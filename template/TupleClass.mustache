@@ -1,0 +1,32 @@
+////
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+////
+package sparx.tuple;
+
+import java.util.Arrays;
+
+class {{name}}Tuple<T, {{#indexes}}T{{value}} extends T{{^last}}, {{/last}}{{/indexes}}> extends GenericTuple<T>
+    implements {{name}}<T, {{#indexes}}T{{value}}{{^last}}, {{/last}}{{/indexes}}> {
+
+{{#ordinals}}  private final T{{value.prevIndex}} {{value.prevName}};
+{{#last}}  private final T{{value.index}} {{value.name}};
+{{/last}}{{/ordinals}}
+
+  {{name}}Tuple({{#ordinals}}final T{{value.prevIndex}} {{value.prevName}}, {{#last}}final T{{value.index}} {{value.name}}{{/last}}{{/ordinals}}) {
+    super(Arrays.asList({{#ordinals}}{{value.prevName}}, {{#last}}{{value.name}}{{/last}}{{/ordinals}}));
+{{#ordinals}}    this.{{value.prevName}} = {{value.prevName}};
+{{#last}}    this.{{value.name}} = {{value.name}};
+{{/last}}{{/ordinals}}
+  }
+
+{{#ordinals}}  @Override
+  public T{{value.prevIndex}} get{{value.prevSuffix}}() {
+    return {{value.prevName}};
+  }
+
+{{#last}}  @Override
+  public T{{value.index}} get{{value.suffix}}() {
+   return {{value.name}};
+  }
+{{/last}}{{/ordinals}}
+}

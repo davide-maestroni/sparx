@@ -1,0 +1,12 @@
+////
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+////
+package sparx.tuple;
+
+public interface {{name}}<T, {{#indexes}}T{{value}} extends T{{^last}}, {{/last}}{{/indexes}}> extends Tuple<T> {
+
+{{#ordinals}}  T{{value.prevIndex}} get{{value.prevSuffix}}();
+
+{{#last}}  T{{value.index}} get{{value.suffix}}();
+{{/last}}{{/ordinals}}
+}

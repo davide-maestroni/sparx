@@ -1,0 +1,126 @@
+import com.github.mustachejava.DefaultMustacheFactory
+import com.github.mustachejava.util.DecoratedCollection
+
+import java.util.stream.Collectors
+import java.util.stream.Stream
+
+buildscript {
+  dependencies {
+    classpath 'com.github.spullara.mustache.java:compiler:0.9.11'
+  }
+}
+
+plugins {
+  id 'java'
+  id 'maven-publish'
+  id 'com.github.ben-manes.versions' version '0.50.0'
+}
+
+group = 'com.github.davide-maestroni'
+version = '0.0.0'
+
+repositories {
+  mavenCentral()
+}
+
+compileJava {
+  options.release.set(6)
+}
+
+dependencies {
+  implementation 'org.jetbrains:annotations:24.1.0'
+  testImplementation platform('org.junit:junit-bom:5.10.1')
+  testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+  useJUnitPlatform()
+}
+
+tasks.register('generateCode') {
+  doLast {
+    def count = 1
+    def tupleNames = [
+        'Couple', 'Triple', 'Quadruple', 'Quintuple', 'Sextuple', 'Septuple', 'Octuple', 'Nonuple',
+        'Decuple', 'Undecuple', 'Duodecuple', 'Tredecuple', 'Quattuordecuple', 'Quindecuple',
+        'Sexdecuple', 'Septendecuple', 'Octodecuple', 'Novemdecuple', 'Viguple'
+    ]
+    def index = 2
+    def prevName = 'first'
+    def ordinalNames = [
+        'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth',
+        'eleventh', 'twelfth', 'thirteenth', 'fourteenth', 'fifteenth', 'sixteenth', 'seventeenth',
+        'eighteenth', 'nineteenth', 'twentieth'
+    ].stream().map {
+      def element = [
+          name      : it,
+          suffix    : it.capitalize(),
+          prevName  : prevName,
+          prevSuffix: prevName.capitalize(),
+          index     : index,
+          prevIndex : index - 1
+      ]
+      ++index
+      prevName = it
+      element
+    }.collect(Collectors.toList())
+    def tuples = tupleNames.stream().map {
+      ++count
+      [
+          name    : it,
+          indexes : new DecoratedCollection<Integer>(new IntRange(1, count).stream().collect(Collectors.toList())),
+          ordinals: new DecoratedCollection<Map<String, String>>(ordinalNames.subList(0, count - 1)),
+          last    : count == tupleNames.size() + 1
+      ]
+    }.toArray()
+    def factory = new DefaultMustacheFactory();
+    {
+      def scope = [
+          methodName: 'then',
+          tuples    : tuples
+      ];
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/StreamableFuture.java'))
+        def mustache = factory.compile("template/StreamableFuture.mustache")
+        mustache.execute(writer, scope)
+        writer.close()
+      }
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/StreamGroupFuture.java'))
+        def mustache = factory.compile("template/StreamGroupFuture.mustache")
+        mustache.execute(writer, scope)
+        writer.close()
+      }
+    }
+    {
+      def scope = [
+          methodName: 'tupleOf',
+          tuples    : tuples
+      ];
+      def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/tuple/Tuples.java'))
+      def mustache = factory.compile("template/Tuples.mustache")
+      mustache.execute(writer, scope)
+      writer.close()
+    }
+    Stream.of(tuples).forEach {
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/tuple/${it.name}.java"))
+        def mustache = factory.compile("template/Tuple.mustache")
+        mustache.execute(writer, it)
+        writer.close()
+      }
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/tuple/${it.name}Tuple.java"))
+        def mustache = factory.compile("template/TupleClass.mustache")
+        mustache.execute(writer, it)
+        writer.close()
+      }
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/concurrent/${it.name}Future.java"))
+        def mustache = factory.compile("template/TupleFuture.mustache")
+        mustache.execute(writer, it)
+        writer.close()
+      }
+    }
+  }
+}

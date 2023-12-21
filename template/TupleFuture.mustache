@@ -1,0 +1,62 @@
+////
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+////
+package sparx.concurrent;
+
+import java.util.Arrays;
+import java.util.List;
+import org.jetbrains.annotations.NotNull;
+import sparx.tuple.{{name}};
+import sparx.util.Requires;
+
+public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/last}}{{/indexes}}> extends
+    TupleStreamGroupFuture<V, {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}>> implements
+    {{name}}<StreamingFuture<? extends V>, {{#indexes}}StreamingFuture<V{{value}}>{{^last}}, {{/last}}{{/indexes}}> {
+
+  public static @NotNull <V, {{#indexes}}V{{value}} extends V{{^last}}, {{/last}}{{/indexes}}> {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> of(
+      @NotNull final StreamingFuture<V1> first,
+{{#ordinals}}      @NotNull final StreamingFuture<V{{value.index}}> {{value.name}}{{^last}},{{/last}}{{#last}}) { {{/last}}
+{{/ordinals}}
+    return new {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}>(
+        Requires.notNull(first, "first"),
+{{#ordinals}}        Requires.notNull({{value.name}}, "{{value.name}}"){{^last}},{{/last}}{{#last}});{{/last}}
+{{/ordinals}}
+  }
+
+  private final StreamingFuture<V1> first;
+{{#ordinals}}  private final StreamingFuture<V{{value.index}}> {{value.name}};
+{{/ordinals}}
+  private final List<StreamingFuture<? extends V>> futures;
+
+  private {{name}}Future(
+      @NotNull final StreamingFuture<V1> first,
+{{#ordinals}}      @NotNull final StreamingFuture<V{{value.index}}> {{value.name}}{{^last}},{{/last}}{{#last}}) { {{/last}}
+{{/ordinals}}
+    this.first = first;
+{{#ordinals}}    this.{{value.name}} = {{value.name}};
+{{/ordinals}}
+    this.futures = Arrays.asList(first, {{#ordinals}}{{value.name}}{{^last}}, {{/last}}{{/ordinals}});
+  }
+
+  @Override
+  public @NotNull {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> readOnly() {
+    return this;
+  }
+{{#ordinals}}
+
+  @Override
+  public @NotNull StreamingFuture<V{{value.prevIndex}}> get{{value.prevSuffix}}() {
+    return {{value.prevName}};
+  }
+
+{{#last}}  @Override
+  public @NotNull StreamingFuture<V{{value.index}}> get{{value.suffix}}() {
+    return {{value.name}};
+  }
+{{/last}}{{/ordinals}}
+
+  @Override
+  public @NotNull List<StreamingFuture<? extends V>> asList() {
+    return futures;
+  }
+}
