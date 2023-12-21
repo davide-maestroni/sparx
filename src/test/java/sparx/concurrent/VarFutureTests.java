@@ -1,18 +1,37 @@
+/*
+ * Copyright 2024 Davide Maestroni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package sparx.concurrent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import sparx.concurrent.VarFuture.HistoryStrategy;
 import sparx.config.SparxConfig;
 
 public class VarFutureTests {
@@ -28,65 +47,50 @@ public class VarFutureTests {
   }
 
   @Test
-  public void testSet() {
-    try (var future = VarFuture.<String>create()) {
-      assertThrows(NoSuchElementException.class, future::getCurrent);
-      assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
-      assertThrows(UncheckedTimeoutException.class,
-          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
-      assertThrows(UncheckedTimeoutException.class,
-          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
-      assertEquals("none", future.getCurrentOr("none"));
+  @SuppressWarnings({"DataFlowIssue", "resource"})
+  public void futureCreate() {
+    assertThrows(NullPointerException.class, () -> VarFuture.create(null));
+    var future = VarFuture.<String>create();
+    assertFalse(future.isReadOnly());
+    assertFalse(future.isCancelled());
+    assertFalse(future.isDone());
+    future.close();
+    assertFalse(future.isReadOnly());
+    assertFalse(future.isCancelled());
+    assertTrue(future.isDone());
+    future = VarFuture.create(new HistoryStrategy<>() {
+      @Override
+      public void onClear() {
+      }
 
-      future.set("test");
-      assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
-      assertEquals("test", future.getCurrent());
-      assertEquals("test", future.getCurrentOr("none"));
+      @Override
+      public void onClose() {
+      }
 
-      var timeoutIterator = future.iterator(100, TimeUnit.MILLISECONDS);
-      assertTrue(timeoutIterator.hasNext());
-      assertEquals("test", timeoutIterator.next());
-      assertThrows(UncheckedTimeoutException.class, timeoutIterator::hasNext);
+      @Override
+      public void onSet(final String value) {
+      }
 
-      var indefiniteIterator = future.iterator();
-      assertTrue(indefiniteIterator.hasNext());
-      assertEquals("test", indefiniteIterator.next());
-      assertThrows(UncheckedTimeoutException.class,
-          () -> indefiniteIterator.hasNext(100, TimeUnit.MILLISECONDS));
-    }
+      @Override
+      public void onSetBulk(@NotNull final List<String> values) {
+      }
+
+      @Override
+      public @NotNull List<String> onSubscribe() {
+        return List.of();
+      }
+    });
+    assertFalse(future.isReadOnly());
+    assertFalse(future.isCancelled());
+    assertFalse(future.isDone());
+    future.close();
+    assertFalse(future.isReadOnly());
+    assertFalse(future.isCancelled());
+    assertTrue(future.isDone());
   }
 
   @Test
-  public void testSetBulk() {
-    try (var future = VarFuture.<String>create()) {
-      assertThrows(NoSuchElementException.class, future::getCurrent);
-      assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
-      assertThrows(UncheckedTimeoutException.class,
-          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
-      assertThrows(UncheckedTimeoutException.class,
-          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
-      assertEquals("none", future.getCurrentOr("none"));
-
-      future.setBulk(Arrays.asList("hello", "test"));
-      assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
-      assertEquals("test", future.getCurrent());
-      assertEquals("test", future.getCurrentOr("none"));
-
-      var timeoutIterator = future.iterator(100, TimeUnit.MILLISECONDS);
-      assertTrue(timeoutIterator.hasNext());
-      assertEquals("test", timeoutIterator.next());
-      assertThrows(UncheckedTimeoutException.class, timeoutIterator::hasNext);
-
-      var indefiniteIterator = future.iterator();
-      assertTrue(indefiniteIterator.hasNext());
-      assertEquals("test", indefiniteIterator.next());
-      assertThrows(UncheckedTimeoutException.class,
-          () -> indefiniteIterator.hasNext(100, TimeUnit.MILLISECONDS));
-    }
-  }
-
-  @Test
-  public void testClear() {
+  public void futureClear() {
     try (var future = VarFuture.<String>create()) {
       future.clear();
       future.set("hello");
@@ -119,7 +123,95 @@ public class VarFutureTests {
   }
 
   @Test
-  public void testFail() {
+  @SuppressWarnings("DataFlowIssue")
+  public void futureCompute() {
+    try (var future = VarFuture.<String>create()) {
+      future.set("hello");
+      assertThrows(NullPointerException.class, () -> future.compute(null));
+      future.compute(s -> s + " test");
+      assertEquals("hello test", future.getCurrent());
+      assertFalse(future.isCancelled());
+      assertFalse(future.isDone());
+      future.compute(s -> String.valueOf(Integer.parseInt(s)));
+      assertFalse(future.isCancelled());
+      assertTrue(future.isDone());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      var ex = assertThrows(ExecutionException.class, future::get);
+      assertEquals(NumberFormatException.class, ex.getCause().getClass());
+    }
+  }
+
+  @Test
+  public void futureReadOnly() {
+    try (var future = VarFuture.<String>create()) {
+      assertFalse(future.isReadOnly());
+      var readOnly = future.readOnly();
+      assertNotEquals(readOnly, future);
+      assertTrue(readOnly.isReadOnly());
+      assertEquals(readOnly, future.readOnly());
+    }
+  }
+
+  @Test
+  public void futureSet() {
+    try (var future = VarFuture.<String>create()) {
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedTimeoutException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedTimeoutException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      future.set("test");
+      assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertEquals("test", future.getCurrent());
+      assertEquals("test", future.getCurrentOr("none"));
+
+      var timeoutIterator = future.iterator(100, TimeUnit.MILLISECONDS);
+      assertTrue(timeoutIterator.hasNext());
+      assertEquals("test", timeoutIterator.next());
+      assertThrows(UncheckedTimeoutException.class, timeoutIterator::hasNext);
+
+      var indefiniteIterator = future.iterator();
+      assertTrue(indefiniteIterator.hasNext());
+      assertEquals("test", indefiniteIterator.next());
+      assertThrows(UncheckedTimeoutException.class,
+          () -> indefiniteIterator.hasNext(100, TimeUnit.MILLISECONDS));
+    }
+  }
+
+  @Test
+  public void futureSetBulk() {
+    try (var future = VarFuture.<String>create()) {
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedTimeoutException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedTimeoutException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      future.setBulk(Arrays.asList("hello", "test"));
+      assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertEquals("test", future.getCurrent());
+      assertEquals("test", future.getCurrentOr("none"));
+
+      var timeoutIterator = future.iterator(100, TimeUnit.MILLISECONDS);
+      assertTrue(timeoutIterator.hasNext());
+      assertEquals("test", timeoutIterator.next());
+      assertThrows(UncheckedTimeoutException.class, timeoutIterator::hasNext);
+
+      var indefiniteIterator = future.iterator();
+      assertTrue(indefiniteIterator.hasNext());
+      assertEquals("test", indefiniteIterator.next());
+      assertThrows(UncheckedTimeoutException.class,
+          () -> indefiniteIterator.hasNext(100, TimeUnit.MILLISECONDS));
+    }
+  }
+
+  @Test
+  public void futureFail() {
     try (var future = VarFuture.<String>create()) {
       future.set("hello");
       future.fail(new IllegalAccessException());
@@ -152,7 +244,7 @@ public class VarFutureTests {
   }
 
   @Test
-  public void testSetBulkIterator() {
+  public void futureIteratorSetBulk() {
     var future = VarFuture.<String>create();
     var timeoutIterator = future.iterator(100, TimeUnit.MILLISECONDS);
     var indefiniteIterator = future.iterator();

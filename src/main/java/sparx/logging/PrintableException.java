@@ -18,7 +18,7 @@ public class PrintableException extends Exception {
     if (message == null) {
       final StringWriter sw = new StringWriter();
       final PrintWriter pw = new PrintWriter(sw);
-      printStackTrace(pw);
+      getCause().printStackTrace(pw);
       message = sw.toString();
     }
     return message;

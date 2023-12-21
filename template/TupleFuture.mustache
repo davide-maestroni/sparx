@@ -1,3 +1,18 @@
+/*
+* Copyright 2024 Davide Maestroni
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 ////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 ////
@@ -37,11 +52,6 @@ public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/las
 {{/ordinals}}
     this.futures = Arrays.asList(first, {{#ordinals}}{{value.name}}{{^last}}, {{/last}}{{/ordinals}});
   }
-
-  @Override
-  public @NotNull {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> readOnly() {
-    return this;
-  }
 {{#ordinals}}
 
   @Override
@@ -58,5 +68,10 @@ public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/las
   @Override
   public @NotNull List<StreamingFuture<? extends V>> asList() {
     return futures;
+  }
+
+  @Override
+  public @NotNull {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> readOnly() {
+    return this;
   }
 }

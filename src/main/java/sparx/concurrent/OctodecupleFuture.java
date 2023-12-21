@@ -1,3 +1,18 @@
+/*
+* Copyright 2024 Davide Maestroni
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 ////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 ////
@@ -114,11 +129,6 @@ public class OctodecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 e
   }
 
   @Override
-  public @NotNull OctodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18> readOnly() {
-    return this;
-  }
-
-  @Override
   public @NotNull StreamingFuture<V1> getFirst() {
     return first;
   }
@@ -227,5 +237,10 @@ public class OctodecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 e
   @Override
   public @NotNull List<StreamingFuture<? extends V>> asList() {
     return futures;
+  }
+
+  @Override
+  public @NotNull OctodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18> readOnly() {
+    return this;
   }
 }
