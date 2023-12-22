@@ -38,6 +38,7 @@ class ExecutionScope implements ExecutionContext {
 
   private static @NotNull <E> Collection<List<E>> chunks(@NotNull final Collection<E> collection,
       final int size) {
+    // TODO: sublist
     final LinkedList<List<E>> chunks = new LinkedList<List<E>>();
     ArrayList<E> chunk = new ArrayList<E>();
     for (final E element : collection) {
@@ -107,6 +108,7 @@ class ExecutionScope implements ExecutionContext {
     private final HashSet<Receiver<?>> receivers = new HashSet<Receiver<?>>();
     private final Scheduler scheduler;
     private final AtomicInteger status = new AtomicInteger(IDLE);
+    private final String taskID = toString();
     private final int weight;
 
     private GroupStatus groupStatus = new RunningStatus();
@@ -183,7 +185,7 @@ class ExecutionScope implements ExecutionContext {
 
     @Override
     public @NotNull String taskID() {
-      return toString();
+      return taskID;
     }
 
     @Override
@@ -490,7 +492,7 @@ class ExecutionScope implements ExecutionContext {
 
       @Override
       public @NotNull String taskID() {
-        return ScopeFuture.this.toString();
+        return taskID;
       }
 
       @Override

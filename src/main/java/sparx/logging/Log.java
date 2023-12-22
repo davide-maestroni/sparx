@@ -46,8 +46,8 @@ public class Log {
     return null;
   }
 
-  public static @NotNull PrintableException printable(@NotNull final Throwable t) {
-    return new PrintableException(t);
+  public static @NotNull Printable printable(@NotNull final Throwable t) {
+    return new PrintableThrowable(t);
   }
 
   public static void reset() {
@@ -249,6 +249,7 @@ public class Log {
 
   public static void errInvocation(final Object tag, final String name, final String method,
       final Exception e) {
+    // TODO: remove
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
       collector.log(LogLevel.ERROR, tag, "Failed to invoke %s '%s' method: %s", name, method,
           Log.printable(e));
@@ -353,6 +354,7 @@ public class Log {
 
   public static void wrnInvocation(final Object tag, final String name, final String method,
       final Exception e) {
+    // TODO: remove
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, "Failed to invoke %s '%s' method: %s", name, method,
           Log.printable(e));

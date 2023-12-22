@@ -23,6 +23,7 @@ import sparx.logging.Log;
 public class SafeReceiver<V> implements Receiver<V> {
 
   private final Scheduler scheduler = Scheduler.trampoline();
+  private final String taskID = toString();
 
   private Receiver<V> status = new RunningStatus();
 
@@ -150,7 +151,7 @@ public class SafeReceiver<V> implements Receiver<V> {
 
     @Override
     public @NotNull String taskID() {
-      return SafeReceiver.this.toString();
+      return taskID;
     }
 
     @Override

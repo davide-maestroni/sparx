@@ -72,6 +72,7 @@ public class Scheduler {
 
   public boolean interruptTask(@NotNull final String taskID) {
     synchronized (mutex) {
+      final Task runningTask = this.runningTask;
       if (runningTask != null && runningTask.taskID().equals(taskID)) {
         runningThread.interrupt();
         return true;

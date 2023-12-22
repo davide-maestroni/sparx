@@ -5,12 +5,13 @@ import java.io.StringWriter;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Requires;
 
-public class PrintableException extends Exception {
+class PrintableThrowable implements Printable {
 
+  private final Throwable wrapped;
   private volatile String message;
 
-  PrintableException(@NotNull final Throwable cause) {
-    super(Requires.notNull(cause, "cause"));
+  PrintableThrowable(@NotNull final Throwable wrapped) {
+    this.wrapped = Requires.notNull(wrapped, "wrapped");
   }
 
   @Override
@@ -18,7 +19,7 @@ public class PrintableException extends Exception {
     if (message == null) {
       final StringWriter sw = new StringWriter();
       final PrintWriter pw = new PrintWriter(sw);
-      getCause().printStackTrace(pw);
+      wrapped.printStackTrace(pw);
       message = sw.toString();
     }
     return message;

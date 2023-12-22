@@ -31,6 +31,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
   private final Group group;
   private final HashMap<Receiver<?>, Scheduler> receivers = new HashMap<Receiver<?>, Scheduler>();
   private final Scheduler scheduler = Scheduler.trampoline();
+  private final String taskID = toString();
 
   private GroupStatus status = new RunningStatus();
 
@@ -394,7 +395,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
     @Override
     public @NotNull String taskID() {
-      return StreamGroup.this.toString();
+      return taskID;
     }
 
     @Override

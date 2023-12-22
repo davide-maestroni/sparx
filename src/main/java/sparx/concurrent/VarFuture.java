@@ -62,6 +62,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   private final Scheduler scheduler = Scheduler.trampoline();
   private final WeakHashMap<Semaphore, Void> semaphores = new WeakHashMap<Semaphore, Void>();
   private final AtomicInteger status = new AtomicInteger(RUNNING);
+  private final String taskID = toString();
 
   private volatile Exception failureException;
   private Status innerStatus = new RunningStatus();
@@ -990,7 +991,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
     @Override
     public @NotNull String taskID() {
-      return VarFuture.this.toString();
+      return taskID;
     }
 
     @Override
@@ -1022,7 +1023,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
     @Override
     public @NotNull String taskID() {
-      return VarFuture.this.toString();
+      return taskID;
     }
 
     @Override
