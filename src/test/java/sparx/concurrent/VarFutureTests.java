@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
@@ -166,7 +165,7 @@ public class VarFutureTests {
       assertEquals("2", value1.get());
       assertEquals("2", value2.get());
       sub1.cancel();
-      future.setBulk(List.of("3", "4", "5"));
+      future.setBulk("3", "4", "5");
       assertEquals("2", value1.get());
       assertEquals("2", value2.get());
       var value3 = new AtomicReference<String>();
@@ -231,7 +230,7 @@ public class VarFutureTests {
           () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
       assertEquals("none", future.getCurrentOr("none"));
 
-      future.setBulk(Arrays.asList("hello", "test"));
+      future.setBulk("hello", "test");
       assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
       assertEquals("test", future.getCurrent());
       assertEquals("test", future.getCurrentOr("none"));
@@ -287,7 +286,7 @@ public class VarFutureTests {
     var future = VarFuture.<String>create();
     var timeoutIterator = future.iterator(100, TimeUnit.MILLISECONDS);
     var indefiniteIterator = future.iterator();
-    future.setBulk(Arrays.asList("hello", "test"));
+    future.setBulk("hello", "test");
 
     assertTrue(timeoutIterator.hasNext());
     assertEquals("hello", timeoutIterator.next());
@@ -315,5 +314,117 @@ public class VarFutureTests {
     assertThrows(NoSuchElementException.class, indefiniteIterator::next);
     assertThrows(NoSuchElementException.class,
         () -> indefiniteIterator.next(100, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  public void liveIteratorIndefinite() {
+    var future = VarFuture.<String>create();
+    var iterator = future.iterator();
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.next(10, TimeUnit.MILLISECONDS));
+
+    future.set("1");
+    assertTrue(iterator.hasNext());
+    assertTrue(iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertEquals("1", iterator.next());
+
+    future.set("2");
+    assertTrue(iterator.hasNext());
+    assertTrue(iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertEquals("2", iterator.next(10, TimeUnit.MILLISECONDS));
+
+    future.setBulk("3", "4", "5");
+    assertTrue(iterator.hasNext());
+    assertEquals("3", iterator.next(10, TimeUnit.MILLISECONDS));
+    assertTrue(iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertEquals("4", iterator.next());
+    assertEquals("5", iterator.next(10, TimeUnit.MILLISECONDS));
+
+    future.close();
+    assertFalse(iterator.hasNext());
+    assertFalse(iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertThrows(NoSuchElementException.class, iterator::next);
+    assertThrows(NoSuchElementException.class,
+        () -> iterator.next(10, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  public void liveIterator() {
+    var future = VarFuture.<String>create();
+    var iterator = future.iterator(1, TimeUnit.MINUTES);
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.next(10, TimeUnit.MILLISECONDS));
+
+    future.set("1");
+    assertTrue(iterator.hasNext());
+    assertTrue(iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertEquals("1", iterator.next());
+
+    future.set("2");
+    assertTrue(iterator.hasNext());
+    assertTrue(iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertEquals("2", iterator.next(10, TimeUnit.MILLISECONDS));
+
+    future.setBulk("3", "4", "5");
+    assertTrue(iterator.hasNext());
+    assertEquals("3", iterator.next(10, TimeUnit.MILLISECONDS));
+    assertTrue(iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertEquals("4", iterator.next());
+    assertEquals("5", iterator.next(10, TimeUnit.MILLISECONDS));
+
+    future.close();
+    assertFalse(iterator.hasNext());
+    assertFalse(iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertThrows(NoSuchElementException.class, iterator::next);
+    assertThrows(NoSuchElementException.class,
+        () -> iterator.next(10, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  public void liveIteratorTimeout() {
+    var future = VarFuture.<String>create();
+    var iterator = future.iterator(40, TimeUnit.MILLISECONDS);
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.next(10, TimeUnit.MILLISECONDS));
+
+    future.set("1");
+    assertTrue(iterator.hasNext());
+    assertTrue(iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertEquals("1", iterator.next());
+
+    future.setBulk("2", "3", "4", "5");
+    assertEquals("2", iterator.next(10, TimeUnit.MILLISECONDS));
+    assertTrue(iterator.hasNext());
+    assertEquals("3", iterator.next(10, TimeUnit.MILLISECONDS));
+    assertTrue(iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertEquals("4", iterator.next());
+    assertEquals("5", iterator.next(10, TimeUnit.MILLISECONDS));
+
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.next(10, TimeUnit.MILLISECONDS));
+
+    future.set("6");
+    assertThrows(UncheckedTimeoutException.class, iterator::hasNext);
+    assertThrows(UncheckedTimeoutException.class, iterator::next);
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.next(10, TimeUnit.MILLISECONDS));
+
+    future.close();
+    assertThrows(UncheckedTimeoutException.class, iterator::hasNext);
+    assertThrows(UncheckedTimeoutException.class, iterator::next);
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
+    assertThrows(UncheckedTimeoutException.class,
+        () -> iterator.next(10, TimeUnit.MILLISECONDS));
   }
 }

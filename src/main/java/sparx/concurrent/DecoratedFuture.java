@@ -68,6 +68,11 @@ public class DecoratedFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>>
   }
 
   @Override
+  public void setBulk(final V... values) {
+    wrapped.setBulk(values);
+  }
+
+  @Override
   public @NotNull Subscription subscribe(@NotNull final Receiver<? super V> receiver) {
     return wrapped.subscribe(receiver);
   }

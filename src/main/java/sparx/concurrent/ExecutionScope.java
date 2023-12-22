@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
@@ -35,24 +35,6 @@ import sparx.util.Nothing;
 import sparx.util.Requires;
 
 class ExecutionScope implements ExecutionContext {
-
-  private static @NotNull <E> Collection<List<E>> chunks(@NotNull final Collection<E> collection,
-      final int size) {
-    // TODO: sublist
-    final LinkedList<List<E>> chunks = new LinkedList<List<E>>();
-    ArrayList<E> chunk = new ArrayList<E>();
-    for (final E element : collection) {
-      chunk.add(element);
-      if (chunk.size() == size) {
-        chunks.add(Collections.unmodifiableList(chunk));
-        chunk = new ArrayList<E>();
-      }
-    }
-    if (!chunk.isEmpty()) {
-      chunks.add(Collections.unmodifiableList(chunk));
-    }
-    return chunks;
-  }
 
   private final Scheduler scheduler;
 
@@ -358,11 +340,20 @@ class ExecutionScope implements ExecutionContext {
 
       @Override
       public void setBulk(@NotNull final Collection<R> values) {
-        for (final List<R> chunk : chunks(values, scheduler.minThroughput())) {
-          if (chunk.size() == 1) {
-            status.set(chunk.get(0));
-          } else {
-            status.setBulk(values);
+        final int throughput = scheduler.minThroughput();
+        if (throughput == 1) {
+          for (final R value : values) {
+            status.set(value);
+          }
+        } else {
+          final ChunkIterator<R> chunkIterator = new ChunkIterator<R>(values, throughput);
+          while (chunkIterator.hasNext()) {
+            final List<R> chunk = chunkIterator.next();
+            if (chunk.size() == 1) {
+              status.set(chunk.get(0));
+            } else {
+              status.setBulk(values);
+            }
           }
         }
       }
@@ -574,6 +565,38 @@ class ExecutionScope implements ExecutionContext {
     void innerRun() throws Exception {
       set(predicate.test(future));
       close();
+    }
+  }
+
+  private static class ChunkIterator<E> implements Iterator<List<E>> {
+
+    private final Iterator<E> iterator;
+    private final int maxSize;
+
+    private ChunkIterator(@NotNull final Collection<E> collection, final int maxSize) {
+      this.iterator = collection.iterator();
+      this.maxSize = maxSize;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return iterator.hasNext();
+    }
+
+    @Override
+    public List<E> next() {
+      final int maxSize = this.maxSize;
+      final Iterator<E> iterator = this.iterator;
+      final ArrayList<E> chunk = new ArrayList<E>(maxSize);
+      while (iterator.hasNext() && chunk.size() < maxSize) {
+        chunk.add(iterator.next());
+      }
+      return Collections.unmodifiableList(chunk);
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
     }
   }
 }

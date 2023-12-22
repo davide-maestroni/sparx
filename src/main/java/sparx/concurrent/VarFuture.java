@@ -17,6 +17,7 @@ package sparx.concurrent;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -140,6 +141,11 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       readonly = new ReadOnlyFuture<V>(this);
     }
     return readonly;
+  }
+
+  @Override
+  public void setBulk(final V... values) {
+    setBulk(Arrays.asList(values));
   }
 
   @Override

@@ -60,4 +60,9 @@ abstract class ReadOnlyStreamGroupFuture<V, F extends SignalFuture<V>> extends
   public boolean isReadOnly() {
     return true;
   }
+
+  @Override
+  public void setBulk(final V... values) {
+    fail();
+  }
 }

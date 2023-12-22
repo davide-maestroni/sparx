@@ -125,44 +125,73 @@ public class SparxDSL {
       @Override
       public StreamingFuture<V> apply(final SignalFuture<V> input) {
         final VarFuture<V> future = VarFuture.create();
-        input.subscribe(new Receiver<V>() {
+        if (maxSize == 1) {
+          input.subscribe(new Receiver<V>() {
 
-          private final ArrayList<V> buffer = new ArrayList<V>();
-
-          @Override
-          public boolean fail(@NotNull final Exception error) {
-            return future.fail(error);
-          }
-
-          @Override
-          public void set(final V value) {
-            buffer.add(value);
-            if (buffer.size() == maxSize) {
-              future.setBulk(buffer);
-              buffer.clear();
+            @Override
+            public boolean fail(@NotNull final Exception error) {
+              return future.fail(error);
             }
-          }
 
-          @Override
-          public void setBulk(@NotNull final Collection<V> values) {
-            final ArrayList<V> buffer = this.buffer;
-            for (final V value : values) {
+            @Override
+            public void set(final V value) {
+              future.set(value);
+            }
+
+            @Override
+            public void setBulk(@NotNull final Collection<V> values) {
+              for (final V value : values) {
+                future.set(value);
+              }
+            }
+
+            @Override
+            public void close() {
+              future.close();
+            }
+          });
+        } else {
+          input.subscribe(new Receiver<V>() {
+
+            private final ArrayList<V> buffer = new ArrayList<V>(maxSize);
+
+            @Override
+            public boolean fail(@NotNull final Exception error) {
+              return future.fail(error);
+            }
+
+            @Override
+            public void set(final V value) {
+              final ArrayList<V> buffer = this.buffer;
               buffer.add(value);
               if (buffer.size() == maxSize) {
                 future.setBulk(buffer);
                 buffer.clear();
               }
             }
-          }
 
-          @Override
-          public void close() {
-            if (!buffer.isEmpty()) {
-              future.setBulk(buffer);
+            @Override
+            public void setBulk(@NotNull final Collection<V> values) {
+              final ArrayList<V> buffer = this.buffer;
+              for (final V value : values) {
+                buffer.add(value);
+                if (buffer.size() == maxSize) {
+                  future.setBulk(buffer);
+                  buffer.clear();
+                }
+              }
             }
-            future.close();
-          }
-        });
+
+            @Override
+            public void close() {
+              final ArrayList<V> buffer = this.buffer;
+              if (!buffer.isEmpty()) {
+                future.setBulk(buffer);
+              }
+              future.close();
+            }
+          });
+        }
         return future.readOnly();
       }
     };
