@@ -42,12 +42,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
   public @NotNull FutureGroup.Registration onCreate(@NotNull final StreamingFuture<?> future) {
     final StreamRegistration registration = new StreamRegistration(group.onCreate(future),
         future);
-    scheduler.scheduleAfter(new Task() {
-      @Override
-      public int weight() {
-        return 1;
-      }
-
+    scheduler.scheduleAfter(new GroupTask() {
       @Override
       public void run() {
         status.onCreate(future, registration);
@@ -67,12 +62,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
     final StreamGroupReceiver<R> hookReceiver = new StreamGroupReceiver<R>(
         group.onSubscribe(future, scheduler, new StreamReceiver<R>(receiver)), future, receiver);
-    this.scheduler.scheduleAfter(new Task() {
-      @Override
-      public int weight() {
-        return 1;
-      }
-
+    this.scheduler.scheduleAfter(new GroupTask() {
       @Override
       public void run() {
         status.onSubscribe(hookReceiver, scheduler);
@@ -118,12 +108,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
   }
 
   private void innerFail(@NotNull final Exception error) {
-    final Task task = new Task() {
-      @Override
-      public int weight() {
-        return 1;
-      }
-
+    final Task task = new GroupTask() {
       @Override
       public void run() {
         status.onFail(error);
@@ -191,12 +176,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
       for (final Entry<Receiver<?>, Scheduler> entry : receivers.entrySet()) {
         final Receiver<?> receiver = entry.getKey();
         if (StreamGroupReceiver.class.equals(receiver.getClass())) {
-          entry.getValue().scheduleAfter(new Task() {
-            @Override
-            public int weight() {
-              return 1;
-            }
-
+          entry.getValue().scheduleAfter(new GroupTask() {
             @Override
             @SuppressWarnings("unchecked")
             public void run() {
@@ -230,12 +210,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
     @Override
     public void cancel() {
-      scheduler.scheduleAfter(new Task() {
-        @Override
-        public int weight() {
-          return 1;
-        }
-
+      scheduler.scheduleAfter(new GroupTask() {
         @Override
         public void run() {
           receivers.remove(future);
@@ -322,12 +297,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
     @Override
     public void onUnsubscribe() {
       status = new DoneStatus();
-      scheduler.scheduleAfter(new Task() {
-        @Override
-        public int weight() {
-          return 1;
-        }
-
+      scheduler.scheduleAfter(new GroupTask() {
         @Override
         public void run() {
           receivers.remove(receiver);
@@ -417,6 +387,19 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
         status = new DoneStatus();
         wrapped.close();
       }
+    }
+  }
+
+  private abstract class GroupTask implements Task {
+
+    @Override
+    public @NotNull String taskID() {
+      return StreamGroup.this.toString();
+    }
+
+    @Override
+    public int weight() {
+      return 1;
     }
   }
 }

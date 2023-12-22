@@ -42,6 +42,8 @@ public class Scheduler {
   private final Runnable runner;
 
   private int pauseStatus = RUNNING;
+  private Task runningTask;
+  private Thread runningThread;
 
   public static @NotNull Scheduler of(@NotNull final Executor executor) {
     return of(executor, Integer.MAX_VALUE);
@@ -66,6 +68,16 @@ public class Scheduler {
     } else {
       this.runner = new ThroughputRunner();
     }
+  }
+
+  public boolean interruptTask(@NotNull final String taskID) {
+    synchronized (mutex) {
+      if (runningTask != null && runningTask.taskID().equals(taskID)) {
+        runningThread.interrupt();
+        return true;
+      }
+    }
+    return false;
   }
 
   public int minThroughput() {
@@ -124,6 +136,8 @@ public class Scheduler {
 
   public interface Task extends Runnable {
 
+    @NotNull String taskID();
+
     int weight();
   }
 
@@ -133,11 +147,14 @@ public class Scheduler {
 
     @Override
     public void run() {
+      final Thread currentThread = Thread.currentThread();
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
       while (true) {
         Task task;
         synchronized (mutex) {
+          runningTask = null;
+          runningThread = null;
           if (pauseStatus == PAUSING) {
             pauseStatus = PAUSED;
             return;
@@ -151,12 +168,18 @@ public class Scheduler {
               return;
             }
           }
+          runningTask = task;
+          runningThread = currentThread;
         }
 
         try {
           task.run();
           // TODO: alert => takes too long?
         } catch (final Throwable t) {
+          synchronized (mutex) {
+            runningTask = null;
+            runningThread = null;
+          }
           Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
           UncheckedException.throwUnchecked(t);
         }
@@ -184,6 +207,8 @@ public class Scheduler {
             return;
           }
         }
+        runningTask = task;
+        runningThread = Thread.currentThread();
       }
 
       try {
@@ -192,6 +217,11 @@ public class Scheduler {
       } catch (final Throwable t) {
         Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
         UncheckedException.throwUnchecked(t);
+      } finally {
+        synchronized (mutex) {
+          runningTask = null;
+          runningThread = null;
+        }
       }
       executor.execute(this);
     }
@@ -201,12 +231,15 @@ public class Scheduler {
 
     @Override
     public void run() {
+      final Thread currentThread = Thread.currentThread();
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
       int minThroughput = Scheduler.this.minThroughput;
       while (minThroughput > 0) {
         Task task;
         synchronized (mutex) {
+          runningTask = null;
+          runningThread = null;
           if (pauseStatus == PAUSING) {
             pauseStatus = PAUSED;
             return;
@@ -220,6 +253,8 @@ public class Scheduler {
               return;
             }
           }
+          runningTask = task;
+          runningThread = currentThread;
         }
 
         try {
@@ -227,24 +262,28 @@ public class Scheduler {
           task.run();
           // TODO: alert => takes too long?
         } catch (final Throwable t) {
+          synchronized (mutex) {
+            runningTask = null;
+            runningThread = null;
+          }
           Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
           UncheckedException.throwUnchecked(t);
         }
       }
 
-      Task task;
+      int size;
       synchronized (mutex) {
         if (pauseStatus == PAUSING) {
           pauseStatus = PAUSED;
           return;
         }
 
-        task = beforeQueue.peek();
-        if (task == null) {
-          task = beforeQueue.peek();
+        size = beforeQueue.size();
+        if (size == 0) {
+          size = afterQueue.size();
         }
       }
-      if (task != null) {
+      if (size > 0) {
         executor.execute(this);
       }
     }

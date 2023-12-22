@@ -119,6 +119,55 @@ public class SparxDSL {
     return null;
   }
 
+  public static @NotNull <V> Function<SignalFuture<V>, StreamingFuture<V>> buffer(
+      final int maxSize) {
+    return new Function<SignalFuture<V>, StreamingFuture<V>>() {
+      @Override
+      public StreamingFuture<V> apply(final SignalFuture<V> input) {
+        final VarFuture<V> future = VarFuture.create();
+        input.subscribe(new Receiver<V>() {
+
+          private final ArrayList<V> buffer = new ArrayList<V>();
+
+          @Override
+          public boolean fail(@NotNull final Exception error) {
+            return future.fail(error);
+          }
+
+          @Override
+          public void set(final V value) {
+            buffer.add(value);
+            if (buffer.size() == maxSize) {
+              future.setBulk(buffer);
+              buffer.clear();
+            }
+          }
+
+          @Override
+          public void setBulk(@NotNull final Collection<V> values) {
+            final ArrayList<V> buffer = this.buffer;
+            for (final V value : values) {
+              buffer.add(value);
+              if (buffer.size() == maxSize) {
+                future.setBulk(buffer);
+                buffer.clear();
+              }
+            }
+          }
+
+          @Override
+          public void close() {
+            if (!buffer.isEmpty()) {
+              future.setBulk(buffer);
+            }
+            future.close();
+          }
+        });
+        return future.readOnly();
+      }
+    };
+  }
+
   public static @NotNull <V, U> Function<SignalFuture<V>, StreamingFuture<U>> map(
       @NotNull final Function<? super V, ? extends U> function) {
     return new Function<SignalFuture<V>, StreamingFuture<U>>() {

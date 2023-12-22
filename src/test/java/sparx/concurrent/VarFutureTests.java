@@ -27,6 +27,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -149,6 +150,44 @@ public class VarFutureTests {
       assertNotEquals(readOnly, future);
       assertTrue(readOnly.isReadOnly());
       assertEquals(readOnly, future.readOnly());
+    }
+  }
+
+  @Test
+  public void futureSubscribe() {
+    try (var future = VarFuture.<String>create()) {
+      future.set("1");
+      var value1 = new AtomicReference<String>();
+      var sub1 = future.subscribe(value1::set, null, null, null);
+      assertEquals("1", value1.get());
+      future.set("2");
+      var value2 = new AtomicReference<String>();
+      var sub2 = future.subscribe(value2::set, null, null, null);
+      assertEquals("2", value1.get());
+      assertEquals("2", value2.get());
+      sub1.cancel();
+      future.setBulk(List.of("3", "4", "5"));
+      assertEquals("2", value1.get());
+      assertEquals("2", value2.get());
+      var value3 = new AtomicReference<String>();
+      var sub3 = future.subscribe(value3::set, null, null, null);
+      assertEquals("2", value1.get());
+      assertEquals("2", value2.get());
+      assertEquals("5", value3.get());
+      future.set("6");
+      assertEquals("2", value1.get());
+      assertEquals("6", value2.get());
+      assertEquals("6", value3.get());
+      sub3.cancel();
+      future.set("7");
+      assertEquals("2", value1.get());
+      assertEquals("7", value2.get());
+      assertEquals("6", value3.get());
+      sub2.cancel();
+      future.set("8");
+      assertEquals("2", value1.get());
+      assertEquals("7", value2.get());
+      assertEquals("6", value3.get());
     }
   }
 

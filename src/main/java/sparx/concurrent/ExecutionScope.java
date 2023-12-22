@@ -126,12 +126,7 @@ class ExecutionScope implements ExecutionContext {
       if (status.compareAndSet(IDLE, DONE)) {
         super.close();
       } else if (status.compareAndSet(RUNNING, DONE)) {
-        scheduler.scheduleAfter(new Task() {
-          @Override
-          public int weight() {
-            return 1;
-          }
-
+        scheduler.scheduleAfter(new GroupTask() {
           @Override
           public void run() {
             if (receivers.isEmpty()) {
@@ -157,12 +152,7 @@ class ExecutionScope implements ExecutionContext {
     @Override
     public @NotNull Registration onCreate(@NotNull final StreamingFuture<?> future) {
       final ScopeRegistration registration = new ScopeRegistration(future);
-      scheduler.scheduleAfter(new Task() {
-        @Override
-        public int weight() {
-          return 1;
-        }
-
+      scheduler.scheduleAfter(new GroupTask() {
         @Override
         public void run() {
           groupStatus.onCreate(future, registration);
@@ -177,12 +167,7 @@ class ExecutionScope implements ExecutionContext {
         @NotNull final Receiver<R> receiver) {
       final ScopeGroupReceiver<R> groupReceiver = new ScopeGroupReceiver<R>(future, scheduler,
           receiver);
-      this.scheduler.scheduleAfter(new Task() {
-        @Override
-        public int weight() {
-          return 1;
-        }
-
+      this.scheduler.scheduleAfter(new GroupTask() {
         @Override
         public void run() {
           groupStatus.onSubscribe(groupReceiver);
@@ -194,6 +179,11 @@ class ExecutionScope implements ExecutionContext {
     @Override
     public void onTask(@NotNull final Task task) {
       scheduler.scheduleAfter(task);
+    }
+
+    @Override
+    public @NotNull String taskID() {
+      return toString();
     }
 
     @Override
@@ -225,6 +215,10 @@ class ExecutionScope implements ExecutionContext {
         }
       };
       if (FutureCancellationException.class.equals(error.getClass())) {
+        final Scheduler scheduler = this.scheduler;
+        if (((FutureCancellationException) error).mayInterruptIfRunning()) {
+          scheduler.interruptTask(toString());
+        }
         scheduler.scheduleBefore(task);
       } else {
         scheduler.scheduleAfter(task);
@@ -331,12 +325,7 @@ class ExecutionScope implements ExecutionContext {
       public void onUnsubscribe() {
         status = new DoneStatus();
         futureScheduler.pause();
-        scheduler.scheduleAfter(new Task() {
-          @Override
-          public int weight() {
-            return 1;
-          }
-
+        scheduler.scheduleAfter(new GroupTask() {
           @Override
           public void run() {
             removeReceiver(wrapped);
@@ -483,12 +472,7 @@ class ExecutionScope implements ExecutionContext {
 
       @Override
       public void cancel() {
-        scheduler.scheduleAfter(new Task() {
-          @Override
-          public int weight() {
-            return 1;
-          }
-
+        scheduler.scheduleAfter(new GroupTask() {
           @Override
           public void run() {
             removeReceiver(future);
@@ -502,12 +486,20 @@ class ExecutionScope implements ExecutionContext {
       }
     }
 
-    private abstract class ScopeTask implements Task {
+    private abstract class GroupTask implements Task {
+
+      @Override
+      public @NotNull String taskID() {
+        return ScopeFuture.this.toString();
+      }
 
       @Override
       public int weight() {
         return 1;
       }
+    }
+
+    private abstract class ScopeTask extends GroupTask {
 
       @Override
       public void run() {

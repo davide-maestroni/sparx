@@ -90,12 +90,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   @Override
   public void clear() {
-    scheduler.scheduleAfter(new Task() {
-      @Override
-      public int weight() {
-        return 1;
-      }
-
+    scheduler.scheduleAfter(new VarTask() {
       @Override
       public void run() {
         innerStatus.clear();
@@ -107,12 +102,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   public void compute(@NotNull final Function<? super V, ? extends V> function) {
     Requires.notNull(function, "function");
     final Group group = FutureGroup.currentGroup();
-    scheduler.scheduleAfter(new Task() {
-      @Override
-      public int weight() {
-        return 1;
-      }
-
+    scheduler.scheduleAfter(new VarTask() {
       @Override
       public void run() {
         innerStatus.compute(group, function);
@@ -156,12 +146,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     final GroupReceiver<? super V> groupReceiver = FutureGroup.currentGroup()
         .onSubscribe(this, scheduler, Requires.notNull(receiver, "receiver"));
     // TODO: alert => serializable?
-    scheduler.scheduleAfter(new Task() {
-      @Override
-      public int weight() {
-        return 1;
-      }
-
+    scheduler.scheduleAfter(new VarTask() {
       @Override
       @SuppressWarnings("unchecked")
       public void run() {
@@ -182,12 +167,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   @Override
   public void unsubscribe(@NotNull final Receiver<?> receiver) {
-    scheduler.scheduleBefore(new Task() {
-      @Override
-      public int weight() {
-        return 1;
-      }
-
+    scheduler.scheduleBefore(new VarTask() {
       @Override
       public void run() {
         final GroupReceiver<V> groupReceiver = receivers.remove(receiver);
@@ -262,12 +242,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   @Override
   public void close() {
     if (status.compareAndSet(RUNNING, COMPLETING)) {
-      scheduler.scheduleAfter(new Task() {
-        @Override
-        public int weight() {
-          return 1;
-        }
-
+      scheduler.scheduleAfter(new VarTask() {
         @Override
         public void run() {
           innerStatus.close();
@@ -280,18 +255,17 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   public boolean fail(@NotNull final Exception error) {
     Requires.notNull(error, "error");
     if (status.compareAndSet(RUNNING, COMPLETING)) {
-      final Task task = new Task() {
-        @Override
-        public int weight() {
-          return 1;
-        }
-
+      final Task task = new VarTask() {
         @Override
         public void run() {
           innerStatus.fail(error);
         }
       };
       if (FutureCancellationException.class.equals(error.getClass())) {
+        final Scheduler scheduler = this.scheduler;
+        if (((FutureCancellationException) error).mayInterruptIfRunning()) {
+          scheduler.interruptTask(toString());
+        }
         scheduler.scheduleBefore(task);
       } else {
         scheduler.scheduleAfter(task);
@@ -304,12 +278,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   @Override
   public void set(final V value) {
     if (!isDone()) {
-      scheduler.scheduleAfter(new Task() {
-        @Override
-        public int weight() {
-          return 1;
-        }
-
+      scheduler.scheduleAfter(new VarTask() {
         @Override
         public void run() {
           innerStatus.set(value);
@@ -322,7 +291,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   public void setBulk(@NotNull final Collection<V> values) {
     if (!values.isEmpty() && !isDone()) {
       final List<V> valueList = Collections.unmodifiableList(new ArrayList<V>(values));
-      scheduler.scheduleAfter(new Task() {
+      scheduler.scheduleAfter(new VarTask() {
         @Override
         public int weight() {
           return valueList.size();
@@ -948,12 +917,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       if (lastValue != UNSET) {
         scheduler.pause();
         try {
-          group.onTask(new Task() {
-            @Override
-            public int weight() {
-              return 1;
-            }
-
+          group.onTask(new VarTask() {
             @Override
             @SuppressWarnings({"unchecked", "NonAtomicOperationOnVolatileField"})
             public void run() {
@@ -1025,6 +989,11 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
 
     @Override
+    public @NotNull String taskID() {
+      return VarFuture.this.toString();
+    }
+
+    @Override
     public int weight() {
       return 1;
     }
@@ -1035,7 +1004,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
   }
 
-  private class IteratorTask implements Task {
+  private class IteratorTask extends VarTask {
 
     private final FutureIterator<V> iterator;
 
@@ -1044,13 +1013,21 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
 
     @Override
-    public int weight() {
-      return 1;
+    public void run() {
+      innerStatus.iterator(iterator);
+    }
+  }
+
+  private abstract class VarTask implements Task {
+
+    @Override
+    public @NotNull String taskID() {
+      return VarFuture.this.toString();
     }
 
     @Override
-    public void run() {
-      innerStatus.iterator(iterator);
+    public int weight() {
+      return 1;
     }
   }
 }

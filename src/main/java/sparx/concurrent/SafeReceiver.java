@@ -24,16 +24,11 @@ public class SafeReceiver<V> implements Receiver<V> {
 
   private final Scheduler scheduler = Scheduler.trampoline();
 
-  private Receiver<V> status;
+  private Receiver<V> status = new RunningStatus();
 
   @Override
   public final boolean fail(@NotNull final Exception error) {
-    scheduler.scheduleAfter(new Task() {
-      @Override
-      public int weight() {
-        return 1;
-      }
-
+    scheduler.scheduleAfter(new SafeTask() {
       @Override
       public void run() {
         status.fail(error);
@@ -44,12 +39,7 @@ public class SafeReceiver<V> implements Receiver<V> {
 
   @Override
   public final void set(final V value) {
-    scheduler.scheduleAfter(new Task() {
-      @Override
-      public int weight() {
-        return 1;
-      }
-
+    scheduler.scheduleAfter(new SafeTask() {
       @Override
       public void run() {
         status.set(value);
@@ -59,10 +49,10 @@ public class SafeReceiver<V> implements Receiver<V> {
 
   @Override
   public final void setBulk(@NotNull final Collection<V> values) {
-    scheduler.scheduleAfter(new Task() {
+    scheduler.scheduleAfter(new SafeTask() {
       @Override
       public int weight() {
-        return 1;
+        return values.size();
       }
 
       @Override
@@ -74,12 +64,7 @@ public class SafeReceiver<V> implements Receiver<V> {
 
   @Override
   public final void close() {
-    scheduler.scheduleAfter(new Task() {
-      @Override
-      public int weight() {
-        return 1;
-      }
-
+    scheduler.scheduleAfter(new SafeTask() {
       @Override
       public void run() {
         status.close();
@@ -158,6 +143,19 @@ public class SafeReceiver<V> implements Receiver<V> {
         Log.wrn(SafeReceiver.class, "Uncaught exception: %s", Log.printable(e));
         fail(e);
       }
+    }
+  }
+
+  private abstract class SafeTask implements Task {
+
+    @Override
+    public @NotNull String taskID() {
+      return SafeReceiver.this.toString();
+    }
+
+    @Override
+    public int weight() {
+      return 1;
     }
   }
 }
