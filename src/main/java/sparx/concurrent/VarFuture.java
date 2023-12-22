@@ -144,8 +144,21 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   }
 
   @Override
-  public void setBulk(final V... values) {
-    setBulk(Arrays.asList(values));
+  public void setBulk(@NotNull final V... values) {
+    if (values.length > 0 && !isDone()) {
+      final List<V> valueList = Arrays.asList(values);
+      scheduler.scheduleAfter(new VarTask() {
+        @Override
+        public int weight() {
+          return valueList.size();
+        }
+
+        @Override
+        public void run() {
+          innerStatus.setBulk(valueList);
+        }
+      });
+    }
   }
 
   @Override
