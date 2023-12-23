@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.ConstFuture;
 import sparx.concurrent.ExecutorContext;
-import sparx.concurrent.FutureLogCollector;
+import sparx.concurrent.LogCollectorFuture;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TripleFuture;
@@ -29,6 +29,8 @@ import sparx.logging.Log.LogLevel;
 import sparx.logging.LogMessage;
 import sparx.logging.printer.ConsoleLogPrinter;
 import sparx.logging.printer.JavaLogPrinter;
+import sparx.tuple.Couple;
+import sparx.tuple.Tuples;
 import sparx.util.Nothing;
 
 public class SparxConfig {
@@ -130,48 +132,53 @@ public class SparxConfig {
                     });
                   }
                   executors.add(executor);
-                  final VarFuture<Nothing> ready = VarFuture.create();
-                  ExecutorContext.of(executor)
-                      .run(TripleFuture.of(future, ConstFuture.of(properties), ready),
-                          new Consumer<TripleFuture<Object, LogMessage, Properties, Nothing>>() {
-                            @Override
-                            public void accept(
-                                final TripleFuture<Object, LogMessage, Properties, Nothing> input) {
-                              input.getSecond().subscribe(new Receiver<Properties>() {
-                                @Override
-                                public boolean fail(@NotNull final Exception error) {
-                                  return input.getThird().fail(error);
-                                }
-
-                                @Override
-                                public void set(final Properties value) {
-                                  final String printers = properties.getProperty(LOG_PRINTERS_PROP);
-                                  if (printers != null) {
-                                    for (final String printerName : printers.split("\\s*,\\s*")) {
-                                      final Receiver<LogMessage> logPrinter = instantiateLogPrinter(
-                                          printerName, properties);
-                                      if (logPrinter != null) {
-                                        input.getFirst().subscribe(logPrinter);
+                  for (final String printerName : printerNames) {
+                    final VarFuture<Nothing> ready = VarFuture.create();
+                    ExecutorContext.of(executor)
+                        .run(TripleFuture.of(future, ready,
+                                ConstFuture.of(Tuples.tupleOf(printerName, properties))),
+                            new Consumer<TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>>>() {
+                              @Override
+                              public void accept(
+                                  final TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>> input) {
+                                input.getThird().subscribe(
+                                    new Receiver<Couple<Object, String, Properties>>() {
+                                      @Override
+                                      public boolean fail(@NotNull final Exception error) {
+                                        return input.getSecond().fail(error);
                                       }
-                                    }
-                                  }
-                                }
 
-                                @Override
-                                public void setBulk(@NotNull final Collection<Properties> values) {
-                                  for (final Properties props : values) {
-                                    set(props);
-                                  }
-                                }
+                                      @Override
+                                      public void set(
+                                          final Couple<Object, String, Properties> value) {
+                                        try {
+                                          final Receiver<LogMessage> logPrinter = instantiateLogPrinter(
+                                              value.getFirst(), value.getSecond());
+                                          if (logPrinter != null) {
+                                            input.getFirst().subscribe(logPrinter);
+                                          }
+                                        } catch (final RuntimeException e) {
+                                          input.getSecond().fail(e);
+                                        }
+                                      }
 
-                                @Override
-                                public void close() {
-                                  input.getThird().close();
-                                }
-                              });
-                            }
-                          }, 1);
-                  ready.get();
+                                      @Override
+                                      public void setBulk(
+                                          @NotNull final Collection<Couple<Object, String, Properties>> values) {
+                                        for (Couple<Object, String, Properties> value : values) {
+                                          set(value);
+                                        }
+                                      }
+
+                                      @Override
+                                      public void close() {
+                                        input.getSecond().close();
+                                      }
+                                    });
+                              }
+                            }, 1);
+                    ready.get();
+                  }
                 }
               }
             }
@@ -206,8 +213,8 @@ public class SparxConfig {
 
   private static LogCollector instantiateLogFormatter(@Nullable final String formatterName,
       @NotNull final Properties properties) {
-    if (FutureLogCollector.class.getName().equals(formatterName)) {
-      return new FutureLogCollector(properties);
+    if (LogCollectorFuture.class.getName().equals(formatterName)) {
+      return new LogCollectorFuture(properties);
     }
     if (formatterName != null) {
       try {

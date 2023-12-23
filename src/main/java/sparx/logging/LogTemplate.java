@@ -25,6 +25,13 @@ public class LogTemplate {
 
   public static @NotNull Map<String, VariableResolver> defaultResolvers() {
     return new HashMap<String, VariableResolver>() {{
+      put("tag", new CachedVariableResolver() {
+        @Override
+        String innerResolve(@NotNull final LogMessage message) {
+          final Object tag = message.tag();
+          return tag != null ? tag.toString() : UNKNOWN;
+        }
+      });
       put("tag_name", new DefaultVariableResolver() {
         @Override
         public String resolve(@NotNull final LogMessage message) {
@@ -67,11 +74,11 @@ public class LogTemplate {
           return DATETIME_FORMAT.format(new Date(message.timestamp()));
         }
       });
-      put("tag", new CachedVariableResolver() {
+      put("thread", new CachedVariableResolver() {
         @Override
         String innerResolve(@NotNull final LogMessage message) {
-          final Object tag = message.tag();
-          return tag != null ? tag.toString() : UNKNOWN;
+          final Thread thread = message.callingThread();
+          return thread != null ? thread.toString() : UNKNOWN;
         }
       });
       put("thread_name", new CachedVariableResolver() {

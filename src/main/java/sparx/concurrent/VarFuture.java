@@ -80,6 +80,13 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     return new VarFuture<V>(historyStrategy);
   }
 
+  private static void logInvocationException(final String name, final String method,
+      final Exception e) {
+    Log.err(VarFuture.class, "Failed to invoke %s '%s' method: %s", name, method,
+        Log.printable(e));
+  }
+
+
   @SuppressWarnings("unchecked")
   VarFuture() {
     this((HistoryStrategy<V>) NO_HISTORY);
@@ -680,7 +687,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           iterator.addAll(values);
         }
       } catch (final RuntimeException e) {
-        Log.errInvocation(VarFuture.class, "history strategy", "onSubscribe", e);
+        logInvocationException("history strategy", "onSubscribe", e);
       }
     }
 
@@ -700,7 +707,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           }
         }
       } catch (final RuntimeException e) {
-        Log.errInvocation(VarFuture.class, "history strategy", "onSubscribe", e);
+        logInvocationException("history strategy", "onSubscribe", e);
       }
     }
   }
@@ -777,7 +784,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         try {
           historyStrategy.onSet((V) lastValue);
         } catch (final RuntimeException e) {
-          Log.errInvocation(VarFuture.class, "history strategy", "onSet", e);
+          logInvocationException("history strategy", "onSet", e);
         }
       }
       lastValue = UNSET;
@@ -831,7 +838,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         try {
           historyStrategy.onSet((V) lastValue);
         } catch (final RuntimeException e) {
-          Log.errInvocation(VarFuture.class, "history strategy", "onSet", e);
+          logInvocationException("history strategy", "onSet", e);
         }
       }
       final int lastIndex = values.size() - 1;
@@ -840,7 +847,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       try {
         historyStrategy.onSetBulk(valuesList.subList(0, lastIndex));
       } catch (final RuntimeException e) {
-        Log.errInvocation(VarFuture.class, "history strategy", "onSetBulk", e);
+        logInvocationException("history strategy", "onSetBulk", e);
       }
       for (final Entry<Receiver<?>, GroupReceiver<V>> entry : receivers.entrySet()) {
         final GroupReceiver<V> groupReceiver = entry.getValue();
@@ -868,7 +875,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         try {
           historyStrategy.onSet((V) lastValue);
         } catch (final RuntimeException e) {
-          Log.errInvocation(VarFuture.class, "history strategy", "onSet", e);
+          logInvocationException("history strategy", "onSet", e);
         }
       }
       lastValue = value;
@@ -895,7 +902,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       try {
         historyStrategy.onClose();
       } catch (final RuntimeException e) {
-        Log.errInvocation(VarFuture.class, "history strategy", "onClose", e);
+        logInvocationException("history strategy", "onClose", e);
       }
       final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
       for (final GroupReceiver<V> groupReceiver : receivers.values()) {
@@ -927,7 +934,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       try {
         historyStrategy.onClear();
       } catch (final RuntimeException e) {
-        Log.errInvocation(VarFuture.class, "history strategy", "onClear", e);
+        logInvocationException("history strategy", "onClear", e);
       }
     }
 
@@ -951,7 +958,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
             }
           });
         } catch (final RuntimeException e) {
-          Log.errInvocation(VarFuture.class, "group", "onTask", e);
+          logInvocationException("group", "onTask", e);
           scheduler.resume();
         }
       }

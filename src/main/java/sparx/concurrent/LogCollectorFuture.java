@@ -24,9 +24,9 @@ import sparx.logging.Log.LogLevel;
 import sparx.logging.LogMessage;
 import sparx.logging.LogMessageFactory;
 
-public class FutureLogCollector extends ReadOnlyFuture<LogMessage> implements LogCollector {
+public class LogCollectorFuture extends ReadOnlyFuture<LogMessage> implements LogCollector {
 
-  private static final String PROP_PREFIX = FutureLogCollector.class.getName();
+  private static final String PROP_PREFIX = LogCollectorFuture.class.getName();
   public static final String INCLUDE_CALL_STACK_PROP = PROP_PREFIX + ".includeStack";
   public static final String INCLUDE_CALLING_THREAD_PROP = PROP_PREFIX + ".includeThread";
   public static final String INCLUDE_TAG_PROP = PROP_PREFIX + ".includeTag";
@@ -34,7 +34,7 @@ public class FutureLogCollector extends ReadOnlyFuture<LogMessage> implements Lo
 
   private final LogMessageFactory factory;
 
-  public FutureLogCollector(@NotNull final Properties properties) {
+  public LogCollectorFuture(@NotNull final Properties properties) {
     super(VarFuture.<LogMessage>create());
     factory = new LogMessageFactory()
         .includeTag(

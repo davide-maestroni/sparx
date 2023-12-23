@@ -247,15 +247,6 @@ public class Log {
     }
   }
 
-  public static void errInvocation(final Object tag, final String name, final String method,
-      final Exception e) {
-    // TODO: remove
-    if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
-      collector.log(LogLevel.ERROR, tag, "Failed to invoke %s '%s' method: %s", name, method,
-          Log.printable(e));
-    }
-  }
-
   public static void wrn(final Object tag, final String msg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msg);
@@ -349,15 +340,6 @@ public class Log {
   public static void wrn(final Object tag, final String msgFmt, final Object... args) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msgFmt, args);
-    }
-  }
-
-  public static void wrnInvocation(final Object tag, final String name, final String method,
-      final Exception e) {
-    // TODO: remove
-    if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
-      collector.log(LogLevel.WARNING, tag, "Failed to invoke %s '%s' method: %s", name, method,
-          Log.printable(e));
     }
   }
 
