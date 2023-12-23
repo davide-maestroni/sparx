@@ -32,7 +32,4 @@ public interface ExecutionContext {
 
   @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(@NotNull F future,
       @NotNull Consumer<F> consumer, int weight);
-
-  @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Boolean> test(@NotNull F future,
-      @NotNull Predicate<F> predicate, int weight);
 }

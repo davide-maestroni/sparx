@@ -29,7 +29,6 @@ import sparx.concurrent.FutureGroup.Registration;
 import sparx.concurrent.Scheduler.Task;
 import sparx.function.Consumer;
 import sparx.function.Function;
-import sparx.function.Predicate;
 import sparx.logging.Log;
 import sparx.util.Nothing;
 import sparx.util.Requires;
@@ -67,15 +66,6 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final F future, @NotNull final Consumer<F> consumer, final int weight) {
     // TODO: alert => serializable
     final RunFuture<V, F> task = new RunFuture<V, F>(scheduler, future, consumer, weight);
-    scheduler.scheduleAfter(task);
-    return task.readOnly();
-  }
-
-  @Override
-  public @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Boolean> test(
-      @NotNull final F future, @NotNull final Predicate<F> predicate, final int weight) {
-    // TODO: alert => serializable
-    final TestFuture<V, F> task = new TestFuture<V, F>(scheduler, future, predicate, weight);
     scheduler.scheduleAfter(task);
     return task.readOnly();
   }
@@ -544,26 +534,6 @@ class ExecutionScope implements ExecutionContext {
     @Override
     void innerRun() throws Exception {
       consumer.accept(future);
-      close();
-    }
-  }
-
-  private static class TestFuture<V, F extends TupleFuture<V, ?>> extends
-      ScopeFuture<Boolean> {
-
-    private final Predicate<F> predicate;
-    private final F future;
-
-    private TestFuture(@NotNull final Scheduler scheduler, @NotNull final F future,
-        @NotNull final Predicate<F> predicate, final int weight) {
-      super(scheduler, weight);
-      this.future = Requires.notNull(future, "future");
-      this.predicate = Requires.notNull(predicate, "predicate");
-    }
-
-    @Override
-    void innerRun() throws Exception {
-      set(predicate.test(future));
       close();
     }
   }

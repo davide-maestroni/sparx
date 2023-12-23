@@ -19,7 +19,6 @@ import java.util.concurrent.Executor;
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Consumer;
 import sparx.function.Function;
-import sparx.function.Predicate;
 import sparx.util.Nothing;
 import sparx.util.Requires;
 
@@ -61,11 +60,5 @@ public class ExecutorContext implements ExecutionContext {
   public @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(
       @NotNull final F future, @NotNull final Consumer<F> consumer, final int weight) {
     return new ExecutionScope(scheduler).run(future, consumer, weight);
-  }
-
-  @Override
-  public @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Boolean> test(
-      @NotNull final F future, @NotNull final Predicate<F> predicate, final int weight) {
-    return new ExecutionScope(scheduler).test(future, predicate, weight);
   }
 }
