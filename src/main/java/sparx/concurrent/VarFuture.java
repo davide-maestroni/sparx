@@ -774,8 +774,6 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   private class RunningStatus extends Status {
 
-    // TODO: set volatile Thread => cancel(true) (only set, setBulk??)
-
     @Override
     @SuppressWarnings("unchecked")
     public boolean fail(@NotNull final Exception error) {

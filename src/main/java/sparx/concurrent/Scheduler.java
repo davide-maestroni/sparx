@@ -18,7 +18,9 @@ package sparx.concurrent;
 import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
 import org.jetbrains.annotations.NotNull;
+import sparx.logging.Alerts;
 import sparx.logging.Log;
+import sparx.logging.SchedulerAlert;
 import sparx.util.Requires;
 
 public class Scheduler {
@@ -30,10 +32,12 @@ public class Scheduler {
     }
   };
 
+  private static final int IDLE = 0;
   private static final int RUNNING = 1;
   private static final int PAUSING = 2;
   private static final int PAUSED = 3;
 
+  private final SchedulerAlert alert = Alerts.schedulerAlert();
   private final Executor executor;
   private final ArrayDeque<Task> beforeQueue = new ArrayDeque<Task>();
   private final ArrayDeque<Task> afterQueue = new ArrayDeque<Task>();
@@ -41,9 +45,9 @@ public class Scheduler {
   private final Object mutex = new Object();
   private final Runnable runner;
 
-  private int pauseStatus = RUNNING;
   private Task runningTask;
   private Thread runningThread;
+  private int status = IDLE;
 
   public static @NotNull Scheduler of(@NotNull final Executor executor) {
     return of(executor, Integer.MAX_VALUE);
@@ -87,8 +91,10 @@ public class Scheduler {
 
   public void pause() {
     synchronized (mutex) {
-      if (pauseStatus == RUNNING) {
-        pauseStatus = PAUSING;
+      if (status == RUNNING) {
+        status = PAUSING;
+      } else if (status == IDLE) {
+        status = PAUSED;
       }
     }
   }
@@ -102,33 +108,43 @@ public class Scheduler {
   public void resume() {
     final boolean needsExecution;
     synchronized (mutex) {
-      needsExecution = (pauseStatus == PAUSED);
-      pauseStatus = RUNNING;
+      final boolean isPaused = status == PAUSED;
+      needsExecution = isPaused && !(beforeQueue.isEmpty() && afterQueue.isEmpty());
+      if (isPaused || (status == PAUSING)) {
+        status = RUNNING;
+      }
     }
     if (needsExecution) {
       executor.execute(runner);
     }
   }
 
+  @SuppressWarnings("AssignmentUsedAsCondition")
   public void scheduleAfter(@NotNull final Task task) {
     final boolean needsExecution;
     synchronized (mutex) {
       final ArrayDeque<Task> afterQueue = this.afterQueue;
-      needsExecution = afterQueue.isEmpty();
       afterQueue.offer(task);
-      // TODO: alert => too many pending
+      alert.notifyPendingTasks(beforeQueue.size(), afterQueue.size());
+      if (needsExecution = status == IDLE) {
+        status = RUNNING;
+      }
     }
     if (needsExecution) {
       executor.execute(runner);
     }
   }
 
+  @SuppressWarnings("AssignmentUsedAsCondition")
   public void scheduleBefore(@NotNull final Task task) {
     final boolean needsExecution;
     synchronized (mutex) {
       final ArrayDeque<Task> beforeQueue = this.beforeQueue;
-      needsExecution = beforeQueue.isEmpty();
       beforeQueue.offer(task);
+      alert.notifyPendingTasks(beforeQueue.size(), afterQueue.size());
+      if (needsExecution = status == IDLE) {
+        status = RUNNING;
+      }
     }
     if (needsExecution) {
       executor.execute(runner);
@@ -144,20 +160,21 @@ public class Scheduler {
 
   private class InfiniteRunner implements Runnable {
 
-    // TODO: alert => set volatile startTime (hook) => periodically check
-
     @Override
     public void run() {
       final Thread currentThread = Thread.currentThread();
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
+      final SchedulerAlert alert = Scheduler.this.alert;
+      alert.notifyTaskStart(currentThread);
       while (true) {
         Task task;
         synchronized (mutex) {
           runningTask = null;
           runningThread = null;
-          if (pauseStatus == PAUSING) {
-            pauseStatus = PAUSED;
+          if (status == PAUSING) {
+            status = PAUSED;
+            alert.notifyTaskStop(currentThread);
             return;
           }
 
@@ -166,6 +183,8 @@ public class Scheduler {
             task = afterQueue.poll();
             if (task == null) {
               // move to IDLE
+              status = IDLE;
+              alert.notifyTaskStop(currentThread);
               return;
             }
           }
@@ -175,11 +194,11 @@ public class Scheduler {
 
         try {
           task.run();
-          // TODO: alert => takes too long?
         } catch (final Throwable t) {
           synchronized (mutex) {
             runningTask = null;
             runningThread = null;
+            alert.notifyTaskStop(currentThread);
           }
           Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
           UncheckedException.throwUnchecked(t);
@@ -192,11 +211,17 @@ public class Scheduler {
 
     @Override
     public void run() {
+      final Thread currentThread = Thread.currentThread();
       final Executor executor = Scheduler.this.executor;
+      final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
+      final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
+      final SchedulerAlert alert = Scheduler.this.alert;
+      alert.notifyTaskStart(currentThread);
       Task task;
       synchronized (mutex) {
-        if (pauseStatus == PAUSING) {
-          pauseStatus = PAUSED;
+        if (status == PAUSING) {
+          status = PAUSED;
+          alert.notifyTaskStop(currentThread);
           return;
         }
 
@@ -205,16 +230,18 @@ public class Scheduler {
           task = afterQueue.poll();
           if (task == null) {
             // move to IDLE
+            status = IDLE;
+            alert.notifyTaskStop(currentThread);
             return;
           }
         }
         runningTask = task;
-        runningThread = Thread.currentThread();
+        runningThread = currentThread;
       }
 
+      boolean hasNext = false;
       try {
         task.run();
-        // TODO: alert => takes too long?
       } catch (final Throwable t) {
         Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
         UncheckedException.throwUnchecked(t);
@@ -222,9 +249,16 @@ public class Scheduler {
         synchronized (mutex) {
           runningTask = null;
           runningThread = null;
+          alert.notifyTaskStop(currentThread);
+          if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
+            hasNext = true;
+            status = IDLE;
+          }
         }
       }
-      executor.execute(this);
+      if (hasNext) {
+        executor.execute(this);
+      }
     }
   }
 
@@ -235,14 +269,17 @@ public class Scheduler {
       final Thread currentThread = Thread.currentThread();
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
+      final SchedulerAlert alert = Scheduler.this.alert;
+      alert.notifyTaskStart(currentThread);
       int minThroughput = Scheduler.this.minThroughput;
       while (minThroughput > 0) {
         Task task;
         synchronized (mutex) {
           runningTask = null;
           runningThread = null;
-          if (pauseStatus == PAUSING) {
-            pauseStatus = PAUSED;
+          if (status == PAUSING) {
+            status = PAUSED;
+            alert.notifyTaskStop(currentThread);
             return;
           }
 
@@ -251,6 +288,8 @@ public class Scheduler {
             task = afterQueue.poll();
             if (task == null) {
               // move to IDLE
+              status = IDLE;
+              alert.notifyTaskStop(currentThread);
               return;
             }
           }
@@ -261,30 +300,31 @@ public class Scheduler {
         try {
           minThroughput -= Math.max(task.weight(), 1);
           task.run();
-          // TODO: alert => takes too long?
         } catch (final Throwable t) {
           synchronized (mutex) {
             runningTask = null;
             runningThread = null;
+            alert.notifyTaskStop(currentThread);
           }
           Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
           UncheckedException.throwUnchecked(t);
         }
       }
 
-      int size;
+      boolean hasNext = false;
       synchronized (mutex) {
-        if (pauseStatus == PAUSING) {
-          pauseStatus = PAUSED;
+        alert.notifyTaskStop(currentThread);
+        if (status == PAUSING) {
+          status = PAUSED;
           return;
         }
 
-        size = beforeQueue.size();
-        if (size == 0) {
-          size = afterQueue.size();
+        if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
+          hasNext = true;
+          status = IDLE;
         }
       }
-      if (size > 0) {
+      if (hasNext) {
         executor.execute(this);
       }
     }

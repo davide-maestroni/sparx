@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.logging;
 
+import java.io.Closeable;
 import org.jetbrains.annotations.NotNull;
 
-public class TrampolineContext extends ExecutorContext {
+public interface SchedulerAlert extends Closeable {
 
-  public static @NotNull TrampolineContext create() {
-    return new TrampolineContext();
-  }
+  void notifyPendingTasks(int beforeQueueCount, int afterQueueCount);
 
-  TrampolineContext() {
-    super(Scheduler.trampoline());
-  }
+  void notifyTaskStart(@NotNull Thread currentThread);
+
+  void notifyTaskStop(@NotNull Thread currentThread);
+
+  @Override
+  void close();
 }

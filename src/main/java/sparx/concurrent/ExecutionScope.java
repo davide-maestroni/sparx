@@ -486,7 +486,6 @@ class ExecutionScope implements ExecutionContext {
 
       @Override
       public void run() {
-        // TODO: set volatile Thread => cancel(true)
         FutureGroup.pushGroup(ScopeFuture.this);
         try {
           runInScope();
