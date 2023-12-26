@@ -24,9 +24,9 @@ import org.jetbrains.annotations.NotNull;
 
 public class Alerts {
 
-  private static volatile JoinAlert joinTimeout = DummyJoinAlert.instance();
-  private static volatile SchedulerAlert pendingTasks = DummySchedulerAlert.instance();
-  private static volatile SchedulerAlert tasksTimeout = DummySchedulerAlert.instance();
+  private static volatile JoinAlert joinTimeout;
+  private static volatile SchedulerAlert pendingTasks;
+  private static volatile SchedulerAlert tasksTimeout;
 
   private static final JoinAlert joinAlert = new JoinAlert() {
     @Override
@@ -60,11 +60,25 @@ public class Alerts {
     public void close() {
     }
   };
-  private static final Object mutex = new Object();
+  private static final Object mutex;
 
   private static ScheduledExecutorService alertsExecutorService;
 
+  static {
+    mutex = new Object();
+    pendingTasks = tasksTimeout = DummySchedulerAlert.instance();
+    resetDefaults();
+  }
+
   private Alerts() {
+  }
+
+  public static @NotNull JoinAlert joinAlert() {
+    return joinAlert;
+  }
+
+  public static @NotNull SchedulerAlert schedulerAlert() {
+    return schedulerAlert;
   }
 
   public static void disableAcquireTimeoutAlert() {
@@ -79,13 +93,15 @@ public class Alerts {
   }
 
   public static void disableTasksTimeoutAlert() {
+    final ScheduledExecutorService executorService;
     synchronized (mutex) {
       pendingTasks.close();
       pendingTasks = DummySchedulerAlert.instance();
-      if (alertsExecutorService != null) {
-        alertsExecutorService.shutdown();
-        alertsExecutorService = null;
-      }
+      executorService = alertsExecutorService;
+      alertsExecutorService = null;
+    }
+    if (executorService != null) {
+      executorService.shutdown();
     }
   }
 
@@ -115,24 +131,19 @@ public class Alerts {
   }
 
   public static void resetDefaults() {
+    joinTimeout = new AcquireTimeoutAlert(Alerts.class, 3, TimeUnit.MINUTES);
+    final ScheduledExecutorService executorService;
     synchronized (mutex) {
       pendingTasks.close();
       pendingTasks = DummySchedulerAlert.instance();
       tasksTimeout.close();
       tasksTimeout = DummySchedulerAlert.instance();
-      if (alertsExecutorService != null) {
-        alertsExecutorService.shutdown();
-        alertsExecutorService = null;
-      }
+      executorService = alertsExecutorService;
+      alertsExecutorService = null;
     }
-  }
-
-  public static @NotNull JoinAlert joinAlert() {
-    return joinAlert;
-  }
-
-  public static @NotNull SchedulerAlert schedulerAlert() {
-    return schedulerAlert;
+    if (executorService != null) {
+      executorService.shutdown();
+    }
   }
 
   private static @NotNull ScheduledExecutorService createsExecutorService() {

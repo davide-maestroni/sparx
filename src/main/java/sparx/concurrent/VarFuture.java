@@ -42,12 +42,16 @@ import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.function.Function;
 import sparx.function.Supplier;
+import sparx.logging.Alerts;
+import sparx.logging.JoinAlert;
 import sparx.logging.Log;
 import sparx.util.LiveIterator;
 import sparx.util.Requires;
 
 public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {
+
+  private static final JoinAlert alert = Alerts.joinAlert();
 
   private static final int CLOSED = 0;
   private static final int RUNNING = 1;
@@ -245,8 +249,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
-    task.acquire();
-    // TODO: alert => takes too long?
+    alert.notifyAcquire(task);
     return this.result.get();
   }
 
@@ -259,8 +262,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
-    // TODO: alert => timeout too long?
-    if (!task.tryAcquire(timeout, unit)) {
+    if (!alert.notifyTryAcquire(task, timeout, unit)) {
       throw new TimeoutException();
     }
     return this.result.get();
@@ -455,6 +457,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
+      final JoinAlert alert = VarFuture.alert;
       while (remainingTime > 0) {
         if (!queue.isEmpty()) {
           return true;
@@ -467,8 +470,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           throw UncheckedException.toUnchecked(failureException);
         }
         try {
-          // TODO: alert => timeout too long?
-          if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
+          if (!alert.notifyTryAcquire(semaphore, remainingTime, TimeUnit.MILLISECONDS)) {
             throw new UncheckedTimeoutException();
           }
         } catch (final InterruptedException e) {
@@ -484,6 +486,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
+      final JoinAlert alert = VarFuture.alert;
       while (true) {
         if (!queue.isEmpty()) {
           return true;
@@ -496,8 +499,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           throw UncheckedException.toUnchecked(failureException);
         }
         try {
-          semaphore.acquire();
-          // TODO: alert => takes too long?
+          alert.notifyAcquire(semaphore);
         } catch (final InterruptedException e) {
           throw new UncheckedInterruptedException(e);
         }
@@ -522,6 +524,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
+        final JoinAlert alert = VarFuture.alert;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
             return true;
@@ -534,8 +537,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
             throw UncheckedException.toUnchecked(failureException);
           }
           try {
-            // TODO: alert => timeout too long?
-            if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
+            if (!alert.notifyTryAcquire(semaphore, remainingTime, TimeUnit.MILLISECONDS)) {
               throw new UncheckedTimeoutException();
             }
           } catch (final InterruptedException e) {
@@ -557,6 +559,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
+        final JoinAlert alert = VarFuture.alert;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
             return true;
@@ -569,8 +572,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
             throw UncheckedException.toUnchecked(failureException);
           }
           try {
-            // TODO: alert => timeout too long?
-            if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
+            if (!alert.notifyTryAcquire(semaphore, remainingTime, TimeUnit.MILLISECONDS)) {
               throw new UncheckedTimeoutException();
             }
           } catch (final InterruptedException e) {

@@ -98,7 +98,7 @@ tasks.register('generateCode') {
     }
     {
       def scope = [
-          methodName: 'tupleOf',
+          methodName: 'asTuple',
           tuples    : tuples
       ];
       def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/tuple/Tuples.java'))

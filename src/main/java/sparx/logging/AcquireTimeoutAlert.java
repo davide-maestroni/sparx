@@ -27,8 +27,7 @@ class AcquireTimeoutAlert implements JoinAlert {
   private final long timeoutMillis;
   private final TimeUnit timeoutUnit;
 
-  AcquireTimeoutAlert(final Object tag, final long timeout,
-      @NotNull final TimeUnit timeoutUnit) {
+  AcquireTimeoutAlert(final Object tag, final long timeout, @NotNull final TimeUnit timeoutUnit) {
     this.tag = tag;
     this.timeout = timeout;
     this.timeoutUnit = timeoutUnit;
@@ -40,8 +39,8 @@ class AcquireTimeoutAlert implements JoinAlert {
     if (!semaphore.tryAcquire(timeout, timeoutUnit)) {
       Log.wrn(tag, "Join on thread %s is taking too long: still waiting after %d %s!",
           Thread.currentThread(), timeout, timeoutUnit);
+      semaphore.acquire();
     }
-    semaphore.acquire();
   }
 
   @Override
@@ -53,8 +52,9 @@ class AcquireTimeoutAlert implements JoinAlert {
       if (!semaphore.tryAcquire(maxTimeoutMillis, TimeUnit.MILLISECONDS)) {
         Log.wrn(tag, "Join on thread %s is taking too long: still waiting after %d %s!",
             Thread.currentThread(), this.timeout, this.timeoutUnit);
+        return semaphore.tryAcquire(timeoutMillis - maxTimeoutMillis, TimeUnit.MILLISECONDS);
       }
-      return semaphore.tryAcquire(timeoutMillis - maxTimeoutMillis, TimeUnit.MILLISECONDS);
+      return true;
     }
     return semaphore.tryAcquire(timeout, unit);
   }

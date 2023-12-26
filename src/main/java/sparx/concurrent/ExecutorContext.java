@@ -35,7 +35,7 @@ public class ExecutorContext implements ExecutionContext {
     return new ExecutorContext(Scheduler.of(executor, minThroughput));
   }
 
-  public static @NotNull ExecutorContext tramploine() {
+  public static @NotNull ExecutorContext trampoline() {
     return new ExecutorContext(Scheduler.trampoline());
   }
 

@@ -136,7 +136,7 @@ public class SparxConfig {
                     final VarFuture<Nothing> ready = VarFuture.create();
                     ExecutorContext.of(executor)
                         .run(TripleFuture.of(future, ready,
-                                ConstFuture.of(Tuples.tupleOf(printerName, properties))),
+                                ConstFuture.of(Tuples.asTuple(printerName, properties))),
                             new Consumer<TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>>>() {
                               @Override
                               public void accept(
@@ -165,7 +165,7 @@ public class SparxConfig {
                                       @Override
                                       public void setBulk(
                                           @NotNull final Collection<Couple<Object, String, Properties>> values) {
-                                        for (Couple<Object, String, Properties> value : values) {
+                                        for (final Couple<Object, String, Properties> value : values) {
                                           set(value);
                                         }
                                       }
