@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Davide Maestroni
+ * Copyright 2024 Davide Maestroni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.logging;
+package sparx.logging.alert;
 
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 
-class DummyJoinAlert implements JoinAlert {
+class DummySchedulerQueueAlert implements SchedulerQueueAlert {
 
-  private static final DummyJoinAlert INSTANCE = new DummyJoinAlert();
+  private static final DummySchedulerQueueAlert INSTANCE = new DummySchedulerQueueAlert();
 
-  public static @NotNull DummyJoinAlert instance() {
+  static @NotNull DummySchedulerQueueAlert instance() {
     return INSTANCE;
   }
 
-  @Override
-  public void notifyAcquire(@NotNull final Semaphore semaphore) throws InterruptedException {
-    semaphore.acquire();
+  private DummySchedulerQueueAlert() {
   }
 
   @Override
-  public boolean notifyTryAcquire(@NotNull final Semaphore semaphore, final long timeout,
-      @NotNull final TimeUnit unit) throws InterruptedException {
-    return semaphore.tryAcquire(timeout, unit);
+  public void notifyPendingTasks(final int beforeQueueCount, final int afterQueueCount) {
   }
 }

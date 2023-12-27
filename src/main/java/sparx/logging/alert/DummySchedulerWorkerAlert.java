@@ -13,19 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.logging;
+package sparx.logging.alert;
 
-import java.io.Closeable;
 import org.jetbrains.annotations.NotNull;
 
-public interface SchedulerAlert extends Closeable {
+class DummySchedulerWorkerAlert implements SchedulerWorkerAlert {
 
-  void notifyPendingTasks(int beforeQueueCount, int afterQueueCount);
+  private static final DummySchedulerWorkerAlert INSTANCE = new DummySchedulerWorkerAlert();
 
-  void notifyTaskStart(@NotNull Thread currentThread);
+  static @NotNull DummySchedulerWorkerAlert instance() {
+    return INSTANCE;
+  }
 
-  void notifyTaskStop(@NotNull Thread currentThread);
+  private DummySchedulerWorkerAlert() {
+  }
 
   @Override
-  void close();
+  public void notifyTaskStart(@NotNull final Thread currentThread) {
+  }
+
+  @Override
+  public void notifyTaskStop(@NotNull final Thread currentThread) {
+  }
+
+  @Override
+  public void turnOff() {
+  }
 }

@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.logging;
-
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import org.jetbrains.annotations.NotNull;
+package sparx.logging.alert;
 
 public interface JoinAlert {
 
-  void notifyAcquire(@NotNull Semaphore semaphore) throws InterruptedException;
+  void notifyJoinStart();
 
-  boolean notifyTryAcquire(@NotNull Semaphore semaphore, long timeout, @NotNull TimeUnit unit)
-      throws InterruptedException;
+  void notifyJoinStop();
+
+  void turnOff();
 }

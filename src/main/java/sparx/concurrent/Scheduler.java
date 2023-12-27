@@ -18,14 +18,18 @@ package sparx.concurrent;
 import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
 import org.jetbrains.annotations.NotNull;
-import sparx.logging.Alerts;
 import sparx.logging.Log;
-import sparx.logging.SchedulerAlert;
+import sparx.logging.alert.Alerts;
+import sparx.logging.alert.BackpressureAlert;
+import sparx.logging.alert.SchedulerQueueAlert;
+import sparx.logging.alert.SchedulerWorkerAlert;
 import sparx.util.Requires;
 
 public class Scheduler {
 
-  private static final SchedulerAlert alert = Alerts.schedulerAlert();
+  private static final BackpressureAlert backpressureAlert = Alerts.backpressureAlert();
+  private static final SchedulerQueueAlert queueAlert = Alerts.schedulerQueueAlert();
+  private static final SchedulerWorkerAlert workerAlert = Alerts.schedulerWorkerAlert();
   private static final Executor synchronousExecutor = new Executor() {
     @Override
     public void execute(@NotNull Runnable command) {
@@ -43,7 +47,7 @@ public class Scheduler {
   private final ArrayDeque<Task> afterQueue = new ArrayDeque<Task>();
   private final int minThroughput;
   private final Object mutex = new Object();
-  private final Runnable runner;
+  private final Runnable worker;
 
   private Task runningTask;
   private Thread runningThread;
@@ -76,11 +80,11 @@ public class Scheduler {
     this.minThroughput = Requires.positive(minThroughput, "minThroughput");
     if (minThroughput == Integer.MAX_VALUE) {
       // infinite throughput
-      this.runner = new InfiniteRunner();
+      this.worker = new InfiniteWorker();
     } else if (minThroughput == 1) {
-      this.runner = new SingleRunner();
+      this.worker = new SingleWorker();
     } else {
-      this.runner = new ThroughputRunner();
+      this.worker = new ThroughputWorker();
     }
   }
 
@@ -125,7 +129,7 @@ public class Scheduler {
       }
     }
     if (needsExecution) {
-      executor.execute(runner);
+      executor.execute(worker);
     }
   }
 
@@ -136,13 +140,13 @@ public class Scheduler {
       applyBackpressure(mutex, runningThread);
       final ArrayDeque<Task> afterQueue = this.afterQueue;
       afterQueue.offer(task);
-      alert.notifyPendingTasks(beforeQueue.size(), afterQueue.size());
+      queueAlert.notifyPendingTasks(beforeQueue.size(), afterQueue.size());
       if (needsExecution = status == IDLE) {
         status = RUNNING;
       }
     }
     if (needsExecution) {
-      executor.execute(runner);
+      executor.execute(worker);
     }
   }
 
@@ -153,13 +157,13 @@ public class Scheduler {
       applyBackpressure(mutex, runningThread);
       final ArrayDeque<Task> beforeQueue = this.beforeQueue;
       beforeQueue.offer(task);
-      alert.notifyPendingTasks(beforeQueue.size(), afterQueue.size());
+      queueAlert.notifyPendingTasks(beforeQueue.size(), afterQueue.size());
       if (needsExecution = status == IDLE) {
         status = RUNNING;
       }
     }
     if (needsExecution) {
-      executor.execute(runner);
+      executor.execute(worker);
     }
   }
 
@@ -188,12 +192,17 @@ public class Scheduler {
 
     @Override
     protected void applyBackpressure(@NotNull final Object mutex, final Thread runningThread) {
-      if (!Thread.currentThread().equals(runningThread)) {
-        while (pendingCount() > taskThreshold) {
+      final Thread currentThread = Thread.currentThread();
+      if (!currentThread.equals(runningThread)) {
+        final BackpressureAlert backpressureAlert = Scheduler.backpressureAlert;
+        while (pendingCount() >= taskThreshold) {
+          backpressureAlert.notifyWaitStart(currentThread);
           try {
             mutex.wait();
           } catch (final InterruptedException e) {
             throw new UncheckedInterruptedException(e);
+          } finally {
+            backpressureAlert.notifyWaitStop(currentThread);
           }
         }
       }
@@ -201,21 +210,21 @@ public class Scheduler {
 
     @Override
     protected void releaseBackpressure(@NotNull final Object mutex) {
-      if (pendingCount() <= taskThreshold) {
-        mutex.notifyAll();
+      if (pendingCount() < taskThreshold) {
+        mutex.notify();
       }
     }
   }
 
-  private class InfiniteRunner implements Runnable {
+  private class InfiniteWorker implements Runnable {
 
     @Override
     public void run() {
-      final SchedulerAlert alert = Scheduler.alert;
+      final SchedulerWorkerAlert workerAlert = Scheduler.workerAlert;
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
       final Thread currentThread = Thread.currentThread();
-      alert.notifyTaskStart(currentThread);
+      workerAlert.notifyTaskStart(currentThread);
       while (true) {
         Task task;
         synchronized (mutex) {
@@ -223,7 +232,7 @@ public class Scheduler {
           runningThread = null;
           if (status == PAUSING) {
             status = PAUSED;
-            alert.notifyTaskStop(currentThread);
+            workerAlert.notifyTaskStop(currentThread);
             return;
           }
 
@@ -233,7 +242,7 @@ public class Scheduler {
             if (task == null) {
               // move to IDLE
               status = IDLE;
-              alert.notifyTaskStop(currentThread);
+              workerAlert.notifyTaskStop(currentThread);
               return;
             }
           }
@@ -248,7 +257,7 @@ public class Scheduler {
           synchronized (mutex) {
             runningTask = null;
             runningThread = null;
-            alert.notifyTaskStop(currentThread);
+            workerAlert.notifyTaskStop(currentThread);
           }
           Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
           UncheckedException.throwUnchecked(t);
@@ -257,21 +266,21 @@ public class Scheduler {
     }
   }
 
-  private class SingleRunner implements Runnable {
+  private class SingleWorker implements Runnable {
 
     @Override
     public void run() {
-      final SchedulerAlert alert = Scheduler.alert;
+      final SchedulerWorkerAlert workerAlert = Scheduler.workerAlert;
       final Executor executor = Scheduler.this.executor;
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
       final Thread currentThread = Thread.currentThread();
-      alert.notifyTaskStart(currentThread);
+      workerAlert.notifyTaskStart(currentThread);
       Task task;
       synchronized (mutex) {
         if (status == PAUSING) {
           status = PAUSED;
-          alert.notifyTaskStop(currentThread);
+          workerAlert.notifyTaskStop(currentThread);
           return;
         }
 
@@ -281,7 +290,7 @@ public class Scheduler {
           if (task == null) {
             // move to IDLE
             status = IDLE;
-            alert.notifyTaskStop(currentThread);
+            workerAlert.notifyTaskStop(currentThread);
             return;
           }
         }
@@ -300,7 +309,7 @@ public class Scheduler {
         synchronized (mutex) {
           runningTask = null;
           runningThread = null;
-          alert.notifyTaskStop(currentThread);
+          workerAlert.notifyTaskStop(currentThread);
           if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
             hasNext = true;
             status = IDLE;
@@ -313,15 +322,15 @@ public class Scheduler {
     }
   }
 
-  private class ThroughputRunner implements Runnable {
+  private class ThroughputWorker implements Runnable {
 
     @Override
     public void run() {
-      final SchedulerAlert alert = Scheduler.alert;
+      final SchedulerWorkerAlert workerAlert = Scheduler.workerAlert;
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
       final Thread currentThread = Thread.currentThread();
-      alert.notifyTaskStart(currentThread);
+      workerAlert.notifyTaskStart(currentThread);
       int minThroughput = Scheduler.this.minThroughput;
       while (minThroughput > 0) {
         Task task;
@@ -330,7 +339,7 @@ public class Scheduler {
           runningThread = null;
           if (status == PAUSING) {
             status = PAUSED;
-            alert.notifyTaskStop(currentThread);
+            workerAlert.notifyTaskStop(currentThread);
             return;
           }
 
@@ -340,7 +349,7 @@ public class Scheduler {
             if (task == null) {
               // move to IDLE
               status = IDLE;
-              alert.notifyTaskStop(currentThread);
+              workerAlert.notifyTaskStop(currentThread);
               return;
             }
           }
@@ -356,7 +365,7 @@ public class Scheduler {
           synchronized (mutex) {
             runningTask = null;
             runningThread = null;
-            alert.notifyTaskStop(currentThread);
+            workerAlert.notifyTaskStop(currentThread);
           }
           Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
           UncheckedException.throwUnchecked(t);
@@ -365,7 +374,7 @@ public class Scheduler {
 
       boolean hasNext = false;
       synchronized (mutex) {
-        alert.notifyTaskStop(currentThread);
+        workerAlert.notifyTaskStop(currentThread);
         if (status == PAUSING) {
           status = PAUSED;
           return;

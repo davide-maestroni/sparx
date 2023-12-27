@@ -13,34 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.logging;
+package sparx.logging.alert;
 
 import org.jetbrains.annotations.NotNull;
 
-class DummySchedulerAlert implements SchedulerAlert {
+public interface SchedulerWorkerAlert {
 
-  private static final DummySchedulerAlert INSTANCE = new DummySchedulerAlert();
+  void notifyTaskStart(@NotNull Thread currentThread);
 
-  static @NotNull DummySchedulerAlert instance() {
-    return INSTANCE;
-  }
+  void notifyTaskStop(@NotNull Thread currentThread);
 
-  private DummySchedulerAlert() {
-  }
-
-  @Override
-  public void notifyPendingTasks(final int beforeQueueCount, final int afterQueueCount) {
-  }
-
-  @Override
-  public void notifyTaskStart(@NotNull final Thread currentThread) {
-  }
-
-  @Override
-  public void notifyTaskStop(@NotNull final Thread currentThread) {
-  }
-
-  @Override
-  public void close() {
-  }
+  void turnOff();
 }

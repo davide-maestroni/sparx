@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.logging;
+package sparx.logging.alert;
 
-import org.jetbrains.annotations.NotNull;
+import sparx.logging.Log;
 import sparx.util.Requires;
 
-class PendingTasksAlert implements SchedulerAlert {
+class PendingTasksWorkerAlert implements SchedulerQueueAlert {
 
   private final int maxTasksCount;
   private final Object tag;
 
-  PendingTasksAlert(final Object tag, final int maxTasksCount) {
+  PendingTasksWorkerAlert(final Object tag, final int maxTasksCount) {
     this.maxTasksCount = Requires.positive(maxTasksCount, "maxTasksCount");
     this.tag = tag;
   }
@@ -34,17 +34,5 @@ class PendingTasksAlert implements SchedulerAlert {
     if (count > maxTasksCount) {
       Log.wrn(tag, "Pending tasks count exceeded the limit of %d: %d!", maxTasksCount, count);
     }
-  }
-
-  @Override
-  public void notifyTaskStart(@NotNull final Thread currentThread) {
-  }
-
-  @Override
-  public void notifyTaskStop(@NotNull final Thread currentThread) {
-  }
-
-  @Override
-  public void close() {
   }
 }

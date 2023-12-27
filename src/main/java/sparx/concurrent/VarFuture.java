@@ -42,16 +42,16 @@ import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.function.Function;
 import sparx.function.Supplier;
-import sparx.logging.Alerts;
-import sparx.logging.JoinAlert;
 import sparx.logging.Log;
+import sparx.logging.alert.Alerts;
+import sparx.logging.alert.JoinAlert;
 import sparx.util.LiveIterator;
 import sparx.util.Requires;
 
 public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {
 
-  private static final JoinAlert alert = Alerts.joinAlert();
+  private static final JoinAlert joinAlert = Alerts.joinAlert();
 
   private static final int CLOSED = 0;
   private static final int RUNNING = 1;
@@ -249,7 +249,13 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
-    alert.notifyAcquire(task);
+    final JoinAlert joinAlert = VarFuture.joinAlert;
+    joinAlert.notifyJoinStart();
+    try {
+      task.acquire();
+    } finally {
+      joinAlert.notifyJoinStop();
+    }
     return this.result.get();
   }
 
@@ -262,8 +268,14 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
-    if (!alert.notifyTryAcquire(task, timeout, unit)) {
-      throw new TimeoutException();
+    final JoinAlert joinAlert = VarFuture.joinAlert;
+    joinAlert.notifyJoinStart();
+    try {
+      if (!task.tryAcquire(timeout, unit)) {
+        throw new TimeoutException();
+      }
+    } finally {
+      joinAlert.notifyJoinStop();
     }
     return this.result.get();
   }
@@ -457,7 +469,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
-      final JoinAlert alert = VarFuture.alert;
+      final JoinAlert joinAlert = VarFuture.joinAlert;
       while (remainingTime > 0) {
         if (!queue.isEmpty()) {
           return true;
@@ -469,12 +481,15 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         if (status == FAILED) {
           throw UncheckedException.toUnchecked(failureException);
         }
+        joinAlert.notifyJoinStart();
         try {
-          if (!alert.notifyTryAcquire(semaphore, remainingTime, TimeUnit.MILLISECONDS)) {
+          if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
             throw new UncheckedTimeoutException();
           }
         } catch (final InterruptedException e) {
           throw new UncheckedInterruptedException(e);
+        } finally {
+          joinAlert.notifyJoinStop();
         }
         remainingTime -= System.currentTimeMillis() - startTime;
       }
@@ -486,7 +501,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
-      final JoinAlert alert = VarFuture.alert;
+      final JoinAlert joinAlert = VarFuture.joinAlert;
       while (true) {
         if (!queue.isEmpty()) {
           return true;
@@ -498,10 +513,13 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         if (status == FAILED) {
           throw UncheckedException.toUnchecked(failureException);
         }
+        joinAlert.notifyJoinStart();
         try {
-          alert.notifyAcquire(semaphore);
+          semaphore.acquire();
         } catch (final InterruptedException e) {
           throw new UncheckedInterruptedException(e);
+        } finally {
+          joinAlert.notifyJoinStop();
         }
       }
     }
@@ -524,7 +542,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
-        final JoinAlert alert = VarFuture.alert;
+        final JoinAlert joinAlert = VarFuture.joinAlert;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
             return true;
@@ -536,12 +554,15 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           if (status == FAILED) {
             throw UncheckedException.toUnchecked(failureException);
           }
+          joinAlert.notifyJoinStart();
           try {
-            if (!alert.notifyTryAcquire(semaphore, remainingTime, TimeUnit.MILLISECONDS)) {
+            if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
               throw new UncheckedTimeoutException();
             }
           } catch (final InterruptedException e) {
             throw new UncheckedInterruptedException(e);
+          } finally {
+            joinAlert.notifyJoinStop();
           }
           remainingTime -= System.currentTimeMillis() - startTime;
         }
@@ -559,7 +580,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
-        final JoinAlert alert = VarFuture.alert;
+        final JoinAlert joinAlert = VarFuture.joinAlert;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
             return true;
@@ -571,12 +592,15 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           if (status == FAILED) {
             throw UncheckedException.toUnchecked(failureException);
           }
+          joinAlert.notifyJoinStart();
           try {
-            if (!alert.notifyTryAcquire(semaphore, remainingTime, TimeUnit.MILLISECONDS)) {
+            if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
               throw new UncheckedTimeoutException();
             }
           } catch (final InterruptedException e) {
             throw new UncheckedInterruptedException(e);
+          } finally {
+            joinAlert.notifyJoinStop();
           }
           remainingTime -= System.currentTimeMillis() - startTime;
         }
