@@ -30,10 +30,14 @@ import sparx.concurrent.Scheduler.Task;
 import sparx.function.Consumer;
 import sparx.function.Function;
 import sparx.logging.Log;
+import sparx.logging.alert.Alerts;
+import sparx.logging.alert.ExecutionContextTaskAlert;
 import sparx.util.Nothing;
 import sparx.util.Requires;
 
 class ExecutionScope implements ExecutionContext {
+
+  private static final ExecutionContextTaskAlert taskAlert = Alerts.executionContextTaskAlert();
 
   private final Scheduler scheduler;
 
@@ -55,7 +59,7 @@ class ExecutionScope implements ExecutionContext {
   public @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(
       @NotNull final F future, @NotNull final Function<F, ? extends SignalFuture<U>> function,
       final int weight) {
-    // TODO: alert => serializable
+    taskAlert.notifyCall(function);
     final CallFuture<V, F, U> task = new CallFuture<V, F, U>(scheduler, future, function, weight);
     scheduler.scheduleAfter(task);
     return task.readOnly();
@@ -64,7 +68,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(
       @NotNull final F future, @NotNull final Consumer<F> consumer, final int weight) {
-    // TODO: alert => serializable
+    taskAlert.notifyRun(consumer);
     final RunFuture<V, F> task = new RunFuture<V, F>(scheduler, future, consumer, weight);
     scheduler.scheduleAfter(task);
     return task.readOnly();

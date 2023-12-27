@@ -16,27 +16,25 @@
 package sparx.logging.alert;
 
 import org.jetbrains.annotations.NotNull;
+import sparx.function.Consumer;
+import sparx.function.Function;
 
-class DummyJoinAlert implements JoinAlert {
+public class DummyExecutionContextTaskAlert implements ExecutionContextTaskAlert {
 
-  private static final DummyJoinAlert INSTANCE = new DummyJoinAlert();
+  private static final DummyExecutionContextTaskAlert INSTANCE = new DummyExecutionContextTaskAlert();
 
-  public static @NotNull DummyJoinAlert instance() {
+  public static @NotNull DummyExecutionContextTaskAlert instance() {
     return INSTANCE;
   }
 
-  private DummyJoinAlert() {
+  private DummyExecutionContextTaskAlert() {
   }
 
   @Override
-  public void notifyJoinStart() {
+  public void notifyCall(@NotNull final Function<?, ?> function) {
   }
 
   @Override
-  public void notifyJoinStop() {
-  }
-
-  @Override
-  public void turnOff() {
+  public void notifyRun(@NotNull final Consumer<?> consumer) {
   }
 }

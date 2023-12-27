@@ -176,7 +176,6 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   public @NotNull Subscription subscribe(@NotNull final Receiver<? super V> receiver) {
     final GroupReceiver<? super V> groupReceiver = FutureGroup.currentGroup()
         .onSubscribe(this, scheduler, Requires.notNull(receiver, "receiver"));
-    // TODO: alert => serializable?
     scheduler.scheduleAfter(new VarTask() {
       @Override
       @SuppressWarnings("unchecked")
@@ -191,7 +190,6 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   public @NotNull Subscription subscribe(@Nullable final Consumer<? super V> onValueConsumer,
       @Nullable final Consumer<? super Collection<V>> onValuesConsumer,
       @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
-    // TODO: alert => serializable?
     return subscribe(new FunctionalReceiver<V>(onValueConsumer, onValuesConsumer, onErrorConsumer,
         onCloseAction));
   }

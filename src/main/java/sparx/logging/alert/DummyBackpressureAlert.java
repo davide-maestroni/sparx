@@ -25,6 +25,9 @@ class DummyBackpressureAlert implements BackpressureAlert {
     return INSTANCE;
   }
 
+  private DummyBackpressureAlert() {
+  }
+
   @Override
   public void notifyWaitStart(@NotNull final Thread currentThread) {
   }

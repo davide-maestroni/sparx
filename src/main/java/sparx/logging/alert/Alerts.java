@@ -20,10 +20,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
+import sparx.function.Consumer;
+import sparx.function.Function;
 
 public class Alerts {
 
   private static volatile BackpressureAlert backpressureAlert;
+  private static volatile ExecutionContextTaskAlert executionContextTaskAlert;
   private static volatile JoinAlert joinAlert;
   private static volatile SchedulerQueueAlert queueAlert;
   private static volatile SchedulerWorkerAlert workerAlert;
@@ -43,6 +46,18 @@ public class Alerts {
     @Override
     public void turnOff() {
       throw new UnsupportedOperationException("turnOff");
+    }
+  };
+  private static final ExecutionContextTaskAlert EXECUTION_CONTEXT_TASK_ALERT = new ExecutionContextTaskAlert() {
+
+    @Override
+    public void notifyCall(@NotNull final Function<?, ?> function) {
+      executionContextTaskAlert.notifyCall(function);
+    }
+
+    @Override
+    public void notifyRun(@NotNull final Consumer<?> consumer) {
+      executionContextTaskAlert.notifyRun(consumer);
     }
   };
   private static final JoinAlert JOIN_ALERT = new JoinAlert() {
@@ -103,6 +118,10 @@ public class Alerts {
     return BACKPRESSURE_ALERT;
   }
 
+  public static @NotNull ExecutionContextTaskAlert executionContextTaskAlert() {
+    return EXECUTION_CONTEXT_TASK_ALERT;
+  }
+
   public static @NotNull JoinAlert joinAlert() {
     return JOIN_ALERT;
   }
@@ -128,6 +147,10 @@ public class Alerts {
     if (executorService != null) {
       executorService.shutdown();
     }
+  }
+
+  public static void disableExecutionContextTaskAlert() {
+    executionContextTaskAlert = DummyExecutionContextTaskAlert.instance();
   }
 
   public static void disableJoinAlert() {
@@ -178,6 +201,10 @@ public class Alerts {
     }
   }
 
+  public static void enableExecutionContextTaskAlert() {
+    executionContextTaskAlert = new SerializableTaskAlert(Alerts.class);
+  }
+
   public static void enableJoinAlert(final long interval,
       @NotNull final TimeUnit intervalUnit, final long timeout,
       @NotNull final TimeUnit timeoutUnit) {
@@ -211,6 +238,7 @@ public class Alerts {
   }
 
   public static void resetDefaults() {
+    executionContextTaskAlert = DummyExecutionContextTaskAlert.instance();
     queueAlert = DummySchedulerQueueAlert.instance();
     final ScheduledExecutorService executorService;
     synchronized (mutex) {
