@@ -18,8 +18,6 @@
 ////
 package sparx.tuple;
 
-import java.util.Arrays;
-
 class UndecupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5 extends T, T6 extends T, T7 extends T, T8 extends T, T9 extends T, T10 extends T, T11 extends T> extends GenericTuple<T>
     implements Undecuple<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> {
 
@@ -35,8 +33,9 @@ class UndecupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, 
   private final T10 tenth;
   private final T11 eleventh;
 
+  @SuppressWarnings("unchecked")
   UndecupleTuple(final T1 first, final T2 second, final T3 third, final T4 fourth, final T5 fifth, final T6 sixth, final T7 seventh, final T8 eighth, final T9 ninth, final T10 tenth, final T11 eleventh) {
-    super(Arrays.asList(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh));
+    super(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh);
     this.first = first;
     this.second = second;
     this.third = third;

@@ -18,8 +18,6 @@
 ////
 package sparx.tuple;
 
-import java.util.Arrays;
-
 class TredecupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5 extends T, T6 extends T, T7 extends T, T8 extends T, T9 extends T, T10 extends T, T11 extends T, T12 extends T, T13 extends T> extends GenericTuple<T>
     implements Tredecuple<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> {
 
@@ -37,8 +35,9 @@ class TredecupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T,
   private final T12 twelfth;
   private final T13 thirteenth;
 
+  @SuppressWarnings("unchecked")
   TredecupleTuple(final T1 first, final T2 second, final T3 third, final T4 fourth, final T5 fifth, final T6 sixth, final T7 seventh, final T8 eighth, final T9 ninth, final T10 tenth, final T11 eleventh, final T12 twelfth, final T13 thirteenth) {
-    super(Arrays.asList(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth));
+    super(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth);
     this.first = first;
     this.second = second;
     this.third = third;

@@ -17,6 +17,8 @@ package sparx.concurrent;
 
 import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import sparx.logging.Log;
 import sparx.logging.alert.Alerts;
@@ -65,16 +67,6 @@ public class Scheduler {
     return of(synchronousExecutor);
   }
 
-  public static @NotNull Scheduler withBackpressure(@NotNull final Executor executor,
-      final int taskThreshold) {
-    return withBackpressure(executor, Integer.MAX_VALUE, taskThreshold);
-  }
-
-  public static @NotNull Scheduler withBackpressure(@NotNull final Executor executor,
-      final int minThroughput, final int taskThreshold) {
-    return new SchedulerWithBackpressure(executor, minThroughput, taskThreshold);
-  }
-
   private Scheduler(@NotNull final Executor executor, final int minThroughput) {
     this.executor = Requires.notNull(executor, "executor");
     this.minThroughput = Requires.positive(minThroughput, "minThroughput");
@@ -92,8 +84,13 @@ public class Scheduler {
     synchronized (mutex) {
       final Task runningTask = this.runningTask;
       if (runningTask != null && runningTask.taskID().equals(taskID)) {
-        runningThread.interrupt();
-        return true;
+        try {
+          runningThread.interrupt();
+          return true;
+        } catch (final SecurityException e) {
+          Log.err(Scheduler.class, "Cannot interrupt running thread %s: %s", runningThread,
+              Log.printable(e));
+        }
       }
     }
     return false;
@@ -167,6 +164,122 @@ public class Scheduler {
     }
   }
 
+  // TODO: withBackpressure(List<Triple>)???
+
+  public @NotNull Scheduler withBackpressure(final int taskThreshold) {
+    Requires.positive(taskThreshold, "taskThreshold");
+    return new Scheduler(executor, minThroughput) {
+      @Override
+      protected void applyBackpressure(@NotNull final Object mutex, final Thread runningThread) {
+        final Thread currentThread = Thread.currentThread();
+        if (!currentThread.equals(runningThread)) {
+          final BackpressureAlert backpressureAlert = Scheduler.backpressureAlert;
+          while (pendingCount() >= taskThreshold) {
+            backpressureAlert.notifyWaitStart(currentThread);
+            try {
+              mutex.wait();
+            } catch (final InterruptedException e) {
+              throw new UncheckedInterruptedException(e);
+            } finally {
+              backpressureAlert.notifyWaitStop(currentThread);
+            }
+          }
+        }
+      }
+
+      @Override
+      protected void releaseBackpressure(@NotNull final Object mutex) {
+        if (pendingCount() < taskThreshold) {
+          mutex.notify();
+        }
+      }
+    };
+  }
+
+  public @NotNull Scheduler withBackpressure(final int taskThreshold, final long delay,
+      @NotNull final TimeUnit unit) {
+    Requires.positive(taskThreshold, "taskThreshold");
+    final long delayMillis = unit.toMillis(delay);
+    return new Scheduler(executor, minThroughput) {
+      @Override
+      protected void applyBackpressure(@NotNull final Object mutex, final Thread runningThread) {
+        final Thread currentThread = Thread.currentThread();
+        if (!currentThread.equals(runningThread)) {
+          if (pendingCount() >= taskThreshold) {
+            final BackpressureAlert backpressureAlert = Scheduler.backpressureAlert;
+            backpressureAlert.notifyWaitStart(currentThread);
+            try {
+              mutex.wait(delayMillis);
+            } catch (final InterruptedException e) {
+              throw new UncheckedInterruptedException(e);
+            } finally {
+              backpressureAlert.notifyWaitStop(currentThread);
+            }
+          }
+        }
+      }
+
+      @Override
+      protected void releaseBackpressure(@NotNull final Object mutex) {
+        if (pendingCount() < taskThreshold) {
+          mutex.notify();
+        }
+      }
+    };
+  }
+
+  public @NotNull Scheduler withRejection(final int taskThreshold) {
+    Requires.positive(taskThreshold, "taskThreshold");
+    return new Scheduler(executor, minThroughput) {
+      @Override
+      protected void applyBackpressure(@NotNull final Object mutex, final Thread runningThread) {
+        final Thread currentThread = Thread.currentThread();
+        if (!currentThread.equals(runningThread) && (pendingCount() >= taskThreshold)) {
+          throw new RejectedExecutionException();
+        }
+      }
+
+      @Override
+      protected void releaseBackpressure(@NotNull final Object mutex) {
+      }
+    };
+  }
+
+  public @NotNull Scheduler withRejection(final int taskThreshold, final long delay,
+      @NotNull final TimeUnit unit) {
+    Requires.positive(taskThreshold, "taskThreshold");
+    final long delayMillis = unit.toMillis(delay);
+    return new Scheduler(executor, minThroughput) {
+      @Override
+      protected void applyBackpressure(@NotNull final Object mutex, final Thread runningThread) {
+        final Thread currentThread = Thread.currentThread();
+        if (!currentThread.equals(runningThread)) {
+          if (pendingCount() >= taskThreshold) {
+            final BackpressureAlert backpressureAlert = Scheduler.backpressureAlert;
+            backpressureAlert.notifyWaitStart(currentThread);
+            try {
+              mutex.wait(delayMillis);
+            } catch (final InterruptedException e) {
+              throw new UncheckedInterruptedException(e);
+            } finally {
+              backpressureAlert.notifyWaitStop(currentThread);
+            }
+            if (pendingCount() >= taskThreshold) {
+              throw new RejectedExecutionException();
+            }
+          }
+        }
+      }
+
+      @Override
+      protected void releaseBackpressure(@NotNull final Object mutex) {
+        if (pendingCount() < taskThreshold) {
+          mutex.notify();
+        }
+      }
+    };
+  }
+
   protected void applyBackpressure(@NotNull final Object mutex, final Thread runningThread) {
   }
 
@@ -178,42 +291,6 @@ public class Scheduler {
     @NotNull String taskID();
 
     int weight();
-  }
-
-  private static class SchedulerWithBackpressure extends Scheduler {
-
-    private final int taskThreshold;
-
-    private SchedulerWithBackpressure(@NotNull final Executor executor, final int minThroughput,
-        final int taskThreshold) {
-      super(executor, minThroughput);
-      this.taskThreshold = Requires.positive(taskThreshold, "taskThreshold");
-    }
-
-    @Override
-    protected void applyBackpressure(@NotNull final Object mutex, final Thread runningThread) {
-      final Thread currentThread = Thread.currentThread();
-      if (!currentThread.equals(runningThread)) {
-        final BackpressureAlert backpressureAlert = Scheduler.backpressureAlert;
-        while (pendingCount() >= taskThreshold) {
-          backpressureAlert.notifyWaitStart(currentThread);
-          try {
-            mutex.wait();
-          } catch (final InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
-          } finally {
-            backpressureAlert.notifyWaitStop(currentThread);
-          }
-        }
-      }
-    }
-
-    @Override
-    protected void releaseBackpressure(@NotNull final Object mutex) {
-      if (pendingCount() < taskThreshold) {
-        mutex.notify();
-      }
-    }
   }
 
   private class InfiniteWorker implements Runnable {

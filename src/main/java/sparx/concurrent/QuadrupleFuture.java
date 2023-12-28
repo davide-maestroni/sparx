@@ -18,10 +18,10 @@
 ////
 package sparx.concurrent;
 
-import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Quadruple;
+import sparx.util.ImmutableList;
 import sparx.util.Requires;
 
 public class QuadrupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V> extends
@@ -46,6 +46,7 @@ public class QuadrupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
   private final StreamingFuture<V4> fourth;
   private final List<StreamingFuture<? extends V>> futures;
 
+  @SuppressWarnings("unchecked")
   private QuadrupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
@@ -55,7 +56,7 @@ public class QuadrupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
     this.second = second;
     this.third = third;
     this.fourth = fourth;
-    this.futures = Arrays.asList(first, second, third, fourth);
+    this.futures = ImmutableList.of(first, second, third, fourth);
   }
 
   @Override

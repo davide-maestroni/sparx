@@ -18,10 +18,10 @@
 ////
 package sparx.concurrent;
 
-import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Couple;
+import sparx.util.ImmutableList;
 import sparx.util.Requires;
 
 public class CoupleFuture<V, V1 extends V, V2 extends V> extends
@@ -40,12 +40,13 @@ public class CoupleFuture<V, V1 extends V, V2 extends V> extends
   private final StreamingFuture<V2> second;
   private final List<StreamingFuture<? extends V>> futures;
 
+  @SuppressWarnings("unchecked")
   private CoupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second) { 
     this.first = first;
     this.second = second;
-    this.futures = Arrays.asList(first, second);
+    this.futures = ImmutableList.of(first, second);
   }
 
   @Override

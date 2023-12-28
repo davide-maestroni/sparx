@@ -18,8 +18,6 @@
 ////
 package sparx.tuple;
 
-import java.util.Arrays;
-
 class QuadrupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T> extends GenericTuple<T>
     implements Quadruple<T, T1, T2, T3, T4> {
 
@@ -28,8 +26,9 @@ class QuadrupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T> 
   private final T3 third;
   private final T4 fourth;
 
+  @SuppressWarnings("unchecked")
   QuadrupleTuple(final T1 first, final T2 second, final T3 third, final T4 fourth) {
-    super(Arrays.asList(first, second, third, fourth));
+    super(first, second, third, fourth);
     this.first = first;
     this.second = second;
     this.third = third;

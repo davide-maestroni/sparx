@@ -18,8 +18,6 @@
 ////
 package sparx.tuple;
 
-import java.util.Arrays;
-
 class SeptendecupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5 extends T, T6 extends T, T7 extends T, T8 extends T, T9 extends T, T10 extends T, T11 extends T, T12 extends T, T13 extends T, T14 extends T, T15 extends T, T16 extends T, T17 extends T> extends GenericTuple<T>
     implements Septendecuple<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17> {
 
@@ -41,8 +39,9 @@ class SeptendecupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends
   private final T16 sixteenth;
   private final T17 seventeenth;
 
+  @SuppressWarnings("unchecked")
   SeptendecupleTuple(final T1 first, final T2 second, final T3 third, final T4 fourth, final T5 fifth, final T6 sixth, final T7 seventh, final T8 eighth, final T9 ninth, final T10 tenth, final T11 eleventh, final T12 twelfth, final T13 thirteenth, final T14 fourteenth, final T15 fifteenth, final T16 sixteenth, final T17 seventeenth) {
-    super(Arrays.asList(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth));
+    super(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth);
     this.first = first;
     this.second = second;
     this.third = third;

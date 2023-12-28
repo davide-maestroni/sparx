@@ -18,8 +18,6 @@
 ////
 package sparx.tuple;
 
-import java.util.Arrays;
-
 class SeptupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5 extends T, T6 extends T, T7 extends T> extends GenericTuple<T>
     implements Septuple<T, T1, T2, T3, T4, T5, T6, T7> {
 
@@ -31,8 +29,9 @@ class SeptupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T
   private final T6 sixth;
   private final T7 seventh;
 
+  @SuppressWarnings("unchecked")
   SeptupleTuple(final T1 first, final T2 second, final T3 third, final T4 fourth, final T5 fifth, final T6 sixth, final T7 seventh) {
-    super(Arrays.asList(first, second, third, fourth, fifth, sixth, seventh));
+    super(first, second, third, fourth, fifth, sixth, seventh);
     this.first = first;
     this.second = second;
     this.third = third;

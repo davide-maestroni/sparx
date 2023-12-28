@@ -18,8 +18,6 @@
 ////
 package sparx.tuple;
 
-import java.util.Arrays;
-
 class TripleTuple<T, T1 extends T, T2 extends T, T3 extends T> extends GenericTuple<T>
     implements Triple<T, T1, T2, T3> {
 
@@ -27,8 +25,9 @@ class TripleTuple<T, T1 extends T, T2 extends T, T3 extends T> extends GenericTu
   private final T2 second;
   private final T3 third;
 
+  @SuppressWarnings("unchecked")
   TripleTuple(final T1 first, final T2 second, final T3 third) {
-    super(Arrays.asList(first, second, third));
+    super(first, second, third);
     this.first = first;
     this.second = second;
     this.third = third;

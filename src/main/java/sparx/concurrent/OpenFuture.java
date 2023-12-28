@@ -16,8 +16,6 @@
 package sparx.concurrent;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,10 +43,11 @@ import sparx.function.Supplier;
 import sparx.logging.Log;
 import sparx.logging.alert.Alerts;
 import sparx.logging.alert.JoinAlert;
+import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
 import sparx.util.Requires;
 
-public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> implements
+public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {
 
   private static final JoinAlert joinAlert = Alerts.joinAlert();
@@ -75,28 +74,28 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   private volatile StreamingFuture<V> readonly;
   private volatile Result<V> result;
 
-  public static @NotNull <V> VarFuture<V> create() {
-    return new VarFuture<V>();
+  public static @NotNull <V> OpenFuture<V> create() {
+    return new OpenFuture<V>();
   }
 
-  public static @NotNull <V> VarFuture<V> create(
+  public static @NotNull <V> OpenFuture<V> create(
       @NotNull final HistoryStrategy<V> historyStrategy) {
-    return new VarFuture<V>(historyStrategy);
+    return new OpenFuture<V>(historyStrategy);
   }
 
   private static void logInvocationException(final String name, final String method,
       final Exception e) {
-    Log.err(VarFuture.class, "Failed to invoke %s '%s' method: %s", name, method,
+    Log.err(OpenFuture.class, "Failed to invoke %s '%s' method: %s", name, method,
         Log.printable(e));
   }
 
 
   @SuppressWarnings("unchecked")
-  VarFuture() {
+  OpenFuture() {
     this((HistoryStrategy<V>) NO_HISTORY);
   }
 
-  VarFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
+  OpenFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
     this.historyStrategy = Requires.notNull(historyStrategy, "historyStrategy");
     this.registration = FutureGroup.currentGroup().onCreate(this);
   }
@@ -157,7 +156,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   @Override
   public void setBulk(@NotNull final V... values) {
     if (values.length > 0 && !isDone()) {
-      final List<V> valueList = Arrays.asList(values);
+      final List<V> valueList = ImmutableList.of(values);
       scheduler.scheduleAfter(new VarTask() {
         @Override
         public int weight() {
@@ -247,7 +246,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
-    final JoinAlert joinAlert = VarFuture.joinAlert;
+    final JoinAlert joinAlert = OpenFuture.joinAlert;
     joinAlert.notifyJoinStart();
     try {
       task.acquire();
@@ -266,7 +265,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
-    final JoinAlert joinAlert = VarFuture.joinAlert;
+    final JoinAlert joinAlert = OpenFuture.joinAlert;
     joinAlert.notifyJoinStart();
     try {
       if (!task.tryAcquire(timeout, unit)) {
@@ -329,7 +328,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   @Override
   public void setBulk(@NotNull final Collection<V> values) {
     if (!values.isEmpty() && !isDone()) {
-      final List<V> valueList = Collections.unmodifiableList(new ArrayList<V>(values));
+      final List<V> valueList = ImmutableList.ofElementsIn(values);
       scheduler.scheduleAfter(new VarTask() {
         @Override
         public int weight() {
@@ -467,7 +466,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
-      final JoinAlert joinAlert = VarFuture.joinAlert;
+      final JoinAlert joinAlert = OpenFuture.joinAlert;
       while (remainingTime > 0) {
         if (!queue.isEmpty()) {
           return true;
@@ -499,7 +498,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
-      final JoinAlert joinAlert = VarFuture.joinAlert;
+      final JoinAlert joinAlert = OpenFuture.joinAlert;
       while (true) {
         if (!queue.isEmpty()) {
           return true;
@@ -540,7 +539,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
-        final JoinAlert joinAlert = VarFuture.joinAlert;
+        final JoinAlert joinAlert = OpenFuture.joinAlert;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
             return true;
@@ -578,7 +577,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
-        final JoinAlert joinAlert = VarFuture.joinAlert;
+        final JoinAlert joinAlert = OpenFuture.joinAlert;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
             return true;
@@ -669,7 +668,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
     @Override
     public void cancel() {
-      VarFuture.this.unsubscribe(receiver);
+      OpenFuture.this.unsubscribe(receiver);
     }
   }
 
@@ -679,26 +678,32 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
     @Override
     public boolean fail(@NotNull final Exception error) {
+      Log.dbg(OpenFuture.class, "Ignoring 'fail' operation: future is already closed");
       return false;
     }
 
     @Override
-    public void setBulk(@NotNull final Collection<V> values) {
+    public void set(final V value) {
+      Log.dbg(OpenFuture.class, "Ignoring 'set' operation: future is already closed");
     }
 
     @Override
-    public void set(final V value) {
+    public void setBulk(@NotNull final Collection<V> values) {
+      Log.dbg(OpenFuture.class, "Ignoring 'setBulk' operation: future is already closed");
     }
 
     @Override
     public void close() {
+      Log.dbg(OpenFuture.class, "Ignoring 'close' operation: future is already closed");
     }
 
     void clear() {
+      Log.dbg(OpenFuture.class, "Ignoring 'clear' operation: future is already closed");
     }
 
     void compute(@NotNull final Group group,
         @NotNull final Function<? super V, ? extends V> function) {
+      Log.dbg(OpenFuture.class, "Ignoring 'compute' operation: future is already closed");
     }
 
     void get(@NotNull final Semaphore semaphore) {
@@ -724,7 +729,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
             if (values.size() == 1) {
               groupReceiver.set(values.get(0));
             } else {
-              groupReceiver.setBulk(Collections.unmodifiableList(new ArrayList<V>(values)));
+              groupReceiver.setBulk(ImmutableList.ofElementsIn(values));
             }
           } catch (final RuntimeException e) {
             groupReceiver.onUncaughtError(e);
@@ -816,8 +821,8 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       } else {
         result = new FailureResult<V>(error);
       }
-      final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
-      final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
+      final WeakHashMap<FutureIterator<V>, Void> iterators = OpenFuture.this.iterators;
+      final WeakHashMap<Semaphore, Void> semaphores = OpenFuture.this.semaphores;
       if (isUncaught()) {
         for (final FutureIterator<V> futureIterator : iterators.keySet()) {
           futureIterator.fail(error);
@@ -829,7 +834,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         semaphores.clear();
         registration.onUncaughtError(error);
       } else {
-        final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
+        final HashMap<Receiver<?>, GroupReceiver<V>> receivers = OpenFuture.this.receivers;
         for (final GroupReceiver<V> groupReceiver : receivers.values()) {
           try {
             groupReceiver.fail(error);
@@ -926,7 +931,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       } catch (final RuntimeException e) {
         logInvocationException("history strategy", "onClose", e);
       }
-      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
+      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = OpenFuture.this.receivers;
       for (final GroupReceiver<V> groupReceiver : receivers.values()) {
         try {
           groupReceiver.close();
@@ -936,12 +941,12 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         groupReceiver.onUnsubscribe();
       }
       receivers.clear();
-      final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
+      final WeakHashMap<FutureIterator<V>, Void> iterators = OpenFuture.this.iterators;
       for (final FutureIterator<V> futureIterator : iterators.keySet()) {
         futureIterator.end();
       }
       iterators.clear();
-      final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
+      final WeakHashMap<Semaphore, Void> semaphores = OpenFuture.this.semaphores;
       for (final Semaphore semaphore : semaphores.keySet()) {
         semaphore.release();
       }
@@ -973,7 +978,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
               try {
                 lastValue = function.apply((V) lastValue);
               } catch (final Exception e) {
-                Log.err(VarFuture.class, "Failed to compute next value: %s", Log.printable(e));
+                Log.err(OpenFuture.class, "Failed to compute next value: %s", Log.printable(e));
                 innerStatus.fail(e);
               }
               scheduler.resume();
@@ -1005,7 +1010,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     @SuppressWarnings("unchecked")
     void subscribe(@NotNull final Receiver<V> receiver,
         @NotNull final GroupReceiver<V> groupReceiver) {
-      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
+      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = OpenFuture.this.receivers;
       if (!receivers.containsKey(receiver)) {
         super.subscribe(receiver, groupReceiver);
         if (lastValue != UNSET) {

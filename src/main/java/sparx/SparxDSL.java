@@ -11,7 +11,7 @@ import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TripleFuture;
 import sparx.concurrent.TupleFuture;
 import sparx.concurrent.UncheckedException;
-import sparx.concurrent.VarFuture;
+import sparx.concurrent.OpenFuture;
 import sparx.function.Action;
 import sparx.function.BiFunction;
 import sparx.function.Consumer;
@@ -124,7 +124,7 @@ public class SparxDSL {
     return new Function<SignalFuture<V>, StreamingFuture<V>>() {
       @Override
       public StreamingFuture<V> apply(final SignalFuture<V> input) {
-        final VarFuture<V> future = VarFuture.create();
+        final OpenFuture<V> future = OpenFuture.create();
         if (maxSize == 1) {
           input.subscribe(new Receiver<V>() {
 
@@ -202,7 +202,7 @@ public class SparxDSL {
     return new Function<SignalFuture<V>, StreamingFuture<U>>() {
       @Override
       public StreamingFuture<U> apply(final SignalFuture<V> input) {
-        final VarFuture<U> future = VarFuture.create();
+        final OpenFuture<U> future = OpenFuture.create();
         input.subscribe(new Receiver<V>() {
           @Override
           public boolean fail(@NotNull final Exception error) {
@@ -246,7 +246,7 @@ public class SparxDSL {
     return new Function<SignalFuture<V>, StreamingFuture<U>>() {
       @Override
       public StreamingFuture<U> apply(final SignalFuture<V> input) {
-        final VarFuture<U> future = VarFuture.create();
+        final OpenFuture<U> future = OpenFuture.create();
         input.subscribe(new Receiver<V>() {
 
           private U accumulated = identity;

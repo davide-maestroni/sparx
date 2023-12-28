@@ -35,7 +35,7 @@ public class LogCollectorFuture extends ReadOnlyFuture<LogMessage> implements Lo
   private final LogMessageFactory factory;
 
   public LogCollectorFuture(@NotNull final Properties properties) {
-    super(VarFuture.<LogMessage>create());
+    super(OpenFuture.<LogMessage>create());
     factory = new LogMessageFactory()
         .includeTag(
             parseBoolean(properties.getProperty(INCLUDE_TAG_PROP, Boolean.FALSE.toString())))

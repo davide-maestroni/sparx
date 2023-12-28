@@ -18,8 +18,6 @@
 ////
 package sparx.tuple;
 
-import java.util.Arrays;
-
 class NonupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5 extends T, T6 extends T, T7 extends T, T8 extends T, T9 extends T> extends GenericTuple<T>
     implements Nonuple<T, T1, T2, T3, T4, T5, T6, T7, T8, T9> {
 
@@ -33,8 +31,9 @@ class NonupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5
   private final T8 eighth;
   private final T9 ninth;
 
+  @SuppressWarnings("unchecked")
   NonupleTuple(final T1 first, final T2 second, final T3 third, final T4 fourth, final T5 fifth, final T6 sixth, final T7 seventh, final T8 eighth, final T9 ninth) {
-    super(Arrays.asList(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth));
+    super(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth);
     this.first = first;
     this.second = second;
     this.third = third;

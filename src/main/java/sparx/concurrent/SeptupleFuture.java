@@ -18,10 +18,10 @@
 ////
 package sparx.concurrent;
 
-import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Septuple;
+import sparx.util.ImmutableList;
 import sparx.util.Requires;
 
 public class SeptupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V> extends
@@ -55,6 +55,7 @@ public class SeptupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exte
   private final StreamingFuture<V7> seventh;
   private final List<StreamingFuture<? extends V>> futures;
 
+  @SuppressWarnings("unchecked")
   private SeptupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
@@ -70,7 +71,7 @@ public class SeptupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exte
     this.fifth = fifth;
     this.sixth = sixth;
     this.seventh = seventh;
-    this.futures = Arrays.asList(first, second, third, fourth, fifth, sixth, seventh);
+    this.futures = ImmutableList.of(first, second, third, fourth, fifth, sixth, seventh);
   }
 
   @Override

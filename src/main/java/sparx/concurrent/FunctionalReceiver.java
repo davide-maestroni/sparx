@@ -63,6 +63,7 @@ class FunctionalReceiver<V> implements Receiver<V> {
     if (((onValueConsumer == null) || (onValuesConsumer == null))
         && (onValueConsumer != onValuesConsumer)) {
       if (onValueConsumer != null) {
+        // TODO: ???
         Log.wrn(FunctionalReceiver.class,
             "Bulk values handler implementation is missing: single value is handled by '%s'",
             onValueConsumer);

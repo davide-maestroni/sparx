@@ -18,10 +18,10 @@
 ////
 package sparx.concurrent;
 
-import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.{{name}};
+import sparx.util.ImmutableList;
 import sparx.util.Requires;
 
 public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/last}}{{/indexes}}> extends
@@ -43,6 +43,7 @@ public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/las
 {{/ordinals}}
   private final List<StreamingFuture<? extends V>> futures;
 
+  @SuppressWarnings("unchecked")
   private {{name}}Future(
       @NotNull final StreamingFuture<V1> first,
 {{#ordinals}}      @NotNull final StreamingFuture<V{{value.index}}> {{value.name}}{{^last}},{{/last}}{{#last}}) { {{/last}}
@@ -50,7 +51,7 @@ public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/las
     this.first = first;
 {{#ordinals}}    this.{{value.name}} = {{value.name}};
 {{/ordinals}}
-    this.futures = Arrays.asList(first, {{#ordinals}}{{value.name}}{{^last}}, {{/last}}{{/ordinals}});
+    this.futures = ImmutableList.of(first, {{#ordinals}}{{value.name}}{{^last}}, {{/last}}{{/ordinals}});
   }
 {{#ordinals}}
 

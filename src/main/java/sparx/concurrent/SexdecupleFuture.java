@@ -18,10 +18,10 @@
 ////
 package sparx.concurrent;
 
-import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Sexdecuple;
+import sparx.util.ImmutableList;
 import sparx.util.Requires;
 
 public class SexdecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V, V11 extends V, V12 extends V, V13 extends V, V14 extends V, V15 extends V, V16 extends V> extends
@@ -82,6 +82,7 @@ public class SexdecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
   private final StreamingFuture<V16> sixteenth;
   private final List<StreamingFuture<? extends V>> futures;
 
+  @SuppressWarnings("unchecked")
   private SexdecupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
@@ -115,7 +116,7 @@ public class SexdecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
     this.fourteenth = fourteenth;
     this.fifteenth = fifteenth;
     this.sixteenth = sixteenth;
-    this.futures = Arrays.asList(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth);
+    this.futures = ImmutableList.of(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth);
   }
 
   @Override

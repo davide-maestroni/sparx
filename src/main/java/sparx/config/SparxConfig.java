@@ -3,7 +3,6 @@ package sparx.config;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -14,14 +13,14 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.concurrent.ConstFuture;
+import sparx.concurrent.ClosedFuture;
 import sparx.concurrent.ExecutorContext;
 import sparx.concurrent.LogCollectorFuture;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TripleFuture;
 import sparx.concurrent.UncheckedInterruptedException;
-import sparx.concurrent.VarFuture;
+import sparx.concurrent.OpenFuture;
 import sparx.function.Consumer;
 import sparx.logging.Log;
 import sparx.logging.Log.LogCollector;
@@ -31,6 +30,7 @@ import sparx.logging.printer.ConsoleLogPrinter;
 import sparx.logging.printer.JavaLogPrinter;
 import sparx.tuple.Couple;
 import sparx.tuple.Tuples;
+import sparx.util.ImmutableList;
 import sparx.util.Nothing;
 
 public class SparxConfig {
@@ -44,7 +44,7 @@ public class SparxConfig {
   public static final String LOG_PRINTERS_PROP = LOGGING_PROP_PREFIX + ".printers";
   public static final String LOG_THREADS_PROP = LOGGING_PROP_PREFIX + ".threads";
 
-  private static final List<String> CONFIG_LOCATIONS = Arrays.asList("sparx.properties",
+  private static final List<String> CONFIG_LOCATIONS = ImmutableList.of("sparx.properties",
       "sparx/sparx.properties", "sparx/config.properties");
   public static final String LOG_PRINTER_THREAD_PREFIX = "sparx-log-printer-";
 
@@ -133,10 +133,10 @@ public class SparxConfig {
                   }
                   executors.add(executor);
                   for (final String printerName : printerNames) {
-                    final VarFuture<Nothing> ready = VarFuture.create();
+                    final OpenFuture<Nothing> ready = OpenFuture.create();
                     ExecutorContext.of(executor)
                         .run(TripleFuture.of(future, ready,
-                                ConstFuture.of(Tuples.asTuple(printerName, properties))),
+                                ClosedFuture.of(Tuples.asTuple(printerName, properties))),
                             new Consumer<TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>>>() {
                               @Override
                               public void accept(

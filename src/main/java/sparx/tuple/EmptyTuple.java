@@ -1,6 +1,5 @@
 package sparx.tuple;
 
-import java.util.Collections;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Nothing;
 
@@ -13,6 +12,5 @@ class EmptyTuple extends GenericTuple<Nothing> implements Empty<Nothing> {
   }
 
   private EmptyTuple() {
-    super(Collections.<Nothing>emptyList());
   }
 }

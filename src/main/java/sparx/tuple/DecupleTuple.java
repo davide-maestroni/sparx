@@ -18,8 +18,6 @@
 ////
 package sparx.tuple;
 
-import java.util.Arrays;
-
 class DecupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5 extends T, T6 extends T, T7 extends T, T8 extends T, T9 extends T, T10 extends T> extends GenericTuple<T>
     implements Decuple<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> {
 
@@ -34,8 +32,9 @@ class DecupleTuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5
   private final T9 ninth;
   private final T10 tenth;
 
+  @SuppressWarnings("unchecked")
   DecupleTuple(final T1 first, final T2 second, final T3 third, final T4 fourth, final T5 fifth, final T6 sixth, final T7 seventh, final T8 eighth, final T9 ninth, final T10 tenth) {
-    super(Arrays.asList(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth));
+    super(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth);
     this.first = first;
     this.second = second;
     this.third = third;

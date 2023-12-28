@@ -18,10 +18,10 @@
 ////
 package sparx.concurrent;
 
-import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Quintuple;
+import sparx.util.ImmutableList;
 import sparx.util.Requires;
 
 public class QuintupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V> extends
@@ -49,6 +49,7 @@ public class QuintupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
   private final StreamingFuture<V5> fifth;
   private final List<StreamingFuture<? extends V>> futures;
 
+  @SuppressWarnings("unchecked")
   private QuintupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
@@ -60,7 +61,7 @@ public class QuintupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
     this.third = third;
     this.fourth = fourth;
     this.fifth = fifth;
-    this.futures = Arrays.asList(first, second, third, fourth, fifth);
+    this.futures = ImmutableList.of(first, second, third, fourth, fifth);
   }
 
   @Override

@@ -42,6 +42,7 @@ class ExecutionScope implements ExecutionContext {
   private final Scheduler scheduler;
 
   ExecutionScope(@NotNull final Scheduler scheduler) {
+    // TODO: handle executor rejection
     this.scheduler = Requires.notNull(scheduler, "scheduler");
   }
 
@@ -74,7 +75,7 @@ class ExecutionScope implements ExecutionContext {
     return task.readOnly();
   }
 
-  private static abstract class ScopeFuture<U> extends VarFuture<U> implements Group, Task {
+  private static abstract class ScopeFuture<U> extends OpenFuture<U> implements Group, Task {
 
     private static final int IDLE = 0;
     private static final int RUNNING = 1;

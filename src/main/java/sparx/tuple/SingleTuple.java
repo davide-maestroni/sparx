@@ -1,13 +1,12 @@
 package sparx.tuple;
 
-import java.util.Collections;
-
 class SingleTuple<T> extends GenericTuple<T> implements Single<T> {
 
   private final T first;
 
+  @SuppressWarnings("unchecked")
   SingleTuple(final T first) {
-    super(Collections.singletonList(first));
+    super(first);
     this.first = first;
   }
 
