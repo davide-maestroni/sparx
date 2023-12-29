@@ -18,25 +18,26 @@ package sparx.logging.alert;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import sparx.logging.Log;
 import sparx.util.Requires;
+import sparx.util.SharedTimer;
 
 class AcquireTimeoutAlert implements JoinAlert, Runnable {
 
   private final ScheduledFuture<?> future;
   private final Object mutex = new Object();
+  private final SharedTimer timer;
   private final long timeoutMillis;
   private final WeakHashMap<Thread, Long> timestamps = new WeakHashMap<Thread, Long>();
 
-  AcquireTimeoutAlert(@NotNull final ScheduledExecutorService executorService,
-      final long interval, @NotNull final TimeUnit intervalUnit, final long timeout,
+  AcquireTimeoutAlert(final long interval, @NotNull final TimeUnit intervalUnit, final long timeout,
       @NotNull final TimeUnit timeoutUnit) {
-    this.timeoutMillis = timeoutUnit.toMillis(Requires.positive(timeout, "timeout"));
-    this.future = executorService.scheduleAtFixedRate(this, interval, interval, intervalUnit);
+    timeoutMillis = timeoutUnit.toMillis(Requires.positive(timeout, "timeout"));
+    timer = SharedTimer.acquire();
+    future = timer.scheduleAtFixedRate(this, interval, interval, intervalUnit);
   }
 
   @Override
@@ -56,6 +57,7 @@ class AcquireTimeoutAlert implements JoinAlert, Runnable {
   @Override
   public void turnOff() {
     future.cancel(false);
+    timer.release();
   }
 
   @Override

@@ -15,9 +15,6 @@
  */
 package sparx.logging.alert;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Consumer;
@@ -100,9 +97,6 @@ public class Alerts {
   };
   private static final Object mutex;
 
-  private static ScheduledExecutorService alertsExecutorService;
-  private static int enabledServiceClients;
-
   static {
     mutex = new Object();
     backpressureAlert = DummyBackpressureAlert.instance();
@@ -135,17 +129,9 @@ public class Alerts {
   }
 
   public static void disableBackpressureAlert() {
-    ScheduledExecutorService executorService = null;
     synchronized (mutex) {
       backpressureAlert.turnOff();
       backpressureAlert = DummyBackpressureAlert.instance();
-      if (--enabledServiceClients == 0) {
-        executorService = alertsExecutorService;
-        alertsExecutorService = null;
-      }
-    }
-    if (executorService != null) {
-      executorService.shutdown();
     }
   }
 
@@ -154,17 +140,9 @@ public class Alerts {
   }
 
   public static void disableJoinAlert() {
-    ScheduledExecutorService executorService = null;
     synchronized (mutex) {
       joinAlert.turnOff();
       joinAlert = DummyJoinAlert.instance();
-      if (--enabledServiceClients == 0) {
-        executorService = alertsExecutorService;
-        alertsExecutorService = null;
-      }
-    }
-    if (executorService != null) {
-      executorService.shutdown();
     }
   }
 
@@ -173,17 +151,9 @@ public class Alerts {
   }
 
   public static void disableSchedulerWorkerAlert() {
-    ScheduledExecutorService executorService = null;
     synchronized (mutex) {
       workerAlert.turnOff();
       workerAlert = DummySchedulerWorkerAlert.instance();
-      if (--enabledServiceClients == 0) {
-        executorService = alertsExecutorService;
-        alertsExecutorService = null;
-      }
-    }
-    if (executorService != null) {
-      executorService.shutdown();
     }
   }
 
@@ -191,13 +161,8 @@ public class Alerts {
       @NotNull final TimeUnit intervalUnit, final long timeout,
       @NotNull final TimeUnit timeoutUnit) {
     synchronized (mutex) {
-      if (alertsExecutorService == null) {
-        alertsExecutorService = createsExecutorService();
-      }
-      ++enabledServiceClients;
       backpressureAlert.turnOff();
-      backpressureAlert = new WaitTimeoutAlert(alertsExecutorService, interval,
-          intervalUnit, timeout, timeoutUnit);
+      backpressureAlert = new WaitTimeoutAlert(interval, intervalUnit, timeout, timeoutUnit);
     }
   }
 
@@ -209,13 +174,8 @@ public class Alerts {
       @NotNull final TimeUnit intervalUnit, final long timeout,
       @NotNull final TimeUnit timeoutUnit) {
     synchronized (mutex) {
-      if (alertsExecutorService == null) {
-        alertsExecutorService = createsExecutorService();
-      }
-      ++enabledServiceClients;
       joinAlert.turnOff();
-      joinAlert = new AcquireTimeoutAlert(alertsExecutorService, interval,
-          intervalUnit, timeout, timeoutUnit);
+      joinAlert = new AcquireTimeoutAlert(interval, intervalUnit, timeout, timeoutUnit);
     }
   }
 
@@ -227,20 +187,14 @@ public class Alerts {
       @NotNull final TimeUnit intervalUnit, final long timeout,
       @NotNull final TimeUnit timeoutUnit) {
     synchronized (mutex) {
-      if (alertsExecutorService == null) {
-        alertsExecutorService = createsExecutorService();
-      }
-      ++enabledServiceClients;
       workerAlert.turnOff();
-      workerAlert = new WorkerTimeoutAlert(alertsExecutorService, interval,
-          intervalUnit, timeout, timeoutUnit);
+      workerAlert = new WorkerTimeoutAlert(interval, intervalUnit, timeout, timeoutUnit);
     }
   }
 
   public static void resetDefaults() {
     executionContextTaskAlert = DummyExecutionContextTaskAlert.instance();
     queueAlert = DummySchedulerQueueAlert.instance();
-    final ScheduledExecutorService executorService;
     synchronized (mutex) {
       backpressureAlert.turnOff();
       backpressureAlert = DummyBackpressureAlert.instance();
@@ -248,23 +202,6 @@ public class Alerts {
       joinAlert = DummyJoinAlert.instance();
       workerAlert.turnOff();
       workerAlert = DummySchedulerWorkerAlert.instance();
-      executorService = alertsExecutorService;
-      alertsExecutorService = null;
     }
-    if (executorService != null) {
-      executorService.shutdown();
-    }
-  }
-
-  private static @NotNull ScheduledExecutorService createsExecutorService() {
-    return Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactory() {
-          @Override
-          public Thread newThread(@NotNull final Runnable r) {
-            final Thread thread = new Thread(r, "sparx-alerts");
-            thread.setPriority(Thread.MIN_PRIORITY);
-            return thread;
-          }
-        });
   }
 }
