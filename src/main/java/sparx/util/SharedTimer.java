@@ -34,7 +34,7 @@ public class SharedTimer {
 
   public static @NotNull SharedTimer acquire() {
     synchronized (mutex) {
-      if (sharedCount == 0) {
+      if (executorService == null) {
         executorService = createsExecutorService();
       }
       ++sharedCount;
@@ -61,7 +61,7 @@ public class SharedTimer {
     if (released.compareAndSet(false, true)) {
       synchronized (mutex) {
         if (--sharedCount == 0) {
-          // defer shutdown to avoid destroying and re-creating threads too frequently
+          // defer shutdown to avoid destroying and re-creating the thread too frequently
           executorService.schedule(new Runnable() {
             @Override
             public void run() {
