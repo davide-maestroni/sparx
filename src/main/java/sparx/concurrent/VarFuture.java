@@ -986,6 +986,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           });
         } catch (final RuntimeException e) {
           logInvocationException("group", "onTask", e);
+          innerStatus.fail(e);
           scheduler.resume();
         }
       }

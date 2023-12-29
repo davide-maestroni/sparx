@@ -78,7 +78,7 @@ class WaitTimeoutAlert implements BackpressureAlert, Runnable {
     }
     for (final Entry<Thread, Long> entry : timeouts.entrySet()) {
       Log.wrn(BackpressureAlert.class,
-          "Producer on thread %s is waiting too long: timeout was %d %s but still waiting after %d %s!",
+          "Producer on thread %s is waiting too long: timeout was %d %s but still waiting after %d %s!\nPlease consider distributing processing over more consumers.",
           entry.getKey(), timeout, timeoutUnit, now - entry.getValue(), TimeUnit.MILLISECONDS);
     }
   }

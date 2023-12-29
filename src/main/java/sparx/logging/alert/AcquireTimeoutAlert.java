@@ -73,7 +73,8 @@ class AcquireTimeoutAlert implements JoinAlert, Runnable {
       }
     }
     for (final Entry<Thread, Long> entry : timeouts.entrySet()) {
-      Log.wrn(JoinAlert.class, "Join on thread %s is taking too long: still waiting after %d %s!",
+      Log.wrn(JoinAlert.class,
+          "Join on thread %s is taking too long: still waiting after %d %s!\nPlease verify no deadlock is happening.",
           entry.getKey(), now - entry.getValue(), TimeUnit.MILLISECONDS);
     }
   }

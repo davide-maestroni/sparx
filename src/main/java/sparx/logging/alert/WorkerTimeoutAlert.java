@@ -78,7 +78,7 @@ class WorkerTimeoutAlert implements SchedulerWorkerAlert, Runnable {
     }
     for (final Entry<Thread, Long> entry : timeouts.entrySet()) {
       Log.wrn(SchedulerWorkerAlert.class,
-          "Tasks on thread %s is taking too long: timeout was %d %s but task is still running after %d %s!",
+          "Tasks on thread %s is taking too long: timeout was %d %s but task is still running after %d %s!\nPlease consider decreasing the throughput or splitting the task into smaller steps.",
           entry.getKey(), timeout, timeoutUnit, now - entry.getValue(), TimeUnit.MILLISECONDS);
     }
   }

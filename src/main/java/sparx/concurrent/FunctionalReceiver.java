@@ -65,11 +65,11 @@ class FunctionalReceiver<V> implements Receiver<V> {
       if (onValueConsumer != null) {
         // TODO: ???
         Log.wrn(FunctionalReceiver.class,
-            "Bulk values handler implementation is missing: single value is handled by '%s'",
+            "Bulk values handler implementation is missing: single value is handled by '%s'\nPlease consider providing a proper consumer.",
             onValueConsumer);
       } else {
         Log.wrn(FunctionalReceiver.class,
-            "Single value handler implementation is missing: bulk values are handled by '%s'",
+            "Single value handler implementation is missing: bulk values are handled by '%s'\nPlease consider providing a proper consumer.",
             onValuesConsumer);
       }
     }

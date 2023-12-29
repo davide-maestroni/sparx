@@ -27,7 +27,7 @@ class SerializableTaskAlert implements ExecutionContextTaskAlert {
     final Constructor<?>[] constructors = taskClass.getConstructors();
     if (constructors.length != 1 || constructors[0].getParameterTypes().length != 0) {
       Log.wrn(ExecutionContextTaskAlert.class,
-          "Execution context task might not be serializable, only one default constructor should be declared: %s",
+          "Execution context task might not be serializable, only one default constructor should be declared: %s\nPlease consider avoiding referencing external objects or modifying the task implementation.",
           taskClass);
     }
   }

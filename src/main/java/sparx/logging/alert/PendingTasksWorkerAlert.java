@@ -30,7 +30,8 @@ class PendingTasksWorkerAlert implements SchedulerQueueAlert {
   public void notifyPendingTasks(final int beforeQueueCount, final int afterQueueCount) {
     final int count = afterQueueCount - beforeQueueCount;
     if (count > maxTasksCount) {
-      Log.wrn(SchedulerQueueAlert.class, "Pending tasks count exceeded the limit of %d: %d!",
+      Log.wrn(SchedulerQueueAlert.class,
+          "Pending tasks count exceeded the limit of %d: %d!\nPlease consider adding backpressure to the consumer future.",
           maxTasksCount, count);
     }
   }
