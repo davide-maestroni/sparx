@@ -22,38 +22,38 @@ import sparx.function.Function;
 abstract class ReadOnlyStreamGroupFuture<V, F extends SignalFuture<V>> extends
     StreamGroupFuture<V, F> {
 
-  private static <R> R fail() {
-    throw new ReadOnlyException();
+  private static <R> R fail(@NotNull final String name) {
+    throw new UnsupportedOperationException(name);
   }
 
   @Override
   public void close() {
-    fail();
+    fail("close");
   }
 
   @Override
   public boolean fail(@NotNull final Exception error) {
-    return fail();
+    return fail("fail");
   }
 
   @Override
   public void set(final V value) {
-    fail();
+    fail("set");
   }
 
   @Override
   public void setBulk(@NotNull final Collection<V> values) {
-    fail();
+    fail("setBulk");
   }
 
   @Override
   public void clear() {
-    fail();
+    fail("clear");
   }
 
   @Override
   public void compute(@NotNull final Function<? super V, ? extends V> function) {
-    fail();
+    fail("compute");
   }
 
   @Override
@@ -63,6 +63,6 @@ abstract class ReadOnlyStreamGroupFuture<V, F extends SignalFuture<V>> extends
 
   @Override
   public void setBulk(@NotNull final V... values) {
-    fail();
+    fail("setBulk");
   }
 }

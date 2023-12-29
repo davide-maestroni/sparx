@@ -29,16 +29,14 @@ class WorkerTimeoutAlert implements SchedulerWorkerAlert, Runnable {
 
   private final ScheduledFuture<?> future;
   private final Object mutex = new Object();
-  private final Object tag;
   private final long timeout;
   private final long timeoutMillis;
   private final TimeUnit timeoutUnit;
   private final WeakHashMap<Thread, Long> timestamps = new WeakHashMap<Thread, Long>();
 
-  WorkerTimeoutAlert(final Object tag, @NotNull final ScheduledExecutorService executorService,
+  WorkerTimeoutAlert(@NotNull final ScheduledExecutorService executorService,
       final long interval, @NotNull final TimeUnit intervalUnit, final long timeout,
       @NotNull final TimeUnit timeoutUnit) {
-    this.tag = tag;
     this.timeout = timeout;
     this.timeoutUnit = timeoutUnit;
     this.timeoutMillis = timeoutUnit.toMillis(Requires.positive(timeout, "timeout"));
@@ -77,7 +75,7 @@ class WorkerTimeoutAlert implements SchedulerWorkerAlert, Runnable {
       }
     }
     for (final Entry<Thread, Long> entry : timeouts.entrySet()) {
-      Log.wrn(tag,
+      Log.wrn(SchedulerWorkerAlert.class,
           "Tasks on thread %s is taking too long: timeout was %d %s but task is still running after %d %s!",
           entry.getKey(), timeout, timeoutUnit, now - entry.getValue(), TimeUnit.MILLISECONDS);
     }

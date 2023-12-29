@@ -47,7 +47,7 @@ import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
 import sparx.util.Requires;
 
-public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> implements
+public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {
 
   private static final JoinAlert joinAlert = Alerts.joinAlert();
@@ -74,28 +74,28 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
   private volatile StreamingFuture<V> readonly;
   private volatile Result<V> result;
 
-  public static @NotNull <V> OpenFuture<V> create() {
-    return new OpenFuture<V>();
+  public static @NotNull <V> VarFuture<V> create() {
+    return new VarFuture<V>();
   }
 
-  public static @NotNull <V> OpenFuture<V> create(
+  public static @NotNull <V> VarFuture<V> create(
       @NotNull final HistoryStrategy<V> historyStrategy) {
-    return new OpenFuture<V>(historyStrategy);
+    return new VarFuture<V>(historyStrategy);
   }
 
   private static void logInvocationException(final String name, final String method,
       final Exception e) {
-    Log.err(OpenFuture.class, "Failed to invoke %s '%s' method: %s", name, method,
+    Log.err(VarFuture.class, "Failed to invoke %s '%s' method: %s", name, method,
         Log.printable(e));
   }
 
 
   @SuppressWarnings("unchecked")
-  OpenFuture() {
+  VarFuture() {
     this((HistoryStrategy<V>) NO_HISTORY);
   }
 
-  OpenFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
+  VarFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
     this.historyStrategy = Requires.notNull(historyStrategy, "historyStrategy");
     this.registration = FutureGroup.currentGroup().onCreate(this);
   }
@@ -246,7 +246,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
     }
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
-    final JoinAlert joinAlert = OpenFuture.joinAlert;
+    final JoinAlert joinAlert = VarFuture.joinAlert;
     joinAlert.notifyJoinStart();
     try {
       task.acquire();
@@ -265,7 +265,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
     }
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
-    final JoinAlert joinAlert = OpenFuture.joinAlert;
+    final JoinAlert joinAlert = VarFuture.joinAlert;
     joinAlert.notifyJoinStart();
     try {
       if (!task.tryAcquire(timeout, unit)) {
@@ -466,7 +466,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
-      final JoinAlert joinAlert = OpenFuture.joinAlert;
+      final JoinAlert joinAlert = VarFuture.joinAlert;
       while (remainingTime > 0) {
         if (!queue.isEmpty()) {
           return true;
@@ -498,7 +498,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
-      final JoinAlert joinAlert = OpenFuture.joinAlert;
+      final JoinAlert joinAlert = VarFuture.joinAlert;
       while (true) {
         if (!queue.isEmpty()) {
           return true;
@@ -539,7 +539,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
-        final JoinAlert joinAlert = OpenFuture.joinAlert;
+        final JoinAlert joinAlert = VarFuture.joinAlert;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
             return true;
@@ -577,7 +577,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
-        final JoinAlert joinAlert = OpenFuture.joinAlert;
+        final JoinAlert joinAlert = VarFuture.joinAlert;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
             return true;
@@ -668,7 +668,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
 
     @Override
     public void cancel() {
-      OpenFuture.this.unsubscribe(receiver);
+      VarFuture.this.unsubscribe(receiver);
     }
   }
 
@@ -678,32 +678,32 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
 
     @Override
     public boolean fail(@NotNull final Exception error) {
-      Log.dbg(OpenFuture.class, "Ignoring 'fail' operation: future is already closed");
+      Log.dbg(VarFuture.class, "Ignoring 'fail' operation: future is already closed");
       return false;
     }
 
     @Override
     public void set(final V value) {
-      Log.dbg(OpenFuture.class, "Ignoring 'set' operation: future is already closed");
+      Log.dbg(VarFuture.class, "Ignoring 'set' operation: future is already closed");
     }
 
     @Override
     public void setBulk(@NotNull final Collection<V> values) {
-      Log.dbg(OpenFuture.class, "Ignoring 'setBulk' operation: future is already closed");
+      Log.dbg(VarFuture.class, "Ignoring 'setBulk' operation: future is already closed");
     }
 
     @Override
     public void close() {
-      Log.dbg(OpenFuture.class, "Ignoring 'close' operation: future is already closed");
+      Log.dbg(VarFuture.class, "Ignoring 'close' operation: future is already closed");
     }
 
     void clear() {
-      Log.dbg(OpenFuture.class, "Ignoring 'clear' operation: future is already closed");
+      Log.dbg(VarFuture.class, "Ignoring 'clear' operation: future is already closed");
     }
 
     void compute(@NotNull final Group group,
         @NotNull final Function<? super V, ? extends V> function) {
-      Log.dbg(OpenFuture.class, "Ignoring 'compute' operation: future is already closed");
+      Log.dbg(VarFuture.class, "Ignoring 'compute' operation: future is already closed");
     }
 
     void get(@NotNull final Semaphore semaphore) {
@@ -821,8 +821,8 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
       } else {
         result = new FailureResult<V>(error);
       }
-      final WeakHashMap<FutureIterator<V>, Void> iterators = OpenFuture.this.iterators;
-      final WeakHashMap<Semaphore, Void> semaphores = OpenFuture.this.semaphores;
+      final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
+      final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
       if (isUncaught()) {
         for (final FutureIterator<V> futureIterator : iterators.keySet()) {
           futureIterator.fail(error);
@@ -834,7 +834,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
         semaphores.clear();
         registration.onUncaughtError(error);
       } else {
-        final HashMap<Receiver<?>, GroupReceiver<V>> receivers = OpenFuture.this.receivers;
+        final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
         for (final GroupReceiver<V> groupReceiver : receivers.values()) {
           try {
             groupReceiver.fail(error);
@@ -931,7 +931,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
       } catch (final RuntimeException e) {
         logInvocationException("history strategy", "onClose", e);
       }
-      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = OpenFuture.this.receivers;
+      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
       for (final GroupReceiver<V> groupReceiver : receivers.values()) {
         try {
           groupReceiver.close();
@@ -941,12 +941,12 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
         groupReceiver.onUnsubscribe();
       }
       receivers.clear();
-      final WeakHashMap<FutureIterator<V>, Void> iterators = OpenFuture.this.iterators;
+      final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
       for (final FutureIterator<V> futureIterator : iterators.keySet()) {
         futureIterator.end();
       }
       iterators.clear();
-      final WeakHashMap<Semaphore, Void> semaphores = OpenFuture.this.semaphores;
+      final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
       for (final Semaphore semaphore : semaphores.keySet()) {
         semaphore.release();
       }
@@ -978,7 +978,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
               try {
                 lastValue = function.apply((V) lastValue);
               } catch (final Exception e) {
-                Log.err(OpenFuture.class, "Failed to compute next value: %s", Log.printable(e));
+                Log.err(VarFuture.class, "Failed to compute next value: %s", Log.printable(e));
                 innerStatus.fail(e);
               }
               scheduler.resume();
@@ -1010,7 +1010,7 @@ public class OpenFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> impl
     @SuppressWarnings("unchecked")
     void subscribe(@NotNull final Receiver<V> receiver,
         @NotNull final GroupReceiver<V> groupReceiver) {
-      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = OpenFuture.this.receivers;
+      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
       if (!receivers.containsKey(receiver)) {
         super.subscribe(receiver, groupReceiver);
         if (lastValue != UNSET) {

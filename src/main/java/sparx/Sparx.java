@@ -5,18 +5,18 @@ import sparx.concurrent.CoupleFuture;
 import sparx.concurrent.SingleFuture;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TripleFuture;
-import sparx.concurrent.OpenFuture;
-import sparx.concurrent.OpenFuture.HistoryStrategy;
+import sparx.concurrent.VarFuture;
+import sparx.concurrent.VarFuture.HistoryStrategy;
 
 public class Sparx {
 
   public static @NotNull <V> StreamingFuture<V> future() {
-    return OpenFuture.create();
+    return VarFuture.create();
   }
 
   public static @NotNull <V> StreamingFuture<V> future(
       @NotNull final HistoryStrategy<V> historyStrategy) {
-    return OpenFuture.create(historyStrategy);
+    return VarFuture.create(historyStrategy);
   }
 
   public static @NotNull <V> SingleFuture<V> tupleFuture(@NotNull StreamingFuture<V> first) {

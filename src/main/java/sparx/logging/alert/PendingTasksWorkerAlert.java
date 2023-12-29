@@ -21,18 +21,17 @@ import sparx.util.Requires;
 class PendingTasksWorkerAlert implements SchedulerQueueAlert {
 
   private final int maxTasksCount;
-  private final Object tag;
 
-  PendingTasksWorkerAlert(final Object tag, final int maxTasksCount) {
+  PendingTasksWorkerAlert(final int maxTasksCount) {
     this.maxTasksCount = Requires.positive(maxTasksCount, "maxTasksCount");
-    this.tag = tag;
   }
 
   @Override
   public void notifyPendingTasks(final int beforeQueueCount, final int afterQueueCount) {
     final int count = afterQueueCount - beforeQueueCount;
     if (count > maxTasksCount) {
-      Log.wrn(tag, "Pending tasks count exceeded the limit of %d: %d!", maxTasksCount, count);
+      Log.wrn(SchedulerQueueAlert.class, "Pending tasks count exceeded the limit of %d: %d!",
+          maxTasksCount, count);
     }
   }
 }

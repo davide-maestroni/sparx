@@ -33,15 +33,15 @@ import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
 import sparx.util.Requires;
 
-public abstract class ClosedFuture<V> extends
+public abstract class ValFuture<V> extends
     ReadOnlyStreamGroupFuture<V, StreamingFuture<V>> implements StreamingFuture<V> {
 
   @SuppressWarnings("unchecked")
-  public static @NotNull <V> ClosedFuture<V> of() {
-    return (ClosedFuture<V>) ValuesFuture.EMPTY_FUTURE;
+  public static @NotNull <V> ValFuture<V> of() {
+    return (ValFuture<V>) ValuesFuture.EMPTY_FUTURE;
   }
 
-  public static @NotNull <V> ClosedFuture<V> of(final V value) {
+  public static @NotNull <V> ValFuture<V> of(final V value) {
     return new ValuesFuture<V>(singletonList(value)) {
       @Override
       public V getCurrent() {
@@ -55,7 +55,7 @@ public abstract class ClosedFuture<V> extends
     };
   }
 
-  public static @NotNull <V> ClosedFuture<V> ofBulk(@NotNull final Collection<V> values) {
+  public static @NotNull <V> ValFuture<V> ofBulk(@NotNull final Collection<V> values) {
     if (values.isEmpty()) {
       return of();
     } else if (values.size() == 1) {
@@ -64,7 +64,7 @@ public abstract class ClosedFuture<V> extends
     return new ValuesFuture<V>(ImmutableList.ofElementsIn(values));
   }
 
-  public static @NotNull <V> ClosedFuture<V> ofBulk(@NotNull final V... values) {
+  public static @NotNull <V> ValFuture<V> ofBulk(@NotNull final V... values) {
     if (values.length == 0) {
       return of();
     } else if (values.length == 1) {
@@ -73,15 +73,15 @@ public abstract class ClosedFuture<V> extends
     return new ValuesFuture<V>(ImmutableList.of(values));
   }
 
-  public static @NotNull <V> ClosedFuture<V> ofFailure(@NotNull final Exception error) {
+  public static @NotNull <V> ValFuture<V> ofFailure(@NotNull final Exception error) {
     return new FailureFuture<V>(Requires.notNull(error, "error"));
   }
 
-  private ClosedFuture() {
+  private ValFuture() {
   }
 
   @Override
-  public @NotNull ClosedFuture<V> readOnly() {
+  public @NotNull ValFuture<V> readOnly() {
     return this;
   }
 
@@ -125,7 +125,7 @@ public abstract class ClosedFuture<V> extends
     return get();
   }
 
-  private static class FailureFuture<V> extends ClosedFuture<V> {
+  private static class FailureFuture<V> extends ValFuture<V> {
 
     private final Exception error;
     private final FailureIterator<V> iterator;
@@ -150,7 +150,7 @@ public abstract class ClosedFuture<V> extends
       try {
         receiver.fail(error);
       } catch (final RuntimeException e) {
-        Log.err(ClosedFuture.class, "Uncaught exception: %s", Log.printable(e));
+        Log.err(ValFuture.class, "Uncaught exception: %s", Log.printable(e));
       }
       return DummySubscription.instance();
     }
@@ -163,7 +163,7 @@ public abstract class ClosedFuture<V> extends
         try {
           onErrorConsumer.accept(error);
         } catch (final Exception e) {
-          Log.err(ClosedFuture.class, "Uncaught exception: %s", Log.printable(e));
+          Log.err(ValFuture.class, "Uncaught exception: %s", Log.printable(e));
         }
       }
       return DummySubscription.instance();
@@ -214,7 +214,7 @@ public abstract class ClosedFuture<V> extends
     }
   }
 
-  private static class ValuesFuture<V> extends ClosedFuture<V> {
+  private static class ValuesFuture<V> extends ValFuture<V> {
 
     private static final ValuesFuture<?> EMPTY_FUTURE = new ValuesFuture<Object>(emptyList()) {
 
@@ -233,7 +233,7 @@ public abstract class ClosedFuture<V> extends
         try {
           receiver.close();
         } catch (final RuntimeException e) {
-          Log.err(ClosedFuture.class, "Uncaught exception: %s", Log.printable(e));
+          Log.err(ValFuture.class, "Uncaught exception: %s", Log.printable(e));
         }
         return DummySubscription.instance();
       }
@@ -248,7 +248,7 @@ public abstract class ClosedFuture<V> extends
           try {
             onCloseAction.run();
           } catch (final Exception e) {
-            Log.err(ClosedFuture.class, "Uncaught exception: %s", Log.printable(e));
+            Log.err(ValFuture.class, "Uncaught exception: %s", Log.printable(e));
           }
         }
         return DummySubscription.instance();
@@ -289,7 +289,7 @@ public abstract class ClosedFuture<V> extends
         }
         receiver.close();
       } catch (final RuntimeException e) {
-        Log.err(ClosedFuture.class, "Uncaught exception: %s", Log.printable(e));
+        Log.err(ValFuture.class, "Uncaught exception: %s", Log.printable(e));
       }
       return DummySubscription.instance();
     }

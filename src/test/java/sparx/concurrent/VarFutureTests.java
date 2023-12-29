@@ -31,10 +31,10 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import sparx.concurrent.OpenFuture.HistoryStrategy;
+import sparx.concurrent.VarFuture.HistoryStrategy;
 import sparx.config.SparxConfig;
 
-public class OpenFutureTests {
+public class VarFutureTests {
 
   @BeforeAll
   public static void init() {
@@ -49,8 +49,8 @@ public class OpenFutureTests {
   @Test
   @SuppressWarnings({"DataFlowIssue", "resource"})
   public void futureCreate() {
-    assertThrows(NullPointerException.class, () -> OpenFuture.create(null));
-    var future = OpenFuture.<String>create();
+    assertThrows(NullPointerException.class, () -> VarFuture.create(null));
+    var future = VarFuture.<String>create();
     assertFalse(future.isReadOnly());
     assertFalse(future.isCancelled());
     assertFalse(future.isDone());
@@ -58,7 +58,7 @@ public class OpenFutureTests {
     assertFalse(future.isReadOnly());
     assertFalse(future.isCancelled());
     assertTrue(future.isDone());
-    future = OpenFuture.create(new HistoryStrategy<>() {
+    future = VarFuture.create(new HistoryStrategy<>() {
       @Override
       public void onClear() {
       }
@@ -91,7 +91,7 @@ public class OpenFutureTests {
 
   @Test
   public void futureClear() {
-    try (var future = OpenFuture.<String>create()) {
+    try (var future = VarFuture.<String>create()) {
       future.clear();
       future.set("hello");
 
@@ -125,7 +125,7 @@ public class OpenFutureTests {
   @Test
   @SuppressWarnings("DataFlowIssue")
   public void futureCompute() {
-    try (var future = OpenFuture.<String>create()) {
+    try (var future = VarFuture.<String>create()) {
       future.set("hello");
       assertThrows(NullPointerException.class, () -> future.compute(null));
       future.compute(s -> s + " test");
@@ -143,7 +143,7 @@ public class OpenFutureTests {
 
   @Test
   public void futureReadOnly() {
-    try (var future = OpenFuture.<String>create()) {
+    try (var future = VarFuture.<String>create()) {
       assertFalse(future.isReadOnly());
       var readOnly = future.readOnly();
       assertNotEquals(readOnly, future);
@@ -154,7 +154,7 @@ public class OpenFutureTests {
 
   @Test
   public void futureSubscribe() {
-    try (var future = OpenFuture.<String>create()) {
+    try (var future = VarFuture.<String>create()) {
       future.set("1");
       var value1 = new AtomicReference<String>();
       var sub1 = future.subscribe(value1::set, null, null, null);
@@ -192,7 +192,7 @@ public class OpenFutureTests {
 
   @Test
   public void futureSet() {
-    try (var future = OpenFuture.<String>create()) {
+    try (var future = VarFuture.<String>create()) {
       assertThrows(NoSuchElementException.class, future::getCurrent);
       assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
       assertThrows(UncheckedTimeoutException.class,
@@ -221,7 +221,7 @@ public class OpenFutureTests {
 
   @Test
   public void futureSetBulk() {
-    try (var future = OpenFuture.<String>create()) {
+    try (var future = VarFuture.<String>create()) {
       assertThrows(NoSuchElementException.class, future::getCurrent);
       assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
       assertThrows(UncheckedTimeoutException.class,
@@ -250,7 +250,7 @@ public class OpenFutureTests {
 
   @Test
   public void futureFail() {
-    try (var future = OpenFuture.<String>create()) {
+    try (var future = VarFuture.<String>create()) {
       future.set("hello");
       future.fail(new IllegalAccessException());
       assertThrows(NoSuchElementException.class, future::getCurrent);
@@ -283,7 +283,7 @@ public class OpenFutureTests {
 
   @Test
   public void futureIteratorSetBulk() {
-    var future = OpenFuture.<String>create();
+    var future = VarFuture.<String>create();
     var timeoutIterator = future.iterator(100, TimeUnit.MILLISECONDS);
     var indefiniteIterator = future.iterator();
     future.setBulk("hello", "test");
@@ -318,7 +318,7 @@ public class OpenFutureTests {
 
   @Test
   public void liveIteratorIndefinite() {
-    var future = OpenFuture.<String>create();
+    var future = VarFuture.<String>create();
     var iterator = future.iterator();
     assertThrows(UncheckedTimeoutException.class,
         () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
@@ -352,7 +352,7 @@ public class OpenFutureTests {
 
   @Test
   public void liveIterator() {
-    var future = OpenFuture.<String>create();
+    var future = VarFuture.<String>create();
     var iterator = future.iterator(1, TimeUnit.MINUTES);
     assertThrows(UncheckedTimeoutException.class,
         () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
@@ -386,7 +386,7 @@ public class OpenFutureTests {
 
   @Test
   public void liveIteratorTimeout() {
-    var future = OpenFuture.<String>create();
+    var future = VarFuture.<String>create();
     var iterator = future.iterator(40, TimeUnit.MILLISECONDS);
     assertThrows(UncheckedTimeoutException.class,
         () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));

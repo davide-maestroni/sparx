@@ -1,7 +1,10 @@
 package sparx.config;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collection;
 import java.util.HashSet;
@@ -13,14 +16,14 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.concurrent.ClosedFuture;
+import sparx.concurrent.ValFuture;
 import sparx.concurrent.ExecutorContext;
 import sparx.concurrent.LogCollectorFuture;
+import sparx.concurrent.VarFuture;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TripleFuture;
 import sparx.concurrent.UncheckedInterruptedException;
-import sparx.concurrent.OpenFuture;
 import sparx.function.Consumer;
 import sparx.logging.Log;
 import sparx.logging.Log.LogCollector;
@@ -66,7 +69,30 @@ public class SparxConfig {
       }
     }
     throw new ExceptionInInitializerError(
-        "Could not find the config file in the following locations: " + CONFIG_LOCATIONS);
+        "Could not find any config file in the following locations: " + CONFIG_LOCATIONS);
+  }
+
+  public static void initFromConfigFile(@NotNull final String filePath) {
+    final File file = new File(filePath);
+    if (file.exists()) {
+      initFromConfigFile(file.toURI());
+    } else {
+      final URL fileUrl = SparxConfig.class.getClassLoader().getResource(filePath);
+      if (fileUrl != null) {
+        initFromConfigFile(fileUrl);
+      } else {
+        throw new ExceptionInInitializerError(
+            "Could not find any config file in the following location: " + filePath);
+      }
+    }
+  }
+
+  public static void initFromConfigFile(@NotNull final URI fileUri) {
+    try {
+      initFromConfigFile(fileUri.toURL());
+    } catch (final MalformedURLException e) {
+      throw new ExceptionInInitializerError(e);
+    }
   }
 
   public static void initFromConfigFile(@NotNull final URL fileUrl) {
@@ -133,10 +159,10 @@ public class SparxConfig {
                   }
                   executors.add(executor);
                   for (final String printerName : printerNames) {
-                    final OpenFuture<Nothing> ready = OpenFuture.create();
+                    final VarFuture<Nothing> ready = VarFuture.create();
                     ExecutorContext.of(executor)
                         .run(TripleFuture.of(future, ready,
-                                ClosedFuture.of(Tuples.asTuple(printerName, properties))),
+                                ValFuture.of(Tuples.asTuple(printerName, properties))),
                             new Consumer<TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>>>() {
                               @Override
                               public void accept(

@@ -196,13 +196,13 @@ public class Alerts {
       }
       ++enabledServiceClients;
       backpressureAlert.turnOff();
-      backpressureAlert = new WaitTimeoutAlert(Alerts.class, alertsExecutorService, interval,
+      backpressureAlert = new WaitTimeoutAlert(alertsExecutorService, interval,
           intervalUnit, timeout, timeoutUnit);
     }
   }
 
   public static void enableExecutionContextTaskAlert() {
-    executionContextTaskAlert = new SerializableTaskAlert(Alerts.class);
+    executionContextTaskAlert = new SerializableTaskAlert();
   }
 
   public static void enableJoinAlert(final long interval,
@@ -214,13 +214,13 @@ public class Alerts {
       }
       ++enabledServiceClients;
       joinAlert.turnOff();
-      joinAlert = new AcquireTimeoutAlert(Alerts.class, alertsExecutorService, interval,
+      joinAlert = new AcquireTimeoutAlert(alertsExecutorService, interval,
           intervalUnit, timeout, timeoutUnit);
     }
   }
 
   public static void enableSchedulerQueueAlert(final int maxCount) {
-    queueAlert = new PendingTasksWorkerAlert(Alerts.class, maxCount);
+    queueAlert = new PendingTasksWorkerAlert(maxCount);
   }
 
   public static void enableSchedulerWorkerAlert(final long interval,
@@ -232,7 +232,7 @@ public class Alerts {
       }
       ++enabledServiceClients;
       workerAlert.turnOff();
-      workerAlert = new WorkerTimeoutAlert(Alerts.class, alertsExecutorService, interval,
+      workerAlert = new WorkerTimeoutAlert(alertsExecutorService, interval,
           intervalUnit, timeout, timeoutUnit);
     }
   }

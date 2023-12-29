@@ -68,7 +68,7 @@ public class DecoratedFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>>
   }
 
   @Override
-  public void setBulk(final V... values) {
+  public void setBulk(@NotNull final V... values) {
     wrapped.setBulk(values);
   }
 

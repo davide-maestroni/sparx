@@ -23,28 +23,25 @@ import sparx.logging.Log;
 
 class SerializableTaskAlert implements ExecutionContextTaskAlert {
 
-  private static void checkConstructors(final Object tag, @NotNull final Class<?> taskClass) {
+  private static void checkConstructors(@NotNull final Class<?> taskClass) {
     final Constructor<?>[] constructors = taskClass.getConstructors();
     if (constructors.length != 1 || constructors[0].getParameterTypes().length != 0) {
-      Log.wrn(tag,
+      Log.wrn(ExecutionContextTaskAlert.class,
           "Execution context task might not be serializable, only one default constructor should be declared: %s",
           taskClass);
     }
   }
 
-  private final Object tag;
-
-  SerializableTaskAlert(final Object tag) {
-    this.tag = tag;
+  SerializableTaskAlert() {
   }
 
   @Override
   public void notifyCall(@NotNull final Function<?, ?> function) {
-    checkConstructors(tag, function.getClass());
+    checkConstructors(function.getClass());
   }
 
   @Override
   public void notifyRun(@NotNull final Consumer<?> consumer) {
-    checkConstructors(tag, consumer.getClass());
+    checkConstructors(consumer.getClass());
   }
 }

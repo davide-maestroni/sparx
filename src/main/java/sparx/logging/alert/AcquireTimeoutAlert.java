@@ -29,14 +29,12 @@ class AcquireTimeoutAlert implements JoinAlert, Runnable {
 
   private final ScheduledFuture<?> future;
   private final Object mutex = new Object();
-  private final Object tag;
   private final long timeoutMillis;
   private final WeakHashMap<Thread, Long> timestamps = new WeakHashMap<Thread, Long>();
 
-  AcquireTimeoutAlert(final Object tag, @NotNull final ScheduledExecutorService executorService,
+  AcquireTimeoutAlert(@NotNull final ScheduledExecutorService executorService,
       final long interval, @NotNull final TimeUnit intervalUnit, final long timeout,
       @NotNull final TimeUnit timeoutUnit) {
-    this.tag = tag;
     this.timeoutMillis = timeoutUnit.toMillis(Requires.positive(timeout, "timeout"));
     this.future = executorService.scheduleAtFixedRate(this, interval, interval, intervalUnit);
   }
@@ -73,7 +71,7 @@ class AcquireTimeoutAlert implements JoinAlert, Runnable {
       }
     }
     for (final Entry<Thread, Long> entry : timeouts.entrySet()) {
-      Log.wrn(tag, "Join on thread %s is taking too long: still waiting after %d %s!",
+      Log.wrn(JoinAlert.class, "Join on thread %s is taking too long: still waiting after %d %s!",
           entry.getKey(), now - entry.getValue(), TimeUnit.MILLISECONDS);
     }
   }

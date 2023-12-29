@@ -43,7 +43,7 @@ class StandardGroupReceiver<V> implements GroupReceiver<V> {
 
   @Override
   public void onUncaughtError(@NotNull final Exception error) {
-    Log.err(GroupReceiver.class,
+    Log.err(FutureGroup.class,
         "Uncaught exception, the throwing receiver will be automatically unsubscribed: %s",
         Log.printable(error));
     future.unsubscribe(receiver);
