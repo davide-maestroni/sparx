@@ -28,19 +28,18 @@ public class SharedTimer {
 
   private static final Object mutex = new Object();
   private static int sharedCount = 0;
-  private static ScheduledExecutorService sharedService;
+  private static ScheduledExecutorService executorService;
 
-  private final ScheduledExecutorService executorService;
   private final AtomicBoolean released = new AtomicBoolean(false);
 
   public static @NotNull SharedTimer acquire() {
     synchronized (mutex) {
       if (sharedCount == 0) {
-        sharedService = createsExecutorService();
+        executorService = createsExecutorService();
       }
       ++sharedCount;
     }
-    return new SharedTimer(sharedService);
+    return new SharedTimer();
   }
 
   private static @NotNull ScheduledExecutorService createsExecutorService() {
@@ -55,19 +54,36 @@ public class SharedTimer {
         });
   }
 
-  private SharedTimer(@NotNull final ScheduledExecutorService executorService) {
-    this.executorService = executorService;
+  private SharedTimer() {
   }
 
   public void release() {
-    released.set(true);
-    synchronized (mutex) {
-      if (--sharedCount == 0) {
-        // TODO: schedule shutdown (after 10 seconds?)
-        sharedService.shutdownNow();
+    if (released.compareAndSet(false, true)) {
+      synchronized (mutex) {
+        if (--sharedCount == 0) {
+          // defer shutdown to avoid destroying and re-creating threads too frequently
+          executorService.schedule(new Runnable() {
+            @Override
+            public void run() {
+              synchronized (mutex) {
+                if (sharedCount == 0) {
+                  executorService.shutdownNow();
+                  executorService = null;
+                }
+              }
+            }
+          }, 10, TimeUnit.SECONDS);
+        }
       }
-      sharedService = null;
     }
+  }
+
+  public @NotNull ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
+      @NotNull final TimeUnit unit) {
+    if (released.get()) {
+      throw new RejectedExecutionException("Timer already released");
+    }
+    return executorService.schedule(command, delay, unit);
   }
 
   public @NotNull ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
