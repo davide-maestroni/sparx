@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class UncheckedException extends RuntimeException {
 
-  public static void throwUnchecked(final Throwable error) {
+  public static @NotNull RuntimeException throwUnchecked(final Throwable error) {
     if (error instanceof InterruptedException) {
       throw new UncheckedInterruptedException((InterruptedException) error);
     } else if (error instanceof TimeoutException) {
@@ -37,9 +37,6 @@ public class UncheckedException extends RuntimeException {
   public static @NotNull UncheckedException toUnchecked(final Throwable error) {
     return (error instanceof UncheckedException) ? (UncheckedException) error
         : new UncheckedException(error);
-  }
-
-  public UncheckedException() {
   }
 
   public UncheckedException(final Throwable cause) {

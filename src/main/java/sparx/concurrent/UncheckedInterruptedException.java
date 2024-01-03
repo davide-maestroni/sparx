@@ -15,7 +15,7 @@
  */
 package sparx.concurrent;
 
-public class UncheckedInterruptedException extends UncheckedException {
+public class UncheckedInterruptedException extends RuntimeException {
 
   public UncheckedInterruptedException(final InterruptedException cause) {
     super(cause);
