@@ -143,7 +143,7 @@ public class SchedulerBak {
           task.run();
         } catch (final Throwable t) {
           Log.err(SchedulerBak.class, "Uncaught exception: %s", Log.printable(t));
-          UncheckedException.throwUnchecked(t);
+          throw UncheckedException.throwUnchecked(t);
         }
       }
     }
@@ -176,7 +176,7 @@ public class SchedulerBak {
         task.run();
       } catch (final Throwable t) {
         Log.err(SchedulerBak.class, "Uncaught exception: %s", Log.printable(t));
-        UncheckedException.throwUnchecked(t);
+        throw UncheckedException.throwUnchecked(t);
       }
       executor.execute(this);
     }
@@ -215,7 +215,7 @@ public class SchedulerBak {
           task.run();
         } catch (final Throwable t) {
           Log.err(SchedulerBak.class, "Uncaught exception: %s", Log.printable(t));
-          UncheckedException.throwUnchecked(t);
+          throw UncheckedException.throwUnchecked(t);
         }
       }
 

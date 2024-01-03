@@ -79,7 +79,7 @@ class FunctionalReceiver<V> implements Receiver<V> {
     try {
       onCloseAction.run();
     } catch (final Exception e) {
-      UncheckedException.throwUnchecked(e);
+      throw UncheckedException.throwUnchecked(e);
     }
   }
 
@@ -89,9 +89,8 @@ class FunctionalReceiver<V> implements Receiver<V> {
       onErrorConsumer.accept(error);
       return true;
     } catch (final Exception e) {
-      UncheckedException.throwUnchecked(e);
+      throw UncheckedException.throwUnchecked(e);
     }
-    return false;
   }
 
   @Override
@@ -99,7 +98,7 @@ class FunctionalReceiver<V> implements Receiver<V> {
     try {
       onValueConsumer.accept(value);
     } catch (final Exception e) {
-      UncheckedException.throwUnchecked(e);
+      throw UncheckedException.throwUnchecked(e);
     }
   }
 
@@ -108,7 +107,7 @@ class FunctionalReceiver<V> implements Receiver<V> {
     try {
       onValuesConsumer.accept(values);
     } catch (final Exception e) {
-      UncheckedException.throwUnchecked(e);
+      throw UncheckedException.throwUnchecked(e);
     }
   }
 }

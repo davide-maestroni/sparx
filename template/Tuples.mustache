@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-////
-// WARNING: GENERATED CODE - DO NOT MODIFY!!
-////
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 package sparx.tuple;
 
 import org.jetbrains.annotations.NotNull;

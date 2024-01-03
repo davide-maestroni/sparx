@@ -168,6 +168,22 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
     }
   }
 
+  private static class TupleSubscription implements Subscription {
+
+    private final Collection<Subscription> subscriptions;
+
+    private TupleSubscription(@NotNull final Collection<Subscription> subscriptions) {
+      this.subscriptions = subscriptions;
+    }
+
+    @Override
+    public void cancel() {
+      for (final Subscription subscription : subscriptions) {
+        subscription.cancel();
+      }
+    }
+  }
+
   private class IndefiniteIterator implements LiveIterator<Nothing> {
 
     @Override
@@ -179,7 +195,7 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
           future.get(timeoutMillis, TimeUnit.MILLISECONDS);
           timeoutMillis -= System.currentTimeMillis() - start;
         } catch (final Exception e) {
-          UncheckedException.throwUnchecked(e);
+          throw UncheckedException.throwUnchecked(e);
         }
       }
       return false;
@@ -196,7 +212,7 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
         try {
           future.get();
         } catch (final Exception e) {
-          UncheckedException.throwUnchecked(e);
+          throw UncheckedException.throwUnchecked(e);
         }
       }
       return false;
@@ -233,7 +249,7 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
             future.get(timeoutMillis, TimeUnit.MILLISECONDS);
             timeoutMillis -= System.currentTimeMillis() - start;
           } catch (final Exception e) {
-            UncheckedException.throwUnchecked(e);
+            throw UncheckedException.throwUnchecked(e);
           }
         }
       } finally {
@@ -258,7 +274,7 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
             future.get(timeoutMillis, TimeUnit.MILLISECONDS);
             timeoutMillis -= System.currentTimeMillis() - start;
           } catch (final Exception e) {
-            UncheckedException.throwUnchecked(e);
+            throw UncheckedException.throwUnchecked(e);
           }
         }
       } finally {
@@ -275,22 +291,6 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
     @Override
     public void remove() {
       throw new UnsupportedOperationException("remove");
-    }
-  }
-
-  private class TupleSubscription implements Subscription {
-
-    private final Collection<Subscription> subscriptions;
-
-    private TupleSubscription(@NotNull final Collection<Subscription> subscriptions) {
-      this.subscriptions = subscriptions;
-    }
-
-    @Override
-    public void cancel() {
-      for (final Subscription subscription : subscriptions) {
-        subscription.cancel();
-      }
     }
   }
 }

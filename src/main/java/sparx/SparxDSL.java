@@ -214,7 +214,7 @@ public class SparxDSL {
             try {
               future.set(function.apply(value));
             } catch (final Exception e) {
-              UncheckedException.throwUnchecked(e);
+              throw UncheckedException.throwUnchecked(e);
             }
           }
 
@@ -227,7 +227,7 @@ public class SparxDSL {
               }
               future.setBulk(outputs);
             } catch (final Exception e) {
-              UncheckedException.throwUnchecked(e);
+              throw UncheckedException.throwUnchecked(e);
             }
           }
 
@@ -261,7 +261,7 @@ public class SparxDSL {
             try {
               accumulated = function.apply(accumulated, value);
             } catch (final Exception e) {
-              UncheckedException.throwUnchecked(e);
+              throw UncheckedException.throwUnchecked(e);
             }
           }
 
@@ -272,7 +272,7 @@ public class SparxDSL {
                 accumulated = function.apply(accumulated, value);
               }
             } catch (final Exception e) {
-              UncheckedException.throwUnchecked(e);
+              throw UncheckedException.throwUnchecked(e);
             }
           }
 

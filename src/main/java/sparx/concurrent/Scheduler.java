@@ -293,7 +293,7 @@ public class Scheduler {
             workerAlert.notifyTaskStop(currentThread);
           }
           Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
-          UncheckedException.throwUnchecked(t);
+          throw UncheckedException.throwUnchecked(t);
         }
       }
     }
@@ -337,7 +337,7 @@ public class Scheduler {
         task.run();
       } catch (final Throwable t) {
         Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
-        UncheckedException.throwUnchecked(t);
+        throw UncheckedException.throwUnchecked(t);
       } finally {
         synchronized (mutex) {
           runningTask = null;
@@ -401,7 +401,7 @@ public class Scheduler {
             workerAlert.notifyTaskStop(currentThread);
           }
           Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
-          UncheckedException.throwUnchecked(t);
+          throw UncheckedException.throwUnchecked(t);
         }
       }
 
