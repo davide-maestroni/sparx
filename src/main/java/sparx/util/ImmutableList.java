@@ -105,6 +105,10 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
     }
 
     @Override
+    public void clear() {
+    }
+
+    @Override
     public boolean contains(final Object o) {
       return false;
     }
@@ -260,6 +264,12 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
 
   @SuppressWarnings("unchecked")
   public static @NotNull <E> ImmutableList<E> of(@NotNull final E... elements) {
+    if (elements.length == 0) {
+      return (ImmutableList<E>) EMPTY_LIST;
+    }
+    if (elements.length == 1) {
+      return of(elements[0]);
+    }
     return new ImmutableList<E>(
         (E[]) Arrays.copyOf(elements, elements.length, elements.getClass()));
   }
@@ -337,5 +347,10 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
   @Override
   public boolean contains(final Object o) {
     return indexOf(o) >= 0;
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return false;
   }
 }
