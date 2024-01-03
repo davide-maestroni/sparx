@@ -17,10 +17,12 @@ package sparx.concurrent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
@@ -30,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import sparx.concurrent.VarFuture.HistoryStrategy;
@@ -301,6 +304,17 @@ public class VarFutureTests {
           () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
       assertEquals("none", future.getCurrentOr("none"));
 
+      future.setBulk(List.of("test", "test"));
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(ExecutionException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
       future.fail(new IllegalAccessException());
       assertTrue(future.isDone());
       assertFalse(future.isCancelled());
@@ -333,6 +347,29 @@ public class VarFutureTests {
       assertThrows(UncheckedException.class,
           () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
       assertEquals("none", future.getCurrentOr("none"));
+
+      future.subscribe(new Receiver<>() {
+        @Override
+        public void close() {
+          Assertions.fail();
+        }
+
+        @Override
+        public boolean fail(@NotNull final Exception error) {
+          assertInstanceOf(IllegalAccessException.class, error);
+          return false;
+        }
+
+        @Override
+        public void set(final String value) {
+          Assertions.fail();
+        }
+
+        @Override
+        public void setBulk(@NotNull final Collection<String> values) {
+          Assertions.fail();
+        }
+      });
     }
   }
 
@@ -531,6 +568,17 @@ public class VarFutureTests {
           () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
       assertEquals("none", future.getCurrentOr("none"));
 
+      future.setBulk(List.of("test", "test"));
+      assertTrue(future.isDone());
+      assertTrue(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(CancellationException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
       future.fail(new IllegalAccessException());
       assertTrue(future.isDone());
       assertTrue(future.isCancelled());
@@ -563,6 +611,29 @@ public class VarFutureTests {
       assertThrows(UncheckedException.class,
           () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
       assertEquals("none", future.getCurrentOr("none"));
+
+      future.subscribe(new Receiver<>() {
+        @Override
+        public void close() {
+          Assertions.fail();
+        }
+
+        @Override
+        public boolean fail(@NotNull final Exception error) {
+          assertInstanceOf(FutureCancellationException.class, error);
+          return false;
+        }
+
+        @Override
+        public void set(final String value) {
+          Assertions.fail();
+        }
+
+        @Override
+        public void setBulk(@NotNull final Collection<String> values) {
+          Assertions.fail();
+        }
+      });
     }
   }
 
@@ -606,6 +677,15 @@ public class VarFutureTests {
       assertTrue(future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
       assertEquals("hello", future.getCurrentOr("none"));
 
+      future.setBulk(List.of("test", "test"));
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertEquals("hello", future.getCurrent());
+      assertEquals(List.of("hello"), future.get(100, TimeUnit.MILLISECONDS));
+      assertTrue(future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertTrue(future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("hello", future.getCurrentOr("none"));
+
       future.fail(new IllegalAccessException());
       assertTrue(future.isDone());
       assertFalse(future.isCancelled());
@@ -632,6 +712,28 @@ public class VarFutureTests {
       assertTrue(future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
       assertTrue(future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
       assertEquals("hello", future.getCurrentOr("none"));
+
+      future.subscribe(new Receiver<>() {
+        @Override
+        public void close() {
+        }
+
+        @Override
+        public boolean fail(@NotNull final Exception error) {
+          Assertions.fail();
+          return false;
+        }
+
+        @Override
+        public void set(final String value) {
+          assertEquals("hello", value);
+        }
+
+        @Override
+        public void setBulk(@NotNull final Collection<String> values) {
+          Assertions.fail();
+        }
+      });
     }
   }
 }
