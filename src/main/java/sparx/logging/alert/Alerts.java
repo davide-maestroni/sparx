@@ -170,9 +170,8 @@ public class Alerts {
     executionContextTaskAlert = new SerializableTaskAlert();
   }
 
-  public static void enableJoinAlert(final long interval,
-      @NotNull final TimeUnit intervalUnit, final long timeout,
-      @NotNull final TimeUnit timeoutUnit) {
+  public static void enableJoinAlert(final long interval, @NotNull final TimeUnit intervalUnit,
+      final long timeout, @NotNull final TimeUnit timeoutUnit) {
     synchronized (mutex) {
       joinAlert.turnOff();
       joinAlert = new AcquireTimeoutAlert(interval, intervalUnit, timeout, timeoutUnit);

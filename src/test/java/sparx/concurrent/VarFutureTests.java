@@ -32,12 +32,16 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import sparx.concurrent.VarFuture.HistoryStrategy;
+import sparx.config.AlertModule;
+import sparx.config.LogModule;
 import sparx.config.SparxConfig;
 
 public class VarFutureTests {
 
   @BeforeAll
   public static void init() {
+    LogModule.addModule();
+    AlertModule.addModule();
     SparxConfig.initFromConfigFile();
   }
 

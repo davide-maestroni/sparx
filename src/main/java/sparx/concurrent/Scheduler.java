@@ -75,6 +75,11 @@ public class Scheduler {
     return of(synchronousExecutor);
   }
 
+  public static @NotNull Scheduler trampoline(
+      @NotNull final BackpressureStrategy backpressureStrategy) {
+    return of(synchronousExecutor, backpressureStrategy);
+  }
+
   private Scheduler(@NotNull final Executor executor, final int minThroughput) {
     this.executor = Requires.notNull(executor, "executor");
     this.minThroughput = Requires.positive(minThroughput, "minThroughput");

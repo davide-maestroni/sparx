@@ -17,7 +17,6 @@ package sparx.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.FutureGroup.Registration;
-import sparx.logging.Log;
 
 class DummyRegistration implements Registration {
 
@@ -36,7 +35,5 @@ class DummyRegistration implements Registration {
 
   @Override
   public void onUncaughtError(@NotNull final Exception error) {
-    Log.err(FutureGroup.class, "Uncaught exception: %s\nPlease consider handling it in a receiver.",
-        Log.printable(error));
   }
 }

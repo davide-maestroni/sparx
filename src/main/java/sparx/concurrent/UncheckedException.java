@@ -15,12 +15,18 @@ package sparx.concurrent;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.concurrent.TimeoutException;
 import org.jetbrains.annotations.NotNull;
 
 public class UncheckedException extends RuntimeException {
 
   public static void throwUnchecked(final Throwable error) {
-    if (error instanceof RuntimeException) {
+    if (error instanceof InterruptedException) {
+      throw new UncheckedInterruptedException((InterruptedException) error);
+    } else if (error instanceof TimeoutException) {
+      throw new UncheckedTimeoutException((TimeoutException) error);
+    } else if (error instanceof RuntimeException) {
       throw (RuntimeException) error;
     } else if (error instanceof Error) {
       throw (Error) error;
