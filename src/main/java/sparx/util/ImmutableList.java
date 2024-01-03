@@ -29,7 +29,6 @@ import org.jetbrains.annotations.NotNull;
 public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, Serializable {
 
   private static final Iterator<?> EMPTY_ITERATOR = new ListIterator<Object>() {
-
     @Override
     public boolean hasNext() {
       return false;
@@ -105,17 +104,12 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
     }
 
     @Override
-    public void clear() {
-    }
-
-    @Override
-    public boolean contains(final Object o) {
-      return false;
-    }
-
-    @Override
     public int lastIndexOf(final Object o) {
       return -1;
+    }
+
+    @Override
+    public void clear() {
     }
 
     @Override
@@ -128,6 +122,11 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
     @SuppressWarnings("unchecked")
     public @NotNull ListIterator<Object> listIterator() {
       return (ListIterator<Object>) EMPTY_ITERATOR;
+    }
+
+    @Override
+    public boolean contains(final Object o) {
+      return false;
     }
 
     @Override
@@ -166,13 +165,13 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
         }
 
         @Override
-        public boolean contains(final Object o) {
-          return (o == null);
+        public int lastIndexOf(final Object o) {
+          return indexOf(o);
         }
 
         @Override
-        public int lastIndexOf(final Object o) {
-          return indexOf(o);
+        public boolean contains(final Object o) {
+          return (o == null);
         }
       };
     }
@@ -188,13 +187,13 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
       }
 
       @Override
-      public boolean contains(final Object o) {
-        return element.equals(o);
+      public int lastIndexOf(final Object o) {
+        return indexOf(o);
       }
 
       @Override
-      public int lastIndexOf(final Object o) {
-        return indexOf(o);
+      public boolean contains(final Object o) {
+        return element.equals(o);
       }
     };
   }
@@ -319,13 +318,32 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
   public int indexOf(final Object o) {
     final E[] elements = this.elements;
     if (o == null) {
-      for (int i = 0; i < elements.length; i++) {
+      for (int i = 0; i < elements.length; ++i) {
         if (elements[i] == null) {
           return i;
         }
       }
     } else {
-      for (int i = 0; i < elements.length; i++) {
+      for (int i = 0; i < elements.length; ++i) {
+        if (o.equals(elements[i])) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+
+  @Override
+  public int lastIndexOf(final Object o) {
+    final E[] elements = this.elements;
+    if (o == null) {
+      for (int i = elements.length - 1; i >= 0; --i) {
+        if (elements[i] == null) {
+          return i;
+        }
+      }
+    } else {
+      for (int i = elements.length - 1; i >= 0; --i) {
         if (o.equals(elements[i])) {
           return i;
         }
@@ -336,11 +354,6 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
 
   @Override
   public void clear() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean addAll(final int index, final Collection<? extends E> c) {
     throw new UnsupportedOperationException();
   }
 
