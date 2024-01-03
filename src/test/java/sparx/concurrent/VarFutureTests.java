@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -257,6 +258,8 @@ public class VarFutureTests {
     try (var future = VarFuture.<String>create()) {
       future.set("hello");
       future.fail(new IllegalAccessException());
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
       assertThrows(NoSuchElementException.class, future::getCurrent);
       assertThrows(ExecutionException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
       assertThrows(UncheckedException.class,
@@ -266,6 +269,8 @@ public class VarFutureTests {
       assertEquals("none", future.getCurrentOr("none"));
 
       future.clear();
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
       assertThrows(NoSuchElementException.class, future::getCurrent);
       assertThrows(ExecutionException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
       assertThrows(UncheckedException.class,
@@ -275,6 +280,52 @@ public class VarFutureTests {
       assertEquals("none", future.getCurrentOr("none"));
 
       future.set("test");
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(ExecutionException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      future.setBulk("test", "test");
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(ExecutionException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      future.fail(new IllegalAccessException());
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(ExecutionException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      assertFalse(future.cancel(true));
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(ExecutionException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      future.close();
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
       assertThrows(NoSuchElementException.class, future::getCurrent);
       assertThrows(ExecutionException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
       assertThrows(UncheckedException.class,
@@ -430,5 +481,157 @@ public class VarFutureTests {
         () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
     assertThrows(UncheckedTimeoutException.class,
         () -> iterator.next(10, TimeUnit.MILLISECONDS));
+  }
+
+  @Test
+  public void futureCancel() {
+    try (var future = VarFuture.<String>create()) {
+      future.set("hello");
+      assertTrue(future.cancel(true));
+      assertTrue(future.isDone());
+      assertTrue(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(CancellationException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      future.clear();
+      assertTrue(future.isDone());
+      assertTrue(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(CancellationException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      future.set("test");
+      assertTrue(future.isDone());
+      assertTrue(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(CancellationException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      future.setBulk("test", "test");
+      assertTrue(future.isDone());
+      assertTrue(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(CancellationException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      future.fail(new IllegalAccessException());
+      assertTrue(future.isDone());
+      assertTrue(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(CancellationException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      assertFalse(future.cancel(true));
+      assertTrue(future.isDone());
+      assertTrue(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(CancellationException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+
+      future.close();
+      assertTrue(future.isDone());
+      assertTrue(future.isCancelled());
+      assertThrows(NoSuchElementException.class, future::getCurrent);
+      assertThrows(CancellationException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+      assertThrows(UncheckedException.class,
+          () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertThrows(UncheckedException.class,
+          () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("none", future.getCurrentOr("none"));
+    }
+  }
+
+  @Test
+  public void futureClose() throws Exception {
+    try (var future = VarFuture.<String>create()) {
+      future.set("hello");
+      future.close();
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertEquals("hello", future.getCurrent());
+      assertEquals(List.of("hello"), future.get(100, TimeUnit.MILLISECONDS));
+      assertTrue(future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertTrue(future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("hello", future.getCurrentOr("none"));
+
+      future.clear();
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertEquals("hello", future.getCurrent());
+      assertEquals(List.of("hello"), future.get(100, TimeUnit.MILLISECONDS));
+      assertTrue(future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertTrue(future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("hello", future.getCurrentOr("none"));
+
+      future.set("test");
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertEquals("hello", future.getCurrent());
+      assertEquals(List.of("hello"), future.get(100, TimeUnit.MILLISECONDS));
+      assertTrue(future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertTrue(future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("hello", future.getCurrentOr("none"));
+
+      future.setBulk("test", "test");
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertEquals("hello", future.getCurrent());
+      assertEquals(List.of("hello"), future.get(100, TimeUnit.MILLISECONDS));
+      assertTrue(future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertTrue(future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("hello", future.getCurrentOr("none"));
+
+      future.fail(new IllegalAccessException());
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertEquals("hello", future.getCurrent());
+      assertEquals(List.of("hello"), future.get(100, TimeUnit.MILLISECONDS));
+      assertTrue(future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertTrue(future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("hello", future.getCurrentOr("none"));
+
+      assertFalse(future.cancel(false));
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertEquals("hello", future.getCurrent());
+      assertEquals(List.of("hello"), future.get(100, TimeUnit.MILLISECONDS));
+      assertTrue(future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertTrue(future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("hello", future.getCurrentOr("none"));
+
+      future.close();
+      assertTrue(future.isDone());
+      assertFalse(future.isCancelled());
+      assertEquals("hello", future.getCurrent());
+      assertEquals(List.of("hello"), future.get(100, TimeUnit.MILLISECONDS));
+      assertTrue(future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
+      assertTrue(future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
+      assertEquals("hello", future.getCurrentOr("none"));
+    }
   }
 }

@@ -102,12 +102,16 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   @Override
   public void clear() {
-    scheduler.scheduleAfter(new VarTask() {
-      @Override
-      public void run() {
-        innerStatus.clear();
-      }
-    });
+    if (!isDone()) {
+      scheduler.scheduleAfter(new VarTask() {
+        @Override
+        public void run() {
+          innerStatus.clear();
+        }
+      });
+    } else {
+      Log.dbg(VarFuture.class, "Ignoring 'clear' operation: future is already closed");
+    }
   }
 
   @Override
@@ -155,19 +159,23 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   @Override
   public void setBulk(@NotNull final V... values) {
-    if (values.length > 0 && !isDone()) {
-      final List<V> valueList = ImmutableList.of(values);
-      scheduler.scheduleAfter(new VarTask() {
-        @Override
-        public int weight() {
-          return valueList.size();
-        }
+    if (values.length > 0) {
+      if (!isDone()) {
+        final List<V> valueList = ImmutableList.of(values);
+        scheduler.scheduleAfter(new VarTask() {
+          @Override
+          public int weight() {
+            return valueList.size();
+          }
 
-        @Override
-        public void run() {
-          innerStatus.setBulk(valueList);
-        }
-      });
+          @Override
+          public void run() {
+            innerStatus.setBulk(valueList);
+          }
+        });
+      } else {
+        Log.dbg(VarFuture.class, "Ignoring 'setBulk' operation: future is already closed");
+      }
     }
   }
 
@@ -286,6 +294,8 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           innerStatus.close();
         }
       });
+    } else {
+      Log.dbg(VarFuture.class, "Ignoring 'close' operation: future is already closed");
     }
   }
 
@@ -310,6 +320,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       }
       return true;
     }
+    Log.dbg(VarFuture.class, "Ignoring 'fail' operation: future is already closed");
     return false;
   }
 
@@ -322,24 +333,30 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           innerStatus.set(value);
         }
       });
+    } else {
+      Log.dbg(VarFuture.class, "Ignoring 'set' operation: future is already closed");
     }
   }
 
   @Override
   public void setBulk(@NotNull final Collection<V> values) {
-    if (!values.isEmpty() && !isDone()) {
-      final List<V> valueList = ImmutableList.ofElementsIn(values);
-      scheduler.scheduleAfter(new VarTask() {
-        @Override
-        public int weight() {
-          return valueList.size();
-        }
+    if (!values.isEmpty()) {
+      if (!isDone()) {
+        final List<V> valueList = ImmutableList.ofElementsIn(values);
+        scheduler.scheduleAfter(new VarTask() {
+          @Override
+          public int weight() {
+            return valueList.size();
+          }
 
-        @Override
-        public void run() {
-          innerStatus.setBulk(valueList);
-        }
-      });
+          @Override
+          public void run() {
+            innerStatus.setBulk(valueList);
+          }
+        });
+      } else {
+        Log.dbg(VarFuture.class, "Ignoring 'setBulk' operation: future is already closed");
+      }
     }
   }
 
@@ -823,35 +840,27 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       }
       final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
       final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
+      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
+      for (final GroupReceiver<V> groupReceiver : receivers.values()) {
+        try {
+          groupReceiver.fail(error);
+        } catch (final RuntimeException e) {
+          groupReceiver.onUncaughtError(e);
+        }
+        groupReceiver.onUnsubscribe();
+      }
+      receivers.clear();
+      for (final FutureIterator<V> futureIterator : iterators.keySet()) {
+        futureIterator.fail(error);
+      }
+      iterators.clear();
+      for (final Semaphore semaphore : semaphores.keySet()) {
+        semaphore.release();
+      }
+      semaphores.clear();
       if (isUncaught()) {
-        for (final FutureIterator<V> futureIterator : iterators.keySet()) {
-          futureIterator.fail(error);
-        }
-        iterators.clear();
-        for (final Semaphore semaphore : semaphores.keySet()) {
-          semaphore.release();
-        }
-        semaphores.clear();
         registration.onUncaughtError(error);
       } else {
-        final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
-        for (final GroupReceiver<V> groupReceiver : receivers.values()) {
-          try {
-            groupReceiver.fail(error);
-          } catch (final RuntimeException e) {
-            groupReceiver.onUncaughtError(e);
-          }
-          groupReceiver.onUnsubscribe();
-        }
-        receivers.clear();
-        for (final FutureIterator<V> futureIterator : iterators.keySet()) {
-          futureIterator.fail(error);
-        }
-        iterators.clear();
-        for (final Semaphore semaphore : semaphores.keySet()) {
-          semaphore.release();
-        }
-        semaphores.clear();
         registration.cancel();
       }
       status.set(CANCELLED);
