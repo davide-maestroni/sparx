@@ -35,7 +35,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       return first;
     } catch (final Exception e) {
       group.onUncaughtError(e);
-      throw UncheckedException.toUnchecked(e);
+      UncheckedException.throwUnchecked(e);
     } finally {
       FutureGroup.popGroup();
     }
@@ -59,7 +59,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
 
     } catch (final Exception e) {
       group.onUncaughtError(e);
-      throw UncheckedException.toUnchecked(e);
+      UncheckedException.throwUnchecked(e);
     } finally {
       FutureGroup.popGroup();
     }

@@ -39,6 +39,9 @@ public class UncheckedException extends RuntimeException {
         : new UncheckedException(error);
   }
 
+  public UncheckedException() {
+  }
+
   public UncheckedException(final Throwable cause) {
     super(cause);
   }

@@ -17,7 +17,7 @@ package sparx.concurrent;
 
 import java.util.concurrent.TimeoutException;
 
-public class UncheckedTimeoutException extends RuntimeException {
+public class UncheckedTimeoutException extends UncheckedException {
 
   public UncheckedTimeoutException() {
   }

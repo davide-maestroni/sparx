@@ -178,10 +178,8 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
           final long start = System.currentTimeMillis();
           future.get(timeoutMillis, TimeUnit.MILLISECONDS);
           timeoutMillis -= System.currentTimeMillis() - start;
-        } catch (final InterruptedException e) {
-          throw new UncheckedInterruptedException(e);
         } catch (final Exception e) {
-          throw UncheckedException.toUnchecked(e);
+          UncheckedException.throwUnchecked(e);
         }
       }
       return false;
@@ -197,10 +195,8 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
       for (final StreamingFuture<? extends V> future : asList()) {
         try {
           future.get();
-        } catch (final InterruptedException e) {
-          throw new UncheckedInterruptedException(e);
         } catch (final Exception e) {
-          throw UncheckedException.toUnchecked(e);
+          UncheckedException.throwUnchecked(e);
         }
       }
       return false;
@@ -236,12 +232,8 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
             final long start = System.currentTimeMillis();
             future.get(timeoutMillis, TimeUnit.MILLISECONDS);
             timeoutMillis -= System.currentTimeMillis() - start;
-          } catch (final InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
-          } catch (final TimeoutException e) {
-            throw new UncheckedTimeoutException(e);
           } catch (final Exception e) {
-            throw UncheckedException.toUnchecked(e);
+            UncheckedException.throwUnchecked(e);
           }
         }
       } finally {
@@ -265,12 +257,8 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
             final long start = System.currentTimeMillis();
             future.get(timeoutMillis, TimeUnit.MILLISECONDS);
             timeoutMillis -= System.currentTimeMillis() - start;
-          } catch (final InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
-          } catch (final TimeoutException e) {
-            throw new UncheckedTimeoutException(e);
           } catch (final Exception e) {
-            throw UncheckedException.toUnchecked(e);
+            UncheckedException.throwUnchecked(e);
           }
         }
       } finally {
