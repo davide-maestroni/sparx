@@ -15,9 +15,6 @@
  */
 package sparx.concurrent;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -42,7 +39,7 @@ public abstract class ValFuture<V> extends
   }
 
   public static @NotNull <V> ValFuture<V> of(final V value) {
-    return new ValuesFuture<V>(singletonList(value)) {
+    return new ValuesFuture<V>(ImmutableList.of(value)) {
       @Override
       public V getCurrent() {
         return get().get(0);
@@ -216,7 +213,8 @@ public abstract class ValFuture<V> extends
 
   private static class ValuesFuture<V> extends ValFuture<V> {
 
-    private static final ValuesFuture<?> EMPTY_FUTURE = new ValuesFuture<Object>(emptyList()) {
+    private static final ValuesFuture<?> EMPTY_FUTURE = new ValuesFuture<Object>(
+        ImmutableList.of()) {
 
       @Override
       public Object getCurrent() {

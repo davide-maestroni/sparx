@@ -31,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.function.Action;
 import sparx.function.Consumer;
+import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
 import sparx.util.Nothing;
 import sparx.util.Requires;
@@ -124,7 +125,7 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
     for (final StreamingFuture<? extends V> future : asList()) {
       future.get();
     }
-    return Collections.emptyList();
+    return ImmutableList.of();
   }
 
   @Override
@@ -133,7 +134,7 @@ abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>>
     for (final StreamingFuture<? extends V> future : asList()) {
       future.get(timeout, unit);
     }
-    return Collections.emptyList();
+    return ImmutableList.of();
   }
 
   private static class TupleReceiver<V> implements Receiver<V> {

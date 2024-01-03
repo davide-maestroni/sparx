@@ -15,7 +15,6 @@
  */
 package sparx.tuple;
 
-import java.util.Collections;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.ImmutableList;
@@ -25,11 +24,11 @@ class GenericTuple<T> implements Tuple<T> {
   private final List<T> values;
 
   GenericTuple() {
-    this.values = Collections.emptyList();
+    this.values = ImmutableList.of();
   }
 
   GenericTuple(final T value) {
-    this.values = Collections.singletonList(value);
+    this.values = ImmutableList.of(value);
   }
 
   GenericTuple(@NotNull final T... values) {

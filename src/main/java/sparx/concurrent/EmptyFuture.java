@@ -15,8 +15,6 @@
  */
 package sparx.concurrent;
 
-import static java.util.Collections.emptyList;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -28,6 +26,7 @@ import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.logging.Log;
 import sparx.tuple.Empty;
+import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
 import sparx.util.Nothing;
 
@@ -103,7 +102,7 @@ public class EmptyFuture extends TupleStreamGroupFuture<Nothing, EmptyFuture> im
 
   @Override
   public List<Nothing> get() throws InterruptedException, ExecutionException {
-    return emptyList();
+    return ImmutableList.of();
   }
 
   @Override
@@ -114,6 +113,6 @@ public class EmptyFuture extends TupleStreamGroupFuture<Nothing, EmptyFuture> im
 
   @Override
   public @NotNull List<StreamingFuture<? extends Nothing>> asList() {
-    return emptyList();
+    return ImmutableList.of();
   }
 }

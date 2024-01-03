@@ -17,7 +17,6 @@ package sparx.concurrent;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -401,7 +400,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
     @Override
     public @NotNull List<V> onSubscribe() {
-      return Collections.emptyList();
+      return ImmutableList.of();
     }
   }
 
@@ -661,9 +660,9 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
     private ValueResult(final V value) {
       if (value != UNSET) {
-        result = Collections.singletonList(value);
+        result = ImmutableList.of(value);
       } else {
-        result = Collections.emptyList();
+        result = ImmutableList.of();
       }
     }
 
