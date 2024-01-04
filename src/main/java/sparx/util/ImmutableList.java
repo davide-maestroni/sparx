@@ -276,6 +276,12 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
   @SuppressWarnings("unchecked")
   public static @NotNull <E> ImmutableList<E> ofElementsIn(
       @NotNull final Collection<E> collection) {
+    if (collection.isEmpty()) {
+      return (ImmutableList<E>) EMPTY_LIST;
+    }
+    if (collection.size() == 1) {
+      return of(collection.iterator().next());
+    }
     return new ImmutableList<E>((E[]) collection.toArray());
   }
 

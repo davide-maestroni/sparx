@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.NoSuchElementException;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 public class ImmutableListTests {
@@ -36,6 +37,7 @@ public class ImmutableListTests {
     var list = ImmutableList.<String>of();
     assertSame(ImmutableList.of(), list);
     assertSame(ImmutableList.of(new Object[0]), list);
+    assertSame(ImmutableList.ofElementsIn(Collections.<String>emptyList()), list);
     assertTrue(list.isEmpty());
     assertEquals(0, list.size());
     assertEquals(0, list.toArray().length);
@@ -92,6 +94,9 @@ public class ImmutableListTests {
   public void singleton() {
     var list = ImmutableList.of("test");
     assertFalse(list.isEmpty());
+    assertEquals(ImmutableList.of("test"), list);
+    assertEquals(ImmutableList.of(new String[]{"test"}), list);
+    assertEquals(ImmutableList.ofElementsIn(Collections.singleton("test")), list);
     assertEquals(1, list.size());
     assertEquals("test", list.get(0));
     assertEquals(0, list.indexOf("test"));
@@ -231,5 +236,139 @@ public class ImmutableListTests {
     assertFalse(listIterator.hasPrevious());
     assertThrows(NoSuchElementException.class, listIterator::previous);
     assertNotSame(iterator, listIterator);
+  }
+
+  @Test
+  public void lists() {
+    testList(ImmutableList.of("0", "1"), 2);
+    testList(ImmutableList.of("0", "1", "2"), 3);
+    testList(ImmutableList.of("0", "1", "2", "3"), 4);
+    testList(ImmutableList.of("0", "1", "2", "3", "4"), 5);
+    testList(ImmutableList.of("0", "1", "2", "3", "4", "5"), 6);
+    testList(ImmutableList.of("0", "1", "2", "3", "4", "5", "6"), 7);
+    testList(ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7"), 8);
+    testList(ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8"), 9);
+    testList(ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"), 10);
+    testList(ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"), 11);
+  }
+
+  @Test
+  @SuppressWarnings("DataFlowIssue")
+  public void listsWithNull() {
+    testListNull(ImmutableList.of(null, "1"), 2);
+    testListNull(ImmutableList.of(null, "1", "2"), 3);
+    testListNull(ImmutableList.of(null, "1", "2", "3"), 4);
+    testListNull(ImmutableList.of(null, "1", "2", "3", "4"), 5);
+    testListNull(ImmutableList.of(null, "1", "2", "3", "4", "5"), 6);
+    testListNull(ImmutableList.of(null, "1", "2", "3", "4", "5", "6"), 7);
+    testListNull(ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7"), 8);
+    testListNull(ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8"), 9);
+    testListNull(ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9"), 10);
+    testListNull(ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"), 11);
+  }
+
+  private void testList(@NotNull final ImmutableList<String> list, final int size) {
+    assertFalse(list.isEmpty());
+    assertEquals(size, list.size());
+    for (int i = 0; i < size; i++) {
+      assertEquals(Integer.toString(i), list.get(i));
+      assertEquals(i, list.indexOf(Integer.toString(i)));
+      assertEquals(i, list.lastIndexOf(Integer.toString(i)));
+    }
+    var strings = new String[size];
+    for (int i = 0; i < size; i++) {
+      strings[i] = Integer.toString(i);
+    }
+    assertArrayEquals(strings, list.toArray(new String[0]));
+    var array = new Object[size + 1];
+    array[size] = "test";
+    list.toArray(array);
+    for (int i = 0; i < size; i++) {
+      assertEquals(Integer.toString(i), array[i]);
+    }
+    assertNull(array[size]);
+    assertThrows(IndexOutOfBoundsException.class, () -> list.get(size + 1));
+    assertEquals(0, list.indexOf("0"));
+    assertEquals(0, list.lastIndexOf("0"));
+    assertEquals(-1, list.indexOf("a"));
+    assertEquals(-1, list.lastIndexOf("b"));
+    assertTrue(list.contains("0"));
+    assertFalse(list.contains("a"));
+    assertFalse(list.remove("a"));
+    assertFalse(list.addAll(ImmutableList.of()));
+    assertFalse(list.addAll(0, ImmutableList.of()));
+    assertFalse(list.removeAll(ImmutableList.<String>of()));
+    assertFalse(list.removeAll(ImmutableList.of("a")));
+    assertFalse(list.retainAll(ImmutableList.ofElementsIn(list)));
+    assertThrows(UnsupportedOperationException.class, list::clear);
+    assertThrows(UnsupportedOperationException.class, () -> list.remove("0"));
+    assertThrows(UnsupportedOperationException.class, () -> list.add("test"));
+    assertThrows(UnsupportedOperationException.class, () -> list.add(0, "test"));
+    assertThrows(UnsupportedOperationException.class, () -> list.addAll(ImmutableList.of("test")));
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.addAll(0, ImmutableList.of("test")));
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.removeAll(ImmutableList.of("0")));
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.retainAll(ImmutableList.<String>of()));
+    assertThrows(UnsupportedOperationException.class, () -> list.retainAll(ImmutableList.of("a")));
+    assertThrows(UnsupportedOperationException.class, () -> list.set(0, "test"));
+    assertThrows(UnsupportedOperationException.class, () -> list.remove(0));
+    assertEquals(ImmutableList.of(list.toArray(new String[0])), list);
+    assertEquals(ImmutableList.ofElementsIn(list), list);
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.sort(String.CASE_INSENSITIVE_ORDER));
+  }
+
+  private void testListNull(@NotNull final ImmutableList<String> list, final int size) {
+    assertFalse(list.isEmpty());
+    assertEquals(size, list.size());
+    assertNull(list.get(0));
+    for (int i = 1; i < size; i++) {
+      assertEquals(i, list.indexOf(Integer.toString(i)));
+      assertEquals(i, list.lastIndexOf(Integer.toString(i)));
+    }
+    var strings = new String[size];
+    for (int i = 1; i < size; i++) {
+      strings[i] = Integer.toString(i);
+    }
+    assertArrayEquals(strings, list.toArray(new String[0]));
+    var array = new Object[size + 1];
+    array[size] = "test";
+    list.toArray(array);
+    assertNull(array[0]);
+    for (int i = 1; i < size; i++) {
+      assertEquals(Integer.toString(i), array[i]);
+    }
+    assertNull(array[size]);
+    assertThrows(IndexOutOfBoundsException.class, () -> list.get(size + 1));
+    assertEquals(0, list.indexOf(null));
+    assertEquals(0, list.lastIndexOf(null));
+    assertEquals(-1, list.indexOf("a"));
+    assertEquals(-1, list.lastIndexOf("b"));
+    assertTrue(list.contains(null));
+    assertFalse(list.contains("a"));
+    assertFalse(list.remove("a"));
+    assertFalse(list.addAll(ImmutableList.of()));
+    assertFalse(list.addAll(0, ImmutableList.of()));
+    assertFalse(list.removeAll(ImmutableList.<String>of()));
+    assertFalse(list.removeAll(ImmutableList.of("a")));
+    assertFalse(list.retainAll(ImmutableList.ofElementsIn(list)));
+    assertThrows(UnsupportedOperationException.class, list::clear);
+    assertThrows(UnsupportedOperationException.class, () -> list.remove(null));
+    assertThrows(UnsupportedOperationException.class, () -> list.add("test"));
+    assertThrows(UnsupportedOperationException.class, () -> list.add(0, "test"));
+    assertThrows(UnsupportedOperationException.class, () -> list.addAll(ImmutableList.of("test")));
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.addAll(0, ImmutableList.of("test")));
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.removeAll(ImmutableList.of((String) null)));
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.retainAll(ImmutableList.<String>of()));
+    assertThrows(UnsupportedOperationException.class, () -> list.retainAll(ImmutableList.of("a")));
+    assertThrows(UnsupportedOperationException.class, () -> list.set(0, "test"));
+    assertThrows(UnsupportedOperationException.class, () -> list.remove(0));
+    assertEquals(ImmutableList.of(list.toArray(new String[0])), list);
+    assertEquals(ImmutableList.ofElementsIn(list), list);
   }
 }
