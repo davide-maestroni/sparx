@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -734,6 +735,131 @@ public class VarFutureTests {
           Assertions.fail();
         }
       });
+    }
+  }
+
+  @Test
+  public void futureCancelAsync() throws InterruptedException {
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var context = ExecutorContext.of(executor);
+      var input = VarFuture.<String>create();
+      var output = VarFuture.<Exception>create();
+      var result = context.run(CoupleFuture.of(input, output),
+          f -> f.getFirst().subscribe(new Receiver<>() {
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public boolean fail(@NotNull final Exception error) {
+              f.getSecond().set(error);
+              return true;
+            }
+
+            @Override
+            public void set(final String value) {
+            }
+
+            @Override
+            public void setBulk(@NotNull final Collection<String> values) {
+            }
+          }), 1);
+      Thread.sleep(1000);
+      assertFalse(result.isDone());
+      assertTrue(result.cancel(false));
+      assertTrue(result.isDone());
+      assertTrue(result.isCancelled());
+      assertThrows(CancellationException.class, result::get);
+      Thread.sleep(1000);
+      assertFalse(input.isDone());
+      assertFalse(output.isDone());
+      assertInstanceOf(FutureCancellationException.class, output.getCurrent());
+    } finally {
+      executor.shutdown();
+    }
+  }
+
+  @Test
+  public void futureCloseAsync() throws InterruptedException, ExecutionException {
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var context = ExecutorContext.of(executor);
+      var input = VarFuture.<String>create();
+      var output = VarFuture.<Exception>create();
+      var result = context.run(CoupleFuture.of(input, output),
+          f -> f.getFirst().subscribe(new Receiver<>() {
+            @Override
+            public void close() {
+              f.getSecond().close();
+            }
+
+            @Override
+            public boolean fail(@NotNull final Exception error) {
+              f.getSecond().set(error);
+              return true;
+            }
+
+            @Override
+            public void set(final String value) {
+            }
+
+            @Override
+            public void setBulk(@NotNull final Collection<String> values) {
+            }
+          }), 1);
+      Thread.sleep(1000);
+      assertFalse(result.isDone());
+      input.close();
+      assertTrue(input.isDone());
+      assertTrue(output.get().isEmpty());
+      assertTrue(output.isDone());
+      assertTrue(result.get().isEmpty());
+      assertTrue(result.isDone());
+    } finally {
+      executor.shutdown();
+    }
+  }
+
+  @Test
+  public void futureFailAsync() throws InterruptedException, ExecutionException {
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var context = ExecutorContext.of(executor);
+      var input = VarFuture.<String>create();
+      var output = VarFuture.<Exception>create();
+      var result = context.run(CoupleFuture.of(input, output),
+          f -> f.getFirst().subscribe(new Receiver<>() {
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public boolean fail(@NotNull final Exception error) {
+              f.getSecond().set(error);
+              return true;
+            }
+
+            @Override
+            public void set(final String value) {
+            }
+
+            @Override
+            public void setBulk(@NotNull final Collection<String> values) {
+            }
+          }), 1);
+      Thread.sleep(1000);
+      assertFalse(result.isDone());
+      assertTrue(input.cancel(false));
+      assertTrue(input.isDone());
+      assertTrue(input.isCancelled());
+      assertTrue(result.get().isEmpty());
+      assertTrue(result.isDone());
+      assertFalse(result.isCancelled());
+      assertFalse(output.isDone());
+      assertInstanceOf(FutureCancellationException.class, output.getCurrent());
+    } finally {
+      executor.shutdown();
     }
   }
 }

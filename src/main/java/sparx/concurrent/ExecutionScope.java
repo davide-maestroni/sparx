@@ -102,9 +102,7 @@ class ExecutionScope implements ExecutionContext {
 
     @Override
     public void close() {
-      if (status.compareAndSet(IDLE, DONE)) {
-        super.close();
-      } else if (status.compareAndSet(RUNNING, DONE)) {
+      if (status.compareAndSet(RUNNING, DONE)) {
         scheduler.scheduleAfter(new GroupTask() {
           @Override
           public void run() {
@@ -184,7 +182,18 @@ class ExecutionScope implements ExecutionContext {
       }
     }
 
-    abstract void innerRun() throws Exception;
+    protected void complete() {
+      scheduler.scheduleAfter(new GroupTask() {
+        @Override
+        public void run() {
+          if (receivers.isEmpty()) {
+            ScopeFuture.super.close();
+          }
+        }
+      });
+    }
+
+    protected abstract void innerRun() throws Exception;
 
     private void innerFail(@NotNull final Exception error) {
       final ScopeTask task = new ScopeTask() {
@@ -207,7 +216,7 @@ class ExecutionScope implements ExecutionContext {
     private void removeReceiver(@NotNull final Receiver<?> receiver) {
       final HashSet<Receiver<?>> receivers = ScopeFuture.this.receivers;
       receivers.remove(receiver);
-      if (receivers.isEmpty() && status.get() == DONE) {
+      if (receivers.isEmpty()) {
         ScopeFuture.super.close();
       }
     }
@@ -307,7 +316,7 @@ class ExecutionScope implements ExecutionContext {
         scheduler.scheduleAfter(new GroupTask() {
           @Override
           public void run() {
-            removeReceiver(wrapped);
+            removeReceiver(ScopeGroupReceiver.this);
             futureScheduler.resume();
           }
         });
@@ -518,7 +527,7 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
-    void innerRun() throws Exception {
+    protected void innerRun() throws Exception {
       function.apply(future).subscribe(this);
     }
   }
@@ -536,9 +545,9 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
-    void innerRun() throws Exception {
+    protected void innerRun() throws Exception {
       consumer.accept(future);
-      close();
+      complete();
     }
   }
 

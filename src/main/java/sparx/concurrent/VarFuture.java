@@ -101,16 +101,12 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   @Override
   public void clear() {
-    if (!isDone()) {
-      scheduler.scheduleAfter(new VarTask() {
-        @Override
-        public void run() {
-          innerStatus.clear();
-        }
-      });
-    } else {
-      Log.dbg(VarFuture.class, "Ignoring 'clear' operation: future is already closed");
-    }
+    scheduler.scheduleAfter(new VarTask() {
+      @Override
+      public void run() {
+        innerStatus.clear();
+      }
+    });
   }
 
   @Override
@@ -159,22 +155,18 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   @Override
   public void setBulk(@NotNull final V... values) {
     if (values.length > 0) {
-      if (!isDone()) {
-        final List<V> valueList = ImmutableList.of(values);
-        scheduler.scheduleAfter(new VarTask() {
-          @Override
-          public int weight() {
-            return valueList.size();
-          }
+      final List<V> valueList = ImmutableList.of(values);
+      scheduler.scheduleAfter(new VarTask() {
+        @Override
+        public int weight() {
+          return valueList.size();
+        }
 
-          @Override
-          public void run() {
-            innerStatus.setBulk(valueList);
-          }
-        });
-      } else {
-        Log.dbg(VarFuture.class, "Ignoring 'setBulk' operation: future is already closed");
-      }
+        @Override
+        public void run() {
+          innerStatus.setBulk(valueList);
+        }
+      });
     }
   }
 
@@ -325,37 +317,29 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   @Override
   public void set(final V value) {
-    if (!isDone()) {
-      scheduler.scheduleAfter(new VarTask() {
-        @Override
-        public void run() {
-          innerStatus.set(value);
-        }
-      });
-    } else {
-      Log.dbg(VarFuture.class, "Ignoring 'set' operation: future is already closed");
-    }
+    scheduler.scheduleAfter(new VarTask() {
+      @Override
+      public void run() {
+        innerStatus.set(value);
+      }
+    });
   }
 
   @Override
   public void setBulk(@NotNull final Collection<V> values) {
     if (!values.isEmpty()) {
-      if (!isDone()) {
-        final List<V> valueList = ImmutableList.ofElementsIn(values);
-        scheduler.scheduleAfter(new VarTask() {
-          @Override
-          public int weight() {
-            return valueList.size();
-          }
+      final List<V> valueList = ImmutableList.ofElementsIn(values);
+      scheduler.scheduleAfter(new VarTask() {
+        @Override
+        public int weight() {
+          return valueList.size();
+        }
 
-          @Override
-          public void run() {
-            innerStatus.setBulk(valueList);
-          }
-        });
-      } else {
-        Log.dbg(VarFuture.class, "Ignoring 'setBulk' operation: future is already closed");
-      }
+        @Override
+        public void run() {
+          innerStatus.setBulk(valueList);
+        }
+      });
     }
   }
 
