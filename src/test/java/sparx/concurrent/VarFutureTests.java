@@ -40,6 +40,7 @@ import sparx.concurrent.VarFuture.HistoryStrategy;
 import sparx.config.AlertModule;
 import sparx.config.LogModule;
 import sparx.config.SparxConfig;
+import sparx.util.UncheckedException;
 
 public class VarFutureTests {
 
@@ -107,9 +108,9 @@ public class VarFutureTests {
       future.clear();
       assertThrows(NoSuchElementException.class, future::getCurrent);
       assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
-      assertThrows(UncheckedTimeoutException.class,
+      assertThrows(UncheckedException.UncheckedTimeoutException.class,
           () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
-      assertThrows(UncheckedTimeoutException.class,
+      assertThrows(UncheckedException.UncheckedTimeoutException.class,
           () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
       assertEquals("none", future.getCurrentOr("none"));
 
@@ -121,12 +122,12 @@ public class VarFutureTests {
       var timeoutIterator = future.iterator(100, TimeUnit.MILLISECONDS);
       assertTrue(timeoutIterator.hasNext());
       assertEquals("test", timeoutIterator.next());
-      assertThrows(UncheckedTimeoutException.class, timeoutIterator::hasNext);
+      assertThrows(UncheckedException.UncheckedTimeoutException.class, timeoutIterator::hasNext);
 
       var indefiniteIterator = future.iterator();
       assertTrue(indefiniteIterator.hasNext());
       assertEquals("test", indefiniteIterator.next());
-      assertThrows(UncheckedTimeoutException.class,
+      assertThrows(UncheckedException.UncheckedTimeoutException.class,
           () -> indefiniteIterator.hasNext(100, TimeUnit.MILLISECONDS));
     }
   }
@@ -204,9 +205,9 @@ public class VarFutureTests {
     try (var future = VarFuture.<String>create()) {
       assertThrows(NoSuchElementException.class, future::getCurrent);
       assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
-      assertThrows(UncheckedTimeoutException.class,
+      assertThrows(UncheckedException.UncheckedTimeoutException.class,
           () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
-      assertThrows(UncheckedTimeoutException.class,
+      assertThrows(UncheckedException.UncheckedTimeoutException.class,
           () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
       assertEquals("none", future.getCurrentOr("none"));
 
@@ -218,12 +219,12 @@ public class VarFutureTests {
       var timeoutIterator = future.iterator(100, TimeUnit.MILLISECONDS);
       assertTrue(timeoutIterator.hasNext());
       assertEquals("test", timeoutIterator.next());
-      assertThrows(UncheckedTimeoutException.class, timeoutIterator::hasNext);
+      assertThrows(UncheckedException.UncheckedTimeoutException.class, timeoutIterator::hasNext);
 
       var indefiniteIterator = future.iterator();
       assertTrue(indefiniteIterator.hasNext());
       assertEquals("test", indefiniteIterator.next());
-      assertThrows(UncheckedTimeoutException.class,
+      assertThrows(UncheckedException.UncheckedTimeoutException.class,
           () -> indefiniteIterator.hasNext(100, TimeUnit.MILLISECONDS));
     }
   }
@@ -233,9 +234,9 @@ public class VarFutureTests {
     try (var future = VarFuture.<String>create()) {
       assertThrows(NoSuchElementException.class, future::getCurrent);
       assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
-      assertThrows(UncheckedTimeoutException.class,
+      assertThrows(UncheckedException.UncheckedTimeoutException.class,
           () -> future.iterator(100, TimeUnit.MILLISECONDS).hasNext());
-      assertThrows(UncheckedTimeoutException.class,
+      assertThrows(UncheckedException.UncheckedTimeoutException.class,
           () -> future.iterator().hasNext(100, TimeUnit.MILLISECONDS));
       assertEquals("none", future.getCurrentOr("none"));
 
@@ -247,12 +248,12 @@ public class VarFutureTests {
       var timeoutIterator = future.iterator(100, TimeUnit.MILLISECONDS);
       assertTrue(timeoutIterator.hasNext());
       assertEquals("test", timeoutIterator.next());
-      assertThrows(UncheckedTimeoutException.class, timeoutIterator::hasNext);
+      assertThrows(UncheckedException.UncheckedTimeoutException.class, timeoutIterator::hasNext);
 
       var indefiniteIterator = future.iterator();
       assertTrue(indefiniteIterator.hasNext());
       assertEquals("test", indefiniteIterator.next());
-      assertThrows(UncheckedTimeoutException.class,
+      assertThrows(UncheckedException.UncheckedTimeoutException.class,
           () -> indefiniteIterator.hasNext(100, TimeUnit.MILLISECONDS));
     }
   }
@@ -385,14 +386,14 @@ public class VarFutureTests {
     assertEquals("hello", timeoutIterator.next());
     assertTrue(timeoutIterator.hasNext(100, TimeUnit.MILLISECONDS));
     assertEquals("test", timeoutIterator.next(100, TimeUnit.MILLISECONDS));
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> timeoutIterator.hasNext(10, TimeUnit.MILLISECONDS));
 
     assertTrue(indefiniteIterator.hasNext());
     assertEquals("hello", indefiniteIterator.next());
     assertTrue(indefiniteIterator.hasNext(100, TimeUnit.MILLISECONDS));
     assertEquals("test", indefiniteIterator.next(100, TimeUnit.MILLISECONDS));
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> indefiniteIterator.hasNext(10, TimeUnit.MILLISECONDS));
 
     future.close();
@@ -413,9 +414,9 @@ public class VarFutureTests {
   public void liveIteratorIndefinite() {
     var future = VarFuture.<String>create();
     var iterator = future.iterator();
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.next(10, TimeUnit.MILLISECONDS));
 
     future.set("1");
@@ -447,9 +448,9 @@ public class VarFutureTests {
   public void liveIterator() {
     var future = VarFuture.<String>create();
     var iterator = future.iterator(1, TimeUnit.MINUTES);
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.next(10, TimeUnit.MILLISECONDS));
 
     future.set("1");
@@ -481,9 +482,9 @@ public class VarFutureTests {
   public void liveIteratorTimeout() {
     var future = VarFuture.<String>create();
     var iterator = future.iterator(40, TimeUnit.MILLISECONDS);
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.next(10, TimeUnit.MILLISECONDS));
 
     future.set("1");
@@ -499,25 +500,25 @@ public class VarFutureTests {
     assertEquals("4", iterator.next());
     assertEquals("5", iterator.next(10, TimeUnit.MILLISECONDS));
 
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.next(10, TimeUnit.MILLISECONDS));
 
     future.set("6");
-    assertThrows(UncheckedTimeoutException.class, iterator::hasNext);
-    assertThrows(UncheckedTimeoutException.class, iterator::next);
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class, iterator::hasNext);
+    assertThrows(UncheckedException.UncheckedTimeoutException.class, iterator::next);
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.next(10, TimeUnit.MILLISECONDS));
 
     future.close();
-    assertThrows(UncheckedTimeoutException.class, iterator::hasNext);
-    assertThrows(UncheckedTimeoutException.class, iterator::next);
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class, iterator::hasNext);
+    assertThrows(UncheckedException.UncheckedTimeoutException.class, iterator::next);
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
-    assertThrows(UncheckedTimeoutException.class,
+    assertThrows(UncheckedException.UncheckedTimeoutException.class,
         () -> iterator.next(10, TimeUnit.MILLISECONDS));
   }
 
@@ -738,8 +739,9 @@ public class VarFutureTests {
     }
   }
 
+  // TODO: move to ExecutorContextTests??
   @Test
-  public void futureCancelAsync() throws InterruptedException {
+  public void futureCancelRun() throws InterruptedException {
     var executor = Executors.newSingleThreadExecutor();
     try {
       var context = ExecutorContext.of(executor);
@@ -781,7 +783,52 @@ public class VarFutureTests {
   }
 
   @Test
-  public void futureCloseAsync() throws InterruptedException, ExecutionException {
+  public void futureCancelCall() throws InterruptedException {
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var context = ExecutorContext.of(executor);
+      var input = VarFuture.<String>create();
+      var output = VarFuture.<Exception>create();
+      var result = context.call(CoupleFuture.of(input, output),
+          f -> {
+            f.getFirst().subscribe(new Receiver<>() {
+              @Override
+              public void close() {
+              }
+
+              @Override
+              public boolean fail(@NotNull final Exception error) {
+                f.getSecond().set(error);
+                return true;
+              }
+
+              @Override
+              public void set(final String value) {
+              }
+
+              @Override
+              public void setBulk(@NotNull final Collection<String> values) {
+              }
+            });
+            return f.getSecond();
+          }, 1);
+      Thread.sleep(1000);
+      assertFalse(result.isDone());
+      assertTrue(result.cancel(false));
+      assertTrue(result.isDone());
+      assertTrue(result.isCancelled());
+      assertThrows(CancellationException.class, result::get);
+      Thread.sleep(1000);
+      assertFalse(input.isDone());
+      assertFalse(output.isDone());
+      assertInstanceOf(FutureCancellationException.class, output.getCurrent());
+    } finally {
+      executor.shutdown();
+    }
+  }
+
+  @Test
+  public void futureCloseRun() throws InterruptedException, ExecutionException {
     var executor = Executors.newSingleThreadExecutor();
     try {
       var context = ExecutorContext.of(executor);
@@ -822,7 +869,51 @@ public class VarFutureTests {
   }
 
   @Test
-  public void futureFailAsync() throws InterruptedException, ExecutionException {
+  public void futureCloseCall() throws InterruptedException, ExecutionException {
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var context = ExecutorContext.of(executor);
+      var input = VarFuture.<String>create();
+      var output = VarFuture.<Exception>create();
+      var result = context.call(CoupleFuture.of(input, output),
+          f -> {
+            f.getFirst().subscribe(new Receiver<>() {
+              @Override
+              public void close() {
+                f.getSecond().close();
+              }
+
+              @Override
+              public boolean fail(@NotNull final Exception error) {
+                f.getSecond().set(error);
+                return true;
+              }
+
+              @Override
+              public void set(final String value) {
+              }
+
+              @Override
+              public void setBulk(@NotNull final Collection<String> values) {
+              }
+            });
+            return f.getSecond();
+          }, 1);
+      Thread.sleep(1000);
+      assertFalse(result.isDone());
+      input.close();
+      assertTrue(input.isDone());
+      assertTrue(output.get().isEmpty());
+      assertTrue(output.isDone());
+      assertTrue(result.get().isEmpty());
+      assertTrue(result.isDone());
+    } finally {
+      executor.shutdown();
+    }
+  }
+
+  @Test
+  public void futureFailRun() throws InterruptedException, ExecutionException {
     var executor = Executors.newSingleThreadExecutor();
     try {
       var context = ExecutorContext.of(executor);
@@ -858,6 +949,51 @@ public class VarFutureTests {
       assertFalse(result.isCancelled());
       assertFalse(output.isDone());
       assertInstanceOf(FutureCancellationException.class, output.getCurrent());
+    } finally {
+      executor.shutdown();
+    }
+  }
+
+  @Test
+  public void futureFailCall() throws InterruptedException, ExecutionException {
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var context = ExecutorContext.of(executor);
+      var input = VarFuture.<String>create();
+      var output = VarFuture.<Exception>create();
+      var result = context.call(CoupleFuture.of(input, output),
+          f -> {
+            f.getFirst().subscribe(new Receiver<>() {
+              @Override
+              public void close() {
+              }
+
+              @Override
+              public boolean fail(@NotNull final Exception error) {
+                f.getSecond().fail(error);
+                return true;
+              }
+
+              @Override
+              public void set(final String value) {
+              }
+
+              @Override
+              public void setBulk(@NotNull final Collection<String> values) {
+              }
+            });
+            return f.getSecond();
+          }, 1);
+      Thread.sleep(1000);
+      assertFalse(result.isDone());
+      assertTrue(input.cancel(false));
+      assertTrue(input.isDone());
+      assertTrue(input.isCancelled());
+      assertThrows(CancellationException.class, result::get);
+      assertTrue(result.isDone());
+      assertTrue(result.isCancelled());
+      assertTrue(output.isDone());
+      assertTrue(output.isCancelled());
     } finally {
       executor.shutdown();
     }

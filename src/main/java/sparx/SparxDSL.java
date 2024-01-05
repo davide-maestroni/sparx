@@ -10,7 +10,6 @@ import sparx.concurrent.SignalFuture;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TripleFuture;
 import sparx.concurrent.TupleFuture;
-import sparx.concurrent.UncheckedException;
 import sparx.concurrent.VarFuture;
 import sparx.function.Action;
 import sparx.function.BiFunction;
@@ -20,6 +19,7 @@ import sparx.function.Predicate;
 import sparx.tuple.Couple;
 import sparx.tuple.Triple;
 import sparx.util.Nothing;
+import sparx.util.UncheckedException;
 
 public class SparxDSL {
 

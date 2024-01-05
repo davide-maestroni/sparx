@@ -24,6 +24,7 @@ import sparx.logging.alert.BackpressureAlert;
 import sparx.logging.alert.SchedulerQueueAlert;
 import sparx.logging.alert.SchedulerWorkerAlert;
 import sparx.util.Requires;
+import sparx.util.UncheckedException;
 
 public class Scheduler {
 
@@ -229,7 +230,7 @@ public class Scheduler {
           try {
             mutex.wait(delayMillis);
           } catch (final InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
+            throw UncheckedException.toUnchecked(e);
           } finally {
             backpressureAlert.notifyWaitStop(currentThread);
           }

@@ -20,6 +20,7 @@ package sparx.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Function;
+import sparx.util.UncheckedException;
 
 abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements StreamableFuture<V, F> {
 

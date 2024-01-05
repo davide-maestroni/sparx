@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.logging.Log;
+import sparx.util.UncheckedException;
 
 class FunctionalReceiver<V> implements Receiver<V> {
 

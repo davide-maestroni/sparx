@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.UncheckedException;
+import sparx.util.UncheckedException;
 import sparx.logging.Log;
 import sparx.util.ImmutableList;
 
@@ -35,7 +35,7 @@ public class SparxConfig {
         try {
           oldModule.reset();
         } catch (final Exception e) {
-          UncheckedException.throwUnchecked(e);
+          throw UncheckedException.throwUnchecked(e);
         }
       }
     }
@@ -48,7 +48,7 @@ public class SparxConfig {
         try {
           oldModule.reset();
         } catch (final Exception e) {
-          UncheckedException.throwUnchecked(e);
+          throw UncheckedException.throwUnchecked(e);
         }
       }
     }
@@ -115,7 +115,7 @@ public class SparxConfig {
               entry.getValue().configure(properties);
               break;
             } catch (final Exception e) {
-              UncheckedException.throwUnchecked(e);
+              throw UncheckedException.throwUnchecked(e);
             }
           }
         }
@@ -133,7 +133,7 @@ public class SparxConfig {
           try {
             module.reset();
           } catch (final Exception e) {
-            UncheckedException.throwUnchecked(e);
+            throw UncheckedException.throwUnchecked(e);
           }
         }
         Log.dbg(SparxConfig.class, "Sparx configuration successfully reset to default");

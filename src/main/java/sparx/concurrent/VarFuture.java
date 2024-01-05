@@ -45,6 +45,7 @@ import sparx.logging.alert.JoinAlert;
 import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
 import sparx.util.Requires;
+import sparx.util.UncheckedException;
 
 public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {
@@ -481,16 +482,16 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         joinAlert.notifyJoinStart();
         try {
           if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
-            throw new UncheckedTimeoutException();
+            throw UncheckedException.timeout();
           }
         } catch (final InterruptedException e) {
-          throw new UncheckedInterruptedException(e);
+          throw UncheckedException.toUnchecked(e);
         } finally {
           joinAlert.notifyJoinStop();
         }
         remainingTime -= System.currentTimeMillis() - startTime;
       }
-      throw new UncheckedTimeoutException();
+      throw UncheckedException.timeout();
     }
 
     @Override
@@ -514,7 +515,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         try {
           semaphore.acquire();
         } catch (final InterruptedException e) {
-          throw new UncheckedInterruptedException(e);
+          throw UncheckedException.toUnchecked(e);
         } finally {
           joinAlert.notifyJoinStop();
         }
@@ -554,16 +555,16 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           joinAlert.notifyJoinStart();
           try {
             if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
-              throw new UncheckedTimeoutException();
+              throw UncheckedException.timeout();
             }
           } catch (final InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
+            throw UncheckedException.toUnchecked(e);
           } finally {
             joinAlert.notifyJoinStop();
           }
           remainingTime -= System.currentTimeMillis() - startTime;
         }
-        throw new UncheckedTimeoutException();
+        throw UncheckedException.timeout();
       } finally {
         totalTimeoutMillis -= System.currentTimeMillis() - startTime;
       }
@@ -592,16 +593,16 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           joinAlert.notifyJoinStart();
           try {
             if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
-              throw new UncheckedTimeoutException();
+              throw UncheckedException.timeout();
             }
           } catch (final InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
+            throw UncheckedException.toUnchecked(e);
           } finally {
             joinAlert.notifyJoinStop();
           }
           remainingTime -= System.currentTimeMillis() - startTime;
         }
-        throw new UncheckedTimeoutException();
+        throw UncheckedException.timeout();
       } finally {
         totalTimeoutMillis -= System.currentTimeMillis() - startTime;
       }
@@ -806,6 +807,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     @Override
     @SuppressWarnings("unchecked")
     public boolean fail(@NotNull final Exception error) {
+      status.set(CANCELLED);
       innerStatus = new CancelledStatus();
       if (lastValue != UNSET) {
         try {
@@ -846,7 +848,6 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       } else {
         registration.cancel();
       }
-      status.set(CANCELLED);
       return true;
     }
 
@@ -916,6 +917,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     @Override
     @SuppressWarnings("unchecked")
     public void close() {
+      status.set(CLOSED);
       innerStatus = new ClosedStatus();
       result = new ValueResult<V>((V) lastValue);
       try {
@@ -944,7 +946,6 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       }
       semaphores.clear();
       registration.cancel();
-      status.set(CLOSED);
     }
 
     @Override

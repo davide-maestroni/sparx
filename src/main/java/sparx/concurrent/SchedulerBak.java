@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.logging.Log;
 import sparx.util.Requires;
+import sparx.util.UncheckedException;
 
 public class SchedulerBak {
 
