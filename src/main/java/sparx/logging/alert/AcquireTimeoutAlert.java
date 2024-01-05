@@ -28,9 +28,9 @@ import sparx.util.SharedTimer;
 class AcquireTimeoutAlert implements JoinAlert, Runnable {
 
   private final ScheduledFuture<?> future;
-  private final Object mutex = new Object();
-  private final SharedTimer timer;
+  private final Object lock = new Object();
   private final long timeoutMillis;
+  private final SharedTimer timer;
   private final WeakHashMap<Thread, Long> timestamps = new WeakHashMap<Thread, Long>();
 
   AcquireTimeoutAlert(final long interval, @NotNull final TimeUnit intervalUnit, final long timeout,
@@ -42,14 +42,14 @@ class AcquireTimeoutAlert implements JoinAlert, Runnable {
 
   @Override
   public void notifyJoinStart() {
-    synchronized (mutex) {
+    synchronized (lock) {
       timestamps.put(Thread.currentThread(), System.currentTimeMillis());
     }
   }
 
   @Override
   public void notifyJoinStop() {
-    synchronized (mutex) {
+    synchronized (lock) {
       timestamps.remove(Thread.currentThread());
     }
   }
@@ -65,7 +65,7 @@ class AcquireTimeoutAlert implements JoinAlert, Runnable {
     final long now = System.currentTimeMillis();
     final long timeoutMillis = this.timeoutMillis;
     final HashMap<Thread, Long> timeouts = new HashMap<Thread, Long>();
-    synchronized (mutex) {
+    synchronized (lock) {
       for (final Entry<Thread, Long> entry : timestamps.entrySet()) {
         if (now - entry.getValue() > timeoutMillis) {
           timeouts.put(entry.getKey(), entry.getValue());

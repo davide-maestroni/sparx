@@ -28,11 +28,11 @@ import sparx.util.SharedTimer;
 class WorkerTimeoutAlert implements SchedulerWorkerAlert, Runnable {
 
   private final ScheduledFuture<?> future;
-  private final Object mutex = new Object();
-  private final SharedTimer timer;
+  private final Object lock = new Object();
   private final long timeout;
   private final long timeoutMillis;
   private final TimeUnit timeoutUnit;
+  private final SharedTimer timer;
   private final WeakHashMap<Thread, Long> timestamps = new WeakHashMap<Thread, Long>();
 
   WorkerTimeoutAlert(final long interval, @NotNull final TimeUnit intervalUnit, final long timeout,
@@ -46,14 +46,14 @@ class WorkerTimeoutAlert implements SchedulerWorkerAlert, Runnable {
 
   @Override
   public void notifyTaskStart(@NotNull final Thread currentThread) {
-    synchronized (mutex) {
+    synchronized (lock) {
       timestamps.put(currentThread, System.currentTimeMillis());
     }
   }
 
   @Override
   public void notifyTaskStop(@NotNull final Thread currentThread) {
-    synchronized (mutex) {
+    synchronized (lock) {
       timestamps.remove(currentThread);
     }
   }
@@ -69,7 +69,7 @@ class WorkerTimeoutAlert implements SchedulerWorkerAlert, Runnable {
     final long now = System.currentTimeMillis();
     final long timeoutMillis = this.timeoutMillis;
     final HashMap<Thread, Long> timeouts = new HashMap<Thread, Long>();
-    synchronized (mutex) {
+    synchronized (lock) {
       for (final Entry<Thread, Long> entry : timestamps.entrySet()) {
         if (now - entry.getValue() > timeoutMillis) {
           timeouts.put(entry.getKey(), entry.getValue());

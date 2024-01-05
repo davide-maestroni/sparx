@@ -95,10 +95,11 @@ public class Alerts {
       throw new UnsupportedOperationException("turnOff");
     }
   };
-  private static final Object mutex;
+
+  private static final Object lock;
 
   static {
-    mutex = new Object();
+    lock = new Object();
     backpressureAlert = DummyBackpressureAlert.instance();
     joinAlert = DummyJoinAlert.instance();
     workerAlert = DummySchedulerWorkerAlert.instance();
@@ -129,7 +130,7 @@ public class Alerts {
   }
 
   public static void disableBackpressureAlert() {
-    synchronized (mutex) {
+    synchronized (lock) {
       backpressureAlert.turnOff();
       backpressureAlert = DummyBackpressureAlert.instance();
     }
@@ -140,7 +141,7 @@ public class Alerts {
   }
 
   public static void disableJoinAlert() {
-    synchronized (mutex) {
+    synchronized (lock) {
       joinAlert.turnOff();
       joinAlert = DummyJoinAlert.instance();
     }
@@ -151,7 +152,7 @@ public class Alerts {
   }
 
   public static void disableSchedulerWorkerAlert() {
-    synchronized (mutex) {
+    synchronized (lock) {
       workerAlert.turnOff();
       workerAlert = DummySchedulerWorkerAlert.instance();
     }
@@ -160,7 +161,7 @@ public class Alerts {
   public static void enableBackpressureAlert(final long interval,
       @NotNull final TimeUnit intervalUnit, final long timeout,
       @NotNull final TimeUnit timeoutUnit) {
-    synchronized (mutex) {
+    synchronized (lock) {
       backpressureAlert.turnOff();
       backpressureAlert = new WaitTimeoutAlert(interval, intervalUnit, timeout, timeoutUnit);
     }
@@ -172,7 +173,7 @@ public class Alerts {
 
   public static void enableJoinAlert(final long interval, @NotNull final TimeUnit intervalUnit,
       final long timeout, @NotNull final TimeUnit timeoutUnit) {
-    synchronized (mutex) {
+    synchronized (lock) {
       joinAlert.turnOff();
       joinAlert = new AcquireTimeoutAlert(interval, intervalUnit, timeout, timeoutUnit);
     }
@@ -185,7 +186,7 @@ public class Alerts {
   public static void enableSchedulerWorkerAlert(final long interval,
       @NotNull final TimeUnit intervalUnit, final long timeout,
       @NotNull final TimeUnit timeoutUnit) {
-    synchronized (mutex) {
+    synchronized (lock) {
       workerAlert.turnOff();
       workerAlert = new WorkerTimeoutAlert(interval, intervalUnit, timeout, timeoutUnit);
     }
@@ -194,7 +195,7 @@ public class Alerts {
   public static void resetDefaults() {
     executionContextTaskAlert = DummyExecutionContextTaskAlert.instance();
     queueAlert = DummySchedulerQueueAlert.instance();
-    synchronized (mutex) {
+    synchronized (lock) {
       backpressureAlert.turnOff();
       backpressureAlert = DummyBackpressureAlert.instance();
       joinAlert.turnOff();

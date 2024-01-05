@@ -43,11 +43,11 @@ public class Scheduler {
   private static final int PAUSING = 2;
   private static final int PAUSED = 3;
 
-  private final Executor executor;
-  private final ArrayDeque<Task> beforeQueue = new ArrayDeque<Task>();
   private final ArrayDeque<Task> afterQueue = new ArrayDeque<Task>();
+  private final ArrayDeque<Task> beforeQueue = new ArrayDeque<Task>();
+  private final Executor executor;
+  private final Object lock = new Object();
   private final int minThroughput;
-  private final Object mutex = new Object();
   private final Runnable worker;
 
   private Task runningTask;
@@ -95,7 +95,7 @@ public class Scheduler {
   }
 
   public boolean interruptTask(@NotNull final String taskID) {
-    synchronized (mutex) {
+    synchronized (lock) {
       final Task runningTask = this.runningTask;
       if (runningTask != null && runningTask.taskID().equals(taskID)) {
         try {
@@ -115,7 +115,7 @@ public class Scheduler {
   }
 
   public void pause() {
-    synchronized (mutex) {
+    synchronized (lock) {
       if (status == RUNNING) {
         status = PAUSING;
       } else if (status == IDLE) {
@@ -125,14 +125,14 @@ public class Scheduler {
   }
 
   public int pendingCount() {
-    synchronized (mutex) {
+    synchronized (lock) {
       return beforeQueue.size() + afterQueue.size();
     }
   }
 
   public void resume() {
     final boolean needsExecution;
-    synchronized (mutex) {
+    synchronized (lock) {
       final boolean isPaused = status == PAUSED;
       needsExecution = isPaused && !(beforeQueue.isEmpty() && afterQueue.isEmpty());
       if (isPaused || (status == PAUSING)) {
@@ -147,8 +147,8 @@ public class Scheduler {
   @SuppressWarnings("AssignmentUsedAsCondition")
   public void scheduleAfter(@NotNull Task task) {
     final boolean needsExecution;
-    synchronized (mutex) {
-      task = applyBackpressure(task, mutex, runningThread);
+    synchronized (lock) {
+      task = applyBackpressure(task, lock, runningThread);
       final ArrayDeque<Task> afterQueue = this.afterQueue;
       afterQueue.offer(task);
       queueAlert.notifyPendingTasks(beforeQueue.size(), afterQueue.size());
@@ -164,7 +164,7 @@ public class Scheduler {
   @SuppressWarnings("AssignmentUsedAsCondition")
   public void scheduleBefore(@NotNull final Task task) {
     final boolean needsExecution;
-    synchronized (mutex) {
+    synchronized (lock) {
       final ArrayDeque<Task> beforeQueue = this.beforeQueue;
       beforeQueue.offer(task);
       queueAlert.notifyPendingTasks(beforeQueue.size(), afterQueue.size());
@@ -177,12 +177,12 @@ public class Scheduler {
     }
   }
 
-  protected @NotNull Task applyBackpressure(@NotNull final Task task, @NotNull final Object mutex,
+  protected @NotNull Task applyBackpressure(@NotNull final Task task, @NotNull final Object lock,
       final Thread runningThread) {
     return task;
   }
 
-  protected void releaseBackpressure(@NotNull final Object mutex) {
+  protected void releaseBackpressure(@NotNull final Object lock) {
   }
 
   public interface Task extends Runnable {
@@ -214,7 +214,7 @@ public class Scheduler {
 
     @Override
     protected @NotNull Task applyBackpressure(@NotNull final Task task,
-        @NotNull final Object mutex, final Thread runningThread) {
+        @NotNull final Object lock, final Thread runningThread) {
       final int pendingCount = pendingCount();
       final int throughput = minThroughput();
       final ArrayDeque<Task> waitingTasks = this.waitingTasks;
@@ -228,7 +228,7 @@ public class Scheduler {
           backpressureAlert.notifyWaitStart(currentThread);
           waitingTasks.offer(task);
           try {
-            mutex.wait(delayMillis);
+            lock.wait(delayMillis);
           } catch (final InterruptedException e) {
             throw UncheckedException.toUnchecked(e);
           } finally {
@@ -241,11 +241,11 @@ public class Scheduler {
     }
 
     @Override
-    protected void releaseBackpressure(@NotNull final Object mutex) {
+    protected void releaseBackpressure(@NotNull final Object lock) {
       final ArrayDeque<Task> waitingTasks = this.waitingTasks;
       if (!waitingTasks.isEmpty() && backpressureStrategy.releaseBackpressure(pendingCount(),
           waitingTasks.size(), minThroughput())) {
-        mutex.notify();
+        lock.notify();
       }
     }
   }
@@ -261,7 +261,7 @@ public class Scheduler {
       workerAlert.notifyTaskStart(currentThread);
       while (true) {
         Task task;
-        synchronized (mutex) {
+        synchronized (lock) {
           runningTask = null;
           runningThread = null;
           if (status == PAUSING) {
@@ -282,13 +282,13 @@ public class Scheduler {
           }
           runningTask = task;
           runningThread = currentThread;
-          releaseBackpressure(mutex);
+          releaseBackpressure(lock);
         }
 
         try {
           task.run();
         } catch (final Throwable t) {
-          synchronized (mutex) {
+          synchronized (lock) {
             runningTask = null;
             runningThread = null;
             workerAlert.notifyTaskStop(currentThread);
@@ -311,7 +311,7 @@ public class Scheduler {
       final Thread currentThread = Thread.currentThread();
       workerAlert.notifyTaskStart(currentThread);
       Task task;
-      synchronized (mutex) {
+      synchronized (lock) {
         if (status == PAUSING) {
           status = PAUSED;
           workerAlert.notifyTaskStop(currentThread);
@@ -330,7 +330,7 @@ public class Scheduler {
         }
         runningTask = task;
         runningThread = currentThread;
-        releaseBackpressure(mutex);
+        releaseBackpressure(lock);
       }
 
       boolean hasNext = false;
@@ -340,7 +340,7 @@ public class Scheduler {
         Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
         throw UncheckedException.throwUnchecked(t);
       } finally {
-        synchronized (mutex) {
+        synchronized (lock) {
           runningTask = null;
           runningThread = null;
           workerAlert.notifyTaskStop(currentThread);
@@ -368,7 +368,7 @@ public class Scheduler {
       int minThroughput = Scheduler.this.minThroughput;
       while (minThroughput > 0) {
         Task task;
-        synchronized (mutex) {
+        synchronized (lock) {
           runningTask = null;
           runningThread = null;
           if (status == PAUSING) {
@@ -389,14 +389,14 @@ public class Scheduler {
           }
           runningTask = task;
           runningThread = currentThread;
-          releaseBackpressure(mutex);
+          releaseBackpressure(lock);
         }
 
         try {
           minThroughput -= Math.max(task.weight(), 1);
           task.run();
         } catch (final Throwable t) {
-          synchronized (mutex) {
+          synchronized (lock) {
             runningTask = null;
             runningThread = null;
             workerAlert.notifyTaskStop(currentThread);
@@ -407,7 +407,7 @@ public class Scheduler {
       }
 
       boolean hasNext = false;
-      synchronized (mutex) {
+      synchronized (lock) {
         workerAlert.notifyTaskStop(currentThread);
         if (status == PAUSING) {
           status = PAUSED;

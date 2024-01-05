@@ -55,7 +55,7 @@ public class LogModule implements ConfigModule {
   public static final String LOG_PRINTER_THREAD_PREFIX = "sparx-log-printer-";
 
   private final HashSet<ExecutorService> executors = new HashSet<ExecutorService>();
-  private final Object mutex = new Object();
+  private final Object lock = new Object();
 
   public static void addModule() {
     SparxConfig.addModule(LOGGING_PROP_PREFIX, new LogModule());
@@ -103,7 +103,7 @@ public class LogModule implements ConfigModule {
 
   @Override
   public void configure(@NotNull final Properties properties) throws Exception {
-    synchronized (mutex) {
+    synchronized (lock) {
       final String levelName = properties.getProperty(LOG_LEVEL_PROP);
       if (levelName != null) {
         Log.setLevel(LogLevel.valueOf(levelName.toUpperCase()));
@@ -157,46 +157,7 @@ public class LogModule implements ConfigModule {
                   ExecutorContext.of(executor)
                       .run(TripleFuture.of(future, ready,
                               ValFuture.of(Tuples.asTuple(printerName, properties))),
-                          new Consumer<TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>>>() {
-                            @Override
-                            public void accept(
-                                final TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>> input) {
-                              input.getThird().subscribe(
-                                  new Receiver<Couple<Object, String, Properties>>() {
-                                    @Override
-                                    public boolean fail(@NotNull final Exception error) {
-                                      return input.getSecond().fail(error);
-                                    }
-
-                                    @Override
-                                    public void set(
-                                        final Couple<Object, String, Properties> value) {
-                                      try {
-                                        final Receiver<LogMessage> logPrinter = instantiateLogPrinter(
-                                            value.getFirst(), value.getSecond());
-                                        if (logPrinter != null) {
-                                          input.getFirst().subscribe(logPrinter);
-                                        }
-                                      } catch (final Exception e) {
-                                        input.getSecond().fail(e);
-                                      }
-                                    }
-
-                                    @Override
-                                    public void setBulk(
-                                        @NotNull final Collection<Couple<Object, String, Properties>> values) {
-                                      for (final Couple<Object, String, Properties> value : values) {
-                                        set(value);
-                                      }
-                                    }
-
-                                    @Override
-                                    public void close() {
-                                      input.getSecond().close();
-                                    }
-                                  });
-                            }
-                          }, 1);
+                          new LogPrintersSetup(), 1);
                   ready.get();
                 }
               }
@@ -209,13 +170,56 @@ public class LogModule implements ConfigModule {
 
   @Override
   public void reset() {
-    synchronized (mutex) {
+    synchronized (lock) {
       final HashSet<ExecutorService> executors = this.executors;
       for (final ExecutorService executor : executors) {
         executor.shutdown();
       }
       executors.clear();
       Log.reset();
+    }
+  }
+
+  private static class LogPrintersSetup implements
+      Consumer<TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>>> {
+
+    @Override
+    public void accept(
+        final TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>> input) {
+      input.getThird().subscribe(
+          new Receiver<Couple<Object, String, Properties>>() {
+            @Override
+            public boolean fail(@NotNull final Exception error) {
+              return input.getSecond().fail(error);
+            }
+
+            @Override
+            public void set(
+                final Couple<Object, String, Properties> value) {
+              try {
+                final Receiver<LogMessage> logPrinter = instantiateLogPrinter(
+                    value.getFirst(), value.getSecond());
+                if (logPrinter != null) {
+                  input.getFirst().subscribe(logPrinter);
+                }
+              } catch (final Exception e) {
+                input.getSecond().fail(e);
+              }
+            }
+
+            @Override
+            public void setBulk(
+                @NotNull final Collection<Couple<Object, String, Properties>> values) {
+              for (final Couple<Object, String, Properties> value : values) {
+                set(value);
+              }
+            }
+
+            @Override
+            public void close() {
+              input.getSecond().close();
+            }
+          });
     }
   }
 }

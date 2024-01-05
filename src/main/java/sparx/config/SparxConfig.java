@@ -20,8 +20,8 @@ public class SparxConfig {
   private static final List<String> CONFIG_LOCATIONS = ImmutableList.of("sparx.properties",
       "sparx/sparx.properties", "sparx/config.properties");
 
+  private static final Object lock = new Object();
   private static final HashMap<String, ConfigModule> modules = new HashMap<String, ConfigModule>();
-  private static final Object mutex = new Object();
 
   private static boolean initialized = false;
 
@@ -29,7 +29,7 @@ public class SparxConfig {
   }
 
   public static void addModule(@NotNull final String prefix, @NotNull final ConfigModule module) {
-    synchronized (mutex) {
+    synchronized (lock) {
       final ConfigModule oldModule = modules.put(prefix, module);
       if (oldModule != null && !oldModule.equals(module)) {
         try {
@@ -42,7 +42,7 @@ public class SparxConfig {
   }
 
   public static void removeModule(@NotNull final String prefix) {
-    synchronized (mutex) {
+    synchronized (lock) {
       final ConfigModule oldModule = modules.remove(prefix);
       if (oldModule != null) {
         try {
@@ -101,7 +101,7 @@ public class SparxConfig {
   }
 
   public static void initFromProperties(@NotNull final Properties properties) {
-    synchronized (mutex) {
+    synchronized (lock) {
       reset();
       initialized = true;
       for (final Entry<String, ConfigModule> entry : modules.entrySet()) {
@@ -126,7 +126,7 @@ public class SparxConfig {
   }
 
   public static void reset() {
-    synchronized (mutex) {
+    synchronized (lock) {
       if (initialized) {
         initialized = false;
         for (final ConfigModule module : modules.values()) {
