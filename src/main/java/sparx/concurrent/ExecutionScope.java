@@ -42,7 +42,6 @@ class ExecutionScope implements ExecutionContext {
   private final Scheduler scheduler;
 
   ExecutionScope(@NotNull final Scheduler scheduler) {
-    // TODO: handle executor rejection
     this.scheduler = Requires.notNull(scheduler, "scheduler");
   }
 

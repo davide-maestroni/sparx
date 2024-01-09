@@ -35,6 +35,8 @@ import sparx.concurrent.FutureGroup.Group;
 import sparx.concurrent.FutureGroup.GroupReceiver;
 import sparx.concurrent.FutureGroup.Registration;
 import sparx.concurrent.Scheduler.Task;
+import sparx.concurrent.history.FutureHistory;
+import sparx.concurrent.history.HistoryStrategy;
 import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.function.Function;
@@ -56,7 +58,6 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   private static final int RUNNING = 1;
   private static final int CANCELLED = 2;
   private static final int COMPLETING = 3;
-  private static final NoHistoryStrategy<?> NO_HISTORY = new NoHistoryStrategy<Object>();
   private static final Object UNSET = new Object();
 
   private final HistoryStrategy<V> historyStrategy;
@@ -89,10 +90,8 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         Log.printable(e));
   }
 
-
-  @SuppressWarnings("unchecked")
   VarFuture() {
-    this((HistoryStrategy<V>) NO_HISTORY);
+    this(FutureHistory.<V>noHistory());
   }
 
   VarFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
@@ -175,7 +174,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   public @NotNull Subscription subscribe(@NotNull final Receiver<? super V> receiver) {
     final GroupReceiver<? super V> groupReceiver = FutureGroup.currentGroup()
         .onSubscribe(this, scheduler, Requires.notNull(receiver, "receiver"));
-    scheduler.scheduleAfter(new VarTask() {
+    scheduler.scheduleBefore(new VarTask() {
       @Override
       @SuppressWarnings("unchecked")
       public void run() {
@@ -344,49 +343,10 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
   }
 
-  public interface HistoryStrategy<V> {
-
-    void onClear();
-
-    void onClose();
-
-    void onSet(V value);
-
-    void onSetBulk(@NotNull List<V> values);
-
-    @NotNull List<V> onSubscribe();
-  }
-
   private interface Result<V> extends Supplier<List<V>> {
 
     @Override
     List<V> get() throws ExecutionException;
-  }
-
-// History
-
-  private static class NoHistoryStrategy<V> implements HistoryStrategy<V> {
-
-    @Override
-    public void onClear() {
-    }
-
-    @Override
-    public void onClose() {
-    }
-
-    @Override
-    public void onSet(final V value) {
-    }
-
-    @Override
-    public void onSetBulk(@NotNull final List<V> values) {
-    }
-
-    @Override
-    public @NotNull List<V> onSubscribe() {
-      return ImmutableList.of();
-    }
   }
 
 // Iterators
@@ -723,21 +683,23 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
     void subscribe(@NotNull final Receiver<V> receiver,
         @NotNull final GroupReceiver<V> groupReceiver) {
-      try {
-        final List<V> values = historyStrategy.onSubscribe();
-        if (!values.isEmpty()) {
-          try {
-            if (values.size() == 1) {
-              groupReceiver.set(values.get(0));
-            } else {
-              groupReceiver.setBulk(ImmutableList.ofElementsIn(values));
+      if (groupReceiver.isSink()) {
+        try {
+          final List<V> values = historyStrategy.onSubscribe();
+          if (!values.isEmpty()) {
+            try {
+              if (values.size() == 1) {
+                groupReceiver.set(values.get(0));
+              } else {
+                groupReceiver.setBulk(ImmutableList.ofElementsIn(values));
+              }
+            } catch (final RuntimeException e) {
+              groupReceiver.onUncaughtError(e);
             }
-          } catch (final RuntimeException e) {
-            groupReceiver.onUncaughtError(e);
           }
+        } catch (final RuntimeException e) {
+          logInvocationException("history strategy", "onSubscribe", e);
         }
-      } catch (final RuntimeException e) {
-        logInvocationException("history strategy", "onSubscribe", e);
       }
     }
   }
@@ -791,7 +753,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         @NotNull final GroupReceiver<V> groupReceiver) {
       super.subscribe(receiver, groupReceiver);
       try {
-        if (lastValue != UNSET) {
+        if (groupReceiver.isSink() && lastValue != UNSET) {
           groupReceiver.set((V) lastValue);
         }
         groupReceiver.close();
@@ -811,7 +773,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       innerStatus = new CancelledStatus();
       if (lastValue != UNSET) {
         try {
-          historyStrategy.onSet((V) lastValue);
+          historyStrategy.onPush((V) lastValue);
         } catch (final RuntimeException e) {
           logInvocationException("history strategy", "onSet", e);
         }
@@ -856,7 +818,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     public void setBulk(@NotNull final Collection<V> values) {
       if (lastValue != UNSET) {
         try {
-          historyStrategy.onSet((V) lastValue);
+          historyStrategy.onPush((V) lastValue);
         } catch (final RuntimeException e) {
           logInvocationException("history strategy", "onSet", e);
         }
@@ -865,7 +827,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final List<V> valuesList = (List<V>) values;
       lastValue = valuesList.get(lastIndex);
       try {
-        historyStrategy.onSetBulk(valuesList.subList(0, lastIndex));
+        historyStrategy.onPushBulk(valuesList.subList(0, lastIndex));
       } catch (final RuntimeException e) {
         logInvocationException("history strategy", "onSetBulk", e);
       }
@@ -893,7 +855,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     public void set(final V value) {
       if (lastValue != UNSET) {
         try {
-          historyStrategy.onSet((V) lastValue);
+          historyStrategy.onPush((V) lastValue);
         } catch (final RuntimeException e) {
           logInvocationException("history strategy", "onSet", e);
         }
@@ -1007,7 +969,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
       if (!receivers.containsKey(receiver)) {
         super.subscribe(receiver, groupReceiver);
-        if (lastValue != UNSET) {
+        if (groupReceiver.isSink() && lastValue != UNSET) {
           try {
             groupReceiver.set((V) lastValue);
           } catch (final RuntimeException e) {

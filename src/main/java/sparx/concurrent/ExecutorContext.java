@@ -17,7 +17,7 @@ package sparx.concurrent;
 
 import java.util.concurrent.Executor;
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.Scheduler.BackpressureStrategy;
+import sparx.concurrent.backpressure.BackpressureStrategy;
 import sparx.function.Consumer;
 import sparx.function.Function;
 import sparx.util.Nothing;
@@ -38,11 +38,13 @@ public class ExecutorContext implements ExecutionContext {
 
   public static @NotNull ExecutorContext of(@NotNull final Executor executor,
       final int minThroughput) {
+    // TODO: handle executor rejection: wrap executor and make every scope fail?
     return new ExecutorContext(Scheduler.of(executor, minThroughput));
   }
 
   public static @NotNull ExecutorContext of(@NotNull final Executor executor,
       final int minThroughput, @NotNull final BackpressureStrategy backpressureStrategy) {
+    // TODO: handle executor rejection: wrap executor and make every scope fail?
     return new ExecutorContext(Scheduler.of(executor, minThroughput, backpressureStrategy));
   }
 

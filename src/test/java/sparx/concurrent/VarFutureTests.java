@@ -36,7 +36,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import sparx.concurrent.VarFuture.HistoryStrategy;
+import sparx.concurrent.history.HistoryStrategy;
 import sparx.config.AlertModule;
 import sparx.config.LogModule;
 import sparx.config.SparxConfig;
@@ -78,11 +78,11 @@ public class VarFutureTests {
       }
 
       @Override
-      public void onSet(final String value) {
+      public void onPush(final String value) {
       }
 
       @Override
-      public void onSetBulk(@NotNull final List<String> values) {
+      public void onPushBulk(@NotNull final List<String> values) {
       }
 
       @Override

@@ -18,6 +18,7 @@ package sparx.concurrent;
 import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.backpressure.BackpressureStrategy;
 import sparx.logging.Log;
 import sparx.logging.alert.Alerts;
 import sparx.logging.alert.BackpressureAlert;
@@ -190,15 +191,6 @@ public class Scheduler {
     @NotNull String taskID();
 
     int weight();
-  }
-
-  public interface BackpressureStrategy {
-
-    boolean applyBackpressure(int pendingCount, int waitingCount, int minThroughput);
-
-    long getDelayMillis(int pendingCount, int waitingCount, int minThroughput);
-
-    boolean releaseBackpressure(int pendingCount, int waitingCount, int minThroughput);
   }
 
   private static class SchedulerWithBackpressure extends Scheduler {

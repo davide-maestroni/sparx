@@ -6,7 +6,7 @@ import sparx.concurrent.SingleFuture;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TripleFuture;
 import sparx.concurrent.VarFuture;
-import sparx.concurrent.VarFuture.HistoryStrategy;
+import sparx.concurrent.history.HistoryStrategy;
 
 public class Sparx {
 
