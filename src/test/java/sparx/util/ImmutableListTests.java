@@ -250,6 +250,30 @@ public class ImmutableListTests {
     testList(ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8"), 9);
     testList(ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"), 10);
     testList(ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"), 11);
+    testList(ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"), 12);
+    testList(ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"),
+        13);
+    testList(
+        ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"),
+        14);
+    testList(
+        ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14"), 15);
+    testList(
+        ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14", "15"), 16);
+    testList(
+        ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14", "15", "16"), 17);
+    testList(
+        ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14", "15", "16", "17"), 18);
+    testList(
+        ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14", "15", "16", "17", "18"), 19);
+    testList(
+        ImmutableList.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14", "15", "16", "17", "18", "19"), 20);
   }
 
   @Test
@@ -265,6 +289,32 @@ public class ImmutableListTests {
     testListNull(ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8"), 9);
     testListNull(ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9"), 10);
     testListNull(ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"), 11);
+    testListNull(ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"),
+        12);
+    testListNull(
+        ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"),
+        13);
+    testListNull(
+        ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"),
+        14);
+    testListNull(
+        ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14"), 15);
+    testListNull(
+        ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14", "15"), 16);
+    testListNull(
+        ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14", "15", "16"), 17);
+    testListNull(
+        ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14", "15", "16", "17"), 18);
+    testListNull(
+        ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14", "15", "16", "17", "18"), 19);
+    testListNull(
+        ImmutableList.of(null, "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13",
+            "14", "15", "16", "17", "18", "19"), 20);
   }
 
   private void testList(@NotNull final ImmutableList<String> list, final int size) {
