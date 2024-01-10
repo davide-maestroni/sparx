@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
-///////////////////////////////////////////////
 package sparx.concurrent;
 
 import java.util.List;
@@ -23,6 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Quintuple;
 import sparx.util.ImmutableList;
 import sparx.util.Requires;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 public class QuintupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V> extends
     TupleStreamGroupFuture<V, QuintupleFuture<V, V1, V2, V3, V4, V5>> implements
@@ -39,7 +40,8 @@ public class QuintupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
         Requires.notNull(second, "second"),
         Requires.notNull(third, "third"),
         Requires.notNull(fourth, "fourth"),
-        Requires.notNull(fifth, "fifth"));
+        Requires.notNull(fifth, "fifth")
+    );
   }
 
   private final StreamingFuture<V1> first;
@@ -49,7 +51,6 @@ public class QuintupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
   private final StreamingFuture<V5> fifth;
   private final List<StreamingFuture<? extends V>> futures;
 
-  @SuppressWarnings("unchecked")
   private QuintupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
@@ -100,5 +101,25 @@ public class QuintupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
   @Override
   public @NotNull QuintupleFuture<V, V1, V2, V3, V4, V5> readOnly() {
     return this;
+  }
+
+  @Override
+  protected @NotNull QuintupleFuture<V, V1, V2, V3, V4, V5> createFuture() {
+    return new QuintupleFuture<V, V1, V2, V3, V4, V5>(
+        new VarFuture<V1>(),
+        new VarFuture<V2>(),
+        new VarFuture<V3>(),
+        new VarFuture<V4>(),
+        new VarFuture<V5>()
+    );
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final QuintupleFuture<V, V1, V2, V3, V4, V5> future) {
+    getFirst().subscribe(future.getFirst());
+    getSecond().subscribe(future.getSecond());
+    getThird().subscribe(future.getThird());
+    getFourth().subscribe(future.getFourth());
+    getFifth().subscribe(future.getFifth());
   }
 }

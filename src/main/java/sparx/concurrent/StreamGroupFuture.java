@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
-///////////////////////////////////////////////
 package sparx.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Function;
 import sparx.util.UncheckedException;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements StreamableFuture<V, F> {
 
@@ -31,7 +32,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       first.subscribe(group);
       return first;
     } catch (final Exception e) {
@@ -50,9 +51,11 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V2> group = new StreamGroup<V2>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       second.subscribe(group);
+      subscribeFuture(future);
       return second;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -71,10 +74,12 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V3> group = new StreamGroup<V3>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       third.subscribe(group);
+      subscribeFuture(future);
       return third;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -94,11 +99,13 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V4> group = new StreamGroup<V4>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
       fourth.subscribe(group);
+      subscribeFuture(future);
       return fourth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -119,12 +126,14 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V5> group = new StreamGroup<V5>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
       final F5 fifth = fifthFunction.apply(fourth);
       fifth.subscribe(group);
+      subscribeFuture(future);
       return fifth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -146,13 +155,15 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V6> group = new StreamGroup<V6>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
       final F5 fifth = fifthFunction.apply(fourth);
       final F6 sixth = sixthFunction.apply(fifth);
       sixth.subscribe(group);
+      subscribeFuture(future);
       return sixth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -175,7 +186,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V7> group = new StreamGroup<V7>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -183,6 +195,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F6 sixth = sixthFunction.apply(fifth);
       final F7 seventh = seventhFunction.apply(sixth);
       seventh.subscribe(group);
+      subscribeFuture(future);
       return seventh;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -206,7 +219,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V8> group = new StreamGroup<V8>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -215,6 +229,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F7 seventh = seventhFunction.apply(sixth);
       final F8 eighth = eighthFunction.apply(seventh);
       eighth.subscribe(group);
+      subscribeFuture(future);
       return eighth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -239,7 +254,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V9> group = new StreamGroup<V9>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -249,6 +265,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F8 eighth = eighthFunction.apply(seventh);
       final F9 ninth = ninthFunction.apply(eighth);
       ninth.subscribe(group);
+      subscribeFuture(future);
       return ninth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -274,7 +291,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V10> group = new StreamGroup<V10>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -285,6 +303,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F9 ninth = ninthFunction.apply(eighth);
       final F10 tenth = tenthFunction.apply(ninth);
       tenth.subscribe(group);
+      subscribeFuture(future);
       return tenth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -311,7 +330,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V11> group = new StreamGroup<V11>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -323,6 +343,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F10 tenth = tenthFunction.apply(ninth);
       final F11 eleventh = eleventhFunction.apply(tenth);
       eleventh.subscribe(group);
+      subscribeFuture(future);
       return eleventh;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -350,7 +371,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V12> group = new StreamGroup<V12>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -363,6 +385,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F11 eleventh = eleventhFunction.apply(tenth);
       final F12 twelfth = twelfthFunction.apply(eleventh);
       twelfth.subscribe(group);
+      subscribeFuture(future);
       return twelfth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -391,7 +414,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V13> group = new StreamGroup<V13>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -405,6 +429,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F12 twelfth = twelfthFunction.apply(eleventh);
       final F13 thirteenth = thirteenthFunction.apply(twelfth);
       thirteenth.subscribe(group);
+      subscribeFuture(future);
       return thirteenth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -434,7 +459,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V14> group = new StreamGroup<V14>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -449,6 +475,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F13 thirteenth = thirteenthFunction.apply(twelfth);
       final F14 fourteenth = fourteenthFunction.apply(thirteenth);
       fourteenth.subscribe(group);
+      subscribeFuture(future);
       return fourteenth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -479,7 +506,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V15> group = new StreamGroup<V15>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -495,6 +523,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F14 fourteenth = fourteenthFunction.apply(thirteenth);
       final F15 fifteenth = fifteenthFunction.apply(fourteenth);
       fifteenth.subscribe(group);
+      subscribeFuture(future);
       return fifteenth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -526,7 +555,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V16> group = new StreamGroup<V16>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -543,6 +573,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F15 fifteenth = fifteenthFunction.apply(fourteenth);
       final F16 sixteenth = sixteenthFunction.apply(fifteenth);
       sixteenth.subscribe(group);
+      subscribeFuture(future);
       return sixteenth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -575,7 +606,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V17> group = new StreamGroup<V17>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -593,6 +625,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F16 sixteenth = sixteenthFunction.apply(fifteenth);
       final F17 seventeenth = seventeenthFunction.apply(sixteenth);
       seventeenth.subscribe(group);
+      subscribeFuture(future);
       return seventeenth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -626,7 +659,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V18> group = new StreamGroup<V18>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -645,6 +679,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F17 seventeenth = seventeenthFunction.apply(sixteenth);
       final F18 eighteenth = eighteenthFunction.apply(seventeenth);
       eighteenth.subscribe(group);
+      subscribeFuture(future);
       return eighteenth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -679,7 +714,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V19> group = new StreamGroup<V19>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -699,6 +735,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F18 eighteenth = eighteenthFunction.apply(seventeenth);
       final F19 nineteenth = nineteenthFunction.apply(eighteenth);
       nineteenth.subscribe(group);
+      subscribeFuture(future);
       return nineteenth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -734,7 +771,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V20> group = new StreamGroup<V20>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -755,6 +793,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       final F19 nineteenth = nineteenthFunction.apply(eighteenth);
       final F20 twentieth = twentiethFunction.apply(nineteenth);
       twentieth.subscribe(group);
+      subscribeFuture(future);
       return twentieth;
     } catch (final Exception e) {
       group.onUncaughtError(e);
@@ -763,4 +802,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
       FutureGroup.popGroup();
     }
   }
+
+  protected abstract @NotNull F createFuture();
+
+  protected abstract void subscribeFuture(@NotNull F future);
 }

@@ -50,4 +50,14 @@ public class SingleFuture<V> extends TupleStreamGroupFuture<V, SingleFuture<V>> 
   public @NotNull List<StreamingFuture<? extends V>> asList() {
     return futures;
   }
+
+  @Override
+  protected @NotNull SingleFuture<V> createFuture() {
+    return new SingleFuture<V>(new VarFuture<V>());
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final SingleFuture<V> future) {
+    getFirst().subscribe(future.getFirst());
+  }
 }

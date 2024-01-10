@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
-///////////////////////////////////////////////
 package sparx.concurrent;
 
 import java.util.List;
@@ -23,6 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import sparx.tuple.{{name}};
 import sparx.util.ImmutableList;
 import sparx.util.Requires;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/last}}{{/indexes}}> extends
     TupleStreamGroupFuture<V, {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}>> implements
@@ -34,8 +35,9 @@ public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/las
 {{/ordinals}}
     return new {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}>(
         Requires.notNull(first, "first"),
-{{#ordinals}}        Requires.notNull({{value.name}}, "{{value.name}}"){{^last}},{{/last}}{{#last}});{{/last}}
-{{/ordinals}}
+{{#ordinals}}        Requires.notNull({{value.name}}, "{{value.name}}"){{^last}},{{/last}}
+{{#last}}    );{{/last}}{{/ordinals}}
+
   }
 
   private final StreamingFuture<V1> first;
@@ -43,7 +45,6 @@ public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/las
 {{/ordinals}}
   private final List<StreamingFuture<? extends V>> futures;
 
-  @SuppressWarnings("unchecked")
   private {{name}}Future(
       @NotNull final StreamingFuture<V1> first,
 {{#ordinals}}      @NotNull final StreamingFuture<V{{value.index}}> {{value.name}}{{^last}},{{/last}}{{#last}}) { {{/last}}
@@ -74,5 +75,21 @@ public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/las
   @Override
   public @NotNull {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> readOnly() {
     return this;
+  }
+
+  @Override
+  protected @NotNull {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> createFuture() {
+    return new {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}>(
+{{#ordinals}}        new VarFuture<V{{value.prevIndex}}>(),
+{{#last}}        new VarFuture<V{{value.index}}>()
+{{/last}}{{/ordinals}}
+    );
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> future) {
+{{#ordinals}}    get{{value.prevSuffix}}().subscribe(future.get{{value.prevSuffix}}());
+{{#last}}    get{{value.suffix}}().subscribe(future.get{{value.suffix}}());
+{{/last}}{{/ordinals}}
   }
 }

@@ -122,6 +122,16 @@ public abstract class ValFuture<V> extends
     return get();
   }
 
+  @Override
+  protected @NotNull StreamingFuture<V> createFuture() {
+    return new VarFuture<V>();
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final StreamingFuture<V> future) {
+    subscribe(future);
+  }
+
   private static class FailureFuture<V> extends ValFuture<V> {
 
     private final Exception error;

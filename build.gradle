@@ -95,12 +95,18 @@ tasks.register('generateCode') {
         mustache.execute(writer, scope)
         writer.close()
       }
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/DecoratedFuture.java'))
+        def mustache = factory.compile("template/DecoratedFuture.mustache")
+        mustache.execute(writer, scope)
+        writer.close()
+      }
     }
     {
       def scope = [
           methodName: 'asTuple',
           tuples    : tuples
-      ];
+      ]
       def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/tuple/Tuples.java'))
       def mustache = factory.compile("template/Tuples.mustache")
       mustache.execute(writer, scope)

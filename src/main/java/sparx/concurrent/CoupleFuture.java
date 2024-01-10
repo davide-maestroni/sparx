@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
-///////////////////////////////////////////////
 package sparx.concurrent;
 
 import java.util.List;
@@ -23,6 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Couple;
 import sparx.util.ImmutableList;
 import sparx.util.Requires;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 public class CoupleFuture<V, V1 extends V, V2 extends V> extends
     TupleStreamGroupFuture<V, CoupleFuture<V, V1, V2>> implements
@@ -33,14 +34,14 @@ public class CoupleFuture<V, V1 extends V, V2 extends V> extends
       @NotNull final StreamingFuture<V2> second) { 
     return new CoupleFuture<V, V1, V2>(
         Requires.notNull(first, "first"),
-        Requires.notNull(second, "second"));
+        Requires.notNull(second, "second")
+    );
   }
 
   private final StreamingFuture<V1> first;
   private final StreamingFuture<V2> second;
   private final List<StreamingFuture<? extends V>> futures;
 
-  @SuppressWarnings("unchecked")
   private CoupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second) { 
@@ -67,5 +68,19 @@ public class CoupleFuture<V, V1 extends V, V2 extends V> extends
   @Override
   public @NotNull CoupleFuture<V, V1, V2> readOnly() {
     return this;
+  }
+
+  @Override
+  protected @NotNull CoupleFuture<V, V1, V2> createFuture() {
+    return new CoupleFuture<V, V1, V2>(
+        new VarFuture<V1>(),
+        new VarFuture<V2>()
+    );
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final CoupleFuture<V, V1, V2> future) {
+    getFirst().subscribe(future.getFirst());
+    getSecond().subscribe(future.getSecond());
   }
 }

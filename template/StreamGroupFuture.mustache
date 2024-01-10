@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
-///////////////////////////////////////////////
 package sparx.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Function;
+import sparx.util.UncheckedException;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements StreamableFuture<V, F> {
 
@@ -30,7 +32,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       first.subscribe(group);
       return first;
     } catch (final Exception e) {
@@ -51,9 +53,11 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
 {{/ordinals}}
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F future = createFuture();
+      final F1 first = firstFunction.apply((F) future.readOnly());
 {{#ordinals}}      final F{{value.index}} {{value.name}} = {{value.name}}Function.apply({{value.prevName}});
 {{#last}}      {{value.name}}.subscribe(group);
+      subscribeFuture(future);
       return {{value.name}};{{/last}}
 {{/ordinals}}
 
@@ -65,4 +69,8 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     }
   }
 {{/tuples}}
+
+  protected abstract @NotNull F createFuture();
+
+  protected abstract void subscribeFuture(@NotNull F future);
 }

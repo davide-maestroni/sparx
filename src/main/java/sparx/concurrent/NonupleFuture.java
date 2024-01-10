@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
-///////////////////////////////////////////////
 package sparx.concurrent;
 
 import java.util.List;
@@ -23,6 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Nonuple;
 import sparx.util.ImmutableList;
 import sparx.util.Requires;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 public class NonupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V> extends
     TupleStreamGroupFuture<V, NonupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9>> implements
@@ -47,7 +48,8 @@ public class NonupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exten
         Requires.notNull(sixth, "sixth"),
         Requires.notNull(seventh, "seventh"),
         Requires.notNull(eighth, "eighth"),
-        Requires.notNull(ninth, "ninth"));
+        Requires.notNull(ninth, "ninth")
+    );
   }
 
   private final StreamingFuture<V1> first;
@@ -61,7 +63,6 @@ public class NonupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exten
   private final StreamingFuture<V9> ninth;
   private final List<StreamingFuture<? extends V>> futures;
 
-  @SuppressWarnings("unchecked")
   private NonupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
@@ -144,5 +145,33 @@ public class NonupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exten
   @Override
   public @NotNull NonupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9> readOnly() {
     return this;
+  }
+
+  @Override
+  protected @NotNull NonupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9> createFuture() {
+    return new NonupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9>(
+        new VarFuture<V1>(),
+        new VarFuture<V2>(),
+        new VarFuture<V3>(),
+        new VarFuture<V4>(),
+        new VarFuture<V5>(),
+        new VarFuture<V6>(),
+        new VarFuture<V7>(),
+        new VarFuture<V8>(),
+        new VarFuture<V9>()
+    );
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final NonupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9> future) {
+    getFirst().subscribe(future.getFirst());
+    getSecond().subscribe(future.getSecond());
+    getThird().subscribe(future.getThird());
+    getFourth().subscribe(future.getFourth());
+    getFifth().subscribe(future.getFifth());
+    getSixth().subscribe(future.getSixth());
+    getSeventh().subscribe(future.getSeventh());
+    getEighth().subscribe(future.getEighth());
+    getNinth().subscribe(future.getNinth());
   }
 }

@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
-///////////////////////////////////////////////
 package sparx.concurrent;
 
 import java.util.List;
@@ -23,6 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Decuple;
 import sparx.util.ImmutableList;
 import sparx.util.Requires;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 public class DecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V> extends
     TupleStreamGroupFuture<V, DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10>> implements
@@ -49,7 +50,8 @@ public class DecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exten
         Requires.notNull(seventh, "seventh"),
         Requires.notNull(eighth, "eighth"),
         Requires.notNull(ninth, "ninth"),
-        Requires.notNull(tenth, "tenth"));
+        Requires.notNull(tenth, "tenth")
+    );
   }
 
   private final StreamingFuture<V1> first;
@@ -64,7 +66,6 @@ public class DecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exten
   private final StreamingFuture<V10> tenth;
   private final List<StreamingFuture<? extends V>> futures;
 
-  @SuppressWarnings("unchecked")
   private DecupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
@@ -155,5 +156,35 @@ public class DecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exten
   @Override
   public @NotNull DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10> readOnly() {
     return this;
+  }
+
+  @Override
+  protected @NotNull DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10> createFuture() {
+    return new DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10>(
+        new VarFuture<V1>(),
+        new VarFuture<V2>(),
+        new VarFuture<V3>(),
+        new VarFuture<V4>(),
+        new VarFuture<V5>(),
+        new VarFuture<V6>(),
+        new VarFuture<V7>(),
+        new VarFuture<V8>(),
+        new VarFuture<V9>(),
+        new VarFuture<V10>()
+    );
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10> future) {
+    getFirst().subscribe(future.getFirst());
+    getSecond().subscribe(future.getSecond());
+    getThird().subscribe(future.getThird());
+    getFourth().subscribe(future.getFourth());
+    getFifth().subscribe(future.getFifth());
+    getSixth().subscribe(future.getSixth());
+    getSeventh().subscribe(future.getSeventh());
+    getEighth().subscribe(future.getEighth());
+    getNinth().subscribe(future.getNinth());
+    getTenth().subscribe(future.getTenth());
   }
 }

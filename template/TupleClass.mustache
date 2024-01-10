@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package sparx.tuple;
+
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
-package sparx.tuple;
 
 class {{name}}Tuple<T, {{#indexes}}T{{value}} extends T{{^last}}, {{/last}}{{/indexes}}> extends GenericTuple<T>
     implements {{name}}<T, {{#indexes}}T{{value}}{{^last}}, {{/last}}{{/indexes}}> {

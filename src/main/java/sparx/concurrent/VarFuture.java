@@ -343,6 +343,16 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
   }
 
+  @Override
+  protected @NotNull StreamingFuture<V> createFuture() {
+    return new VarFuture<V>();
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final StreamingFuture<V> future) {
+    subscribe(future);
+  }
+
   private interface Result<V> extends Supplier<List<V>> {
 
     @Override

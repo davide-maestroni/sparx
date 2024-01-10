@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
-///////////////////////////////////////////////
 package sparx.concurrent;
 
 import java.util.List;
@@ -23,6 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Quadruple;
 import sparx.util.ImmutableList;
 import sparx.util.Requires;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 public class QuadrupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V> extends
     TupleStreamGroupFuture<V, QuadrupleFuture<V, V1, V2, V3, V4>> implements
@@ -37,7 +38,8 @@ public class QuadrupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
         Requires.notNull(first, "first"),
         Requires.notNull(second, "second"),
         Requires.notNull(third, "third"),
-        Requires.notNull(fourth, "fourth"));
+        Requires.notNull(fourth, "fourth")
+    );
   }
 
   private final StreamingFuture<V1> first;
@@ -46,7 +48,6 @@ public class QuadrupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
   private final StreamingFuture<V4> fourth;
   private final List<StreamingFuture<? extends V>> futures;
 
-  @SuppressWarnings("unchecked")
   private QuadrupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
@@ -89,5 +90,23 @@ public class QuadrupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
   @Override
   public @NotNull QuadrupleFuture<V, V1, V2, V3, V4> readOnly() {
     return this;
+  }
+
+  @Override
+  protected @NotNull QuadrupleFuture<V, V1, V2, V3, V4> createFuture() {
+    return new QuadrupleFuture<V, V1, V2, V3, V4>(
+        new VarFuture<V1>(),
+        new VarFuture<V2>(),
+        new VarFuture<V3>(),
+        new VarFuture<V4>()
+    );
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final QuadrupleFuture<V, V1, V2, V3, V4> future) {
+    getFirst().subscribe(future.getFirst());
+    getSecond().subscribe(future.getSecond());
+    getThird().subscribe(future.getThird());
+    getFourth().subscribe(future.getFourth());
   }
 }

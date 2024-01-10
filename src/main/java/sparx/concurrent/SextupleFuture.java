@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
-///////////////////////////////////////////////
 package sparx.concurrent;
 
 import java.util.List;
@@ -23,6 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Sextuple;
 import sparx.util.ImmutableList;
 import sparx.util.Requires;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 public class SextupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V> extends
     TupleStreamGroupFuture<V, SextupleFuture<V, V1, V2, V3, V4, V5, V6>> implements
@@ -41,7 +42,8 @@ public class SextupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exte
         Requires.notNull(third, "third"),
         Requires.notNull(fourth, "fourth"),
         Requires.notNull(fifth, "fifth"),
-        Requires.notNull(sixth, "sixth"));
+        Requires.notNull(sixth, "sixth")
+    );
   }
 
   private final StreamingFuture<V1> first;
@@ -52,7 +54,6 @@ public class SextupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exte
   private final StreamingFuture<V6> sixth;
   private final List<StreamingFuture<? extends V>> futures;
 
-  @SuppressWarnings("unchecked")
   private SextupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
@@ -111,5 +112,27 @@ public class SextupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exte
   @Override
   public @NotNull SextupleFuture<V, V1, V2, V3, V4, V5, V6> readOnly() {
     return this;
+  }
+
+  @Override
+  protected @NotNull SextupleFuture<V, V1, V2, V3, V4, V5, V6> createFuture() {
+    return new SextupleFuture<V, V1, V2, V3, V4, V5, V6>(
+        new VarFuture<V1>(),
+        new VarFuture<V2>(),
+        new VarFuture<V3>(),
+        new VarFuture<V4>(),
+        new VarFuture<V5>(),
+        new VarFuture<V6>()
+    );
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final SextupleFuture<V, V1, V2, V3, V4, V5, V6> future) {
+    getFirst().subscribe(future.getFirst());
+    getSecond().subscribe(future.getSecond());
+    getThird().subscribe(future.getThird());
+    getFourth().subscribe(future.getFourth());
+    getFifth().subscribe(future.getFifth());
+    getSixth().subscribe(future.getSixth());
   }
 }

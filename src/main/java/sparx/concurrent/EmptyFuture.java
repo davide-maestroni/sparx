@@ -115,4 +115,13 @@ public class EmptyFuture extends TupleStreamGroupFuture<Nothing, EmptyFuture> im
   public @NotNull List<StreamingFuture<? extends Nothing>> asList() {
     return ImmutableList.of();
   }
+
+  @Override
+  protected @NotNull EmptyFuture createFuture() {
+    return INSTANCE;
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final EmptyFuture future) {
+  }
 }

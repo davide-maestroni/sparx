@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
-///////////////////////////////////////////////
 package sparx.concurrent;
 
 import java.util.List;
@@ -23,6 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Quattuordecuple;
 import sparx.util.ImmutableList;
 import sparx.util.Requires;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V, V11 extends V, V12 extends V, V13 extends V, V14 extends V> extends
     TupleStreamGroupFuture<V, QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14>> implements
@@ -57,7 +58,8 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
         Requires.notNull(eleventh, "eleventh"),
         Requires.notNull(twelfth, "twelfth"),
         Requires.notNull(thirteenth, "thirteenth"),
-        Requires.notNull(fourteenth, "fourteenth"));
+        Requires.notNull(fourteenth, "fourteenth")
+    );
   }
 
   private final StreamingFuture<V1> first;
@@ -76,7 +78,6 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
   private final StreamingFuture<V14> fourteenth;
   private final List<StreamingFuture<? extends V>> futures;
 
-  @SuppressWarnings("unchecked")
   private QuattuordecupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
@@ -199,5 +200,43 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
   @Override
   public @NotNull QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14> readOnly() {
     return this;
+  }
+
+  @Override
+  protected @NotNull QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14> createFuture() {
+    return new QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14>(
+        new VarFuture<V1>(),
+        new VarFuture<V2>(),
+        new VarFuture<V3>(),
+        new VarFuture<V4>(),
+        new VarFuture<V5>(),
+        new VarFuture<V6>(),
+        new VarFuture<V7>(),
+        new VarFuture<V8>(),
+        new VarFuture<V9>(),
+        new VarFuture<V10>(),
+        new VarFuture<V11>(),
+        new VarFuture<V12>(),
+        new VarFuture<V13>(),
+        new VarFuture<V14>()
+    );
+  }
+
+  @Override
+  protected void subscribeFuture(@NotNull final QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14> future) {
+    getFirst().subscribe(future.getFirst());
+    getSecond().subscribe(future.getSecond());
+    getThird().subscribe(future.getThird());
+    getFourth().subscribe(future.getFourth());
+    getFifth().subscribe(future.getFifth());
+    getSixth().subscribe(future.getSixth());
+    getSeventh().subscribe(future.getSeventh());
+    getEighth().subscribe(future.getEighth());
+    getNinth().subscribe(future.getNinth());
+    getTenth().subscribe(future.getTenth());
+    getEleventh().subscribe(future.getEleventh());
+    getTwelfth().subscribe(future.getTwelfth());
+    getThirteenth().subscribe(future.getThirteenth());
+    getFourteenth().subscribe(future.getFourteenth());
   }
 }
