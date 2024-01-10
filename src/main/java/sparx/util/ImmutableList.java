@@ -262,6 +262,124 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
   }
 
   @SuppressWarnings("unchecked")
+  public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement,
+      final E thirdElement, final E fourthElement, final E fifthElement, final E sixthElement,
+      final E seventhElement, final E eighthElement, final E ninthElement, final E tenthElement,
+      final E eleventhElement) {
+    return new ImmutableList<E>(firstElement, secondElement, thirdElement, fourthElement,
+        fifthElement, sixthElement, seventhElement, eighthElement, ninthElement, tenthElement,
+        eleventhElement);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement,
+      final E thirdElement, final E fourthElement, final E fifthElement, final E sixthElement,
+      final E seventhElement, final E eighthElement, final E ninthElement, final E tenthElement,
+      final E eleventhElement, final E twelfthElement) {
+    return new ImmutableList<E>(firstElement, secondElement, thirdElement, fourthElement,
+        fifthElement, sixthElement, seventhElement, eighthElement, ninthElement, tenthElement,
+        eleventhElement, twelfthElement);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement,
+      final E thirdElement, final E fourthElement, final E fifthElement, final E sixthElement,
+      final E seventhElement, final E eighthElement, final E ninthElement, final E tenthElement,
+      final E eleventhElement, final E twelfthElement, final E thirteenthElement) {
+    return new ImmutableList<E>(firstElement, secondElement, thirdElement, fourthElement,
+        fifthElement, sixthElement, seventhElement, eighthElement, ninthElement, tenthElement,
+        eleventhElement, twelfthElement, thirteenthElement);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement,
+      final E thirdElement, final E fourthElement, final E fifthElement, final E sixthElement,
+      final E seventhElement, final E eighthElement, final E ninthElement, final E tenthElement,
+      final E eleventhElement, final E twelfthElement, final E thirteenthElement,
+      final E fourteenthElement) {
+    return new ImmutableList<E>(firstElement, secondElement, thirdElement, fourthElement,
+        fifthElement, sixthElement, seventhElement, eighthElement, ninthElement, tenthElement,
+        eleventhElement, twelfthElement, thirteenthElement, fourteenthElement);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement,
+      final E thirdElement, final E fourthElement, final E fifthElement, final E sixthElement,
+      final E seventhElement, final E eighthElement, final E ninthElement, final E tenthElement,
+      final E eleventhElement, final E twelfthElement, final E thirteenthElement,
+      final E fourteenthElement, final E fifteenthElement) {
+    return new ImmutableList<E>(firstElement, secondElement, thirdElement, fourthElement,
+        fifthElement, sixthElement, seventhElement, eighthElement, ninthElement, tenthElement,
+        eleventhElement, twelfthElement, thirteenthElement, fourteenthElement, fifteenthElement);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement,
+      final E thirdElement, final E fourthElement, final E fifthElement, final E sixthElement,
+      final E seventhElement, final E eighthElement, final E ninthElement, final E tenthElement,
+      final E eleventhElement, final E twelfthElement, final E thirteenthElement,
+      final E fourteenthElement, final E fifteenthElement, final E sixteenthElement) {
+    return new ImmutableList<E>(firstElement, secondElement, thirdElement, fourthElement,
+        fifthElement, sixthElement, seventhElement, eighthElement, ninthElement, tenthElement,
+        eleventhElement, twelfthElement, thirteenthElement, fourteenthElement, fifteenthElement,
+        sixteenthElement);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement,
+      final E thirdElement, final E fourthElement, final E fifthElement, final E sixthElement,
+      final E seventhElement, final E eighthElement, final E ninthElement, final E tenthElement,
+      final E eleventhElement, final E twelfthElement, final E thirteenthElement,
+      final E fourteenthElement, final E fifteenthElement, final E sixteenthElement,
+      final E seventeenthElement) {
+    return new ImmutableList<E>(firstElement, secondElement, thirdElement, fourthElement,
+        fifthElement, sixthElement, seventhElement, eighthElement, ninthElement, tenthElement,
+        eleventhElement, twelfthElement, thirteenthElement, fourteenthElement, fifteenthElement,
+        sixteenthElement, seventeenthElement);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement,
+      final E thirdElement, final E fourthElement, final E fifthElement, final E sixthElement,
+      final E seventhElement, final E eighthElement, final E ninthElement, final E tenthElement,
+      final E eleventhElement, final E twelfthElement, final E thirteenthElement,
+      final E fourteenthElement, final E fifteenthElement, final E sixteenthElement,
+      final E seventeenthElement, final E eighteenthElement) {
+    return new ImmutableList<E>(firstElement, secondElement, thirdElement, fourthElement,
+        fifthElement, sixthElement, seventhElement, eighthElement, ninthElement, tenthElement,
+        eleventhElement, twelfthElement, thirteenthElement, fourteenthElement, fifteenthElement,
+        sixteenthElement, seventeenthElement, eighteenthElement);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement,
+      final E thirdElement, final E fourthElement, final E fifthElement, final E sixthElement,
+      final E seventhElement, final E eighthElement, final E ninthElement, final E tenthElement,
+      final E eleventhElement, final E twelfthElement, final E thirteenthElement,
+      final E fourteenthElement, final E fifteenthElement, final E sixteenthElement,
+      final E seventeenthElement, final E eighteenthElement, final E nineteenthElement) {
+    return new ImmutableList<E>(firstElement, secondElement, thirdElement, fourthElement,
+        fifthElement, sixthElement, seventhElement, eighthElement, ninthElement, tenthElement,
+        eleventhElement, twelfthElement, thirteenthElement, fourteenthElement, fifteenthElement,
+        sixteenthElement, seventeenthElement, eighteenthElement, nineteenthElement);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement,
+      final E thirdElement, final E fourthElement, final E fifthElement, final E sixthElement,
+      final E seventhElement, final E eighthElement, final E ninthElement, final E tenthElement,
+      final E eleventhElement, final E twelfthElement, final E thirteenthElement,
+      final E fourteenthElement, final E fifteenthElement, final E sixteenthElement,
+      final E seventeenthElement, final E eighteenthElement, final E nineteenthElement,
+      final E twentiethElement) {
+    return new ImmutableList<E>(firstElement, secondElement, thirdElement, fourthElement,
+        fifthElement, sixthElement, seventhElement, eighthElement, ninthElement, tenthElement,
+        eleventhElement, twelfthElement, thirteenthElement, fourteenthElement, fifteenthElement,
+        sixteenthElement, seventeenthElement, eighteenthElement, nineteenthElement,
+        twentiethElement);
+  }
+
+  @SuppressWarnings("unchecked")
   public static @NotNull <E> ImmutableList<E> of(@NotNull final E... elements) {
     if (elements.length == 0) {
       return (ImmutableList<E>) EMPTY_LIST;
