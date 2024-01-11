@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package sparx.tuple;
+
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
-package sparx.tuple;
 
 class CoupleTuple<T, T1 extends T, T2 extends T> extends GenericTuple<T>
     implements Couple<T, T1, T2> {

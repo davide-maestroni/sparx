@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package sparx.tuple;
+
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
-package sparx.tuple;
 
 public interface Quintuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5 extends T> extends Tuple<T> {
 

@@ -408,22 +408,28 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final ArrayDeque<E> array = new ArrayDeque<E>(1);
       array.add(element);
       queue.add(array);
-      semaphore.release();
+      release();
     }
 
     private void addAll(@NotNull final Collection<E> elements) {
       queue.add(new ArrayDeque<E>(elements));
-      semaphore.release();
+      release();
     }
 
     private void end() {
       status.set(IDLE);
-      semaphore.release();
+      release();
     }
 
     private void fail(@NotNull final Exception error) {
       this.failureException = error;
       status.set(FAILED);
+      release();
+    }
+
+    private void release() {
+      final Semaphore semaphore = this.semaphore;
+      semaphore.drainPermits();
       semaphore.release();
     }
   }
