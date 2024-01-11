@@ -280,10 +280,19 @@ public class Scheduler {
         try {
           task.run();
         } catch (final Throwable t) {
+          boolean hasNext = false;
           synchronized (lock) {
             runningTask = null;
             runningThread = null;
             workerAlert.notifyTaskStop(currentThread);
+            if (status == PAUSING) {
+              status = PAUSED;
+            } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
+              hasNext = true;
+            }
+          }
+          if (hasNext) {
+            executor.execute(this);
           }
           Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
           throw UncheckedException.throwUnchecked(t);
@@ -325,25 +334,26 @@ public class Scheduler {
         releaseBackpressure(lock);
       }
 
-      boolean hasNext = false;
       try {
         task.run();
       } catch (final Throwable t) {
         Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
         throw UncheckedException.throwUnchecked(t);
       } finally {
+        boolean hasNext = false;
         synchronized (lock) {
           runningTask = null;
           runningThread = null;
           workerAlert.notifyTaskStop(currentThread);
-          if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
+          if (status == PAUSING) {
+            status = PAUSED;
+          } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
             hasNext = true;
-            status = IDLE;
           }
         }
-      }
-      if (hasNext) {
-        executor.execute(this);
+        if (hasNext) {
+          executor.execute(this);
+        }
       }
     }
   }
@@ -388,10 +398,19 @@ public class Scheduler {
           minThroughput -= Math.max(task.weight(), 1);
           task.run();
         } catch (final Throwable t) {
+          boolean hasNext = false;
           synchronized (lock) {
             runningTask = null;
             runningThread = null;
             workerAlert.notifyTaskStop(currentThread);
+            if (status == PAUSING) {
+              status = PAUSED;
+            } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
+              hasNext = true;
+            }
+          }
+          if (hasNext) {
+            executor.execute(this);
           }
           Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
           throw UncheckedException.throwUnchecked(t);
@@ -405,10 +424,8 @@ public class Scheduler {
           status = PAUSED;
           return;
         }
-
         if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
           hasNext = true;
-          status = IDLE;
         }
       }
       if (hasNext) {

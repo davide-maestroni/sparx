@@ -32,6 +32,7 @@ public interface SignalFuture<V> extends Future<List<V>>, Receiver<V>, Iterable<
   //  state (in execution context)?
   //  lazy? f.pipe(lazy(...))
   //  generator?
+  //  f.then(takeMap(1, v -> ...<to future>...))
 
   void clear();
 
