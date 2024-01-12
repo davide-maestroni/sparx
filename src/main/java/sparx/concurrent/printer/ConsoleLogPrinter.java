@@ -1,4 +1,4 @@
-package sparx.logging.printer;
+package sparx.concurrent.printer;
 
 import java.io.PrintStream;
 import java.util.Collection;

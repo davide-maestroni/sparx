@@ -18,7 +18,6 @@ package sparx.concurrent;
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Consumer;
 import sparx.function.Function;
-import sparx.function.Predicate;
 import sparx.util.Nothing;
 
 public interface ExecutionContext {

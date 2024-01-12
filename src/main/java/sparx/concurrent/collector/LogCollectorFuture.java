@@ -13,12 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.concurrent.collector;
 
 import static java.lang.Boolean.parseBoolean;
 
 import java.util.Properties;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ReadOnlyFuture;
+import sparx.concurrent.StreamingFuture;
+import sparx.concurrent.VarFuture;
 import sparx.logging.Log.LogCollector;
 import sparx.logging.Log.LogLevel;
 import sparx.logging.LogMessage;

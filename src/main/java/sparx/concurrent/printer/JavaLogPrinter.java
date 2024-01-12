@@ -1,4 +1,4 @@
-package sparx.logging.printer;
+package sparx.concurrent.printer;
 
 import java.util.Collection;
 import java.util.HashMap;

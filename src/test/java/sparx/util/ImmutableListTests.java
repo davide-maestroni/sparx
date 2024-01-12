@@ -277,7 +277,6 @@ public class ImmutableListTests {
   }
 
   @Test
-  @SuppressWarnings("DataFlowIssue")
   public void listsWithNull() {
     testListNull(ImmutableList.of(null, "1"), 2);
     testListNull(ImmutableList.of(null, "1", "2"), 3);

@@ -864,7 +864,7 @@ public class VarFutureTests {
   }
 
   @Test
-  public void futureFailCall() throws InterruptedException, ExecutionException {
+  public void futureFailCall() throws InterruptedException {
     var executor = Executors.newSingleThreadExecutor();
     try {
       var context = ExecutorContext.of(executor);

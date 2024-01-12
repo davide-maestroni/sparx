@@ -17,9 +17,7 @@ package sparx.concurrent;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.function.Action;
@@ -101,13 +99,12 @@ public class EmptyFuture extends TupleStreamGroupFuture<Nothing, EmptyFuture> im
   }
 
   @Override
-  public List<Nothing> get() throws InterruptedException, ExecutionException {
+  public List<Nothing> get() {
     return ImmutableList.of();
   }
 
   @Override
-  public List<Nothing> get(final long timeout, @NotNull final TimeUnit unit)
-      throws InterruptedException, ExecutionException, TimeoutException {
+  public List<Nothing> get(final long timeout, @NotNull final TimeUnit unit) {
     return get();
   }
 

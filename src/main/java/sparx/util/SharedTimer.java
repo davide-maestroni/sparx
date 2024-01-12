@@ -50,7 +50,7 @@ public class SharedTimer {
     }
     final AtomicBoolean released = new AtomicBoolean(false);
     final SharedTimer timer = new SharedTimer(released);
-    new TimerWeakReference(timer, released, referenceQueue);
+    new TimerWeakReference(timer, released);
     consumeReferenceQueue();
     return timer;
   }
@@ -132,9 +132,8 @@ public class SharedTimer {
 
     private final AtomicBoolean released;
 
-    TimerWeakReference(@NotNull final SharedTimer timer, @NotNull final AtomicBoolean released,
-        @NotNull final ReferenceQueue<SharedTimer> queue) {
-      super(timer, queue);
+    TimerWeakReference(@NotNull final SharedTimer timer, @NotNull final AtomicBoolean released) {
+      super(timer, referenceQueue);
       this.released = released;
     }
 
