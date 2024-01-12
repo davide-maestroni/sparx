@@ -26,9 +26,10 @@ public interface ExecutionContext {
 
   int pendingCount();
 
+  // TODO: remove weight?
   @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(@NotNull F future,
-      @NotNull Function<F, ? extends SignalFuture<U>> function, int weight);
+      @NotNull Function<? super F, ? extends SignalFuture<U>> function, int weight);
 
   @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(@NotNull F future,
-      @NotNull Consumer<F> consumer, int weight);
+      @NotNull Consumer<? super F> consumer, int weight);
 }

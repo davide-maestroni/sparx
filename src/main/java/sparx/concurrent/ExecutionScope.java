@@ -57,7 +57,8 @@ class ExecutionScope implements ExecutionContext {
 
   @Override
   public @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(
-      @NotNull final F future, @NotNull final Function<F, ? extends SignalFuture<U>> function,
+      @NotNull final F future,
+      @NotNull final Function<? super F, ? extends SignalFuture<U>> function,
       final int weight) {
     taskAlert.notifyCall(function);
     final CallFuture<V, F, U> task = new CallFuture<V, F, U>(scheduler, future, function, weight);
@@ -67,7 +68,7 @@ class ExecutionScope implements ExecutionContext {
 
   @Override
   public @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(
-      @NotNull final F future, @NotNull final Consumer<F> consumer, final int weight) {
+      @NotNull final F future, @NotNull final Consumer<? super F> consumer, final int weight) {
     taskAlert.notifyRun(consumer);
     final RunFuture<V, F> task = new RunFuture<V, F>(scheduler, future, consumer, weight);
     scheduler.scheduleAfter(task);
@@ -515,11 +516,11 @@ class ExecutionScope implements ExecutionContext {
 
   private static class CallFuture<V, F extends TupleFuture<V, ?>, U> extends ScopeFuture<U> {
 
-    private final Function<F, ? extends SignalFuture<U>> function;
+    private final Function<? super F, ? extends SignalFuture<U>> function;
     private final F future;
 
     private CallFuture(@NotNull final Scheduler scheduler, @NotNull final F future,
-        @NotNull final Function<F, ? extends SignalFuture<U>> function, final int weight) {
+        @NotNull final Function<? super F, ? extends SignalFuture<U>> function, final int weight) {
       super(scheduler, weight);
       this.future = Requires.notNull(future, "future");
       this.function = Requires.notNull(function, "function");
@@ -533,11 +534,11 @@ class ExecutionScope implements ExecutionContext {
 
   private static class RunFuture<V, F extends TupleFuture<V, ?>> extends ScopeFuture<Nothing> {
 
-    private final Consumer<F> consumer;
+    private final Consumer<? super F> consumer;
     private final F future;
 
     private RunFuture(@NotNull final Scheduler scheduler, @NotNull final F future,
-        @NotNull final Consumer<F> consumer, final int weight) {
+        @NotNull final Consumer<? super F> consumer, final int weight) {
       super(scheduler, weight);
       this.future = Requires.notNull(future, "future");
       this.consumer = Requires.notNull(consumer, "consumer");

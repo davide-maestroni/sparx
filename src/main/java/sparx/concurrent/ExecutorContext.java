@@ -73,14 +73,15 @@ public class ExecutorContext implements ExecutionContext {
 
   @Override
   public @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(
-      @NotNull final F future, @NotNull final Function<F, ? extends SignalFuture<U>> function,
+      @NotNull final F future,
+      @NotNull final Function<? super F, ? extends SignalFuture<U>> function,
       final int weight) {
     return new ExecutionScope(scheduler).call(future, function, weight);
   }
 
   @Override
   public @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(
-      @NotNull final F future, @NotNull final Consumer<F> consumer, final int weight) {
+      @NotNull final F future, @NotNull final Consumer<? super F> consumer, final int weight) {
     return new ExecutionScope(scheduler).run(future, consumer, weight);
   }
 }

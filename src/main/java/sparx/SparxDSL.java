@@ -26,9 +26,28 @@ import sparx.util.UncheckedException;
 
 public class SparxDSL {
 
-  public static @NotNull <V, F extends TupleFuture<V, ?>> Function<F, StreamingFuture<Nothing>> inContext(
-      ExecutionContext context, Consumer<? super F> consumer) {
-    return null;
+  // TODO: f.then(takeMap(1, v -> ...<to future>...))
+
+  public static @NotNull <V, F extends TupleFuture<V, ?>, U> Function<F, StreamingFuture<U>> callInContext(
+      @NotNull final ExecutionContext context, final int weight,
+      @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
+    return new Function<F, StreamingFuture<U>>() {
+      @Override
+      public StreamingFuture<U> apply(final F input) {
+        return context.call(input, function, weight);
+      }
+    };
+  }
+
+  public static @NotNull <V, F extends TupleFuture<V, ?>> Function<F, StreamingFuture<Nothing>> runInContext(
+      @NotNull final ExecutionContext context, final int weight,
+      @NotNull final Consumer<? super F> consumer) {
+    return new Function<F, StreamingFuture<Nothing>>() {
+      @Override
+      public StreamingFuture<Nothing> apply(final F input) {
+        return context.run(input, consumer, weight);
+      }
+    };
   }
 
   public static @NotNull <V, V1 extends V, V2 extends V> Function<CoupleFuture<V, V1, V2>, StreamingFuture<Couple<V, V1, V2>>> combineLatestBinary(
