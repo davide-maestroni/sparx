@@ -92,6 +92,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
   @Override
   public void close() {
+    innerClose();
   }
 
   @Override
@@ -108,8 +109,17 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
   public void setBulk(@NotNull final Collection<U> values) {
   }
 
+  private void innerClose() {
+    scheduler.scheduleAfter(new GroupTask() {
+      @Override
+      public void run() {
+        status.onClose();
+      }
+    });
+  }
+
   private void innerFail(@NotNull final Exception error) {
-    final Task task = new GroupTask() {
+    final GroupTask task = new GroupTask() {
       @Override
       public void run() {
         status.onFail(error);
@@ -123,6 +133,8 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
   }
 
   private interface GroupStatus {
+
+    void onClose();
 
     void onCreate(@NotNull StreamingFuture<?> future,
         @NotNull FutureGroup.Registration registration);
@@ -139,6 +151,10 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
     private CancelledStatus(@NotNull final Exception error) {
       failureException = error;
+    }
+
+    @Override
+    public void onClose() {
     }
 
     @Override
@@ -163,6 +179,26 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
   }
 
   private class RunningStatus implements GroupStatus {
+
+    @Override
+    public void onClose() {
+      final HashMap<Receiver<?>, Scheduler> receivers = StreamGroup.this.receivers;
+      for (final Entry<Receiver<?>, Scheduler> entry : receivers.entrySet()) {
+        final Receiver<?> receiver = entry.getKey();
+        if (StreamGroupReceiver.class.equals(receiver.getClass())) {
+          entry.getValue().scheduleAfter(new GroupTask() {
+            @Override
+            @SuppressWarnings("unchecked")
+            public void run() {
+              ((StreamGroupReceiver<Object>) receiver).closeAndUnsubscribe();
+            }
+          });
+        } else {
+          receiver.close();
+        }
+      }
+      receivers.clear();
+    }
 
     @Override
     public void onCreate(@NotNull final StreamingFuture<?> future,
@@ -331,6 +367,18 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
     @Override
     public void setBulk(@NotNull final Collection<R> values) {
       status.setBulk(values);
+    }
+
+    private void closeAndUnsubscribe() {
+      FutureGroup.pushGroup(StreamGroup.this);
+      try {
+        wrapped.close();
+      } catch (final RuntimeException e) {
+        Log.err(StreamGroup.class, "Uncaught exception: %s", Log.printable(e));
+      } finally {
+        FutureGroup.popGroup();
+      }
+      future.unsubscribe(receiver);
     }
 
     private void failAndUnsubscribe(@NotNull final Exception error) {
