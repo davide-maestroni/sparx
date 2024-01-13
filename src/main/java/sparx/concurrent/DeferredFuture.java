@@ -32,9 +32,15 @@ import sparx.util.UncheckedException;
 public class DeferredFuture<V> extends ReadOnlyStreamGroupFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {
 
-  private final Object lock = new Object();
+  private static final int NULL = 0;
+  private static final int CREATING = 1;
+  private static final int CREATED = 2;
 
-  private Supplier<StreamingFuture<V>> supplier;
+  private final Object lock = new Object();
+  private final Supplier<StreamingFuture<V>> supplier;
+
+  private StreamingFuture<V> future;
+  private int status = NULL;
 
   public static @NotNull <V> DeferredFuture<V> of(
       @NotNull final Supplier<StreamingFuture<V>> supplier) {
@@ -43,19 +49,7 @@ public class DeferredFuture<V> extends ReadOnlyStreamGroupFuture<V, StreamingFut
 
   private DeferredFuture(@NotNull final Supplier<StreamingFuture<V>> supplier) {
     Requires.notNull(supplier, "supplier");
-    this.supplier = new Supplier<StreamingFuture<V>>() {
-      @Override
-      public StreamingFuture<V> get() throws Exception {
-        final StreamingFuture<V> future = supplier.get();
-        DeferredFuture.this.supplier = new Supplier<StreamingFuture<V>>() {
-          @Override
-          public StreamingFuture<V> get() {
-            return future;
-          }
-        };
-        return future;
-      }
-    };
+    this.supplier = Requires.notNull(supplier, "supplier");
   }
 
   @Override
@@ -137,12 +131,40 @@ public class DeferredFuture<V> extends ReadOnlyStreamGroupFuture<V, StreamingFut
   }
 
   private @NotNull StreamingFuture<V> getFuture() {
-    try {
-      synchronized (lock) {
-        return supplier.get();
+    synchronized (lock) {
+      if (status == CREATED) {
+        return future;
       }
+      if (status == NULL) {
+        status = CREATING;
+      } else {
+        while (status == CREATING) {
+          try {
+            lock.wait();
+          } catch (final InterruptedException e) {
+            throw UncheckedException.throwUnchecked(e);
+          }
+        }
+        if (status == NULL) {
+          throw new IllegalStateException("Future creation failed");
+        }
+        return future;
+      }
+    }
+    try {
+      final StreamingFuture<V> newFuture = supplier.get();
+      synchronized (lock) {
+        status = CREATED;
+        future = newFuture;
+        lock.notifyAll();
+      }
+      return newFuture;
     } catch (final Exception e) {
-      throw UncheckedException.throwUnchecked(e);
+      synchronized (lock) {
+        status = NULL;
+        lock.notifyAll();
+      }
+      throw new RuntimeException(e);
     }
   }
 }

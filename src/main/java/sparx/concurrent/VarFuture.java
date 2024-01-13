@@ -801,9 +801,9 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       } else {
         result = new FailureResult<V>(error);
       }
+      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
       final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
       final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
-      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
       for (final GroupReceiver<V> groupReceiver : receivers.values()) {
         try {
           groupReceiver.fail(error);
