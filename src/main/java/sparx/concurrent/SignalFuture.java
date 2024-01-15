@@ -29,7 +29,6 @@ import sparx.util.LiveIterator;
 public interface SignalFuture<V> extends Future<List<V>>, Receiver<V>, Iterable<V> {
 
   // TODO:
-  //  state (in execution context)?
   //  generator?
 
   void clear();

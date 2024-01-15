@@ -26,20 +26,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.ExecutorContext;
-import sparx.concurrent.collector.LogCollectorFuture;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TripleFuture;
 import sparx.concurrent.ValFuture;
 import sparx.concurrent.VarFuture;
+import sparx.concurrent.collector.LogCollectorFuture;
+import sparx.concurrent.printer.ConsoleLogPrinter;
+import sparx.concurrent.printer.JavaLogPrinter;
 import sparx.config.SparxConfig.ConfigModule;
 import sparx.function.Consumer;
 import sparx.logging.Log;
 import sparx.logging.Log.LogCollector;
 import sparx.logging.Log.LogLevel;
 import sparx.logging.LogMessage;
-import sparx.concurrent.printer.ConsoleLogPrinter;
-import sparx.concurrent.printer.JavaLogPrinter;
 import sparx.tuple.Couple;
 import sparx.tuple.Tuples;
 import sparx.util.Nothing;
@@ -157,7 +157,7 @@ public class LogModule implements ConfigModule {
                   ExecutorContext.of(executor)
                       .run(TripleFuture.of(future, ready,
                               ValFuture.of(Tuples.asTuple(printerName, properties))),
-                          new LogPrintersSetup(), 1);
+                          new LogPrintersSetup());
                   ready.get();
                 }
               }

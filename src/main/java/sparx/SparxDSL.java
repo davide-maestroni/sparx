@@ -29,23 +29,22 @@ public class SparxDSL {
   // TODO: f.then(takeMap(1, v -> ...<to future>...))
 
   public static @NotNull <V, F extends TupleFuture<V, ?>, U> Function<F, StreamingFuture<U>> callInContext(
-      @NotNull final ExecutionContext context, final int weight,
+      @NotNull final ExecutionContext context,
       @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
     return new Function<F, StreamingFuture<U>>() {
       @Override
       public StreamingFuture<U> apply(final F input) {
-        return context.call(input, function, weight);
+        return context.call(input, function);
       }
     };
   }
 
   public static @NotNull <V, F extends TupleFuture<V, ?>> Function<F, StreamingFuture<Nothing>> runInContext(
-      @NotNull final ExecutionContext context, final int weight,
-      @NotNull final Consumer<? super F> consumer) {
+      @NotNull final ExecutionContext context, @NotNull final Consumer<? super F> consumer) {
     return new Function<F, StreamingFuture<Nothing>>() {
       @Override
       public StreamingFuture<Nothing> apply(final F input) {
-        return context.run(input, consumer, weight);
+        return context.run(input, consumer);
       }
     };
   }

@@ -17,6 +17,7 @@ package sparx.concurrent;
 
 import java.util.ArrayDeque;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.Scheduler.Task;
 import sparx.util.Requires;
 
@@ -50,6 +51,8 @@ public class FutureGroup {
 
   public interface Group {
 
+    @Nullable ExecutionContext executionContext();
+
     @NotNull Registration onCreate(@NotNull StreamingFuture<?> future);
 
     @NotNull <R, V extends R> GroupReceiver<R> onSubscribe(
@@ -57,6 +60,10 @@ public class FutureGroup {
         @NotNull Receiver<R> receiver);
 
     void onTask(@NotNull Task task);
+
+    Object restoreValue(@NotNull String name);
+
+    void storeValue(@NotNull String name, Object value);
   }
 
   public interface GroupReceiver<V> extends Receiver<V> {
@@ -78,6 +85,11 @@ public class FutureGroup {
   private static class DummyFutureGroup implements Group {
 
     @Override
+    public @Nullable ExecutionContext executionContext() {
+      return null;
+    }
+
+    @Override
     public @NotNull Registration onCreate(@NotNull final StreamingFuture<?> future) {
       return DummyRegistration.instance();
     }
@@ -92,6 +104,16 @@ public class FutureGroup {
     @Override
     public void onTask(@NotNull final Task task) {
       task.run();
+    }
+
+    @Override
+    public Object restoreValue(@NotNull final String name) {
+      throw new UnsupportedOperationException("restoreValue");
+    }
+
+    @Override
+    public void storeValue(@NotNull final String name, final Object value) {
+      throw new UnsupportedOperationException("storeValue");
     }
   }
 }

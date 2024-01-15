@@ -21,8 +21,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.FutureGroup.Group;
 import sparx.concurrent.FutureGroup.GroupReceiver;
 import sparx.concurrent.FutureGroup.Registration;
@@ -39,10 +41,15 @@ class ExecutionScope implements ExecutionContext {
 
   private static final ExecutionContextTaskAlert taskAlert = Alerts.executionContextTaskAlert();
 
+  private final ExecutionContext context;
   private final Scheduler scheduler;
+  private final Map<String, Object> values;
 
-  ExecutionScope(@NotNull final Scheduler scheduler) {
+  ExecutionScope(@NotNull final ExecutionContext context, @NotNull final Scheduler scheduler,
+      @NotNull final Map<String, Object> values) {
+    this.context = Requires.notNull(context, "context");
     this.scheduler = Requires.notNull(scheduler, "scheduler");
+    this.values = Requires.notNull(values, "values");
   }
 
   @Override
@@ -58,24 +65,64 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(
       @NotNull final F future,
-      @NotNull final Function<? super F, ? extends SignalFuture<U>> function,
-      final int weight) {
+      @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
     taskAlert.notifyCall(function);
-    final CallFuture<V, F, U> task = new CallFuture<V, F, U>(scheduler, future, function, weight);
+    final CallFuture<V, F, U> task = new CallFuture<V, F, U>(future, function);
     scheduler.scheduleAfter(task);
     return task.readOnly();
   }
 
   @Override
   public @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(
-      @NotNull final F future, @NotNull final Consumer<? super F> consumer, final int weight) {
+      @NotNull final F future, @NotNull final Consumer<? super F> consumer) {
     taskAlert.notifyRun(consumer);
-    final RunFuture<V, F> task = new RunFuture<V, F>(scheduler, future, consumer, weight);
+    final RunFuture<V, F> task = new RunFuture<V, F>(future, consumer);
     scheduler.scheduleAfter(task);
     return task.readOnly();
   }
 
-  private static abstract class ScopeFuture<U> extends VarFuture<U> implements Group, Task {
+  private static class ChunkIterator<E> implements Iterator<List<E>> {
+
+    private final Iterator<E> iterator;
+    private final int maxSize;
+
+    private ChunkIterator(@NotNull final Collection<E> collection, final int maxSize) {
+      this.iterator = collection.iterator();
+      this.maxSize = maxSize;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return iterator.hasNext();
+    }
+
+    @Override
+    public List<E> next() {
+      final int maxSize = this.maxSize;
+      final Iterator<E> iterator = this.iterator;
+      final ArrayList<E> chunk = new ArrayList<E>(maxSize);
+      while (iterator.hasNext() && chunk.size() < maxSize) {
+        chunk.add(iterator.next());
+      }
+      return Collections.unmodifiableList(chunk);
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
+  }
+
+  private interface GroupStatus {
+
+    void onCreate(@NotNull StreamingFuture<?> future, @NotNull Registration registration);
+
+    void onFail(@NotNull Exception error);
+
+    void onSubscribe(@NotNull GroupReceiver<?> groupReceiver);
+  }
+
+  private abstract class ScopeFuture<U> extends VarFuture<U> implements Group, Task {
 
     private static final int IDLE = 0;
     private static final int RUNNING = 1;
@@ -83,17 +130,10 @@ class ExecutionScope implements ExecutionContext {
     private static final int FAILED = 3;
 
     private final HashSet<Receiver<?>> receivers = new HashSet<Receiver<?>>();
-    private final Scheduler scheduler;
     private final AtomicInteger status = new AtomicInteger(IDLE);
     private final String taskID = toString();
-    private final int weight;
 
     private GroupStatus groupStatus = new RunningStatus();
-
-    ScopeFuture(@NotNull final Scheduler scheduler, final int weight) {
-      this.scheduler = scheduler;
-      this.weight = Requires.positive(weight, "weight");
-    }
 
     @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
@@ -127,6 +167,11 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
+    public @Nullable ExecutionContext executionContext() {
+      return context;
+    }
+
+    @Override
     public @NotNull Registration onCreate(@NotNull final StreamingFuture<?> future) {
       final ScopeRegistration registration = new ScopeRegistration(future);
       scheduler.scheduleAfter(new GroupTask() {
@@ -144,7 +189,7 @@ class ExecutionScope implements ExecutionContext {
         @NotNull final Receiver<R> receiver) {
       final ScopeGroupReceiver<R> groupReceiver = new ScopeGroupReceiver<R>(future, scheduler,
           receiver);
-      this.scheduler.scheduleAfter(new GroupTask() {
+      ExecutionScope.this.scheduler.scheduleAfter(new GroupTask() {
         @Override
         public void run() {
           groupStatus.onSubscribe(groupReceiver);
@@ -159,13 +204,27 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
+    public Object restoreValue(@NotNull final String name) {
+      return values.get(name);
+    }
+
+    @Override
+    public void storeValue(@NotNull final String name, final Object value) {
+      if (value == null) {
+        values.remove(name);
+      } else {
+        values.put(name, value);
+      }
+    }
+
+    @Override
     public @NotNull String taskID() {
       return taskID;
     }
 
     @Override
     public int weight() {
-      return weight;
+      return 1;
     }
 
     @Override
@@ -203,7 +262,7 @@ class ExecutionScope implements ExecutionContext {
         }
       };
       if (FutureCancellationException.class.equals(error.getClass())) {
-        final Scheduler scheduler = this.scheduler;
+        final Scheduler scheduler = ExecutionScope.this.scheduler;
         if (((FutureCancellationException) error).mayInterruptIfRunning()) {
           scheduler.interruptTask(toString());
         }
@@ -221,16 +280,7 @@ class ExecutionScope implements ExecutionContext {
       }
     }
 
-    private interface GroupStatus {
-
-      void onCreate(@NotNull StreamingFuture<?> future, @NotNull Registration registration);
-
-      void onFail(@NotNull Exception error);
-
-      void onSubscribe(@NotNull GroupReceiver<?> groupReceiver);
-    }
-
-    private static class CancelledStatus implements GroupStatus {
+    private class CancelledStatus implements GroupStatus {
 
       private final Exception failureException;
 
@@ -514,14 +564,13 @@ class ExecutionScope implements ExecutionContext {
     }
   }
 
-  private static class CallFuture<V, F extends TupleFuture<V, ?>, U> extends ScopeFuture<U> {
+  private class CallFuture<V, F extends TupleFuture<V, ?>, U> extends ScopeFuture<U> {
 
     private final Function<? super F, ? extends SignalFuture<U>> function;
     private final F future;
 
-    private CallFuture(@NotNull final Scheduler scheduler, @NotNull final F future,
-        @NotNull final Function<? super F, ? extends SignalFuture<U>> function, final int weight) {
-      super(scheduler, weight);
+    private CallFuture(@NotNull final F future,
+        @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
       this.future = Requires.notNull(future, "future");
       this.function = Requires.notNull(function, "function");
     }
@@ -532,14 +581,12 @@ class ExecutionScope implements ExecutionContext {
     }
   }
 
-  private static class RunFuture<V, F extends TupleFuture<V, ?>> extends ScopeFuture<Nothing> {
+  private class RunFuture<V, F extends TupleFuture<V, ?>> extends ScopeFuture<Nothing> {
 
     private final Consumer<? super F> consumer;
     private final F future;
 
-    private RunFuture(@NotNull final Scheduler scheduler, @NotNull final F future,
-        @NotNull final Consumer<? super F> consumer, final int weight) {
-      super(scheduler, weight);
+    private RunFuture(@NotNull final F future, @NotNull final Consumer<? super F> consumer) {
       this.future = Requires.notNull(future, "future");
       this.consumer = Requires.notNull(consumer, "consumer");
     }
@@ -548,38 +595,6 @@ class ExecutionScope implements ExecutionContext {
     protected void innerRun() throws Exception {
       consumer.accept(future);
       complete();
-    }
-  }
-
-  private static class ChunkIterator<E> implements Iterator<List<E>> {
-
-    private final Iterator<E> iterator;
-    private final int maxSize;
-
-    private ChunkIterator(@NotNull final Collection<E> collection, final int maxSize) {
-      this.iterator = collection.iterator();
-      this.maxSize = maxSize;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return iterator.hasNext();
-    }
-
-    @Override
-    public List<E> next() {
-      final int maxSize = this.maxSize;
-      final Iterator<E> iterator = this.iterator;
-      final ArrayList<E> chunk = new ArrayList<E>(maxSize);
-      while (iterator.hasNext() && chunk.size() < maxSize) {
-        chunk.add(iterator.next());
-      }
-      return Collections.unmodifiableList(chunk);
-    }
-
-    @Override
-    public void remove() {
-      throw new UnsupportedOperationException("remove");
     }
   }
 }

@@ -17,6 +17,7 @@ package sparx.concurrent;
 
 import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.backpressure.BackpressureStrategy;
 import sparx.logging.Log;
@@ -73,6 +74,17 @@ public class Scheduler {
     return new SchedulerWithBackpressure(executor, minThroughput, backpressureStrategy);
   }
 
+
+  public static @NotNull Scheduler of(@NotNull final Executor executor, final long minTime,
+      @NotNull final TimeUnit unit) {
+    return new Scheduler(executor, minTime, unit);
+  }
+
+  public static @NotNull Scheduler of(@NotNull final Executor executor, final long minTime,
+      @NotNull final TimeUnit unit, @NotNull final BackpressureStrategy backpressureStrategy) {
+    return new SchedulerWithBackpressure(executor, minTime, unit, backpressureStrategy);
+  }
+
   public static @NotNull Scheduler trampoline() {
     return of(synchronousExecutor);
   }
@@ -93,6 +105,13 @@ public class Scheduler {
     } else {
       this.worker = new ThroughputWorker();
     }
+  }
+
+  private Scheduler(@NotNull final Executor executor, final long minTime,
+      @NotNull final TimeUnit unit) {
+    this.executor = Requires.notNull(executor, "executor");
+    this.minThroughput = Integer.MAX_VALUE;
+    this.worker = new TimeoutWorker(minTime, unit);
   }
 
   public boolean interruptTask(@NotNull final String taskID) {
@@ -201,6 +220,12 @@ public class Scheduler {
     private SchedulerWithBackpressure(@NotNull final Executor executor, final int minThroughput,
         @NotNull final BackpressureStrategy backpressureStrategy) {
       super(executor, minThroughput);
+      this.backpressureStrategy = Requires.notNull(backpressureStrategy, "backpressureStrategy");
+    }
+
+    private SchedulerWithBackpressure(@NotNull final Executor executor, final long minTime,
+        @NotNull final TimeUnit unit, @NotNull final BackpressureStrategy backpressureStrategy) {
+      super(executor, minTime, unit);
       this.backpressureStrategy = Requires.notNull(backpressureStrategy, "backpressureStrategy");
     }
 
@@ -397,6 +422,89 @@ public class Scheduler {
         try {
           minThroughput -= Math.max(task.weight(), 1);
           task.run();
+        } catch (final Throwable t) {
+          boolean hasNext = false;
+          synchronized (lock) {
+            runningTask = null;
+            runningThread = null;
+            workerAlert.notifyTaskStop(currentThread);
+            if (status == PAUSING) {
+              status = PAUSED;
+            } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
+              hasNext = true;
+            }
+          }
+          if (hasNext) {
+            executor.execute(this);
+          }
+          Log.err(Scheduler.class, "Uncaught exception: %s", Log.printable(t));
+          throw UncheckedException.throwUnchecked(t);
+        }
+      }
+
+      boolean hasNext = false;
+      synchronized (lock) {
+        workerAlert.notifyTaskStop(currentThread);
+        if (status == PAUSING) {
+          status = PAUSED;
+          return;
+        }
+        if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
+          hasNext = true;
+        }
+      }
+      if (hasNext) {
+        executor.execute(this);
+      }
+    }
+  }
+
+  private class TimeoutWorker implements Runnable {
+
+    private final long minTimeMillis;
+
+    public TimeoutWorker(final long minTime, @NotNull final TimeUnit unit) {
+      this.minTimeMillis = unit.toMillis(Requires.positive(minTime, "minTime"));
+    }
+
+    @Override
+    public void run() {
+      final SchedulerWorkerAlert workerAlert = Scheduler.workerAlert;
+      final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
+      final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
+      final Thread currentThread = Thread.currentThread();
+      workerAlert.notifyTaskStart(currentThread);
+      long minTimeMillis = this.minTimeMillis;
+      while (minTimeMillis > 0) {
+        Task task;
+        synchronized (lock) {
+          runningTask = null;
+          runningThread = null;
+          if (status == PAUSING) {
+            status = PAUSED;
+            workerAlert.notifyTaskStop(currentThread);
+            return;
+          }
+
+          task = beforeQueue.poll();
+          if (task == null) {
+            task = afterQueue.poll();
+            if (task == null) {
+              // move to IDLE
+              status = IDLE;
+              workerAlert.notifyTaskStop(currentThread);
+              return;
+            }
+          }
+          runningTask = task;
+          runningThread = currentThread;
+          releaseBackpressure(lock);
+        }
+
+        final long startTimeMillis = System.currentTimeMillis();
+        try {
+          task.run();
+          minTimeMillis -= System.currentTimeMillis() - startTimeMillis;
         } catch (final Throwable t) {
           boolean hasNext = false;
           synchronized (lock) {

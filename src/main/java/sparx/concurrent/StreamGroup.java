@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.FutureGroup.Group;
 import sparx.concurrent.FutureGroup.GroupReceiver;
 import sparx.concurrent.FutureGroup.Registration;
@@ -35,8 +36,13 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
   private GroupStatus status = new RunningStatus();
 
-  StreamGroup(@NotNull final FutureGroup.Group group) {
+  StreamGroup(@NotNull final Group group) {
     this.group = Requires.notNull(group, "hooks");
+  }
+
+  @Override
+  public @Nullable ExecutionContext executionContext() {
+    return group.executionContext();
   }
 
   @Override
@@ -75,6 +81,16 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
   @Override
   public void onTask(@NotNull final Task task) {
     group.onTask(task);
+  }
+
+  @Override
+  public Object restoreValue(@NotNull final String name) {
+    return group.restoreValue(name);
+  }
+
+  @Override
+  public void storeValue(@NotNull final String name, final Object value) {
+    group.storeValue(name, value);
   }
 
   @Override

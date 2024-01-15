@@ -748,7 +748,7 @@ public class VarFutureTests {
       var input = VarFuture.<String>create();
       var output = VarFuture.<Exception>create();
       var result = context.run(CoupleFuture.of(input, output),
-          f -> f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), null), 1);
+          f -> f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), null));
       Thread.sleep(1000);
       assertFalse(result.isDone());
       assertTrue(result.cancel(false));
@@ -775,7 +775,7 @@ public class VarFutureTests {
           f -> {
             f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), null);
             return f.getSecond();
-          }, 1);
+          });
       Thread.sleep(1000);
       assertFalse(result.isDone());
       assertTrue(result.cancel(false));
@@ -799,8 +799,7 @@ public class VarFutureTests {
       var input = VarFuture.<String>create();
       var output = VarFuture.<Exception>create();
       var result = context.run(CoupleFuture.of(input, output),
-          f -> f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), f.getSecond()::close),
-          1);
+          f -> f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), f.getSecond()::close));
       Thread.sleep(1000);
       assertFalse(result.isDone());
       input.close();
@@ -825,7 +824,7 @@ public class VarFutureTests {
           f -> {
             f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), f.getSecond()::close);
             return f.getSecond();
-          }, 1);
+          });
       Thread.sleep(1000);
       assertFalse(result.isDone());
       input.close();
@@ -847,7 +846,7 @@ public class VarFutureTests {
       var input = VarFuture.<String>create();
       var output = VarFuture.<Exception>create();
       var result = context.run(CoupleFuture.of(input, output),
-          f -> f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), null), 1);
+          f -> f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), null));
       Thread.sleep(1000);
       assertFalse(result.isDone());
       assertTrue(input.cancel(false));
@@ -874,7 +873,7 @@ public class VarFutureTests {
           f -> {
             f.getFirst().subscribe(null, null, e -> f.getSecond().fail(e), null);
             return f.getSecond();
-          }, 1);
+          });
       Thread.sleep(1000);
       assertFalse(result.isDone());
       assertTrue(input.cancel(false));

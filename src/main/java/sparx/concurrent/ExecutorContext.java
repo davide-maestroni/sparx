@@ -15,6 +15,7 @@
  */
 package sparx.concurrent;
 
+import java.util.HashMap;
 import java.util.concurrent.Executor;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.backpressure.BackpressureStrategy;
@@ -26,6 +27,7 @@ import sparx.util.Requires;
 public class ExecutorContext implements ExecutionContext {
 
   private final Scheduler scheduler;
+  private final HashMap<String, Object> values = new HashMap<String, Object>();
 
   public static @NotNull ExecutorContext of(@NotNull final Executor executor) {
     return of(executor, Integer.MAX_VALUE);
@@ -74,14 +76,13 @@ public class ExecutorContext implements ExecutionContext {
   @Override
   public @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(
       @NotNull final F future,
-      @NotNull final Function<? super F, ? extends SignalFuture<U>> function,
-      final int weight) {
-    return new ExecutionScope(scheduler).call(future, function, weight);
+      @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
+    return new ExecutionScope(this, scheduler, values).call(future, function);
   }
 
   @Override
   public @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(
-      @NotNull final F future, @NotNull final Consumer<? super F> consumer, final int weight) {
-    return new ExecutionScope(scheduler).run(future, consumer, weight);
+      @NotNull final F future, @NotNull final Consumer<? super F> consumer) {
+    return new ExecutionScope(this, scheduler, values).run(future, consumer);
   }
 }
