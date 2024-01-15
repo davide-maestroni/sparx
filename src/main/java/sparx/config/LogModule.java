@@ -61,7 +61,8 @@ public class LogModule implements ConfigModule {
     SparxConfig.addModule(LOGGING_PROP_PREFIX, new LogModule());
   }
 
-  private static LogCollector instantiateLogFormatter(@Nullable final String formatterName,
+  private static @Nullable LogCollector instantiateLogFormatter(
+      @Nullable final String formatterName,
       @NotNull final Properties properties) throws Exception {
     if (LogCollectorFuture.class.getName().equals(formatterName)) {
       return new LogCollectorFuture(properties);
@@ -80,7 +81,8 @@ public class LogModule implements ConfigModule {
   }
 
   @SuppressWarnings("unchecked")
-  private static Receiver<LogMessage> instantiateLogPrinter(@Nullable final String printerName,
+  private static @Nullable Receiver<LogMessage> instantiateLogPrinter(
+      @Nullable final String printerName,
       @NotNull final Properties properties) throws Exception {
     if (ConsoleLogPrinter.class.getName().equals(printerName)) {
       return new ConsoleLogPrinter(properties);

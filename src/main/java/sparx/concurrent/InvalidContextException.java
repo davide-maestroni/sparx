@@ -13,25 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.logging;
+package sparx.concurrent;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import sparx.logging.Log.LogLevel;
+public class InvalidContextException extends RuntimeException {
 
-public interface LogMessage {
-
-  @Nullable Thread callingThread();
-
-  @Nullable StackTraceElement[] callStack();
-
-  @NotNull String formattedText();
-
-  @NotNull LogLevel level();
-
-  @Nullable Object tag();
-
-  @NotNull String tagName();
-
-  long timestamp();
+  InvalidContextException() {
+  }
 }

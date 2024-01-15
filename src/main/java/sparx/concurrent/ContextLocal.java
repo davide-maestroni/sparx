@@ -31,23 +31,21 @@ public class ContextLocal {
 
   public static @NotNull <V> LocalValue<V> getValue(@NotNull final String name) {
     final Group group = FutureGroup.currentGroup();
-    @SuppressWarnings("unchecked")
-    LocalValue<V> value = (LocalValue<V>) group.restoreValue(Requires.notNull(name, "name"));
-    if (value == null) {
-      value = new LocalValue<V>(group, name);
-      group.storeValue(name, value);
-    }
-    return value;
+    @SuppressWarnings("unchecked") final LocalValue<V> value =
+        (LocalValue<V>) group.restoreValue(Requires.notNull(name, "name"));
+    return (value == null) ? new LocalValue<V>(group, name) : value;
   }
 
   public static class LocalValue<V> {
 
+    private final ExecutionContext context;
     private final Group group;
     private final String name;
 
     private V value;
 
     private LocalValue(@NotNull final Group group, @NotNull final String name) {
+      this.context = group.executionContext();
       this.group = group;
       this.name = name;
     }
@@ -57,10 +55,14 @@ public class ContextLocal {
     }
 
     public void set(final V value) {
+      if (FutureGroup.currentGroup().executionContext() != context) {
+        throw new InvalidContextException();
+      }
       if (value == null) {
         group.storeValue(name, null);
       } else {
         this.value = value;
+        group.storeValue(name, this);
       }
     }
   }
