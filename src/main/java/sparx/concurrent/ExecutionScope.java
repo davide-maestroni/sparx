@@ -42,14 +42,16 @@ class ExecutionScope implements ExecutionContext {
   private static final ExecutionContextTaskAlert taskAlert = Alerts.executionContextTaskAlert();
 
   private final ExecutionContext context;
+  private final FutureRegistry registry;
   private final Scheduler scheduler;
   private final Map<String, Object> values;
 
-  ExecutionScope(@NotNull final ExecutionContext context, @NotNull final Scheduler scheduler,
-      @NotNull final Map<String, Object> values) {
+  ExecutionScope(@NotNull final ExecutionContext context, @NotNull final Map<String, Object> values,
+      @NotNull final Scheduler scheduler, @NotNull final FutureRegistry registry) {
     this.context = Requires.notNull(context, "context");
-    this.scheduler = Requires.notNull(scheduler, "scheduler");
     this.values = Requires.notNull(values, "values");
+    this.scheduler = Requires.notNull(scheduler, "scheduler");
+    this.registry = Requires.notNull(registry, "registry");
   }
 
   @Override
@@ -68,6 +70,7 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
     taskAlert.notifyCall(function);
     final CallFuture<V, F, U> task = new CallFuture<V, F, U>(future, function);
+    registry.register(task);
     scheduler.scheduleAfter(task);
     return task.readOnly();
   }
@@ -77,8 +80,14 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final F future, @NotNull final Consumer<? super F> consumer) {
     taskAlert.notifyRun(consumer);
     final RunFuture<V, F> task = new RunFuture<V, F>(future, consumer);
+    registry.register(task);
     scheduler.scheduleAfter(task);
     return task.readOnly();
+  }
+
+  public interface FutureRegistry {
+
+    void register(@NotNull StreamingFuture<?> future);
   }
 
   private static class ChunkIterator<E> implements Iterator<List<E>> {
