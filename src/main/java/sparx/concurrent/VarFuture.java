@@ -252,7 +252,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       task.acquire();
     } finally {
       joinAlert.notifyJoinStop();
-      scheduler.scheduleAfter(new RemoveTask(task));
+      scheduler.scheduleBefore(new RemoveTask(task));
     }
     return this.result.get();
   }
@@ -275,7 +275,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       }
     } finally {
       joinAlert.notifyJoinStop();
-      scheduler.scheduleAfter(new RemoveTask(task));
+      scheduler.scheduleBefore(new RemoveTask(task));
     }
     return this.result.get();
   }
