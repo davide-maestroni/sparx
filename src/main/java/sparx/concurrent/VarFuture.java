@@ -243,6 +243,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     if (result != null) {
       return result.get();
     }
+    final Scheduler scheduler = this.scheduler;
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
     final JoinAlert joinAlert = VarFuture.joinAlert;
@@ -251,6 +252,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       task.acquire();
     } finally {
       joinAlert.notifyJoinStop();
+      scheduler.scheduleAfter(new RemoveTask(task));
     }
     return this.result.get();
   }
@@ -262,6 +264,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     if (result != null) {
       return result.get();
     }
+    final Scheduler scheduler = this.scheduler;
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
     final JoinAlert joinAlert = VarFuture.joinAlert;
@@ -272,6 +275,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       }
     } finally {
       joinAlert.notifyJoinStop();
+      scheduler.scheduleAfter(new RemoveTask(task));
     }
     return this.result.get();
   }
@@ -718,6 +722,9 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         }
       }
     }
+
+    void remove(@NotNull final Semaphore semaphore) {
+    }
   }
 
   private class CancelledStatus extends Status {
@@ -996,6 +1003,11 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       }
     }
 
+    @Override
+    void remove(@NotNull final Semaphore semaphore) {
+      semaphores.remove(semaphore);
+    }
+
     private boolean isUncaught() {
       for (final GroupReceiver<V> groupReceiver : receivers.values()) {
         if (groupReceiver.isSink()) {
@@ -1041,6 +1053,20 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     @Override
     public void run() {
       innerStatus.iterator(iterator);
+    }
+  }
+
+  private class RemoveTask extends VarTask {
+
+    private final Semaphore semaphore;
+
+    private RemoveTask(@NotNull final Semaphore semaphore) {
+      this.semaphore = semaphore;
+    }
+
+    @Override
+    public void run() {
+      innerStatus.remove(semaphore);
     }
   }
 
