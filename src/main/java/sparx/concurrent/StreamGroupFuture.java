@@ -26,21 +26,9 @@ import sparx.util.UncheckedException;
 abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements StreamableFuture<V, F> {
 
   @Override
-  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>> F1 then(
       @NotNull final Function<? super F, F1> firstFunction) {
-    final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
-    try {
-      final F1 first = firstFunction.apply((F) readOnly());
-      first.subscribe(group);
-      return first;
-    } catch (final Exception e) {
-      group.onUncaughtError(e);
-      throw UncheckedException.throwUnchecked(e);
-    } finally {
-      FutureGroup.popGroup();
-    }
+    return thenImmediately(firstFunction);
   }
 
   @Override
@@ -804,9 +792,21 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>> F1 thenImmediately(
       @NotNull final Function<? super F, F1> firstFunction) {
-    return then(firstFunction);
+    final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
+    FutureGroup.pushGroup(group);
+    try {
+      final F1 first = firstFunction.apply((F) readOnly());
+      first.subscribe(group);
+      return first;
+    } catch (final Exception e) {
+      group.onUncaughtError(e);
+      throw UncheckedException.throwUnchecked(e);
+    } finally {
+      FutureGroup.popGroup();
+    }
   }
 
   @Override

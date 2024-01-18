@@ -26,7 +26,7 @@ import sparx.util.Requires;
 ///////////////////////////////////////////////
 
 public class SextupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V> extends
-    TupleStreamGroupFuture<V, SextupleFuture<V, V1, V2, V3, V4, V5, V6>> implements
+    StreamGroupTupleFuture<V, SextupleFuture<V, V1, V2, V3, V4, V5, V6>> implements
     Sextuple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>, StreamingFuture<V4>, StreamingFuture<V5>, StreamingFuture<V6>> {
 
   public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V> SextupleFuture<V, V1, V2, V3, V4, V5, V6> of(

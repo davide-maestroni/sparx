@@ -26,7 +26,7 @@ import sparx.util.Requires;
 ///////////////////////////////////////////////
 
 public class TripleFuture<V, V1 extends V, V2 extends V, V3 extends V> extends
-    TupleStreamGroupFuture<V, TripleFuture<V, V1, V2, V3>> implements
+    StreamGroupTupleFuture<V, TripleFuture<V, V1, V2, V3>> implements
     Triple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>> {
 
   public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V> TripleFuture<V, V1, V2, V3> of(

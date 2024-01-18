@@ -37,7 +37,7 @@ import sparx.util.Nothing;
 import sparx.util.Requires;
 import sparx.util.UncheckedException;
 
-abstract class TupleStreamGroupFuture<V, F extends StreamableFuture<Nothing, F>> extends
+abstract class StreamGroupTupleFuture<V, F extends TupleFuture<V, F>> extends
     ReadOnlyStreamGroupFuture<Nothing, F> implements TupleFuture<V, F> {
 
   private final Map<Receiver<?>, TupleSubscription> receivers = Collections.synchronizedMap(

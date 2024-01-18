@@ -26,7 +26,7 @@ import sparx.util.Requires;
 ///////////////////////////////////////////////
 
 public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/last}}{{/indexes}}> extends
-    TupleStreamGroupFuture<V, {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}>> implements
+    StreamGroupTupleFuture<V, {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}>> implements
     {{name}}<StreamingFuture<? extends V>, {{#indexes}}StreamingFuture<V{{value}}>{{^last}}, {{/last}}{{/indexes}}> {
 
   public static @NotNull <V, {{#indexes}}V{{value}} extends V{{^last}}, {{/last}}{{/indexes}}> {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> of(

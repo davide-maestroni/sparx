@@ -26,7 +26,7 @@ import sparx.util.Requires;
 ///////////////////////////////////////////////
 
 public class NonupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V> extends
-    TupleStreamGroupFuture<V, NonupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9>> implements
+    StreamGroupTupleFuture<V, NonupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9>> implements
     Nonuple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>, StreamingFuture<V4>, StreamingFuture<V5>, StreamingFuture<V6>, StreamingFuture<V7>, StreamingFuture<V8>, StreamingFuture<V9>> {
 
   public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V> NonupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9> of(

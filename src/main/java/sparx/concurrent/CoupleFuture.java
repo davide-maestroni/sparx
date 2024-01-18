@@ -26,7 +26,7 @@ import sparx.util.Requires;
 ///////////////////////////////////////////////
 
 public class CoupleFuture<V, V1 extends V, V2 extends V> extends
-    TupleStreamGroupFuture<V, CoupleFuture<V, V1, V2>> implements
+    StreamGroupTupleFuture<V, CoupleFuture<V, V1, V2>> implements
     Couple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>> {
 
   public static @NotNull <V, V1 extends V, V2 extends V> CoupleFuture<V, V1, V2> of(

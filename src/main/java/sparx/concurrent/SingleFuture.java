@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Single;
 import sparx.util.Requires;
 
-public class SingleFuture<V> extends TupleStreamGroupFuture<V, SingleFuture<V>> implements
+public class SingleFuture<V> extends StreamGroupTupleFuture<V, SingleFuture<V>> implements
     Single<StreamingFuture<? extends V>> {
 
   public static @NotNull <V> SingleFuture<V> of(@NotNull final StreamingFuture<V> first) {

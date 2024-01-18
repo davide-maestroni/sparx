@@ -28,7 +28,7 @@ import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
 import sparx.util.Nothing;
 
-public class EmptyFuture extends TupleStreamGroupFuture<Nothing, EmptyFuture> implements
+public class EmptyFuture extends StreamGroupTupleFuture<Nothing, EmptyFuture> implements
     Empty<StreamingFuture<? extends Nothing>> {
 
   private static final EmptyFuture INSTANCE = new EmptyFuture();
