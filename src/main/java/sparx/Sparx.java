@@ -2,11 +2,14 @@ package sparx;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.CoupleFuture;
+import sparx.concurrent.SignalFuture;
 import sparx.concurrent.SingleFuture;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TripleFuture;
 import sparx.concurrent.VarFuture;
 import sparx.concurrent.history.HistoryStrategy;
+import sparx.function.BinaryFunction;
+import sparx.function.Consumer;
 
 public class Sparx {
 
@@ -32,5 +35,15 @@ public class Sparx {
       @NotNull StreamingFuture<V1> first, @NotNull StreamingFuture<V2> second,
       @NotNull StreamingFuture<V3> third) {
     return TripleFuture.of(first, second, third);
+  }
+
+  public static @NotNull <V> StreamingFuture<V> generator(
+      @NotNull Consumer<? super SignalFuture<V>> consumer) {
+    return null;
+  }
+
+  public static @NotNull <V> StreamingFuture<V> generator(V initialValue,
+      @NotNull BinaryFunction<? super V, ? super SignalFuture<V>, V> consumer) {
+    return null;
   }
 }

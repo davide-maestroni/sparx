@@ -15,7 +15,7 @@ import sparx.concurrent.TupleFuture;
 import sparx.concurrent.VarFuture;
 import sparx.concurrent.history.FutureHistory;
 import sparx.function.Action;
-import sparx.function.BiFunction;
+import sparx.function.BinaryFunction;
 import sparx.function.Consumer;
 import sparx.function.Function;
 import sparx.function.Predicate;
@@ -276,7 +276,7 @@ public class SparxDSL {
   }
 
   public static @NotNull <V, U> Function<SignalFuture<V>, StreamingFuture<U>> foldLeft(
-      final U identity, @NotNull final BiFunction<? super U, ? super V, ? extends U> function) {
+      final U identity, @NotNull final BinaryFunction<? super U, ? super V, ? extends U> function) {
     return new Function<SignalFuture<V>, StreamingFuture<U>>() {
       @Override
       public StreamingFuture<U> apply(final SignalFuture<V> input) {
@@ -445,7 +445,7 @@ public class SparxDSL {
   }
 
   public static @NotNull <V, U> Function<SignalFuture<V>, StreamingFuture<U>> foldLeft1(
-      final U identity, @NotNull final BiFunction<? super U, ? super V, ? extends U> function) {
+      final U identity, @NotNull final BinaryFunction<? super U, ? super V, ? extends U> function) {
     return new Function<SignalFuture<V>, StreamingFuture<U>>() {
       @Override
       public StreamingFuture<U> apply(final SignalFuture<V> input) {

@@ -15,7 +15,7 @@
  */
 package sparx.function;
 
-public interface Predicate<I> {
+public interface BinaryFunction<I1, I2, O> {
 
-  boolean test(I input) throws Exception;
+  O apply(I1 firstInput, I2 secondInput) throws Exception;
 }
