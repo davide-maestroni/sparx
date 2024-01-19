@@ -2,7 +2,7 @@ package sparx;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.CoupleFuture;
-import sparx.concurrent.SignalFuture;
+import sparx.concurrent.Receiver;
 import sparx.concurrent.SingleFuture;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TripleFuture;
@@ -38,12 +38,12 @@ public class Sparx {
   }
 
   public static @NotNull <V> StreamingFuture<V> generator(
-      @NotNull Consumer<? super SignalFuture<V>> consumer) {
+      @NotNull Consumer<? super Receiver<V>> consumer) {
     return null;
   }
 
   public static @NotNull <V> StreamingFuture<V> generator(V initialValue,
-      @NotNull BinaryFunction<? super V, ? super SignalFuture<V>, V> consumer) {
+      @NotNull BinaryFunction<? super V, ? super Receiver<V>, V> consumer) {
     return null;
   }
 }

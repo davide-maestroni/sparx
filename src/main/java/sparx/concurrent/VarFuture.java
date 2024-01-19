@@ -246,6 +246,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     final Scheduler scheduler = this.scheduler;
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
+    pullFromJoin(true);
     final JoinAlert joinAlert = VarFuture.joinAlert;
     joinAlert.notifyJoinStart();
     try {
@@ -253,6 +254,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     } finally {
       joinAlert.notifyJoinStop();
       scheduler.scheduleBefore(new RemoveTask(task));
+      pullFromJoin(false);
     }
     return this.result.get();
   }
@@ -267,6 +269,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     final Scheduler scheduler = this.scheduler;
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
+    pullFromJoin(true);
     final JoinAlert joinAlert = VarFuture.joinAlert;
     joinAlert.notifyJoinStart();
     try {
@@ -276,6 +279,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     } finally {
       joinAlert.notifyJoinStop();
       scheduler.scheduleBefore(new RemoveTask(task));
+      pullFromJoin(false);
     }
     return this.result.get();
   }
@@ -345,6 +349,23 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         }
       });
     }
+  }
+
+  protected void pullFromIterator() {
+  }
+
+  protected void pullFromJoin(final boolean isPull) {
+  }
+
+  protected void pullFromReceiver() {
+  }
+
+  protected @NotNull Scheduler scheduler() {
+    return scheduler;
+  }
+
+  protected @NotNull String taskID() {
+    return taskID;
   }
 
   @Override
@@ -438,7 +459,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
   }
 
-  private static class IndefiniteIterator<E> extends FutureIterator<E> {
+  private class IndefiniteIterator<E> extends FutureIterator<E> {
 
     @Override
     public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
@@ -448,6 +469,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
       final JoinAlert joinAlert = VarFuture.joinAlert;
+      boolean firstLoop = true;
       while (remainingTime > 0) {
         if (!queue.isEmpty()) {
           return true;
@@ -458,6 +480,10 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         }
         if (status == FAILED) {
           throw UncheckedException.toUnchecked(failureException);
+        }
+        if (firstLoop) {
+          firstLoop = false;
+          pullFromIterator();
         }
         joinAlert.notifyJoinStart();
         try {
@@ -480,6 +506,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
       final JoinAlert joinAlert = VarFuture.joinAlert;
+      boolean firstLoop = true;
       while (true) {
         if (!queue.isEmpty()) {
           return true;
@@ -490,6 +517,10 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         }
         if (status == FAILED) {
           throw UncheckedException.toUnchecked(failureException);
+        }
+        if (firstLoop) {
+          firstLoop = false;
+          pullFromIterator();
         }
         joinAlert.notifyJoinStart();
         try {
@@ -503,7 +534,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
   }
 
-  private static class TimeoutIterator<E> extends FutureIterator<E> {
+  private class TimeoutIterator<E> extends FutureIterator<E> {
 
     private long totalTimeoutMillis;
 
@@ -521,6 +552,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
         final JoinAlert joinAlert = VarFuture.joinAlert;
+        boolean firstLoop = true;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
             return true;
@@ -531,6 +563,10 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           }
           if (status == FAILED) {
             throw UncheckedException.toUnchecked(failureException);
+          }
+          if (firstLoop) {
+            firstLoop = false;
+            pullFromIterator();
           }
           joinAlert.notifyJoinStart();
           try {
@@ -559,6 +595,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
         final JoinAlert joinAlert = VarFuture.joinAlert;
+        boolean firstLoop = true;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
             return true;
@@ -569,6 +606,10 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           }
           if (status == FAILED) {
             throw UncheckedException.toUnchecked(failureException);
+          }
+          if (firstLoop) {
+            firstLoop = false;
+            pullFromIterator();
           }
           joinAlert.notifyJoinStart();
           try {
@@ -828,10 +869,10 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         semaphore.release();
       }
       semaphores.clear();
-      if (isUncaught()) {
-        registration.onUncaughtError(error);
-      } else {
+      if (hasSinks()) {
         registration.cancel();
+      } else {
+        registration.onUncaughtError(error);
       }
       return true;
     }
@@ -854,6 +895,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       } catch (final RuntimeException e) {
         logInvocationException("history strategy", "onSetBulk", e);
       }
+      boolean firstSink = true;
       for (final Entry<Receiver<?>, GroupReceiver<V>> entry : receivers.entrySet()) {
         final GroupReceiver<V> groupReceiver = entry.getValue();
         if (groupReceiver.isSink()) {
@@ -865,6 +907,10 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
             }
           } catch (final RuntimeException e) {
             groupReceiver.onUncaughtError(e);
+          }
+          if (firstSink) {
+            firstSink = false;
+            pullFromReceiver();
           }
         }
       }
@@ -884,6 +930,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         }
       }
       lastValue = value;
+      boolean firstSink = true;
       for (final Entry<Receiver<?>, GroupReceiver<V>> entry : receivers.entrySet()) {
         final GroupReceiver<V> groupReceiver = entry.getValue();
         if (groupReceiver.isSink()) {
@@ -891,6 +938,10 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
             groupReceiver.set(value);
           } catch (final RuntimeException e) {
             groupReceiver.onUncaughtError(e);
+          }
+          if (firstSink) {
+            firstSink = false;
+            pullFromReceiver();
           }
         }
       }
@@ -999,7 +1050,11 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
             groupReceiver.onUncaughtError(e);
           }
         }
+        final boolean hadSinks = hasSinks();
         receivers.put(receiver, groupReceiver);
+        if (!hadSinks && groupReceiver.isSink()) {
+          pullFromReceiver();
+        }
       }
     }
 
@@ -1008,13 +1063,13 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       semaphores.remove(semaphore);
     }
 
-    private boolean isUncaught() {
+    private boolean hasSinks() {
       for (final GroupReceiver<V> groupReceiver : receivers.values()) {
         if (groupReceiver.isSink()) {
-          return false;
+          return true;
         }
       }
-      return true;
+      return false;
     }
   }
 
