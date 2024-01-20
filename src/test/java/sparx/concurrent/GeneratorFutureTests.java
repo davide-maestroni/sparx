@@ -24,15 +24,7 @@ public class GeneratorFutureTests {
 
   @Test
   public void test() {
-    var future = GeneratorFuture.of(0, (count, output) -> {
-      if (count < 10) {
-        output.set(count);
-        ++count;
-      } else {
-        output.close();
-      }
-      return count;
-    });
+    var future = GeneratorFuture.forLoop(0, c -> (c < 10), c -> c + 1);
     var iterator = future.iterator();
     assertEquals(0, iterator.next());
     assertEquals(1, iterator.next());

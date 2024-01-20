@@ -33,7 +33,6 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
 {{#tuples}}
 
   @Override
-  @SuppressWarnings("unchecked")
   public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}>{{/last}}{{/indexes}}{{#indexes}}{{#last}} F{{value}}{{/last}}{{/indexes}} {{methodName}}(
       @NotNull final Function<? super F, F1> firstFunction,
 {{#ordinals}}      @NotNull final Function<? super F{{value.prevIndex}}, F{{value.index}}> {{value.name}}Function{{^last}},{{/last}}{{#last}}) {
@@ -42,7 +41,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     FutureGroup.pushGroup(group);
     try {
       final F future = createFuture();
-      final F1 first = firstFunction.apply((F) future.readOnly());
+      final F1 first = firstFunction.apply(future);
 {{#ordinals}}      final F{{value.index}} {{value.name}} = {{value.name}}Function.apply({{value.prevName}});
 {{#last}}      {{value.name}}.subscribe(group);
       subscribeFuture(future);
@@ -65,7 +64,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) readOnly());
+      final F1 first = firstFunction.apply((F) this);
       first.subscribe(group);
       return first;
     } catch (final Exception e) {
@@ -86,7 +85,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
 {{/ordinals}}
     FutureGroup.pushGroup(group);
     try {
-      final F1 first = firstFunction.apply((F) readOnly());
+      final F1 first = firstFunction.apply((F) this);
 {{#ordinals}}      final F{{value.index}} {{value.name}} = {{value.name}}Function.apply({{value.prevName}});
 {{#last}}      {{value.name}}.subscribe(group);
       return {{value.name}};{{/last}}

@@ -910,7 +910,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           }
           if (firstSink) {
             firstSink = false;
-            pullFromReceiver();
+            pullFromReceiver(); // TODO: schedule
           }
         }
       }
@@ -941,7 +941,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           }
           if (firstSink) {
             firstSink = false;
-            pullFromReceiver();
+            pullFromReceiver(); // TODO: schedule
           }
         }
       }
