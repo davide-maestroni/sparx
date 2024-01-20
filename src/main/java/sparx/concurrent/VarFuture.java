@@ -246,7 +246,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     final Scheduler scheduler = this.scheduler;
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
-    pullFromJoin(true);
+    pullFromJoinStart();
     final JoinAlert joinAlert = VarFuture.joinAlert;
     joinAlert.notifyJoinStart();
     try {
@@ -254,7 +254,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     } finally {
       joinAlert.notifyJoinStop();
       scheduler.scheduleBefore(new RemoveTask(task));
-      pullFromJoin(false);
+      pullFromJoinStop();
     }
     return this.result.get();
   }
@@ -269,7 +269,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     final Scheduler scheduler = this.scheduler;
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
-    pullFromJoin(true);
+    pullFromJoinStart();
     final JoinAlert joinAlert = VarFuture.joinAlert;
     joinAlert.notifyJoinStart();
     try {
@@ -279,7 +279,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     } finally {
       joinAlert.notifyJoinStop();
       scheduler.scheduleBefore(new RemoveTask(task));
-      pullFromJoin(false);
+      pullFromJoinStop();
     }
     return this.result.get();
   }
@@ -351,13 +351,28 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
   }
 
+  protected boolean hasSinks() {
+    for (final GroupReceiver<V> groupReceiver : receivers.values()) {
+      if (groupReceiver.isSink()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   protected void pullFromIterator() {
   }
 
-  protected void pullFromJoin(final boolean isPull) {
+  protected void pullFromJoinStart() {
   }
 
-  protected void pullFromReceiver() {
+  protected void pullFromJoinStop() {
+  }
+
+  protected void pullFromExistingReceiver() {
+  }
+
+  protected void pullFromNewReceiver() {
   }
 
   protected @NotNull Scheduler scheduler() {
@@ -910,7 +925,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           }
           if (firstSink) {
             firstSink = false;
-            pullFromReceiver(); // TODO: schedule
+            pullFromExistingReceiver();
           }
         }
       }
@@ -941,7 +956,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           }
           if (firstSink) {
             firstSink = false;
-            pullFromReceiver(); // TODO: schedule
+            pullFromExistingReceiver();
           }
         }
       }
@@ -1053,7 +1068,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         final boolean hadSinks = hasSinks();
         receivers.put(receiver, groupReceiver);
         if (!hadSinks && groupReceiver.isSink()) {
-          pullFromReceiver();
+          pullFromNewReceiver();
         }
       }
     }
@@ -1061,15 +1076,6 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     @Override
     void remove(@NotNull final Semaphore semaphore) {
       semaphores.remove(semaphore);
-    }
-
-    private boolean hasSinks() {
-      for (final GroupReceiver<V> groupReceiver : receivers.values()) {
-        if (groupReceiver.isSink()) {
-          return true;
-        }
-      }
-      return false;
     }
   }
 

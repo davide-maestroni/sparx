@@ -118,32 +118,45 @@ public class GeneratorFuture<V> extends GeneratorStreamGroupFuture<V> {
     }
 
     @Override
-    protected void pullFromJoin(final boolean isPull) {
-      final PullTask task;
-      if (isPull) {
-        task = new PullTask() {
-          @Override
-          public void run() {
-            final boolean wasPull = isPull();
-            pullFromJoin = true;
-            if (!wasPull) {
-              pull();
-            }
+    protected void pullFromJoinStart() {
+      scheduler().scheduleBefore(new PullTask() {
+        @Override
+        public void run() {
+          final boolean wasPull = isPull();
+          pullFromJoin = true;
+          if (!wasPull) {
+            pull();
           }
-        };
-      } else {
-        task = new PullTask() {
-          @Override
-          public void run() {
-            pullFromJoin = false;
-          }
-        };
-      }
-      scheduler().scheduleBefore(task);
+        }
+      });
     }
 
     @Override
-    protected void pullFromReceiver() {
+    protected void pullFromJoinStop() {
+      scheduler().scheduleBefore(new PullTask() {
+        @Override
+        public void run() {
+          pullFromJoin = false;
+        }
+      });
+    }
+
+    @Override
+    protected void pullFromExistingReceiver() {
+      scheduler().scheduleAfter(new PullTask() {
+        @Override
+        public void run() {
+          if (hasSinks()) {
+            pullFromNewReceiver();
+          } else {
+            pullFromReceiver = false;
+          }
+        }
+      });
+    }
+
+    @Override
+    protected void pullFromNewReceiver() {
       final boolean wasPull = isPull();
       pullFromReceiver = true;
       if (!wasPull) {
