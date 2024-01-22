@@ -265,7 +265,9 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
         scheduler().scheduleAfter(new PullTask() {
           @Override
           public void run() {
+            final LinkedList<V> pendingValues = PullFuture.this.pendingValues;
             pendingValues.add(value);
+            final ArrayList<Receiver<V>> receivers = GeneratorReceiver.this.receivers;
             for (final Receiver<V> receiver : receivers) {
               receiver.setBulk(pendingValues);
             }
@@ -283,7 +285,9 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
         scheduler().scheduleAfter(new PullTask() {
           @Override
           public void run() {
+            final LinkedList<V> pendingValues = PullFuture.this.pendingValues;
             pendingValues.addAll(values);
+            final ArrayList<Receiver<V>> receivers = GeneratorReceiver.this.receivers;
             for (final Receiver<V> receiver : receivers) {
               receiver.setBulk(pendingValues);
             }

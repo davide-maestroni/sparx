@@ -882,8 +882,10 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
 
     @Override
     public void close() {
+      final LinkedList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
         isClosed = true;
+        final VarFuture<U> future = this.future;
         if (future != null) {
           future.setBulk(pendingValues);
           future.close();
@@ -894,9 +896,11 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
 
     @Override
     public boolean fail(@NotNull final Exception error) {
+      final LinkedList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
         isClosed = true;
         failureException = error;
+        final VarFuture<U> future = this.future;
         if (future != null) {
           future.setBulk(pendingValues);
           future.fail(error);
@@ -909,6 +913,8 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     @Override
     public void set(final U value) {
       unsubscribe(input);
+      final VarFuture<U> future = this.future;
+      final LinkedList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
         if (pendingValues.isEmpty()) {
           if (future != null) {
@@ -931,6 +937,8 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     @Override
     public void setBulk(@NotNull final Collection<U> values) {
       unsubscribe(input);
+      final VarFuture<U> future = this.future;
+      final LinkedList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
         if (pendingValues.isEmpty()) {
           if (future != null) {
