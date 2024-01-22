@@ -1,0 +1,203 @@
+/*
+ * Copyright 2024 Davide Maestroni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package sparx.concurrent;
+
+import java.util.Collection;
+import java.util.LinkedList;
+import org.jetbrains.annotations.NotNull;
+import sparx.function.Function;
+import sparx.function.Supplier;
+import sparx.util.UncheckedException;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
+
+abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
+
+  GeneratorStreamGroupFuture(@NotNull final StreamingFuture<V> future) {
+    super(future);
+  }
+
+  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratorFuture<V1> {{methodName}}Pull(
+      @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction) {
+    final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
+    FutureGroup.pushGroup(group);
+    try {
+      final VarFuture<V> input = VarFuture.create();
+      final F1 output = input.{{methodName}}Immediately(firstFunction);
+      final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
+      final GeneratorFuture<V1> generator = GeneratorFuture.of(receiver);
+      generator.subscribe(group);
+      return generator;
+    } catch (final Exception e) {
+      group.onUncaughtError(e);
+      throw UncheckedException.throwUnchecked(e);
+    } finally {
+      FutureGroup.popGroup();
+    }
+  }
+{{#tuples}}
+
+  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> GeneratorFuture<V{{value}}>{{/last}}{{/indexes}} {{methodName}}Pull(
+      @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
+{{#ordinals}}      @NotNull final Function<? super F{{value.prevIndex}}, F{{value.index}}> {{value.name}}Function{{^last}},{{/last}}{{#last}}) {
+    final StreamGroup<V{{value.index}}> group = new StreamGroup<V{{value.index}}>(FutureGroup.currentGroup());{{/last}}
+{{/ordinals}}
+    FutureGroup.pushGroup(group);
+    try {
+      final VarFuture<V> input = VarFuture.create();
+{{#ordinals}}{{#last}}      final F{{value.index}} output = input.{{methodName}}Immediately({{/last}}{{/ordinals}}
+{{#ordinals}}
+        {{value.prevName}}Function,{{#last}}
+
+        {{value.name}}Function{{/last}}
+{{/ordinals}}
+      );
+{{#ordinals}}{{#last}}      final GeneratorStreamReceiver<V{{value.index}}> receiver = new GeneratorStreamReceiver<V{{value.index}}>(input, output);
+      final GeneratorFuture<V{{value.index}}> generator = GeneratorFuture.of(receiver);
+{{/last}}{{/ordinals}}
+      generator.subscribe(group);
+      return generator;
+    } catch (final Exception e) {
+      group.onUncaughtError(e);
+      throw UncheckedException.throwUnchecked(e);
+    } finally {
+      FutureGroup.popGroup();
+    }
+  }
+{{/tuples}}
+
+  abstract void pull(@NotNull Receiver<V> receiver);
+
+  private class GeneratorStreamReceiver<U> implements Supplier<SignalFuture<U>>, Receiver<U> {
+
+    private final VarFuture<V> input;
+    private final SignalFuture<U> output;
+    private final LinkedList<U> pendingValues = new LinkedList<U>();
+
+    private Exception failureException;
+    private VarFuture<U> future;
+    private boolean isClosed;
+
+    private GeneratorStreamReceiver(@NotNull final VarFuture<V> input,
+        @NotNull final SignalFuture<U> output) {
+      this.input = input;
+      this.output = output;
+    }
+
+    @Override
+    public SignalFuture<U> get() {
+      final LinkedList<U> pendingValues = this.pendingValues;
+      synchronized (pendingValues) {
+        final Exception failureException = this.failureException;
+        if (!pendingValues.isEmpty()) {
+          if (failureException != null) {
+            final VarFuture<U> future = VarFuture.create();
+            future.setBulk(pendingValues);
+            future.fail(failureException);
+            pendingValues.clear();
+            return future;
+          } else {
+            final ValFuture<U> future = ValFuture.ofBulk(pendingValues);
+            pendingValues.clear();
+            return future;
+          }
+        } else if (isClosed) {
+          if (failureException != null) {
+            return ValFuture.ofFailure(failureException);
+          }
+          return null;
+        } else {
+          future = VarFuture.create();
+        }
+      }
+      output.subscribe(this);
+      pull(input);
+      return future;
+    }
+
+    @Override
+    public void close() {
+      synchronized (pendingValues) {
+        isClosed = true;
+        if (future != null) {
+          future.setBulk(pendingValues);
+          future.close();
+          pendingValues.clear();
+        }
+      }
+    }
+
+    @Override
+    public boolean fail(@NotNull final Exception error) {
+      synchronized (pendingValues) {
+        isClosed = true;
+        failureException = error;
+        if (future != null) {
+          future.setBulk(pendingValues);
+          future.fail(error);
+          pendingValues.clear();
+        }
+      }
+      return true;
+    }
+
+    @Override
+    public void set(final U value) {
+      unsubscribe(input);
+      synchronized (pendingValues) {
+        if (pendingValues.isEmpty()) {
+          if (future != null) {
+            future.set(value);
+            future.close();
+          } else {
+            pendingValues.add(value);
+          }
+        } else {
+          pendingValues.add(value);
+          if (future != null) {
+            future.setBulk(pendingValues);
+            future.close();
+            pendingValues.clear();
+          }
+        }
+      }
+    }
+
+    @Override
+    public void setBulk(@NotNull final Collection<U> values) {
+      unsubscribe(input);
+      synchronized (pendingValues) {
+        if (pendingValues.isEmpty()) {
+          if (future != null) {
+            future.setBulk(values);
+            future.close();
+          } else {
+            pendingValues.addAll(values);
+          }
+        } else {
+          pendingValues.addAll(values);
+          if (future != null) {
+            future.setBulk(pendingValues);
+            future.close();
+            pendingValues.clear();
+          }
+        }
+      }
+    }
+  }
+}

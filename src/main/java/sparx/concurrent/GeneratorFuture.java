@@ -15,7 +15,9 @@
  */
 package sparx.concurrent;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedList;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.Scheduler.Task;
@@ -24,11 +26,12 @@ import sparx.function.Predicate;
 import sparx.function.Supplier;
 import sparx.logging.Log;
 import sparx.tuple.Couple;
+import sparx.util.ImmutableList;
 import sparx.util.Requires;
 
 public class GeneratorFuture<V> extends GeneratorStreamGroupFuture<V> {
 
-  public static @NotNull <V> StreamingFuture<V> forLoop(final V initialValue,
+  public static @NotNull <V> GeneratorFuture<V> forLoop(final V initialValue,
       @NotNull final Predicate<? super V> predicate,
       @NotNull final Function<? super V, ? extends V> function) {
     return of(new Supplier<SignalFuture<V>>() {
@@ -61,9 +64,23 @@ public class GeneratorFuture<V> extends GeneratorStreamGroupFuture<V> {
     });
   }
 
-  // TODO: of(Iterable), of(Iterator)
+  public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterable<? extends V> iterable) {
+    return of(iterable.iterator());
+  }
 
-  public static @NotNull <V> StreamingFuture<V> of(
+  public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterator<? extends V> iterator) {
+    return of(new Supplier<SignalFuture<V>>() {
+      @Override
+      public SignalFuture<V> get() {
+        if (iterator.hasNext()) {
+          return ValFuture.of(iterator.next());
+        }
+        return null;
+      }
+    });
+  }
+
+  public static @NotNull <V> GeneratorFuture<V> of(
       @NotNull final Supplier<? extends SignalFuture<V>> supplier) {
     return new GeneratorFuture<V>(new PullFuture<V>(supplier));
   }
@@ -85,8 +102,18 @@ public class GeneratorFuture<V> extends GeneratorStreamGroupFuture<V> {
     });
   }
 
-  private GeneratorFuture(@NotNull final StreamingFuture<V> future) {
+  private GeneratorFuture(@NotNull final PullFuture<V> future) {
     super(future);
+  }
+
+  @Override
+  protected @NotNull StreamingFuture<V> wrapped() {
+    return this;
+  }
+
+  @Override
+  void pull(@NotNull final Receiver<V> receiver) {
+    ((PullFuture<V>) super.wrapped()).pull(receiver);
   }
 
   private static class PullFuture<V> extends VarFuture<V> {
@@ -183,6 +210,35 @@ public class GeneratorFuture<V> extends GeneratorStreamGroupFuture<V> {
       return pullFromJoin || pullFromReceiver || pullFromIterator;
     }
 
+    private void pull(@NotNull final Receiver<V> receiver) {
+      scheduler().scheduleAfter(new PullTask() {
+        @Override
+        public void run() {
+          final LinkedList<V> pendingValues = PullFuture.this.pendingValues;
+          if (!pendingValues.isEmpty()) {
+            receiver.setBulk(ImmutableList.ofElementsIn(pendingValues));
+            pendingValues.clear();
+          } else if (isPull()) {
+            PullFuture.this.receiver.addTempReceiver(receiver);
+          } else {
+            try {
+              final SignalFuture<V> future = supplier.get();
+              if (future == null) {
+                close();
+              } else {
+                final GeneratorReceiver generatorReceiver = PullFuture.this.receiver;
+                generatorReceiver.addTempReceiver(receiver);
+                future.subscribe(generatorReceiver);
+              }
+            } catch (final Exception e) {
+              Log.err(GeneratorFuture.class, "Failed to generate new values: %s", Log.printable(e));
+              fail(e);
+            }
+          }
+        }
+      });
+    }
+
     private void pull() {
       consumeValues();
       if (isPull()) {
@@ -202,25 +258,61 @@ public class GeneratorFuture<V> extends GeneratorStreamGroupFuture<V> {
 
     private class GeneratorReceiver implements Receiver<V> {
 
+      private final ArrayList<Receiver<V>> receivers = new ArrayList<Receiver<V>>();
+
       @Override
       public void close() {
       }
 
       @Override
       public boolean fail(@NotNull final Exception error) {
-        return PullFuture.this.fail(error);
+        scheduler().scheduleAfter(new PullTask() {
+          @Override
+          public void run() {
+            PullFuture.this.fail(error);
+          }
+        });
+        return true;
       }
 
       @Override
       public void set(final V value) {
-        pendingValues.add(value);
-        consumeValues();
+        scheduler().scheduleAfter(new PullTask() {
+          @Override
+          public void run() {
+            pendingValues.add(value);
+            for (final Receiver<V> receiver : receivers) {
+              receiver.setBulk(pendingValues);
+            }
+            consumeValues();
+            if (!receivers.isEmpty()) {
+              receivers.clear();
+              pendingValues.clear();
+            }
+          }
+        });
       }
 
       @Override
       public void setBulk(@NotNull final Collection<V> values) {
-        pendingValues.addAll(values);
-        consumeValues();
+        scheduler().scheduleAfter(new PullTask() {
+          @Override
+          public void run() {
+            pendingValues.addAll(values);
+            for (final Receiver<V> receiver : receivers) {
+              receiver.setBulk(pendingValues);
+            }
+            consumeValues();
+            if (!receivers.isEmpty()) {
+              receivers.clear();
+              pendingValues.clear();
+            }
+          }
+        });
+      }
+
+      private void addTempReceiver(@NotNull final Receiver<V> receiver) {
+        receivers.add(receiver);
       }
     }
 

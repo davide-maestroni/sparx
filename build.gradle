@@ -96,6 +96,12 @@ tasks.register('generateCode') {
         writer.close()
       }
       {
+        def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/GeneratorStreamGroupFuture.java'))
+        def mustache = factory.compile("template/GeneratorStreamGroupFuture.mustache")
+        mustache.execute(writer, scope)
+        writer.close()
+      }
+      {
         def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/DecoratedFuture.java'))
         def mustache = factory.compile("template/DecoratedFuture.mustache")
         mustache.execute(writer, scope)

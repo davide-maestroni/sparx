@@ -1512,7 +1512,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
     }
   }
 
-  protected abstract @NotNull F createFuture();
+  abstract @NotNull F createFuture();
 
-  protected abstract void subscribeFuture(@NotNull F future);
+  abstract void subscribeFuture(@NotNull F future);
 }

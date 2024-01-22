@@ -28,7 +28,7 @@ public interface StreamableFuture<V, F extends SignalFuture<V>> extends SignalFu
     @NotNull Function<? super F, F1> firstFunction);
 {{#tuples}}
 
-  @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}>{{/last}}{{/indexes}}{{#indexes}}{{#last}} F{{value}}{{/last}}{{/indexes}} {{methodName}}(
+  @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> F{{value}}{{/last}}{{/indexes}} {{methodName}}(
       @NotNull final Function<? super F, F1> firstFunction,
 {{#ordinals}}      @NotNull final Function<? super F{{value.prevIndex}}, F{{value.index}}> {{value.name}}Function{{^last}},{{/last}}{{#last}});{{/last}}
 {{/ordinals}}{{/tuples}}
@@ -37,7 +37,7 @@ public interface StreamableFuture<V, F extends SignalFuture<V>> extends SignalFu
       @NotNull Function<? super F, F1> firstFunction);
 {{#tuples}}
 
-  @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}>{{/last}}{{/indexes}}{{#indexes}}{{#last}} F{{value}}{{/last}}{{/indexes}} {{methodName}}Immediately(
+  @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> F{{value}}{{/last}}{{/indexes}} {{methodName}}Immediately(
       @NotNull final Function<? super F, F1> firstFunction,
 {{#ordinals}}      @NotNull final Function<? super F{{value.prevIndex}}, F{{value.index}}> {{value.name}}Function{{^last}},{{/last}}{{#last}});{{/last}}
 {{/ordinals}}{{/tuples}}

@@ -33,7 +33,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
 {{#tuples}}
 
   @Override
-  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}>{{/last}}{{/indexes}}{{#indexes}}{{#last}} F{{value}}{{/last}}{{/indexes}} {{methodName}}(
+  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> F{{value}}{{/last}}{{/indexes}} {{methodName}}(
       @NotNull final Function<? super F, F1> firstFunction,
 {{#ordinals}}      @NotNull final Function<? super F{{value.prevIndex}}, F{{value.index}}> {{value.name}}Function{{^last}},{{/last}}{{#last}}) {
     final StreamGroup<V{{value.index}}> group = new StreamGroup<V{{value.index}}>(FutureGroup.currentGroup());{{/last}}
@@ -78,7 +78,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}>{{/last}}{{/indexes}}{{#indexes}}{{#last}} F{{value}}{{/last}}{{/indexes}} {{methodName}}Immediately(
+  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> F{{value}}{{/last}}{{/indexes}} {{methodName}}Immediately(
       @NotNull final Function<? super F, F1> firstFunction,
 {{#ordinals}}      @NotNull final Function<? super F{{value.prevIndex}}, F{{value.index}}> {{value.name}}Function{{^last}},{{/last}}{{#last}}) {
     final StreamGroup<V{{value.index}}> group = new StreamGroup<V{{value.index}}>(FutureGroup.currentGroup());{{/last}}
@@ -100,7 +100,7 @@ abstract class StreamGroupFuture<V, F extends SignalFuture<V>> implements Stream
   }
 {{/tuples}}
 
-  protected abstract @NotNull F createFuture();
+  abstract @NotNull F createFuture();
 
-  protected abstract void subscribeFuture(@NotNull F future);
+  abstract void subscribeFuture(@NotNull F future);
 }
