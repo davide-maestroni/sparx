@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Function;
 import sparx.function.Supplier;
+import sparx.util.Requires;
 import sparx.util.UncheckedException;
 
 ///////////////////////////////////////////////
@@ -845,7 +846,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     private GeneratorStreamReceiver(@NotNull final VarFuture<V> input,
         @NotNull final SignalFuture<U> output) {
       this.input = input;
-      this.output = output;
+      this.output = Requires.notNull(output, "output");
     }
 
     @Override

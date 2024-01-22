@@ -35,6 +35,7 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
   }
 
   public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterator<? extends V> iterator) {
+    Requires.notNull(iterator, "iterator");
     return of(new Supplier<SignalFuture<V>>() {
       @Override
       public SignalFuture<V> get() {
@@ -54,6 +55,8 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
   public static @NotNull <V> GeneratorFuture<V> ofLoop(final V initialValue,
       @NotNull final Predicate<? super V> predicate,
       @NotNull final Function<? super V, ? extends V> function) {
+    Requires.notNull(predicate, "predicate");
+    Requires.notNull(function, "function");
     return of(new Supplier<SignalFuture<V>>() {
       private V value = initialValue;
 
