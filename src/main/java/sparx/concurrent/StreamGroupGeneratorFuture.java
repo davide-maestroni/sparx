@@ -15,8 +15,8 @@
  */
 package sparx.concurrent;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Function;
 import sparx.function.Supplier;
@@ -837,7 +837,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
 
     private final VarFuture<V> input;
     private final SignalFuture<U> output;
-    private final LinkedList<U> pendingValues = new LinkedList<U>();
+    private final ArrayList<U> pendingValues = new ArrayList<U>();
 
     private Exception failureException;
     private VarFuture<U> future;
@@ -851,7 +851,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
 
     @Override
     public SignalFuture<U> get() {
-      final LinkedList<U> pendingValues = this.pendingValues;
+      final ArrayList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
         final Exception failureException = this.failureException;
         if (!pendingValues.isEmpty()) {
@@ -882,7 +882,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
 
     @Override
     public void close() {
-      final LinkedList<U> pendingValues = this.pendingValues;
+      final ArrayList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
         isClosed = true;
         final VarFuture<U> future = this.future;
@@ -896,7 +896,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
 
     @Override
     public boolean fail(@NotNull final Exception error) {
-      final LinkedList<U> pendingValues = this.pendingValues;
+      final ArrayList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
         isClosed = true;
         failureException = error;
@@ -914,7 +914,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     public void set(final U value) {
       unsubscribe(input);
       final VarFuture<U> future = this.future;
-      final LinkedList<U> pendingValues = this.pendingValues;
+      final ArrayList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
         if (pendingValues.isEmpty()) {
           if (future != null) {
@@ -938,7 +938,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     public void setBulk(@NotNull final Collection<U> values) {
       unsubscribe(input);
       final VarFuture<U> future = this.future;
-      final LinkedList<U> pendingValues = this.pendingValues;
+      final ArrayList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
         if (pendingValues.isEmpty()) {
           if (future != null) {
