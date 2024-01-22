@@ -26,9 +26,9 @@ import sparx.util.UncheckedException;
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
+abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
 
-  GeneratorStreamGroupFuture(@NotNull final StreamingFuture<V> future) {
+  StreamGroupGeneratorFuture(@NotNull final StreamingFuture<V> future) {
     super(future);
   }
 
@@ -59,8 +59,8 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F2 output = input.thenImmediately(
-        firstFunction,
-        secondFunction
+          firstFunction,
+          secondFunction
       );
       final GeneratorStreamReceiver<V2> receiver = new GeneratorStreamReceiver<V2>(input, output);
       final GeneratorFuture<V2> generator = GeneratorFuture.of(receiver);
@@ -83,9 +83,9 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F3 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction
       );
       final GeneratorStreamReceiver<V3> receiver = new GeneratorStreamReceiver<V3>(input, output);
       final GeneratorFuture<V3> generator = GeneratorFuture.of(receiver);
@@ -109,10 +109,10 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F4 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction
       );
       final GeneratorStreamReceiver<V4> receiver = new GeneratorStreamReceiver<V4>(input, output);
       final GeneratorFuture<V4> generator = GeneratorFuture.of(receiver);
@@ -137,11 +137,11 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F5 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction
       );
       final GeneratorStreamReceiver<V5> receiver = new GeneratorStreamReceiver<V5>(input, output);
       final GeneratorFuture<V5> generator = GeneratorFuture.of(receiver);
@@ -167,12 +167,12 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F6 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction
       );
       final GeneratorStreamReceiver<V6> receiver = new GeneratorStreamReceiver<V6>(input, output);
       final GeneratorFuture<V6> generator = GeneratorFuture.of(receiver);
@@ -199,13 +199,13 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F7 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction
       );
       final GeneratorStreamReceiver<V7> receiver = new GeneratorStreamReceiver<V7>(input, output);
       final GeneratorFuture<V7> generator = GeneratorFuture.of(receiver);
@@ -233,14 +233,14 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F8 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction
       );
       final GeneratorStreamReceiver<V8> receiver = new GeneratorStreamReceiver<V8>(input, output);
       final GeneratorFuture<V8> generator = GeneratorFuture.of(receiver);
@@ -269,15 +269,15 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F9 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction
       );
       final GeneratorStreamReceiver<V9> receiver = new GeneratorStreamReceiver<V9>(input, output);
       final GeneratorFuture<V9> generator = GeneratorFuture.of(receiver);
@@ -307,16 +307,16 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F10 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction
       );
       final GeneratorStreamReceiver<V10> receiver = new GeneratorStreamReceiver<V10>(input, output);
       final GeneratorFuture<V10> generator = GeneratorFuture.of(receiver);
@@ -347,17 +347,17 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F11 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction
       );
       final GeneratorStreamReceiver<V11> receiver = new GeneratorStreamReceiver<V11>(input, output);
       final GeneratorFuture<V11> generator = GeneratorFuture.of(receiver);
@@ -389,18 +389,18 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F12 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction
       );
       final GeneratorStreamReceiver<V12> receiver = new GeneratorStreamReceiver<V12>(input, output);
       final GeneratorFuture<V12> generator = GeneratorFuture.of(receiver);
@@ -433,19 +433,19 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F13 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction
       );
       final GeneratorStreamReceiver<V13> receiver = new GeneratorStreamReceiver<V13>(input, output);
       final GeneratorFuture<V13> generator = GeneratorFuture.of(receiver);
@@ -479,20 +479,20 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F14 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction
       );
       final GeneratorStreamReceiver<V14> receiver = new GeneratorStreamReceiver<V14>(input, output);
       final GeneratorFuture<V14> generator = GeneratorFuture.of(receiver);
@@ -527,21 +527,21 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F15 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction
       );
       final GeneratorStreamReceiver<V15> receiver = new GeneratorStreamReceiver<V15>(input, output);
       final GeneratorFuture<V15> generator = GeneratorFuture.of(receiver);
@@ -577,22 +577,22 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F16 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction,
-        sixteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction,
+          sixteenthFunction
       );
       final GeneratorStreamReceiver<V16> receiver = new GeneratorStreamReceiver<V16>(input, output);
       final GeneratorFuture<V16> generator = GeneratorFuture.of(receiver);
@@ -629,23 +629,23 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F17 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction,
-        sixteenthFunction,
-        seventeenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction,
+          sixteenthFunction,
+          seventeenthFunction
       );
       final GeneratorStreamReceiver<V17> receiver = new GeneratorStreamReceiver<V17>(input, output);
       final GeneratorFuture<V17> generator = GeneratorFuture.of(receiver);
@@ -683,24 +683,24 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F18 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction,
-        sixteenthFunction,
-        seventeenthFunction,
-        eighteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction,
+          sixteenthFunction,
+          seventeenthFunction,
+          eighteenthFunction
       );
       final GeneratorStreamReceiver<V18> receiver = new GeneratorStreamReceiver<V18>(input, output);
       final GeneratorFuture<V18> generator = GeneratorFuture.of(receiver);
@@ -739,25 +739,25 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F19 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction,
-        sixteenthFunction,
-        seventeenthFunction,
-        eighteenthFunction,
-        nineteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction,
+          sixteenthFunction,
+          seventeenthFunction,
+          eighteenthFunction,
+          nineteenthFunction
       );
       final GeneratorStreamReceiver<V19> receiver = new GeneratorStreamReceiver<V19>(input, output);
       final GeneratorFuture<V19> generator = GeneratorFuture.of(receiver);
@@ -797,26 +797,26 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
     try {
       final VarFuture<V> input = VarFuture.create();
       final F20 output = input.thenImmediately(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction,
-        sixteenthFunction,
-        seventeenthFunction,
-        eighteenthFunction,
-        nineteenthFunction,
-        twentiethFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction,
+          sixteenthFunction,
+          seventeenthFunction,
+          eighteenthFunction,
+          nineteenthFunction,
+          twentiethFunction
       );
       final GeneratorStreamReceiver<V20> receiver = new GeneratorStreamReceiver<V20>(input, output);
       final GeneratorFuture<V20> generator = GeneratorFuture.of(receiver);

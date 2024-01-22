@@ -26,9 +26,9 @@ import sparx.util.UncheckedException;
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
+abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
 
-  GeneratorStreamGroupFuture(@NotNull final StreamingFuture<V> future) {
+  StreamGroupGeneratorFuture(@NotNull final StreamingFuture<V> future) {
     super(future);
   }
 
@@ -62,9 +62,9 @@ abstract class GeneratorStreamGroupFuture<V> extends ReadOnlyFuture<V> {
       final VarFuture<V> input = VarFuture.create();
 {{#ordinals}}{{#last}}      final F{{value.index}} output = input.{{methodName}}Immediately({{/last}}{{/ordinals}}
 {{#ordinals}}
-        {{value.prevName}}Function,{{#last}}
+          {{value.prevName}}Function,{{#last}}
 
-        {{value.name}}Function{{/last}}
+          {{value.name}}Function{{/last}}
 {{/ordinals}}
       );
 {{#ordinals}}{{#last}}      final GeneratorStreamReceiver<V{{value.index}}> receiver = new GeneratorStreamReceiver<V{{value.index}}>(input, output);

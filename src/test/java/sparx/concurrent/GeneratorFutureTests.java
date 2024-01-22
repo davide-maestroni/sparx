@@ -20,13 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static sparx.SparxDSL.map;
 
 import org.junit.jupiter.api.Test;
-import sparx.SparxDSL;
 
 public class GeneratorFutureTests {
 
   @Test
   public void testIterator() {
-    var future = GeneratorFuture.forLoop(0, c -> (c < 10), c -> c + 1);
+    var future = GeneratorFuture.ofLoop(0, c -> (c < 10), c -> c + 1);
     var iterator = future.iterator();
     assertEquals(0, iterator.next());
     assertEquals(1, iterator.next());
@@ -37,7 +36,7 @@ public class GeneratorFutureTests {
 
   @Test
   public void testThen() {
-    var future = GeneratorFuture.forLoop(0, c -> (c < 10), c -> c + 1)
+    var future = GeneratorFuture.ofLoop(0, c -> (c < 10), c -> c + 1)
         .thenPull(map(i -> Integer.toString(i)));
     var iterator = future.iterator();
     assertEquals("0", iterator.next());

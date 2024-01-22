@@ -25,13 +25,33 @@ import sparx.function.Function;
 import sparx.function.Predicate;
 import sparx.function.Supplier;
 import sparx.logging.Log;
-import sparx.tuple.Couple;
 import sparx.util.ImmutableList;
 import sparx.util.Requires;
 
-public class GeneratorFuture<V> extends GeneratorStreamGroupFuture<V> {
+public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
 
-  public static @NotNull <V> GeneratorFuture<V> forLoop(final V initialValue,
+  public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterable<? extends V> iterable) {
+    return of(iterable.iterator());
+  }
+
+  public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterator<? extends V> iterator) {
+    return of(new Supplier<SignalFuture<V>>() {
+      @Override
+      public SignalFuture<V> get() {
+        if (iterator.hasNext()) {
+          return ValFuture.of(iterator.next());
+        }
+        return null;
+      }
+    });
+  }
+
+  public static @NotNull <V> GeneratorFuture<V> of(
+      @NotNull final Supplier<? extends SignalFuture<V>> supplier) {
+    return new GeneratorFuture<V>(new PullFuture<V>(supplier));
+  }
+
+  public static @NotNull <V> GeneratorFuture<V> ofLoop(final V initialValue,
       @NotNull final Predicate<? super V> predicate,
       @NotNull final Function<? super V, ? extends V> function) {
     return of(new Supplier<SignalFuture<V>>() {
@@ -61,44 +81,6 @@ public class GeneratorFuture<V> extends GeneratorStreamGroupFuture<V> {
           return null;
         }
       };
-    });
-  }
-
-  public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterable<? extends V> iterable) {
-    return of(iterable.iterator());
-  }
-
-  public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterator<? extends V> iterator) {
-    return of(new Supplier<SignalFuture<V>>() {
-      @Override
-      public SignalFuture<V> get() {
-        if (iterator.hasNext()) {
-          return ValFuture.of(iterator.next());
-        }
-        return null;
-      }
-    });
-  }
-
-  public static @NotNull <V> GeneratorFuture<V> of(
-      @NotNull final Supplier<? extends SignalFuture<V>> supplier) {
-    return new GeneratorFuture<V>(new PullFuture<V>(supplier));
-  }
-
-  public static @NotNull <V> StreamingFuture<V> of(final V initialValue,
-      @NotNull final Function<? super V, Couple<Object, ? extends V, ? extends SignalFuture<V>>> function) {
-    return of(new Supplier<SignalFuture<V>>() {
-      private V value = initialValue;
-
-      @Override
-      public SignalFuture<V> get() throws Exception {
-        final Couple<Object, ? extends V, ? extends SignalFuture<V>> couple = function.apply(value);
-        if (couple != null) {
-          value = couple.getFirst();
-          return couple.getSecond();
-        }
-        return null;
-      }
     });
   }
 
