@@ -17,8 +17,11 @@ package sparx.concurrent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static sparx.SparxDSL.doOnce;
 import static sparx.SparxDSL.map;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 public class GeneratorFutureTests {
@@ -37,12 +40,32 @@ public class GeneratorFutureTests {
   @Test
   public void testThen() {
     var future = GeneratorFuture.ofLoop(0, c -> (c < 10), c -> c + 1)
-        .thenPull(map(i -> Integer.toString(i)));
+        .thenGenerate(map(i -> Integer.toString(i)));
     var iterator = future.iterator();
     assertEquals("0", iterator.next());
     assertEquals("1", iterator.next());
     assertEquals("2", iterator.next());
     assertEquals("2", future.getCurrent());
+    assertFalse(future.isDone());
+  }
+
+  @Test
+  public void testSubscribe() {
+    var value = new AtomicInteger(-1);
+    var future = GeneratorFuture.ofLoop(0, c -> (c < 10), c -> c + 1);
+    future.thenGenerate(doOnce(value::set)).subscribe();
+    assertEquals(0, value.get());
+    assertEquals(0, future.getCurrent());
+    assertFalse(future.isDone());
+
+    future.thenGenerate(doOnce(value::set)).subscribe();
+    assertEquals(1, value.get());
+    assertEquals(1, future.getCurrent());
+    assertFalse(future.isDone());
+
+    future.thenGenerate(doOnce(value::set)).subscribe();
+    assertEquals(2, value.get());
+    assertEquals(2, future.getCurrent());
     assertFalse(future.isDone());
   }
 }

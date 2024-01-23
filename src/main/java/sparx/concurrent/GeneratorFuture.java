@@ -91,6 +91,10 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
     super(future);
   }
 
+  public @NotNull Subscription subscribe() {
+    return subscribe(null, null, null, null);
+  }
+
   @Override
   protected @NotNull StreamingFuture<V> wrapped() {
     return this;
@@ -123,7 +127,7 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
           final boolean wasPull = isPull();
           pullFromIterator = true;
           if (!wasPull) {
-            pull();
+            internalPull();
           }
         }
       });
@@ -137,7 +141,7 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
           final boolean wasPull = isPull();
           pullFromJoin = true;
           if (!wasPull) {
-            pull();
+            internalPull();
           }
         }
       });
@@ -154,26 +158,21 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
     }
 
     @Override
-    protected void pullFromExistingReceiver() {
+    protected void pullFromReceiver() {
       scheduler().scheduleAfter(new PullTask() {
         @Override
         public void run() {
           if (hasSinks()) {
-            pullFromNewReceiver();
+            final boolean wasPull = isPull();
+            pullFromReceiver = true;
+            if (!wasPull) {
+              internalPull();
+            }
           } else {
             pullFromReceiver = false;
           }
         }
       });
-    }
-
-    @Override
-    protected void pullFromNewReceiver() {
-      final boolean wasPull = isPull();
-      pullFromReceiver = true;
-      if (!wasPull) {
-        pull();
-      }
     }
 
     private void consumeValues() {
@@ -202,6 +201,7 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
           final LinkedList<V> pendingValues = PullFuture.this.pendingValues;
           if (!pendingValues.isEmpty()) {
             receiver.setBulk(ImmutableList.ofElementsIn(pendingValues));
+            setBulk(pendingValues);
             pendingValues.clear();
           } else if (isPull()) {
             PullFuture.this.receiver.addTempReceiver(receiver);
@@ -224,7 +224,7 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
       });
     }
 
-    private void pull() {
+    private void internalPull() {
       consumeValues();
       if (isPull()) {
         try {
@@ -247,6 +247,12 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
 
       @Override
       public void close() {
+        scheduler().scheduleAfter(new PullTask() {
+          @Override
+          public void run() {
+            internalPull();
+          }
+        });
       }
 
       @Override
@@ -274,7 +280,10 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
             consumeValues();
             if (!receivers.isEmpty()) {
               receivers.clear();
-              pendingValues.clear();
+              if (!pendingValues.isEmpty()) {
+                PullFuture.this.setBulk(pendingValues);
+                pendingValues.clear();
+              }
             }
           }
         });
@@ -294,7 +303,10 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
             consumeValues();
             if (!receivers.isEmpty()) {
               receivers.clear();
-              pendingValues.clear();
+              if (!pendingValues.isEmpty()) {
+                PullFuture.this.setBulk(pendingValues);
+                pendingValues.clear();
+              }
             }
           }
         });

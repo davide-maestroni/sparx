@@ -91,8 +91,51 @@ public class SparxDSL {
   }
 
   public static @NotNull <V> Function<SignalFuture<V>, StreamingFuture<Nothing>> doOnce(
-      Consumer<? super V> consumer) {
-    return null;
+      final Consumer<? super V> consumer) {
+    return new Function<SignalFuture<V>, StreamingFuture<Nothing>>() {
+      @Override
+      public StreamingFuture<Nothing> apply(final SignalFuture<V> input) throws Exception {
+        final VarFuture<Nothing> future = VarFuture.create();
+        input.subscribe(new Receiver<V>() {
+          @Override
+          public void close() {
+            future.close();
+          }
+
+          @Override
+          public boolean fail(@NotNull final Exception error) {
+            return future.fail(error);
+          }
+
+          @Override
+          public void set(final V value) {
+            try {
+              consumer.accept(value);
+              future.close();
+            } catch (final Exception e) {
+              future.fail(e);
+            } finally {
+              input.unsubscribe(this);
+            }
+          }
+
+          @Override
+          public void setBulk(@NotNull final Collection<V> values) {
+            if (!values.isEmpty()) {
+              try {
+                consumer.accept(values.iterator().next());
+                future.close();
+              } catch (final Exception e) {
+                future.fail(e);
+              } finally {
+                input.unsubscribe(this);
+              }
+            }
+          }
+        });
+        return future.readOnly();
+      }
+    };
   }
 
   public static @NotNull <V> Function<SignalFuture<V>, StreamingFuture<Nothing>> doUntil(

@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.function.Consumer;
 import sparx.function.Function;
 
-public class DummyExecutionContextTaskAlert implements ExecutionContextTaskAlert {
+class DummyExecutionContextTaskAlert implements ExecutionContextTaskAlert {
 
   private static final DummyExecutionContextTaskAlert INSTANCE = new DummyExecutionContextTaskAlert();
 

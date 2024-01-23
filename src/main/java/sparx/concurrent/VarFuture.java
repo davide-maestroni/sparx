@@ -369,10 +369,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   protected void pullFromJoinStop() {
   }
 
-  protected void pullFromExistingReceiver() {
-  }
-
-  protected void pullFromNewReceiver() {
+  protected void pullFromReceiver() {
   }
 
   protected @NotNull Scheduler scheduler() {
@@ -925,7 +922,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           }
           if (firstSink) {
             firstSink = false;
-            pullFromExistingReceiver();
+            pullFromReceiver();
           }
         }
       }
@@ -956,7 +953,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
           }
           if (firstSink) {
             firstSink = false;
-            pullFromExistingReceiver();
+            pullFromReceiver();
           }
         }
       }
@@ -1065,10 +1062,9 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
             groupReceiver.onUncaughtError(e);
           }
         }
-        final boolean hadSinks = hasSinks();
         receivers.put(receiver, groupReceiver);
-        if (!hadSinks && groupReceiver.isSink()) {
-          pullFromNewReceiver();
+        if (hasSinks()) {
+          pullFromReceiver();
         }
       }
     }
