@@ -831,45 +831,6 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>> StreamingFuture<V1> thenPull(
-      @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction) {
-    final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
-    try {
-      final VarFuture<V> input = new VarFuture<V>() {
-        @Override
-        protected void pullFromIterator() {
-          pullFromIterator();
-        }
-
-        @Override
-        protected void pullFromJoinStart() {
-          pullFromJoinStart();
-        }
-
-        @Override
-        protected void pullFromJoinStop() {
-          pullFromJoinStop();
-        }
-
-        @Override
-        protected void pullFromReceiver() {
-          pullFromReceiver();
-        }
-      };
-      final F1 output = input.thenImmediately(firstFunction);
-      final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
-      final GeneratorFuture<V1> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
-    } catch (final Exception e) {
-      group.onUncaughtError(e);
-      throw UncheckedException.throwUnchecked(e);
-    } finally {
-      FutureGroup.popGroup();
-    }
-  }
-
   abstract void pull(@NotNull Receiver<V> receiver);
 
   private class GeneratorStreamReceiver<U> implements Supplier<SignalFuture<U>>, Receiver<U> {
