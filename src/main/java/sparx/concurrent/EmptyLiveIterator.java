@@ -25,7 +25,7 @@ public class EmptyLiveIterator<E> implements LiveIterator<E> {
   private static final EmptyLiveIterator<?> INSTANCE = new EmptyLiveIterator<Object>();
 
   @SuppressWarnings("unchecked")
-  static @NotNull <E> EmptyLiveIterator<E> instance() {
+  public static @NotNull <E> EmptyLiveIterator<E> instance() {
     return (EmptyLiveIterator<E>) INSTANCE;
   }
 

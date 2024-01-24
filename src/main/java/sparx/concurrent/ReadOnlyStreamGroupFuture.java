@@ -19,7 +19,7 @@ import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Function;
 
-abstract class ReadOnlyStreamGroupFuture<V, F extends SignalFuture<V>> extends
+public abstract class ReadOnlyStreamGroupFuture<V, F extends SignalFuture<V>> extends
     StreamGroupFuture<V, F> {
 
   private static <R> R fail(@NotNull final String name) {

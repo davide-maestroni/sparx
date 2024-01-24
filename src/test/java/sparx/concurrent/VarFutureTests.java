@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import sparx.concurrent.history.HistoryStrategy;
+import sparx.concurrent.tuple.CoupleFuture;
 import sparx.config.AlertModule;
 import sparx.config.LogModule;
 import sparx.config.SparxConfig;

@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.concurrent.tuple;
 
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
-import sparx.tuple.Couple;
+import sparx.concurrent.StreamingFuture;
+import sparx.concurrent.VarFuture;
+import sparx.tuple.Triple;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
 
@@ -25,29 +27,34 @@ import sparx.util.Require;
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-public class CoupleFuture<V, V1 extends V, V2 extends V> extends
-    StreamGroupTupleFuture<V, CoupleFuture<V, V1, V2>> implements
-    Couple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>> {
+public class TripleFuture<V, V1 extends V, V2 extends V, V3 extends V> extends
+    StreamGroupTupleFuture<V, TripleFuture<V, V1, V2, V3>> implements
+    Triple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>> {
 
-  public static @NotNull <V, V1 extends V, V2 extends V> CoupleFuture<V, V1, V2> of(
+  public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V> TripleFuture<V, V1, V2, V3> of(
       @NotNull final StreamingFuture<V1> first,
-      @NotNull final StreamingFuture<V2> second) { 
-    return new CoupleFuture<V, V1, V2>(
+      @NotNull final StreamingFuture<V2> second,
+      @NotNull final StreamingFuture<V3> third) { 
+    return new TripleFuture<V, V1, V2, V3>(
         Require.notNull(first, "first"),
-        Require.notNull(second, "second")
+        Require.notNull(second, "second"),
+        Require.notNull(third, "third")
     );
   }
 
   private final StreamingFuture<V1> first;
   private final StreamingFuture<V2> second;
+  private final StreamingFuture<V3> third;
   private final List<StreamingFuture<? extends V>> futures;
 
-  private CoupleFuture(
+  private TripleFuture(
       @NotNull final StreamingFuture<V1> first,
-      @NotNull final StreamingFuture<V2> second) { 
+      @NotNull final StreamingFuture<V2> second,
+      @NotNull final StreamingFuture<V3> third) { 
     this.first = first;
     this.second = second;
-    this.futures = ImmutableList.of(first, second);
+    this.third = third;
+    this.futures = ImmutableList.of(first, second, third);
   }
 
   @Override
@@ -55,9 +62,15 @@ public class CoupleFuture<V, V1 extends V, V2 extends V> extends
     return first;
   }
 
+
   @Override
   public @NotNull StreamingFuture<V2> getSecond() {
     return second;
+  }
+
+  @Override
+  public @NotNull StreamingFuture<V3> getThird() {
+    return third;
   }
 
   @Override
@@ -66,21 +79,23 @@ public class CoupleFuture<V, V1 extends V, V2 extends V> extends
   }
 
   @Override
-  public @NotNull CoupleFuture<V, V1, V2> readOnly() {
+  public @NotNull TripleFuture<V, V1, V2, V3> readOnly() {
     return this;
   }
 
   @Override
-  protected @NotNull CoupleFuture<V, V1, V2> createFuture() {
-    return new CoupleFuture<V, V1, V2>(
-        new VarFuture<V1>(),
-        new VarFuture<V2>()
+  protected @NotNull TripleFuture<V, V1, V2, V3> createFuture() {
+    return new TripleFuture<V, V1, V2, V3>(
+        VarFuture.<V1>create(),
+        VarFuture.<V2>create(),
+        VarFuture.<V3>create()
     );
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final CoupleFuture<V, V1, V2> future) {
+  protected void subscribeFuture(@NotNull final TripleFuture<V, V1, V2, V3> future) {
     getFirst().subscribe(future.getFirst());
     getSecond().subscribe(future.getSecond());
+    getThird().subscribe(future.getThird());
   }
 }

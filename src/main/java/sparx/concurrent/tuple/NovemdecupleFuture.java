@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.concurrent.tuple;
 
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
-import sparx.tuple.Quattuordecuple;
+import sparx.concurrent.StreamingFuture;
+import sparx.concurrent.VarFuture;
+import sparx.tuple.Novemdecuple;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
 
@@ -25,11 +27,11 @@ import sparx.util.Require;
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V, V11 extends V, V12 extends V, V13 extends V, V14 extends V> extends
-    StreamGroupTupleFuture<V, QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14>> implements
-    Quattuordecuple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>, StreamingFuture<V4>, StreamingFuture<V5>, StreamingFuture<V6>, StreamingFuture<V7>, StreamingFuture<V8>, StreamingFuture<V9>, StreamingFuture<V10>, StreamingFuture<V11>, StreamingFuture<V12>, StreamingFuture<V13>, StreamingFuture<V14>> {
+public class NovemdecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V, V11 extends V, V12 extends V, V13 extends V, V14 extends V, V15 extends V, V16 extends V, V17 extends V, V18 extends V, V19 extends V> extends
+    StreamGroupTupleFuture<V, NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19>> implements
+    Novemdecuple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>, StreamingFuture<V4>, StreamingFuture<V5>, StreamingFuture<V6>, StreamingFuture<V7>, StreamingFuture<V8>, StreamingFuture<V9>, StreamingFuture<V10>, StreamingFuture<V11>, StreamingFuture<V12>, StreamingFuture<V13>, StreamingFuture<V14>, StreamingFuture<V15>, StreamingFuture<V16>, StreamingFuture<V17>, StreamingFuture<V18>, StreamingFuture<V19>> {
 
-  public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V, V11 extends V, V12 extends V, V13 extends V, V14 extends V> QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14> of(
+  public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V, V11 extends V, V12 extends V, V13 extends V, V14 extends V, V15 extends V, V16 extends V, V17 extends V, V18 extends V, V19 extends V> NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19> of(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
       @NotNull final StreamingFuture<V3> third,
@@ -43,8 +45,13 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
       @NotNull final StreamingFuture<V11> eleventh,
       @NotNull final StreamingFuture<V12> twelfth,
       @NotNull final StreamingFuture<V13> thirteenth,
-      @NotNull final StreamingFuture<V14> fourteenth) { 
-    return new QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14>(
+      @NotNull final StreamingFuture<V14> fourteenth,
+      @NotNull final StreamingFuture<V15> fifteenth,
+      @NotNull final StreamingFuture<V16> sixteenth,
+      @NotNull final StreamingFuture<V17> seventeenth,
+      @NotNull final StreamingFuture<V18> eighteenth,
+      @NotNull final StreamingFuture<V19> nineteenth) { 
+    return new NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19>(
         Require.notNull(first, "first"),
         Require.notNull(second, "second"),
         Require.notNull(third, "third"),
@@ -58,7 +65,12 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
         Require.notNull(eleventh, "eleventh"),
         Require.notNull(twelfth, "twelfth"),
         Require.notNull(thirteenth, "thirteenth"),
-        Require.notNull(fourteenth, "fourteenth")
+        Require.notNull(fourteenth, "fourteenth"),
+        Require.notNull(fifteenth, "fifteenth"),
+        Require.notNull(sixteenth, "sixteenth"),
+        Require.notNull(seventeenth, "seventeenth"),
+        Require.notNull(eighteenth, "eighteenth"),
+        Require.notNull(nineteenth, "nineteenth")
     );
   }
 
@@ -76,9 +88,14 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
   private final StreamingFuture<V12> twelfth;
   private final StreamingFuture<V13> thirteenth;
   private final StreamingFuture<V14> fourteenth;
+  private final StreamingFuture<V15> fifteenth;
+  private final StreamingFuture<V16> sixteenth;
+  private final StreamingFuture<V17> seventeenth;
+  private final StreamingFuture<V18> eighteenth;
+  private final StreamingFuture<V19> nineteenth;
   private final List<StreamingFuture<? extends V>> futures;
 
-  private QuattuordecupleFuture(
+  private NovemdecupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
       @NotNull final StreamingFuture<V3> third,
@@ -92,7 +109,12 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
       @NotNull final StreamingFuture<V11> eleventh,
       @NotNull final StreamingFuture<V12> twelfth,
       @NotNull final StreamingFuture<V13> thirteenth,
-      @NotNull final StreamingFuture<V14> fourteenth) { 
+      @NotNull final StreamingFuture<V14> fourteenth,
+      @NotNull final StreamingFuture<V15> fifteenth,
+      @NotNull final StreamingFuture<V16> sixteenth,
+      @NotNull final StreamingFuture<V17> seventeenth,
+      @NotNull final StreamingFuture<V18> eighteenth,
+      @NotNull final StreamingFuture<V19> nineteenth) { 
     this.first = first;
     this.second = second;
     this.third = third;
@@ -107,7 +129,12 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
     this.twelfth = twelfth;
     this.thirteenth = thirteenth;
     this.fourteenth = fourteenth;
-    this.futures = ImmutableList.of(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth);
+    this.fifteenth = fifteenth;
+    this.sixteenth = sixteenth;
+    this.seventeenth = seventeenth;
+    this.eighteenth = eighteenth;
+    this.nineteenth = nineteenth;
+    this.futures = ImmutableList.of(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth, eighteenth, nineteenth);
   }
 
   @Override
@@ -187,9 +214,39 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
     return thirteenth;
   }
 
+
   @Override
   public @NotNull StreamingFuture<V14> getFourteenth() {
     return fourteenth;
+  }
+
+
+  @Override
+  public @NotNull StreamingFuture<V15> getFifteenth() {
+    return fifteenth;
+  }
+
+
+  @Override
+  public @NotNull StreamingFuture<V16> getSixteenth() {
+    return sixteenth;
+  }
+
+
+  @Override
+  public @NotNull StreamingFuture<V17> getSeventeenth() {
+    return seventeenth;
+  }
+
+
+  @Override
+  public @NotNull StreamingFuture<V18> getEighteenth() {
+    return eighteenth;
+  }
+
+  @Override
+  public @NotNull StreamingFuture<V19> getNineteenth() {
+    return nineteenth;
   }
 
   @Override
@@ -198,32 +255,37 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
   }
 
   @Override
-  public @NotNull QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14> readOnly() {
+  public @NotNull NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19> readOnly() {
     return this;
   }
 
   @Override
-  protected @NotNull QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14> createFuture() {
-    return new QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14>(
-        new VarFuture<V1>(),
-        new VarFuture<V2>(),
-        new VarFuture<V3>(),
-        new VarFuture<V4>(),
-        new VarFuture<V5>(),
-        new VarFuture<V6>(),
-        new VarFuture<V7>(),
-        new VarFuture<V8>(),
-        new VarFuture<V9>(),
-        new VarFuture<V10>(),
-        new VarFuture<V11>(),
-        new VarFuture<V12>(),
-        new VarFuture<V13>(),
-        new VarFuture<V14>()
+  protected @NotNull NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19> createFuture() {
+    return new NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19>(
+        VarFuture.<V1>create(),
+        VarFuture.<V2>create(),
+        VarFuture.<V3>create(),
+        VarFuture.<V4>create(),
+        VarFuture.<V5>create(),
+        VarFuture.<V6>create(),
+        VarFuture.<V7>create(),
+        VarFuture.<V8>create(),
+        VarFuture.<V9>create(),
+        VarFuture.<V10>create(),
+        VarFuture.<V11>create(),
+        VarFuture.<V12>create(),
+        VarFuture.<V13>create(),
+        VarFuture.<V14>create(),
+        VarFuture.<V15>create(),
+        VarFuture.<V16>create(),
+        VarFuture.<V17>create(),
+        VarFuture.<V18>create(),
+        VarFuture.<V19>create()
     );
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final QuattuordecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14> future) {
+  protected void subscribeFuture(@NotNull final NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19> future) {
     getFirst().subscribe(future.getFirst());
     getSecond().subscribe(future.getSecond());
     getThird().subscribe(future.getThird());
@@ -238,5 +300,10 @@ public class QuattuordecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, 
     getTwelfth().subscribe(future.getTwelfth());
     getThirteenth().subscribe(future.getThirteenth());
     getFourteenth().subscribe(future.getFourteenth());
+    getFifteenth().subscribe(future.getFifteenth());
+    getSixteenth().subscribe(future.getSixteenth());
+    getSeventeenth().subscribe(future.getSeventeenth());
+    getEighteenth().subscribe(future.getEighteenth());
+    getNineteenth().subscribe(future.getNineteenth());
   }
 }

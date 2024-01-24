@@ -23,7 +23,7 @@ import sparx.function.Consumer;
 import sparx.logging.Log;
 import sparx.util.UncheckedException;
 
-class FunctionalReceiver<V> implements Receiver<V> {
+public class FunctionalReceiver<V> implements Receiver<V> {
 
   private static final Action EMPTY_ACTION = new Action() {
     @Override
@@ -42,7 +42,7 @@ class FunctionalReceiver<V> implements Receiver<V> {
   private final Consumer<? super Collection<V>> onValuesConsumer;
 
   @SuppressWarnings("unchecked")
-  FunctionalReceiver(@Nullable final Consumer<? super V> onValueConsumer,
+  public FunctionalReceiver(@Nullable final Consumer<? super V> onValueConsumer,
       @Nullable final Consumer<? super Collection<V>> onValuesConsumer,
       @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
     if (onValueConsumer != null) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.concurrent.tuple;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import sparx.concurrent.FunctionalReceiver;
+import sparx.concurrent.ReadOnlyStreamGroupFuture;
+import sparx.concurrent.Receiver;
+import sparx.concurrent.StreamingFuture;
+import sparx.concurrent.TupleFuture;
 import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.util.ImmutableList;
@@ -96,29 +101,32 @@ abstract class StreamGroupTupleFuture<V, F extends TupleFuture<V, F>> extends
 
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
-    boolean isCancelled = true;
     for (final StreamingFuture<? extends V> future : asList()) {
-      isCancelled &= future.cancel(mayInterruptIfRunning);
+      if (!future.cancel(mayInterruptIfRunning)) {
+        return false;
+      }
     }
-    return isCancelled;
+    return true;
   }
 
   @Override
   public boolean isCancelled() {
-    boolean isCancelled = true;
     for (final StreamingFuture<? extends V> future : asList()) {
-      isCancelled &= future.isCancelled();
+      if (!future.isCancelled()) {
+        return false;
+      }
     }
-    return isCancelled;
+    return true;
   }
 
   @Override
   public boolean isDone() {
-    boolean isDone = true;
     for (final StreamingFuture<? extends V> future : asList()) {
-      isDone &= future.isDone();
+      if (!future.isDone()) {
+        return false;
+      }
     }
-    return isDone;
+    return true;
   }
 
   @Override

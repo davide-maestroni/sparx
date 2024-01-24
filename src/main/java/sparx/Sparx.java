@@ -1,13 +1,13 @@
 package sparx;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.CoupleFuture;
 import sparx.concurrent.Receiver;
-import sparx.concurrent.SingleFuture;
 import sparx.concurrent.StreamingFuture;
-import sparx.concurrent.TripleFuture;
 import sparx.concurrent.VarFuture;
 import sparx.concurrent.history.HistoryStrategy;
+import sparx.concurrent.tuple.CoupleFuture;
+import sparx.concurrent.tuple.SingleFuture;
+import sparx.concurrent.tuple.TripleFuture;
 import sparx.function.BinaryFunction;
 import sparx.function.Consumer;
 

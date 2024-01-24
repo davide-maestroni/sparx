@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.concurrent.tuple;
 
 import java.util.Collections;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.StreamingFuture;
+import sparx.concurrent.VarFuture;
 import sparx.tuple.Single;
 import sparx.util.Require;
 
@@ -53,7 +55,7 @@ public class SingleFuture<V> extends StreamGroupTupleFuture<V, SingleFuture<V>> 
 
   @Override
   protected @NotNull SingleFuture<V> createFuture() {
-    return new SingleFuture<V>(new VarFuture<V>());
+    return new SingleFuture<V>(VarFuture.<V>create());
   }
 
   @Override

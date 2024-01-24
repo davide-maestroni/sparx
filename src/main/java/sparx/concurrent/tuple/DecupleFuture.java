@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.concurrent.tuple;
 
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
-import sparx.tuple.Tredecuple;
+import sparx.concurrent.StreamingFuture;
+import sparx.concurrent.VarFuture;
+import sparx.tuple.Decuple;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
 
@@ -25,11 +27,11 @@ import sparx.util.Require;
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-public class TredecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V, V11 extends V, V12 extends V, V13 extends V> extends
-    StreamGroupTupleFuture<V, TredecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13>> implements
-    Tredecuple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>, StreamingFuture<V4>, StreamingFuture<V5>, StreamingFuture<V6>, StreamingFuture<V7>, StreamingFuture<V8>, StreamingFuture<V9>, StreamingFuture<V10>, StreamingFuture<V11>, StreamingFuture<V12>, StreamingFuture<V13>> {
+public class DecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V> extends
+    StreamGroupTupleFuture<V, DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10>> implements
+    Decuple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>, StreamingFuture<V4>, StreamingFuture<V5>, StreamingFuture<V6>, StreamingFuture<V7>, StreamingFuture<V8>, StreamingFuture<V9>, StreamingFuture<V10>> {
 
-  public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V, V11 extends V, V12 extends V, V13 extends V> TredecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13> of(
+  public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V> DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10> of(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
       @NotNull final StreamingFuture<V3> third,
@@ -39,11 +41,8 @@ public class TredecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
       @NotNull final StreamingFuture<V7> seventh,
       @NotNull final StreamingFuture<V8> eighth,
       @NotNull final StreamingFuture<V9> ninth,
-      @NotNull final StreamingFuture<V10> tenth,
-      @NotNull final StreamingFuture<V11> eleventh,
-      @NotNull final StreamingFuture<V12> twelfth,
-      @NotNull final StreamingFuture<V13> thirteenth) { 
-    return new TredecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13>(
+      @NotNull final StreamingFuture<V10> tenth) { 
+    return new DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10>(
         Require.notNull(first, "first"),
         Require.notNull(second, "second"),
         Require.notNull(third, "third"),
@@ -53,10 +52,7 @@ public class TredecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
         Require.notNull(seventh, "seventh"),
         Require.notNull(eighth, "eighth"),
         Require.notNull(ninth, "ninth"),
-        Require.notNull(tenth, "tenth"),
-        Require.notNull(eleventh, "eleventh"),
-        Require.notNull(twelfth, "twelfth"),
-        Require.notNull(thirteenth, "thirteenth")
+        Require.notNull(tenth, "tenth")
     );
   }
 
@@ -70,12 +66,9 @@ public class TredecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
   private final StreamingFuture<V8> eighth;
   private final StreamingFuture<V9> ninth;
   private final StreamingFuture<V10> tenth;
-  private final StreamingFuture<V11> eleventh;
-  private final StreamingFuture<V12> twelfth;
-  private final StreamingFuture<V13> thirteenth;
   private final List<StreamingFuture<? extends V>> futures;
 
-  private TredecupleFuture(
+  private DecupleFuture(
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second,
       @NotNull final StreamingFuture<V3> third,
@@ -85,10 +78,7 @@ public class TredecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
       @NotNull final StreamingFuture<V7> seventh,
       @NotNull final StreamingFuture<V8> eighth,
       @NotNull final StreamingFuture<V9> ninth,
-      @NotNull final StreamingFuture<V10> tenth,
-      @NotNull final StreamingFuture<V11> eleventh,
-      @NotNull final StreamingFuture<V12> twelfth,
-      @NotNull final StreamingFuture<V13> thirteenth) { 
+      @NotNull final StreamingFuture<V10> tenth) { 
     this.first = first;
     this.second = second;
     this.third = third;
@@ -99,10 +89,7 @@ public class TredecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
     this.eighth = eighth;
     this.ninth = ninth;
     this.tenth = tenth;
-    this.eleventh = eleventh;
-    this.twelfth = twelfth;
-    this.thirteenth = thirteenth;
-    this.futures = ImmutableList.of(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth);
+    this.futures = ImmutableList.of(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth);
   }
 
   @Override
@@ -158,27 +145,9 @@ public class TredecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
     return ninth;
   }
 
-
   @Override
   public @NotNull StreamingFuture<V10> getTenth() {
     return tenth;
-  }
-
-
-  @Override
-  public @NotNull StreamingFuture<V11> getEleventh() {
-    return eleventh;
-  }
-
-
-  @Override
-  public @NotNull StreamingFuture<V12> getTwelfth() {
-    return twelfth;
-  }
-
-  @Override
-  public @NotNull StreamingFuture<V13> getThirteenth() {
-    return thirteenth;
   }
 
   @Override
@@ -187,31 +156,28 @@ public class TredecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
   }
 
   @Override
-  public @NotNull TredecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13> readOnly() {
+  public @NotNull DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10> readOnly() {
     return this;
   }
 
   @Override
-  protected @NotNull TredecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13> createFuture() {
-    return new TredecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13>(
-        new VarFuture<V1>(),
-        new VarFuture<V2>(),
-        new VarFuture<V3>(),
-        new VarFuture<V4>(),
-        new VarFuture<V5>(),
-        new VarFuture<V6>(),
-        new VarFuture<V7>(),
-        new VarFuture<V8>(),
-        new VarFuture<V9>(),
-        new VarFuture<V10>(),
-        new VarFuture<V11>(),
-        new VarFuture<V12>(),
-        new VarFuture<V13>()
+  protected @NotNull DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10> createFuture() {
+    return new DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10>(
+        VarFuture.<V1>create(),
+        VarFuture.<V2>create(),
+        VarFuture.<V3>create(),
+        VarFuture.<V4>create(),
+        VarFuture.<V5>create(),
+        VarFuture.<V6>create(),
+        VarFuture.<V7>create(),
+        VarFuture.<V8>create(),
+        VarFuture.<V9>create(),
+        VarFuture.<V10>create()
     );
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final TredecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13> future) {
+  protected void subscribeFuture(@NotNull final DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10> future) {
     getFirst().subscribe(future.getFirst());
     getSecond().subscribe(future.getSecond());
     getThird().subscribe(future.getThird());
@@ -222,8 +188,5 @@ public class TredecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
     getEighth().subscribe(future.getEighth());
     getNinth().subscribe(future.getNinth());
     getTenth().subscribe(future.getTenth());
-    getEleventh().subscribe(future.getEleventh());
-    getTwelfth().subscribe(future.getTwelfth());
-    getThirteenth().subscribe(future.getThirteenth());
   }
 }

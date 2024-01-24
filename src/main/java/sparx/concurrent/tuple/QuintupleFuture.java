@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.concurrent.tuple;
 
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.StreamingFuture;
+import sparx.concurrent.VarFuture;
 import sparx.tuple.Quintuple;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
@@ -106,11 +108,11 @@ public class QuintupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
   @Override
   protected @NotNull QuintupleFuture<V, V1, V2, V3, V4, V5> createFuture() {
     return new QuintupleFuture<V, V1, V2, V3, V4, V5>(
-        new VarFuture<V1>(),
-        new VarFuture<V2>(),
-        new VarFuture<V3>(),
-        new VarFuture<V4>(),
-        new VarFuture<V5>()
+        VarFuture.<V1>create(),
+        VarFuture.<V2>create(),
+        VarFuture.<V3>create(),
+        VarFuture.<V4>create(),
+        VarFuture.<V5>create()
     );
   }
 

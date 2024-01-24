@@ -138,7 +138,7 @@ tasks.register('generateCode') {
         writer.close()
       }
       {
-        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/concurrent/${it.name}Future.java"))
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/concurrent/tuple/${it.name}Future.java"))
         def mustache = factory.compile("template/TupleFuture.mustache")
         mustache.execute(writer, it)
         writer.close()
