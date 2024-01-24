@@ -43,7 +43,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F1 output = input.{{methodName}}Immediately(firstFunction);
       final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
       final GeneratingFuture<V1> future = createGeneratingFuture(receiver);
@@ -65,7 +65,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
 {{/ordinals}}
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
 {{#ordinals}}{{#last}}      final F{{value.index}} output = input.{{methodName}}Immediately({{/last}}{{/ordinals}}
 {{#ordinals}}
         {{value.prevName}}Function,{{#last}}

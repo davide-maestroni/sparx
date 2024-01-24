@@ -43,7 +43,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F1 output = input.thenImmediately(firstFunction);
       final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
       final GeneratingFuture<V1> future = createGeneratingFuture(receiver);
@@ -63,7 +63,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V2> group = new StreamGroup<V2>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F2 output = input.thenImmediately(
         firstFunction,
         secondFunction
@@ -87,7 +87,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V3> group = new StreamGroup<V3>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F3 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -113,7 +113,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V4> group = new StreamGroup<V4>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F4 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -141,7 +141,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V5> group = new StreamGroup<V5>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F5 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -171,7 +171,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V6> group = new StreamGroup<V6>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F6 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -203,7 +203,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V7> group = new StreamGroup<V7>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F7 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -237,7 +237,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V8> group = new StreamGroup<V8>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F8 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -273,7 +273,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V9> group = new StreamGroup<V9>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F9 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -311,7 +311,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V10> group = new StreamGroup<V10>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F10 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -351,7 +351,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V11> group = new StreamGroup<V11>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F11 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -393,7 +393,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V12> group = new StreamGroup<V12>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F12 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -437,7 +437,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V13> group = new StreamGroup<V13>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F13 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -483,7 +483,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V14> group = new StreamGroup<V14>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F14 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -531,7 +531,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V15> group = new StreamGroup<V15>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F15 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -581,7 +581,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V16> group = new StreamGroup<V16>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F16 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -633,7 +633,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V17> group = new StreamGroup<V17>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F17 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -687,7 +687,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V18> group = new StreamGroup<V18>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F18 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -743,7 +743,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V19> group = new StreamGroup<V19>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F19 output = input.thenImmediately(
         firstFunction,
         secondFunction,
@@ -801,7 +801,7 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
     final StreamGroup<V20> group = new StreamGroup<V20>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
     try {
-      final VarFuture<V> input = new VarFuture<V>();
+      final VarFuture<V> input = VarFuture.create();
       final F20 output = input.thenImmediately(
         firstFunction,
         secondFunction,
