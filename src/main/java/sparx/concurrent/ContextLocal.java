@@ -18,7 +18,7 @@ package sparx.concurrent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.FutureGroup.Group;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 public class ContextLocal {
 
@@ -32,7 +32,7 @@ public class ContextLocal {
   public static @NotNull <V> LocalValue<V> getValue(@NotNull final String name) {
     final Group group = FutureGroup.currentGroup();
     @SuppressWarnings("unchecked") final LocalValue<V> value =
-        (LocalValue<V>) group.restoreValue(Requires.notNull(name, "name"));
+        (LocalValue<V>) group.restoreValue(Require.notNull(name, "name"));
     return (value == null) ? new LocalValue<V>(group, name) : value;
   }
 

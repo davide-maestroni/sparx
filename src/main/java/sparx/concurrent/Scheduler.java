@@ -25,7 +25,7 @@ import sparx.logging.alert.Alerts;
 import sparx.logging.alert.BackpressureAlert;
 import sparx.logging.alert.SchedulerQueueAlert;
 import sparx.logging.alert.SchedulerWorkerAlert;
-import sparx.util.Requires;
+import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 public class Scheduler {
@@ -95,8 +95,8 @@ public class Scheduler {
   }
 
   private Scheduler(@NotNull final Executor executor, final int minThroughput) {
-    this.executor = Requires.notNull(executor, "executor");
-    this.minThroughput = Requires.positive(minThroughput, "minThroughput");
+    this.executor = Require.notNull(executor, "executor");
+    this.minThroughput = Require.positive(minThroughput, "minThroughput");
     if (minThroughput == Integer.MAX_VALUE) {
       // infinite throughput
       this.worker = new InfiniteWorker();
@@ -109,7 +109,7 @@ public class Scheduler {
 
   private Scheduler(@NotNull final Executor executor, final long minTime,
       @NotNull final TimeUnit unit) {
-    this.executor = Requires.notNull(executor, "executor");
+    this.executor = Require.notNull(executor, "executor");
     this.minThroughput = Integer.MAX_VALUE;
     this.worker = new TimeoutWorker(minTime, unit);
   }
@@ -220,13 +220,13 @@ public class Scheduler {
     private SchedulerWithBackpressure(@NotNull final Executor executor, final int minThroughput,
         @NotNull final BackpressureStrategy backpressureStrategy) {
       super(executor, minThroughput);
-      this.backpressureStrategy = Requires.notNull(backpressureStrategy, "backpressureStrategy");
+      this.backpressureStrategy = Require.notNull(backpressureStrategy, "backpressureStrategy");
     }
 
     private SchedulerWithBackpressure(@NotNull final Executor executor, final long minTime,
         @NotNull final TimeUnit unit, @NotNull final BackpressureStrategy backpressureStrategy) {
       super(executor, minTime, unit);
-      this.backpressureStrategy = Requires.notNull(backpressureStrategy, "backpressureStrategy");
+      this.backpressureStrategy = Require.notNull(backpressureStrategy, "backpressureStrategy");
     }
 
     @Override
@@ -464,7 +464,7 @@ public class Scheduler {
     private final long minTimeMillis;
 
     public TimeoutWorker(final long minTime, @NotNull final TimeUnit unit) {
-      this.minTimeMillis = unit.toMillis(Requires.positive(minTime, "minTime"));
+      this.minTimeMillis = unit.toMillis(Require.positive(minTime, "minTime"));
     }
 
     @Override

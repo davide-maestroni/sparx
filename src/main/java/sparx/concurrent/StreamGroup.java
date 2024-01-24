@@ -25,7 +25,7 @@ import sparx.concurrent.FutureGroup.GroupReceiver;
 import sparx.concurrent.FutureGroup.Registration;
 import sparx.concurrent.Scheduler.Task;
 import sparx.logging.Log;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 class StreamGroup<U> implements Group, GroupReceiver<U> {
 
@@ -37,7 +37,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
   private GroupStatus status = new RunningStatus();
 
   StreamGroup(@NotNull final Group group) {
-    this.group = Requires.notNull(group, "hooks");
+    this.group = Require.notNull(group, "hooks");
   }
 
   @Override
@@ -257,8 +257,8 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
     private StreamRegistration(@NotNull final Registration wrapped,
         @NotNull final StreamingFuture<?> future) {
-      this.wrapped = Requires.notNull(wrapped, "wrapped");
-      this.future = Requires.notNull(future, "future");
+      this.wrapped = Require.notNull(wrapped, "wrapped");
+      this.future = Require.notNull(future, "future");
     }
 
     @Override

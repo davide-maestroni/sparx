@@ -26,7 +26,7 @@ import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.function.Function;
 import sparx.util.LiveIterator;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
@@ -37,7 +37,7 @@ public class DecoratedFuture<V> implements StreamingFuture<V> {
   private final StreamingFuture<V> wrapped;
 
   public DecoratedFuture(@NotNull final StreamingFuture<V> wrapped) {
-    this.wrapped = Requires.notNull(wrapped, "wrapped");
+    this.wrapped = Require.notNull(wrapped, "wrapped");
   }
 
   @Override

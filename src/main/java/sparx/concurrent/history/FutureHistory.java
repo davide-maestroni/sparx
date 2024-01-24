@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.ImmutableList;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 public class FutureHistory {
 
@@ -47,7 +47,7 @@ public class FutureHistory {
     private HistoryStrategy<V> status;
 
     private FlushOnSubscribeStrategy(@NotNull final HistoryStrategy<V> initialStrategy) {
-      status = Requires.notNull(initialStrategy, "initialStrategy");
+      status = Require.notNull(initialStrategy, "initialStrategy");
     }
 
     @Override

@@ -19,7 +19,7 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Decuple;
 import sparx.util.ImmutableList;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
@@ -41,16 +41,16 @@ public class DecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exten
       @NotNull final StreamingFuture<V9> ninth,
       @NotNull final StreamingFuture<V10> tenth) { 
     return new DecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10>(
-        Requires.notNull(first, "first"),
-        Requires.notNull(second, "second"),
-        Requires.notNull(third, "third"),
-        Requires.notNull(fourth, "fourth"),
-        Requires.notNull(fifth, "fifth"),
-        Requires.notNull(sixth, "sixth"),
-        Requires.notNull(seventh, "seventh"),
-        Requires.notNull(eighth, "eighth"),
-        Requires.notNull(ninth, "ninth"),
-        Requires.notNull(tenth, "tenth")
+        Require.notNull(first, "first"),
+        Require.notNull(second, "second"),
+        Require.notNull(third, "third"),
+        Require.notNull(fourth, "fourth"),
+        Require.notNull(fifth, "fifth"),
+        Require.notNull(sixth, "sixth"),
+        Require.notNull(seventh, "seventh"),
+        Require.notNull(eighth, "eighth"),
+        Require.notNull(ninth, "ninth"),
+        Require.notNull(tenth, "tenth")
     );
   }
 

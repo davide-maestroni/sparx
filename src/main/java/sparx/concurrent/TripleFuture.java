@@ -19,7 +19,7 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Triple;
 import sparx.util.ImmutableList;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
@@ -34,9 +34,9 @@ public class TripleFuture<V, V1 extends V, V2 extends V, V3 extends V> extends
       @NotNull final StreamingFuture<V2> second,
       @NotNull final StreamingFuture<V3> third) { 
     return new TripleFuture<V, V1, V2, V3>(
-        Requires.notNull(first, "first"),
-        Requires.notNull(second, "second"),
-        Requires.notNull(third, "third")
+        Require.notNull(first, "first"),
+        Require.notNull(second, "second"),
+        Require.notNull(third, "third")
     );
   }
 

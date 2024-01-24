@@ -35,7 +35,7 @@ import sparx.logging.Log;
 import sparx.logging.alert.Alerts;
 import sparx.logging.alert.ExecutionContextTaskAlert;
 import sparx.util.Nothing;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 class ExecutionScope implements ExecutionContext {
 
@@ -48,10 +48,10 @@ class ExecutionScope implements ExecutionContext {
 
   ExecutionScope(@NotNull final ExecutionContext context, @NotNull final Map<String, Object> values,
       @NotNull final Scheduler scheduler, @NotNull final FutureRegistry registry) {
-    this.context = Requires.notNull(context, "context");
-    this.values = Requires.notNull(values, "values");
-    this.scheduler = Requires.notNull(scheduler, "scheduler");
-    this.registry = Requires.notNull(registry, "registry");
+    this.context = Require.notNull(context, "context");
+    this.values = Require.notNull(values, "values");
+    this.scheduler = Require.notNull(scheduler, "scheduler");
+    this.registry = Require.notNull(registry, "registry");
   }
 
   @Override
@@ -523,7 +523,7 @@ class ExecutionScope implements ExecutionContext {
       private final StreamingFuture<?> future;
 
       private ScopeRegistration(@NotNull final StreamingFuture<?> future) {
-        this.future = Requires.notNull(future, "future");
+        this.future = Require.notNull(future, "future");
       }
 
       @Override
@@ -580,8 +580,8 @@ class ExecutionScope implements ExecutionContext {
 
     private CallFuture(@NotNull final F future,
         @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
-      this.future = Requires.notNull(future, "future");
-      this.function = Requires.notNull(function, "function");
+      this.future = Require.notNull(future, "future");
+      this.function = Require.notNull(function, "function");
     }
 
     @Override
@@ -596,8 +596,8 @@ class ExecutionScope implements ExecutionContext {
     private final F future;
 
     private RunFuture(@NotNull final F future, @NotNull final Consumer<? super F> consumer) {
-      this.future = Requires.notNull(future, "future");
-      this.consumer = Requires.notNull(consumer, "consumer");
+      this.future = Require.notNull(future, "future");
+      this.consumer = Require.notNull(consumer, "consumer");
     }
 
     @Override

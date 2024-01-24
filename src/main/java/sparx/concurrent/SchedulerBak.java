@@ -20,7 +20,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.logging.Log;
-import sparx.util.Requires;
+import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 public class SchedulerBak {
@@ -60,8 +60,8 @@ public class SchedulerBak {
   }
 
   private SchedulerBak(@NotNull final Executor executor, final int minThroughput) {
-    this.executor = Requires.notNull(executor, "executor");
-    this.minThroughput = Requires.positive(minThroughput, "minThroughput");
+    this.executor = Require.notNull(executor, "executor");
+    this.minThroughput = Require.positive(minThroughput, "minThroughput");
     if (minThroughput == Integer.MAX_VALUE) {
       // infinite throughput
       this.runner = new InfiniteRunner();

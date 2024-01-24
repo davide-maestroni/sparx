@@ -19,7 +19,7 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.{{name}};
 import sparx.util.ImmutableList;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
@@ -34,8 +34,8 @@ public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/las
 {{#ordinals}}      @NotNull final StreamingFuture<V{{value.index}}> {{value.name}}{{^last}},{{/last}}{{#last}}) { {{/last}}
 {{/ordinals}}
     return new {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}>(
-        Requires.notNull(first, "first"),
-{{#ordinals}}        Requires.notNull({{value.name}}, "{{value.name}}"){{^last}},{{/last}}
+        Require.notNull(first, "first"),
+{{#ordinals}}        Require.notNull({{value.name}}, "{{value.name}}"){{^last}},{{/last}}
 {{#last}}    );{{/last}}{{/ordinals}}
 
   }

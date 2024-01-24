@@ -34,7 +34,7 @@ import sparx.function.Consumer;
 import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
 import sparx.util.Nothing;
-import sparx.util.Requires;
+import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 abstract class StreamGroupTupleFuture<V, F extends TupleFuture<V, F>> extends
@@ -57,7 +57,7 @@ abstract class StreamGroupTupleFuture<V, F extends TupleFuture<V, F>> extends
   public @NotNull Subscription subscribe(@NotNull final Receiver<? super Nothing> receiver) {
     final Collection<StreamingFuture<? extends V>> futures = asList();
     final TupleReceiver<V> tupleReceiver = new TupleReceiver<V>(
-        Requires.notNull(receiver, "receiver"), futures.size());
+        Require.notNull(receiver, "receiver"), futures.size());
     final ArrayList<Subscription> subscriptions = new ArrayList<Subscription>(futures.size());
     for (final StreamingFuture<? extends V> future : futures) {
       subscriptions.add(future.subscribe(tupleReceiver));
@@ -91,7 +91,7 @@ abstract class StreamGroupTupleFuture<V, F extends TupleFuture<V, F>> extends
 
   @Override
   public @NotNull LiveIterator<Nothing> iterator(final long timeout, @NotNull final TimeUnit unit) {
-    return new TimeoutIterator(unit.toMillis(Requires.positive(timeout, "timeout")));
+    return new TimeoutIterator(unit.toMillis(Require.positive(timeout, "timeout")));
   }
 
   @Override
@@ -190,7 +190,7 @@ abstract class StreamGroupTupleFuture<V, F extends TupleFuture<V, F>> extends
 
     @Override
     public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
-      long timeoutMillis = unit.toMillis(Requires.positive(timeout, "timeout"));
+      long timeoutMillis = unit.toMillis(Require.positive(timeout, "timeout"));
       for (final StreamingFuture<? extends V> future : asList()) {
         try {
           final long start = System.currentTimeMillis();
@@ -243,7 +243,7 @@ abstract class StreamGroupTupleFuture<V, F extends TupleFuture<V, F>> extends
     public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
       final long startTime = System.currentTimeMillis();
       try {
-        long timeoutMillis = Math.min(unit.toMillis(Requires.positive(timeout, "timeout")),
+        long timeoutMillis = Math.min(unit.toMillis(Require.positive(timeout, "timeout")),
             totalTimeoutMillis);
         for (final StreamingFuture<? extends V> future : asList()) {
           try {

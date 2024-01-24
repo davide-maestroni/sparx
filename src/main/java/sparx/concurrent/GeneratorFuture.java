@@ -26,16 +26,16 @@ import sparx.function.Predicate;
 import sparx.function.Supplier;
 import sparx.logging.Log;
 import sparx.util.ImmutableList;
-import sparx.util.Requires;
+import sparx.util.Require;
 
-public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
+public class GeneratorFuture<V> extends GeneratorGroupFuture<V> {
 
   public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterable<? extends V> iterable) {
     return of(iterable.iterator());
   }
 
   public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterator<? extends V> iterator) {
-    Requires.notNull(iterator, "iterator");
+    Require.notNull(iterator, "iterator");
     return of(new Supplier<SignalFuture<V>>() {
       @Override
       public SignalFuture<V> get() {
@@ -49,14 +49,14 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
 
   public static @NotNull <V> GeneratorFuture<V> of(
       @NotNull final Supplier<? extends SignalFuture<V>> supplier) {
-    return new GeneratorFuture<V>(new PullFuture<V>(supplier));
+    return new GeneratorFuture<V>(supplier);
   }
 
   public static @NotNull <V> GeneratorFuture<V> ofLoop(final V initialValue,
       @NotNull final Predicate<? super V> predicate,
       @NotNull final Function<? super V, ? extends V> function) {
-    Requires.notNull(predicate, "predicate");
-    Requires.notNull(function, "function");
+    Require.notNull(predicate, "predicate");
+    Require.notNull(function, "function");
     return of(new Supplier<SignalFuture<V>>() {
       private V value = initialValue;
 
@@ -87,17 +87,19 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
     });
   }
 
-  private GeneratorFuture(@NotNull final PullFuture<V> future) {
-    super(future);
-  }
-
-  public @NotNull Subscription subscribe() {
-    return subscribe(null, null, null, null);
+  private GeneratorFuture(@NotNull final Supplier<? extends SignalFuture<V>> supplier) {
+    super(new PullFuture<V>(supplier));
   }
 
   @Override
   protected @NotNull StreamingFuture<V> wrapped() {
     return this;
+  }
+
+  @Override
+  @NotNull <U> GeneratingFuture<U> createGeneratingFuture(
+      @NotNull final Supplier<? extends SignalFuture<U>> supplier) {
+    return new GeneratorFuture<U>(supplier);
   }
 
   @Override
@@ -116,7 +118,7 @@ public class GeneratorFuture<V> extends StreamGroupGeneratorFuture<V> {
     private boolean pullFromReceiver = false;
 
     private PullFuture(@NotNull final Supplier<? extends SignalFuture<V>> supplier) {
-      this.supplier = Requires.notNull(supplier, "supplier");
+      this.supplier = Require.notNull(supplier, "supplier");
     }
 
     @Override

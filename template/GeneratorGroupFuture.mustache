@@ -20,20 +20,25 @@ import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Function;
 import sparx.function.Supplier;
-import sparx.util.Requires;
+import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
+abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {
 
-  StreamGroupGeneratorFuture(@NotNull final StreamingFuture<V> future) {
+  GeneratorGroupFuture(@NotNull final StreamingFuture<V> future) {
     super(future);
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratorFuture<V1> {{methodName}}Generate(
+  @Override
+  public @NotNull Subscription subscribe() {
+    return subscribe(null, null, null, null);
+  }
+
+  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratingFuture<V1> {{methodName}}Generate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction) {
     final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
@@ -41,9 +46,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
       final VarFuture<V> input = new VarFuture<V>();
       final F1 output = input.{{methodName}}Immediately(firstFunction);
       final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
-      final GeneratorFuture<V1> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V1> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -53,7 +58,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
   }
 {{#tuples}}
 
-  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> GeneratorFuture<V{{value}}>{{/last}}{{/indexes}} {{methodName}}Generate(
+  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> GeneratingFuture<V{{value}}>{{/last}}{{/indexes}} {{methodName}}Generate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
 {{#ordinals}}      @NotNull final Function<? super F{{value.prevIndex}}, F{{value.index}}> {{value.name}}Function{{^last}},{{/last}}{{#last}}) {
     final StreamGroup<V{{value.index}}> group = new StreamGroup<V{{value.index}}>(FutureGroup.currentGroup());{{/last}}
@@ -69,10 +74,10 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
 {{/ordinals}}
       );
 {{#ordinals}}{{#last}}      final GeneratorStreamReceiver<V{{value.index}}> receiver = new GeneratorStreamReceiver<V{{value.index}}>(input, output);
-      final GeneratorFuture<V{{value.index}}> generator = GeneratorFuture.of(receiver);
+      final GeneratingFuture<V{{value.index}}> future = createGeneratingFuture(receiver);
 {{/last}}{{/ordinals}}
-      generator.subscribe(group);
-      return generator;
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -81,6 +86,8 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 {{/tuples}}
+
+  abstract @NotNull <U> GeneratingFuture<U> createGeneratingFuture(@NotNull Supplier<? extends SignalFuture<U>> supplier);
 
   abstract void pull(@NotNull Receiver<V> receiver);
 
@@ -97,7 +104,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     private GeneratorStreamReceiver(@NotNull final VarFuture<V> input,
         @NotNull final SignalFuture<U> output) {
       this.input = input;
-      this.output = Requires.notNull(output, "output");
+      this.output = Require.notNull(output, "output");
     }
 
     @Override

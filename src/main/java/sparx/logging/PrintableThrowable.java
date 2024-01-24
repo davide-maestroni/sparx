@@ -18,7 +18,7 @@ package sparx.logging;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 class PrintableThrowable implements Printable {
 
@@ -26,7 +26,7 @@ class PrintableThrowable implements Printable {
   private volatile String message;
 
   PrintableThrowable(@NotNull final Throwable wrapped) {
-    this.wrapped = Requires.notNull(wrapped, "wrapped");
+    this.wrapped = Require.notNull(wrapped, "wrapped");
   }
 
   @Override

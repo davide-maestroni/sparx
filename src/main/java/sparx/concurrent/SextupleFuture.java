@@ -19,7 +19,7 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Sextuple;
 import sparx.util.ImmutableList;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
@@ -37,12 +37,12 @@ public class SextupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exte
       @NotNull final StreamingFuture<V5> fifth,
       @NotNull final StreamingFuture<V6> sixth) { 
     return new SextupleFuture<V, V1, V2, V3, V4, V5, V6>(
-        Requires.notNull(first, "first"),
-        Requires.notNull(second, "second"),
-        Requires.notNull(third, "third"),
-        Requires.notNull(fourth, "fourth"),
-        Requires.notNull(fifth, "fifth"),
-        Requires.notNull(sixth, "sixth")
+        Require.notNull(first, "first"),
+        Require.notNull(second, "second"),
+        Require.notNull(third, "third"),
+        Require.notNull(fourth, "fourth"),
+        Require.notNull(fifth, "fifth"),
+        Require.notNull(sixth, "sixth")
     );
   }
 

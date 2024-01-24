@@ -19,7 +19,7 @@ import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.FutureGroup.GroupReceiver;
 import sparx.logging.Log;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 class StandardGroupReceiver<V> implements GroupReceiver<V> {
 
@@ -28,8 +28,8 @@ class StandardGroupReceiver<V> implements GroupReceiver<V> {
 
   StandardGroupReceiver(@NotNull final StreamingFuture<?> future,
       @NotNull final Receiver<V> receiver) {
-    this.future = Requires.notNull(future, "future");
-    this.receiver = Requires.notNull(receiver, "receiver");
+    this.future = Require.notNull(future, "future");
+    this.receiver = Require.notNull(receiver, "receiver");
   }
 
   @Override

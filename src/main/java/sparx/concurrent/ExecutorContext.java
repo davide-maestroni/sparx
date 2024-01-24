@@ -26,7 +26,7 @@ import sparx.function.Consumer;
 import sparx.function.Function;
 import sparx.logging.Log;
 import sparx.util.Nothing;
-import sparx.util.Requires;
+import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 
@@ -75,7 +75,7 @@ public class ExecutorContext implements ExecutionContext {
   }
 
   ExecutorContext(@NotNull final Scheduler scheduler, @NotNull final FutureRegistry registry) {
-    this.scheduler = Requires.notNull(scheduler, "scheduler");
+    this.scheduler = Require.notNull(scheduler, "scheduler");
     this.registry = registry;
   }
 

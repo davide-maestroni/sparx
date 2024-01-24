@@ -16,14 +16,14 @@
 package sparx.logging.alert;
 
 import sparx.logging.Log;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 class PendingTasksWorkerAlert implements SchedulerQueueAlert {
 
   private final int maxTasksCount;
 
   PendingTasksWorkerAlert(final int maxTasksCount) {
-    this.maxTasksCount = Requires.positive(maxTasksCount, "maxTasksCount");
+    this.maxTasksCount = Require.positive(maxTasksCount, "maxTasksCount");
   }
 
   @Override

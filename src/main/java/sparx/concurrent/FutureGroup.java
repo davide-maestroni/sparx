@@ -19,7 +19,7 @@ import java.util.ArrayDeque;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.Scheduler.Task;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 public class FutureGroup {
 
@@ -46,7 +46,7 @@ public class FutureGroup {
   }
 
   static void pushGroup(@NotNull final Group group) {
-    localGroup.get().push(Requires.notNull(group, "group"));
+    localGroup.get().push(Require.notNull(group, "group"));
   }
 
   public interface Group {

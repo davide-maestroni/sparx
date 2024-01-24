@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 public class Log {
 
@@ -36,7 +36,7 @@ public class Log {
   }
 
   public static void setCollector(@NotNull final LogCollector collector) {
-    Log.collector = Requires.notNull(collector, "collector");
+    Log.collector = Require.notNull(collector, "collector");
   }
 
   public static @NotNull LogLevel getLevel() {
@@ -44,7 +44,7 @@ public class Log {
   }
 
   public static void setLevel(@NotNull final LogLevel level) {
-    Log.level = Requires.notNull(level, "level");
+    Log.level = Require.notNull(level, "level");
   }
 
   public static @Nullable StackTraceElement getCallerElement(

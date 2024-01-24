@@ -19,13 +19,13 @@ import java.util.Collections;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Single;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 public class SingleFuture<V> extends StreamGroupTupleFuture<V, SingleFuture<V>> implements
     Single<StreamingFuture<? extends V>> {
 
   public static @NotNull <V> SingleFuture<V> of(@NotNull final StreamingFuture<V> first) {
-    return new SingleFuture<V>(Requires.notNull(first, "first"));
+    return new SingleFuture<V>(Require.notNull(first, "first"));
   }
 
   private final StreamingFuture<V> first;

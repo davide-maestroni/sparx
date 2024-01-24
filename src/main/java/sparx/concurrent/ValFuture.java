@@ -28,7 +28,7 @@ import sparx.function.Consumer;
 import sparx.logging.Log;
 import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 public abstract class ValFuture<V> extends
     ReadOnlyStreamGroupFuture<V, StreamingFuture<V>> implements StreamingFuture<V> {
@@ -71,7 +71,7 @@ public abstract class ValFuture<V> extends
   }
 
   public static @NotNull <V> ValFuture<V> ofFailure(@NotNull final Exception error) {
-    return new FailureFuture<V>(Requires.notNull(error, "error"));
+    return new FailureFuture<V>(Require.notNull(error, "error"));
   }
 
   private ValFuture() {

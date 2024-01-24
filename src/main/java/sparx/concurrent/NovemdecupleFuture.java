@@ -19,7 +19,7 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Novemdecuple;
 import sparx.util.ImmutableList;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
@@ -50,25 +50,25 @@ public class NovemdecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 
       @NotNull final StreamingFuture<V18> eighteenth,
       @NotNull final StreamingFuture<V19> nineteenth) { 
     return new NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19>(
-        Requires.notNull(first, "first"),
-        Requires.notNull(second, "second"),
-        Requires.notNull(third, "third"),
-        Requires.notNull(fourth, "fourth"),
-        Requires.notNull(fifth, "fifth"),
-        Requires.notNull(sixth, "sixth"),
-        Requires.notNull(seventh, "seventh"),
-        Requires.notNull(eighth, "eighth"),
-        Requires.notNull(ninth, "ninth"),
-        Requires.notNull(tenth, "tenth"),
-        Requires.notNull(eleventh, "eleventh"),
-        Requires.notNull(twelfth, "twelfth"),
-        Requires.notNull(thirteenth, "thirteenth"),
-        Requires.notNull(fourteenth, "fourteenth"),
-        Requires.notNull(fifteenth, "fifteenth"),
-        Requires.notNull(sixteenth, "sixteenth"),
-        Requires.notNull(seventeenth, "seventeenth"),
-        Requires.notNull(eighteenth, "eighteenth"),
-        Requires.notNull(nineteenth, "nineteenth")
+        Require.notNull(first, "first"),
+        Require.notNull(second, "second"),
+        Require.notNull(third, "third"),
+        Require.notNull(fourth, "fourth"),
+        Require.notNull(fifth, "fifth"),
+        Require.notNull(sixth, "sixth"),
+        Require.notNull(seventh, "seventh"),
+        Require.notNull(eighth, "eighth"),
+        Require.notNull(ninth, "ninth"),
+        Require.notNull(tenth, "tenth"),
+        Require.notNull(eleventh, "eleventh"),
+        Require.notNull(twelfth, "twelfth"),
+        Require.notNull(thirteenth, "thirteenth"),
+        Require.notNull(fourteenth, "fourteenth"),
+        Require.notNull(fifteenth, "fifteenth"),
+        Require.notNull(sixteenth, "sixteenth"),
+        Require.notNull(seventeenth, "seventeenth"),
+        Require.notNull(eighteenth, "eighteenth"),
+        Require.notNull(nineteenth, "nineteenth")
     );
   }
 

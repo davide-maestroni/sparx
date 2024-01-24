@@ -19,7 +19,7 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.tuple.Couple;
 import sparx.util.ImmutableList;
-import sparx.util.Requires;
+import sparx.util.Require;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
@@ -33,8 +33,8 @@ public class CoupleFuture<V, V1 extends V, V2 extends V> extends
       @NotNull final StreamingFuture<V1> first,
       @NotNull final StreamingFuture<V2> second) { 
     return new CoupleFuture<V, V1, V2>(
-        Requires.notNull(first, "first"),
-        Requires.notNull(second, "second")
+        Require.notNull(first, "first"),
+        Require.notNull(second, "second")
     );
   }
 

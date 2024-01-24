@@ -26,7 +26,7 @@ import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.function.Supplier;
 import sparx.util.LiveIterator;
-import sparx.util.Requires;
+import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 public class DeferredFuture<V> extends ReadOnlyStreamGroupFuture<V, StreamingFuture<V>> implements
@@ -48,8 +48,8 @@ public class DeferredFuture<V> extends ReadOnlyStreamGroupFuture<V, StreamingFut
   }
 
   private DeferredFuture(@NotNull final Supplier<StreamingFuture<V>> supplier) {
-    Requires.notNull(supplier, "supplier");
-    this.supplier = Requires.notNull(supplier, "supplier");
+    Require.notNull(supplier, "supplier");
+    this.supplier = Require.notNull(supplier, "supplier");
   }
 
   @Override

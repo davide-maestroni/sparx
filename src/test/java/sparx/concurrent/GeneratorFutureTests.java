@@ -17,7 +17,6 @@ package sparx.concurrent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static sparx.SparxDSL.doOnce;
 import static sparx.SparxDSL.map;
 
@@ -31,7 +30,9 @@ public class GeneratorFutureTests {
     var future = GeneratorFuture.ofLoop(0, c -> (c < 10), c -> c + 1);
     var iterator = future.iterator();
     assertEquals(0, iterator.next());
+    assertEquals(0, future.getCurrent());
     assertEquals(1, iterator.next());
+    assertEquals(1, future.getCurrent());
     assertEquals(2, iterator.next());
     assertEquals(2, future.getCurrent());
     assertFalse(future.isDone());
@@ -43,7 +44,9 @@ public class GeneratorFutureTests {
         .thenGenerate(map(i -> Integer.toString(i)));
     var iterator = future.iterator();
     assertEquals("0", iterator.next());
+    assertEquals("0", future.getCurrent());
     assertEquals("1", iterator.next());
+    assertEquals("1", future.getCurrent());
     assertEquals("2", iterator.next());
     assertEquals("2", future.getCurrent());
     assertFalse(future.isDone());

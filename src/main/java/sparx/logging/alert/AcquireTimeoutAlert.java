@@ -22,7 +22,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import sparx.logging.Log;
-import sparx.util.Requires;
+import sparx.util.Require;
 import sparx.util.SharedTimer;
 
 class AcquireTimeoutAlert implements JoinAlert, Runnable {
@@ -35,7 +35,7 @@ class AcquireTimeoutAlert implements JoinAlert, Runnable {
 
   AcquireTimeoutAlert(final long interval, @NotNull final TimeUnit intervalUnit, final long timeout,
       @NotNull final TimeUnit timeoutUnit) {
-    timeoutMillis = timeoutUnit.toMillis(Requires.positive(timeout, "timeout"));
+    timeoutMillis = timeoutUnit.toMillis(Require.positive(timeout, "timeout"));
     timer = SharedTimer.acquire();
     future = timer.scheduleAtFixedRate(this, interval, interval, intervalUnit);
   }

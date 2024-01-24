@@ -20,20 +20,25 @@ import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Function;
 import sparx.function.Supplier;
-import sparx.util.Requires;
+import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
+abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {
 
-  StreamGroupGeneratorFuture(@NotNull final StreamingFuture<V> future) {
+  GeneratorGroupFuture(@NotNull final StreamingFuture<V> future) {
     super(future);
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratorFuture<V1> thenGenerate(
+  @Override
+  public @NotNull Subscription subscribe() {
+    return subscribe(null, null, null, null);
+  }
+
+  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratingFuture<V1> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction) {
     final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
     FutureGroup.pushGroup(group);
@@ -41,9 +46,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
       final VarFuture<V> input = new VarFuture<V>();
       final F1 output = input.thenImmediately(firstFunction);
       final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
-      final GeneratorFuture<V1> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V1> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -52,7 +57,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>> GeneratorFuture<V2> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>> GeneratingFuture<V2> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction) {
     final StreamGroup<V2> group = new StreamGroup<V2>(FutureGroup.currentGroup());
@@ -64,9 +69,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         secondFunction
       );
       final GeneratorStreamReceiver<V2> receiver = new GeneratorStreamReceiver<V2>(input, output);
-      final GeneratorFuture<V2> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V2> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -75,7 +80,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>> GeneratorFuture<V3> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>> GeneratingFuture<V3> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction) {
@@ -89,9 +94,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         thirdFunction
       );
       final GeneratorStreamReceiver<V3> receiver = new GeneratorStreamReceiver<V3>(input, output);
-      final GeneratorFuture<V3> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V3> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -100,7 +105,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>> GeneratorFuture<V4> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>> GeneratingFuture<V4> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -116,9 +121,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         fourthFunction
       );
       final GeneratorStreamReceiver<V4> receiver = new GeneratorStreamReceiver<V4>(input, output);
-      final GeneratorFuture<V4> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V4> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -127,7 +132,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>> GeneratorFuture<V5> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>> GeneratingFuture<V5> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -145,9 +150,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         fifthFunction
       );
       final GeneratorStreamReceiver<V5> receiver = new GeneratorStreamReceiver<V5>(input, output);
-      final GeneratorFuture<V5> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V5> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -156,7 +161,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>> GeneratorFuture<V6> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>> GeneratingFuture<V6> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -176,9 +181,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         sixthFunction
       );
       final GeneratorStreamReceiver<V6> receiver = new GeneratorStreamReceiver<V6>(input, output);
-      final GeneratorFuture<V6> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V6> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -187,7 +192,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>> GeneratorFuture<V7> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>> GeneratingFuture<V7> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -209,9 +214,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         seventhFunction
       );
       final GeneratorStreamReceiver<V7> receiver = new GeneratorStreamReceiver<V7>(input, output);
-      final GeneratorFuture<V7> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V7> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -220,7 +225,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>> GeneratorFuture<V8> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>> GeneratingFuture<V8> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -244,9 +249,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         eighthFunction
       );
       final GeneratorStreamReceiver<V8> receiver = new GeneratorStreamReceiver<V8>(input, output);
-      final GeneratorFuture<V8> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V8> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -255,7 +260,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>> GeneratorFuture<V9> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>> GeneratingFuture<V9> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -281,9 +286,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         ninthFunction
       );
       final GeneratorStreamReceiver<V9> receiver = new GeneratorStreamReceiver<V9>(input, output);
-      final GeneratorFuture<V9> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V9> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -292,7 +297,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>> GeneratorFuture<V10> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>> GeneratingFuture<V10> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -320,9 +325,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         tenthFunction
       );
       final GeneratorStreamReceiver<V10> receiver = new GeneratorStreamReceiver<V10>(input, output);
-      final GeneratorFuture<V10> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V10> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -331,7 +336,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>> GeneratorFuture<V11> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>> GeneratingFuture<V11> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -361,9 +366,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         eleventhFunction
       );
       final GeneratorStreamReceiver<V11> receiver = new GeneratorStreamReceiver<V11>(input, output);
-      final GeneratorFuture<V11> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V11> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -372,7 +377,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>> GeneratorFuture<V12> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>> GeneratingFuture<V12> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -404,9 +409,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         twelfthFunction
       );
       final GeneratorStreamReceiver<V12> receiver = new GeneratorStreamReceiver<V12>(input, output);
-      final GeneratorFuture<V12> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V12> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -415,7 +420,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>> GeneratorFuture<V13> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>> GeneratingFuture<V13> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -449,9 +454,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         thirteenthFunction
       );
       final GeneratorStreamReceiver<V13> receiver = new GeneratorStreamReceiver<V13>(input, output);
-      final GeneratorFuture<V13> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V13> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -460,7 +465,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>> GeneratorFuture<V14> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>> GeneratingFuture<V14> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -496,9 +501,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         fourteenthFunction
       );
       final GeneratorStreamReceiver<V14> receiver = new GeneratorStreamReceiver<V14>(input, output);
-      final GeneratorFuture<V14> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V14> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -507,7 +512,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>> GeneratorFuture<V15> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>> GeneratingFuture<V15> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -545,9 +550,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         fifteenthFunction
       );
       final GeneratorStreamReceiver<V15> receiver = new GeneratorStreamReceiver<V15>(input, output);
-      final GeneratorFuture<V15> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V15> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -556,7 +561,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>> GeneratorFuture<V16> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>> GeneratingFuture<V16> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -596,9 +601,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         sixteenthFunction
       );
       final GeneratorStreamReceiver<V16> receiver = new GeneratorStreamReceiver<V16>(input, output);
-      final GeneratorFuture<V16> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V16> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -607,7 +612,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>> GeneratorFuture<V17> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>> GeneratingFuture<V17> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -649,9 +654,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         seventeenthFunction
       );
       final GeneratorStreamReceiver<V17> receiver = new GeneratorStreamReceiver<V17>(input, output);
-      final GeneratorFuture<V17> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V17> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -660,7 +665,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>> GeneratorFuture<V18> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>> GeneratingFuture<V18> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -704,9 +709,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         eighteenthFunction
       );
       final GeneratorStreamReceiver<V18> receiver = new GeneratorStreamReceiver<V18>(input, output);
-      final GeneratorFuture<V18> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V18> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -715,7 +720,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>> GeneratorFuture<V19> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>> GeneratingFuture<V19> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -761,9 +766,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         nineteenthFunction
       );
       final GeneratorStreamReceiver<V19> receiver = new GeneratorStreamReceiver<V19>(input, output);
-      final GeneratorFuture<V19> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V19> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -772,7 +777,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>, V20, F20 extends SignalFuture<V20>> GeneratorFuture<V20> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>, V20, F20 extends SignalFuture<V20>> GeneratingFuture<V20> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -820,9 +825,9 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
         twentiethFunction
       );
       final GeneratorStreamReceiver<V20> receiver = new GeneratorStreamReceiver<V20>(input, output);
-      final GeneratorFuture<V20> generator = GeneratorFuture.of(receiver);
-      generator.subscribe(group);
-      return generator;
+      final GeneratingFuture<V20> future = createGeneratingFuture(receiver);
+      future.subscribe(group);
+      return future;
     } catch (final Exception e) {
       group.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
@@ -830,6 +835,8 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
       FutureGroup.popGroup();
     }
   }
+
+  abstract @NotNull <U> GeneratingFuture<U> createGeneratingFuture(@NotNull Supplier<? extends SignalFuture<U>> supplier);
 
   abstract void pull(@NotNull Receiver<V> receiver);
 
@@ -846,7 +853,7 @@ abstract class StreamGroupGeneratorFuture<V> extends ReadOnlyFuture<V> {
     private GeneratorStreamReceiver(@NotNull final VarFuture<V> input,
         @NotNull final SignalFuture<U> output) {
       this.input = input;
-      this.output = Requires.notNull(output, "output");
+      this.output = Require.notNull(output, "output");
     }
 
     @Override

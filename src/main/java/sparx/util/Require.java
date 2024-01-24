@@ -2,9 +2,9 @@ package sparx.util;
 
 import org.jetbrains.annotations.NotNull;
 
-public class Requires {
+public class Require {
 
-  private Requires() {
+  private Require() {
   }
 
   public static @NotNull <T> T notNull(final T ref, final String name) {

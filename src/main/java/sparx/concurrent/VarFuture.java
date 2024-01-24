@@ -46,7 +46,7 @@ import sparx.logging.alert.Alerts;
 import sparx.logging.alert.JoinAlert;
 import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
-import sparx.util.Requires;
+import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> implements
@@ -95,7 +95,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   }
 
   VarFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
-    this.historyStrategy = Requires.notNull(historyStrategy, "historyStrategy");
+    this.historyStrategy = Require.notNull(historyStrategy, "historyStrategy");
     this.registration = FutureGroup.currentGroup().onCreate(this);
   }
 
@@ -111,7 +111,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   @Override
   public void compute(@NotNull final Function<? super V, ? extends V> function) {
-    Requires.notNull(function, "function");
+    Require.notNull(function, "function");
     final Group group = FutureGroup.currentGroup();
     scheduler.scheduleAfter(new VarTask() {
       @Override
@@ -173,7 +173,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   @Override
   public @NotNull Subscription subscribe(@NotNull final Receiver<? super V> receiver) {
     final GroupReceiver<? super V> groupReceiver = FutureGroup.currentGroup()
-        .onSubscribe(this, scheduler, Requires.notNull(receiver, "receiver"));
+        .onSubscribe(this, scheduler, Require.notNull(receiver, "receiver"));
     scheduler.scheduleBefore(new VarTask() {
       @Override
       @SuppressWarnings("unchecked")
@@ -215,7 +215,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   @Override
   public @NotNull LiveIterator<V> iterator(final long timeout, @NotNull final TimeUnit unit) {
     final TimeoutIterator<V> iterator = new TimeoutIterator<V>(
-        unit.toMillis(Requires.positive(timeout, "timeout")));
+        unit.toMillis(Require.positive(timeout, "timeout")));
     scheduler.scheduleBefore(new IteratorTask(iterator));
     return iterator;
   }
@@ -300,7 +300,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   @Override
   public boolean fail(@NotNull final Exception error) {
-    Requires.notNull(error, "error");
+    Require.notNull(error, "error");
     if (status.compareAndSet(RUNNING, COMPLETING)) {
       final Task task = new VarTask() {
         @Override
@@ -476,7 +476,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     @Override
     public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
       final long startTime = System.currentTimeMillis();
-      long remainingTime = unit.toMillis(Requires.positive(timeout, "timeout"));
+      long remainingTime = unit.toMillis(Require.positive(timeout, "timeout"));
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
@@ -558,7 +558,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
       final long startTime = System.currentTimeMillis();
       long remainingTime = Math.min(totalTimeoutMillis,
-          unit.toMillis(Requires.positive(timeout, "timeout")));
+          unit.toMillis(Require.positive(timeout, "timeout")));
       try {
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
