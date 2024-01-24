@@ -15,21 +15,29 @@
  */
 package sparx.concurrent;
 
+import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.Signal.Subscription;
+import org.jetbrains.annotations.Nullable;
+import sparx.function.Action;
+import sparx.function.Consumer;
 
-class DummySubscription implements Subscription {
+public interface Signal<V> {
 
-  private final static DummySubscription INSTANCE = new DummySubscription();
+  V getCurrent();
 
-  static @NotNull DummySubscription instance() {
-    return INSTANCE;
-  }
+  V getCurrentOr(V defaultValue);
 
-  private DummySubscription() {
-  }
+  @NotNull Subscription subscribe(@NotNull Receiver<? super V> receiver);
 
-  @Override
-  public void cancel() {
+  @NotNull Subscription subscribe(@Nullable Consumer<? super V> onValueConsumer,
+      @Nullable Consumer<? super Collection<V>> onValuesConsumer,
+      @Nullable Consumer<Exception> onErrorConsumer,
+      @Nullable Action onCloseAction);
+
+  void unsubscribe(@NotNull Receiver<?> receiver);
+
+  interface Subscription {
+
+    void cancel();
   }
 }
