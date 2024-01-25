@@ -44,7 +44,7 @@ public class ContextLocal {
 
     private V value;
 
-    private LocalValue(@NotNull final FutureContext.Context context, @NotNull final String name) {
+    private LocalValue(@NotNull final Context context, @NotNull final String name) {
       this.executionContext = context.executionContext();
       this.context = context;
       this.name = name;

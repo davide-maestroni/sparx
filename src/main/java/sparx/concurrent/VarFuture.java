@@ -735,7 +735,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
       Log.dbg(VarFuture.class, "Ignoring 'clear' operation: future is already closed");
     }
 
-    void compute(@NotNull final FutureContext.Context context,
+    void compute(@NotNull final Context context,
         @NotNull final Function<? super V, ? extends V> function) {
       Log.dbg(VarFuture.class, "Ignoring 'compute' operation: future is already closed");
     }
@@ -755,7 +755,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
     }
 
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final FutureContext.ContextReceiver<V> contextReceiver) {
+        @NotNull final ContextReceiver<V> contextReceiver) {
       if (contextReceiver.isSink()) {
         try {
           final List<V> values = historyStrategy.onSubscribe();
@@ -795,7 +795,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
 
     @Override
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final FutureContext.ContextReceiver<V> contextReceiver) {
+        @NotNull final ContextReceiver<V> contextReceiver) {
       super.subscribe(receiver, contextReceiver);
       try {
         contextReceiver.fail(failureException);
@@ -826,7 +826,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
     @Override
     @SuppressWarnings("unchecked")
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final FutureContext.ContextReceiver<V> contextReceiver) {
+        @NotNull final ContextReceiver<V> contextReceiver) {
       super.subscribe(receiver, contextReceiver);
       try {
         if (contextReceiver.isSink() && lastValue != UNSET) {
@@ -1007,7 +1007,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
     }
 
     @Override
-    public void compute(@NotNull final FutureContext.Context context,
+    public void compute(@NotNull final Context context,
         @NotNull final Function<? super V, ? extends V> function) {
       if (lastValue != UNSET) {
         scheduler.pause();
@@ -1051,7 +1051,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
     @Override
     @SuppressWarnings("unchecked")
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final FutureContext.ContextReceiver<V> contextReceiver) {
+        @NotNull final ContextReceiver<V> contextReceiver) {
       final HashMap<Receiver<?>, ContextReceiver<V>> receivers = VarFuture.this.receivers;
       if (!receivers.containsKey(receiver)) {
         super.subscribe(receiver, contextReceiver);

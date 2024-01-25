@@ -128,7 +128,7 @@ class ExecutionScope implements ExecutionContext {
 
     void onFail(@NotNull Exception error);
 
-    void onSubscribe(@NotNull FutureContext.ContextReceiver<?> contextReceiver);
+    void onSubscribe(@NotNull ContextReceiver<?> contextReceiver);
   }
 
   private abstract class ScopeFuture<U> extends VarFuture<U> implements Context, Task {
@@ -193,7 +193,7 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
-    public @NotNull <R, V extends R> FutureContext.ContextReceiver<R> onSubscribe(
+    public @NotNull <R, V extends R> ContextReceiver<R> onSubscribe(
         @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
         @NotNull final Receiver<R> receiver) {
       final ScopeContextReceiver<R> contextReceiver = new ScopeContextReceiver<R>(future, scheduler,
@@ -312,7 +312,7 @@ class ExecutionScope implements ExecutionContext {
       }
 
       @Override
-      public void onSubscribe(@NotNull final FutureContext.ContextReceiver<?> contextReceiver) {
+      public void onSubscribe(@NotNull final ContextReceiver<?> contextReceiver) {
         contextReceiver.fail(failureException);
         contextReceiver.onUnsubscribe();
       }
@@ -342,7 +342,7 @@ class ExecutionScope implements ExecutionContext {
       }
 
       @Override
-      public void onSubscribe(@NotNull final FutureContext.ContextReceiver<?> contextReceiver) {
+      public void onSubscribe(@NotNull final ContextReceiver<?> contextReceiver) {
         receivers.add(contextReceiver);
       }
     }

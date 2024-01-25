@@ -36,7 +36,7 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
 
   private ContextStatus status = new RunningStatus();
 
-  StreamContext(@NotNull final FutureContext.Context context) {
+  StreamContext(@NotNull final Context context) {
     this.context = Require.notNull(context, "hooks");
   }
 
@@ -60,7 +60,7 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <R, V extends R> FutureContext.ContextReceiver<R> onSubscribe(
+  public @NotNull <R, V extends R> ContextReceiver<R> onSubscribe(
       @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
       @NotNull final Receiver<R> receiver) {
     if (receiver == this) {
@@ -157,8 +157,7 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
 
     void onFail(@NotNull Exception error);
 
-    void onSubscribe(@NotNull FutureContext.ContextReceiver<?> contextReceiver,
-        @NotNull Scheduler scheduler);
+    void onSubscribe(@NotNull ContextReceiver<?> contextReceiver, @NotNull Scheduler scheduler);
   }
 
   private static class CancelledStatus implements ContextStatus {
@@ -187,7 +186,7 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
     }
 
     @Override
-    public void onSubscribe(@NotNull final FutureContext.ContextReceiver<?> contextReceiver,
+    public void onSubscribe(@NotNull final ContextReceiver<?> contextReceiver,
         @NotNull final Scheduler scheduler) {
       contextReceiver.fail(failureException);
       contextReceiver.onUnsubscribe();
@@ -244,7 +243,7 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
     }
 
     @Override
-    public void onSubscribe(@NotNull final FutureContext.ContextReceiver<?> contextReceiver,
+    public void onSubscribe(@NotNull final ContextReceiver<?> contextReceiver,
         @NotNull final Scheduler scheduler) {
       receivers.put(contextReceiver, scheduler);
     }
@@ -335,7 +334,7 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
 
     private Receiver<R> status = new RunningStatus();
 
-    private StreamContextReceiver(@NotNull final FutureContext.ContextReceiver<R> wrapped,
+    private StreamContextReceiver(@NotNull final ContextReceiver<R> wrapped,
         @NotNull final StreamingFuture<?> future, @NotNull final Receiver<R> receiver) {
       this.wrapped = wrapped;
       this.future = future;

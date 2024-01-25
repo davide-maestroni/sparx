@@ -95,7 +95,7 @@ public class FutureContext {
     }
 
     @Override
-    public @NotNull <R, V extends R> FutureContext.ContextReceiver<R> onSubscribe(
+    public @NotNull <R, V extends R> ContextReceiver<R> onSubscribe(
         @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
         @NotNull final Receiver<R> receiver) {
       return new StandardContextReceiver<R>(future, receiver);
