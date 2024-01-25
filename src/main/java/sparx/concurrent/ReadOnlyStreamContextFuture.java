@@ -19,8 +19,8 @@ import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import sparx.function.Function;
 
-public abstract class ReadOnlyStreamGroupFuture<V, F extends SignalFuture<V>> extends
-    StreamGroupFuture<V, F> {
+public abstract class ReadOnlyStreamContextFuture<V, F extends SignalFuture<V>> extends
+    StreamContextFuture<V, F> {
 
   private static <R> R fail(@NotNull final String name) {
     throw new UnsupportedOperationException(name);

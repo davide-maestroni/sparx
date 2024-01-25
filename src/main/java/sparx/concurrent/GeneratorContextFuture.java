@@ -27,9 +27,9 @@ import sparx.util.UncheckedException;
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {
+abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {
 
-  GeneratorGroupFuture(@NotNull final StreamingFuture<V> future) {
+  GeneratorContextFuture(@NotNull final StreamingFuture<V> future) {
     super(future);
   }
 
@@ -40,28 +40,28 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
 
   public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratingFuture<V1> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction) {
-    final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V1> context = new StreamContext<V1>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F1 output = input.thenImmediately(firstFunction);
       final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
       final GeneratingFuture<V1> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>> GeneratingFuture<V2> thenGenerate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction) {
-    final StreamGroup<V2> group = new StreamGroup<V2>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V2> context = new StreamContext<V2>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F2 output = input.thenImmediately(
@@ -70,13 +70,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V2> receiver = new GeneratorStreamReceiver<V2>(input, output);
       final GeneratingFuture<V2> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -84,8 +84,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction) {
-    final StreamGroup<V3> group = new StreamGroup<V3>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V3> context = new StreamContext<V3>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F3 output = input.thenImmediately(
@@ -95,13 +95,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V3> receiver = new GeneratorStreamReceiver<V3>(input, output);
       final GeneratingFuture<V3> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -110,8 +110,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
       @NotNull final Function<? super F3, F4> fourthFunction) {
-    final StreamGroup<V4> group = new StreamGroup<V4>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V4> context = new StreamContext<V4>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F4 output = input.thenImmediately(
@@ -122,13 +122,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V4> receiver = new GeneratorStreamReceiver<V4>(input, output);
       final GeneratingFuture<V4> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -138,8 +138,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F2, F3> thirdFunction,
       @NotNull final Function<? super F3, F4> fourthFunction,
       @NotNull final Function<? super F4, F5> fifthFunction) {
-    final StreamGroup<V5> group = new StreamGroup<V5>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V5> context = new StreamContext<V5>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F5 output = input.thenImmediately(
@@ -151,13 +151,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V5> receiver = new GeneratorStreamReceiver<V5>(input, output);
       final GeneratingFuture<V5> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -168,8 +168,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F3, F4> fourthFunction,
       @NotNull final Function<? super F4, F5> fifthFunction,
       @NotNull final Function<? super F5, F6> sixthFunction) {
-    final StreamGroup<V6> group = new StreamGroup<V6>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V6> context = new StreamContext<V6>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F6 output = input.thenImmediately(
@@ -182,13 +182,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V6> receiver = new GeneratorStreamReceiver<V6>(input, output);
       final GeneratingFuture<V6> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -200,8 +200,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F4, F5> fifthFunction,
       @NotNull final Function<? super F5, F6> sixthFunction,
       @NotNull final Function<? super F6, F7> seventhFunction) {
-    final StreamGroup<V7> group = new StreamGroup<V7>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V7> context = new StreamContext<V7>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F7 output = input.thenImmediately(
@@ -215,13 +215,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V7> receiver = new GeneratorStreamReceiver<V7>(input, output);
       final GeneratingFuture<V7> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -234,8 +234,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F5, F6> sixthFunction,
       @NotNull final Function<? super F6, F7> seventhFunction,
       @NotNull final Function<? super F7, F8> eighthFunction) {
-    final StreamGroup<V8> group = new StreamGroup<V8>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V8> context = new StreamContext<V8>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F8 output = input.thenImmediately(
@@ -250,13 +250,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V8> receiver = new GeneratorStreamReceiver<V8>(input, output);
       final GeneratingFuture<V8> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -270,8 +270,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F6, F7> seventhFunction,
       @NotNull final Function<? super F7, F8> eighthFunction,
       @NotNull final Function<? super F8, F9> ninthFunction) {
-    final StreamGroup<V9> group = new StreamGroup<V9>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V9> context = new StreamContext<V9>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F9 output = input.thenImmediately(
@@ -287,13 +287,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V9> receiver = new GeneratorStreamReceiver<V9>(input, output);
       final GeneratingFuture<V9> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -308,8 +308,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F7, F8> eighthFunction,
       @NotNull final Function<? super F8, F9> ninthFunction,
       @NotNull final Function<? super F9, F10> tenthFunction) {
-    final StreamGroup<V10> group = new StreamGroup<V10>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V10> context = new StreamContext<V10>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F10 output = input.thenImmediately(
@@ -326,13 +326,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V10> receiver = new GeneratorStreamReceiver<V10>(input, output);
       final GeneratingFuture<V10> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -348,8 +348,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F8, F9> ninthFunction,
       @NotNull final Function<? super F9, F10> tenthFunction,
       @NotNull final Function<? super F10, F11> eleventhFunction) {
-    final StreamGroup<V11> group = new StreamGroup<V11>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V11> context = new StreamContext<V11>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F11 output = input.thenImmediately(
@@ -367,13 +367,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V11> receiver = new GeneratorStreamReceiver<V11>(input, output);
       final GeneratingFuture<V11> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -390,8 +390,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F9, F10> tenthFunction,
       @NotNull final Function<? super F10, F11> eleventhFunction,
       @NotNull final Function<? super F11, F12> twelfthFunction) {
-    final StreamGroup<V12> group = new StreamGroup<V12>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V12> context = new StreamContext<V12>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F12 output = input.thenImmediately(
@@ -410,13 +410,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V12> receiver = new GeneratorStreamReceiver<V12>(input, output);
       final GeneratingFuture<V12> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -434,8 +434,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F10, F11> eleventhFunction,
       @NotNull final Function<? super F11, F12> twelfthFunction,
       @NotNull final Function<? super F12, F13> thirteenthFunction) {
-    final StreamGroup<V13> group = new StreamGroup<V13>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V13> context = new StreamContext<V13>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F13 output = input.thenImmediately(
@@ -455,13 +455,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V13> receiver = new GeneratorStreamReceiver<V13>(input, output);
       final GeneratingFuture<V13> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -480,8 +480,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F11, F12> twelfthFunction,
       @NotNull final Function<? super F12, F13> thirteenthFunction,
       @NotNull final Function<? super F13, F14> fourteenthFunction) {
-    final StreamGroup<V14> group = new StreamGroup<V14>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V14> context = new StreamContext<V14>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F14 output = input.thenImmediately(
@@ -502,13 +502,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V14> receiver = new GeneratorStreamReceiver<V14>(input, output);
       final GeneratingFuture<V14> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -528,8 +528,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F12, F13> thirteenthFunction,
       @NotNull final Function<? super F13, F14> fourteenthFunction,
       @NotNull final Function<? super F14, F15> fifteenthFunction) {
-    final StreamGroup<V15> group = new StreamGroup<V15>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V15> context = new StreamContext<V15>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F15 output = input.thenImmediately(
@@ -551,13 +551,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V15> receiver = new GeneratorStreamReceiver<V15>(input, output);
       final GeneratingFuture<V15> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -578,8 +578,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F13, F14> fourteenthFunction,
       @NotNull final Function<? super F14, F15> fifteenthFunction,
       @NotNull final Function<? super F15, F16> sixteenthFunction) {
-    final StreamGroup<V16> group = new StreamGroup<V16>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V16> context = new StreamContext<V16>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F16 output = input.thenImmediately(
@@ -602,13 +602,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V16> receiver = new GeneratorStreamReceiver<V16>(input, output);
       final GeneratingFuture<V16> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -630,8 +630,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F14, F15> fifteenthFunction,
       @NotNull final Function<? super F15, F16> sixteenthFunction,
       @NotNull final Function<? super F16, F17> seventeenthFunction) {
-    final StreamGroup<V17> group = new StreamGroup<V17>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V17> context = new StreamContext<V17>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F17 output = input.thenImmediately(
@@ -655,13 +655,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V17> receiver = new GeneratorStreamReceiver<V17>(input, output);
       final GeneratingFuture<V17> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -684,8 +684,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F15, F16> sixteenthFunction,
       @NotNull final Function<? super F16, F17> seventeenthFunction,
       @NotNull final Function<? super F17, F18> eighteenthFunction) {
-    final StreamGroup<V18> group = new StreamGroup<V18>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V18> context = new StreamContext<V18>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F18 output = input.thenImmediately(
@@ -710,13 +710,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V18> receiver = new GeneratorStreamReceiver<V18>(input, output);
       final GeneratingFuture<V18> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -740,8 +740,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F16, F17> seventeenthFunction,
       @NotNull final Function<? super F17, F18> eighteenthFunction,
       @NotNull final Function<? super F18, F19> nineteenthFunction) {
-    final StreamGroup<V19> group = new StreamGroup<V19>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V19> context = new StreamContext<V19>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F19 output = input.thenImmediately(
@@ -767,13 +767,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V19> receiver = new GeneratorStreamReceiver<V19>(input, output);
       final GeneratingFuture<V19> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 
@@ -798,8 +798,8 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       @NotNull final Function<? super F17, F18> eighteenthFunction,
       @NotNull final Function<? super F18, F19> nineteenthFunction,
       @NotNull final Function<? super F19, F20> twentiethFunction) {
-    final StreamGroup<V20> group = new StreamGroup<V20>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V20> context = new StreamContext<V20>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F20 output = input.thenImmediately(
@@ -826,13 +826,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
       );
       final GeneratorStreamReceiver<V20> receiver = new GeneratorStreamReceiver<V20>(input, output);
       final GeneratingFuture<V20> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 

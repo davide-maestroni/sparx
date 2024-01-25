@@ -31,9 +31,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.concurrent.FutureGroup.Group;
-import sparx.concurrent.FutureGroup.GroupReceiver;
-import sparx.concurrent.FutureGroup.Registration;
+import sparx.concurrent.FutureContext.Context;
+import sparx.concurrent.FutureContext.ContextReceiver;
+import sparx.concurrent.FutureContext.Registration;
 import sparx.concurrent.Scheduler.Task;
 import sparx.concurrent.history.FutureHistory;
 import sparx.concurrent.history.HistoryStrategy;
@@ -49,7 +49,7 @@ import sparx.util.LiveIterator;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 
-public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> implements
+public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {
 
   private static final JoinAlert joinAlert = Alerts.joinAlert();
@@ -62,7 +62,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   private final HistoryStrategy<V> historyStrategy;
   private final WeakHashMap<FutureIterator<V>, Void> iterators = new WeakHashMap<FutureIterator<V>, Void>();
-  private final HashMap<Receiver<?>, GroupReceiver<V>> receivers = new HashMap<Receiver<?>, GroupReceiver<V>>();
+  private final HashMap<Receiver<?>, ContextReceiver<V>> receivers = new HashMap<Receiver<?>, ContextReceiver<V>>();
   private final Registration registration;
   private final Scheduler scheduler = Scheduler.trampoline();
   private final WeakHashMap<Semaphore, Void> semaphores = new WeakHashMap<Semaphore, Void>();
@@ -96,7 +96,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   VarFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
     this.historyStrategy = Require.notNull(historyStrategy, "historyStrategy");
-    this.registration = FutureGroup.currentGroup().onCreate(this);
+    this.registration = FutureContext.currentContext().onCreate(this);
   }
 
   @Override
@@ -112,11 +112,11 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   @Override
   public void compute(@NotNull final Function<? super V, ? extends V> function) {
     Require.notNull(function, "function");
-    final Group group = FutureGroup.currentGroup();
+    final Context context = FutureContext.currentContext();
     scheduler.scheduleAfter(new VarTask() {
       @Override
       public void run() {
-        innerStatus.compute(group, function);
+        innerStatus.compute(context, function);
       }
     });
   }
@@ -172,13 +172,13 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
   @Override
   public @NotNull Subscription subscribe(@NotNull final Receiver<? super V> receiver) {
-    final GroupReceiver<? super V> groupReceiver = FutureGroup.currentGroup()
+    final ContextReceiver<? super V> contextReceiver = FutureContext.currentContext()
         .onSubscribe(this, scheduler, Require.notNull(receiver, "receiver"));
     scheduler.scheduleBefore(new VarTask() {
       @Override
       @SuppressWarnings("unchecked")
       public void run() {
-        innerStatus.subscribe((Receiver<V>) receiver, (GroupReceiver<V>) groupReceiver);
+        innerStatus.subscribe((Receiver<V>) receiver, (ContextReceiver<V>) contextReceiver);
       }
     });
     return new VarSubscription(receiver);
@@ -197,9 +197,9 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     scheduler.scheduleBefore(new VarTask() {
       @Override
       public void run() {
-        final GroupReceiver<V> groupReceiver = receivers.remove(receiver);
-        if (groupReceiver != null) {
-          groupReceiver.onUnsubscribe();
+        final ContextReceiver<V> contextReceiver = receivers.remove(receiver);
+        if (contextReceiver != null) {
+          contextReceiver.onUnsubscribe();
         }
       }
     });
@@ -352,8 +352,8 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
   }
 
   protected boolean hasSinks() {
-    for (final GroupReceiver<V> groupReceiver : receivers.values()) {
-      if (groupReceiver.isSink()) {
+    for (final ContextReceiver<V> contextReceiver : receivers.values()) {
+      if (contextReceiver.isSink()) {
         return true;
       }
     }
@@ -735,7 +735,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       Log.dbg(VarFuture.class, "Ignoring 'clear' operation: future is already closed");
     }
 
-    void compute(@NotNull final Group group,
+    void compute(@NotNull final FutureContext.Context context,
         @NotNull final Function<? super V, ? extends V> function) {
       Log.dbg(VarFuture.class, "Ignoring 'compute' operation: future is already closed");
     }
@@ -755,19 +755,19 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
 
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final GroupReceiver<V> groupReceiver) {
-      if (groupReceiver.isSink()) {
+        @NotNull final FutureContext.ContextReceiver<V> contextReceiver) {
+      if (contextReceiver.isSink()) {
         try {
           final List<V> values = historyStrategy.onSubscribe();
           if (!values.isEmpty()) {
             try {
               if (values.size() == 1) {
-                groupReceiver.set(values.get(0));
+                contextReceiver.set(values.get(0));
               } else {
-                groupReceiver.setBulk(ImmutableList.ofElementsIn(values));
+                contextReceiver.setBulk(ImmutableList.ofElementsIn(values));
               }
             } catch (final RuntimeException e) {
-              groupReceiver.onUncaughtError(e);
+              contextReceiver.onUncaughtError(e);
             }
           }
         } catch (final RuntimeException e) {
@@ -795,14 +795,14 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
 
     @Override
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final GroupReceiver<V> groupReceiver) {
-      super.subscribe(receiver, groupReceiver);
+        @NotNull final FutureContext.ContextReceiver<V> contextReceiver) {
+      super.subscribe(receiver, contextReceiver);
       try {
-        groupReceiver.fail(failureException);
+        contextReceiver.fail(failureException);
       } catch (final RuntimeException e) {
-        groupReceiver.onUncaughtError(e);
+        contextReceiver.onUncaughtError(e);
       }
-      groupReceiver.onUnsubscribe();
+      contextReceiver.onUnsubscribe();
     }
   }
 
@@ -826,17 +826,17 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     @Override
     @SuppressWarnings("unchecked")
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final GroupReceiver<V> groupReceiver) {
-      super.subscribe(receiver, groupReceiver);
+        @NotNull final FutureContext.ContextReceiver<V> contextReceiver) {
+      super.subscribe(receiver, contextReceiver);
       try {
-        if (groupReceiver.isSink() && lastValue != UNSET) {
-          groupReceiver.set((V) lastValue);
+        if (contextReceiver.isSink() && lastValue != UNSET) {
+          contextReceiver.set((V) lastValue);
         }
-        groupReceiver.close();
+        contextReceiver.close();
       } catch (final RuntimeException e) {
-        groupReceiver.onUncaughtError(e);
+        contextReceiver.onUncaughtError(e);
       }
-      groupReceiver.onUnsubscribe();
+      contextReceiver.onUnsubscribe();
     }
   }
 
@@ -861,16 +861,16 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       } else {
         result = new FailureResult<V>(error);
       }
-      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
+      final HashMap<Receiver<?>, ContextReceiver<V>> receivers = VarFuture.this.receivers;
       final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
       final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
-      for (final GroupReceiver<V> groupReceiver : receivers.values()) {
+      for (final ContextReceiver<V> contextReceiver : receivers.values()) {
         try {
-          groupReceiver.fail(error);
+          contextReceiver.fail(error);
         } catch (final RuntimeException e) {
-          groupReceiver.onUncaughtError(e);
+          contextReceiver.onUncaughtError(e);
         }
-        groupReceiver.onUnsubscribe();
+        contextReceiver.onUnsubscribe();
       }
       receivers.clear();
       for (final FutureIterator<V> futureIterator : iterators.keySet()) {
@@ -908,17 +908,17 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
         logInvocationException("history strategy", "onSetBulk", e);
       }
       boolean firstSink = true;
-      for (final Entry<Receiver<?>, GroupReceiver<V>> entry : receivers.entrySet()) {
-        final GroupReceiver<V> groupReceiver = entry.getValue();
-        if (groupReceiver.isSink()) {
+      for (final Entry<Receiver<?>, ContextReceiver<V>> entry : receivers.entrySet()) {
+        final ContextReceiver<V> contextReceiver = entry.getValue();
+        if (contextReceiver.isSink()) {
           try {
             if (values.size() == 1) {
-              groupReceiver.set(valuesList.get(0));
+              contextReceiver.set(valuesList.get(0));
             } else {
-              groupReceiver.setBulk(values);
+              contextReceiver.setBulk(values);
             }
           } catch (final RuntimeException e) {
-            groupReceiver.onUncaughtError(e);
+            contextReceiver.onUncaughtError(e);
           }
           if (firstSink) {
             firstSink = false;
@@ -943,13 +943,13 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       }
       lastValue = value;
       boolean firstSink = true;
-      for (final Entry<Receiver<?>, GroupReceiver<V>> entry : receivers.entrySet()) {
-        final GroupReceiver<V> groupReceiver = entry.getValue();
-        if (groupReceiver.isSink()) {
+      for (final Entry<Receiver<?>, ContextReceiver<V>> entry : receivers.entrySet()) {
+        final ContextReceiver<V> contextReceiver = entry.getValue();
+        if (contextReceiver.isSink()) {
           try {
-            groupReceiver.set(value);
+            contextReceiver.set(value);
           } catch (final RuntimeException e) {
-            groupReceiver.onUncaughtError(e);
+            contextReceiver.onUncaughtError(e);
           }
           if (firstSink) {
             firstSink = false;
@@ -973,14 +973,14 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
       } catch (final RuntimeException e) {
         logInvocationException("history strategy", "onClose", e);
       }
-      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
-      for (final GroupReceiver<V> groupReceiver : receivers.values()) {
+      final HashMap<Receiver<?>, ContextReceiver<V>> receivers = VarFuture.this.receivers;
+      for (final ContextReceiver<V> contextReceiver : receivers.values()) {
         try {
-          groupReceiver.close();
+          contextReceiver.close();
         } catch (final RuntimeException e) {
-          groupReceiver.onUncaughtError(e);
+          contextReceiver.onUncaughtError(e);
         }
-        groupReceiver.onUnsubscribe();
+        contextReceiver.onUnsubscribe();
       }
       receivers.clear();
       final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
@@ -1007,12 +1007,12 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     }
 
     @Override
-    public void compute(@NotNull final Group group,
+    public void compute(@NotNull final FutureContext.Context context,
         @NotNull final Function<? super V, ? extends V> function) {
       if (lastValue != UNSET) {
         scheduler.pause();
         try {
-          group.onTask(new VarTask() {
+          context.onTask(new VarTask() {
             @Override
             @SuppressWarnings({"unchecked", "NonAtomicOperationOnVolatileField"})
             public void run() {
@@ -1026,7 +1026,7 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
             }
           });
         } catch (final RuntimeException e) {
-          logInvocationException("group", "onTask", e);
+          logInvocationException("context", "onTask", e);
           innerStatus.fail(e);
           scheduler.resume();
         }
@@ -1051,18 +1051,18 @@ public class VarFuture<V> extends StreamGroupFuture<V, StreamingFuture<V>> imple
     @Override
     @SuppressWarnings("unchecked")
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final GroupReceiver<V> groupReceiver) {
-      final HashMap<Receiver<?>, GroupReceiver<V>> receivers = VarFuture.this.receivers;
+        @NotNull final FutureContext.ContextReceiver<V> contextReceiver) {
+      final HashMap<Receiver<?>, ContextReceiver<V>> receivers = VarFuture.this.receivers;
       if (!receivers.containsKey(receiver)) {
-        super.subscribe(receiver, groupReceiver);
-        if (groupReceiver.isSink() && lastValue != UNSET) {
+        super.subscribe(receiver, contextReceiver);
+        if (contextReceiver.isSink() && lastValue != UNSET) {
           try {
-            groupReceiver.set((V) lastValue);
+            contextReceiver.set((V) lastValue);
           } catch (final RuntimeException e) {
-            groupReceiver.onUncaughtError(e);
+            contextReceiver.onUncaughtError(e);
           }
         }
-        receivers.put(receiver, groupReceiver);
+        receivers.put(receiver, contextReceiver);
         if (hasSinks()) {
           pullFromReceiver();
         }

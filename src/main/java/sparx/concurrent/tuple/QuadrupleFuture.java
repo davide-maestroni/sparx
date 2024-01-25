@@ -28,7 +28,7 @@ import sparx.util.Require;
 ///////////////////////////////////////////////
 
 public class QuadrupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V> extends
-    StreamGroupTupleFuture<V, QuadrupleFuture<V, V1, V2, V3, V4>> implements
+    StreamContextTupleFuture<V, QuadrupleFuture<V, V1, V2, V3, V4>> implements
     Quadruple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>, StreamingFuture<V4>> {
 
   public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V, V4 extends V> QuadrupleFuture<V, V1, V2, V3, V4> of(

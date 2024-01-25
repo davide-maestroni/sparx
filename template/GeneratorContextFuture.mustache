@@ -27,9 +27,9 @@ import sparx.util.UncheckedException;
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {
+abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {
 
-  GeneratorGroupFuture(@NotNull final StreamingFuture<V> future) {
+  GeneratorContextFuture(@NotNull final StreamingFuture<V> future) {
     super(future);
   }
 
@@ -40,20 +40,20 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
 
   public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratingFuture<V1> {{methodName}}Generate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction) {
-    final StreamGroup<V1> group = new StreamGroup<V1>(FutureGroup.currentGroup());
-    FutureGroup.pushGroup(group);
+    final StreamContext<V1> context = new StreamContext<V1>(FutureContext.currentContext());
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F1 output = input.{{methodName}}Immediately(firstFunction);
       final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
       final GeneratingFuture<V1> future = createGeneratingFuture(receiver);
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 {{#tuples}}
@@ -61,9 +61,9 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
   public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> GeneratingFuture<V{{value}}>{{/last}}{{/indexes}} {{methodName}}Generate(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
 {{#ordinals}}      @NotNull final Function<? super F{{value.prevIndex}}, F{{value.index}}> {{value.name}}Function{{^last}},{{/last}}{{#last}}) {
-    final StreamGroup<V{{value.index}}> group = new StreamGroup<V{{value.index}}>(FutureGroup.currentGroup());{{/last}}
+    final StreamContext<V{{value.index}}> context = new StreamContext<V{{value.index}}>(FutureContext.currentContext());{{/last}}
 {{/ordinals}}
-    FutureGroup.pushGroup(group);
+    FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
 {{#ordinals}}{{#last}}      final F{{value.index}} output = input.{{methodName}}Immediately({{/last}}{{/ordinals}}
@@ -76,13 +76,13 @@ abstract class GeneratorGroupFuture<V> extends ReadOnlyFuture<V> implements Gene
 {{#ordinals}}{{#last}}      final GeneratorStreamReceiver<V{{value.index}}> receiver = new GeneratorStreamReceiver<V{{value.index}}>(input, output);
       final GeneratingFuture<V{{value.index}}> future = createGeneratingFuture(receiver);
 {{/last}}{{/ordinals}}
-      future.subscribe(group);
+      future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      group.onUncaughtError(e);
+      context.onUncaughtError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureGroup.popGroup();
+      FutureContext.popContext();
     }
   }
 {{/tuples}}

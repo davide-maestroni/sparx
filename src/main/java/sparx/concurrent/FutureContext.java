@@ -21,41 +21,41 @@ import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.Scheduler.Task;
 import sparx.util.Require;
 
-public class FutureGroup {
+public class FutureContext {
 
-  private static final DummyFutureGroup DUMMY_GROUP = new DummyFutureGroup();
-  private static final ThreadLocal<ArrayDeque<Group>> localGroup = new ThreadLocal<ArrayDeque<Group>>() {
+  private static final DummyFutureContext DUMMY_CONTEXT = new DummyFutureContext();
+  private static final ThreadLocal<ArrayDeque<Context>> localContext = new ThreadLocal<ArrayDeque<Context>>() {
 
     @Override
-    protected ArrayDeque<Group> initialValue() {
-      final ArrayDeque<Group> groups = new ArrayDeque<Group>();
-      groups.push(DUMMY_GROUP);
-      return groups;
+    protected ArrayDeque<Context> initialValue() {
+      final ArrayDeque<Context> contexts = new ArrayDeque<Context>();
+      contexts.push(DUMMY_CONTEXT);
+      return contexts;
     }
   };
 
-  public static @NotNull Group currentGroup() {
-    return localGroup.get().peek();
+  public static @NotNull Context currentContext() {
+    return localContext.get().peek();
   }
 
-  static void popGroup() {
-    final ArrayDeque<Group> groups = localGroup.get();
-    if (groups.size() > 1) {
-      groups.pop();
+  static void popContext() {
+    final ArrayDeque<Context> contexts = localContext.get();
+    if (contexts.size() > 1) {
+      contexts.pop();
     }
   }
 
-  static void pushGroup(@NotNull final Group group) {
-    localGroup.get().push(Require.notNull(group, "group"));
+  static void pushContext(@NotNull final Context context) {
+    localContext.get().push(Require.notNull(context, "context"));
   }
 
-  public interface Group {
+  public interface Context {
 
     @Nullable ExecutionContext executionContext();
 
     @NotNull Registration onCreate(@NotNull StreamingFuture<?> future);
 
-    @NotNull <R, V extends R> GroupReceiver<R> onSubscribe(
+    @NotNull <R, V extends R> ContextReceiver<R> onSubscribe(
         @NotNull StreamingFuture<V> future, @NotNull Scheduler scheduler,
         @NotNull Receiver<R> receiver);
 
@@ -66,7 +66,7 @@ public class FutureGroup {
     void storeValue(@NotNull String name, Object value);
   }
 
-  public interface GroupReceiver<V> extends Receiver<V> {
+  public interface ContextReceiver<V> extends Receiver<V> {
 
     boolean isSink();
 
@@ -82,7 +82,7 @@ public class FutureGroup {
     void onUncaughtError(@NotNull Exception error);
   }
 
-  private static class DummyFutureGroup implements Group {
+  private static class DummyFutureContext implements Context {
 
     @Override
     public @Nullable ExecutionContext executionContext() {
@@ -95,10 +95,10 @@ public class FutureGroup {
     }
 
     @Override
-    public @NotNull <R, V extends R> FutureGroup.GroupReceiver<R> onSubscribe(
+    public @NotNull <R, V extends R> FutureContext.ContextReceiver<R> onSubscribe(
         @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
         @NotNull final Receiver<R> receiver) {
-      return new StandardGroupReceiver<R>(future, receiver);
+      return new StandardContextReceiver<R>(future, receiver);
     }
 
     @Override

@@ -17,7 +17,7 @@ package sparx.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.concurrent.FutureGroup.Group;
+import sparx.concurrent.FutureContext.Context;
 import sparx.util.Require;
 
 public class ContextLocal {
@@ -26,27 +26,27 @@ public class ContextLocal {
   }
 
   public static @Nullable ExecutionContext currentContext() {
-    return FutureGroup.currentGroup().executionContext();
+    return FutureContext.currentContext().executionContext();
   }
 
   public static @NotNull <V> LocalValue<V> getValue(@NotNull final String name) {
-    final Group group = FutureGroup.currentGroup();
+    final Context context = FutureContext.currentContext();
     @SuppressWarnings("unchecked") final LocalValue<V> value =
-        (LocalValue<V>) group.restoreValue(Require.notNull(name, "name"));
-    return (value == null) ? new LocalValue<V>(group, name) : value;
+        (LocalValue<V>) context.restoreValue(Require.notNull(name, "name"));
+    return (value == null) ? new LocalValue<V>(context, name) : value;
   }
 
   public static class LocalValue<V> {
 
-    private final ExecutionContext context;
-    private final Group group;
+    private final ExecutionContext executionContext;
+    private final Context context;
     private final String name;
 
     private V value;
 
-    private LocalValue(@NotNull final Group group, @NotNull final String name) {
-      this.context = group.executionContext();
-      this.group = group;
+    private LocalValue(@NotNull final FutureContext.Context context, @NotNull final String name) {
+      this.executionContext = context.executionContext();
+      this.context = context;
       this.name = name;
     }
 
@@ -55,14 +55,14 @@ public class ContextLocal {
     }
 
     public void set(final V value) {
-      if (FutureGroup.currentGroup().executionContext() != context) {
+      if (FutureContext.currentContext().executionContext() != executionContext) {
         throw new InvalidContextException();
       }
       if (value == null) {
-        group.storeValue(name, null);
+        context.storeValue(name, null);
       } else {
         this.value = value;
-        group.storeValue(name, this);
+        context.storeValue(name, this);
       }
     }
   }

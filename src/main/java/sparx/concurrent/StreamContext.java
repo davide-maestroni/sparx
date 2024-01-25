@@ -20,36 +20,36 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.concurrent.FutureGroup.Group;
-import sparx.concurrent.FutureGroup.GroupReceiver;
-import sparx.concurrent.FutureGroup.Registration;
+import sparx.concurrent.FutureContext.Context;
+import sparx.concurrent.FutureContext.ContextReceiver;
+import sparx.concurrent.FutureContext.Registration;
 import sparx.concurrent.Scheduler.Task;
 import sparx.logging.Log;
 import sparx.util.Require;
 
-class StreamGroup<U> implements Group, GroupReceiver<U> {
+class StreamContext<U> implements Context, ContextReceiver<U> {
 
-  private final Group group;
+  private final Context context;
   private final HashMap<Receiver<?>, Scheduler> receivers = new HashMap<Receiver<?>, Scheduler>();
   private final Scheduler scheduler = Scheduler.trampoline();
   private final String taskID = toString();
 
-  private GroupStatus status = new RunningStatus();
+  private ContextStatus status = new RunningStatus();
 
-  StreamGroup(@NotNull final Group group) {
-    this.group = Require.notNull(group, "hooks");
+  StreamContext(@NotNull final FutureContext.Context context) {
+    this.context = Require.notNull(context, "hooks");
   }
 
   @Override
   public @Nullable ExecutionContext executionContext() {
-    return group.executionContext();
+    return context.executionContext();
   }
 
   @Override
-  public @NotNull FutureGroup.Registration onCreate(@NotNull final StreamingFuture<?> future) {
-    final StreamRegistration registration = new StreamRegistration(group.onCreate(future),
+  public @NotNull FutureContext.Registration onCreate(@NotNull final StreamingFuture<?> future) {
+    final StreamRegistration registration = new StreamRegistration(context.onCreate(future),
         future);
-    scheduler.scheduleAfter(new GroupTask() {
+    scheduler.scheduleAfter(new ContextTask() {
       @Override
       public void run() {
         status.onCreate(future, registration);
@@ -60,16 +60,16 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <R, V extends R> FutureGroup.GroupReceiver<R> onSubscribe(
+  public @NotNull <R, V extends R> FutureContext.ContextReceiver<R> onSubscribe(
       @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
       @NotNull final Receiver<R> receiver) {
     if (receiver == this) {
-      return (GroupReceiver<R>) this;
+      return (ContextReceiver<R>) this;
     }
 
-    final StreamGroupReceiver<R> hookReceiver = new StreamGroupReceiver<R>(
-        group.onSubscribe(future, scheduler, new StreamReceiver<R>(receiver)), future, receiver);
-    this.scheduler.scheduleAfter(new GroupTask() {
+    final StreamContextReceiver<R> hookReceiver = new StreamContextReceiver<R>(
+        context.onSubscribe(future, scheduler, new StreamReceiver<R>(receiver)), future, receiver);
+    this.scheduler.scheduleAfter(new ContextTask() {
       @Override
       public void run() {
         status.onSubscribe(hookReceiver, scheduler);
@@ -80,17 +80,17 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
   @Override
   public void onTask(@NotNull final Task task) {
-    group.onTask(task);
+    context.onTask(task);
   }
 
   @Override
   public Object restoreValue(@NotNull final String name) {
-    return group.restoreValue(name);
+    return context.restoreValue(name);
   }
 
   @Override
   public void storeValue(@NotNull final String name, final Object value) {
-    group.storeValue(name, value);
+    context.storeValue(name, value);
   }
 
   @Override
@@ -126,7 +126,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
   }
 
   private void innerClose() {
-    scheduler.scheduleAfter(new GroupTask() {
+    scheduler.scheduleAfter(new ContextTask() {
       @Override
       public void run() {
         status.onClose();
@@ -135,7 +135,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
   }
 
   private void innerFail(@NotNull final Exception error) {
-    final GroupTask task = new GroupTask() {
+    final ContextTask task = new ContextTask() {
       @Override
       public void run() {
         status.onFail(error);
@@ -148,20 +148,20 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
     }
   }
 
-  private interface GroupStatus {
+  private interface ContextStatus {
 
     void onClose();
 
     void onCreate(@NotNull StreamingFuture<?> future,
-        @NotNull FutureGroup.Registration registration);
+        @NotNull FutureContext.Registration registration);
 
     void onFail(@NotNull Exception error);
 
-    void onSubscribe(@NotNull FutureGroup.GroupReceiver<?> groupReceiver,
+    void onSubscribe(@NotNull FutureContext.ContextReceiver<?> contextReceiver,
         @NotNull Scheduler scheduler);
   }
 
-  private static class CancelledStatus implements GroupStatus {
+  private static class CancelledStatus implements ContextStatus {
 
     private final Exception failureException;
 
@@ -175,38 +175,38 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
     @Override
     public void onCreate(@NotNull final StreamingFuture<?> future,
-        @NotNull final FutureGroup.Registration registration) {
+        @NotNull final FutureContext.Registration registration) {
       future.fail(failureException);
       registration.cancel();
     }
 
     @Override
     public void onFail(@NotNull final Exception error) {
-      Log.wrn(StreamGroup.class, "Exception was thrown: %s\nbut it was shadowed by: %s",
+      Log.wrn(StreamContext.class, "Exception was thrown: %s\nbut it was shadowed by: %s",
           Log.printable(error), Log.printable(failureException));
     }
 
     @Override
-    public void onSubscribe(@NotNull final FutureGroup.GroupReceiver<?> groupReceiver,
+    public void onSubscribe(@NotNull final FutureContext.ContextReceiver<?> contextReceiver,
         @NotNull final Scheduler scheduler) {
-      groupReceiver.fail(failureException);
-      groupReceiver.onUnsubscribe();
+      contextReceiver.fail(failureException);
+      contextReceiver.onUnsubscribe();
     }
   }
 
-  private class RunningStatus implements GroupStatus {
+  private class RunningStatus implements ContextStatus {
 
     @Override
     public void onClose() {
-      final HashMap<Receiver<?>, Scheduler> receivers = StreamGroup.this.receivers;
+      final HashMap<Receiver<?>, Scheduler> receivers = StreamContext.this.receivers;
       for (final Entry<Receiver<?>, Scheduler> entry : receivers.entrySet()) {
         final Receiver<?> receiver = entry.getKey();
-        if (StreamGroupReceiver.class.equals(receiver.getClass())) {
-          entry.getValue().scheduleAfter(new GroupTask() {
+        if (StreamContextReceiver.class.equals(receiver.getClass())) {
+          entry.getValue().scheduleAfter(new ContextTask() {
             @Override
             @SuppressWarnings("unchecked")
             public void run() {
-              ((StreamGroupReceiver<Object>) receiver).closeAndUnsubscribe();
+              ((StreamContextReceiver<Object>) receiver).closeAndUnsubscribe();
             }
           });
         } else {
@@ -218,22 +218,22 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
     @Override
     public void onCreate(@NotNull final StreamingFuture<?> future,
-        @NotNull final FutureGroup.Registration registration) {
+        @NotNull final FutureContext.Registration registration) {
       receivers.put(future, null);
     }
 
     @Override
     public void onFail(@NotNull final Exception error) {
       status = new CancelledStatus(error);
-      final HashMap<Receiver<?>, Scheduler> receivers = StreamGroup.this.receivers;
+      final HashMap<Receiver<?>, Scheduler> receivers = StreamContext.this.receivers;
       for (final Entry<Receiver<?>, Scheduler> entry : receivers.entrySet()) {
         final Receiver<?> receiver = entry.getKey();
-        if (StreamGroupReceiver.class.equals(receiver.getClass())) {
-          entry.getValue().scheduleAfter(new GroupTask() {
+        if (StreamContextReceiver.class.equals(receiver.getClass())) {
+          entry.getValue().scheduleAfter(new ContextTask() {
             @Override
             @SuppressWarnings("unchecked")
             public void run() {
-              ((StreamGroupReceiver<Object>) receiver).failAndUnsubscribe(error);
+              ((StreamContextReceiver<Object>) receiver).failAndUnsubscribe(error);
             }
           });
         } else {
@@ -244,9 +244,9 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
     }
 
     @Override
-    public void onSubscribe(@NotNull final FutureGroup.GroupReceiver<?> groupReceiver,
+    public void onSubscribe(@NotNull final FutureContext.ContextReceiver<?> contextReceiver,
         @NotNull final Scheduler scheduler) {
-      receivers.put(groupReceiver, scheduler);
+      receivers.put(contextReceiver, scheduler);
     }
   }
 
@@ -263,7 +263,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
     @Override
     public void cancel() {
-      scheduler.scheduleAfter(new GroupTask() {
+      scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
           receivers.remove(future);
@@ -288,54 +288,54 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
 
     @Override
     public void close() {
-      FutureGroup.pushGroup(StreamGroup.this);
+      FutureContext.pushContext(StreamContext.this);
       try {
         wrapped.close();
       } finally {
-        FutureGroup.popGroup();
+        FutureContext.popContext();
       }
     }
 
     @Override
     public boolean fail(@NotNull final Exception error) {
-      FutureGroup.pushGroup(StreamGroup.this);
+      FutureContext.pushContext(StreamContext.this);
       try {
         return wrapped.fail(error);
       } finally {
-        FutureGroup.popGroup();
+        FutureContext.popContext();
       }
     }
 
     @Override
     public void set(final R value) {
-      FutureGroup.pushGroup(StreamGroup.this);
+      FutureContext.pushContext(StreamContext.this);
       try {
         wrapped.set(value);
       } finally {
-        FutureGroup.popGroup();
+        FutureContext.popContext();
       }
     }
 
     @Override
     public void setBulk(@NotNull final Collection<R> values) {
-      FutureGroup.pushGroup(StreamGroup.this);
+      FutureContext.pushContext(StreamContext.this);
       try {
         wrapped.setBulk(values);
       } finally {
-        FutureGroup.popGroup();
+        FutureContext.popContext();
       }
     }
   }
 
-  private class StreamGroupReceiver<R> implements GroupReceiver<R> {
+  private class StreamContextReceiver<R> implements ContextReceiver<R> {
 
     private final StreamingFuture<?> future;
     private final Receiver<R> receiver;
-    private final GroupReceiver<R> wrapped;
+    private final ContextReceiver<R> wrapped;
 
     private Receiver<R> status = new RunningStatus();
 
-    private StreamGroupReceiver(@NotNull final FutureGroup.GroupReceiver<R> wrapped,
+    private StreamContextReceiver(@NotNull final FutureContext.ContextReceiver<R> wrapped,
         @NotNull final StreamingFuture<?> future, @NotNull final Receiver<R> receiver) {
       this.wrapped = wrapped;
       this.future = future;
@@ -350,7 +350,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
     @Override
     public void onUnsubscribe() {
       status = new DoneStatus();
-      scheduler.scheduleAfter(new GroupTask() {
+      scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
           receivers.remove(receiver);
@@ -386,25 +386,25 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
     }
 
     private void closeAndUnsubscribe() {
-      FutureGroup.pushGroup(StreamGroup.this);
+      FutureContext.pushContext(StreamContext.this);
       try {
         wrapped.close();
       } catch (final RuntimeException e) {
-        Log.err(StreamGroup.class, "Uncaught exception: %s", Log.printable(e));
+        Log.err(StreamContext.class, "Uncaught exception: %s", Log.printable(e));
       } finally {
-        FutureGroup.popGroup();
+        FutureContext.popContext();
       }
       future.unsubscribe(receiver);
     }
 
     private void failAndUnsubscribe(@NotNull final Exception error) {
-      FutureGroup.pushGroup(StreamGroup.this);
+      FutureContext.pushContext(StreamContext.this);
       try {
         wrapped.fail(error);
       } catch (final RuntimeException e) {
-        Log.err(StreamGroup.class, "Uncaught exception: %s", Log.printable(e));
+        Log.err(StreamContext.class, "Uncaught exception: %s", Log.printable(e));
       } finally {
-        FutureGroup.popGroup();
+        FutureContext.popContext();
       }
       future.unsubscribe(receiver);
     }
@@ -455,7 +455,7 @@ class StreamGroup<U> implements Group, GroupReceiver<U> {
     }
   }
 
-  private abstract class GroupTask implements Task {
+  private abstract class ContextTask implements Task {
 
     @Override
     public @NotNull String taskID() {

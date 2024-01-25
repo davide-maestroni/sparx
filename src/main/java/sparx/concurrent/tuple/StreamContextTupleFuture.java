@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.FunctionalReceiver;
-import sparx.concurrent.ReadOnlyStreamGroupFuture;
+import sparx.concurrent.ReadOnlyStreamContextFuture;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TupleFuture;
@@ -42,8 +42,8 @@ import sparx.util.Nothing;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 
-abstract class StreamGroupTupleFuture<V, F extends TupleFuture<V, F>> extends
-    ReadOnlyStreamGroupFuture<Nothing, F> implements TupleFuture<V, F> {
+abstract class StreamContextTupleFuture<V, F extends TupleFuture<V, F>> extends
+    ReadOnlyStreamContextFuture<Nothing, F> implements TupleFuture<V, F> {
 
   private final Map<Receiver<?>, TupleSubscription> receivers = Collections.synchronizedMap(
       new WeakHashMap<Receiver<?>, TupleSubscription>());

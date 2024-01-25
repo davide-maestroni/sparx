@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.concurrent.FutureGroup.Group;
-import sparx.concurrent.FutureGroup.GroupReceiver;
-import sparx.concurrent.FutureGroup.Registration;
+import sparx.concurrent.FutureContext.Context;
+import sparx.concurrent.FutureContext.ContextReceiver;
+import sparx.concurrent.FutureContext.Registration;
 import sparx.concurrent.Scheduler.Task;
 import sparx.function.Consumer;
 import sparx.function.Function;
@@ -122,16 +122,16 @@ class ExecutionScope implements ExecutionContext {
     }
   }
 
-  private interface GroupStatus {
+  private interface ContextStatus {
 
     void onCreate(@NotNull StreamingFuture<?> future, @NotNull Registration registration);
 
     void onFail(@NotNull Exception error);
 
-    void onSubscribe(@NotNull GroupReceiver<?> groupReceiver);
+    void onSubscribe(@NotNull FutureContext.ContextReceiver<?> contextReceiver);
   }
 
-  private abstract class ScopeFuture<U> extends VarFuture<U> implements Group, Task {
+  private abstract class ScopeFuture<U> extends VarFuture<U> implements Context, Task {
 
     private static final int IDLE = 0;
     private static final int RUNNING = 1;
@@ -142,7 +142,7 @@ class ExecutionScope implements ExecutionContext {
     private final AtomicInteger status = new AtomicInteger(IDLE);
     private final String taskID = toString();
 
-    private GroupStatus groupStatus = new RunningStatus();
+    private ContextStatus contextStatus = new RunningStatus();
 
     @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
@@ -152,7 +152,7 @@ class ExecutionScope implements ExecutionContext {
     @Override
     public void close() {
       if (status.compareAndSet(RUNNING, DONE)) {
-        scheduler.scheduleAfter(new GroupTask() {
+        scheduler.scheduleAfter(new ContextTask() {
           @Override
           public void run() {
             if (receivers.isEmpty()) {
@@ -183,28 +183,28 @@ class ExecutionScope implements ExecutionContext {
     @Override
     public @NotNull Registration onCreate(@NotNull final StreamingFuture<?> future) {
       final ScopeRegistration registration = new ScopeRegistration(future);
-      scheduler.scheduleAfter(new GroupTask() {
+      scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
-          groupStatus.onCreate(future, registration);
+          contextStatus.onCreate(future, registration);
         }
       });
       return registration;
     }
 
     @Override
-    public @NotNull <R, V extends R> GroupReceiver<R> onSubscribe(
+    public @NotNull <R, V extends R> FutureContext.ContextReceiver<R> onSubscribe(
         @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
         @NotNull final Receiver<R> receiver) {
-      final ScopeGroupReceiver<R> groupReceiver = new ScopeGroupReceiver<R>(future, scheduler,
+      final ScopeContextReceiver<R> contextReceiver = new ScopeContextReceiver<R>(future, scheduler,
           receiver);
-      ExecutionScope.this.scheduler.scheduleAfter(new GroupTask() {
+      ExecutionScope.this.scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
-          groupStatus.onSubscribe(groupReceiver);
+          contextStatus.onSubscribe(contextReceiver);
         }
       });
-      return groupReceiver;
+      return contextReceiver;
     }
 
     @Override
@@ -239,19 +239,19 @@ class ExecutionScope implements ExecutionContext {
     @Override
     public void run() {
       if (status.compareAndSet(IDLE, RUNNING)) {
-        FutureGroup.pushGroup(this);
+        FutureContext.pushContext(this);
         try {
           innerRun();
         } catch (final Exception e) {
           fail(e);
         } finally {
-          FutureGroup.popGroup();
+          FutureContext.popContext();
         }
       }
     }
 
     protected void complete() {
-      scheduler.scheduleAfter(new GroupTask() {
+      scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
           if (receivers.isEmpty()) {
@@ -267,7 +267,7 @@ class ExecutionScope implements ExecutionContext {
       final ScopeTask task = new ScopeTask() {
         @Override
         protected void runInScope() {
-          groupStatus.onFail(error);
+          contextStatus.onFail(error);
         }
       };
       if (FutureCancellationException.class.equals(error.getClass())) {
@@ -289,7 +289,7 @@ class ExecutionScope implements ExecutionContext {
       }
     }
 
-    private class CancelledStatus implements GroupStatus {
+    private class CancelledStatus implements ContextStatus {
 
       private final Exception failureException;
 
@@ -312,13 +312,13 @@ class ExecutionScope implements ExecutionContext {
       }
 
       @Override
-      public void onSubscribe(@NotNull final GroupReceiver<?> groupReceiver) {
-        groupReceiver.fail(failureException);
-        groupReceiver.onUnsubscribe();
+      public void onSubscribe(@NotNull final FutureContext.ContextReceiver<?> contextReceiver) {
+        contextReceiver.fail(failureException);
+        contextReceiver.onUnsubscribe();
       }
     }
 
-    private class RunningStatus implements GroupStatus {
+    private class RunningStatus implements ContextStatus {
 
       @Override
       public void onCreate(@NotNull final StreamingFuture<?> future,
@@ -329,11 +329,11 @@ class ExecutionScope implements ExecutionContext {
       @Override
       @SuppressWarnings("unchecked")
       public void onFail(@NotNull final Exception error) {
-        groupStatus = new CancelledStatus(error);
+        contextStatus = new CancelledStatus(error);
         final HashSet<Receiver<?>> receivers = ScopeFuture.this.receivers;
         for (final Receiver<?> receiver : receivers) {
-          if (ScopeGroupReceiver.class.equals(receiver.getClass())) {
-            ((ScopeGroupReceiver<Object>) receiver).failAndUnsubscribe(error);
+          if (ScopeContextReceiver.class.equals(receiver.getClass())) {
+            ((ScopeContextReceiver<Object>) receiver).failAndUnsubscribe(error);
           } else {
             receiver.fail(error);
           }
@@ -342,12 +342,12 @@ class ExecutionScope implements ExecutionContext {
       }
 
       @Override
-      public void onSubscribe(@NotNull final GroupReceiver<?> groupReceiver) {
-        receivers.add(groupReceiver);
+      public void onSubscribe(@NotNull final FutureContext.ContextReceiver<?> contextReceiver) {
+        receivers.add(contextReceiver);
       }
     }
 
-    private class ScopeGroupReceiver<R> implements GroupReceiver<R> {
+    private class ScopeContextReceiver<R> implements ContextReceiver<R> {
 
       private final StreamingFuture<?> future;
       private final Scheduler futureScheduler;
@@ -355,7 +355,7 @@ class ExecutionScope implements ExecutionContext {
 
       private Receiver<R> status = new RunningStatus();
 
-      private ScopeGroupReceiver(@NotNull final StreamingFuture<?> future,
+      private ScopeContextReceiver(@NotNull final StreamingFuture<?> future,
           @NotNull final Scheduler futureScheduler,
           @NotNull final Receiver<R> wrapped) {
         this.future = future;
@@ -372,10 +372,10 @@ class ExecutionScope implements ExecutionContext {
       public void onUnsubscribe() {
         status = new DoneStatus();
         futureScheduler.pause();
-        scheduler.scheduleAfter(new GroupTask() {
+        scheduler.scheduleAfter(new ContextTask() {
           @Override
           public void run() {
-            removeReceiver(ScopeGroupReceiver.this);
+            removeReceiver(ScopeContextReceiver.this);
             futureScheduler.resume();
           }
         });
@@ -422,13 +422,13 @@ class ExecutionScope implements ExecutionContext {
       }
 
       private void failAndUnsubscribe(@NotNull final Exception error) {
-        FutureGroup.pushGroup(ScopeFuture.this);
+        FutureContext.pushContext(ScopeFuture.this);
         try {
           wrapped.fail(error);
         } catch (final RuntimeException e) {
           Log.err(ExecutionScope.class, "Uncaught exception: %s", Log.printable(e));
         } finally {
-          FutureGroup.popGroup();
+          FutureContext.popContext();
         }
         future.unsubscribe(wrapped);
       }
@@ -528,7 +528,7 @@ class ExecutionScope implements ExecutionContext {
 
       @Override
       public void cancel() {
-        scheduler.scheduleAfter(new GroupTask() {
+        scheduler.scheduleAfter(new ContextTask() {
           @Override
           public void run() {
             removeReceiver(future);
@@ -542,7 +542,7 @@ class ExecutionScope implements ExecutionContext {
       }
     }
 
-    private abstract class GroupTask implements Task {
+    private abstract class ContextTask implements Task {
 
       @Override
       public @NotNull String taskID() {
@@ -555,17 +555,17 @@ class ExecutionScope implements ExecutionContext {
       }
     }
 
-    private abstract class ScopeTask extends GroupTask {
+    private abstract class ScopeTask extends ContextTask {
 
       @Override
       public void run() {
-        FutureGroup.pushGroup(ScopeFuture.this);
+        FutureContext.pushContext(ScopeFuture.this);
         try {
           runInScope();
         } catch (final RuntimeException e) {
           fail(e);
         } finally {
-          FutureGroup.popGroup();
+          FutureContext.popContext();
         }
       }
 

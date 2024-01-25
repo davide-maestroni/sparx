@@ -28,7 +28,7 @@ import sparx.logging.Log;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
 
-public class GeneratorFuture<V> extends GeneratorGroupFuture<V> {
+public class GeneratorFuture<V> extends GeneratorContextFuture<V> {
 
   public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterable<? extends V> iterable) {
     return of(iterable.iterator());

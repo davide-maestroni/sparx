@@ -17,16 +17,16 @@ package sparx.concurrent;
 
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.FutureGroup.GroupReceiver;
+import sparx.concurrent.FutureContext.ContextReceiver;
 import sparx.logging.Log;
 import sparx.util.Require;
 
-class StandardGroupReceiver<V> implements GroupReceiver<V> {
+class StandardContextReceiver<V> implements ContextReceiver<V> {
 
   private final StreamingFuture<?> future;
   private final Receiver<V> receiver;
 
-  StandardGroupReceiver(@NotNull final StreamingFuture<?> future,
+  StandardContextReceiver(@NotNull final StreamingFuture<?> future,
       @NotNull final Receiver<V> receiver) {
     this.future = Require.notNull(future, "future");
     this.receiver = Require.notNull(receiver, "receiver");
@@ -43,7 +43,7 @@ class StandardGroupReceiver<V> implements GroupReceiver<V> {
 
   @Override
   public void onUncaughtError(@NotNull final Exception error) {
-    Log.err(FutureGroup.class,
+    Log.err(FutureContext.class,
         "Uncaught exception, the throwing receiver will be automatically unsubscribed: %s",
         Log.printable(error));
     future.unsubscribe(receiver);
