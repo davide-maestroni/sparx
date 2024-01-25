@@ -51,28 +51,28 @@ public class FutureContext {
 
   public interface Context {
 
-    @Nullable ExecutionContext executionContext();
-
-    @NotNull Registration onCreate(@NotNull StreamingFuture<?> future);
-
-    @NotNull <R, V extends R> ContextReceiver<R> onSubscribe(
+    @NotNull <R, V extends R> ContextReceiver<R> decorateReceiver(
         @NotNull StreamingFuture<V> future, @NotNull Scheduler scheduler,
         @NotNull Receiver<R> receiver);
 
-    void onTask(@NotNull Task task);
+    @Nullable ExecutionContext executionContext();
+
+    @NotNull Registration registerFuture(@NotNull StreamingFuture<?> future);
 
     Object restoreValue(@NotNull String name);
+
+    void runTask(@NotNull Task task);
 
     void storeValue(@NotNull String name, Object value);
   }
 
   public interface ContextReceiver<V> extends Receiver<V> {
 
-    boolean isSink();
+    boolean isConsumer();
+
+    void onReceiverError(@NotNull Exception error);
 
     void onUnsubscribe();
-
-    void onUncaughtError(@NotNull Exception error);
   }
 
   public interface Registration {
@@ -85,30 +85,30 @@ public class FutureContext {
   private static class DummyFutureContext implements Context {
 
     @Override
-    public @Nullable ExecutionContext executionContext() {
-      return null;
-    }
-
-    @Override
-    public @NotNull Registration onCreate(@NotNull final StreamingFuture<?> future) {
-      return DummyRegistration.instance();
-    }
-
-    @Override
-    public @NotNull <R, V extends R> ContextReceiver<R> onSubscribe(
+    public @NotNull <R, V extends R> ContextReceiver<R> decorateReceiver(
         @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
         @NotNull final Receiver<R> receiver) {
       return new StandardContextReceiver<R>(future, receiver);
     }
 
     @Override
-    public void onTask(@NotNull final Task task) {
-      task.run();
+    public @Nullable ExecutionContext executionContext() {
+      return null;
+    }
+
+    @Override
+    public @NotNull Registration registerFuture(@NotNull final StreamingFuture<?> future) {
+      return DummyRegistration.instance();
     }
 
     @Override
     public Object restoreValue(@NotNull final String name) {
       throw new UnsupportedOperationException("restoreValue");
+    }
+
+    @Override
+    public void runTask(@NotNull final Task task) {
+      task.run();
     }
 
     @Override

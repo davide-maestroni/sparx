@@ -45,7 +45,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return second;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -68,7 +68,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return third;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -93,7 +93,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return fourth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -120,7 +120,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return fifth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -149,7 +149,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return sixth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -180,7 +180,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return seventh;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -213,7 +213,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return eighth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -248,7 +248,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return ninth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -285,7 +285,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return tenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -324,7 +324,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return eleventh;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -365,7 +365,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return twelfth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -408,7 +408,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return thirteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -453,7 +453,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return fourteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -500,7 +500,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return fifteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -549,7 +549,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return sixteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -600,7 +600,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return seventeenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -653,7 +653,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return eighteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -708,7 +708,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return nineteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -765,7 +765,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       subscribeFuture(future);
       return twentieth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -783,7 +783,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       first.subscribe(context);
       return first;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -803,7 +803,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       second.subscribe(context);
       return second;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -825,7 +825,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       third.subscribe(context);
       return third;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -849,7 +849,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       fourth.subscribe(context);
       return fourth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -875,7 +875,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       fifth.subscribe(context);
       return fifth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -903,7 +903,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       sixth.subscribe(context);
       return sixth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -933,7 +933,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       seventh.subscribe(context);
       return seventh;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -965,7 +965,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       eighth.subscribe(context);
       return eighth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -999,7 +999,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       ninth.subscribe(context);
       return ninth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1035,7 +1035,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       tenth.subscribe(context);
       return tenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1073,7 +1073,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       eleventh.subscribe(context);
       return eleventh;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1113,7 +1113,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       twelfth.subscribe(context);
       return twelfth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1155,7 +1155,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       thirteenth.subscribe(context);
       return thirteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1199,7 +1199,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       fourteenth.subscribe(context);
       return fourteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1245,7 +1245,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       fifteenth.subscribe(context);
       return fifteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1293,7 +1293,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       sixteenth.subscribe(context);
       return sixteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1343,7 +1343,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       seventeenth.subscribe(context);
       return seventeenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1395,7 +1395,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       eighteenth.subscribe(context);
       return eighteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1449,7 +1449,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       nineteenth.subscribe(context);
       return nineteenth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -1505,7 +1505,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       twentieth.subscribe(context);
       return twentieth;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();

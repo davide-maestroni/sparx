@@ -49,7 +49,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 {{/ordinals}}
 
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -68,7 +68,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       first.subscribe(context);
       return first;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -92,7 +92,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 {{/ordinals}}
 
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();

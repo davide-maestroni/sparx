@@ -50,7 +50,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -73,7 +73,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -98,7 +98,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -125,7 +125,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -154,7 +154,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -185,7 +185,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -218,7 +218,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -253,7 +253,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -290,7 +290,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -329,7 +329,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -370,7 +370,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -413,7 +413,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -458,7 +458,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -505,7 +505,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -554,7 +554,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -605,7 +605,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -658,7 +658,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -713,7 +713,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -770,7 +770,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();
@@ -829,7 +829,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       future.subscribe(context);
       return future;
     } catch (final Exception e) {
-      context.onUncaughtError(e);
+      context.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
       FutureContext.popContext();

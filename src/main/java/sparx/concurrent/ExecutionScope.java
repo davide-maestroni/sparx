@@ -176,24 +176,7 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
-    public @Nullable ExecutionContext executionContext() {
-      return context;
-    }
-
-    @Override
-    public @NotNull Registration onCreate(@NotNull final StreamingFuture<?> future) {
-      final ScopeRegistration registration = new ScopeRegistration(future);
-      scheduler.scheduleAfter(new ContextTask() {
-        @Override
-        public void run() {
-          contextStatus.onCreate(future, registration);
-        }
-      });
-      return registration;
-    }
-
-    @Override
-    public @NotNull <R, V extends R> ContextReceiver<R> onSubscribe(
+    public @NotNull <R, V extends R> ContextReceiver<R> decorateReceiver(
         @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
         @NotNull final Receiver<R> receiver) {
       final ScopeContextReceiver<R> contextReceiver = new ScopeContextReceiver<R>(future, scheduler,
@@ -208,13 +191,30 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
-    public void onTask(@NotNull final Task task) {
-      scheduler.scheduleAfter(task);
+    public @Nullable ExecutionContext executionContext() {
+      return context;
+    }
+
+    @Override
+    public @NotNull Registration registerFuture(@NotNull final StreamingFuture<?> future) {
+      final ScopeRegistration registration = new ScopeRegistration(future);
+      scheduler.scheduleAfter(new ContextTask() {
+        @Override
+        public void run() {
+          contextStatus.onCreate(future, registration);
+        }
+      });
+      return registration;
     }
 
     @Override
     public Object restoreValue(@NotNull final String name) {
       return values.get(name);
+    }
+
+    @Override
+    public void runTask(@NotNull final Task task) {
+      scheduler.scheduleAfter(task);
     }
 
     @Override
@@ -364,8 +364,13 @@ class ExecutionScope implements ExecutionContext {
       }
 
       @Override
-      public boolean isSink() {
+      public boolean isConsumer() {
         return true;
+      }
+
+      @Override
+      public void onReceiverError(@NotNull final Exception error) {
+        innerFail(error);
       }
 
       @Override
@@ -379,11 +384,6 @@ class ExecutionScope implements ExecutionContext {
             futureScheduler.resume();
           }
         });
-      }
-
-      @Override
-      public void onUncaughtError(@NotNull final Exception error) {
-        innerFail(error);
       }
 
       @Override

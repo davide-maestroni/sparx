@@ -41,13 +41,33 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
+  public @NotNull <R, V extends R> ContextReceiver<R> decorateReceiver(
+      @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
+      @NotNull final Receiver<R> receiver) {
+    if (receiver == this) {
+      return (ContextReceiver<R>) this;
+    }
+
+    final StreamContextReceiver<R> hookReceiver = new StreamContextReceiver<R>(
+        context.decorateReceiver(future, scheduler, new StreamReceiver<R>(receiver)), future, receiver);
+    this.scheduler.scheduleAfter(new ContextTask() {
+      @Override
+      public void run() {
+        status.onSubscribe(hookReceiver, scheduler);
+      }
+    });
+    return hookReceiver;
+  }
+
+  @Override
   public @Nullable ExecutionContext executionContext() {
     return context.executionContext();
   }
 
   @Override
-  public @NotNull FutureContext.Registration onCreate(@NotNull final StreamingFuture<?> future) {
-    final StreamRegistration registration = new StreamRegistration(context.onCreate(future),
+  public @NotNull FutureContext.Registration registerFuture(@NotNull final StreamingFuture<?> future) {
+    final StreamRegistration registration = new StreamRegistration(context.registerFuture(future),
         future);
     scheduler.scheduleAfter(new ContextTask() {
       @Override
@@ -59,33 +79,13 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public @NotNull <R, V extends R> ContextReceiver<R> onSubscribe(
-      @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
-      @NotNull final Receiver<R> receiver) {
-    if (receiver == this) {
-      return (ContextReceiver<R>) this;
-    }
-
-    final StreamContextReceiver<R> hookReceiver = new StreamContextReceiver<R>(
-        context.onSubscribe(future, scheduler, new StreamReceiver<R>(receiver)), future, receiver);
-    this.scheduler.scheduleAfter(new ContextTask() {
-      @Override
-      public void run() {
-        status.onSubscribe(hookReceiver, scheduler);
-      }
-    });
-    return hookReceiver;
-  }
-
-  @Override
-  public void onTask(@NotNull final Task task) {
-    context.onTask(task);
-  }
-
-  @Override
   public Object restoreValue(@NotNull final String name) {
     return context.restoreValue(name);
+  }
+
+  @Override
+  public void runTask(@NotNull final Task task) {
+    context.runTask(task);
   }
 
   @Override
@@ -94,16 +94,16 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
   }
 
   @Override
-  public boolean isSink() {
+  public boolean isConsumer() {
     return false;
   }
 
   @Override
-  public void onUnsubscribe() {
+  public void onReceiverError(@NotNull final Exception error) {
   }
 
   @Override
-  public void onUncaughtError(@NotNull final Exception error) {
+  public void onUnsubscribe() {
   }
 
   @Override
@@ -342,8 +342,14 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
     }
 
     @Override
-    public boolean isSink() {
+    public boolean isConsumer() {
       return true;
+    }
+
+    @Override
+    public void onReceiverError(@NotNull final Exception error) {
+      innerFail(error);
+      wrapped.onReceiverError(error);
     }
 
     @Override
@@ -356,12 +362,6 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
           wrapped.onUnsubscribe();
         }
       });
-    }
-
-    @Override
-    public void onUncaughtError(@NotNull final Exception error) {
-      innerFail(error);
-      wrapped.onUncaughtError(error);
     }
 
     @Override

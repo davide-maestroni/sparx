@@ -96,7 +96,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
 
   VarFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
     this.historyStrategy = Require.notNull(historyStrategy, "historyStrategy");
-    this.registration = FutureContext.currentContext().onCreate(this);
+    this.registration = FutureContext.currentContext().registerFuture(this);
   }
 
   @Override
@@ -173,7 +173,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
   @Override
   public @NotNull Subscription subscribe(@NotNull final Receiver<? super V> receiver) {
     final ContextReceiver<? super V> contextReceiver = FutureContext.currentContext()
-        .onSubscribe(this, scheduler, Require.notNull(receiver, "receiver"));
+        .decorateReceiver(this, scheduler, Require.notNull(receiver, "receiver"));
     scheduler.scheduleBefore(new VarTask() {
       @Override
       @SuppressWarnings("unchecked")
@@ -353,7 +353,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
 
   protected boolean hasSinks() {
     for (final ContextReceiver<V> contextReceiver : receivers.values()) {
-      if (contextReceiver.isSink()) {
+      if (contextReceiver.isConsumer()) {
         return true;
       }
     }
@@ -756,7 +756,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
 
     void subscribe(@NotNull final Receiver<V> receiver,
         @NotNull final ContextReceiver<V> contextReceiver) {
-      if (contextReceiver.isSink()) {
+      if (contextReceiver.isConsumer()) {
         try {
           final List<V> values = historyStrategy.onSubscribe();
           if (!values.isEmpty()) {
@@ -767,7 +767,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
                 contextReceiver.setBulk(ImmutableList.ofElementsIn(values));
               }
             } catch (final RuntimeException e) {
-              contextReceiver.onUncaughtError(e);
+              contextReceiver.onReceiverError(e);
             }
           }
         } catch (final RuntimeException e) {
@@ -800,7 +800,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
       try {
         contextReceiver.fail(failureException);
       } catch (final RuntimeException e) {
-        contextReceiver.onUncaughtError(e);
+        contextReceiver.onReceiverError(e);
       }
       contextReceiver.onUnsubscribe();
     }
@@ -829,12 +829,12 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
         @NotNull final ContextReceiver<V> contextReceiver) {
       super.subscribe(receiver, contextReceiver);
       try {
-        if (contextReceiver.isSink() && lastValue != UNSET) {
+        if (contextReceiver.isConsumer() && lastValue != UNSET) {
           contextReceiver.set((V) lastValue);
         }
         contextReceiver.close();
       } catch (final RuntimeException e) {
-        contextReceiver.onUncaughtError(e);
+        contextReceiver.onReceiverError(e);
       }
       contextReceiver.onUnsubscribe();
     }
@@ -868,7 +868,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
         try {
           contextReceiver.fail(error);
         } catch (final RuntimeException e) {
-          contextReceiver.onUncaughtError(e);
+          contextReceiver.onReceiverError(e);
         }
         contextReceiver.onUnsubscribe();
       }
@@ -910,7 +910,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
       boolean firstSink = true;
       for (final Entry<Receiver<?>, ContextReceiver<V>> entry : receivers.entrySet()) {
         final ContextReceiver<V> contextReceiver = entry.getValue();
-        if (contextReceiver.isSink()) {
+        if (contextReceiver.isConsumer()) {
           try {
             if (values.size() == 1) {
               contextReceiver.set(valuesList.get(0));
@@ -918,7 +918,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
               contextReceiver.setBulk(values);
             }
           } catch (final RuntimeException e) {
-            contextReceiver.onUncaughtError(e);
+            contextReceiver.onReceiverError(e);
           }
           if (firstSink) {
             firstSink = false;
@@ -945,11 +945,11 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
       boolean firstSink = true;
       for (final Entry<Receiver<?>, ContextReceiver<V>> entry : receivers.entrySet()) {
         final ContextReceiver<V> contextReceiver = entry.getValue();
-        if (contextReceiver.isSink()) {
+        if (contextReceiver.isConsumer()) {
           try {
             contextReceiver.set(value);
           } catch (final RuntimeException e) {
-            contextReceiver.onUncaughtError(e);
+            contextReceiver.onReceiverError(e);
           }
           if (firstSink) {
             firstSink = false;
@@ -978,7 +978,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
         try {
           contextReceiver.close();
         } catch (final RuntimeException e) {
-          contextReceiver.onUncaughtError(e);
+          contextReceiver.onReceiverError(e);
         }
         contextReceiver.onUnsubscribe();
       }
@@ -1012,7 +1012,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
       if (lastValue != UNSET) {
         scheduler.pause();
         try {
-          context.onTask(new VarTask() {
+          context.runTask(new VarTask() {
             @Override
             @SuppressWarnings({"unchecked", "NonAtomicOperationOnVolatileField"})
             public void run() {
@@ -1055,11 +1055,11 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
       final HashMap<Receiver<?>, ContextReceiver<V>> receivers = VarFuture.this.receivers;
       if (!receivers.containsKey(receiver)) {
         super.subscribe(receiver, contextReceiver);
-        if (contextReceiver.isSink() && lastValue != UNSET) {
+        if (contextReceiver.isConsumer() && lastValue != UNSET) {
           try {
             contextReceiver.set((V) lastValue);
           } catch (final RuntimeException e) {
-            contextReceiver.onUncaughtError(e);
+            contextReceiver.onReceiverError(e);
           }
         }
         receivers.put(receiver, contextReceiver);

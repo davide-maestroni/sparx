@@ -33,20 +33,20 @@ class StandardContextReceiver<V> implements ContextReceiver<V> {
   }
 
   @Override
-  public boolean isSink() {
+  public boolean isConsumer() {
     return true;
   }
 
   @Override
-  public void onUnsubscribe() {
-  }
-
-  @Override
-  public void onUncaughtError(@NotNull final Exception error) {
+  public void onReceiverError(@NotNull final Exception error) {
     Log.err(FutureContext.class,
         "Uncaught exception, the throwing receiver will be automatically unsubscribed: %s",
         Log.printable(error));
     future.unsubscribe(receiver);
+  }
+
+  @Override
+  public void onUnsubscribe() {
   }
 
   @Override
