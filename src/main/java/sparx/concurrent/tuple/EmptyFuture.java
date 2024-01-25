@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.concurrent.DummySubscription;
 import sparx.concurrent.EmptyLiveIterator;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.StreamingFuture;
@@ -35,6 +34,11 @@ import sparx.util.Nothing;
 public class EmptyFuture extends StreamContextTupleFuture<Nothing, EmptyFuture> implements
     Empty<StreamingFuture<? extends Nothing>> {
 
+  private static final Subscription DUMMY_SUBSCRIPTION = new Subscription() {
+    @Override
+    public void cancel() {
+    }
+  };
   private static final EmptyFuture INSTANCE = new EmptyFuture();
 
   public static @NotNull EmptyFuture instance() {
@@ -51,7 +55,7 @@ public class EmptyFuture extends StreamContextTupleFuture<Nothing, EmptyFuture> 
     } catch (final RuntimeException e) {
       Log.err(EmptyFuture.class, "Uncaught exception: %s", Log.printable(e));
     }
-    return DummySubscription.instance();
+    return DUMMY_SUBSCRIPTION;
   }
 
   @Override
@@ -65,7 +69,7 @@ public class EmptyFuture extends StreamContextTupleFuture<Nothing, EmptyFuture> 
         Log.err(EmptyFuture.class, "Uncaught exception: %s", Log.printable(e));
       }
     }
-    return DummySubscription.instance();
+    return DUMMY_SUBSCRIPTION;
   }
 
   @Override

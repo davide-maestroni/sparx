@@ -18,7 +18,7 @@ package sparx.concurrent;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.Signal.Subscription;
 
-public class DummySubscription implements Subscription {
+class DummySubscription implements Subscription {
 
   private final static DummySubscription INSTANCE = new DummySubscription();
 
