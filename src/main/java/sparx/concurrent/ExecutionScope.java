@@ -122,15 +122,6 @@ class ExecutionScope implements ExecutionContext {
     }
   }
 
-  private interface ContextStatus {
-
-    void onCreate(@NotNull StreamingFuture<?> future, @NotNull Registration registration);
-
-    void onFail(@NotNull Exception error);
-
-    void onSubscribe(@NotNull ContextReceiver<?> contextReceiver);
-  }
-
   private abstract class ScopeFuture<U> extends VarFuture<U> implements Context, Task {
 
     private static final int IDLE = 0;
@@ -138,7 +129,8 @@ class ExecutionScope implements ExecutionContext {
     private static final int DONE = 2;
     private static final int FAILED = 3;
 
-    private final HashSet<Receiver<?>> receivers = new HashSet<Receiver<?>>();
+    private final HashSet<StreamingFuture<?>> futures = new HashSet<StreamingFuture<?>>();
+    private final HashSet<ScopeContextReceiver<?>> receivers = new HashSet<ScopeContextReceiver<?>>();
     private final AtomicInteger status = new AtomicInteger(IDLE);
     private final String taskID = toString();
 
@@ -155,7 +147,7 @@ class ExecutionScope implements ExecutionContext {
         scheduler.scheduleAfter(new ContextTask() {
           @Override
           public void run() {
-            if (receivers.isEmpty()) {
+            if (receivers.isEmpty() && futures.isEmpty()) {
               ScopeFuture.super.close();
             }
           }
@@ -254,7 +246,7 @@ class ExecutionScope implements ExecutionContext {
       scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
-          if (receivers.isEmpty()) {
+          if (receivers.isEmpty() && futures.isEmpty()) {
             ScopeFuture.super.close();
           }
         }
@@ -281,15 +273,33 @@ class ExecutionScope implements ExecutionContext {
       }
     }
 
-    private void removeReceiver(@NotNull final Receiver<?> receiver) {
-      final HashSet<Receiver<?>> receivers = ScopeFuture.this.receivers;
-      receivers.remove(receiver);
-      if (receivers.isEmpty()) {
+    private void removeFuture(@NotNull final StreamingFuture<?> future) {
+      final HashSet<StreamingFuture<?>> futures = ScopeFuture.this.futures;
+      futures.remove(future);
+      if (receivers.isEmpty() && futures.isEmpty()) {
         ScopeFuture.super.close();
       }
     }
 
-    private class CancelledStatus implements ContextStatus {
+    private void removeReceiver(@NotNull final ScopeContextReceiver<?> receiver) {
+      final HashSet<ScopeContextReceiver<?>> receivers = ScopeFuture.this.receivers;
+      receivers.remove(receiver);
+      if (receivers.isEmpty() && futures.isEmpty()) {
+        ScopeFuture.super.close();
+      }
+    }
+
+    private abstract class ContextStatus {
+
+      abstract void onCreate(@NotNull StreamingFuture<?> future,
+          @NotNull Registration registration);
+
+      abstract void onFail(@NotNull Exception error);
+
+      abstract void onSubscribe(@NotNull ScopeContextReceiver<?> contextReceiver);
+    }
+
+    private class CancelledStatus extends ContextStatus {
 
       private final Exception failureException;
 
@@ -312,37 +322,41 @@ class ExecutionScope implements ExecutionContext {
       }
 
       @Override
-      public void onSubscribe(@NotNull final ContextReceiver<?> contextReceiver) {
+      public void onSubscribe(@NotNull final ScopeContextReceiver<?> contextReceiver) {
         contextReceiver.fail(failureException);
         contextReceiver.onUnsubscribe();
       }
     }
 
-    private class RunningStatus implements ContextStatus {
+    private class RunningStatus extends ContextStatus {
 
       @Override
       public void onCreate(@NotNull final StreamingFuture<?> future,
           @NotNull final Registration registration) {
-        receivers.add(future);
+        futures.add(future);
       }
 
       @Override
-      @SuppressWarnings("unchecked")
       public void onFail(@NotNull final Exception error) {
         contextStatus = new CancelledStatus(error);
-        final HashSet<Receiver<?>> receivers = ScopeFuture.this.receivers;
-        for (final Receiver<?> receiver : receivers) {
-          if (ScopeContextReceiver.class.equals(receiver.getClass())) {
-            ((ScopeContextReceiver<Object>) receiver).failAndUnsubscribe(error);
-          } else {
-            receiver.fail(error);
-          }
+        final HashSet<ScopeContextReceiver<?>> receivers = ScopeFuture.this.receivers;
+        for (final ScopeContextReceiver<?> receiver : receivers) {
+          receiver.failAndUnsubscribe(error);
         }
         receivers.clear();
+        final HashSet<StreamingFuture<?>> futures = ScopeFuture.this.futures;
+        for (final StreamingFuture<?> future : futures) {
+          if (!future.isReadOnly()) {
+            future.fail(error);
+          } else {
+            future.cancel(false);
+          }
+        }
+        futures.clear();
       }
 
       @Override
-      public void onSubscribe(@NotNull final ContextReceiver<?> contextReceiver) {
+      public void onSubscribe(@NotNull final ScopeContextReceiver<?> contextReceiver) {
         receivers.add(contextReceiver);
       }
     }
@@ -531,7 +545,7 @@ class ExecutionScope implements ExecutionContext {
         scheduler.scheduleAfter(new ContextTask() {
           @Override
           public void run() {
-            removeReceiver(future);
+            removeFuture(future);
           }
         });
       }

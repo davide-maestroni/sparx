@@ -17,6 +17,7 @@ package sparx.concurrent;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map.Entry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,7 +31,8 @@ import sparx.util.Require;
 class StreamContext<U> implements Context, ContextReceiver<U> {
 
   private final Context context;
-  private final HashMap<Receiver<?>, Scheduler> receivers = new HashMap<Receiver<?>, Scheduler>();
+  private final HashSet<StreamingFuture<?>> futures = new HashSet<StreamingFuture<?>>();
+  private final HashMap<StreamContextReceiver<?>, Scheduler> receivers = new HashMap<StreamContextReceiver<?>, Scheduler>();
   private final Scheduler scheduler = Scheduler.trampoline();
   private final String taskID = toString();
 
@@ -49,15 +51,16 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
       return (ContextReceiver<R>) this;
     }
 
-    final StreamContextReceiver<R> hookReceiver = new StreamContextReceiver<R>(
-        context.decorateReceiver(future, scheduler, new StreamReceiver<R>(receiver)), future, receiver);
+    final StreamContextReceiver<R> contextReceiver = new StreamContextReceiver<R>(
+        context.decorateReceiver(future, scheduler, new StreamReceiver<R>(receiver)), future,
+        receiver);
     this.scheduler.scheduleAfter(new ContextTask() {
       @Override
       public void run() {
-        status.onSubscribe(hookReceiver, scheduler);
+        status.onSubscribe(contextReceiver, scheduler);
       }
     });
-    return hookReceiver;
+    return contextReceiver;
   }
 
   @Override
@@ -66,7 +69,8 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
   }
 
   @Override
-  public @NotNull FutureContext.Registration registerFuture(@NotNull final StreamingFuture<?> future) {
+  public @NotNull FutureContext.Registration registerFuture(
+      @NotNull final StreamingFuture<?> future) {
     final StreamRegistration registration = new StreamRegistration(context.registerFuture(future),
         future);
     scheduler.scheduleAfter(new ContextTask() {
@@ -148,19 +152,19 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
     }
   }
 
-  private interface ContextStatus {
+  private abstract class ContextStatus {
 
-    void onClose();
+    abstract void onClose();
 
-    void onCreate(@NotNull StreamingFuture<?> future,
-        @NotNull FutureContext.Registration registration);
+    abstract void onCreate(@NotNull StreamingFuture<?> future, @NotNull Registration registration);
 
-    void onFail(@NotNull Exception error);
+    abstract void onFail(@NotNull Exception error);
 
-    void onSubscribe(@NotNull ContextReceiver<?> contextReceiver, @NotNull Scheduler scheduler);
+    abstract void onSubscribe(@NotNull StreamContextReceiver<?> contextReceiver,
+        @NotNull Scheduler scheduler);
   }
 
-  private static class CancelledStatus implements ContextStatus {
+  private class CancelledStatus extends ContextStatus {
 
     private final Exception failureException;
 
@@ -174,7 +178,7 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
 
     @Override
     public void onCreate(@NotNull final StreamingFuture<?> future,
-        @NotNull final FutureContext.Registration registration) {
+        @NotNull final Registration registration) {
       future.fail(failureException);
       registration.cancel();
     }
@@ -186,64 +190,70 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
     }
 
     @Override
-    public void onSubscribe(@NotNull final ContextReceiver<?> contextReceiver,
+    public void onSubscribe(@NotNull final StreamContextReceiver<?> contextReceiver,
         @NotNull final Scheduler scheduler) {
       contextReceiver.fail(failureException);
       contextReceiver.onUnsubscribe();
     }
   }
 
-  private class RunningStatus implements ContextStatus {
+  private class RunningStatus extends ContextStatus {
 
     @Override
     public void onClose() {
-      final HashMap<Receiver<?>, Scheduler> receivers = StreamContext.this.receivers;
-      for (final Entry<Receiver<?>, Scheduler> entry : receivers.entrySet()) {
-        final Receiver<?> receiver = entry.getKey();
-        if (StreamContextReceiver.class.equals(receiver.getClass())) {
-          entry.getValue().scheduleAfter(new ContextTask() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public void run() {
-              ((StreamContextReceiver<Object>) receiver).closeAndUnsubscribe();
-            }
-          });
-        } else {
-          receiver.close();
-        }
+      final HashMap<StreamContextReceiver<?>, Scheduler> receivers = StreamContext.this.receivers;
+      for (final Entry<StreamContextReceiver<?>, Scheduler> entry : receivers.entrySet()) {
+        final StreamContextReceiver<?> receiver = entry.getKey();
+        entry.getValue().scheduleAfter(new ContextTask() {
+          @Override
+          public void run() {
+            receiver.closeAndUnsubscribe();
+          }
+        });
       }
       receivers.clear();
+      final HashSet<StreamingFuture<?>> futures = StreamContext.this.futures;
+      for (final StreamingFuture<?> future : futures) {
+        if (!future.isReadOnly()) {
+          future.close();
+        }
+      }
+      futures.clear();
     }
 
     @Override
     public void onCreate(@NotNull final StreamingFuture<?> future,
-        @NotNull final FutureContext.Registration registration) {
-      receivers.put(future, null);
+        @NotNull final Registration registration) {
+      futures.add(future);
     }
 
     @Override
     public void onFail(@NotNull final Exception error) {
       status = new CancelledStatus(error);
-      final HashMap<Receiver<?>, Scheduler> receivers = StreamContext.this.receivers;
-      for (final Entry<Receiver<?>, Scheduler> entry : receivers.entrySet()) {
-        final Receiver<?> receiver = entry.getKey();
-        if (StreamContextReceiver.class.equals(receiver.getClass())) {
-          entry.getValue().scheduleAfter(new ContextTask() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public void run() {
-              ((StreamContextReceiver<Object>) receiver).failAndUnsubscribe(error);
-            }
-          });
-        } else {
-          receiver.fail(error);
-        }
+      final HashMap<StreamContextReceiver<?>, Scheduler> receivers = StreamContext.this.receivers;
+      for (final Entry<StreamContextReceiver<?>, Scheduler> entry : receivers.entrySet()) {
+        final StreamContextReceiver<?> receiver = entry.getKey();
+        entry.getValue().scheduleAfter(new ContextTask() {
+          @Override
+          public void run() {
+            receiver.failAndUnsubscribe(error);
+          }
+        });
       }
       receivers.clear();
+      final HashSet<StreamingFuture<?>> futures = StreamContext.this.futures;
+      for (final StreamingFuture<?> future : futures) {
+        if (!future.isReadOnly()) {
+          future.fail(error);
+        } else {
+          future.cancel(false);
+        }
+      }
+      futures.clear();
     }
 
     @Override
-    public void onSubscribe(@NotNull final ContextReceiver<?> contextReceiver,
+    public void onSubscribe(@NotNull final StreamContextReceiver<?> contextReceiver,
         @NotNull final Scheduler scheduler) {
       receivers.put(contextReceiver, scheduler);
     }
@@ -265,7 +275,7 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
       scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
-          receivers.remove(future);
+          futures.remove(future);
           wrapped.cancel();
         }
       });
@@ -358,7 +368,7 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
       scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
-          receivers.remove(receiver);
+          receivers.remove(StreamContextReceiver.this);
           wrapped.onUnsubscribe();
         }
       });
