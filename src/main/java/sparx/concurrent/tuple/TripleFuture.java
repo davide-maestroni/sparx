@@ -18,7 +18,6 @@ package sparx.concurrent.tuple;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.concurrent.VarFuture;
 import sparx.tuple.Triple;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
@@ -28,7 +27,7 @@ import sparx.util.Require;
 ///////////////////////////////////////////////
 
 public class TripleFuture<V, V1 extends V, V2 extends V, V3 extends V> extends
-    StreamContextTupleFuture<V, TripleFuture<V, V1, V2, V3>> implements
+    StreamScopeTupleFuture<V, TripleFuture<V, V1, V2, V3>> implements
     Triple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>> {
 
   public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V> TripleFuture<V, V1, V2, V3> of(

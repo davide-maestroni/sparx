@@ -31,9 +31,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.concurrent.FutureContext.Context;
-import sparx.concurrent.FutureContext.ContextReceiver;
-import sparx.concurrent.FutureContext.Registration;
+import sparx.concurrent.FutureScope.Registration;
+import sparx.concurrent.FutureScope.Scope;
+import sparx.concurrent.FutureScope.ScopeReceiver;
 import sparx.concurrent.Scheduler.Task;
 import sparx.concurrent.history.FutureHistory;
 import sparx.concurrent.history.HistoryStrategy;
@@ -49,7 +49,7 @@ import sparx.util.LiveIterator;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 
-public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> implements
+public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {
 
   private static final JoinAlert joinAlert = Alerts.joinAlert();
@@ -62,7 +62,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
 
   private final HistoryStrategy<V> historyStrategy;
   private final WeakHashMap<FutureIterator<V>, Void> iterators = new WeakHashMap<FutureIterator<V>, Void>();
-  private final HashMap<Receiver<?>, ContextReceiver<V>> receivers = new HashMap<Receiver<?>, ContextReceiver<V>>();
+  private final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = new HashMap<Receiver<?>, ScopeReceiver<V>>();
   private final Registration registration;
   private final Scheduler scheduler = Scheduler.trampoline();
   private final WeakHashMap<Semaphore, Void> semaphores = new WeakHashMap<Semaphore, Void>();
@@ -96,7 +96,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
 
   VarFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
     this.historyStrategy = Require.notNull(historyStrategy, "historyStrategy");
-    this.registration = FutureContext.currentContext().registerFuture(this);
+    this.registration = FutureScope.currentScope().registerFuture(this);
   }
 
   @Override
@@ -112,11 +112,11 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
   @Override
   public void compute(@NotNull final Function<? super V, ? extends V> function) {
     Require.notNull(function, "function");
-    final Context context = FutureContext.currentContext();
+    final Scope scope = FutureScope.currentScope();
     scheduler.scheduleAfter(new VarTask() {
       @Override
       public void run() {
-        innerStatus.compute(context, function);
+        innerStatus.compute(scope, function);
       }
     });
   }
@@ -172,13 +172,13 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
 
   @Override
   public @NotNull Subscription subscribe(@NotNull final Receiver<? super V> receiver) {
-    final ContextReceiver<? super V> contextReceiver = FutureContext.currentContext()
+    final ScopeReceiver<? super V> scopeReceiver = FutureScope.currentScope()
         .decorateReceiver(this, scheduler, Require.notNull(receiver, "receiver"));
     scheduler.scheduleBefore(new VarTask() {
       @Override
       @SuppressWarnings("unchecked")
       public void run() {
-        innerStatus.subscribe((Receiver<V>) receiver, (ContextReceiver<V>) contextReceiver);
+        innerStatus.subscribe((Receiver<V>) receiver, (ScopeReceiver<V>) scopeReceiver);
       }
     });
     return new VarSubscription(receiver);
@@ -197,9 +197,9 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
     scheduler.scheduleBefore(new VarTask() {
       @Override
       public void run() {
-        final ContextReceiver<V> contextReceiver = receivers.remove(receiver);
-        if (contextReceiver != null) {
-          contextReceiver.onUnsubscribe();
+        final ScopeReceiver<V> scopeReceiver = receivers.remove(receiver);
+        if (scopeReceiver != null) {
+          scopeReceiver.onUnsubscribe();
         }
       }
     });
@@ -352,8 +352,8 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
   }
 
   protected boolean hasSinks() {
-    for (final ContextReceiver<V> contextReceiver : receivers.values()) {
-      if (contextReceiver.isConsumer()) {
+    for (final ScopeReceiver<V> scopeReceiver : receivers.values()) {
+      if (scopeReceiver.isConsumer()) {
         return true;
       }
     }
@@ -735,7 +735,7 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
       Log.dbg(VarFuture.class, "Ignoring 'clear' operation: future is already closed");
     }
 
-    void compute(@NotNull final Context context,
+    void compute(@NotNull final Scope scope,
         @NotNull final Function<? super V, ? extends V> function) {
       Log.dbg(VarFuture.class, "Ignoring 'compute' operation: future is already closed");
     }
@@ -755,19 +755,19 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
     }
 
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final ContextReceiver<V> contextReceiver) {
-      if (contextReceiver.isConsumer()) {
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      if (scopeReceiver.isConsumer()) {
         try {
           final List<V> values = historyStrategy.onSubscribe();
           if (!values.isEmpty()) {
             try {
               if (values.size() == 1) {
-                contextReceiver.set(values.get(0));
+                scopeReceiver.set(values.get(0));
               } else {
-                contextReceiver.setBulk(ImmutableList.ofElementsIn(values));
+                scopeReceiver.setBulk(ImmutableList.ofElementsIn(values));
               }
             } catch (final RuntimeException e) {
-              contextReceiver.onReceiverError(e);
+              scopeReceiver.onReceiverError(e);
             }
           }
         } catch (final RuntimeException e) {
@@ -795,14 +795,14 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
 
     @Override
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final ContextReceiver<V> contextReceiver) {
-      super.subscribe(receiver, contextReceiver);
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      super.subscribe(receiver, scopeReceiver);
       try {
-        contextReceiver.fail(failureException);
+        scopeReceiver.fail(failureException);
       } catch (final RuntimeException e) {
-        contextReceiver.onReceiverError(e);
+        scopeReceiver.onReceiverError(e);
       }
-      contextReceiver.onUnsubscribe();
+      scopeReceiver.onUnsubscribe();
     }
   }
 
@@ -826,17 +826,17 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
     @Override
     @SuppressWarnings("unchecked")
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final ContextReceiver<V> contextReceiver) {
-      super.subscribe(receiver, contextReceiver);
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      super.subscribe(receiver, scopeReceiver);
       try {
-        if (contextReceiver.isConsumer() && lastValue != UNSET) {
-          contextReceiver.set((V) lastValue);
+        if (scopeReceiver.isConsumer() && lastValue != UNSET) {
+          scopeReceiver.set((V) lastValue);
         }
-        contextReceiver.close();
+        scopeReceiver.close();
       } catch (final RuntimeException e) {
-        contextReceiver.onReceiverError(e);
+        scopeReceiver.onReceiverError(e);
       }
-      contextReceiver.onUnsubscribe();
+      scopeReceiver.onUnsubscribe();
     }
   }
 
@@ -861,16 +861,16 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
       } else {
         result = new FailureResult<V>(error);
       }
-      final HashMap<Receiver<?>, ContextReceiver<V>> receivers = VarFuture.this.receivers;
+      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
       final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
       final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
-      for (final ContextReceiver<V> contextReceiver : receivers.values()) {
+      for (final ScopeReceiver<V> scopeReceiver : receivers.values()) {
         try {
-          contextReceiver.fail(error);
+          scopeReceiver.fail(error);
         } catch (final RuntimeException e) {
-          contextReceiver.onReceiverError(e);
+          scopeReceiver.onReceiverError(e);
         }
-        contextReceiver.onUnsubscribe();
+        scopeReceiver.onUnsubscribe();
       }
       receivers.clear();
       for (final FutureIterator<V> futureIterator : iterators.keySet()) {
@@ -908,17 +908,17 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
         logInvocationException("history strategy", "onSetBulk", e);
       }
       boolean firstSink = true;
-      for (final Entry<Receiver<?>, ContextReceiver<V>> entry : receivers.entrySet()) {
-        final ContextReceiver<V> contextReceiver = entry.getValue();
-        if (contextReceiver.isConsumer()) {
+      for (final Entry<Receiver<?>, ScopeReceiver<V>> entry : receivers.entrySet()) {
+        final ScopeReceiver<V> scopeReceiver = entry.getValue();
+        if (scopeReceiver.isConsumer()) {
           try {
             if (values.size() == 1) {
-              contextReceiver.set(valuesList.get(0));
+              scopeReceiver.set(valuesList.get(0));
             } else {
-              contextReceiver.setBulk(values);
+              scopeReceiver.setBulk(values);
             }
           } catch (final RuntimeException e) {
-            contextReceiver.onReceiverError(e);
+            scopeReceiver.onReceiverError(e);
           }
           if (firstSink) {
             firstSink = false;
@@ -943,13 +943,13 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
       }
       lastValue = value;
       boolean firstSink = true;
-      for (final Entry<Receiver<?>, ContextReceiver<V>> entry : receivers.entrySet()) {
-        final ContextReceiver<V> contextReceiver = entry.getValue();
-        if (contextReceiver.isConsumer()) {
+      for (final Entry<Receiver<?>, ScopeReceiver<V>> entry : receivers.entrySet()) {
+        final ScopeReceiver<V> scopeReceiver = entry.getValue();
+        if (scopeReceiver.isConsumer()) {
           try {
-            contextReceiver.set(value);
+            scopeReceiver.set(value);
           } catch (final RuntimeException e) {
-            contextReceiver.onReceiverError(e);
+            scopeReceiver.onReceiverError(e);
           }
           if (firstSink) {
             firstSink = false;
@@ -973,14 +973,14 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
       } catch (final RuntimeException e) {
         logInvocationException("history strategy", "onClose", e);
       }
-      final HashMap<Receiver<?>, ContextReceiver<V>> receivers = VarFuture.this.receivers;
-      for (final ContextReceiver<V> contextReceiver : receivers.values()) {
+      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
+      for (final ScopeReceiver<V> scopeReceiver : receivers.values()) {
         try {
-          contextReceiver.close();
+          scopeReceiver.close();
         } catch (final RuntimeException e) {
-          contextReceiver.onReceiverError(e);
+          scopeReceiver.onReceiverError(e);
         }
-        contextReceiver.onUnsubscribe();
+        scopeReceiver.onUnsubscribe();
       }
       receivers.clear();
       final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
@@ -1007,12 +1007,12 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
     }
 
     @Override
-    public void compute(@NotNull final Context context,
+    public void compute(@NotNull final Scope scope,
         @NotNull final Function<? super V, ? extends V> function) {
       if (lastValue != UNSET) {
         scheduler.pause();
         try {
-          context.runTask(new VarTask() {
+          scope.runTask(new VarTask() {
             @Override
             @SuppressWarnings({"unchecked", "NonAtomicOperationOnVolatileField"})
             public void run() {
@@ -1051,18 +1051,18 @@ public class VarFuture<V> extends StreamContextFuture<V, StreamingFuture<V>> imp
     @Override
     @SuppressWarnings("unchecked")
     void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final ContextReceiver<V> contextReceiver) {
-      final HashMap<Receiver<?>, ContextReceiver<V>> receivers = VarFuture.this.receivers;
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
       if (!receivers.containsKey(receiver)) {
-        super.subscribe(receiver, contextReceiver);
-        if (contextReceiver.isConsumer() && lastValue != UNSET) {
+        super.subscribe(receiver, scopeReceiver);
+        if (scopeReceiver.isConsumer() && lastValue != UNSET) {
           try {
-            contextReceiver.set((V) lastValue);
+            scopeReceiver.set((V) lastValue);
           } catch (final RuntimeException e) {
-            contextReceiver.onReceiverError(e);
+            scopeReceiver.onReceiverError(e);
           }
         }
-        receivers.put(receiver, contextReceiver);
+        receivers.put(receiver, scopeReceiver);
         if (hasSinks()) {
           pullFromReceiver();
         }

@@ -22,7 +22,7 @@ import sparx.concurrent.StreamingFuture;
 import sparx.tuple.Single;
 import sparx.util.Require;
 
-public class SingleFuture<V> extends StreamContextTupleFuture<V, SingleFuture<V>> implements
+public class SingleFuture<V> extends StreamScopeTupleFuture<V, SingleFuture<V>> implements
     Single<StreamingFuture<? extends V>> {
 
   public static @NotNull <V> SingleFuture<V> of(@NotNull final StreamingFuture<V> first) {

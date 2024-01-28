@@ -27,9 +27,9 @@ import sparx.util.UncheckedException;
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {
+abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {
 
-  GeneratorContextFuture(@NotNull final StreamingFuture<V> future) {
+  GeneratorScopeFuture(@NotNull final StreamingFuture<V> future) {
     super(future);
   }
 
@@ -38,30 +38,30 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     return subscribe(null, null, null, null);
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratingFuture<V1> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratingFuture<V1> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction) {
-    final StreamContext<V1> context = new StreamContext<V1>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V1> scope = new StreamScope<V1>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F1 output = input.thenSequentially(firstFunction);
       final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
       final GeneratingFuture<V1> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>> GeneratingFuture<V2> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>> GeneratingFuture<V2> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction) {
-    final StreamContext<V2> context = new StreamContext<V2>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V2> scope = new StreamScope<V2>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F2 output = input.thenSequentially(
@@ -70,22 +70,22 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V2> receiver = new GeneratorStreamReceiver<V2>(input, output);
       final GeneratingFuture<V2> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>> GeneratingFuture<V3> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>> GeneratingFuture<V3> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction) {
-    final StreamContext<V3> context = new StreamContext<V3>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V3> scope = new StreamScope<V3>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F3 output = input.thenSequentially(
@@ -95,23 +95,23 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V3> receiver = new GeneratorStreamReceiver<V3>(input, output);
       final GeneratingFuture<V3> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>> GeneratingFuture<V4> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>> GeneratingFuture<V4> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
       @NotNull final Function<? super F3, F4> fourthFunction) {
-    final StreamContext<V4> context = new StreamContext<V4>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V4> scope = new StreamScope<V4>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F4 output = input.thenSequentially(
@@ -122,24 +122,24 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V4> receiver = new GeneratorStreamReceiver<V4>(input, output);
       final GeneratingFuture<V4> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>> GeneratingFuture<V5> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>> GeneratingFuture<V5> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
       @NotNull final Function<? super F3, F4> fourthFunction,
       @NotNull final Function<? super F4, F5> fifthFunction) {
-    final StreamContext<V5> context = new StreamContext<V5>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V5> scope = new StreamScope<V5>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F5 output = input.thenSequentially(
@@ -151,25 +151,25 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V5> receiver = new GeneratorStreamReceiver<V5>(input, output);
       final GeneratingFuture<V5> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>> GeneratingFuture<V6> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>> GeneratingFuture<V6> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
       @NotNull final Function<? super F3, F4> fourthFunction,
       @NotNull final Function<? super F4, F5> fifthFunction,
       @NotNull final Function<? super F5, F6> sixthFunction) {
-    final StreamContext<V6> context = new StreamContext<V6>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V6> scope = new StreamScope<V6>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F6 output = input.thenSequentially(
@@ -182,17 +182,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V6> receiver = new GeneratorStreamReceiver<V6>(input, output);
       final GeneratingFuture<V6> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>> GeneratingFuture<V7> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>> GeneratingFuture<V7> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -200,8 +200,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F4, F5> fifthFunction,
       @NotNull final Function<? super F5, F6> sixthFunction,
       @NotNull final Function<? super F6, F7> seventhFunction) {
-    final StreamContext<V7> context = new StreamContext<V7>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V7> scope = new StreamScope<V7>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F7 output = input.thenSequentially(
@@ -215,17 +215,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V7> receiver = new GeneratorStreamReceiver<V7>(input, output);
       final GeneratingFuture<V7> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>> GeneratingFuture<V8> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>> GeneratingFuture<V8> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -234,8 +234,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F5, F6> sixthFunction,
       @NotNull final Function<? super F6, F7> seventhFunction,
       @NotNull final Function<? super F7, F8> eighthFunction) {
-    final StreamContext<V8> context = new StreamContext<V8>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V8> scope = new StreamScope<V8>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F8 output = input.thenSequentially(
@@ -250,17 +250,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V8> receiver = new GeneratorStreamReceiver<V8>(input, output);
       final GeneratingFuture<V8> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>> GeneratingFuture<V9> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>> GeneratingFuture<V9> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -270,8 +270,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F6, F7> seventhFunction,
       @NotNull final Function<? super F7, F8> eighthFunction,
       @NotNull final Function<? super F8, F9> ninthFunction) {
-    final StreamContext<V9> context = new StreamContext<V9>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V9> scope = new StreamScope<V9>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F9 output = input.thenSequentially(
@@ -287,17 +287,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V9> receiver = new GeneratorStreamReceiver<V9>(input, output);
       final GeneratingFuture<V9> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>> GeneratingFuture<V10> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>> GeneratingFuture<V10> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -308,8 +308,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F7, F8> eighthFunction,
       @NotNull final Function<? super F8, F9> ninthFunction,
       @NotNull final Function<? super F9, F10> tenthFunction) {
-    final StreamContext<V10> context = new StreamContext<V10>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V10> scope = new StreamScope<V10>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F10 output = input.thenSequentially(
@@ -326,17 +326,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V10> receiver = new GeneratorStreamReceiver<V10>(input, output);
       final GeneratingFuture<V10> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>> GeneratingFuture<V11> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>> GeneratingFuture<V11> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -348,8 +348,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F8, F9> ninthFunction,
       @NotNull final Function<? super F9, F10> tenthFunction,
       @NotNull final Function<? super F10, F11> eleventhFunction) {
-    final StreamContext<V11> context = new StreamContext<V11>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V11> scope = new StreamScope<V11>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F11 output = input.thenSequentially(
@@ -367,17 +367,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V11> receiver = new GeneratorStreamReceiver<V11>(input, output);
       final GeneratingFuture<V11> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>> GeneratingFuture<V12> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>> GeneratingFuture<V12> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -390,8 +390,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F9, F10> tenthFunction,
       @NotNull final Function<? super F10, F11> eleventhFunction,
       @NotNull final Function<? super F11, F12> twelfthFunction) {
-    final StreamContext<V12> context = new StreamContext<V12>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V12> scope = new StreamScope<V12>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F12 output = input.thenSequentially(
@@ -410,17 +410,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V12> receiver = new GeneratorStreamReceiver<V12>(input, output);
       final GeneratingFuture<V12> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>> GeneratingFuture<V13> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>> GeneratingFuture<V13> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -434,8 +434,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F10, F11> eleventhFunction,
       @NotNull final Function<? super F11, F12> twelfthFunction,
       @NotNull final Function<? super F12, F13> thirteenthFunction) {
-    final StreamContext<V13> context = new StreamContext<V13>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V13> scope = new StreamScope<V13>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F13 output = input.thenSequentially(
@@ -455,17 +455,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V13> receiver = new GeneratorStreamReceiver<V13>(input, output);
       final GeneratingFuture<V13> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>> GeneratingFuture<V14> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>> GeneratingFuture<V14> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -480,8 +480,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F11, F12> twelfthFunction,
       @NotNull final Function<? super F12, F13> thirteenthFunction,
       @NotNull final Function<? super F13, F14> fourteenthFunction) {
-    final StreamContext<V14> context = new StreamContext<V14>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V14> scope = new StreamScope<V14>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F14 output = input.thenSequentially(
@@ -502,17 +502,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V14> receiver = new GeneratorStreamReceiver<V14>(input, output);
       final GeneratingFuture<V14> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>> GeneratingFuture<V15> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>> GeneratingFuture<V15> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -528,8 +528,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F12, F13> thirteenthFunction,
       @NotNull final Function<? super F13, F14> fourteenthFunction,
       @NotNull final Function<? super F14, F15> fifteenthFunction) {
-    final StreamContext<V15> context = new StreamContext<V15>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V15> scope = new StreamScope<V15>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F15 output = input.thenSequentially(
@@ -551,17 +551,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V15> receiver = new GeneratorStreamReceiver<V15>(input, output);
       final GeneratingFuture<V15> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>> GeneratingFuture<V16> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>> GeneratingFuture<V16> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -578,8 +578,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F13, F14> fourteenthFunction,
       @NotNull final Function<? super F14, F15> fifteenthFunction,
       @NotNull final Function<? super F15, F16> sixteenthFunction) {
-    final StreamContext<V16> context = new StreamContext<V16>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V16> scope = new StreamScope<V16>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F16 output = input.thenSequentially(
@@ -602,17 +602,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V16> receiver = new GeneratorStreamReceiver<V16>(input, output);
       final GeneratingFuture<V16> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>> GeneratingFuture<V17> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>> GeneratingFuture<V17> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -630,8 +630,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F14, F15> fifteenthFunction,
       @NotNull final Function<? super F15, F16> sixteenthFunction,
       @NotNull final Function<? super F16, F17> seventeenthFunction) {
-    final StreamContext<V17> context = new StreamContext<V17>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V17> scope = new StreamScope<V17>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F17 output = input.thenSequentially(
@@ -655,17 +655,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V17> receiver = new GeneratorStreamReceiver<V17>(input, output);
       final GeneratingFuture<V17> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>> GeneratingFuture<V18> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>> GeneratingFuture<V18> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -684,8 +684,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F15, F16> sixteenthFunction,
       @NotNull final Function<? super F16, F17> seventeenthFunction,
       @NotNull final Function<? super F17, F18> eighteenthFunction) {
-    final StreamContext<V18> context = new StreamContext<V18>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V18> scope = new StreamScope<V18>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F18 output = input.thenSequentially(
@@ -710,17 +710,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V18> receiver = new GeneratorStreamReceiver<V18>(input, output);
       final GeneratingFuture<V18> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>> GeneratingFuture<V19> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>> GeneratingFuture<V19> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -740,8 +740,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F16, F17> seventeenthFunction,
       @NotNull final Function<? super F17, F18> eighteenthFunction,
       @NotNull final Function<? super F18, F19> nineteenthFunction) {
-    final StreamContext<V19> context = new StreamContext<V19>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V19> scope = new StreamScope<V19>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F19 output = input.thenSequentially(
@@ -767,17 +767,17 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V19> receiver = new GeneratorStreamReceiver<V19>(input, output);
       final GeneratingFuture<V19> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>, V20, F20 extends SignalFuture<V20>> GeneratingFuture<V20> thenGenerate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>, V20, F20 extends SignalFuture<V20>> GeneratingFuture<V20> thenGenerating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -798,8 +798,8 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       @NotNull final Function<? super F17, F18> eighteenthFunction,
       @NotNull final Function<? super F18, F19> nineteenthFunction,
       @NotNull final Function<? super F19, F20> twentiethFunction) {
-    final StreamContext<V20> context = new StreamContext<V20>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V20> scope = new StreamScope<V20>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F20 output = input.thenSequentially(
@@ -826,13 +826,13 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
       );
       final GeneratorStreamReceiver<V20> receiver = new GeneratorStreamReceiver<V20>(input, output);
       final GeneratingFuture<V20> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 

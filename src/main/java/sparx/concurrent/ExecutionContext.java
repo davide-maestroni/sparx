@@ -22,9 +22,6 @@ import sparx.util.Nothing;
 
 public interface ExecutionContext {
 
-  // TODO: extends FutureContext??
-  // TODO: rename FutureContext to FutureScope??
-
   int minThroughput();
 
   int pendingCount();

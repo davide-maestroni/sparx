@@ -16,7 +16,7 @@
 package sparx.concurrent;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.FutureContext.Registration;
+import sparx.concurrent.FutureScope.Registration;
 
 class DummyRegistration implements Registration {
 

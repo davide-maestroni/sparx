@@ -18,7 +18,7 @@ package sparx.concurrent;
 import java.io.Serializable;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.FutureContext.Context;
+import sparx.concurrent.FutureScope.Scope;
 import sparx.util.Require;
 
 public class ExecutionContextLocal<T> implements Serializable {
@@ -35,11 +35,11 @@ public class ExecutionContextLocal<T> implements Serializable {
 
   @SuppressWarnings("unchecked")
   public T get() {
-    final Context context = FutureContext.currentContext();
-    if (context.executionContext() == null) {
+    final Scope scope = FutureScope.currentScope();
+    if (scope.executionContext() == null) {
       throw new IllegalStateException("no execution context");
     }
-    return (T) context.restoreValue(contextLocalName);
+    return (T) scope.restoreValue(contextLocalName);
   }
 
   public @NotNull String name() {
@@ -47,10 +47,10 @@ public class ExecutionContextLocal<T> implements Serializable {
   }
 
   public void set(final T value) {
-    final Context context = FutureContext.currentContext();
-    if (context.executionContext() == null) {
+    final Scope scope = FutureScope.currentScope();
+    if (scope.executionContext() == null) {
       throw new IllegalStateException("no execution context");
     }
-    context.storeValue(contextLocalName, value);
+    scope.storeValue(contextLocalName, value);
   }
 }

@@ -21,37 +21,44 @@ import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.Scheduler.Task;
 import sparx.util.Require;
 
-public class FutureContext {
+public class FutureScope {
 
-  private static final DummyFutureContext DUMMY_CONTEXT = new DummyFutureContext();
-  private static final ThreadLocal<ArrayDeque<Context>> localContext = new ThreadLocal<ArrayDeque<Context>>() {
+  private static final DummyScope DUMMY_SCOPE = new DummyScope();
+  private static final ThreadLocal<ArrayDeque<Scope>> localScopes = new ThreadLocal<ArrayDeque<Scope>>() {
 
     @Override
-    protected ArrayDeque<Context> initialValue() {
-      final ArrayDeque<Context> contexts = new ArrayDeque<Context>();
-      contexts.push(DUMMY_CONTEXT);
-      return contexts;
+    protected ArrayDeque<Scope> initialValue() {
+      final ArrayDeque<Scope> scopes = new ArrayDeque<Scope>();
+      scopes.push(DUMMY_SCOPE);
+      return scopes;
     }
   };
 
-  public static @NotNull Context currentContext() {
-    return localContext.get().peek();
+  public static @NotNull Scope currentScope() {
+    return localScopes.get().peek();
   }
 
-  static void popContext() {
-    final ArrayDeque<Context> contexts = localContext.get();
-    if (contexts.size() > 1) {
-      contexts.pop();
+  static void popScope() {
+    final ArrayDeque<Scope> scopes = localScopes.get();
+    if (scopes.size() > 1) {
+      scopes.pop();
     }
   }
 
-  static void pushContext(@NotNull final Context context) {
-    localContext.get().push(Require.notNull(context, "context"));
+  static void pushScope(@NotNull final Scope scope) {
+    localScopes.get().push(Require.notNull(scope, "scope"));
   }
 
-  public interface Context {
+  public interface Registration {
 
-    @NotNull <R, V extends R> ContextReceiver<R> decorateReceiver(
+    void cancel();
+
+    void onUncaughtError(@NotNull Exception error);
+  }
+
+  public interface Scope {
+
+    @NotNull <R, V extends R> ScopeReceiver<R> decorateReceiver(
         @NotNull StreamingFuture<V> future, @NotNull Scheduler scheduler,
         @NotNull Receiver<R> receiver);
 
@@ -66,7 +73,7 @@ public class FutureContext {
     void storeValue(@NotNull String name, Object value);
   }
 
-  public interface ContextReceiver<V> extends Receiver<V> {
+  public interface ScopeReceiver<V> extends Receiver<V> {
 
     boolean isConsumer();
 
@@ -75,20 +82,13 @@ public class FutureContext {
     void onUnsubscribe();
   }
 
-  public interface Registration {
-
-    void cancel();
-
-    void onUncaughtError(@NotNull Exception error);
-  }
-
-  private static class DummyFutureContext implements Context {
+  private static class DummyScope implements Scope {
 
     @Override
-    public @NotNull <R, V extends R> ContextReceiver<R> decorateReceiver(
+    public @NotNull <R, V extends R> ScopeReceiver<R> decorateReceiver(
         @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
         @NotNull final Receiver<R> receiver) {
-      return new StandardContextReceiver<R>(future, receiver);
+      return new StandardScopeReceiver<R>(future, receiver);
     }
 
     @Override

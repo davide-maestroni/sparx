@@ -31,7 +31,7 @@ import sparx.util.LiveIterator;
 import sparx.util.Require;
 
 public abstract class ValFuture<V> extends
-    ReadOnlyStreamContextFuture<V, StreamingFuture<V>> implements StreamingFuture<V> {
+    ReadOnlyStreamScopeFuture<V, StreamingFuture<V>> implements StreamingFuture<V> {
 
   @SuppressWarnings("unchecked")
   public static @NotNull <V> ValFuture<V> of() {

@@ -18,7 +18,6 @@ package sparx.concurrent.tuple;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.concurrent.VarFuture;
 import sparx.tuple.Couple;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
@@ -28,7 +27,7 @@ import sparx.util.Require;
 ///////////////////////////////////////////////
 
 public class CoupleFuture<V, V1 extends V, V2 extends V> extends
-    StreamContextTupleFuture<V, CoupleFuture<V, V1, V2>> implements
+    StreamScopeTupleFuture<V, CoupleFuture<V, V1, V2>> implements
     Couple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>> {
 
   public static @NotNull <V, V1 extends V, V2 extends V> CoupleFuture<V, V1, V2> of(

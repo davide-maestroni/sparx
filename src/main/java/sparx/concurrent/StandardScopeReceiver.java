@@ -17,16 +17,16 @@ package sparx.concurrent;
 
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.FutureContext.ContextReceiver;
+import sparx.concurrent.FutureScope.ScopeReceiver;
 import sparx.logging.Log;
 import sparx.util.Require;
 
-class StandardContextReceiver<V> implements ContextReceiver<V> {
+class StandardScopeReceiver<V> implements ScopeReceiver<V> {
 
   private final StreamingFuture<?> future;
   private final Receiver<V> receiver;
 
-  StandardContextReceiver(@NotNull final StreamingFuture<?> future,
+  StandardScopeReceiver(@NotNull final StreamingFuture<?> future,
       @NotNull final Receiver<V> receiver) {
     this.future = Require.notNull(future, "future");
     this.receiver = Require.notNull(receiver, "receiver");
@@ -39,7 +39,7 @@ class StandardContextReceiver<V> implements ContextReceiver<V> {
 
   @Override
   public void onReceiverError(@NotNull final Exception error) {
-    Log.err(FutureContext.class,
+    Log.err(FutureScope.class,
         "Uncaught exception, the throwing receiver will be automatically unsubscribed: %s",
         Log.printable(error));
     future.unsubscribe(receiver);

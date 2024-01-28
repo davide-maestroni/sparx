@@ -27,9 +27,9 @@ import sparx.util.UncheckedException;
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {
+abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {
 
-  GeneratorContextFuture(@NotNull final StreamingFuture<V> future) {
+  GeneratorScopeFuture(@NotNull final StreamingFuture<V> future) {
     super(future);
   }
 
@@ -38,32 +38,32 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     return subscribe(null, null, null, null);
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratingFuture<V1> {{methodName}}Generate(
+  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratingFuture<V1> {{methodName}}Generating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction) {
-    final StreamContext<V1> context = new StreamContext<V1>(FutureContext.currentContext());
-    FutureContext.pushContext(context);
+    final StreamScope<V1> scope = new StreamScope<V1>(FutureScope.currentScope());
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
       final F1 output = input.{{methodName}}Sequentially(firstFunction);
       final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
       final GeneratingFuture<V1> future = createGeneratingFuture(receiver);
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 {{#tuples}}
 
-  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> GeneratingFuture<V{{value}}>{{/last}}{{/indexes}} {{methodName}}Generate(
+  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> GeneratingFuture<V{{value}}>{{/last}}{{/indexes}} {{methodName}}Generating(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
 {{#ordinals}}      @NotNull final Function<? super F{{value.prevIndex}}, F{{value.index}}> {{value.name}}Function{{^last}},{{/last}}{{#last}}) {
-    final StreamContext<V{{value.index}}> context = new StreamContext<V{{value.index}}>(FutureContext.currentContext());{{/last}}
+    final StreamScope<V{{value.index}}> scope = new StreamScope<V{{value.index}}>(FutureScope.currentScope());{{/last}}
 {{/ordinals}}
-    FutureContext.pushContext(context);
+    FutureScope.pushScope(scope);
     try {
       final VarFuture<V> input = VarFuture.create();
 {{#ordinals}}{{#last}}      final F{{value.index}} output = input.{{methodName}}Sequentially({{/last}}{{/ordinals}}
@@ -76,13 +76,13 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
 {{#ordinals}}{{#last}}      final GeneratorStreamReceiver<V{{value.index}}> receiver = new GeneratorStreamReceiver<V{{value.index}}>(input, output);
       final GeneratingFuture<V{{value.index}}> future = createGeneratingFuture(receiver);
 {{/last}}{{/ordinals}}
-      future.subscribe(context);
+      future.subscribe(scope);
       return future;
     } catch (final Exception e) {
-      context.onReceiverError(e);
+      scope.onReceiverError(e);
       throw UncheckedException.throwUnchecked(e);
     } finally {
-      FutureContext.popContext();
+      FutureScope.popScope();
     }
   }
 {{/tuples}}

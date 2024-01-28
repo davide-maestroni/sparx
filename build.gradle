@@ -90,8 +90,8 @@ tasks.register('generateCode') {
         writer.close()
       }
       {
-        def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/StreamContextFuture.java'))
-        def mustache = factory.compile("template/StreamContextFuture.mustache")
+        def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/StreamScopeFuture.java'))
+        def mustache = factory.compile("template/StreamScopeFuture.mustache")
         mustache.execute(writer, scope)
         writer.close()
       }
@@ -102,8 +102,8 @@ tasks.register('generateCode') {
         writer.close()
       }
       {
-        def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/GeneratorContextFuture.java'))
-        def mustache = factory.compile("template/GeneratorContextFuture.mustache")
+        def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/GeneratorScopeFuture.java'))
+        def mustache = factory.compile("template/GeneratorScopeFuture.mustache")
         mustache.execute(writer, scope)
         writer.close()
       }

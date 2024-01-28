@@ -29,7 +29,7 @@ import sparx.util.LiveIterator;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 
-public class DeferredFuture<V> extends ReadOnlyStreamContextFuture<V, StreamingFuture<V>> implements
+public class DeferredFuture<V> extends ReadOnlyStreamScopeFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {
 
   private static final int NULL = 0;

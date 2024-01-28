@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.concurrent.FutureContext.Context;
-import sparx.concurrent.FutureContext.ContextReceiver;
-import sparx.concurrent.FutureContext.Registration;
+import sparx.concurrent.FutureScope.Registration;
+import sparx.concurrent.FutureScope.Scope;
+import sparx.concurrent.FutureScope.ScopeReceiver;
 import sparx.concurrent.Scheduler.Task;
 import sparx.function.Consumer;
 import sparx.function.Function;
@@ -122,7 +122,7 @@ class ExecutionScope implements ExecutionContext {
     }
   }
 
-  private abstract class ScopeFuture<U> extends VarFuture<U> implements Context, Task {
+  private abstract class ScopeFuture<U> extends VarFuture<U> implements Scope, Task {
 
     private static final int IDLE = 0;
     private static final int RUNNING = 1;
@@ -130,11 +130,11 @@ class ExecutionScope implements ExecutionContext {
     private static final int FAILED = 3;
 
     private final HashSet<StreamingFuture<?>> futures = new HashSet<StreamingFuture<?>>();
-    private final HashSet<ScopeContextReceiver<?>> receivers = new HashSet<ScopeContextReceiver<?>>();
+    private final HashSet<ExecutionScopeReceiver<?>> receivers = new HashSet<ExecutionScopeReceiver<?>>();
     private final AtomicInteger status = new AtomicInteger(IDLE);
     private final String taskID = toString();
 
-    private ContextStatus contextStatus = new RunningStatus();
+    private ScopeStatus scopeStatus = new RunningStatus();
 
     @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
@@ -168,18 +168,18 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
-    public @NotNull <R, V extends R> ContextReceiver<R> decorateReceiver(
+    public @NotNull <R, V extends R> ScopeReceiver<R> decorateReceiver(
         @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
         @NotNull final Receiver<R> receiver) {
-      final ScopeContextReceiver<R> contextReceiver = new ScopeContextReceiver<R>(future, scheduler,
-          receiver);
+      final ExecutionScopeReceiver<R> scopeReceiver = new ExecutionScopeReceiver<R>(future,
+          scheduler, receiver);
       ExecutionScope.this.scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
-          contextStatus.onSubscribe(contextReceiver);
+          scopeStatus.onSubscribe(scopeReceiver);
         }
       });
-      return contextReceiver;
+      return scopeReceiver;
     }
 
     @Override
@@ -193,7 +193,7 @@ class ExecutionScope implements ExecutionContext {
       scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
-          contextStatus.onCreate(future, registration);
+          scopeStatus.onCreate(future, registration);
         }
       });
       return registration;
@@ -231,13 +231,13 @@ class ExecutionScope implements ExecutionContext {
     @Override
     public void run() {
       if (status.compareAndSet(IDLE, RUNNING)) {
-        FutureContext.pushContext(this);
+        FutureScope.pushScope(this);
         try {
           innerRun();
         } catch (final Exception e) {
           fail(e);
         } finally {
-          FutureContext.popContext();
+          FutureScope.popScope();
         }
       }
     }
@@ -259,7 +259,7 @@ class ExecutionScope implements ExecutionContext {
       final ScopeTask task = new ScopeTask() {
         @Override
         protected void runInScope() {
-          contextStatus.onFail(error);
+          scopeStatus.onFail(error);
         }
       };
       if (FutureCancellationException.class.equals(error.getClass())) {
@@ -281,25 +281,25 @@ class ExecutionScope implements ExecutionContext {
       }
     }
 
-    private void removeReceiver(@NotNull final ScopeContextReceiver<?> receiver) {
-      final HashSet<ScopeContextReceiver<?>> receivers = ScopeFuture.this.receivers;
+    private void removeReceiver(@NotNull final ExecutionScopeReceiver<?> receiver) {
+      final HashSet<ExecutionScopeReceiver<?>> receivers = ScopeFuture.this.receivers;
       receivers.remove(receiver);
       if (receivers.isEmpty() && futures.isEmpty()) {
         ScopeFuture.super.close();
       }
     }
 
-    private abstract class ContextStatus {
+    private abstract class ScopeStatus {
 
       abstract void onCreate(@NotNull StreamingFuture<?> future,
           @NotNull Registration registration);
 
       abstract void onFail(@NotNull Exception error);
 
-      abstract void onSubscribe(@NotNull ScopeContextReceiver<?> contextReceiver);
+      abstract void onSubscribe(@NotNull ExecutionScopeReceiver<?> scopeReceiver);
     }
 
-    private class CancelledStatus extends ContextStatus {
+    private class CancelledStatus extends ScopeStatus {
 
       private final Exception failureException;
 
@@ -322,13 +322,13 @@ class ExecutionScope implements ExecutionContext {
       }
 
       @Override
-      public void onSubscribe(@NotNull final ScopeContextReceiver<?> contextReceiver) {
-        contextReceiver.fail(failureException);
-        contextReceiver.onUnsubscribe();
+      public void onSubscribe(@NotNull final ExecutionScopeReceiver<?> scopeReceiver) {
+        scopeReceiver.fail(failureException);
+        scopeReceiver.onUnsubscribe();
       }
     }
 
-    private class RunningStatus extends ContextStatus {
+    private class RunningStatus extends ScopeStatus {
 
       @Override
       public void onCreate(@NotNull final StreamingFuture<?> future,
@@ -338,9 +338,9 @@ class ExecutionScope implements ExecutionContext {
 
       @Override
       public void onFail(@NotNull final Exception error) {
-        contextStatus = new CancelledStatus(error);
-        final HashSet<ScopeContextReceiver<?>> receivers = ScopeFuture.this.receivers;
-        for (final ScopeContextReceiver<?> receiver : receivers) {
+        scopeStatus = new CancelledStatus(error);
+        final HashSet<ExecutionScopeReceiver<?>> receivers = ScopeFuture.this.receivers;
+        for (final ExecutionScopeReceiver<?> receiver : receivers) {
           receiver.failAndUnsubscribe(error);
         }
         receivers.clear();
@@ -356,12 +356,12 @@ class ExecutionScope implements ExecutionContext {
       }
 
       @Override
-      public void onSubscribe(@NotNull final ScopeContextReceiver<?> contextReceiver) {
-        receivers.add(contextReceiver);
+      public void onSubscribe(@NotNull final ExecutionScopeReceiver<?> scopeReceiver) {
+        receivers.add(scopeReceiver);
       }
     }
 
-    private class ScopeContextReceiver<R> implements ContextReceiver<R> {
+    private class ExecutionScopeReceiver<R> implements ScopeReceiver<R> {
 
       private final StreamingFuture<?> future;
       private final Scheduler futureScheduler;
@@ -369,7 +369,7 @@ class ExecutionScope implements ExecutionContext {
 
       private Receiver<R> status = new RunningStatus();
 
-      private ScopeContextReceiver(@NotNull final StreamingFuture<?> future,
+      private ExecutionScopeReceiver(@NotNull final StreamingFuture<?> future,
           @NotNull final Scheduler futureScheduler,
           @NotNull final Receiver<R> wrapped) {
         this.future = future;
@@ -394,7 +394,7 @@ class ExecutionScope implements ExecutionContext {
         scheduler.scheduleAfter(new ContextTask() {
           @Override
           public void run() {
-            removeReceiver(ScopeContextReceiver.this);
+            removeReceiver(ExecutionScopeReceiver.this);
             futureScheduler.resume();
           }
         });
@@ -436,13 +436,13 @@ class ExecutionScope implements ExecutionContext {
       }
 
       private void failAndUnsubscribe(@NotNull final Exception error) {
-        FutureContext.pushContext(ScopeFuture.this);
+        FutureScope.pushScope(ScopeFuture.this);
         try {
           wrapped.fail(error);
         } catch (final RuntimeException e) {
           Log.err(ExecutionScope.class, "Uncaught exception: %s", Log.printable(e));
         } finally {
-          FutureContext.popContext();
+          FutureScope.popScope();
         }
         future.unsubscribe(wrapped);
       }
@@ -573,13 +573,13 @@ class ExecutionScope implements ExecutionContext {
 
       @Override
       public void run() {
-        FutureContext.pushContext(ScopeFuture.this);
+        FutureScope.pushScope(ScopeFuture.this);
         try {
           runInScope();
         } catch (final RuntimeException e) {
           fail(e);
         } finally {
-          FutureContext.popContext();
+          FutureScope.popScope();
         }
       }
 
