@@ -30,7 +30,7 @@ public interface Signal<V> {
   @NotNull Subscription subscribe(@NotNull Receiver<? super V> receiver);
 
   @NotNull Subscription subscribe(@Nullable Consumer<? super V> onValueConsumer,
-      @Nullable Consumer<? super Collection<V>> onValuesConsumer,
+      @Nullable Consumer<? super Collection<V>> onBulkConsumer,
       @Nullable Consumer<Exception> onErrorConsumer,
       @Nullable Action onCloseAction);
 

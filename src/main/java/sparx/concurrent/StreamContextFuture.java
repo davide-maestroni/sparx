@@ -25,24 +25,33 @@ import sparx.util.UncheckedException;
 
 public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implements StreamableFuture<V, F> {
 
-  @Override
-  public @NotNull <V1, F1 extends SignalFuture<V1>> F1 then(
-      @NotNull final Function<? super F, F1> firstFunction) {
-    return thenImmediately(firstFunction);
+  protected static @NotNull <V> StreamingFuture<V> proxyFuture(@NotNull final StreamingFuture<V> future) {
+    return new ProxyFuture<V>(future);
+  }
+
+  protected static void connectProxy(@NotNull final StreamingFuture<?> proxyFuture) {
+    ((ProxyFuture<?>) proxyFuture).connect();
   }
 
   @Override
+  public @NotNull <V1, F1 extends SignalFuture<V1>> F1 then(
+      @NotNull final Function<? super F, F1> firstFunction) {
+    return thenSequentially(firstFunction);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>> F2 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction) {
     final StreamContext<V2> context = new StreamContext<V2>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       second.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return second;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -53,6 +62,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>> F3 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -60,12 +70,12 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V3> context = new StreamContext<V3>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       third.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return third;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -76,6 +86,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>> F4 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -84,13 +95,13 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V4> context = new StreamContext<V4>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
       fourth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return fourth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -101,6 +112,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>> F5 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -110,14 +122,14 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V5> context = new StreamContext<V5>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
       final F5 fifth = fifthFunction.apply(fourth);
       fifth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return fifth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -128,6 +140,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>> F6 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -138,15 +151,15 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V6> context = new StreamContext<V6>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
       final F5 fifth = fifthFunction.apply(fourth);
       final F6 sixth = sixthFunction.apply(fifth);
       sixth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return sixth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -157,6 +170,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>> F7 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -168,8 +182,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V7> context = new StreamContext<V7>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -177,7 +191,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F6 sixth = sixthFunction.apply(fifth);
       final F7 seventh = seventhFunction.apply(sixth);
       seventh.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return seventh;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -188,6 +202,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>> F8 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -200,8 +215,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V8> context = new StreamContext<V8>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -210,7 +225,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F7 seventh = seventhFunction.apply(sixth);
       final F8 eighth = eighthFunction.apply(seventh);
       eighth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return eighth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -221,6 +236,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>> F9 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -234,8 +250,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V9> context = new StreamContext<V9>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -245,7 +261,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F8 eighth = eighthFunction.apply(seventh);
       final F9 ninth = ninthFunction.apply(eighth);
       ninth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return ninth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -256,6 +272,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>> F10 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -270,8 +287,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V10> context = new StreamContext<V10>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -282,7 +299,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F9 ninth = ninthFunction.apply(eighth);
       final F10 tenth = tenthFunction.apply(ninth);
       tenth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return tenth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -293,6 +310,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>> F11 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -308,8 +326,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V11> context = new StreamContext<V11>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -321,7 +339,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F10 tenth = tenthFunction.apply(ninth);
       final F11 eleventh = eleventhFunction.apply(tenth);
       eleventh.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return eleventh;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -332,6 +350,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>> F12 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -348,8 +367,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V12> context = new StreamContext<V12>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -362,7 +381,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F11 eleventh = eleventhFunction.apply(tenth);
       final F12 twelfth = twelfthFunction.apply(eleventh);
       twelfth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return twelfth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -373,6 +392,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>> F13 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -390,8 +410,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V13> context = new StreamContext<V13>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -405,7 +425,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F12 twelfth = twelfthFunction.apply(eleventh);
       final F13 thirteenth = thirteenthFunction.apply(twelfth);
       thirteenth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return thirteenth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -416,6 +436,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>> F14 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -434,8 +455,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V14> context = new StreamContext<V14>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -450,7 +471,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F13 thirteenth = thirteenthFunction.apply(twelfth);
       final F14 fourteenth = fourteenthFunction.apply(thirteenth);
       fourteenth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return fourteenth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -461,6 +482,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>> F15 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -480,8 +502,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V15> context = new StreamContext<V15>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -497,7 +519,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F14 fourteenth = fourteenthFunction.apply(thirteenth);
       final F15 fifteenth = fifteenthFunction.apply(fourteenth);
       fifteenth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return fifteenth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -508,6 +530,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>> F16 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -528,8 +551,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V16> context = new StreamContext<V16>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -546,7 +569,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F15 fifteenth = fifteenthFunction.apply(fourteenth);
       final F16 sixteenth = sixteenthFunction.apply(fifteenth);
       sixteenth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return sixteenth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -557,6 +580,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>> F17 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -578,8 +602,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V17> context = new StreamContext<V17>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -597,7 +621,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F16 sixteenth = sixteenthFunction.apply(fifteenth);
       final F17 seventeenth = seventeenthFunction.apply(sixteenth);
       seventeenth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return seventeenth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -608,6 +632,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>> F18 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -630,8 +655,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V18> context = new StreamContext<V18>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -650,7 +675,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F17 seventeenth = seventeenthFunction.apply(sixteenth);
       final F18 eighteenth = eighteenthFunction.apply(seventeenth);
       eighteenth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return eighteenth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -661,6 +686,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>> F19 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -684,8 +710,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V19> context = new StreamContext<V19>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -705,7 +731,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F18 eighteenth = eighteenthFunction.apply(seventeenth);
       final F19 nineteenth = nineteenthFunction.apply(eighteenth);
       nineteenth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return nineteenth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -716,6 +742,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>, V20, F20 extends SignalFuture<V20>> F20 then(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
@@ -740,8 +767,8 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V20> context = new StreamContext<V20>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F future = createFuture();
-      final F1 first = firstFunction.apply(future);
+      final F future = createProxy();
+      final F1 first = firstFunction.apply((F) future.readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -762,7 +789,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
       final F19 nineteenth = nineteenthFunction.apply(eighteenth);
       final F20 twentieth = twentiethFunction.apply(nineteenth);
       twentieth.subscribe(context);
-      subscribeFuture(future);
+      subscribeProxy(future);
       return twentieth;
     } catch (final Exception e) {
       context.onReceiverError(e);
@@ -774,12 +801,12 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>> F1 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>> F1 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction) {
     final StreamContext<V1> context = new StreamContext<V1>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       first.subscribe(context);
       return first;
     } catch (final Exception e) {
@@ -792,13 +819,13 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>> F2 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>> F2 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction) {
     final StreamContext<V2> context = new StreamContext<V2>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       second.subscribe(context);
       return second;
@@ -812,14 +839,14 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>> F3 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>> F3 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction) {
     final StreamContext<V3> context = new StreamContext<V3>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       third.subscribe(context);
@@ -834,7 +861,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>> F4 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>> F4 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -842,7 +869,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V4> context = new StreamContext<V4>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -858,7 +885,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>> F5 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>> F5 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -867,7 +894,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V5> context = new StreamContext<V5>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -884,7 +911,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>> F6 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>> F6 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -894,7 +921,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V6> context = new StreamContext<V6>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -912,7 +939,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>> F7 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>> F7 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -923,7 +950,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V7> context = new StreamContext<V7>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -942,7 +969,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>> F8 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>> F8 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -954,7 +981,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V8> context = new StreamContext<V8>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -974,7 +1001,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>> F9 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>> F9 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -987,7 +1014,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V9> context = new StreamContext<V9>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1008,7 +1035,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>> F10 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>> F10 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1022,7 +1049,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V10> context = new StreamContext<V10>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1044,7 +1071,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>> F11 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>> F11 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1059,7 +1086,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V11> context = new StreamContext<V11>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1082,7 +1109,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>> F12 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>> F12 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1098,7 +1125,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V12> context = new StreamContext<V12>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1122,7 +1149,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>> F13 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>> F13 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1139,7 +1166,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V13> context = new StreamContext<V13>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1164,7 +1191,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>> F14 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>> F14 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1182,7 +1209,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V14> context = new StreamContext<V14>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1208,7 +1235,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>> F15 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>> F15 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1227,7 +1254,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V15> context = new StreamContext<V15>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1254,7 +1281,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>> F16 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>> F16 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1274,7 +1301,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V16> context = new StreamContext<V16>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1302,7 +1329,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>> F17 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>> F17 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1323,7 +1350,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V17> context = new StreamContext<V17>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1352,7 +1379,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>> F18 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>> F18 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1374,7 +1401,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V18> context = new StreamContext<V18>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1404,7 +1431,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>> F19 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>> F19 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1427,7 +1454,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V19> context = new StreamContext<V19>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1458,7 +1485,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>, V20, F20 extends SignalFuture<V20>> F20 thenImmediately(
+  public @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>, V3, F3 extends SignalFuture<V3>, V4, F4 extends SignalFuture<V4>, V5, F5 extends SignalFuture<V5>, V6, F6 extends SignalFuture<V6>, V7, F7 extends SignalFuture<V7>, V8, F8 extends SignalFuture<V8>, V9, F9 extends SignalFuture<V9>, V10, F10 extends SignalFuture<V10>, V11, F11 extends SignalFuture<V11>, V12, F12 extends SignalFuture<V12>, V13, F13 extends SignalFuture<V13>, V14, F14 extends SignalFuture<V14>, V15, F15 extends SignalFuture<V15>, V16, F16 extends SignalFuture<V16>, V17, F17 extends SignalFuture<V17>, V18, F18 extends SignalFuture<V18>, V19, F19 extends SignalFuture<V19>, V20, F20 extends SignalFuture<V20>> F20 thenSequentially(
       @NotNull final Function<? super F, F1> firstFunction,
       @NotNull final Function<? super F1, F2> secondFunction,
       @NotNull final Function<? super F2, F3> thirdFunction,
@@ -1482,7 +1509,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     final StreamContext<V20> context = new StreamContext<V20>(FutureContext.currentContext());
     FutureContext.pushContext(context);
     try {
-      final F1 first = firstFunction.apply((F) this);
+      final F1 first = firstFunction.apply((F) readOnly());
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
@@ -1512,7 +1539,7 @@ public abstract class StreamContextFuture<V, F extends SignalFuture<V>> implemen
     }
   }
 
-  protected abstract @NotNull F createFuture();
+  protected abstract @NotNull F createProxy();
 
-  protected abstract void subscribeFuture(@NotNull F future);
+  protected abstract void subscribeProxy(@NotNull F proxyFuture);
 }

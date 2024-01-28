@@ -44,7 +44,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F1 output = input.thenImmediately(firstFunction);
+      final F1 output = input.thenSequentially(firstFunction);
       final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
       final GeneratingFuture<V1> future = createGeneratingFuture(receiver);
       future.subscribe(context);
@@ -64,7 +64,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F2 output = input.thenImmediately(
+      final F2 output = input.thenSequentially(
         firstFunction,
         secondFunction
       );
@@ -88,7 +88,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F3 output = input.thenImmediately(
+      final F3 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction
@@ -114,7 +114,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F4 output = input.thenImmediately(
+      final F4 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -142,7 +142,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F5 output = input.thenImmediately(
+      final F5 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -172,7 +172,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F6 output = input.thenImmediately(
+      final F6 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -204,7 +204,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F7 output = input.thenImmediately(
+      final F7 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -238,7 +238,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F8 output = input.thenImmediately(
+      final F8 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -274,7 +274,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F9 output = input.thenImmediately(
+      final F9 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -312,7 +312,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F10 output = input.thenImmediately(
+      final F10 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -352,7 +352,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F11 output = input.thenImmediately(
+      final F11 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -394,7 +394,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F12 output = input.thenImmediately(
+      final F12 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -438,7 +438,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F13 output = input.thenImmediately(
+      final F13 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -484,7 +484,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F14 output = input.thenImmediately(
+      final F14 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -532,7 +532,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F15 output = input.thenImmediately(
+      final F15 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -582,7 +582,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F16 output = input.thenImmediately(
+      final F16 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -634,7 +634,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F17 output = input.thenImmediately(
+      final F17 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -688,7 +688,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F18 output = input.thenImmediately(
+      final F18 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -744,7 +744,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F19 output = input.thenImmediately(
+      final F19 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,
@@ -802,7 +802,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F20 output = input.thenImmediately(
+      final F20 output = input.thenSequentially(
         firstFunction,
         secondFunction,
         thirdFunction,

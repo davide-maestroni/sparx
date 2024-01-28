@@ -44,7 +44,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-      final F1 output = input.{{methodName}}Immediately(firstFunction);
+      final F1 output = input.{{methodName}}Sequentially(firstFunction);
       final GeneratorStreamReceiver<V1> receiver = new GeneratorStreamReceiver<V1>(input, output);
       final GeneratingFuture<V1> future = createGeneratingFuture(receiver);
       future.subscribe(context);
@@ -66,7 +66,7 @@ abstract class GeneratorContextFuture<V> extends ReadOnlyFuture<V> implements Ge
     FutureContext.pushContext(context);
     try {
       final VarFuture<V> input = VarFuture.create();
-{{#ordinals}}{{#last}}      final F{{value.index}} output = input.{{methodName}}Immediately({{/last}}{{/ordinals}}
+{{#ordinals}}{{#last}}      final F{{value.index}} output = input.{{methodName}}Sequentially({{/last}}{{/ordinals}}
 {{#ordinals}}
         {{value.prevName}}Function,{{#last}}
 

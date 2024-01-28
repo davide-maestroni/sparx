@@ -84,18 +84,18 @@ public class TripleFuture<V, V1 extends V, V2 extends V, V3 extends V> extends
   }
 
   @Override
-  protected @NotNull TripleFuture<V, V1, V2, V3> createFuture() {
+  protected @NotNull TripleFuture<V, V1, V2, V3> createProxy() {
     return new TripleFuture<V, V1, V2, V3>(
-        VarFuture.<V1>create(),
-        VarFuture.<V2>create(),
-        VarFuture.<V3>create()
+        proxyFuture(getFirst()),
+        proxyFuture(getSecond()),
+        proxyFuture(getThird())
     );
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final TripleFuture<V, V1, V2, V3> future) {
-    getFirst().subscribe(future.getFirst());
-    getSecond().subscribe(future.getSecond());
-    getThird().subscribe(future.getThird());
+  protected void subscribeProxy(@NotNull final TripleFuture<V, V1, V2, V3> proxyFuture) {
+    connectProxy(proxyFuture.getFirst());
+    connectProxy(proxyFuture.getSecond());
+    connectProxy(proxyFuture.getThird());
   }
 }

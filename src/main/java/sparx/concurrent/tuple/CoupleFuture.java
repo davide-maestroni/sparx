@@ -73,16 +73,16 @@ public class CoupleFuture<V, V1 extends V, V2 extends V> extends
   }
 
   @Override
-  protected @NotNull CoupleFuture<V, V1, V2> createFuture() {
+  protected @NotNull CoupleFuture<V, V1, V2> createProxy() {
     return new CoupleFuture<V, V1, V2>(
-        VarFuture.<V1>create(),
-        VarFuture.<V2>create()
+        proxyFuture(getFirst()),
+        proxyFuture(getSecond())
     );
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final CoupleFuture<V, V1, V2> future) {
-    getFirst().subscribe(future.getFirst());
-    getSecond().subscribe(future.getSecond());
+  protected void subscribeProxy(@NotNull final CoupleFuture<V, V1, V2> proxyFuture) {
+    connectProxy(proxyFuture.getFirst());
+    connectProxy(proxyFuture.getSecond());
   }
 }

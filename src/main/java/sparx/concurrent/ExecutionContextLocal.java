@@ -15,12 +15,13 @@
  */
 package sparx.concurrent;
 
+import java.io.Serializable;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.FutureContext.Context;
 import sparx.util.Require;
 
-public class ExecutionContextLocal<T> {
+public class ExecutionContextLocal<T> implements Serializable {
 
   private final String contextLocalName;
 

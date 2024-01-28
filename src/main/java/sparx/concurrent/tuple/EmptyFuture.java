@@ -22,6 +22,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.EmptyLiveIterator;
 import sparx.concurrent.Receiver;
+import sparx.concurrent.Scheduler;
+import sparx.concurrent.Scheduler.Task;
 import sparx.concurrent.StreamingFuture;
 import sparx.function.Action;
 import sparx.function.Consumer;
@@ -60,7 +62,7 @@ public class EmptyFuture extends StreamContextTupleFuture<Nothing, EmptyFuture> 
 
   @Override
   public @NotNull Subscription subscribe(@Nullable final Consumer<? super Nothing> onValueConsumer,
-      @Nullable final Consumer<? super Collection<Nothing>> onValuesConsumer,
+      @Nullable final Consumer<? super Collection<Nothing>> onBulkConsumer,
       @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
     if (onCloseAction != null) {
       try {
@@ -122,11 +124,71 @@ public class EmptyFuture extends StreamContextTupleFuture<Nothing, EmptyFuture> 
   }
 
   @Override
-  protected @NotNull EmptyFuture createFuture() {
-    return INSTANCE;
+  protected @NotNull EmptyFuture createProxy() {
+    return new ProxyEmptyFuture();
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final EmptyFuture future) {
+  protected void subscribeProxy(@NotNull final EmptyFuture proxyFuture) {
+    ((ProxyEmptyFuture) proxyFuture).connect();
+  }
+
+  private static class ProxyEmptyFuture extends EmptyFuture {
+
+    private final Scheduler scheduler = Scheduler.trampoline();
+    private final String taskID = toString();
+
+    private ProxyEmptyFuture() {
+      scheduler.pause();
+    }
+
+    @Override
+    public @NotNull Subscription subscribe(@NotNull final Receiver<? super Nothing> receiver) {
+      scheduler.scheduleAfter(new Task() {
+        @Override
+        public @NotNull String taskID() {
+          return taskID;
+        }
+
+        @Override
+        public int weight() {
+          return 1;
+        }
+
+        @Override
+        public void run() {
+          INSTANCE.subscribe(receiver);
+        }
+      });
+      return DUMMY_SUBSCRIPTION;
+    }
+
+    @Override
+    public @NotNull Subscription subscribe(
+        @Nullable final Consumer<? super Nothing> onValueConsumer,
+        @Nullable final Consumer<? super Collection<Nothing>> onBulkConsumer,
+        @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
+      scheduler.scheduleAfter(new Task() {
+        @Override
+        public @NotNull String taskID() {
+          return taskID;
+        }
+
+        @Override
+        public int weight() {
+          return 1;
+        }
+
+        @Override
+        public void run() {
+          INSTANCE.subscribe(onValueConsumer, onBulkConsumer, onErrorConsumer, onCloseAction);
+        }
+      });
+      return DUMMY_SUBSCRIPTION;
+    }
+
+    void connect() {
+      scheduler.resume();
+    }
   }
 }

@@ -172,34 +172,34 @@ public class UndecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
   }
 
   @Override
-  protected @NotNull UndecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11> createFuture() {
+  protected @NotNull UndecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11> createProxy() {
     return new UndecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11>(
-        VarFuture.<V1>create(),
-        VarFuture.<V2>create(),
-        VarFuture.<V3>create(),
-        VarFuture.<V4>create(),
-        VarFuture.<V5>create(),
-        VarFuture.<V6>create(),
-        VarFuture.<V7>create(),
-        VarFuture.<V8>create(),
-        VarFuture.<V9>create(),
-        VarFuture.<V10>create(),
-        VarFuture.<V11>create()
+        proxyFuture(getFirst()),
+        proxyFuture(getSecond()),
+        proxyFuture(getThird()),
+        proxyFuture(getFourth()),
+        proxyFuture(getFifth()),
+        proxyFuture(getSixth()),
+        proxyFuture(getSeventh()),
+        proxyFuture(getEighth()),
+        proxyFuture(getNinth()),
+        proxyFuture(getTenth()),
+        proxyFuture(getEleventh())
     );
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final UndecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11> future) {
-    getFirst().subscribe(future.getFirst());
-    getSecond().subscribe(future.getSecond());
-    getThird().subscribe(future.getThird());
-    getFourth().subscribe(future.getFourth());
-    getFifth().subscribe(future.getFifth());
-    getSixth().subscribe(future.getSixth());
-    getSeventh().subscribe(future.getSeventh());
-    getEighth().subscribe(future.getEighth());
-    getNinth().subscribe(future.getNinth());
-    getTenth().subscribe(future.getTenth());
-    getEleventh().subscribe(future.getEleventh());
+  protected void subscribeProxy(@NotNull final UndecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11> proxyFuture) {
+    connectProxy(proxyFuture.getFirst());
+    connectProxy(proxyFuture.getSecond());
+    connectProxy(proxyFuture.getThird());
+    connectProxy(proxyFuture.getFourth());
+    connectProxy(proxyFuture.getFifth());
+    connectProxy(proxyFuture.getSixth());
+    connectProxy(proxyFuture.getSeventh());
+    connectProxy(proxyFuture.getEighth());
+    connectProxy(proxyFuture.getNinth());
+    connectProxy(proxyFuture.getTenth());
+    connectProxy(proxyFuture.getEleventh());
   }
 }

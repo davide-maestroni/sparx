@@ -227,44 +227,44 @@ public class SexdecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
   }
 
   @Override
-  protected @NotNull SexdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16> createFuture() {
+  protected @NotNull SexdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16> createProxy() {
     return new SexdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16>(
-        VarFuture.<V1>create(),
-        VarFuture.<V2>create(),
-        VarFuture.<V3>create(),
-        VarFuture.<V4>create(),
-        VarFuture.<V5>create(),
-        VarFuture.<V6>create(),
-        VarFuture.<V7>create(),
-        VarFuture.<V8>create(),
-        VarFuture.<V9>create(),
-        VarFuture.<V10>create(),
-        VarFuture.<V11>create(),
-        VarFuture.<V12>create(),
-        VarFuture.<V13>create(),
-        VarFuture.<V14>create(),
-        VarFuture.<V15>create(),
-        VarFuture.<V16>create()
+        proxyFuture(getFirst()),
+        proxyFuture(getSecond()),
+        proxyFuture(getThird()),
+        proxyFuture(getFourth()),
+        proxyFuture(getFifth()),
+        proxyFuture(getSixth()),
+        proxyFuture(getSeventh()),
+        proxyFuture(getEighth()),
+        proxyFuture(getNinth()),
+        proxyFuture(getTenth()),
+        proxyFuture(getEleventh()),
+        proxyFuture(getTwelfth()),
+        proxyFuture(getThirteenth()),
+        proxyFuture(getFourteenth()),
+        proxyFuture(getFifteenth()),
+        proxyFuture(getSixteenth())
     );
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final SexdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16> future) {
-    getFirst().subscribe(future.getFirst());
-    getSecond().subscribe(future.getSecond());
-    getThird().subscribe(future.getThird());
-    getFourth().subscribe(future.getFourth());
-    getFifth().subscribe(future.getFifth());
-    getSixth().subscribe(future.getSixth());
-    getSeventh().subscribe(future.getSeventh());
-    getEighth().subscribe(future.getEighth());
-    getNinth().subscribe(future.getNinth());
-    getTenth().subscribe(future.getTenth());
-    getEleventh().subscribe(future.getEleventh());
-    getTwelfth().subscribe(future.getTwelfth());
-    getThirteenth().subscribe(future.getThirteenth());
-    getFourteenth().subscribe(future.getFourteenth());
-    getFifteenth().subscribe(future.getFifteenth());
-    getSixteenth().subscribe(future.getSixteenth());
+  protected void subscribeProxy(@NotNull final SexdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16> proxyFuture) {
+    connectProxy(proxyFuture.getFirst());
+    connectProxy(proxyFuture.getSecond());
+    connectProxy(proxyFuture.getThird());
+    connectProxy(proxyFuture.getFourth());
+    connectProxy(proxyFuture.getFifth());
+    connectProxy(proxyFuture.getSixth());
+    connectProxy(proxyFuture.getSeventh());
+    connectProxy(proxyFuture.getEighth());
+    connectProxy(proxyFuture.getNinth());
+    connectProxy(proxyFuture.getTenth());
+    connectProxy(proxyFuture.getEleventh());
+    connectProxy(proxyFuture.getTwelfth());
+    connectProxy(proxyFuture.getThirteenth());
+    connectProxy(proxyFuture.getFourteenth());
+    connectProxy(proxyFuture.getFifteenth());
+    connectProxy(proxyFuture.getSixteenth());
   }
 }

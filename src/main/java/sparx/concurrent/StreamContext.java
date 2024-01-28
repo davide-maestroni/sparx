@@ -104,6 +104,7 @@ class StreamContext<U> implements Context, ContextReceiver<U> {
 
   @Override
   public void onReceiverError(@NotNull final Exception error) {
+    innerFail(error);
   }
 
   @Override

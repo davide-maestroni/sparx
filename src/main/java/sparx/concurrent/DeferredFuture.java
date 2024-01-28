@@ -69,9 +69,9 @@ public class DeferredFuture<V> extends ReadOnlyStreamContextFuture<V, StreamingF
 
   @Override
   public @NotNull Subscription subscribe(@Nullable final Consumer<? super V> onValueConsumer,
-      @Nullable final Consumer<? super Collection<V>> onValuesConsumer,
+      @Nullable final Consumer<? super Collection<V>> onBulkConsumer,
       @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
-    return getFuture().subscribe(onValueConsumer, onValuesConsumer, onErrorConsumer, onCloseAction);
+    return getFuture().subscribe(onValueConsumer, onBulkConsumer, onErrorConsumer, onCloseAction);
   }
 
   @Override
@@ -121,13 +121,13 @@ public class DeferredFuture<V> extends ReadOnlyStreamContextFuture<V, StreamingF
   }
 
   @Override
-  protected @NotNull StreamingFuture<V> createFuture() {
-    return new VarFuture<V>();
+  protected @NotNull StreamingFuture<V> createProxy() {
+    return proxyFuture(this);
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final StreamingFuture<V> future) {
-    subscribe(future);
+  protected void subscribeProxy(@NotNull final StreamingFuture<V> proxyFuture) {
+    connectProxy(proxyFuture);
   }
 
   private @NotNull StreamingFuture<V> getFuture() {

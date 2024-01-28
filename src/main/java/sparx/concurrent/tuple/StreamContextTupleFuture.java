@@ -75,9 +75,9 @@ abstract class StreamContextTupleFuture<V, F extends TupleFuture<V, F>> extends
   @Override
   public @NotNull Subscription subscribe(
       @Nullable final Consumer<? super Nothing> onValueConsumer,
-      @Nullable final Consumer<? super Collection<Nothing>> onValuesConsumer,
+      @Nullable final Consumer<? super Collection<Nothing>> onBulkConsumer,
       @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
-    return subscribe(new FunctionalReceiver<Nothing>(onValueConsumer, onValuesConsumer,
+    return subscribe(new FunctionalReceiver<Nothing>(onValueConsumer, onBulkConsumer,
         onErrorConsumer, onCloseAction));
   }
 

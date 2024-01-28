@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.concurrent.VarFuture;
 import sparx.tuple.Single;
 import sparx.util.Require;
 
@@ -54,12 +53,12 @@ public class SingleFuture<V> extends StreamContextTupleFuture<V, SingleFuture<V>
   }
 
   @Override
-  protected @NotNull SingleFuture<V> createFuture() {
-    return new SingleFuture<V>(VarFuture.<V>create());
+  protected @NotNull SingleFuture<V> createProxy() {
+    return new SingleFuture<V>(proxyFuture(getFirst()));
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final SingleFuture<V> future) {
-    getFirst().subscribe(future.getFirst());
+  protected void subscribeProxy(@NotNull final SingleFuture<V> proxyFuture) {
+    connectProxy(proxyFuture.getFirst());
   }
 }

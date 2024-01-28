@@ -183,36 +183,36 @@ public class DuodecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
   }
 
   @Override
-  protected @NotNull DuodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12> createFuture() {
+  protected @NotNull DuodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12> createProxy() {
     return new DuodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12>(
-        VarFuture.<V1>create(),
-        VarFuture.<V2>create(),
-        VarFuture.<V3>create(),
-        VarFuture.<V4>create(),
-        VarFuture.<V5>create(),
-        VarFuture.<V6>create(),
-        VarFuture.<V7>create(),
-        VarFuture.<V8>create(),
-        VarFuture.<V9>create(),
-        VarFuture.<V10>create(),
-        VarFuture.<V11>create(),
-        VarFuture.<V12>create()
+        proxyFuture(getFirst()),
+        proxyFuture(getSecond()),
+        proxyFuture(getThird()),
+        proxyFuture(getFourth()),
+        proxyFuture(getFifth()),
+        proxyFuture(getSixth()),
+        proxyFuture(getSeventh()),
+        proxyFuture(getEighth()),
+        proxyFuture(getNinth()),
+        proxyFuture(getTenth()),
+        proxyFuture(getEleventh()),
+        proxyFuture(getTwelfth())
     );
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final DuodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12> future) {
-    getFirst().subscribe(future.getFirst());
-    getSecond().subscribe(future.getSecond());
-    getThird().subscribe(future.getThird());
-    getFourth().subscribe(future.getFourth());
-    getFifth().subscribe(future.getFifth());
-    getSixth().subscribe(future.getSixth());
-    getSeventh().subscribe(future.getSeventh());
-    getEighth().subscribe(future.getEighth());
-    getNinth().subscribe(future.getNinth());
-    getTenth().subscribe(future.getTenth());
-    getEleventh().subscribe(future.getEleventh());
-    getTwelfth().subscribe(future.getTwelfth());
+  protected void subscribeProxy(@NotNull final DuodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12> proxyFuture) {
+    connectProxy(proxyFuture.getFirst());
+    connectProxy(proxyFuture.getSecond());
+    connectProxy(proxyFuture.getThird());
+    connectProxy(proxyFuture.getFourth());
+    connectProxy(proxyFuture.getFifth());
+    connectProxy(proxyFuture.getSixth());
+    connectProxy(proxyFuture.getSeventh());
+    connectProxy(proxyFuture.getEighth());
+    connectProxy(proxyFuture.getNinth());
+    connectProxy(proxyFuture.getTenth());
+    connectProxy(proxyFuture.getEleventh());
+    connectProxy(proxyFuture.getTwelfth());
   }
 }

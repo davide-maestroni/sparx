@@ -128,26 +128,26 @@ public class SeptupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exte
   }
 
   @Override
-  protected @NotNull SeptupleFuture<V, V1, V2, V3, V4, V5, V6, V7> createFuture() {
+  protected @NotNull SeptupleFuture<V, V1, V2, V3, V4, V5, V6, V7> createProxy() {
     return new SeptupleFuture<V, V1, V2, V3, V4, V5, V6, V7>(
-        VarFuture.<V1>create(),
-        VarFuture.<V2>create(),
-        VarFuture.<V3>create(),
-        VarFuture.<V4>create(),
-        VarFuture.<V5>create(),
-        VarFuture.<V6>create(),
-        VarFuture.<V7>create()
+        proxyFuture(getFirst()),
+        proxyFuture(getSecond()),
+        proxyFuture(getThird()),
+        proxyFuture(getFourth()),
+        proxyFuture(getFifth()),
+        proxyFuture(getSixth()),
+        proxyFuture(getSeventh())
     );
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final SeptupleFuture<V, V1, V2, V3, V4, V5, V6, V7> future) {
-    getFirst().subscribe(future.getFirst());
-    getSecond().subscribe(future.getSecond());
-    getThird().subscribe(future.getThird());
-    getFourth().subscribe(future.getFourth());
-    getFifth().subscribe(future.getFifth());
-    getSixth().subscribe(future.getSixth());
-    getSeventh().subscribe(future.getSeventh());
+  protected void subscribeProxy(@NotNull final SeptupleFuture<V, V1, V2, V3, V4, V5, V6, V7> proxyFuture) {
+    connectProxy(proxyFuture.getFirst());
+    connectProxy(proxyFuture.getSecond());
+    connectProxy(proxyFuture.getThird());
+    connectProxy(proxyFuture.getFourth());
+    connectProxy(proxyFuture.getFifth());
+    connectProxy(proxyFuture.getSixth());
+    connectProxy(proxyFuture.getSeventh());
   }
 }

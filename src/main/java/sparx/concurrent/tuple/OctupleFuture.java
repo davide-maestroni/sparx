@@ -139,28 +139,28 @@ public class OctupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exten
   }
 
   @Override
-  protected @NotNull OctupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8> createFuture() {
+  protected @NotNull OctupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8> createProxy() {
     return new OctupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8>(
-        VarFuture.<V1>create(),
-        VarFuture.<V2>create(),
-        VarFuture.<V3>create(),
-        VarFuture.<V4>create(),
-        VarFuture.<V5>create(),
-        VarFuture.<V6>create(),
-        VarFuture.<V7>create(),
-        VarFuture.<V8>create()
+        proxyFuture(getFirst()),
+        proxyFuture(getSecond()),
+        proxyFuture(getThird()),
+        proxyFuture(getFourth()),
+        proxyFuture(getFifth()),
+        proxyFuture(getSixth()),
+        proxyFuture(getSeventh()),
+        proxyFuture(getEighth())
     );
   }
 
   @Override
-  protected void subscribeFuture(@NotNull final OctupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8> future) {
-    getFirst().subscribe(future.getFirst());
-    getSecond().subscribe(future.getSecond());
-    getThird().subscribe(future.getThird());
-    getFourth().subscribe(future.getFourth());
-    getFifth().subscribe(future.getFifth());
-    getSixth().subscribe(future.getSixth());
-    getSeventh().subscribe(future.getSeventh());
-    getEighth().subscribe(future.getEighth());
+  protected void subscribeProxy(@NotNull final OctupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8> proxyFuture) {
+    connectProxy(proxyFuture.getFirst());
+    connectProxy(proxyFuture.getSecond());
+    connectProxy(proxyFuture.getThird());
+    connectProxy(proxyFuture.getFourth());
+    connectProxy(proxyFuture.getFifth());
+    connectProxy(proxyFuture.getSixth());
+    connectProxy(proxyFuture.getSeventh());
+    connectProxy(proxyFuture.getEighth());
   }
 }
