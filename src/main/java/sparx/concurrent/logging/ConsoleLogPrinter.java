@@ -34,9 +34,9 @@ public class ConsoleLogPrinter implements Receiver<LogMessage> {
   public static final String STREAM_PROP = PROP_PREFIX + ".stream";
 
   private static final String DEFAULT_TEMPLATE = "%1$siso_datetime%2$s [%1$slevel%2$s] [%1$stag_name%2$s]: %1$smessage%2$s";
+  private static final Map<String, VariableResolver> RESOLVERS = LogTemplate.defaultResolvers();
 
   private final PrintStream printStream;
-  private final Map<String, VariableResolver> resolvers = LogTemplate.defaultResolvers();
   private final String template;
   private final String varPrefix;
   private final String varSuffix;
@@ -57,13 +57,17 @@ public class ConsoleLogPrinter implements Receiver<LogMessage> {
   }
 
   @Override
-  public boolean fail(@NotNull Exception error) {
+  public void close() {
+  }
+
+  @Override
+  public boolean fail(@NotNull final Exception error) {
     return false;
   }
 
   @Override
-  public void set(final LogMessage value) {
-    printStream.println(LogTemplate.fillTemplate(template, varPrefix, varSuffix, resolvers, value));
+  public void set(@NotNull final LogMessage value) {
+    printStream.println(LogTemplate.fillTemplate(template, varPrefix, varSuffix, RESOLVERS, value));
   }
 
   @Override
@@ -71,9 +75,5 @@ public class ConsoleLogPrinter implements Receiver<LogMessage> {
     for (final LogMessage message : values) {
       set(message);
     }
-  }
-
-  @Override
-  public void close() {
   }
 }

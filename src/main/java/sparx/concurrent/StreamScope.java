@@ -69,8 +69,7 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
   }
 
   @Override
-  public @NotNull FutureScope.Registration registerFuture(
-      @NotNull final StreamingFuture<?> future) {
+  public @NotNull Registration registerFuture(@NotNull final StreamingFuture<?> future) {
     final StreamRegistration registration = new StreamRegistration(scope.registerFuture(future),
         future);
     scheduler.scheduleAfter(new StreamTask() {
@@ -83,8 +82,8 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
   }
 
   @Override
-  public Object restoreValue(@NotNull final String name) {
-    return scope.restoreValue(name);
+  public Object restoreObject(@NotNull final String name) {
+    return scope.restoreObject(name);
   }
 
   @Override
@@ -93,8 +92,8 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
   }
 
   @Override
-  public void storeValue(@NotNull final String name, final Object value) {
-    scope.storeValue(name, value);
+  public void storeObject(@NotNull final String name, final Object object) {
+    scope.storeObject(name, object);
   }
 
   @Override

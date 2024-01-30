@@ -44,12 +44,13 @@ class ExecutionScope implements ExecutionContext {
   private final ExecutionContext context;
   private final FutureRegistry registry;
   private final Scheduler scheduler;
-  private final Map<String, Object> values;
+  private final Map<String, Object> objects;
 
-  ExecutionScope(@NotNull final ExecutionContext context, @NotNull final Map<String, Object> values,
-      @NotNull final Scheduler scheduler, @NotNull final FutureRegistry registry) {
+  ExecutionScope(@NotNull final ExecutionContext context,
+      @NotNull final Map<String, Object> objects, @NotNull final Scheduler scheduler,
+      @NotNull final FutureRegistry registry) {
     this.context = Require.notNull(context, "context");
-    this.values = Require.notNull(values, "values");
+    this.objects = Require.notNull(objects, "objects");
     this.scheduler = Require.notNull(scheduler, "scheduler");
     this.registry = Require.notNull(registry, "registry");
   }
@@ -200,8 +201,8 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
-    public Object restoreValue(@NotNull final String name) {
-      return values.get(name);
+    public Object restoreObject(@NotNull final String name) {
+      return objects.get(name);
     }
 
     @Override
@@ -210,11 +211,11 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
-    public void storeValue(@NotNull final String name, final Object value) {
-      if (value == null) {
-        values.remove(name);
+    public void storeObject(@NotNull final String name, final Object object) {
+      if (object == null) {
+        objects.remove(name);
       } else {
-        values.put(name, value);
+        objects.put(name, object);
       }
     }
 

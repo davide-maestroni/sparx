@@ -32,6 +32,7 @@ import sparx.tuple.Empty;
 import sparx.util.ImmutableList;
 import sparx.util.LiveIterator;
 import sparx.util.Nothing;
+import sparx.util.Require;
 
 public class EmptyFuture extends StreamScopeTupleFuture<Nothing, EmptyFuture> implements
     Empty<StreamingFuture<? extends Nothing>> {
@@ -43,11 +44,56 @@ public class EmptyFuture extends StreamScopeTupleFuture<Nothing, EmptyFuture> im
   };
   private static final EmptyFuture INSTANCE = new EmptyFuture();
 
+  private EmptyFuture() {
+  }
+
   public static @NotNull EmptyFuture instance() {
     return INSTANCE;
   }
 
-  private EmptyFuture() {
+  @Override
+  public @NotNull List<StreamingFuture<? extends Nothing>> asList() {
+    return ImmutableList.of();
+  }
+
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    return false;
+  }
+
+  @Override
+  public List<Nothing> get() {
+    return ImmutableList.of();
+  }
+
+  @Override
+  public List<Nothing> get(final long timeout, @NotNull final TimeUnit unit) {
+    return get();
+  }
+
+  @Override
+  public boolean isCancelled() {
+    return false;
+  }
+
+  @Override
+  public boolean isDone() {
+    return true;
+  }
+
+  @Override
+  public @NotNull LiveIterator<Nothing> iterator() {
+    return EmptyLiveIterator.instance();
+  }
+
+  @Override
+  public @NotNull LiveIterator<Nothing> iterator(final long timeout, @NotNull final TimeUnit unit) {
+    return iterator();
+  }
+
+  @Override
+  public @NotNull EmptyFuture readOnly() {
+    return this;
   }
 
   @Override
@@ -79,51 +125,6 @@ public class EmptyFuture extends StreamScopeTupleFuture<Nothing, EmptyFuture> im
   }
 
   @Override
-  public @NotNull LiveIterator<Nothing> iterator() {
-    return EmptyLiveIterator.instance();
-  }
-
-  @Override
-  public @NotNull LiveIterator<Nothing> iterator(final long timeout, @NotNull final TimeUnit unit) {
-    return iterator();
-  }
-
-  @Override
-  public @NotNull EmptyFuture readOnly() {
-    return this;
-  }
-
-  @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    return false;
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return false;
-  }
-
-  @Override
-  public boolean isDone() {
-    return true;
-  }
-
-  @Override
-  public List<Nothing> get() {
-    return ImmutableList.of();
-  }
-
-  @Override
-  public List<Nothing> get(final long timeout, @NotNull final TimeUnit unit) {
-    return get();
-  }
-
-  @Override
-  public @NotNull List<StreamingFuture<? extends Nothing>> asList() {
-    return ImmutableList.of();
-  }
-
-  @Override
   protected @NotNull EmptyFuture createProxy() {
     return new ProxyEmptyFuture();
   }
@@ -144,6 +145,7 @@ public class EmptyFuture extends StreamScopeTupleFuture<Nothing, EmptyFuture> im
 
     @Override
     public @NotNull Subscription subscribe(@NotNull final Receiver<? super Nothing> receiver) {
+      Require.notNull(receiver, "receiver");
       scheduler.scheduleAfter(new Task() {
         @Override
         public @NotNull String taskID() {
@@ -187,7 +189,7 @@ public class EmptyFuture extends StreamScopeTupleFuture<Nothing, EmptyFuture> im
       return DUMMY_SUBSCRIPTION;
     }
 
-    void connect() {
+    private void connect() {
       scheduler.resume();
     }
   }

@@ -23,10 +23,10 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.FunctionalReceiver;
@@ -49,6 +49,33 @@ abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
       new WeakHashMap<Receiver<?>, TupleSubscription>());
 
   @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    for (final StreamingFuture<? extends V> future : asList()) {
+      if (!future.cancel(mayInterruptIfRunning)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  public List<Nothing> get() throws InterruptedException, ExecutionException {
+    for (final StreamingFuture<? extends V> future : asList()) {
+      future.get();
+    }
+    return ImmutableList.of();
+  }
+
+  @Override
+  public List<Nothing> get(final long timeout, @NotNull final TimeUnit unit)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    for (final StreamingFuture<? extends V> future : asList()) {
+      future.get(timeout, unit);
+    }
+    return ImmutableList.of();
+  }
+
+  @Override
   public Nothing getCurrent() {
     throw new NoSuchElementException();
   }
@@ -56,6 +83,36 @@ abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
   @Override
   public Nothing getCurrentOr(final Nothing defaultValue) {
     return defaultValue;
+  }
+
+  @Override
+  public boolean isCancelled() {
+    for (final StreamingFuture<? extends V> future : asList()) {
+      if (!future.isCancelled()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  public boolean isDone() {
+    for (final StreamingFuture<? extends V> future : asList()) {
+      if (!future.isDone()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  public @NotNull LiveIterator<Nothing> iterator() {
+    return new IndefiniteIterator();
+  }
+
+  @Override
+  public @NotNull LiveIterator<Nothing> iterator(final long timeout, @NotNull final TimeUnit unit) {
+    return new TimeoutIterator(unit.toMillis(Require.positive(timeout, "timeout")));
   }
 
   @Override
@@ -89,72 +146,22 @@ abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
     }
   }
 
-  @Override
-  public @NotNull LiveIterator<Nothing> iterator() {
-    return new IndefiniteIterator();
-  }
-
-  @Override
-  public @NotNull LiveIterator<Nothing> iterator(final long timeout, @NotNull final TimeUnit unit) {
-    return new TimeoutIterator(unit.toMillis(Require.positive(timeout, "timeout")));
-  }
-
-  @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    for (final StreamingFuture<? extends V> future : asList()) {
-      if (!future.cancel(mayInterruptIfRunning)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  @Override
-  public boolean isCancelled() {
-    for (final StreamingFuture<? extends V> future : asList()) {
-      if (!future.isCancelled()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  @Override
-  public boolean isDone() {
-    for (final StreamingFuture<? extends V> future : asList()) {
-      if (!future.isDone()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  @Override
-  public List<Nothing> get() throws InterruptedException, ExecutionException {
-    for (final StreamingFuture<? extends V> future : asList()) {
-      future.get();
-    }
-    return ImmutableList.of();
-  }
-
-  @Override
-  public List<Nothing> get(final long timeout, @NotNull final TimeUnit unit)
-      throws InterruptedException, ExecutionException, TimeoutException {
-    for (final StreamingFuture<? extends V> future : asList()) {
-      future.get(timeout, unit);
-    }
-    return ImmutableList.of();
-  }
-
   private static class TupleReceiver<V> implements Receiver<V> {
 
-    private final AtomicInteger count;
+    private final Semaphore count;
     private final AtomicBoolean done = new AtomicBoolean(false);
     private final Receiver<? super Nothing> receiver;
 
     private TupleReceiver(@NotNull final Receiver<? super Nothing> receiver, final int size) {
       this.receiver = receiver;
-      this.count = new AtomicInteger(size);
+      this.count = new Semaphore(size);
+    }
+
+    @Override
+    public void close() {
+      if (count.tryAcquire() && done.compareAndSet(false, true)) {
+        receiver.close();
+      }
     }
 
     @Override
@@ -168,13 +175,6 @@ abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
 
     @Override
     public void setBulk(@NotNull final Collection<V> values) {
-    }
-
-    @Override
-    public void close() {
-      if (count.decrementAndGet() == 0 && done.compareAndSet(false, true)) {
-        receiver.close();
-      }
     }
   }
 
@@ -197,6 +197,18 @@ abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
   private class IndefiniteIterator implements LiveIterator<Nothing> {
 
     @Override
+    public boolean hasNext() {
+      for (final StreamingFuture<? extends V> future : asList()) {
+        try {
+          future.get();
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+      return false;
+    }
+
+    @Override
     public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
       long timeoutMillis = unit.toMillis(Require.positive(timeout, "timeout"));
       for (final StreamingFuture<? extends V> future : asList()) {
@@ -212,24 +224,12 @@ abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
     }
 
     @Override
-    public Nothing next(final long timeout, @NotNull final TimeUnit unit) {
+    public Nothing next() {
       throw new NoSuchElementException();
     }
 
     @Override
-    public boolean hasNext() {
-      for (final StreamingFuture<? extends V> future : asList()) {
-        try {
-          future.get();
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-      return false;
-    }
-
-    @Override
-    public Nothing next() {
+    public Nothing next(final long timeout, @NotNull final TimeUnit unit) {
       throw new NoSuchElementException();
     }
 
@@ -245,32 +245,6 @@ abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
 
     private TimeoutIterator(final long totalTimeoutMillis) {
       this.totalTimeoutMillis = totalTimeoutMillis;
-    }
-
-    @Override
-    public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
-      final long startTime = System.currentTimeMillis();
-      try {
-        long timeoutMillis = Math.min(unit.toMillis(Require.positive(timeout, "timeout")),
-            totalTimeoutMillis);
-        for (final StreamingFuture<? extends V> future : asList()) {
-          try {
-            final long start = System.currentTimeMillis();
-            future.get(timeoutMillis, TimeUnit.MILLISECONDS);
-            timeoutMillis -= System.currentTimeMillis() - start;
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-      } finally {
-        totalTimeoutMillis -= System.currentTimeMillis() - startTime;
-      }
-      return false;
-    }
-
-    @Override
-    public Nothing next(final long timeout, @NotNull final TimeUnit unit) {
-      throw new NoSuchElementException();
     }
 
     @Override
@@ -294,7 +268,33 @@ abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
     }
 
     @Override
+    public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
+      final long startTime = System.currentTimeMillis();
+      long timeoutMillis = Math.min(unit.toMillis(Require.positive(timeout, "timeout")),
+          totalTimeoutMillis);
+      try {
+        for (final StreamingFuture<? extends V> future : asList()) {
+          try {
+            final long start = System.currentTimeMillis();
+            future.get(timeoutMillis, TimeUnit.MILLISECONDS);
+            timeoutMillis -= System.currentTimeMillis() - start;
+          } catch (final Exception e) {
+            throw UncheckedException.throwUnchecked(e);
+          }
+        }
+      } finally {
+        totalTimeoutMillis -= System.currentTimeMillis() - startTime;
+      }
+      return false;
+    }
+
+    @Override
     public Nothing next() {
+      throw new NoSuchElementException();
+    }
+
+    @Override
+    public Nothing next(final long timeout, @NotNull final TimeUnit unit) {
       throw new NoSuchElementException();
     }
 

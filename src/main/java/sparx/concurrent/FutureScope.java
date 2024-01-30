@@ -34,7 +34,24 @@ public class FutureScope {
     }
   };
 
-  public static @NotNull Scope currentScope() {
+  public static @Nullable ExecutionContext currentContext() {
+    return currentScope().executionContext();
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T> T restoreObject(@NotNull final String name) {
+    return (T) currentScope().restoreObject(name);
+  }
+
+  public static void runTask(@NotNull final Task task) {
+    currentScope().runTask(task);
+  }
+
+  public static <T> void storeObject(@NotNull final String name, final T object) {
+    currentScope().storeObject(name, object);
+  }
+
+  static @NotNull Scope currentScope() {
     return localScopes.get().peek();
   }
 
@@ -49,14 +66,14 @@ public class FutureScope {
     localScopes.get().push(Require.notNull(scope, "scope"));
   }
 
-  public interface Registration {
+  interface Registration {
 
     void cancel();
 
     void onUncaughtError(@NotNull Exception error);
   }
 
-  public interface Scope {
+  interface Scope {
 
     @NotNull <R, V extends R> ScopeReceiver<R> decorateReceiver(
         @NotNull StreamingFuture<V> future, @NotNull Scheduler scheduler,
@@ -66,14 +83,14 @@ public class FutureScope {
 
     @NotNull Registration registerFuture(@NotNull StreamingFuture<?> future);
 
-    Object restoreValue(@NotNull String name);
+    Object restoreObject(@NotNull String name);
 
     void runTask(@NotNull Task task);
 
-    void storeValue(@NotNull String name, Object value);
+    void storeObject(@NotNull String name, Object object);
   }
 
-  public interface ScopeReceiver<V> extends Receiver<V> {
+  interface ScopeReceiver<V> extends Receiver<V> {
 
     boolean isConsumer();
 
@@ -102,7 +119,7 @@ public class FutureScope {
     }
 
     @Override
-    public Object restoreValue(@NotNull final String name) {
+    public Object restoreObject(@NotNull final String name) {
       throw new UnsupportedOperationException("restoreValue");
     }
 
@@ -112,7 +129,7 @@ public class FutureScope {
     }
 
     @Override
-    public void storeValue(@NotNull final String name, final Object value) {
+    public void storeObject(@NotNull final String name, final Object object) {
       throw new UnsupportedOperationException("storeValue");
     }
   }

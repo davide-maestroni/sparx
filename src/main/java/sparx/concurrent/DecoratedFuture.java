@@ -41,13 +41,39 @@ public class DecoratedFuture<V> implements StreamingFuture<V> {
   }
 
   @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    return wrapped.cancel(mayInterruptIfRunning);
+  }
+
+  @Override
   public void clear() {
     wrapped.clear();
   }
 
   @Override
+  public void close() {
+    wrapped.close();
+  }
+
+  @Override
   public void compute(@NotNull final Function<? super V, ? extends V> function) {
     wrapped.compute(function);
+  }
+
+  @Override
+  public boolean fail(@NotNull final Exception error) {
+    return wrapped.fail(error);
+  }
+
+  @Override
+  public List<V> get() throws InterruptedException, ExecutionException {
+    return wrapped.get();
+  }
+
+  @Override
+  public List<V> get(final long timeout, final @NotNull TimeUnit unit)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    return wrapped.get(timeout, unit);
   }
 
   @Override
@@ -61,13 +87,43 @@ public class DecoratedFuture<V> implements StreamingFuture<V> {
   }
 
   @Override
+  public boolean isCancelled() {
+    return wrapped.isCancelled();
+  }
+
+  @Override
+  public boolean isDone() {
+    return wrapped.isDone();
+  }
+
+  @Override
   public boolean isReadOnly() {
     return wrapped.isReadOnly();
   }
 
   @Override
+  public @NotNull LiveIterator<V> iterator() {
+    return wrapped.iterator();
+  }
+
+  @Override
+  public @NotNull LiveIterator<V> iterator(long timeout, @NotNull final TimeUnit unit) {
+    return wrapped.iterator(timeout, unit);
+  }
+
+  @Override
   public @NotNull StreamingFuture<V> readOnly() {
     return wrapped.readOnly();
+  }
+
+  @Override
+  public void set(final V value) {
+    wrapped.set(value);
+  }
+
+  @Override
+  public void setBulk(@NotNull final Collection<V> values) {
+    wrapped.setBulk(values);
   }
 
   @Override
@@ -90,62 +146,6 @@ public class DecoratedFuture<V> implements StreamingFuture<V> {
   @Override
   public void unsubscribe(@NotNull final Receiver<?> receiver) {
     wrapped.unsubscribe(receiver);
-  }
-
-  @Override
-  public @NotNull LiveIterator<V> iterator() {
-    return wrapped.iterator();
-  }
-
-  @Override
-  public @NotNull LiveIterator<V> iterator(long timeout, @NotNull final TimeUnit unit) {
-    return wrapped.iterator(timeout, unit);
-  }
-
-  @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    return wrapped.cancel(mayInterruptIfRunning);
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return wrapped.isCancelled();
-  }
-
-  @Override
-  public boolean isDone() {
-    return wrapped.isDone();
-  }
-
-  @Override
-  public List<V> get() throws InterruptedException, ExecutionException {
-    return wrapped.get();
-  }
-
-  @Override
-  public List<V> get(final long timeout, final @NotNull TimeUnit unit)
-      throws InterruptedException, ExecutionException, TimeoutException {
-    return wrapped.get(timeout, unit);
-  }
-
-  @Override
-  public boolean fail(@NotNull final Exception error) {
-    return wrapped.fail(error);
-  }
-
-  @Override
-  public void set(final V value) {
-    wrapped.set(value);
-  }
-
-  @Override
-  public void setBulk(@NotNull final Collection<V> values) {
-    wrapped.setBulk(values);
-  }
-
-  @Override
-  public void close() {
-    wrapped.close();
   }
 
   @Override

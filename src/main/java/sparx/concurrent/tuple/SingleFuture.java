@@ -25,10 +25,6 @@ import sparx.util.Require;
 public class SingleFuture<V> extends StreamScopeTupleFuture<V, SingleFuture<V>> implements
     Single<StreamingFuture<? extends V>> {
 
-  public static @NotNull <V> SingleFuture<V> of(@NotNull final StreamingFuture<V> first) {
-    return new SingleFuture<V>(Require.notNull(first, "first"));
-  }
-
   private final StreamingFuture<V> first;
   private final List<StreamingFuture<? extends V>> futures;
 
@@ -37,9 +33,8 @@ public class SingleFuture<V> extends StreamScopeTupleFuture<V, SingleFuture<V>> 
     this.futures = Collections.<StreamingFuture<? extends V>>singletonList(first);
   }
 
-  @Override
-  public @NotNull SingleFuture<V> readOnly() {
-    return this;
+  public static @NotNull <V> SingleFuture<V> of(@NotNull final StreamingFuture<V> first) {
+    return new SingleFuture<V>(Require.notNull(first, "first"));
   }
 
   @Override
@@ -50,6 +45,11 @@ public class SingleFuture<V> extends StreamScopeTupleFuture<V, SingleFuture<V>> 
   @Override
   public @NotNull List<StreamingFuture<? extends V>> asList() {
     return futures;
+  }
+
+  @Override
+  public @NotNull SingleFuture<V> readOnly() {
+    return this;
   }
 
   @Override

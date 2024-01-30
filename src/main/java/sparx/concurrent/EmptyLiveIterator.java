@@ -33,22 +33,22 @@ public class EmptyLiveIterator<E> implements LiveIterator<E> {
   }
 
   @Override
-  public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
-    return false;
-  }
-
-  @Override
-  public E next(final long timeout, @NotNull final TimeUnit unit) {
-    throw new NoSuchElementException();
-  }
-
-  @Override
   public boolean hasNext() {
     return false;
   }
 
   @Override
+  public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
+    return false;
+  }
+
+  @Override
   public E next() {
+    throw new NoSuchElementException();
+  }
+
+  @Override
+  public E next(final long timeout, @NotNull final TimeUnit unit) {
     throw new NoSuchElementException();
   }
 

@@ -40,7 +40,7 @@ public class ExecutorContext implements ExecutionContext {
 
   private final FutureRegistry registry;
   private final Scheduler scheduler;
-  private final HashMap<String, Object> values = new HashMap<String, Object>();
+  private final HashMap<String, Object> objects = new HashMap<String, Object>();
 
   public static @NotNull ExecutorContext of(@NotNull final Executor executor) {
     return of(executor, Integer.MAX_VALUE);
@@ -93,13 +93,13 @@ public class ExecutorContext implements ExecutionContext {
   public @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(
       @NotNull final F future,
       @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
-    return new ExecutionScope(this, values, scheduler, registry).call(future, function);
+    return new ExecutionScope(this, objects, scheduler, registry).call(future, function);
   }
 
   @Override
   public @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(
       @NotNull final F future, @NotNull final Consumer<? super F> consumer) {
-    return new ExecutionScope(this, values, scheduler, registry).run(future, consumer);
+    return new ExecutionScope(this, objects, scheduler, registry).run(future, consumer);
   }
 
   private static class FailingExecutor implements Executor, FutureRegistry {

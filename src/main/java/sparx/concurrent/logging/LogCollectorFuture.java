@@ -20,7 +20,6 @@ import static java.lang.Boolean.parseBoolean;
 import java.util.Properties;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ReadOnlyFuture;
-import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.VarFuture;
 import sparx.logging.Log.LogCollector;
 import sparx.logging.Log.LogLevel;
@@ -53,11 +52,6 @@ public class LogCollectorFuture extends ReadOnlyFuture<LogMessage> implements Lo
   @Override
   public void log(@NotNull final LogLevel level, final Object tag, final String msgFmt,
       final Object... args) {
-    super.wrapped().set(factory.create(level, tag, msgFmt, args));
-  }
-
-  @Override
-  protected @NotNull StreamingFuture<LogMessage> wrapped() {
-    return this;
+    wrapped().set(factory.create(level, tag, msgFmt, args));
   }
 }

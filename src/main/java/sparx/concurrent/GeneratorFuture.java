@@ -52,6 +52,12 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
     return new GeneratorFuture<V>(supplier);
   }
 
+  public static @NotNull <V> GeneratorFuture<V> ofDeferred(
+      @NotNull final Supplier<? extends SignalFuture<V>> supplier) {
+    // TODO: return just once
+    return new GeneratorFuture<V>(supplier);
+  }
+
   public static @NotNull <V> GeneratorFuture<V> ofLoop(final V initialValue,
       @NotNull final Predicate<? super V> predicate,
       @NotNull final Function<? super V, ? extends V> function) {

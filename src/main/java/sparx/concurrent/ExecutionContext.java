@@ -22,12 +22,12 @@ import sparx.util.Nothing;
 
 public interface ExecutionContext {
 
+  @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(@NotNull F future,
+      @NotNull Function<? super F, ? extends SignalFuture<U>> function);
+
   int minThroughput();
 
   int pendingCount();
-
-  @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(@NotNull F future,
-      @NotNull Function<? super F, ? extends SignalFuture<U>> function);
 
   @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(@NotNull F future,
       @NotNull Consumer<? super F> consumer);
