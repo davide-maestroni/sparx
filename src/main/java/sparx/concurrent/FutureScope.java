@@ -43,10 +43,6 @@ public class FutureScope {
     return (T) currentScope().restoreObject(name);
   }
 
-  public static void runTask(@NotNull final Task task) {
-    currentScope().runTask(task);
-  }
-
   public static <T> void storeObject(@NotNull final String name, final T object) {
     currentScope().storeObject(name, object);
   }

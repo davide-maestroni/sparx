@@ -88,12 +88,7 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
 
   @Override
   public void runTask(@NotNull final Task task) {
-    scheduler.scheduleAfter(new StreamTask() {
-      @Override
-      public void run() {
-        scope.runTask(task);
-      }
-    });
+    scope.runTask(task);
   }
 
   @Override

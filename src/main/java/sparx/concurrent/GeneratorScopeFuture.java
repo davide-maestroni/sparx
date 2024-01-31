@@ -844,6 +844,29 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     private final VarFuture<V> input;
     private final SignalFuture<U> output;
     private final ArrayList<U> pendingValues = new ArrayList<U>();
+    private final Receiver<V> receiver = new Receiver<V>() {
+      @Override
+      public void close() {
+        input.close();
+      }
+
+      @Override
+      public boolean fail(@NotNull final Exception error) {
+        return input.fail(error);
+      }
+
+      @Override
+      public void set(final V value) {
+        unsubscribe(this);
+        input.set(value);
+      }
+
+      @Override
+      public void setBulk(@NotNull final Collection<V> values) {
+        unsubscribe(this);
+        input.setBulk(values);
+      }
+    };
 
     private Exception failureException;
     private VarFuture<U> future;
@@ -882,29 +905,7 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
         }
       }
       output.subscribe(this);
-      subscribeNext(new Receiver<V>() {
-        @Override
-        public void close() {
-          input.close();
-        }
-
-        @Override
-        public boolean fail(@NotNull final Exception error) {
-          return input.fail(error);
-        }
-
-        @Override
-        public void set(final V value) {
-          unsubscribe(this);
-          input.set(value);
-        }
-
-        @Override
-        public void setBulk(@NotNull final Collection<V> values) {
-          unsubscribe(this);
-          input.setBulk(values);
-        }
-      });
+      subscribeNext(receiver);
       return future;
     }
 
