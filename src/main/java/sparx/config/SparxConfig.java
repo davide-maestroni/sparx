@@ -104,6 +104,7 @@ public class SparxConfig {
   }
 
   public static void initFromProperties(@NotNull final Properties properties) {
+    Require.notNull(properties, "properties");
     synchronized (lock) {
       reset();
       initialized = true;
