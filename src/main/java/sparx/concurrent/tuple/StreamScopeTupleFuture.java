@@ -139,6 +139,29 @@ abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
   }
 
   @Override
+  public @NotNull Subscription subscribeNext(@NotNull final Receiver<? super Nothing> receiver) {
+    final Collection<StreamingFuture<? extends V>> futures = asList();
+    final TupleReceiver<V> tupleReceiver = new TupleReceiver<V>(
+        Require.notNull(receiver, "receiver"), futures.size());
+    final ArrayList<Subscription> subscriptions = new ArrayList<Subscription>(futures.size());
+    for (final StreamingFuture<? extends V> future : futures) {
+      subscriptions.add(future.subscribeNext(tupleReceiver));
+    }
+    final TupleSubscription subscription = new TupleSubscription(subscriptions);
+    receivers.put(receiver, subscription);
+    return subscription;
+  }
+
+  @Override
+  public @NotNull Subscription subscribeNext(
+      @Nullable final Consumer<? super Nothing> onValueConsumer,
+      @Nullable final Consumer<? super Collection<Nothing>> onBulkConsumer,
+      @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
+    return subscribeNext(new FunctionalReceiver<Nothing>(onValueConsumer, onBulkConsumer,
+        onErrorConsumer, onCloseAction));
+  }
+
+  @Override
   public void unsubscribe(@NotNull final Receiver<?> receiver) {
     final TupleSubscription subscription = receivers.get(receiver);
     if (subscription != null) {

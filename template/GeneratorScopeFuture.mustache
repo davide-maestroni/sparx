@@ -90,8 +90,6 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
   abstract @NotNull <U> GeneratingFuture<U> createGeneratingFuture(
       @NotNull Supplier<? extends SignalFuture<U>> supplier);
 
-  abstract void pull(@NotNull Receiver<V> receiver);
-
   private class GeneratorStreamReceiver<U> implements Supplier<SignalFuture<U>>, Receiver<U> {
 
     private final VarFuture<V> input;
@@ -135,7 +133,29 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
         }
       }
       output.subscribe(this);
-      pull(input);
+      subscribeNext(new Receiver<V>() {
+        @Override
+        public void close() {
+          input.close();
+        }
+
+        @Override
+        public boolean fail(@NotNull final Exception error) {
+          return input.fail(error);
+        }
+
+        @Override
+        public void set(final V value) {
+          unsubscribe(this);
+          input.set(value);
+        }
+
+        @Override
+        public void setBulk(@NotNull final Collection<V> values) {
+          unsubscribe(this);
+          input.setBulk(values);
+        }
+      });
       return future;
     }
 

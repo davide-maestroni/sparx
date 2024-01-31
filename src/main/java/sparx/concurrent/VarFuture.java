@@ -193,6 +193,28 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   }
 
   @Override
+  public @NotNull Subscription subscribeNext(@NotNull final Receiver<? super V> receiver) {
+    final ScopeReceiver<? super V> scopeReceiver = FutureScope.currentScope()
+        .decorateReceiver(this, scheduler, Require.notNull(receiver, "receiver"));
+    scheduler.scheduleBefore(new VarTask() {
+      @Override
+      @SuppressWarnings("unchecked")
+      public void run() {
+        innerStatus.subscribeNext((Receiver<V>) receiver, (ScopeReceiver<V>) scopeReceiver);
+      }
+    });
+    return new VarSubscription(receiver);
+  }
+
+  @Override
+  public @NotNull Subscription subscribeNext(@Nullable final Consumer<? super V> onValueConsumer,
+      @Nullable final Consumer<? super Collection<V>> onBulkConsumer,
+      @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
+    return subscribeNext(new FunctionalReceiver<V>(onValueConsumer, onBulkConsumer, onErrorConsumer,
+        onCloseAction));
+  }
+
+  @Override
   public void unsubscribe(@NotNull final Receiver<?> receiver) {
     scheduler.scheduleBefore(new VarTask() {
       @Override
@@ -776,6 +798,10 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
       }
     }
 
+    void subscribeNext(@NotNull final Receiver<V> receiver,
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+    }
+
     void remove(@NotNull final Semaphore semaphore) {
     }
   }
@@ -797,6 +823,12 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     void subscribe(@NotNull final Receiver<V> receiver,
         @NotNull final ScopeReceiver<V> scopeReceiver) {
       super.subscribe(receiver, scopeReceiver);
+      subscribeNext(receiver, scopeReceiver);
+    }
+
+    @Override
+    void subscribeNext(@NotNull final Receiver<V> receiver,
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
       try {
         scopeReceiver.fail(failureException);
       } catch (final RuntimeException e) {
@@ -832,6 +864,17 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
         if (scopeReceiver.isConsumer() && lastValue != UNSET) {
           scopeReceiver.set((V) lastValue);
         }
+        scopeReceiver.close();
+      } catch (final RuntimeException e) {
+        scopeReceiver.onReceiverError(e);
+      }
+      scopeReceiver.onUnsubscribe();
+    }
+
+    @Override
+    void subscribeNext(@NotNull final Receiver<V> receiver,
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      try {
         scopeReceiver.close();
       } catch (final RuntimeException e) {
         scopeReceiver.onReceiverError(e);
@@ -1062,6 +1105,18 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
             scopeReceiver.onReceiverError(e);
           }
         }
+        receivers.put(receiver, scopeReceiver);
+        if (hasSinks()) {
+          pullFromReceiver();
+        }
+      }
+    }
+
+    @Override
+    void subscribeNext(@NotNull final Receiver<V> receiver,
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
+      if (!receivers.containsKey(receiver)) {
         receivers.put(receiver, scopeReceiver);
         if (hasSinks()) {
           pullFromReceiver();

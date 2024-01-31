@@ -121,6 +121,19 @@ public class EmptyFuture extends StreamScopeTupleFuture<Nothing, EmptyFuture> im
   }
 
   @Override
+  public @NotNull Subscription subscribeNext(@NotNull final Receiver<? super Nothing> receiver) {
+    return subscribe(receiver);
+  }
+
+  @Override
+  public @NotNull Subscription subscribeNext(
+      @Nullable final Consumer<? super Nothing> onValueConsumer,
+      @Nullable final Consumer<? super Collection<Nothing>> onBulkConsumer,
+      @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
+    return subscribe(onValueConsumer, onBulkConsumer, onErrorConsumer, onCloseAction);
+  }
+
+  @Override
   public void unsubscribe(@NotNull final Receiver<?> receiver) {
   }
 

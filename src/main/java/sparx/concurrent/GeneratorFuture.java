@@ -15,7 +15,6 @@
  */
 package sparx.concurrent;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -25,7 +24,6 @@ import sparx.function.Function;
 import sparx.function.Predicate;
 import sparx.function.Supplier;
 import sparx.logging.Log;
-import sparx.util.ImmutableList;
 import sparx.util.Require;
 
 public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
@@ -125,11 +123,6 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
     return new GeneratorFuture<U>(supplier);
   }
 
-  @Override
-  void pull(@NotNull final Receiver<V> receiver) {
-    ((PullFuture<V>) super.wrapped()).pull(receiver);
-  }
-
   private static class PullFuture<V> extends VarFuture<V> {
 
     private final Supplier<? extends SignalFuture<V>> supplier;
@@ -219,36 +212,6 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
       return pullFromJoin || pullFromReceiver || pullFromIterator;
     }
 
-    private void pull(@NotNull final Receiver<V> receiver) {
-      scheduler().scheduleAfter(new PullTask() {
-        @Override
-        public void run() {
-          final LinkedList<V> pendingValues = PullFuture.this.pendingValues;
-          if (!pendingValues.isEmpty()) {
-            receiver.setBulk(ImmutableList.ofElementsIn(pendingValues));
-            setBulk(pendingValues);
-            pendingValues.clear();
-          } else if (isPull()) {
-            PullFuture.this.receiver.addTempReceiver(receiver);
-          } else {
-            try {
-              final SignalFuture<V> future = supplier.get();
-              if (future == null) {
-                close();
-              } else {
-                final GeneratorReceiver generatorReceiver = PullFuture.this.receiver;
-                generatorReceiver.addTempReceiver(receiver);
-                future.subscribe(generatorReceiver);
-              }
-            } catch (final Exception e) {
-              Log.err(GeneratorFuture.class, "Failed to generate new values: %s", Log.printable(e));
-              fail(e);
-            }
-          }
-        }
-      });
-    }
-
     private void internalPull() {
       consumeValues();
       if (isPull()) {
@@ -267,8 +230,6 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
     }
 
     private class GeneratorReceiver implements Receiver<V> {
-
-      private final ArrayList<Receiver<V>> receivers = new ArrayList<Receiver<V>>();
 
       @Override
       public void close() {
@@ -296,20 +257,8 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
         scheduler().scheduleAfter(new PullTask() {
           @Override
           public void run() {
-            final LinkedList<V> pendingValues = PullFuture.this.pendingValues;
             pendingValues.add(value);
-            final ArrayList<Receiver<V>> receivers = GeneratorReceiver.this.receivers;
-            for (final Receiver<V> receiver : receivers) {
-              receiver.setBulk(pendingValues);
-            }
             consumeValues();
-            if (!receivers.isEmpty()) {
-              receivers.clear();
-              if (!pendingValues.isEmpty()) {
-                PullFuture.this.setBulk(pendingValues);
-                pendingValues.clear();
-              }
-            }
           }
         });
       }
@@ -319,26 +268,10 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
         scheduler().scheduleAfter(new PullTask() {
           @Override
           public void run() {
-            final LinkedList<V> pendingValues = PullFuture.this.pendingValues;
             pendingValues.addAll(values);
-            final ArrayList<Receiver<V>> receivers = GeneratorReceiver.this.receivers;
-            for (final Receiver<V> receiver : receivers) {
-              receiver.setBulk(pendingValues);
-            }
             consumeValues();
-            if (!receivers.isEmpty()) {
-              receivers.clear();
-              if (!pendingValues.isEmpty()) {
-                PullFuture.this.setBulk(pendingValues);
-                pendingValues.clear();
-              }
-            }
           }
         });
-      }
-
-      private void addTempReceiver(@NotNull final Receiver<V> receiver) {
-        receivers.add(receiver);
       }
     }
 

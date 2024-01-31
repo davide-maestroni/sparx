@@ -34,6 +34,13 @@ public interface Signal<V> {
       @Nullable Consumer<Exception> onErrorConsumer,
       @Nullable Action onCloseAction);
 
+  @NotNull Subscription subscribeNext(@NotNull Receiver<? super V> receiver);
+
+  @NotNull Subscription subscribeNext(@Nullable Consumer<? super V> onValueConsumer,
+      @Nullable Consumer<? super Collection<V>> onBulkConsumer,
+      @Nullable Consumer<Exception> onErrorConsumer,
+      @Nullable Action onCloseAction);
+
   void unsubscribe(@NotNull Receiver<?> receiver);
 
   interface Subscription {

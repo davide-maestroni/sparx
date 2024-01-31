@@ -56,6 +56,18 @@ class ExecutionScope implements ExecutionContext {
   }
 
   @Override
+  public @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(
+      @NotNull final F future,
+      @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
+    taskAlert.notifyCall(function);
+    final CallFuture<V, F, U> task = new CallFuture<V, F, U>(Require.notNull(future, "future"),
+        Require.notNull(function, "function"));
+    registry.register(task);
+    scheduler.scheduleAfter(task);
+    return task.readOnly();
+  }
+
+  @Override
   public int minThroughput() {
     return scheduler.minThroughput();
   }
@@ -66,27 +78,17 @@ class ExecutionScope implements ExecutionContext {
   }
 
   @Override
-  public @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(
-      @NotNull final F future,
-      @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
-    taskAlert.notifyCall(function);
-    final CallFuture<V, F, U> task = new CallFuture<V, F, U>(future, function);
-    registry.register(task);
-    scheduler.scheduleAfter(task);
-    return task.readOnly();
-  }
-
-  @Override
   public @NotNull <V, F extends TupleFuture<V, ?>> StreamingFuture<Nothing> run(
       @NotNull final F future, @NotNull final Consumer<? super F> consumer) {
     taskAlert.notifyRun(consumer);
-    final RunFuture<V, F> task = new RunFuture<V, F>(future, consumer);
+    final RunFuture<V, F> task = new RunFuture<V, F>(Require.notNull(future, "future"),
+        Require.notNull(consumer, "consumer"));
     registry.register(task);
     scheduler.scheduleAfter(task);
     return task.readOnly();
   }
 
-  public interface FutureRegistry {
+  interface FutureRegistry {
 
     void register(@NotNull StreamingFuture<?> future);
   }
@@ -120,6 +122,40 @@ class ExecutionScope implements ExecutionContext {
     @Override
     public void remove() {
       throw new UnsupportedOperationException("remove");
+    }
+  }
+
+  private class CallFuture<V, F extends TupleFuture<V, ?>, U> extends ScopeFuture<U> {
+
+    private final Function<? super F, ? extends SignalFuture<U>> function;
+    private final F future;
+
+    private CallFuture(@NotNull final F future,
+        @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
+      this.future = future;
+      this.function = function;
+    }
+
+    @Override
+    protected void innerRun() throws Exception {
+      function.apply(future).subscribe(this);
+    }
+  }
+
+  private class RunFuture<V, F extends TupleFuture<V, ?>> extends ScopeFuture<Nothing> {
+
+    private final Consumer<? super F> consumer;
+    private final F future;
+
+    private RunFuture(@NotNull final F future, @NotNull final Consumer<? super F> consumer) {
+      this.future = future;
+      this.consumer = consumer;
+    }
+
+    @Override
+    protected void innerRun() throws Exception {
+      consumer.accept(future);
+      complete();
     }
   }
 
@@ -157,23 +193,12 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
-    public boolean fail(@NotNull final Exception error) {
-      if (!status.compareAndSet(IDLE, FAILED)) {
-        if (status.compareAndSet(RUNNING, FAILED)) {
-          innerFail(error);
-          return super.fail(error);
-        }
-        return false;
-      }
-      return super.fail(error);
-    }
-
-    @Override
     public @NotNull <R, V extends R> ScopeReceiver<R> decorateReceiver(
         @NotNull final StreamingFuture<V> future, @NotNull final Scheduler scheduler,
         @NotNull final Receiver<R> receiver) {
-      final ExecutionScopeReceiver<R> scopeReceiver = new ExecutionScopeReceiver<R>(future,
-          scheduler, receiver);
+      final ExecutionScopeReceiver<R> scopeReceiver = new ExecutionScopeReceiver<R>(
+          Require.notNull(future, "future"), Require.notNull(scheduler, "scheduler"),
+          Require.notNull(receiver, "receiver"));
       ExecutionScope.this.scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
@@ -189,8 +214,22 @@ class ExecutionScope implements ExecutionContext {
     }
 
     @Override
+    public boolean fail(@NotNull final Exception error) {
+      Require.notNull(error, "error");
+      if (!status.compareAndSet(IDLE, FAILED)) {
+        if (status.compareAndSet(RUNNING, FAILED)) {
+          innerFail(error);
+          return super.fail(error);
+        }
+        return false;
+      }
+      return super.fail(error);
+    }
+
+    @Override
     public @NotNull Registration registerFuture(@NotNull final StreamingFuture<?> future) {
-      final ScopeRegistration registration = new ScopeRegistration(future);
+      final ScopeRegistration registration = new ScopeRegistration(
+          Require.notNull(future, "future"));
       scheduler.scheduleAfter(new ContextTask() {
         @Override
         public void run() {
@@ -203,6 +242,20 @@ class ExecutionScope implements ExecutionContext {
     @Override
     public Object restoreObject(@NotNull final String name) {
       return objects.get(name);
+    }
+
+    @Override
+    public void run() {
+      if (status.compareAndSet(IDLE, RUNNING)) {
+        FutureScope.pushScope(this);
+        try {
+          innerRun();
+        } catch (final Exception e) {
+          fail(e);
+        } finally {
+          FutureScope.popScope();
+        }
+      }
     }
 
     @Override
@@ -227,20 +280,6 @@ class ExecutionScope implements ExecutionContext {
     @Override
     public int weight() {
       return 1;
-    }
-
-    @Override
-    public void run() {
-      if (status.compareAndSet(IDLE, RUNNING)) {
-        FutureScope.pushScope(this);
-        try {
-          innerRun();
-        } catch (final Exception e) {
-          fail(e);
-        } finally {
-          FutureScope.popScope();
-        }
-      }
     }
 
     protected void complete() {
@@ -290,16 +329,6 @@ class ExecutionScope implements ExecutionContext {
       }
     }
 
-    private abstract class ScopeStatus {
-
-      abstract void onCreate(@NotNull StreamingFuture<?> future,
-          @NotNull Registration registration);
-
-      abstract void onFail(@NotNull Exception error);
-
-      abstract void onSubscribe(@NotNull ExecutionScopeReceiver<?> scopeReceiver);
-    }
-
     private class CancelledStatus extends ScopeStatus {
 
       private final Exception failureException;
@@ -329,36 +358,16 @@ class ExecutionScope implements ExecutionContext {
       }
     }
 
-    private class RunningStatus extends ScopeStatus {
+    private abstract class ContextTask implements Task {
 
       @Override
-      public void onCreate(@NotNull final StreamingFuture<?> future,
-          @NotNull final Registration registration) {
-        futures.add(future);
+      public @NotNull String taskID() {
+        return taskID;
       }
 
       @Override
-      public void onFail(@NotNull final Exception error) {
-        scopeStatus = new CancelledStatus(error);
-        final HashSet<ExecutionScopeReceiver<?>> receivers = ScopeFuture.this.receivers;
-        for (final ExecutionScopeReceiver<?> receiver : receivers) {
-          receiver.failAndUnsubscribe(error);
-        }
-        receivers.clear();
-        final HashSet<StreamingFuture<?>> futures = ScopeFuture.this.futures;
-        for (final StreamingFuture<?> future : futures) {
-          if (!future.isReadOnly()) {
-            future.fail(error);
-          } else {
-            future.cancel(false);
-          }
-        }
-        futures.clear();
-      }
-
-      @Override
-      public void onSubscribe(@NotNull final ExecutionScopeReceiver<?> scopeReceiver) {
-        receivers.add(scopeReceiver);
+      public int weight() {
+        return 1;
       }
     }
 
@@ -371,11 +380,20 @@ class ExecutionScope implements ExecutionContext {
       private Receiver<R> status = new RunningStatus();
 
       private ExecutionScopeReceiver(@NotNull final StreamingFuture<?> future,
-          @NotNull final Scheduler futureScheduler,
-          @NotNull final Receiver<R> wrapped) {
+          @NotNull final Scheduler futureScheduler, @NotNull final Receiver<R> wrapped) {
         this.future = future;
         this.futureScheduler = futureScheduler;
         this.wrapped = wrapped;
+      }
+
+      @Override
+      public void close() {
+        status.close();
+      }
+
+      @Override
+      public boolean fail(@NotNull final Exception error) {
+        return status.fail(error);
       }
 
       @Override
@@ -399,16 +417,6 @@ class ExecutionScope implements ExecutionContext {
             futureScheduler.resume();
           }
         });
-      }
-
-      @Override
-      public void close() {
-        status.close();
-      }
-
-      @Override
-      public boolean fail(@NotNull final Exception error) {
-        return status.fail(error);
       }
 
       @Override
@@ -448,6 +456,26 @@ class ExecutionScope implements ExecutionContext {
         future.unsubscribe(wrapped);
       }
 
+      private class DoneStatus implements Receiver<R> {
+
+        @Override
+        public void close() {
+        }
+
+        @Override
+        public boolean fail(@NotNull final Exception error) {
+          return false;
+        }
+
+        @Override
+        public void set(final R value) {
+        }
+
+        @Override
+        public void setBulk(@NotNull final Collection<R> values) {
+        }
+      }
+
       private abstract class ReceiverTask extends ScopeTask {
 
         private ReceiverTask() {
@@ -466,30 +494,22 @@ class ExecutionScope implements ExecutionContext {
         protected abstract void runInScheduler();
       }
 
-      private class DoneStatus implements Receiver<R> {
-
-        @Override
-        public boolean fail(@NotNull final Exception error) {
-          return false;
-        }
-
-        @Override
-        public void set(final R value) {
-        }
-
-        @Override
-        public void setBulk(@NotNull final Collection<R> values) {
-        }
-
-        @Override
-        public void close() {
-        }
-      }
-
       private class RunningStatus implements Receiver<R> {
 
         @Override
+        public void close() {
+          status = new DoneStatus();
+          scheduler.scheduleAfter(new ReceiverTask() {
+            @Override
+            protected void runInScheduler() {
+              wrapped.close();
+            }
+          });
+        }
+
+        @Override
         public boolean fail(@NotNull final Exception error) {
+          Require.notNull(error, "error");
           status = new DoneStatus();
           scheduler.scheduleAfter(new ReceiverTask() {
             @Override
@@ -512,6 +532,7 @@ class ExecutionScope implements ExecutionContext {
 
         @Override
         public void setBulk(@NotNull final Collection<R> values) {
+          Require.notNull(values, "values");
           scheduler.scheduleAfter(new ReceiverTask() {
             @Override
             protected void runInScheduler() {
@@ -519,17 +540,39 @@ class ExecutionScope implements ExecutionContext {
             }
           });
         }
+      }
+    }
 
-        @Override
-        public void close() {
-          status = new DoneStatus();
-          scheduler.scheduleAfter(new ReceiverTask() {
-            @Override
-            protected void runInScheduler() {
-              wrapped.close();
-            }
-          });
+    private class RunningStatus extends ScopeStatus {
+
+      @Override
+      public void onCreate(@NotNull final StreamingFuture<?> future,
+          @NotNull final Registration registration) {
+        futures.add(future);
+      }
+
+      @Override
+      public void onFail(@NotNull final Exception error) {
+        scopeStatus = new CancelledStatus(error);
+        final HashSet<ExecutionScopeReceiver<?>> receivers = ScopeFuture.this.receivers;
+        for (final ExecutionScopeReceiver<?> receiver : receivers) {
+          receiver.failAndUnsubscribe(error);
         }
+        receivers.clear();
+        final HashSet<StreamingFuture<?>> futures = ScopeFuture.this.futures;
+        for (final StreamingFuture<?> future : futures) {
+          if (!future.isReadOnly()) {
+            future.fail(error);
+          } else {
+            future.cancel(false);
+          }
+        }
+        futures.clear();
+      }
+
+      @Override
+      public void onSubscribe(@NotNull final ExecutionScopeReceiver<?> scopeReceiver) {
+        receivers.add(scopeReceiver);
       }
     }
 
@@ -538,7 +581,7 @@ class ExecutionScope implements ExecutionContext {
       private final StreamingFuture<?> future;
 
       private ScopeRegistration(@NotNull final StreamingFuture<?> future) {
-        this.future = Require.notNull(future, "future");
+        this.future = future;
       }
 
       @Override
@@ -554,19 +597,6 @@ class ExecutionScope implements ExecutionContext {
       @Override
       public void onUncaughtError(@NotNull final Exception error) {
         innerFail(error);
-      }
-    }
-
-    private abstract class ContextTask implements Task {
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
       }
     }
 
@@ -586,39 +616,15 @@ class ExecutionScope implements ExecutionContext {
 
       protected abstract void runInScope();
     }
-  }
 
-  private class CallFuture<V, F extends TupleFuture<V, ?>, U> extends ScopeFuture<U> {
+    private abstract class ScopeStatus {
 
-    private final Function<? super F, ? extends SignalFuture<U>> function;
-    private final F future;
+      abstract void onCreate(@NotNull StreamingFuture<?> future,
+          @NotNull Registration registration);
 
-    private CallFuture(@NotNull final F future,
-        @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
-      this.future = Require.notNull(future, "future");
-      this.function = Require.notNull(function, "function");
-    }
+      abstract void onFail(@NotNull Exception error);
 
-    @Override
-    protected void innerRun() throws Exception {
-      function.apply(future).subscribe(this);
-    }
-  }
-
-  private class RunFuture<V, F extends TupleFuture<V, ?>> extends ScopeFuture<Nothing> {
-
-    private final Consumer<? super F> consumer;
-    private final F future;
-
-    private RunFuture(@NotNull final F future, @NotNull final Consumer<? super F> consumer) {
-      this.future = Require.notNull(future, "future");
-      this.consumer = Require.notNull(consumer, "consumer");
-    }
-
-    @Override
-    protected void innerRun() throws Exception {
-      consumer.accept(future);
-      complete();
+      abstract void onSubscribe(@NotNull ExecutionScopeReceiver<?> scopeReceiver);
     }
   }
 }

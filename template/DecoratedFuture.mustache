@@ -144,6 +144,18 @@ public class DecoratedFuture<V> implements StreamingFuture<V> {
   }
 
   @Override
+  public @NotNull Subscription subscribeNext(@NotNull final Receiver<? super V> receiver) {
+    return wrapped.subscribeNext(receiver);
+  }
+
+  @Override
+  public @NotNull Subscription subscribeNext(@Nullable final Consumer<? super V> onValueConsumer,
+      @Nullable final Consumer<? super Collection<V>> onBulkConsumer,
+      @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
+    return wrapped.subscribeNext(onValueConsumer, onBulkConsumer, onErrorConsumer, onCloseAction);
+  }
+
+  @Override
   public void unsubscribe(@NotNull final Receiver<?> receiver) {
     wrapped.unsubscribe(receiver);
   }

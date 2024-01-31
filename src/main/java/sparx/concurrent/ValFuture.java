@@ -91,6 +91,14 @@ public abstract class ValFuture<V> extends
   }
 
   @Override
+  public @NotNull Subscription subscribeNext(@Nullable final Consumer<? super V> onValueConsumer,
+      @Nullable final Consumer<? super Collection<V>> onBulkConsumer,
+      @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
+    return subscribeNext(new FunctionalReceiver<V>(onValueConsumer, onBulkConsumer, onErrorConsumer,
+        onCloseAction));
+  }
+
+  @Override
   public void unsubscribe(@NotNull final Receiver<?> receiver) {
   }
 
@@ -174,6 +182,18 @@ public abstract class ValFuture<V> extends
         }
       }
       return DummySubscription.instance();
+    }
+
+    @Override
+    public @NotNull Subscription subscribeNext(@NotNull final Receiver<? super V> receiver) {
+      return subscribe(receiver);
+    }
+
+    @Override
+    public @NotNull Subscription subscribeNext(@Nullable final Consumer<? super V> onValueConsumer,
+        @Nullable final Consumer<? super Collection<V>> onBulkConsumer,
+        @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
+      return subscribe(onValueConsumer, onBulkConsumer, onErrorConsumer, onCloseAction);
     }
 
     @Override
@@ -261,6 +281,20 @@ public abstract class ValFuture<V> extends
         }
         return DummySubscription.instance();
       }
+
+      @Override
+      public @NotNull Subscription subscribeNext(@NotNull final Receiver<? super Object> receiver) {
+        return subscribe(receiver);
+      }
+
+      @Override
+      public @NotNull Subscription subscribeNext(
+          @Nullable final Consumer<? super Object> onValueConsumer,
+          @Nullable final Consumer<? super Collection<Object>> onBulkConsumer,
+          @Nullable final Consumer<Exception> onErrorConsumer,
+          @Nullable final Action onCloseAction) {
+        return subscribe(onValueConsumer, onBulkConsumer, onErrorConsumer, onCloseAction);
+      }
     };
 
     private final List<V> values;
@@ -300,6 +334,11 @@ public abstract class ValFuture<V> extends
         Log.err(ValFuture.class, "Uncaught exception: %s", Log.printable(e));
       }
       return DummySubscription.instance();
+    }
+
+    @Override
+    public @NotNull Subscription subscribeNext(@NotNull final Receiver<? super V> receiver) {
+      return ValFuture.<V>of().subscribe(receiver);
     }
 
     @Override
