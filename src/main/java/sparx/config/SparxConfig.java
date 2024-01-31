@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024 Davide Maestroni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package sparx.config;
 
 import java.io.File;
@@ -11,9 +26,10 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.UncheckedException;
 import sparx.logging.Log;
 import sparx.util.ImmutableList;
+import sparx.util.Require;
+import sparx.util.UncheckedException;
 
 public class SparxConfig {
 
@@ -30,21 +46,8 @@ public class SparxConfig {
 
   public static void addModule(@NotNull final String prefix, @NotNull final ConfigModule module) {
     synchronized (lock) {
-      final ConfigModule oldModule = modules.put(prefix, module);
+      final ConfigModule oldModule = modules.put(prefix, Require.notNull(module, "module"));
       if (oldModule != null && !oldModule.equals(module)) {
-        try {
-          oldModule.reset();
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-    }
-  }
-
-  public static void removeModule(@NotNull final String prefix) {
-    synchronized (lock) {
-      final ConfigModule oldModule = modules.remove(prefix);
-      if (oldModule != null) {
         try {
           oldModule.reset();
         } catch (final Exception e) {
@@ -122,6 +125,19 @@ public class SparxConfig {
       }
       Log.dbg(SparxConfig.class,
           "Sparx configuration successfully initialized with properties: %s", properties);
+    }
+  }
+
+  public static void removeModule(@NotNull final String prefix) {
+    synchronized (lock) {
+      final ConfigModule oldModule = modules.remove(prefix);
+      if (oldModule != null) {
+        try {
+          oldModule.reset();
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
     }
   }
 

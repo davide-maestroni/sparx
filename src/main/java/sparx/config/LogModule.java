@@ -191,6 +191,11 @@ public class LogModule implements ConfigModule {
       input.getThird().subscribe(
           new Receiver<Couple<Object, String, Properties>>() {
             @Override
+            public void close() {
+              input.getSecond().close();
+            }
+
+            @Override
             public boolean fail(@NotNull final Exception error) {
               return input.getSecond().fail(error);
             }
@@ -215,11 +220,6 @@ public class LogModule implements ConfigModule {
               for (final Couple<Object, String, Properties> value : values) {
                 set(value);
               }
-            }
-
-            @Override
-            public void close() {
-              input.getSecond().close();
             }
           });
     }
