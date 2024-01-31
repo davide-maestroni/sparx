@@ -41,7 +41,7 @@ class {{name}}Tuple<T, {{#indexes}}T{{value}} extends T{{^last}}, {{/last}}{{/in
 
 {{#last}}  @Override
   public T{{value.index}} get{{value.suffix}}() {
-   return {{value.name}};
+    return {{value.name}};
   }
 {{/last}}{{/ordinals}}
 }

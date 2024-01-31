@@ -46,6 +46,6 @@ class TripleTuple<T, T1 extends T, T2 extends T, T3 extends T> extends GenericTu
 
   @Override
   public T3 getThird() {
-   return third;
+    return third;
   }
 }

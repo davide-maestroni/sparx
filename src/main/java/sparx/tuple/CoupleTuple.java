@@ -39,6 +39,6 @@ class CoupleTuple<T, T1 extends T, T2 extends T> extends GenericTuple<T>
 
   @Override
   public T2 getSecond() {
-   return second;
+    return second;
   }
 }

@@ -23,9 +23,11 @@ import sparx.util.UncheckedException;
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
 ///////////////////////////////////////////////
 
-public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements StreamableFuture<V, F> {
+public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
+    StreamableFuture<V, F> {
 
-  protected static @NotNull <V> StreamingFuture<V> proxyFuture(@NotNull final StreamingFuture<V> future) {
+  protected static @NotNull <V> StreamingFuture<V> proxyFuture(
+      @NotNull final StreamingFuture<V> future) {
     return new ProxyFuture<V>(future);
   }
 

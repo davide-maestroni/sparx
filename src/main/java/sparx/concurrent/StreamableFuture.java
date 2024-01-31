@@ -25,7 +25,7 @@ import sparx.function.Function;
 public interface StreamableFuture<V, F extends SignalFuture<V>> extends SignalFuture<V> {
 
   @NotNull <V1, F1 extends SignalFuture<V1>> F1 then(
-    @NotNull Function<? super F, F1> firstFunction);
+      @NotNull Function<? super F, F1> firstFunction);
 
   @NotNull <V1, F1 extends SignalFuture<V1>, V2, F2 extends SignalFuture<V2>> F2 then(
       @NotNull final Function<? super F, F1> firstFunction,
