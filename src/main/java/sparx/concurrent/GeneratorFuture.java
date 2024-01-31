@@ -54,8 +54,25 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
 
   public static @NotNull <V> GeneratorFuture<V> ofDeferred(
       @NotNull final Supplier<? extends SignalFuture<V>> supplier) {
-    // TODO: return just once
-    return new GeneratorFuture<V>(supplier);
+    return of(new Supplier<SignalFuture<V>>() {
+      @Override
+      public SignalFuture<V> get() throws Exception {
+        return status.get();
+      }
+
+      private Supplier<SignalFuture<V>> status = new Supplier<SignalFuture<V>>() {
+        @Override
+        public SignalFuture<V> get() throws Exception {
+          status = new Supplier<SignalFuture<V>>() {
+            @Override
+            public SignalFuture<V> get() {
+              return null;
+            }
+          };
+          return supplier.get();
+        }
+      };
+    });
   }
 
   public static @NotNull <V> GeneratorFuture<V> ofLoop(final V initialValue,
@@ -68,14 +85,14 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
 
       @Override
       public SignalFuture<V> get() throws Exception {
-        return supplier.get();
+        return status.get();
       }
 
-      private Supplier<SignalFuture<V>> supplier = new Supplier<SignalFuture<V>>() {
+      private Supplier<SignalFuture<V>> status = new Supplier<SignalFuture<V>>() {
         @Override
         public SignalFuture<V> get() throws Exception {
           if (predicate.test(value)) {
-            supplier = new Supplier<SignalFuture<V>>() {
+            status = new Supplier<SignalFuture<V>>() {
               @Override
               public SignalFuture<V> get() throws Exception {
                 if (predicate.test(value)) {

@@ -65,8 +65,8 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F2 output = input.thenSequentially(
-        firstFunction,
-        secondFunction
+          firstFunction,
+          secondFunction
       );
       final GeneratorStreamReceiver<V2> receiver = new GeneratorStreamReceiver<V2>(input, output);
       final GeneratingFuture<V2> future = createGeneratingFuture(receiver);
@@ -89,9 +89,9 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F3 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction
       );
       final GeneratorStreamReceiver<V3> receiver = new GeneratorStreamReceiver<V3>(input, output);
       final GeneratingFuture<V3> future = createGeneratingFuture(receiver);
@@ -115,10 +115,10 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F4 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction
       );
       final GeneratorStreamReceiver<V4> receiver = new GeneratorStreamReceiver<V4>(input, output);
       final GeneratingFuture<V4> future = createGeneratingFuture(receiver);
@@ -143,11 +143,11 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F5 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction
       );
       final GeneratorStreamReceiver<V5> receiver = new GeneratorStreamReceiver<V5>(input, output);
       final GeneratingFuture<V5> future = createGeneratingFuture(receiver);
@@ -173,12 +173,12 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F6 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction
       );
       final GeneratorStreamReceiver<V6> receiver = new GeneratorStreamReceiver<V6>(input, output);
       final GeneratingFuture<V6> future = createGeneratingFuture(receiver);
@@ -205,13 +205,13 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F7 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction
       );
       final GeneratorStreamReceiver<V7> receiver = new GeneratorStreamReceiver<V7>(input, output);
       final GeneratingFuture<V7> future = createGeneratingFuture(receiver);
@@ -239,14 +239,14 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F8 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction
       );
       final GeneratorStreamReceiver<V8> receiver = new GeneratorStreamReceiver<V8>(input, output);
       final GeneratingFuture<V8> future = createGeneratingFuture(receiver);
@@ -275,15 +275,15 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F9 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction
       );
       final GeneratorStreamReceiver<V9> receiver = new GeneratorStreamReceiver<V9>(input, output);
       final GeneratingFuture<V9> future = createGeneratingFuture(receiver);
@@ -313,16 +313,16 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F10 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction
       );
       final GeneratorStreamReceiver<V10> receiver = new GeneratorStreamReceiver<V10>(input, output);
       final GeneratingFuture<V10> future = createGeneratingFuture(receiver);
@@ -353,17 +353,17 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F11 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction
       );
       final GeneratorStreamReceiver<V11> receiver = new GeneratorStreamReceiver<V11>(input, output);
       final GeneratingFuture<V11> future = createGeneratingFuture(receiver);
@@ -395,18 +395,18 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F12 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction
       );
       final GeneratorStreamReceiver<V12> receiver = new GeneratorStreamReceiver<V12>(input, output);
       final GeneratingFuture<V12> future = createGeneratingFuture(receiver);
@@ -439,19 +439,19 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F13 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction
       );
       final GeneratorStreamReceiver<V13> receiver = new GeneratorStreamReceiver<V13>(input, output);
       final GeneratingFuture<V13> future = createGeneratingFuture(receiver);
@@ -485,20 +485,20 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F14 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction
       );
       final GeneratorStreamReceiver<V14> receiver = new GeneratorStreamReceiver<V14>(input, output);
       final GeneratingFuture<V14> future = createGeneratingFuture(receiver);
@@ -533,21 +533,21 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F15 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction
       );
       final GeneratorStreamReceiver<V15> receiver = new GeneratorStreamReceiver<V15>(input, output);
       final GeneratingFuture<V15> future = createGeneratingFuture(receiver);
@@ -583,22 +583,22 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F16 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction,
-        sixteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction,
+          sixteenthFunction
       );
       final GeneratorStreamReceiver<V16> receiver = new GeneratorStreamReceiver<V16>(input, output);
       final GeneratingFuture<V16> future = createGeneratingFuture(receiver);
@@ -635,23 +635,23 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F17 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction,
-        sixteenthFunction,
-        seventeenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction,
+          sixteenthFunction,
+          seventeenthFunction
       );
       final GeneratorStreamReceiver<V17> receiver = new GeneratorStreamReceiver<V17>(input, output);
       final GeneratingFuture<V17> future = createGeneratingFuture(receiver);
@@ -689,24 +689,24 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F18 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction,
-        sixteenthFunction,
-        seventeenthFunction,
-        eighteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction,
+          sixteenthFunction,
+          seventeenthFunction,
+          eighteenthFunction
       );
       final GeneratorStreamReceiver<V18> receiver = new GeneratorStreamReceiver<V18>(input, output);
       final GeneratingFuture<V18> future = createGeneratingFuture(receiver);
@@ -745,25 +745,25 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F19 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction,
-        sixteenthFunction,
-        seventeenthFunction,
-        eighteenthFunction,
-        nineteenthFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction,
+          sixteenthFunction,
+          seventeenthFunction,
+          eighteenthFunction,
+          nineteenthFunction
       );
       final GeneratorStreamReceiver<V19> receiver = new GeneratorStreamReceiver<V19>(input, output);
       final GeneratingFuture<V19> future = createGeneratingFuture(receiver);
@@ -803,26 +803,26 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     try {
       final VarFuture<V> input = VarFuture.create();
       final F20 output = input.thenSequentially(
-        firstFunction,
-        secondFunction,
-        thirdFunction,
-        fourthFunction,
-        fifthFunction,
-        sixthFunction,
-        seventhFunction,
-        eighthFunction,
-        ninthFunction,
-        tenthFunction,
-        eleventhFunction,
-        twelfthFunction,
-        thirteenthFunction,
-        fourteenthFunction,
-        fifteenthFunction,
-        sixteenthFunction,
-        seventeenthFunction,
-        eighteenthFunction,
-        nineteenthFunction,
-        twentiethFunction
+          firstFunction,
+          secondFunction,
+          thirdFunction,
+          fourthFunction,
+          fifthFunction,
+          sixthFunction,
+          seventhFunction,
+          eighthFunction,
+          ninthFunction,
+          tenthFunction,
+          eleventhFunction,
+          twelfthFunction,
+          thirteenthFunction,
+          fourteenthFunction,
+          fifteenthFunction,
+          sixteenthFunction,
+          seventeenthFunction,
+          eighteenthFunction,
+          nineteenthFunction,
+          twentiethFunction
       );
       final GeneratorStreamReceiver<V20> receiver = new GeneratorStreamReceiver<V20>(input, output);
       final GeneratingFuture<V20> future = createGeneratingFuture(receiver);
@@ -836,7 +836,8 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     }
   }
 
-  abstract @NotNull <U> GeneratingFuture<U> createGeneratingFuture(@NotNull Supplier<? extends SignalFuture<U>> supplier);
+  abstract @NotNull <U> GeneratingFuture<U> createGeneratingFuture(
+      @NotNull Supplier<? extends SignalFuture<U>> supplier);
 
   abstract void pull(@NotNull Receiver<V> receiver);
 

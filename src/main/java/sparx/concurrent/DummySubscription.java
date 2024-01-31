@@ -22,11 +22,11 @@ class DummySubscription implements Subscription {
 
   private final static DummySubscription INSTANCE = new DummySubscription();
 
-  public static @NotNull DummySubscription instance() {
-    return INSTANCE;
+  private DummySubscription() {
   }
 
-  private DummySubscription() {
+  public static @NotNull DummySubscription instance() {
+    return INSTANCE;
   }
 
   @Override

@@ -24,12 +24,12 @@ public class EmptyLiveIterator<E> implements LiveIterator<E> {
 
   private static final EmptyLiveIterator<?> INSTANCE = new EmptyLiveIterator<Object>();
 
+  private EmptyLiveIterator() {
+  }
+
   @SuppressWarnings("unchecked")
   public static @NotNull <E> EmptyLiveIterator<E> instance() {
     return (EmptyLiveIterator<E>) INSTANCE;
-  }
-
-  private EmptyLiveIterator() {
   }
 
   @Override

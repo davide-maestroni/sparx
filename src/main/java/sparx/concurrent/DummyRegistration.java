@@ -22,11 +22,11 @@ class DummyRegistration implements Registration {
 
   private final static DummyRegistration INSTANCE = new DummyRegistration();
 
-  public static @NotNull DummyRegistration instance() {
-    return INSTANCE;
+  private DummyRegistration() {
   }
 
-  private DummyRegistration() {
+  public static @NotNull DummyRegistration instance() {
+    return INSTANCE;
   }
 
   @Override

@@ -68,9 +68,9 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
       final VarFuture<V> input = VarFuture.create();
 {{#ordinals}}{{#last}}      final F{{value.index}} output = input.{{methodName}}Sequentially({{/last}}{{/ordinals}}
 {{#ordinals}}
-        {{value.prevName}}Function,{{#last}}
+          {{value.prevName}}Function,{{#last}}
 
-        {{value.name}}Function{{/last}}
+          {{value.name}}Function{{/last}}
 {{/ordinals}}
       );
 {{#ordinals}}{{#last}}      final GeneratorStreamReceiver<V{{value.index}}> receiver = new GeneratorStreamReceiver<V{{value.index}}>(input, output);
@@ -87,7 +87,8 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
   }
 {{/tuples}}
 
-  abstract @NotNull <U> GeneratingFuture<U> createGeneratingFuture(@NotNull Supplier<? extends SignalFuture<U>> supplier);
+  abstract @NotNull <U> GeneratingFuture<U> createGeneratingFuture(
+      @NotNull Supplier<? extends SignalFuture<U>> supplier);
 
   abstract void pull(@NotNull Receiver<V> receiver);
 
