@@ -41,7 +41,7 @@ public class GeneratorFutureTests {
   @Test
   public void testThen() {
     var future = GeneratorFuture.ofLoop(0, c -> (c < 10), c -> c + 1)
-        .thenGenerating(map(i -> Integer.toString(i)));
+        .thenPulling(map(i -> Integer.toString(i)));
     var iterator = future.iterator();
     assertEquals("0", iterator.next());
     assertEquals("0", future.getCurrent());
@@ -56,17 +56,17 @@ public class GeneratorFutureTests {
   public void testSubscribe() {
     var value = new AtomicInteger(-1);
     var future = GeneratorFuture.ofLoop(0, c -> (c < 10), c -> c + 1);
-    future.thenGenerating(doOnce(value::set)).subscribe();
+    future.thenPulling(doOnce(value::set)).subscribe();
     assertEquals(0, value.get());
     assertEquals(0, future.getCurrent());
     assertFalse(future.isDone());
 
-    future.thenGenerating(doOnce(value::set)).subscribe();
+    future.thenPulling(doOnce(value::set)).subscribe();
     assertEquals(1, value.get());
     assertEquals(1, future.getCurrent());
     assertFalse(future.isDone());
 
-    future.thenGenerating(doOnce(value::set)).subscribe();
+    future.thenPulling(doOnce(value::set)).subscribe();
     assertEquals(2, value.get());
     assertEquals(2, future.getCurrent());
     assertFalse(future.isDone());

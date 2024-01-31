@@ -38,7 +38,7 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     return subscribe(null, null, null, null);
   }
 
-  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratingFuture<V1> {{methodName}}Generating(
+  public @NotNull <V1, F1 extends SignalFuture<V1>> GeneratingFuture<V1> {{methodName}}Pulling(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction) {
     final StreamScope<V1> scope = new StreamScope<V1>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
@@ -58,7 +58,7 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
   }
 {{#tuples}}
 
-  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> GeneratingFuture<V{{value}}>{{/last}}{{/indexes}} {{methodName}}Generating(
+  public @NotNull <{{#indexes}}V{{value}}, F{{value}} extends SignalFuture<V{{value}}>{{^last}}, {{/last}}{{#last}}> GeneratingFuture<V{{value}}>{{/last}}{{/indexes}} {{methodName}}Pulling(
       @NotNull final Function<? super StreamingFuture<V>, F1> firstFunction,
 {{#ordinals}}      @NotNull final Function<? super F{{value.prevIndex}}, F{{value.index}}> {{value.name}}Function{{^last}},{{/last}}{{#last}}) {
     final StreamScope<V{{value.index}}> scope = new StreamScope<V{{value.index}}>(FutureScope.currentScope());{{/last}}
@@ -90,7 +90,7 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
   abstract @NotNull <U> GeneratingFuture<U> createGeneratingFuture(
       @NotNull Supplier<? extends SignalFuture<U>> supplier);
 
-  private class GeneratorStreamReceiver<U> implements Supplier<SignalFuture<U>>, Receiver<U> {
+  private class GeneratorStreamReceiver<U> implements Receiver<U>, Supplier<SignalFuture<U>> {
 
     private final VarFuture<V> input;
     private final SignalFuture<U> output;
@@ -130,6 +130,36 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     }
 
     @Override
+    public void close() {
+      final ArrayList<U> pendingValues = this.pendingValues;
+      synchronized (pendingValues) {
+        isClosed = true;
+        final VarFuture<U> future = this.future;
+        if (future != null) {
+          future.setBulk(pendingValues);
+          future.close();
+          pendingValues.clear();
+        }
+      }
+    }
+
+    @Override
+    public boolean fail(@NotNull final Exception error) {
+      final ArrayList<U> pendingValues = this.pendingValues;
+      synchronized (pendingValues) {
+        isClosed = true;
+        failureException = error;
+        final VarFuture<U> future = this.future;
+        if (future != null) {
+          future.setBulk(pendingValues);
+          future.fail(error);
+          pendingValues.clear();
+        }
+      }
+      return true;
+    }
+
+    @Override
     public SignalFuture<U> get() {
       final ArrayList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
@@ -158,36 +188,6 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
       output.subscribe(this);
       subscribeNext(receiver);
       return future;
-    }
-
-    @Override
-    public void close() {
-      final ArrayList<U> pendingValues = this.pendingValues;
-      synchronized (pendingValues) {
-        isClosed = true;
-        final VarFuture<U> future = this.future;
-        if (future != null) {
-          future.setBulk(pendingValues);
-          future.close();
-          pendingValues.clear();
-        }
-      }
-    }
-
-    @Override
-    public boolean fail(@NotNull final Exception error) {
-      final ArrayList<U> pendingValues = this.pendingValues;
-      synchronized (pendingValues) {
-        isClosed = true;
-        failureException = error;
-        final VarFuture<U> future = this.future;
-        if (future != null) {
-          future.setBulk(pendingValues);
-          future.fail(error);
-          pendingValues.clear();
-        }
-      }
-      return true;
     }
 
     @Override

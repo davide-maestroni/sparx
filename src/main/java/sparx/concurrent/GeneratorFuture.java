@@ -28,6 +28,52 @@ import sparx.util.Require;
 
 public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
 
+  private GeneratorFuture(@NotNull final Supplier<? extends SignalFuture<V>> supplier) {
+    super(new PullFuture<V>(supplier));
+  }
+
+  public static @NotNull <V> GeneratorFuture<V> of(@NotNull final SignalFuture<V> future) {
+    return of(new Supplier<SignalFuture<V>>() {
+      private boolean isDone;
+
+      @Override
+      public SignalFuture<V> get() {
+        if (isDone) {
+          return null;
+        }
+        final VarFuture<V> output = VarFuture.create();
+        future.subscribeNext(new Receiver<V>() {
+          @Override
+          public void close() {
+            isDone = true;
+            output.close();
+          }
+
+          @Override
+          public boolean fail(@NotNull final Exception error) {
+            isDone = true;
+            return output.fail(error);
+          }
+
+          @Override
+          public void set(final V value) {
+            future.unsubscribe(this);
+            output.set(value);
+            output.close();
+          }
+
+          @Override
+          public void setBulk(@NotNull final Collection<V> values) {
+            future.unsubscribe(this);
+            output.setBulk(values);
+            output.close();
+          }
+        });
+        return output;
+      }
+    });
+  }
+
   public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterable<? extends V> iterable) {
     return of(iterable.iterator());
   }
@@ -106,10 +152,6 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
         }
       };
     });
-  }
-
-  private GeneratorFuture(@NotNull final Supplier<? extends SignalFuture<V>> supplier) {
-    super(new PullFuture<V>(supplier));
   }
 
   @Override
