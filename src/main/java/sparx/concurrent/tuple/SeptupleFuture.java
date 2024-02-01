@@ -30,25 +30,6 @@ public class SeptupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exte
     StreamScopeTupleFuture<V, SeptupleFuture<V, V1, V2, V3, V4, V5, V6, V7>> implements
     Septuple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>, StreamingFuture<V4>, StreamingFuture<V5>, StreamingFuture<V6>, StreamingFuture<V7>> {
 
-  public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V> SeptupleFuture<V, V1, V2, V3, V4, V5, V6, V7> of(
-      @NotNull final StreamingFuture<V1> first,
-      @NotNull final StreamingFuture<V2> second,
-      @NotNull final StreamingFuture<V3> third,
-      @NotNull final StreamingFuture<V4> fourth,
-      @NotNull final StreamingFuture<V5> fifth,
-      @NotNull final StreamingFuture<V6> sixth,
-      @NotNull final StreamingFuture<V7> seventh) { 
-    return new SeptupleFuture<V, V1, V2, V3, V4, V5, V6, V7>(
-        Require.notNull(first, "first"),
-        Require.notNull(second, "second"),
-        Require.notNull(third, "third"),
-        Require.notNull(fourth, "fourth"),
-        Require.notNull(fifth, "fifth"),
-        Require.notNull(sixth, "sixth"),
-        Require.notNull(seventh, "seventh")
-    );
-  }
-
   private final StreamingFuture<V1> first;
   private final StreamingFuture<V2> second;
   private final StreamingFuture<V3> third;
@@ -74,6 +55,25 @@ public class SeptupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 exte
     this.sixth = sixth;
     this.seventh = seventh;
     this.futures = ImmutableList.of(first, second, third, fourth, fifth, sixth, seventh);
+  }
+
+  public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V> SeptupleFuture<V, V1, V2, V3, V4, V5, V6, V7> of(
+      @NotNull final StreamingFuture<V1> first,
+      @NotNull final StreamingFuture<V2> second,
+      @NotNull final StreamingFuture<V3> third,
+      @NotNull final StreamingFuture<V4> fourth,
+      @NotNull final StreamingFuture<V5> fifth,
+      @NotNull final StreamingFuture<V6> sixth,
+      @NotNull final StreamingFuture<V7> seventh) { 
+    return new SeptupleFuture<V, V1, V2, V3, V4, V5, V6, V7>(
+        Require.notNull(first, "first"),
+        Require.notNull(second, "second"),
+        Require.notNull(third, "third"),
+        Require.notNull(fourth, "fourth"),
+        Require.notNull(fifth, "fifth"),
+        Require.notNull(sixth, "sixth"),
+        Require.notNull(seventh, "seventh")
+    );
   }
 
   @Override

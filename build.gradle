@@ -43,7 +43,6 @@ test {
 
 tasks.register('generateCode') {
   doLast {
-    def count = 1
     def tupleNames = [
         'Couple', 'Triple', 'Quadruple', 'Quintuple', 'Sextuple', 'Septuple', 'Octuple', 'Nonuple',
         'Decuple', 'Undecuple', 'Duodecuple', 'Tredecuple', 'Quattuordecuple', 'Quindecuple',
@@ -68,10 +67,12 @@ tasks.register('generateCode') {
       prevName = it
       element
     }.collect(Collectors.toList())
+    def count = 1
     def tuples = tupleNames.stream().map {
       ++count
       [
           name    : it,
+          count   : count,
           indexes : new DecoratedCollection<Integer>(new IntRange(1, count).stream().collect(Collectors.toList())),
           ordinals: new DecoratedCollection<Map<String, String>>(ordinalNames.subList(0, count - 1)),
           last    : count == tupleNames.size() + 1
@@ -110,6 +111,12 @@ tasks.register('generateCode') {
       {
         def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/DecoratedFuture.java'))
         def mustache = factory.compile("template/DecoratedFuture.mustache")
+        mustache.execute(writer, scope)
+        writer.close()
+      }
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/tuple/NupleFuture.java'))
+        def mustache = factory.compile("template/NupleFuture.mustache")
         mustache.execute(writer, scope)
         writer.close()
       }

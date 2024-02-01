@@ -36,24 +36,24 @@ public class FunctionalReceiver<V> implements Receiver<V> {
     }
   };
 
+  private final Consumer<? super Collection<V>> onBulkConsumer;
   private final Action onCloseAction;
   private final Consumer<Exception> onErrorConsumer;
   private final Consumer<? super V> onValueConsumer;
-  private final Consumer<? super Collection<V>> onValuesConsumer;
 
   @SuppressWarnings("unchecked")
   public FunctionalReceiver(@Nullable final Consumer<? super V> onValueConsumer,
-      @Nullable final Consumer<? super Collection<V>> onValuesConsumer,
+      @Nullable final Consumer<? super Collection<V>> onBulkConsumer,
       @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
     if (onValueConsumer != null) {
       this.onValueConsumer = onValueConsumer;
     } else {
       this.onValueConsumer = (Consumer<? super V>) EMPTY_CONSUMER;
     }
-    if (onValuesConsumer != null) {
-      this.onValuesConsumer = onValuesConsumer;
+    if (onBulkConsumer != null) {
+      this.onBulkConsumer = onBulkConsumer;
     } else {
-      this.onValuesConsumer = (Consumer<? super Collection<V>>) EMPTY_CONSUMER;
+      this.onBulkConsumer = (Consumer<? super Collection<V>>) EMPTY_CONSUMER;
     }
     if (onErrorConsumer != null) {
       this.onErrorConsumer = onErrorConsumer;
@@ -61,8 +61,8 @@ public class FunctionalReceiver<V> implements Receiver<V> {
       this.onErrorConsumer = (Consumer<Exception>) EMPTY_CONSUMER;
     }
     this.onCloseAction = onCloseAction != null ? onCloseAction : EMPTY_ACTION;
-    if (((onValueConsumer == null) || (onValuesConsumer == null))
-        && (onValueConsumer != onValuesConsumer)) {
+    if (((onValueConsumer == null) || (onBulkConsumer == null))
+        && (onValueConsumer != onBulkConsumer)) {
       if (onValueConsumer != null) {
         Log.wrn(FunctionalReceiver.class,
             "Bulk values handler implementation is missing: single value is handled by '%s'\nPlease consider providing a proper consumer.",
@@ -70,7 +70,7 @@ public class FunctionalReceiver<V> implements Receiver<V> {
       } else {
         Log.wrn(FunctionalReceiver.class,
             "Single value handler implementation is missing: bulk values are handled by '%s'\nPlease consider providing a proper consumer.",
-            onValuesConsumer);
+            onBulkConsumer);
       }
     }
   }
@@ -106,7 +106,7 @@ public class FunctionalReceiver<V> implements Receiver<V> {
   @Override
   public void setBulk(@NotNull final Collection<V> values) {
     try {
-      onValuesConsumer.accept(values);
+      onBulkConsumer.accept(values);
     } catch (final Exception e) {
       throw UncheckedException.throwUnchecked(e);
     }

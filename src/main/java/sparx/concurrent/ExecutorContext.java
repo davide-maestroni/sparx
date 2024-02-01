@@ -42,6 +42,12 @@ public class ExecutorContext implements ExecutionContext {
   private final Scheduler scheduler;
   private final HashMap<String, Object> objects = new HashMap<String, Object>();
 
+  private ExecutorContext(@NotNull final Scheduler scheduler,
+      @NotNull final FutureRegistry registry) {
+    this.scheduler = scheduler;
+    this.registry = registry;
+  }
+
   public static @NotNull ExecutorContext of(@NotNull final Executor executor) {
     return of(executor, Integer.MAX_VALUE);
   }
@@ -53,14 +59,16 @@ public class ExecutorContext implements ExecutionContext {
 
   public static @NotNull ExecutorContext of(@NotNull final Executor executor,
       final int minThroughput) {
-    final FailingExecutor failingExecutor = new FailingExecutor(executor);
+    final FailingExecutor failingExecutor = new FailingExecutor(
+        Require.notNull(executor, "executor"));
     final Scheduler scheduler = Scheduler.of(failingExecutor, minThroughput);
     return new ExecutorContext(scheduler, failingExecutor);
   }
 
   public static @NotNull ExecutorContext of(@NotNull final Executor executor,
       final int minThroughput, @NotNull final BackpressureStrategy backpressureStrategy) {
-    final FailingExecutor failingExecutor = new FailingExecutor(executor);
+    final FailingExecutor failingExecutor = new FailingExecutor(
+        Require.notNull(executor, "executor"));
     final Scheduler scheduler = Scheduler.of(failingExecutor, minThroughput, backpressureStrategy);
     return new ExecutorContext(scheduler, failingExecutor);
   }
@@ -74,9 +82,11 @@ public class ExecutorContext implements ExecutionContext {
     return new ExecutorContext(Scheduler.trampoline(backpressureStrategy), DUMMY_REGISTRY);
   }
 
-  ExecutorContext(@NotNull final Scheduler scheduler, @NotNull final FutureRegistry registry) {
-    this.scheduler = Require.notNull(scheduler, "scheduler");
-    this.registry = registry;
+  @Override
+  public @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(
+      @NotNull final F future,
+      @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
+    return new ExecutionScope(this, objects, scheduler, registry).call(future, function);
   }
 
   @Override
@@ -87,13 +97,6 @@ public class ExecutorContext implements ExecutionContext {
   @Override
   public int pendingCount() {
     return scheduler.pendingCount();
-  }
-
-  @Override
-  public @NotNull <V, F extends TupleFuture<V, ?>, U> StreamingFuture<U> call(
-      @NotNull final F future,
-      @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
-    return new ExecutionScope(this, objects, scheduler, registry).call(future, function);
   }
 
   @Override

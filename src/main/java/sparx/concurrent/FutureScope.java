@@ -24,6 +24,7 @@ import sparx.util.Require;
 public class FutureScope {
 
   private static final DummyScope DUMMY_SCOPE = new DummyScope();
+
   private static final ThreadLocal<ArrayDeque<Scope>> localScopes = new ThreadLocal<ArrayDeque<Scope>>() {
 
     @Override

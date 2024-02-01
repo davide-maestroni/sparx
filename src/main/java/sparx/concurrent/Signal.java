@@ -15,11 +15,7 @@
  */
 package sparx.concurrent;
 
-import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import sparx.function.Action;
-import sparx.function.Consumer;
 
 public interface Signal<V> {
 
@@ -29,17 +25,7 @@ public interface Signal<V> {
 
   @NotNull Subscription subscribe(@NotNull Receiver<? super V> receiver);
 
-  @NotNull Subscription subscribe(@Nullable Consumer<? super V> onValueConsumer,
-      @Nullable Consumer<? super Collection<V>> onBulkConsumer,
-      @Nullable Consumer<Exception> onErrorConsumer,
-      @Nullable Action onCloseAction);
-
   @NotNull Subscription subscribeNext(@NotNull Receiver<? super V> receiver);
-
-  @NotNull Subscription subscribeNext(@Nullable Consumer<? super V> onValueConsumer,
-      @Nullable Consumer<? super Collection<V>> onBulkConsumer,
-      @Nullable Consumer<Exception> onErrorConsumer,
-      @Nullable Action onCloseAction);
 
   void unsubscribe(@NotNull Receiver<?> receiver);
 

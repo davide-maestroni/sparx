@@ -30,17 +30,6 @@ public class TripleFuture<V, V1 extends V, V2 extends V, V3 extends V> extends
     StreamScopeTupleFuture<V, TripleFuture<V, V1, V2, V3>> implements
     Triple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>, StreamingFuture<V3>> {
 
-  public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V> TripleFuture<V, V1, V2, V3> of(
-      @NotNull final StreamingFuture<V1> first,
-      @NotNull final StreamingFuture<V2> second,
-      @NotNull final StreamingFuture<V3> third) { 
-    return new TripleFuture<V, V1, V2, V3>(
-        Require.notNull(first, "first"),
-        Require.notNull(second, "second"),
-        Require.notNull(third, "third")
-    );
-  }
-
   private final StreamingFuture<V1> first;
   private final StreamingFuture<V2> second;
   private final StreamingFuture<V3> third;
@@ -54,6 +43,17 @@ public class TripleFuture<V, V1 extends V, V2 extends V, V3 extends V> extends
     this.second = second;
     this.third = third;
     this.futures = ImmutableList.of(first, second, third);
+  }
+
+  public static @NotNull <V, V1 extends V, V2 extends V, V3 extends V> TripleFuture<V, V1, V2, V3> of(
+      @NotNull final StreamingFuture<V1> first,
+      @NotNull final StreamingFuture<V2> second,
+      @NotNull final StreamingFuture<V3> third) { 
+    return new TripleFuture<V, V1, V2, V3>(
+        Require.notNull(first, "first"),
+        Require.notNull(second, "second"),
+        Require.notNull(third, "third")
+    );
   }
 
   @Override

@@ -30,15 +30,6 @@ public class CoupleFuture<V, V1 extends V, V2 extends V> extends
     StreamScopeTupleFuture<V, CoupleFuture<V, V1, V2>> implements
     Couple<StreamingFuture<? extends V>, StreamingFuture<V1>, StreamingFuture<V2>> {
 
-  public static @NotNull <V, V1 extends V, V2 extends V> CoupleFuture<V, V1, V2> of(
-      @NotNull final StreamingFuture<V1> first,
-      @NotNull final StreamingFuture<V2> second) { 
-    return new CoupleFuture<V, V1, V2>(
-        Require.notNull(first, "first"),
-        Require.notNull(second, "second")
-    );
-  }
-
   private final StreamingFuture<V1> first;
   private final StreamingFuture<V2> second;
   private final List<StreamingFuture<? extends V>> futures;
@@ -49,6 +40,15 @@ public class CoupleFuture<V, V1 extends V, V2 extends V> extends
     this.first = first;
     this.second = second;
     this.futures = ImmutableList.of(first, second);
+  }
+
+  public static @NotNull <V, V1 extends V, V2 extends V> CoupleFuture<V, V1, V2> of(
+      @NotNull final StreamingFuture<V1> first,
+      @NotNull final StreamingFuture<V2> second) { 
+    return new CoupleFuture<V, V1, V2>(
+        Require.notNull(first, "first"),
+        Require.notNull(second, "second")
+    );
   }
 
   @Override

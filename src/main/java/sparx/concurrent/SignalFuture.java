@@ -15,10 +15,14 @@
  */
 package sparx.concurrent;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import sparx.function.Action;
+import sparx.function.Consumer;
 import sparx.function.Function;
 import sparx.util.LiveIterator;
 
@@ -30,12 +34,22 @@ public interface SignalFuture<V> extends Signal<V>, Receiver<V>, Future<List<V>>
 
   boolean isReadOnly();
 
-  @NotNull SignalFuture<V> readOnly();
-
-  void setBulk(@NotNull V... values);
-
   @Override
   @NotNull LiveIterator<V> iterator();
 
   @NotNull LiveIterator<V> iterator(long timeout, @NotNull TimeUnit unit);
+
+  @NotNull SignalFuture<V> readOnly();
+
+  void setBulk(@NotNull V... values);
+
+  @NotNull Subscription subscribe(@Nullable Consumer<? super V> onValueConsumer,
+      @Nullable Consumer<? super Collection<V>> onBulkConsumer,
+      @Nullable Consumer<Exception> onErrorConsumer,
+      @Nullable Action onCloseAction);
+
+  @NotNull Subscription subscribeNext(@Nullable Consumer<? super V> onValueConsumer,
+      @Nullable Consumer<? super Collection<V>> onBulkConsumer,
+      @Nullable Consumer<Exception> onErrorConsumer,
+      @Nullable Action onCloseAction);
 }

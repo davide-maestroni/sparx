@@ -32,48 +32,6 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
     super(new PullFuture<V>(supplier));
   }
 
-  public static @NotNull <V> GeneratorFuture<V> of(@NotNull final SignalFuture<V> future) {
-    return of(new Supplier<SignalFuture<V>>() {
-      private boolean isDone;
-
-      @Override
-      public SignalFuture<V> get() {
-        if (isDone) {
-          return null;
-        }
-        final VarFuture<V> output = VarFuture.create();
-        future.subscribeNext(new Receiver<V>() {
-          @Override
-          public void close() {
-            isDone = true;
-            output.close();
-          }
-
-          @Override
-          public boolean fail(@NotNull final Exception error) {
-            isDone = true;
-            return output.fail(error);
-          }
-
-          @Override
-          public void set(final V value) {
-            future.unsubscribe(this);
-            output.set(value);
-            output.close();
-          }
-
-          @Override
-          public void setBulk(@NotNull final Collection<V> values) {
-            future.unsubscribe(this);
-            output.setBulk(values);
-            output.close();
-          }
-        });
-        return output;
-      }
-    });
-  }
-
   public static @NotNull <V> GeneratorFuture<V> of(@NotNull final Iterable<? extends V> iterable) {
     return of(iterable.iterator());
   }
@@ -93,11 +51,12 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
 
   public static @NotNull <V> GeneratorFuture<V> of(
       @NotNull final Supplier<? extends SignalFuture<V>> supplier) {
-    return new GeneratorFuture<V>(supplier);
+    return new GeneratorFuture<V>(Require.notNull(supplier, "supplier"));
   }
 
   public static @NotNull <V> GeneratorFuture<V> ofDeferred(
       @NotNull final Supplier<? extends SignalFuture<V>> supplier) {
+    Require.notNull(supplier, "supplier");
     return of(new Supplier<SignalFuture<V>>() {
       @Override
       public SignalFuture<V> get() throws Exception {
@@ -162,21 +121,22 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
   @Override
   @NotNull <U> GeneratingFuture<U> createGeneratingFuture(
       @NotNull final Supplier<? extends SignalFuture<U>> supplier) {
-    return new GeneratorFuture<U>(supplier);
+    return new GeneratorFuture<U>(Require.notNull(supplier, "supplier"));
   }
 
   private static class PullFuture<V> extends VarFuture<V> {
 
-    private final Supplier<? extends SignalFuture<V>> supplier;
     private final LinkedList<V> pendingValues = new LinkedList<V>();
     private final GeneratorReceiver receiver = new GeneratorReceiver();
+    private final Supplier<? extends SignalFuture<V>> supplier;
+    private final String taskID = toString();
 
     private boolean pullFromIterator = false;
     private boolean pullFromJoin = false;
     private boolean pullFromReceiver = false;
 
     private PullFuture(@NotNull final Supplier<? extends SignalFuture<V>> supplier) {
-      this.supplier = Require.notNull(supplier, "supplier");
+      this.supplier = supplier;
     }
 
     @Override
@@ -321,7 +281,7 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
 
       @Override
       public @NotNull String taskID() {
-        return PullFuture.super.taskID();
+        return taskID;
       }
 
       @Override

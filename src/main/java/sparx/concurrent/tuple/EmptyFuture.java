@@ -34,25 +34,26 @@ import sparx.util.LiveIterator;
 import sparx.util.Nothing;
 import sparx.util.Require;
 
-public class EmptyFuture extends StreamScopeTupleFuture<Nothing, EmptyFuture> implements
-    Empty<StreamingFuture<? extends Nothing>> {
+public class EmptyFuture<V> extends StreamScopeTupleFuture<V, EmptyFuture<V>> implements
+    Empty<StreamingFuture<? extends V>> {
 
   private static final Subscription DUMMY_SUBSCRIPTION = new Subscription() {
     @Override
     public void cancel() {
     }
   };
-  private static final EmptyFuture INSTANCE = new EmptyFuture();
+  private static final EmptyFuture<?> INSTANCE = new EmptyFuture<Object>();
 
   private EmptyFuture() {
   }
 
-  public static @NotNull EmptyFuture instance() {
-    return INSTANCE;
+  @SuppressWarnings("unchecked")
+  public static @NotNull <V> EmptyFuture<V> instance() {
+    return (EmptyFuture<V>) INSTANCE;
   }
 
   @Override
-  public @NotNull List<StreamingFuture<? extends Nothing>> asList() {
+  public @NotNull List<StreamingFuture<? extends V>> asList() {
     return ImmutableList.of();
   }
 
@@ -138,16 +139,16 @@ public class EmptyFuture extends StreamScopeTupleFuture<Nothing, EmptyFuture> im
   }
 
   @Override
-  protected @NotNull EmptyFuture createProxy() {
-    return new ProxyEmptyFuture();
+  protected @NotNull EmptyFuture<V> createProxy() {
+    return new ProxyEmptyFuture<V>();
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final EmptyFuture proxyFuture) {
-    ((ProxyEmptyFuture) proxyFuture).connect();
+  protected void subscribeProxy(@NotNull final EmptyFuture<V> proxyFuture) {
+    ((ProxyEmptyFuture<V>) proxyFuture).connect();
   }
 
-  private static class ProxyEmptyFuture extends EmptyFuture {
+  private static class ProxyEmptyFuture<V> extends EmptyFuture<V> {
 
     private final Scheduler scheduler = Scheduler.trampoline();
     private final String taskID = toString();

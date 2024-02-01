@@ -121,7 +121,7 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
 
     private Exception failureException;
     private VarFuture<U> future;
-    private boolean isClosed;
+    private boolean isClosed; // TODO: optimize => status
 
     private GeneratorStreamReceiver(@NotNull final VarFuture<V> input,
         @NotNull final SignalFuture<U> output) {
