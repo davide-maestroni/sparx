@@ -26,13 +26,13 @@ import sparx.util.UncheckedException;
 public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     StreamableFuture<V, F> {
 
-  protected static @NotNull <V> StreamingFuture<V> proxyFuture(
+  protected static @NotNull <V> StreamingFuture<V> pauseFuture(
       @NotNull final StreamingFuture<V> future) {
-    return new ProxyFuture<V>(future);
+    return new PausedFuture<V>(future);
   }
 
-  protected static void connectProxy(@NotNull final StreamingFuture<?> proxyFuture) {
-    ((ProxyFuture<?>) proxyFuture).connect();
+  protected static void resumeFuture(@NotNull final StreamingFuture<?> pausedFuture) {
+    ((PausedFuture<?>) pausedFuture).resume();
   }
 
   @Override
@@ -48,11 +48,11 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V2> scope = new StreamScope<V2>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       second.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return second;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -70,12 +70,12 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V3> scope = new StreamScope<V3>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       third.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return third;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -94,13 +94,13 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V4> scope = new StreamScope<V4>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
       fourth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return fourth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -120,14 +120,14 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V5> scope = new StreamScope<V5>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
       final F4 fourth = fourthFunction.apply(third);
       final F5 fifth = fifthFunction.apply(fourth);
       fifth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return fifth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -148,7 +148,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V6> scope = new StreamScope<V6>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -156,7 +156,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F5 fifth = fifthFunction.apply(fourth);
       final F6 sixth = sixthFunction.apply(fifth);
       sixth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return sixth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -178,7 +178,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V7> scope = new StreamScope<V7>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -187,7 +187,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F6 sixth = sixthFunction.apply(fifth);
       final F7 seventh = seventhFunction.apply(sixth);
       seventh.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return seventh;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -210,7 +210,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V8> scope = new StreamScope<V8>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -220,7 +220,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F7 seventh = seventhFunction.apply(sixth);
       final F8 eighth = eighthFunction.apply(seventh);
       eighth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return eighth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -244,7 +244,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V9> scope = new StreamScope<V9>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -255,7 +255,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F8 eighth = eighthFunction.apply(seventh);
       final F9 ninth = ninthFunction.apply(eighth);
       ninth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return ninth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -280,7 +280,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V10> scope = new StreamScope<V10>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -292,7 +292,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F9 ninth = ninthFunction.apply(eighth);
       final F10 tenth = tenthFunction.apply(ninth);
       tenth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return tenth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -318,7 +318,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V11> scope = new StreamScope<V11>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -331,7 +331,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F10 tenth = tenthFunction.apply(ninth);
       final F11 eleventh = eleventhFunction.apply(tenth);
       eleventh.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return eleventh;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -358,7 +358,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V12> scope = new StreamScope<V12>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -372,7 +372,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F11 eleventh = eleventhFunction.apply(tenth);
       final F12 twelfth = twelfthFunction.apply(eleventh);
       twelfth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return twelfth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -400,7 +400,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V13> scope = new StreamScope<V13>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -415,7 +415,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F12 twelfth = twelfthFunction.apply(eleventh);
       final F13 thirteenth = thirteenthFunction.apply(twelfth);
       thirteenth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return thirteenth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -444,7 +444,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V14> scope = new StreamScope<V14>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -460,7 +460,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F13 thirteenth = thirteenthFunction.apply(twelfth);
       final F14 fourteenth = fourteenthFunction.apply(thirteenth);
       fourteenth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return fourteenth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -490,7 +490,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V15> scope = new StreamScope<V15>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -507,7 +507,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F14 fourteenth = fourteenthFunction.apply(thirteenth);
       final F15 fifteenth = fifteenthFunction.apply(fourteenth);
       fifteenth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return fifteenth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -538,7 +538,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V16> scope = new StreamScope<V16>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -556,7 +556,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F15 fifteenth = fifteenthFunction.apply(fourteenth);
       final F16 sixteenth = sixteenthFunction.apply(fifteenth);
       sixteenth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return sixteenth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -588,7 +588,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V17> scope = new StreamScope<V17>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -607,7 +607,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F16 sixteenth = sixteenthFunction.apply(fifteenth);
       final F17 seventeenth = seventeenthFunction.apply(sixteenth);
       seventeenth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return seventeenth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -640,7 +640,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V18> scope = new StreamScope<V18>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -660,7 +660,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F17 seventeenth = seventeenthFunction.apply(sixteenth);
       final F18 eighteenth = eighteenthFunction.apply(seventeenth);
       eighteenth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return eighteenth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -694,7 +694,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V19> scope = new StreamScope<V19>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -715,7 +715,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F18 eighteenth = eighteenthFunction.apply(seventeenth);
       final F19 nineteenth = nineteenthFunction.apply(eighteenth);
       nineteenth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return nineteenth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -750,7 +750,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     final StreamScope<V20> scope = new StreamScope<V20>(FutureScope.currentScope());
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
       final F2 second = secondFunction.apply(first);
       final F3 third = thirdFunction.apply(second);
@@ -772,7 +772,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
       final F19 nineteenth = nineteenthFunction.apply(eighteenth);
       final F20 twentieth = twentiethFunction.apply(nineteenth);
       twentieth.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return twentieth;
     } catch (final Exception e) {
       scope.onReceiverError(e);
@@ -1522,7 +1522,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     }
   }
 
-  protected abstract @NotNull F createProxy();
+  protected abstract @NotNull F createPaused();
 
-  protected abstract void subscribeProxy(@NotNull F proxyFuture);
+  protected abstract void resumePaused(@NotNull F pausedFuture);
 }

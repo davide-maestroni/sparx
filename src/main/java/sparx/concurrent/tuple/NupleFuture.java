@@ -35,27 +35,27 @@ import sparx.util.UncheckedException;
 public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> implements
     Tuple<StreamingFuture<? extends V>> {
 
-  private static final HashMap<Integer, Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>> factories =
-      new HashMap<Integer, Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>>() {
+  private static final HashMap<Integer, Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>> factories =
+      new HashMap<Integer, Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>>() {
         {
-          put(1, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(1, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return SingleFuture.of(input.next());
             }
           });
-          put(2, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(2, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return CoupleFuture.of(
                   input.next(),
                   input.next()
               );
             }
           });
-          put(3, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(3, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return TripleFuture.of(
                   input.next(),
                   input.next(),
@@ -63,9 +63,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(4, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(4, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return QuadrupleFuture.of(
                   input.next(),
                   input.next(),
@@ -74,9 +74,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(5, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(5, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return QuintupleFuture.of(
                   input.next(),
                   input.next(),
@@ -86,9 +86,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(6, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(6, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return SextupleFuture.of(
                   input.next(),
                   input.next(),
@@ -99,9 +99,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(7, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(7, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return SeptupleFuture.of(
                   input.next(),
                   input.next(),
@@ -113,9 +113,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(8, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(8, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return OctupleFuture.of(
                   input.next(),
                   input.next(),
@@ -128,9 +128,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(9, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(9, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return NonupleFuture.of(
                   input.next(),
                   input.next(),
@@ -144,9 +144,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(10, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(10, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return DecupleFuture.of(
                   input.next(),
                   input.next(),
@@ -161,9 +161,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(11, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(11, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return UndecupleFuture.of(
                   input.next(),
                   input.next(),
@@ -179,9 +179,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(12, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(12, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return DuodecupleFuture.of(
                   input.next(),
                   input.next(),
@@ -198,9 +198,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(13, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(13, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return TredecupleFuture.of(
                   input.next(),
                   input.next(),
@@ -218,9 +218,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(14, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(14, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return QuattuordecupleFuture.of(
                   input.next(),
                   input.next(),
@@ -239,9 +239,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(15, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(15, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return QuindecupleFuture.of(
                   input.next(),
                   input.next(),
@@ -261,9 +261,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(16, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(16, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return SexdecupleFuture.of(
                   input.next(),
                   input.next(),
@@ -284,9 +284,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(17, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(17, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return SeptendecupleFuture.of(
                   input.next(),
                   input.next(),
@@ -308,9 +308,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(18, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(18, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return OctodecupleFuture.of(
                   input.next(),
                   input.next(),
@@ -333,9 +333,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(19, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(19, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return NovemdecupleFuture.of(
                   input.next(),
                   input.next(),
@@ -359,9 +359,9 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
               );
             }
           });
-          put(20, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(20, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return VigupleFuture.of(
                   input.next(),
                   input.next(),
@@ -406,12 +406,11 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
     if (futures.isEmpty()) {
       return EmptyFuture.instance();
     } else {
-      final Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>> factory =
+      final Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>> factory =
           factories.get(futures.size());
       if (factory != null) {
         try {
-          return (TupleFuture<V, ?>) factory.apply(
-              (Iterator<StreamingFuture<?>>) futures.iterator());
+          return (TupleFuture<V, ?>) factory.apply(futures.iterator());
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
@@ -432,19 +431,19 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
   }
 
   @Override
-  protected @NotNull NupleFuture<V> createProxy() {
+  protected @NotNull NupleFuture<V> createPaused() {
     final ArrayList<StreamingFuture<? extends V>> proxies = new ArrayList<StreamingFuture<? extends V>>(
         futures.size());
     for (final StreamingFuture<? extends V> future : futures) {
-      proxies.add(proxyFuture(future));
+      proxies.add(pauseFuture(future));
     }
     return new NupleFuture<V>(ImmutableList.ofElementsIn(proxies));
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final NupleFuture<V> proxyFuture) {
-    for (final StreamingFuture<? extends V> future : proxyFuture.asList()) {
-      connectProxy(future);
+  protected void resumePaused(@NotNull final NupleFuture<V> pausedFuture) {
+    for (final StreamingFuture<? extends V> future : pausedFuture.asList()) {
+      resumeFuture(future);
     }
   }
 }

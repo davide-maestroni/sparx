@@ -403,13 +403,13 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   }
 
   @Override
-  protected @NotNull StreamingFuture<V> createProxy() {
-    return proxyFuture(this);
+  protected @NotNull StreamingFuture<V> createPaused() {
+    return pauseFuture(this);
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final StreamingFuture<V> proxyFuture) {
-    connectProxy(proxyFuture);
+  protected void resumePaused(@NotNull final StreamingFuture<V> pausedFuture) {
+    resumeFuture(pausedFuture);
   }
 
   private interface Result<V> extends Supplier<List<V>> {

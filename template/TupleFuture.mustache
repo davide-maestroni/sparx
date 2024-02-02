@@ -79,18 +79,18 @@ public class {{name}}Future<V, {{#indexes}}V{{value}} extends V{{^last}}, {{/las
   }
 
   @Override
-  protected @NotNull {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> createProxy() {
+  protected @NotNull {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> createPaused() {
     return new {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}>(
-{{#ordinals}}        proxyFuture(get{{value.prevSuffix}}()),
-{{#last}}        proxyFuture(get{{value.suffix}}())
+{{#ordinals}}        pauseFuture(get{{value.prevSuffix}}()),
+{{#last}}        pauseFuture(get{{value.suffix}}())
 {{/last}}{{/ordinals}}
     );
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> proxyFuture) {
-{{#ordinals}}    connectProxy(proxyFuture.get{{value.prevSuffix}}());
-{{#last}}    connectProxy(proxyFuture.get{{value.suffix}}());
+  protected void resumePaused(@NotNull final {{name}}Future<V, {{#indexes}}V{{value}}{{^last}}, {{/last}}{{/indexes}}> pausedFuture) {
+{{#ordinals}}    resumeFuture(pausedFuture.get{{value.prevSuffix}}());
+{{#last}}    resumeFuture(pausedFuture.get{{value.suffix}}());
 {{/last}}{{/ordinals}}
   }
 }

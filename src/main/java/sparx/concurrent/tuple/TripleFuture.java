@@ -83,18 +83,18 @@ public class TripleFuture<V, V1 extends V, V2 extends V, V3 extends V> extends
   }
 
   @Override
-  protected @NotNull TripleFuture<V, V1, V2, V3> createProxy() {
+  protected @NotNull TripleFuture<V, V1, V2, V3> createPaused() {
     return new TripleFuture<V, V1, V2, V3>(
-        proxyFuture(getFirst()),
-        proxyFuture(getSecond()),
-        proxyFuture(getThird())
+        pauseFuture(getFirst()),
+        pauseFuture(getSecond()),
+        pauseFuture(getThird())
     );
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final TripleFuture<V, V1, V2, V3> proxyFuture) {
-    connectProxy(proxyFuture.getFirst());
-    connectProxy(proxyFuture.getSecond());
-    connectProxy(proxyFuture.getThird());
+  protected void resumePaused(@NotNull final TripleFuture<V, V1, V2, V3> pausedFuture) {
+    resumeFuture(pausedFuture.getFirst());
+    resumeFuture(pausedFuture.getSecond());
+    resumeFuture(pausedFuture.getThird());
   }
 }

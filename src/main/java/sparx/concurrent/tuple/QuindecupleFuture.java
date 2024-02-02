@@ -215,42 +215,42 @@ public class QuindecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 e
   }
 
   @Override
-  protected @NotNull QuindecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15> createProxy() {
+  protected @NotNull QuindecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15> createPaused() {
     return new QuindecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15>(
-        proxyFuture(getFirst()),
-        proxyFuture(getSecond()),
-        proxyFuture(getThird()),
-        proxyFuture(getFourth()),
-        proxyFuture(getFifth()),
-        proxyFuture(getSixth()),
-        proxyFuture(getSeventh()),
-        proxyFuture(getEighth()),
-        proxyFuture(getNinth()),
-        proxyFuture(getTenth()),
-        proxyFuture(getEleventh()),
-        proxyFuture(getTwelfth()),
-        proxyFuture(getThirteenth()),
-        proxyFuture(getFourteenth()),
-        proxyFuture(getFifteenth())
+        pauseFuture(getFirst()),
+        pauseFuture(getSecond()),
+        pauseFuture(getThird()),
+        pauseFuture(getFourth()),
+        pauseFuture(getFifth()),
+        pauseFuture(getSixth()),
+        pauseFuture(getSeventh()),
+        pauseFuture(getEighth()),
+        pauseFuture(getNinth()),
+        pauseFuture(getTenth()),
+        pauseFuture(getEleventh()),
+        pauseFuture(getTwelfth()),
+        pauseFuture(getThirteenth()),
+        pauseFuture(getFourteenth()),
+        pauseFuture(getFifteenth())
     );
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final QuindecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15> proxyFuture) {
-    connectProxy(proxyFuture.getFirst());
-    connectProxy(proxyFuture.getSecond());
-    connectProxy(proxyFuture.getThird());
-    connectProxy(proxyFuture.getFourth());
-    connectProxy(proxyFuture.getFifth());
-    connectProxy(proxyFuture.getSixth());
-    connectProxy(proxyFuture.getSeventh());
-    connectProxy(proxyFuture.getEighth());
-    connectProxy(proxyFuture.getNinth());
-    connectProxy(proxyFuture.getTenth());
-    connectProxy(proxyFuture.getEleventh());
-    connectProxy(proxyFuture.getTwelfth());
-    connectProxy(proxyFuture.getThirteenth());
-    connectProxy(proxyFuture.getFourteenth());
-    connectProxy(proxyFuture.getFifteenth());
+  protected void resumePaused(@NotNull final QuindecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15> pausedFuture) {
+    resumeFuture(pausedFuture.getFirst());
+    resumeFuture(pausedFuture.getSecond());
+    resumeFuture(pausedFuture.getThird());
+    resumeFuture(pausedFuture.getFourth());
+    resumeFuture(pausedFuture.getFifth());
+    resumeFuture(pausedFuture.getSixth());
+    resumeFuture(pausedFuture.getSeventh());
+    resumeFuture(pausedFuture.getEighth());
+    resumeFuture(pausedFuture.getNinth());
+    resumeFuture(pausedFuture.getTenth());
+    resumeFuture(pausedFuture.getEleventh());
+    resumeFuture(pausedFuture.getTwelfth());
+    resumeFuture(pausedFuture.getThirteenth());
+    resumeFuture(pausedFuture.getFourteenth());
+    resumeFuture(pausedFuture.getFifteenth());
   }
 }

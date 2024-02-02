@@ -72,16 +72,16 @@ public class CoupleFuture<V, V1 extends V, V2 extends V> extends
   }
 
   @Override
-  protected @NotNull CoupleFuture<V, V1, V2> createProxy() {
+  protected @NotNull CoupleFuture<V, V1, V2> createPaused() {
     return new CoupleFuture<V, V1, V2>(
-        proxyFuture(getFirst()),
-        proxyFuture(getSecond())
+        pauseFuture(getFirst()),
+        pauseFuture(getSecond())
     );
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final CoupleFuture<V, V1, V2> proxyFuture) {
-    connectProxy(proxyFuture.getFirst());
-    connectProxy(proxyFuture.getSecond());
+  protected void resumePaused(@NotNull final CoupleFuture<V, V1, V2> pausedFuture) {
+    resumeFuture(pausedFuture.getFirst());
+    resumeFuture(pausedFuture.getSecond());
   }
 }

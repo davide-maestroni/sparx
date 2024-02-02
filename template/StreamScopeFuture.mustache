@@ -26,13 +26,13 @@ import sparx.util.UncheckedException;
 public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
     StreamableFuture<V, F> {
 
-  protected static @NotNull <V> StreamingFuture<V> proxyFuture(
+  protected static @NotNull <V> StreamingFuture<V> pauseFuture(
       @NotNull final StreamingFuture<V> future) {
-    return new ProxyFuture<V>(future);
+    return new PausedFuture<V>(future);
   }
 
-  protected static void connectProxy(@NotNull final StreamingFuture<?> proxyFuture) {
-    ((ProxyFuture<?>) proxyFuture).connect();
+  protected static void resumeFuture(@NotNull final StreamingFuture<?> pausedFuture) {
+    ((PausedFuture<?>) pausedFuture).resume();
   }
 
   @Override
@@ -50,11 +50,11 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
 {{/ordinals}}
     FutureScope.pushScope(scope);
     try {
-      final F future = createProxy();
+      final F future = createPaused();
       final F1 first = firstFunction.apply(future);
 {{#ordinals}}      final F{{value.index}} {{value.name}} = {{value.name}}Function.apply({{value.prevName}});
 {{#last}}      {{value.name}}.subscribe(scope);
-      subscribeProxy(future);
+      resumePaused(future);
       return {{value.name}};{{/last}}
 {{/ordinals}}
 
@@ -110,7 +110,7 @@ public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements
   }
 {{/tuples}}
 
-  protected abstract @NotNull F createProxy();
+  protected abstract @NotNull F createPaused();
 
-  protected abstract void subscribeProxy(@NotNull F proxyFuture);
+  protected abstract void resumePaused(@NotNull F pausedFuture);
 }

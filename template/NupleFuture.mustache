@@ -35,18 +35,18 @@ import sparx.util.UncheckedException;
 public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> implements
     Tuple<StreamingFuture<? extends V>> {
 
-  private static final HashMap<Integer, Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>> factories =
-      new HashMap<Integer, Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>>() {
+  private static final HashMap<Integer, Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>> factories =
+      new HashMap<Integer, Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>>() {
         {
-          put(1, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+          put(1, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return SingleFuture.of(input.next());
             }
           });
-{{#tuples}}          put({{count}}, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+{{#tuples}}          put({{count}}, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
               return {{name}}Future.of(
 {{#indexes}}                  input.next(){{^last}},{{/last}}
 {{/indexes}}
@@ -74,12 +74,11 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
     if (futures.isEmpty()) {
       return EmptyFuture.instance();
     } else {
-      final Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>> factory =
+      final Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>> factory =
           factories.get(futures.size());
       if (factory != null) {
         try {
-          return (TupleFuture<V, ?>) factory.apply(
-              (Iterator<StreamingFuture<?>>) futures.iterator());
+          return (TupleFuture<V, ?>) factory.apply(futures.iterator());
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
@@ -100,19 +99,19 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
   }
 
   @Override
-  protected @NotNull NupleFuture<V> createProxy() {
+  protected @NotNull NupleFuture<V> createPaused() {
     final ArrayList<StreamingFuture<? extends V>> proxies = new ArrayList<StreamingFuture<? extends V>>(
         futures.size());
     for (final StreamingFuture<? extends V> future : futures) {
-      proxies.add(proxyFuture(future));
+      proxies.add(pauseFuture(future));
     }
     return new NupleFuture<V>(ImmutableList.ofElementsIn(proxies));
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final NupleFuture<V> proxyFuture) {
-    for (final StreamingFuture<? extends V> future : proxyFuture.asList()) {
-      connectProxy(future);
+  protected void resumePaused(@NotNull final NupleFuture<V> pausedFuture) {
+    for (final StreamingFuture<? extends V> future : pausedFuture.asList()) {
+      resumeFuture(future);
     }
   }
 }

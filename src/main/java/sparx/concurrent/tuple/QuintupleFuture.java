@@ -105,22 +105,22 @@ public class QuintupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
   }
 
   @Override
-  protected @NotNull QuintupleFuture<V, V1, V2, V3, V4, V5> createProxy() {
+  protected @NotNull QuintupleFuture<V, V1, V2, V3, V4, V5> createPaused() {
     return new QuintupleFuture<V, V1, V2, V3, V4, V5>(
-        proxyFuture(getFirst()),
-        proxyFuture(getSecond()),
-        proxyFuture(getThird()),
-        proxyFuture(getFourth()),
-        proxyFuture(getFifth())
+        pauseFuture(getFirst()),
+        pauseFuture(getSecond()),
+        pauseFuture(getThird()),
+        pauseFuture(getFourth()),
+        pauseFuture(getFifth())
     );
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final QuintupleFuture<V, V1, V2, V3, V4, V5> proxyFuture) {
-    connectProxy(proxyFuture.getFirst());
-    connectProxy(proxyFuture.getSecond());
-    connectProxy(proxyFuture.getThird());
-    connectProxy(proxyFuture.getFourth());
-    connectProxy(proxyFuture.getFifth());
+  protected void resumePaused(@NotNull final QuintupleFuture<V, V1, V2, V3, V4, V5> pausedFuture) {
+    resumeFuture(pausedFuture.getFirst());
+    resumeFuture(pausedFuture.getSecond());
+    resumeFuture(pausedFuture.getThird());
+    resumeFuture(pausedFuture.getFourth());
+    resumeFuture(pausedFuture.getFifth());
   }
 }

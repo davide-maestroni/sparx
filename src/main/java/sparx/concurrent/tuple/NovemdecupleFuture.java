@@ -259,50 +259,50 @@ public class NovemdecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 
   }
 
   @Override
-  protected @NotNull NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19> createProxy() {
+  protected @NotNull NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19> createPaused() {
     return new NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19>(
-        proxyFuture(getFirst()),
-        proxyFuture(getSecond()),
-        proxyFuture(getThird()),
-        proxyFuture(getFourth()),
-        proxyFuture(getFifth()),
-        proxyFuture(getSixth()),
-        proxyFuture(getSeventh()),
-        proxyFuture(getEighth()),
-        proxyFuture(getNinth()),
-        proxyFuture(getTenth()),
-        proxyFuture(getEleventh()),
-        proxyFuture(getTwelfth()),
-        proxyFuture(getThirteenth()),
-        proxyFuture(getFourteenth()),
-        proxyFuture(getFifteenth()),
-        proxyFuture(getSixteenth()),
-        proxyFuture(getSeventeenth()),
-        proxyFuture(getEighteenth()),
-        proxyFuture(getNineteenth())
+        pauseFuture(getFirst()),
+        pauseFuture(getSecond()),
+        pauseFuture(getThird()),
+        pauseFuture(getFourth()),
+        pauseFuture(getFifth()),
+        pauseFuture(getSixth()),
+        pauseFuture(getSeventh()),
+        pauseFuture(getEighth()),
+        pauseFuture(getNinth()),
+        pauseFuture(getTenth()),
+        pauseFuture(getEleventh()),
+        pauseFuture(getTwelfth()),
+        pauseFuture(getThirteenth()),
+        pauseFuture(getFourteenth()),
+        pauseFuture(getFifteenth()),
+        pauseFuture(getSixteenth()),
+        pauseFuture(getSeventeenth()),
+        pauseFuture(getEighteenth()),
+        pauseFuture(getNineteenth())
     );
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19> proxyFuture) {
-    connectProxy(proxyFuture.getFirst());
-    connectProxy(proxyFuture.getSecond());
-    connectProxy(proxyFuture.getThird());
-    connectProxy(proxyFuture.getFourth());
-    connectProxy(proxyFuture.getFifth());
-    connectProxy(proxyFuture.getSixth());
-    connectProxy(proxyFuture.getSeventh());
-    connectProxy(proxyFuture.getEighth());
-    connectProxy(proxyFuture.getNinth());
-    connectProxy(proxyFuture.getTenth());
-    connectProxy(proxyFuture.getEleventh());
-    connectProxy(proxyFuture.getTwelfth());
-    connectProxy(proxyFuture.getThirteenth());
-    connectProxy(proxyFuture.getFourteenth());
-    connectProxy(proxyFuture.getFifteenth());
-    connectProxy(proxyFuture.getSixteenth());
-    connectProxy(proxyFuture.getSeventeenth());
-    connectProxy(proxyFuture.getEighteenth());
-    connectProxy(proxyFuture.getNineteenth());
+  protected void resumePaused(@NotNull final NovemdecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19> pausedFuture) {
+    resumeFuture(pausedFuture.getFirst());
+    resumeFuture(pausedFuture.getSecond());
+    resumeFuture(pausedFuture.getThird());
+    resumeFuture(pausedFuture.getFourth());
+    resumeFuture(pausedFuture.getFifth());
+    resumeFuture(pausedFuture.getSixth());
+    resumeFuture(pausedFuture.getSeventh());
+    resumeFuture(pausedFuture.getEighth());
+    resumeFuture(pausedFuture.getNinth());
+    resumeFuture(pausedFuture.getTenth());
+    resumeFuture(pausedFuture.getEleventh());
+    resumeFuture(pausedFuture.getTwelfth());
+    resumeFuture(pausedFuture.getThirteenth());
+    resumeFuture(pausedFuture.getFourteenth());
+    resumeFuture(pausedFuture.getFifteenth());
+    resumeFuture(pausedFuture.getSixteenth());
+    resumeFuture(pausedFuture.getSeventeenth());
+    resumeFuture(pausedFuture.getEighteenth());
+    resumeFuture(pausedFuture.getNineteenth());
   }
 }

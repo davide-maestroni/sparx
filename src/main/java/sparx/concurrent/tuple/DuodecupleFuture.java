@@ -182,36 +182,36 @@ public class DuodecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ex
   }
 
   @Override
-  protected @NotNull DuodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12> createProxy() {
+  protected @NotNull DuodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12> createPaused() {
     return new DuodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12>(
-        proxyFuture(getFirst()),
-        proxyFuture(getSecond()),
-        proxyFuture(getThird()),
-        proxyFuture(getFourth()),
-        proxyFuture(getFifth()),
-        proxyFuture(getSixth()),
-        proxyFuture(getSeventh()),
-        proxyFuture(getEighth()),
-        proxyFuture(getNinth()),
-        proxyFuture(getTenth()),
-        proxyFuture(getEleventh()),
-        proxyFuture(getTwelfth())
+        pauseFuture(getFirst()),
+        pauseFuture(getSecond()),
+        pauseFuture(getThird()),
+        pauseFuture(getFourth()),
+        pauseFuture(getFifth()),
+        pauseFuture(getSixth()),
+        pauseFuture(getSeventh()),
+        pauseFuture(getEighth()),
+        pauseFuture(getNinth()),
+        pauseFuture(getTenth()),
+        pauseFuture(getEleventh()),
+        pauseFuture(getTwelfth())
     );
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final DuodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12> proxyFuture) {
-    connectProxy(proxyFuture.getFirst());
-    connectProxy(proxyFuture.getSecond());
-    connectProxy(proxyFuture.getThird());
-    connectProxy(proxyFuture.getFourth());
-    connectProxy(proxyFuture.getFifth());
-    connectProxy(proxyFuture.getSixth());
-    connectProxy(proxyFuture.getSeventh());
-    connectProxy(proxyFuture.getEighth());
-    connectProxy(proxyFuture.getNinth());
-    connectProxy(proxyFuture.getTenth());
-    connectProxy(proxyFuture.getEleventh());
-    connectProxy(proxyFuture.getTwelfth());
+  protected void resumePaused(@NotNull final DuodecupleFuture<V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12> pausedFuture) {
+    resumeFuture(pausedFuture.getFirst());
+    resumeFuture(pausedFuture.getSecond());
+    resumeFuture(pausedFuture.getThird());
+    resumeFuture(pausedFuture.getFourth());
+    resumeFuture(pausedFuture.getFifth());
+    resumeFuture(pausedFuture.getSixth());
+    resumeFuture(pausedFuture.getSeventh());
+    resumeFuture(pausedFuture.getEighth());
+    resumeFuture(pausedFuture.getNinth());
+    resumeFuture(pausedFuture.getTenth());
+    resumeFuture(pausedFuture.getEleventh());
+    resumeFuture(pausedFuture.getTwelfth());
   }
 }

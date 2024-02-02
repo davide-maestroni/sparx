@@ -22,12 +22,12 @@ import sparx.concurrent.Scheduler.Task;
 import sparx.function.Action;
 import sparx.function.Consumer;
 
-class ProxyFuture<V> extends DecoratedFuture<V> {
+class PausedFuture<V> extends DecoratedFuture<V> {
 
   private final Scheduler scheduler = Scheduler.trampoline();
   private final String taskID = toString();
 
-  ProxyFuture(@NotNull final StreamingFuture<V> wrapped) {
+  PausedFuture(@NotNull final StreamingFuture<V> wrapped) {
     super(wrapped);
     scheduler.pause();
   }
@@ -39,7 +39,7 @@ class ProxyFuture<V> extends DecoratedFuture<V> {
 
   @Override
   public @NotNull Subscription subscribe(@NotNull final Receiver<? super V> receiver) {
-    final ProxySubscription subscription = new ProxySubscription(receiver);
+    final FutureSubscription subscription = new FutureSubscription(receiver);
     scheduler.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
@@ -69,7 +69,7 @@ class ProxyFuture<V> extends DecoratedFuture<V> {
 
   @Override
   public @NotNull Subscription subscribeNext(@NotNull final Receiver<? super V> receiver) {
-    final ProxySubscription subscription = new ProxySubscription(receiver);
+    final FutureSubscription subscription = new FutureSubscription(receiver);
     scheduler.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
@@ -117,15 +117,15 @@ class ProxyFuture<V> extends DecoratedFuture<V> {
     });
   }
 
-  void connect() {
+  void resume() {
     scheduler.resume();
   }
 
-  private class ProxySubscription implements Subscription {
+  private class FutureSubscription implements Subscription {
 
     private final Receiver<?> receiver;
 
-    private ProxySubscription(@NotNull final Receiver<?> receiver) {
+    private FutureSubscription(@NotNull final Receiver<?> receiver) {
       this.receiver = receiver;
     }
 

@@ -139,21 +139,21 @@ public class EmptyFuture<V> extends StreamScopeTupleFuture<V, EmptyFuture<V>> im
   }
 
   @Override
-  protected @NotNull EmptyFuture<V> createProxy() {
-    return new ProxyEmptyFuture<V>();
+  protected @NotNull EmptyFuture<V> createPaused() {
+    return new PausedEmptyFuture<V>();
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final EmptyFuture<V> proxyFuture) {
-    ((ProxyEmptyFuture<V>) proxyFuture).connect();
+  protected void resumePaused(@NotNull final EmptyFuture<V> pausedFuture) {
+    ((PausedEmptyFuture<V>) pausedFuture).connect();
   }
 
-  private static class ProxyEmptyFuture<V> extends EmptyFuture<V> {
+  private static class PausedEmptyFuture<V> extends EmptyFuture<V> {
 
     private final Scheduler scheduler = Scheduler.trampoline();
     private final String taskID = toString();
 
-    private ProxyEmptyFuture() {
+    private PausedEmptyFuture() {
       scheduler.pause();
     }
 

@@ -53,12 +53,12 @@ public class SingleFuture<V> extends StreamScopeTupleFuture<V, SingleFuture<V>> 
   }
 
   @Override
-  protected @NotNull SingleFuture<V> createProxy() {
-    return new SingleFuture<V>(proxyFuture(getFirst()));
+  protected @NotNull SingleFuture<V> createPaused() {
+    return new SingleFuture<V>(pauseFuture(getFirst()));
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final SingleFuture<V> proxyFuture) {
-    connectProxy(proxyFuture.getFirst());
+  protected void resumePaused(@NotNull final SingleFuture<V> pausedFuture) {
+    resumeFuture(pausedFuture.getFirst());
   }
 }

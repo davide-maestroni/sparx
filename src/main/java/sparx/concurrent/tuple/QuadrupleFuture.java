@@ -94,20 +94,20 @@ public class QuadrupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 ext
   }
 
   @Override
-  protected @NotNull QuadrupleFuture<V, V1, V2, V3, V4> createProxy() {
+  protected @NotNull QuadrupleFuture<V, V1, V2, V3, V4> createPaused() {
     return new QuadrupleFuture<V, V1, V2, V3, V4>(
-        proxyFuture(getFirst()),
-        proxyFuture(getSecond()),
-        proxyFuture(getThird()),
-        proxyFuture(getFourth())
+        pauseFuture(getFirst()),
+        pauseFuture(getSecond()),
+        pauseFuture(getThird()),
+        pauseFuture(getFourth())
     );
   }
 
   @Override
-  protected void subscribeProxy(@NotNull final QuadrupleFuture<V, V1, V2, V3, V4> proxyFuture) {
-    connectProxy(proxyFuture.getFirst());
-    connectProxy(proxyFuture.getSecond());
-    connectProxy(proxyFuture.getThird());
-    connectProxy(proxyFuture.getFourth());
+  protected void resumePaused(@NotNull final QuadrupleFuture<V, V1, V2, V3, V4> pausedFuture) {
+    resumeFuture(pausedFuture.getFirst());
+    resumeFuture(pausedFuture.getSecond());
+    resumeFuture(pausedFuture.getThird());
+    resumeFuture(pausedFuture.getFourth());
   }
 }

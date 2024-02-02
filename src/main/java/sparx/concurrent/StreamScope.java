@@ -39,7 +39,7 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
   private ScopeStatus status = new RunningStatus();
 
   StreamScope(@NotNull final Scope scope) {
-    this.scope = Require.notNull(scope, "hooks");
+    this.scope = Require.notNull(scope, "scope");
   }
 
   @Override
