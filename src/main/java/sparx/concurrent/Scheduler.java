@@ -30,12 +30,9 @@ import sparx.util.UncheckedException;
 
 public class Scheduler {
 
-  private static final BackpressureAlert backpressureAlert = Alerts.backpressureAlert();
-  private static final SchedulerQueueAlert queueAlert = Alerts.schedulerQueueAlert();
-  private static final SchedulerWorkerAlert workerAlert = Alerts.schedulerWorkerAlert();
-  private static final Executor synchronousExecutor = new Executor() {
+  private static final Executor SYNCHRONOUS_EXECUTOR = new Executor() {
     @Override
-    public void execute(@NotNull Runnable command) {
+    public void execute(@NotNull final Runnable command) {
       command.run();
     }
   };
@@ -44,6 +41,10 @@ public class Scheduler {
   private static final int RUNNING = 1;
   private static final int PAUSING = 2;
   private static final int PAUSED = 3;
+
+  private static final BackpressureAlert backpressureAlert = Alerts.backpressureAlert();
+  private static final SchedulerQueueAlert queueAlert = Alerts.schedulerQueueAlert();
+  private static final SchedulerWorkerAlert workerAlert = Alerts.schedulerWorkerAlert();
 
   private final ArrayDeque<Task> afterQueue = new ArrayDeque<Task>();
   private final ArrayDeque<Task> beforeQueue = new ArrayDeque<Task>();
@@ -56,47 +57,9 @@ public class Scheduler {
   private Thread runningThread;
   private int status = IDLE;
 
-  public static @NotNull Scheduler of(@NotNull final Executor executor) {
-    return of(executor, Integer.MAX_VALUE);
-  }
-
-  public static @NotNull Scheduler of(@NotNull final Executor executor,
-      @NotNull final BackpressureStrategy backpressureStrategy) {
-    return of(executor, Integer.MAX_VALUE, backpressureStrategy);
-  }
-
-  public static @NotNull Scheduler of(@NotNull final Executor executor, final int minThroughput) {
-    return new Scheduler(executor, minThroughput);
-  }
-
-  public static @NotNull Scheduler of(@NotNull final Executor executor, final int minThroughput,
-      @NotNull final BackpressureStrategy backpressureStrategy) {
-    return new SchedulerWithBackpressure(executor, minThroughput, backpressureStrategy);
-  }
-
-
-  public static @NotNull Scheduler of(@NotNull final Executor executor, final long minTime,
-      @NotNull final TimeUnit unit) {
-    return new Scheduler(executor, minTime, unit);
-  }
-
-  public static @NotNull Scheduler of(@NotNull final Executor executor, final long minTime,
-      @NotNull final TimeUnit unit, @NotNull final BackpressureStrategy backpressureStrategy) {
-    return new SchedulerWithBackpressure(executor, minTime, unit, backpressureStrategy);
-  }
-
-  public static @NotNull Scheduler trampoline() {
-    return of(synchronousExecutor);
-  }
-
-  public static @NotNull Scheduler trampoline(
-      @NotNull final BackpressureStrategy backpressureStrategy) {
-    return of(synchronousExecutor, backpressureStrategy);
-  }
-
   private Scheduler(@NotNull final Executor executor, final int minThroughput) {
-    this.executor = Require.notNull(executor, "executor");
-    this.minThroughput = Require.positive(minThroughput, "minThroughput");
+    this.executor = executor;
+    this.minThroughput = minThroughput;
     if (minThroughput == Integer.MAX_VALUE) {
       // infinite throughput
       this.worker = new InfiniteWorker();
@@ -109,9 +72,54 @@ public class Scheduler {
 
   private Scheduler(@NotNull final Executor executor, final long minTime,
       @NotNull final TimeUnit unit) {
-    this.executor = Require.notNull(executor, "executor");
+    this.executor = executor;
     this.minThroughput = Integer.MAX_VALUE;
     this.worker = new TimeoutWorker(minTime, unit);
+  }
+
+  public static @NotNull Scheduler of(@NotNull final Executor executor) {
+    return of(executor, Integer.MAX_VALUE);
+  }
+
+  public static @NotNull Scheduler of(@NotNull final Executor executor,
+      @NotNull final BackpressureStrategy backpressureStrategy) {
+    return of(executor, Integer.MAX_VALUE, backpressureStrategy);
+  }
+
+  public static @NotNull Scheduler of(@NotNull final Executor executor, final int minThroughput) {
+    return new Scheduler(Require.notNull(executor, "executor"),
+        Require.positive(minThroughput, "minThroughput"));
+  }
+
+  public static @NotNull Scheduler of(@NotNull final Executor executor, final int minThroughput,
+      @NotNull final BackpressureStrategy backpressureStrategy) {
+    return new SchedulerWithBackpressure(Require.notNull(executor, "executor"),
+        Require.positive(minThroughput, "minThroughput"),
+        Require.notNull(backpressureStrategy, "backpressureStrategy"));
+  }
+
+  public static @NotNull Scheduler of(@NotNull final Executor executor, final long minTime,
+      @NotNull final TimeUnit unit) {
+    return new Scheduler(Require.notNull(executor, "executor"),
+        Require.positive(minTime, "minTime"),
+        Require.notNull(unit, "unit"));
+  }
+
+  public static @NotNull Scheduler of(@NotNull final Executor executor, final long minTime,
+      @NotNull final TimeUnit unit, @NotNull final BackpressureStrategy backpressureStrategy) {
+    return new SchedulerWithBackpressure(Require.notNull(executor, "executor"),
+        Require.positive(minTime, "minTime"),
+        Require.notNull(unit, "unit"),
+        Require.notNull(backpressureStrategy, "backpressureStrategy"));
+  }
+
+  public static @NotNull Scheduler trampoline() {
+    return of(SYNCHRONOUS_EXECUTOR);
+  }
+
+  public static @NotNull Scheduler trampoline(
+      @NotNull final BackpressureStrategy backpressureStrategy) {
+    return of(SYNCHRONOUS_EXECUTOR, backpressureStrategy);
   }
 
   public boolean interruptTask(@NotNull final String taskID) {
@@ -198,7 +206,7 @@ public class Scheduler {
   }
 
   protected @NotNull Task applyBackpressure(@NotNull final Task task, @NotNull final Object lock,
-      final Thread runningThread) {
+      @NotNull final Thread runningThread) {
     return task;
   }
 
@@ -220,22 +228,23 @@ public class Scheduler {
     private SchedulerWithBackpressure(@NotNull final Executor executor, final int minThroughput,
         @NotNull final BackpressureStrategy backpressureStrategy) {
       super(executor, minThroughput);
-      this.backpressureStrategy = Require.notNull(backpressureStrategy, "backpressureStrategy");
+      this.backpressureStrategy = backpressureStrategy;
     }
 
     private SchedulerWithBackpressure(@NotNull final Executor executor, final long minTime,
         @NotNull final TimeUnit unit, @NotNull final BackpressureStrategy backpressureStrategy) {
       super(executor, minTime, unit);
-      this.backpressureStrategy = Require.notNull(backpressureStrategy, "backpressureStrategy");
+      this.backpressureStrategy = backpressureStrategy;
     }
 
     @Override
     protected @NotNull Task applyBackpressure(@NotNull final Task task,
-        @NotNull final Object lock, final Thread runningThread) {
+        @NotNull final Object lock, @NotNull final Thread runningThread) {
       final int pendingCount = pendingCount();
       final int throughput = minThroughput();
       final ArrayDeque<Task> waitingTasks = this.waitingTasks;
       final int waitingCount = waitingTasks.size();
+      final BackpressureStrategy backpressureStrategy = this.backpressureStrategy;
       if (backpressureStrategy.applyBackpressure(pendingCount, waitingCount, throughput)) {
         final Thread currentThread = Thread.currentThread();
         if (!currentThread.equals(runningThread)) {
@@ -464,7 +473,7 @@ public class Scheduler {
     private final long minTimeMillis;
 
     public TimeoutWorker(final long minTime, @NotNull final TimeUnit unit) {
-      this.minTimeMillis = unit.toMillis(Require.positive(minTime, "minTime"));
+      this.minTimeMillis = unit.toMillis(minTime);
     }
 
     @Override

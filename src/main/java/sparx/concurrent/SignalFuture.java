@@ -26,7 +26,7 @@ import sparx.function.Consumer;
 import sparx.function.Function;
 import sparx.util.LiveIterator;
 
-public interface SignalFuture<V> extends Signal<V>, Receiver<V>, Future<List<V>>, Iterable<V> {
+public interface SignalFuture<V> extends Future<List<V>>, Iterable<V>, Receiver<V>, Signal<V> {
 
   void clear();
 

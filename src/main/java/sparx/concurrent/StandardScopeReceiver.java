@@ -33,6 +33,16 @@ class StandardScopeReceiver<V> implements ScopeReceiver<V> {
   }
 
   @Override
+  public void close() {
+    receiver.close();
+  }
+
+  @Override
+  public boolean fail(@NotNull final Exception error) {
+    return receiver.fail(error);
+  }
+
+  @Override
   public boolean isConsumer() {
     return true;
   }
@@ -47,16 +57,6 @@ class StandardScopeReceiver<V> implements ScopeReceiver<V> {
 
   @Override
   public void onUnsubscribe() {
-  }
-
-  @Override
-  public void close() {
-    receiver.close();
-  }
-
-  @Override
-  public boolean fail(@NotNull final Exception error) {
-    return receiver.fail(error);
   }
 
   @Override
