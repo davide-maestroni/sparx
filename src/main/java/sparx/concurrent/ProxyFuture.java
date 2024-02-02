@@ -68,6 +68,36 @@ class ProxyFuture<V> extends DecoratedFuture<V> {
   }
 
   @Override
+  public @NotNull Subscription subscribeNext(@NotNull final Receiver<? super V> receiver) {
+    final ProxySubscription subscription = new ProxySubscription(receiver);
+    scheduler.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        wrapped().subscribeNext(receiver);
+      }
+    });
+    return subscription;
+  }
+
+  @Override
+  public @NotNull Subscription subscribeNext(@Nullable final Consumer<? super V> onValueConsumer,
+      @Nullable final Consumer<? super Collection<V>> onBulkConsumer,
+      @Nullable final Consumer<Exception> onErrorConsumer, @Nullable final Action onCloseAction) {
+    return subscribeNext(new FunctionalReceiver<V>(onValueConsumer, onBulkConsumer, onErrorConsumer,
+        onCloseAction));
+  }
+
+  @Override
   public void unsubscribe(@NotNull final Receiver<?> receiver) {
     scheduler.scheduleAfter(new Task() {
       @Override

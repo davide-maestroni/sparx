@@ -21,12 +21,12 @@ import sparx.function.Function;
 
 public class ReadOnlyFuture<V> extends DecoratedFuture<V> {
 
-  private static <R> R fail(@NotNull final String name) {
-    throw new UnsupportedOperationException(name);
-  }
-
   public ReadOnlyFuture(@NotNull final StreamingFuture<V> future) {
     super(future);
+  }
+
+  private static <R> R fail(@NotNull final String name) {
+    throw new UnsupportedOperationException(name);
   }
 
   @Override
@@ -35,13 +35,13 @@ public class ReadOnlyFuture<V> extends DecoratedFuture<V> {
   }
 
   @Override
-  public void compute(@NotNull final Function<? super V, ? extends V> function) {
-    fail("compute");
+  public void close() {
+    fail("close");
   }
 
   @Override
-  public @NotNull StreamingFuture<V> readOnly() {
-    return this;
+  public void compute(@NotNull final Function<? super V, ? extends V> function) {
+    fail("compute");
   }
 
   @Override
@@ -55,6 +55,11 @@ public class ReadOnlyFuture<V> extends DecoratedFuture<V> {
   }
 
   @Override
+  public @NotNull StreamingFuture<V> readOnly() {
+    return this;
+  }
+
+  @Override
   public void set(final V value) {
     fail("set");
   }
@@ -62,11 +67,6 @@ public class ReadOnlyFuture<V> extends DecoratedFuture<V> {
   @Override
   public void setBulk(@NotNull final Collection<V> values) {
     fail("setBulk");
-  }
-
-  @Override
-  public void close() {
-    fail("close");
   }
 
   @Override

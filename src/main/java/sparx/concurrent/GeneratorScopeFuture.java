@@ -868,9 +868,8 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
       }
     };
 
-    private Exception failureException;
     private VarFuture<U> future;
-    private boolean isClosed; // TODO: optimize => status
+    private volatile Supplier<SignalFuture<U>> status = new RunningStatus();
 
     private GeneratorStreamReceiver(@NotNull final VarFuture<V> input,
         @NotNull final SignalFuture<U> output) {
@@ -882,7 +881,7 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     public void close() {
       final ArrayList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
-        isClosed = true;
+        status = new ClosedStatus();
         final VarFuture<U> future = this.future;
         if (future != null) {
           future.setBulk(pendingValues);
@@ -896,8 +895,7 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     public boolean fail(@NotNull final Exception error) {
       final ArrayList<U> pendingValues = this.pendingValues;
       synchronized (pendingValues) {
-        isClosed = true;
-        failureException = error;
+        status = new FailedStatus(error);
         final VarFuture<U> future = this.future;
         if (future != null) {
           future.setBulk(pendingValues);
@@ -909,34 +907,8 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
     }
 
     @Override
-    public SignalFuture<U> get() {
-      final ArrayList<U> pendingValues = this.pendingValues;
-      synchronized (pendingValues) {
-        final Exception failureException = this.failureException;
-        if (!pendingValues.isEmpty()) {
-          if (failureException != null) {
-            final VarFuture<U> future = VarFuture.create();
-            future.setBulk(pendingValues);
-            future.fail(failureException);
-            pendingValues.clear();
-            return future;
-          } else {
-            final ValFuture<U> future = ValFuture.ofBulk(pendingValues);
-            pendingValues.clear();
-            return future;
-          }
-        } else if (isClosed) {
-          if (failureException != null) {
-            return ValFuture.ofFailure(failureException);
-          }
-          return null;
-        } else {
-          future = VarFuture.create();
-        }
-      }
-      output.subscribe(this);
-      subscribeNext(receiver);
-      return future;
+    public SignalFuture<U> get() throws Exception {
+      return status.get();
     }
 
     @Override
@@ -984,6 +956,66 @@ abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements Gene
             pendingValues.clear();
           }
         }
+      }
+    }
+
+    private class ClosedStatus implements Supplier<SignalFuture<U>> {
+
+      @Override
+      public SignalFuture<U> get() {
+        final ArrayList<U> pendingValues = GeneratorStreamReceiver.this.pendingValues;
+        synchronized (pendingValues) {
+          if (!pendingValues.isEmpty()) {
+            final ValFuture<U> future = ValFuture.ofBulk(pendingValues);
+            pendingValues.clear();
+            return future;
+          }
+        }
+        return null;
+      }
+    }
+
+    private class FailedStatus implements Supplier<SignalFuture<U>> {
+
+      private final Exception failureException;
+
+      private FailedStatus(@NotNull final Exception error) {
+        failureException = error;
+      }
+
+      @Override
+      public SignalFuture<U> get() {
+        final ArrayList<U> pendingValues = GeneratorStreamReceiver.this.pendingValues;
+        synchronized (pendingValues) {
+          if (!pendingValues.isEmpty()) {
+            final VarFuture<U> future = VarFuture.create();
+            future.setBulk(pendingValues);
+            future.fail(failureException);
+            pendingValues.clear();
+            return future;
+          }
+        }
+        return ValFuture.ofFailure(failureException);
+      }
+    }
+
+    private class RunningStatus implements Supplier<SignalFuture<U>> {
+
+      @Override
+      public SignalFuture<U> get() {
+        final ArrayList<U> pendingValues = GeneratorStreamReceiver.this.pendingValues;
+        synchronized (pendingValues) {
+          if (!pendingValues.isEmpty()) {
+            final ValFuture<U> future = ValFuture.ofBulk(pendingValues);
+            pendingValues.clear();
+            return future;
+          } else {
+            future = VarFuture.create();
+          }
+        }
+        output.subscribe(GeneratorStreamReceiver.this);
+        subscribeNext(receiver);
+        return future;
       }
     }
   }

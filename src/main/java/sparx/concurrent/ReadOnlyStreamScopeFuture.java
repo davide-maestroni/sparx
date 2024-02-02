@@ -27,13 +27,28 @@ public abstract class ReadOnlyStreamScopeFuture<V, F extends SignalFuture<V>> ex
   }
 
   @Override
+  public void clear() {
+    fail("clear");
+  }
+
+  @Override
   public void close() {
     fail("close");
   }
 
   @Override
+  public void compute(@NotNull final Function<? super V, ? extends V> function) {
+    fail("compute");
+  }
+
+  @Override
   public boolean fail(@NotNull final Exception error) {
     return fail("fail");
+  }
+
+  @Override
+  public boolean isReadOnly() {
+    return true;
   }
 
   @Override
@@ -44,21 +59,6 @@ public abstract class ReadOnlyStreamScopeFuture<V, F extends SignalFuture<V>> ex
   @Override
   public void setBulk(@NotNull final Collection<V> values) {
     fail("setBulk");
-  }
-
-  @Override
-  public void clear() {
-    fail("clear");
-  }
-
-  @Override
-  public void compute(@NotNull final Function<? super V, ? extends V> function) {
-    fail("compute");
-  }
-
-  @Override
-  public boolean isReadOnly() {
-    return true;
   }
 
   @Override
