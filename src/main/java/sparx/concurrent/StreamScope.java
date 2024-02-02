@@ -30,10 +30,10 @@ import sparx.util.Require;
 
 class StreamScope<U> implements Scope, ScopeReceiver<U> {
 
-  private final Scope scope;
   private final HashSet<StreamingFuture<?>> futures = new HashSet<StreamingFuture<?>>();
   private final HashMap<StreamScopeReceiver<?>, Scheduler> receivers = new HashMap<StreamScopeReceiver<?>, Scheduler>();
   private final Scheduler scheduler = Scheduler.trampoline();
+  private final Scope scope;
   private final String taskID = toString();
 
   private ScopeStatus status = new RunningStatus();
@@ -64,8 +64,33 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
   }
 
   @Override
+  public void close() {
+    innerClose();
+  }
+
+  @Override
   public @Nullable ExecutionContext executionContext() {
     return scope.executionContext();
+  }
+
+  @Override
+  public boolean fail(@NotNull final Exception error) {
+    innerFail(error);
+    return true;
+  }
+
+  @Override
+  public boolean isConsumer() {
+    return false;
+  }
+
+  @Override
+  public void onReceiverError(@NotNull final Exception error) {
+    innerFail(error);
+  }
+
+  @Override
+  public void onUnsubscribe() {
   }
 
   @Override
@@ -92,41 +117,16 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
   }
 
   @Override
-  public void storeObject(@NotNull final String name, final Object object) {
-    scope.storeObject(name, object);
-  }
-
-  @Override
-  public boolean isConsumer() {
-    return false;
-  }
-
-  @Override
-  public void onReceiverError(@NotNull final Exception error) {
-    innerFail(error);
-  }
-
-  @Override
-  public void onUnsubscribe() {
-  }
-
-  @Override
-  public void close() {
-    innerClose();
-  }
-
-  @Override
-  public boolean fail(@NotNull final Exception error) {
-    innerFail(error);
-    return true;
-  }
-
-  @Override
   public void set(final U value) {
   }
 
   @Override
   public void setBulk(@NotNull final Collection<U> values) {
+  }
+
+  @Override
+  public void storeObject(@NotNull final String name, final Object object) {
+    scope.storeObject(name, object);
   }
 
   private void innerClose() {
@@ -150,18 +150,6 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
     } else {
       scheduler.scheduleAfter(task);
     }
-  }
-
-  private abstract class ScopeStatus {
-
-    abstract void onClose();
-
-    abstract void onCreate(@NotNull StreamingFuture<?> future, @NotNull Registration registration);
-
-    abstract void onFail(@NotNull Exception error);
-
-    abstract void onSubscribe(@NotNull StreamScopeReceiver<?> scopeReceiver,
-        @NotNull Scheduler scheduler);
   }
 
   private class CancelledStatus extends ScopeStatus {
@@ -259,32 +247,16 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
     }
   }
 
-  private class StreamRegistration implements Registration {
+  private abstract class ScopeStatus {
 
-    private final StreamingFuture<?> future;
-    private final Registration wrapped;
+    abstract void onClose();
 
-    private StreamRegistration(@NotNull final Registration wrapped,
-        @NotNull final StreamingFuture<?> future) {
-      this.wrapped = Require.notNull(wrapped, "wrapped");
-      this.future = Require.notNull(future, "future");
-    }
+    abstract void onCreate(@NotNull StreamingFuture<?> future, @NotNull Registration registration);
 
-    @Override
-    public void cancel() {
-      scheduler.scheduleAfter(new StreamTask() {
-        @Override
-        public void run() {
-          futures.remove(future);
-          wrapped.cancel();
-        }
-      });
-    }
+    abstract void onFail(@NotNull Exception error);
 
-    @Override
-    public void onUncaughtError(@NotNull final Exception error) {
-      innerFail(error);
-    }
+    abstract void onSubscribe(@NotNull StreamScopeReceiver<?> scopeReceiver,
+        @NotNull Scheduler scheduler);
   }
 
   private class StreamReceiver<R> implements Receiver<R> {
@@ -336,6 +308,34 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
     }
   }
 
+  private class StreamRegistration implements Registration {
+
+    private final StreamingFuture<?> future;
+    private final Registration wrapped;
+
+    private StreamRegistration(@NotNull final Registration wrapped,
+        @NotNull final StreamingFuture<?> future) {
+      this.wrapped = wrapped;
+      this.future = future;
+    }
+
+    @Override
+    public void cancel() {
+      scheduler.scheduleAfter(new StreamTask() {
+        @Override
+        public void run() {
+          futures.remove(future);
+          wrapped.cancel();
+        }
+      });
+    }
+
+    @Override
+    public void onUncaughtError(@NotNull final Exception error) {
+      innerFail(error);
+    }
+  }
+
   private class StreamScopeReceiver<R> implements ScopeReceiver<R> {
 
     private final StreamingFuture<?> future;
@@ -349,6 +349,16 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
       this.wrapped = wrapped;
       this.future = future;
       this.receiver = receiver;
+    }
+
+    @Override
+    public void close() {
+      status.close();
+    }
+
+    @Override
+    public boolean fail(@NotNull final Exception error) {
+      return status.fail(error);
     }
 
     @Override
@@ -372,16 +382,6 @@ class StreamScope<U> implements Scope, ScopeReceiver<U> {
           wrapped.onUnsubscribe();
         }
       });
-    }
-
-    @Override
-    public void close() {
-      status.close();
-    }
-
-    @Override
-    public boolean fail(@NotNull final Exception error) {
-      return status.fail(error);
     }
 
     @Override

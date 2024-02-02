@@ -33,6 +33,9 @@ import sparx.util.Require;
 public abstract class ValFuture<V> extends
     ReadOnlyStreamScopeFuture<V, StreamingFuture<V>> implements StreamingFuture<V> {
 
+  private ValFuture() {
+  }
+
   @SuppressWarnings("unchecked")
   public static @NotNull <V> ValFuture<V> of() {
     return (ValFuture<V>) ValuesFuture.EMPTY_FUTURE;
@@ -74,7 +77,32 @@ public abstract class ValFuture<V> extends
     return new FailureFuture<V>(Require.notNull(error, "error"));
   }
 
-  private ValFuture() {
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    return false;
+  }
+
+  @Override
+  public abstract List<V> get() throws ExecutionException;
+
+  @Override
+  public List<V> get(final long timeout, @NotNull final TimeUnit unit) throws ExecutionException {
+    return get();
+  }
+
+  @Override
+  public boolean isCancelled() {
+    return false;
+  }
+
+  @Override
+  public boolean isDone() {
+    return true;
+  }
+
+  @Override
+  public @NotNull LiveIterator<V> iterator(final long timeout, @NotNull final TimeUnit unit) {
+    return iterator();
   }
 
   @Override
@@ -103,34 +131,6 @@ public abstract class ValFuture<V> extends
   }
 
   @Override
-  public @NotNull LiveIterator<V> iterator(final long timeout, @NotNull final TimeUnit unit) {
-    return iterator();
-  }
-
-  @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    return false;
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return false;
-  }
-
-  @Override
-  public boolean isDone() {
-    return true;
-  }
-
-  @Override
-  public abstract List<V> get() throws ExecutionException;
-
-  @Override
-  public List<V> get(final long timeout, @NotNull final TimeUnit unit) throws ExecutionException {
-    return get();
-  }
-
-  @Override
   protected @NotNull StreamingFuture<V> createPaused() {
     return pauseFuture(this);
   }
@@ -151,6 +151,11 @@ public abstract class ValFuture<V> extends
     }
 
     @Override
+    public List<V> get() throws ExecutionException {
+      throw new ExecutionException(error);
+    }
+
+    @Override
     public V getCurrent() {
       throw new NoSuchElementException();
     }
@@ -158,6 +163,11 @@ public abstract class ValFuture<V> extends
     @Override
     public V getCurrentOr(final V defaultValue) {
       return defaultValue;
+    }
+
+    @Override
+    public @NotNull LiveIterator<V> iterator() {
+      return iterator;
     }
 
     @Override
@@ -196,16 +206,6 @@ public abstract class ValFuture<V> extends
       return subscribe(onValueConsumer, onBulkConsumer, onErrorConsumer, onCloseAction);
     }
 
-    @Override
-    public @NotNull LiveIterator<V> iterator() {
-      return iterator;
-    }
-
-    @Override
-    public List<V> get() throws ExecutionException {
-      throw new ExecutionException(error);
-    }
-
     private static class FailureIterator<V> implements LiveIterator<V> {
 
       private final Exception error;
@@ -215,23 +215,23 @@ public abstract class ValFuture<V> extends
       }
 
       @Override
-      public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
-        return hasNext();
-      }
-
-      @Override
-      public V next(final long timeout, @NotNull final TimeUnit unit) {
-        return next();
-      }
-
-      @Override
       public boolean hasNext() {
         throw new IllegalStateException(error);
       }
 
       @Override
+      public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
+        return hasNext();
+      }
+
+      @Override
       public V next() {
         throw new IllegalStateException(error);
+      }
+
+      @Override
+      public V next(final long timeout, @NotNull final TimeUnit unit) {
+        return next();
       }
 
       @Override
@@ -304,6 +304,11 @@ public abstract class ValFuture<V> extends
     }
 
     @Override
+    public List<V> get() {
+      return values;
+    }
+
+    @Override
     public V getCurrent() {
       if (values.isEmpty()) {
         throw new NoSuchElementException();
@@ -317,6 +322,11 @@ public abstract class ValFuture<V> extends
         return defaultValue;
       }
       return values.get(values.size() - 1);
+    }
+
+    @Override
+    public @NotNull LiveIterator<V> iterator() {
+      return new ValuesIterator<V>(values);
     }
 
     @Override
@@ -341,16 +351,6 @@ public abstract class ValFuture<V> extends
       return ValFuture.<V>of().subscribe(receiver);
     }
 
-    @Override
-    public @NotNull LiveIterator<V> iterator() {
-      return new ValuesIterator<V>(values);
-    }
-
-    @Override
-    public List<V> get() {
-      return values;
-    }
-
     private static class ValuesIterator<V> implements LiveIterator<V> {
 
       private final Iterator<V> iterator;
@@ -360,23 +360,23 @@ public abstract class ValFuture<V> extends
       }
 
       @Override
-      public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
-        return hasNext();
-      }
-
-      @Override
-      public V next(final long timeout, @NotNull final TimeUnit unit) {
-        return next();
-      }
-
-      @Override
       public boolean hasNext() {
         return iterator.hasNext();
       }
 
       @Override
+      public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
+        return hasNext();
+      }
+
+      @Override
       public V next() {
         return iterator.next();
+      }
+
+      @Override
+      public V next(final long timeout, @NotNull final TimeUnit unit) {
+        return next();
       }
 
       @Override
