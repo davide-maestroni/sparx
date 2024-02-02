@@ -182,7 +182,7 @@ public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
       scheduler().scheduleAfter(new PullTask() {
         @Override
         public void run() {
-          if (hasSinks()) {
+          if (hasConsumers()) {
             final boolean wasPull = isPull();
             pullFromReceiver = true;
             if (!wasPull) {

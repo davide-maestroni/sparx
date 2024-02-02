@@ -169,7 +169,6 @@ class ExecutionScope implements ExecutionContext {
     private final HashSet<StreamingFuture<?>> futures = new HashSet<StreamingFuture<?>>();
     private final HashSet<ExecutionScopeReceiver<?>> receivers = new HashSet<ExecutionScopeReceiver<?>>();
     private final AtomicInteger status = new AtomicInteger(IDLE);
-    private final String taskID = toString();
 
     private ScopeStatus scopeStatus = new RunningStatus();
 
@@ -274,7 +273,7 @@ class ExecutionScope implements ExecutionContext {
 
     @Override
     public @NotNull String taskID() {
-      return taskID;
+      return super.taskID();
     }
 
     @Override
@@ -362,7 +361,7 @@ class ExecutionScope implements ExecutionContext {
 
       @Override
       public @NotNull String taskID() {
-        return taskID;
+        return ScopeFuture.this.taskID();
       }
 
       @Override

@@ -52,13 +52,13 @@ import sparx.util.UncheckedException;
 public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {
 
-  private static final JoinAlert joinAlert = Alerts.joinAlert();
-
   private static final int CLOSED = 0;
   private static final int RUNNING = 1;
   private static final int CANCELLED = 2;
   private static final int COMPLETING = 3;
   private static final Object UNSET = new Object();
+
+  private static final JoinAlert joinAlert = Alerts.joinAlert();
 
   private final HistoryStrategy<V> historyStrategy;
   private final WeakHashMap<FutureIterator<V>, Void> iterators = new WeakHashMap<FutureIterator<V>, Void>();
@@ -75,6 +75,15 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   private volatile StreamingFuture<V> readonly;
   private volatile Result<V> result;
 
+  VarFuture() {
+    this(FutureHistory.<V>noHistory());
+  }
+
+  VarFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
+    this.historyStrategy = Require.notNull(historyStrategy, "historyStrategy");
+    this.registration = FutureScope.currentScope().registerFuture(this);
+  }
+
   public static @NotNull <V> VarFuture<V> create() {
     return new VarFuture<V>();
   }
@@ -90,13 +99,9 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
         Log.printable(e));
   }
 
-  VarFuture() {
-    this(FutureHistory.<V>noHistory());
-  }
-
-  VarFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
-    this.historyStrategy = Require.notNull(historyStrategy, "historyStrategy");
-    this.registration = FutureScope.currentScope().registerFuture(this);
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    return fail(new FutureCancellationException(mayInterruptIfRunning));
   }
 
   @Override
@@ -110,6 +115,20 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   }
 
   @Override
+  public void close() {
+    if (status.compareAndSet(RUNNING, COMPLETING)) {
+      scheduler.scheduleAfter(new VarTask() {
+        @Override
+        public void run() {
+          innerStatus.close();
+        }
+      });
+    } else {
+      Log.dbg(VarFuture.class, "Ignoring 'close' operation: future is already closed");
+    }
+  }
+
+  @Override
   public void compute(@NotNull final Function<? super V, ? extends V> function) {
     Require.notNull(function, "function");
     final Scope scope = FutureScope.currentScope();
@@ -119,6 +138,78 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
         innerStatus.compute(scope, function);
       }
     });
+  }
+
+  @Override
+  public boolean fail(@NotNull final Exception error) {
+    Require.notNull(error, "error");
+    if (status.compareAndSet(RUNNING, COMPLETING)) {
+      final Task task = new VarTask() {
+        @Override
+        public void run() {
+          innerStatus.fail(error);
+        }
+      };
+      if (FutureCancellationException.class.equals(error.getClass())) {
+        final Scheduler scheduler = this.scheduler;
+        if (((FutureCancellationException) error).mayInterruptIfRunning()) {
+          scheduler.interruptTask(toString());
+        }
+        scheduler.scheduleBefore(task);
+      } else {
+        scheduler.scheduleAfter(task);
+      }
+      return true;
+    }
+    Log.dbg(VarFuture.class, "Ignoring 'fail' operation: future is already closed");
+    return false;
+  }
+
+  @Override
+  public List<V> get() throws InterruptedException, ExecutionException {
+    final Result<V> result = this.result;
+    if (result != null) {
+      return result.get();
+    }
+    final Scheduler scheduler = this.scheduler;
+    final GetTask task = new GetTask();
+    scheduler.scheduleAfter(task);
+    pullFromJoinStart();
+    final JoinAlert joinAlert = VarFuture.joinAlert;
+    joinAlert.notifyJoinStart();
+    try {
+      task.acquire();
+    } finally {
+      joinAlert.notifyJoinStop();
+      scheduler.scheduleBefore(new RemoveTask(task));
+      pullFromJoinStop();
+    }
+    return this.result.get();
+  }
+
+  @Override
+  public List<V> get(final long timeout, @NotNull final TimeUnit unit)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    final Result<V> result = this.result;
+    if (result != null) {
+      return result.get();
+    }
+    final Scheduler scheduler = this.scheduler;
+    final GetTask task = new GetTask();
+    scheduler.scheduleAfter(task);
+    pullFromJoinStart();
+    final JoinAlert joinAlert = VarFuture.joinAlert;
+    joinAlert.notifyJoinStart();
+    try {
+      if (!task.tryAcquire(timeout, unit)) {
+        throw new TimeoutException();
+      }
+    } finally {
+      joinAlert.notifyJoinStop();
+      scheduler.scheduleBefore(new RemoveTask(task));
+      pullFromJoinStop();
+    }
+    return this.result.get();
   }
 
   @Override
@@ -140,8 +231,35 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   }
 
   @Override
+  public boolean isCancelled() {
+    return status.get() == CANCELLED
+        && FutureCancellationException.class.equals(failureException.getClass());
+  }
+
+  @Override
+  public boolean isDone() {
+    final int status = this.status.get();
+    return status != RUNNING && status != COMPLETING;
+  }
+
+  @Override
   public boolean isReadOnly() {
     return false;
+  }
+
+  @Override
+  public @NotNull LiveIterator<V> iterator() {
+    final IndefiniteIterator<V> iterator = new IndefiniteIterator<V>();
+    scheduler.scheduleBefore(new IteratorTask(iterator));
+    return iterator;
+  }
+
+  @Override
+  public @NotNull LiveIterator<V> iterator(final long timeout, @NotNull final TimeUnit unit) {
+    final TimeoutIterator<V> iterator = new TimeoutIterator<V>(
+        unit.toMillis(Require.positive(timeout, "timeout")));
+    scheduler.scheduleBefore(new IteratorTask(iterator));
+    return iterator;
   }
 
   @Override
@@ -150,6 +268,34 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
       readonly = new ReadOnlyFuture<V>(this);
     }
     return readonly;
+  }
+
+  @Override
+  public void set(final V value) {
+    scheduler.scheduleAfter(new VarTask() {
+      @Override
+      public void run() {
+        innerStatus.set(value);
+      }
+    });
+  }
+
+  @Override
+  public void setBulk(@NotNull final Collection<V> values) {
+    if (!values.isEmpty()) {
+      final List<V> valueList = ImmutableList.ofElementsIn(values);
+      scheduler.scheduleAfter(new VarTask() {
+        @Override
+        public int weight() {
+          return valueList.size();
+        }
+
+        @Override
+        public void run() {
+          innerStatus.setBulk(valueList);
+        }
+      });
+    }
   }
 
   @Override
@@ -228,152 +374,11 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   }
 
   @Override
-  public @NotNull LiveIterator<V> iterator() {
-    final IndefiniteIterator<V> iterator = new IndefiniteIterator<V>();
-    scheduler.scheduleBefore(new IteratorTask(iterator));
-    return iterator;
+  protected @NotNull StreamingFuture<V> createPaused() {
+    return pauseFuture(this);
   }
 
-  @Override
-  public @NotNull LiveIterator<V> iterator(final long timeout, @NotNull final TimeUnit unit) {
-    final TimeoutIterator<V> iterator = new TimeoutIterator<V>(
-        unit.toMillis(Require.positive(timeout, "timeout")));
-    scheduler.scheduleBefore(new IteratorTask(iterator));
-    return iterator;
-  }
-
-  @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    return fail(new FutureCancellationException(mayInterruptIfRunning));
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return status.get() == CANCELLED
-        && FutureCancellationException.class.equals(failureException.getClass());
-  }
-
-  @Override
-  public boolean isDone() {
-    final int status = this.status.get();
-    return status != RUNNING && status != COMPLETING;
-  }
-
-  @Override
-  public List<V> get() throws InterruptedException, ExecutionException {
-    final Result<V> result = this.result;
-    if (result != null) {
-      return result.get();
-    }
-    final Scheduler scheduler = this.scheduler;
-    final GetTask task = new GetTask();
-    scheduler.scheduleAfter(task);
-    pullFromJoinStart();
-    final JoinAlert joinAlert = VarFuture.joinAlert;
-    joinAlert.notifyJoinStart();
-    try {
-      task.acquire();
-    } finally {
-      joinAlert.notifyJoinStop();
-      scheduler.scheduleBefore(new RemoveTask(task));
-      pullFromJoinStop();
-    }
-    return this.result.get();
-  }
-
-  @Override
-  public List<V> get(final long timeout, @NotNull final TimeUnit unit)
-      throws InterruptedException, ExecutionException, TimeoutException {
-    final Result<V> result = this.result;
-    if (result != null) {
-      return result.get();
-    }
-    final Scheduler scheduler = this.scheduler;
-    final GetTask task = new GetTask();
-    scheduler.scheduleAfter(task);
-    pullFromJoinStart();
-    final JoinAlert joinAlert = VarFuture.joinAlert;
-    joinAlert.notifyJoinStart();
-    try {
-      if (!task.tryAcquire(timeout, unit)) {
-        throw new TimeoutException();
-      }
-    } finally {
-      joinAlert.notifyJoinStop();
-      scheduler.scheduleBefore(new RemoveTask(task));
-      pullFromJoinStop();
-    }
-    return this.result.get();
-  }
-
-  @Override
-  public void close() {
-    if (status.compareAndSet(RUNNING, COMPLETING)) {
-      scheduler.scheduleAfter(new VarTask() {
-        @Override
-        public void run() {
-          innerStatus.close();
-        }
-      });
-    } else {
-      Log.dbg(VarFuture.class, "Ignoring 'close' operation: future is already closed");
-    }
-  }
-
-  @Override
-  public boolean fail(@NotNull final Exception error) {
-    Require.notNull(error, "error");
-    if (status.compareAndSet(RUNNING, COMPLETING)) {
-      final Task task = new VarTask() {
-        @Override
-        public void run() {
-          innerStatus.fail(error);
-        }
-      };
-      if (FutureCancellationException.class.equals(error.getClass())) {
-        final Scheduler scheduler = this.scheduler;
-        if (((FutureCancellationException) error).mayInterruptIfRunning()) {
-          scheduler.interruptTask(toString());
-        }
-        scheduler.scheduleBefore(task);
-      } else {
-        scheduler.scheduleAfter(task);
-      }
-      return true;
-    }
-    Log.dbg(VarFuture.class, "Ignoring 'fail' operation: future is already closed");
-    return false;
-  }
-
-  @Override
-  public void set(final V value) {
-    scheduler.scheduleAfter(new VarTask() {
-      @Override
-      public void run() {
-        innerStatus.set(value);
-      }
-    });
-  }
-
-  @Override
-  public void setBulk(@NotNull final Collection<V> values) {
-    if (!values.isEmpty()) {
-      final List<V> valueList = ImmutableList.ofElementsIn(values);
-      scheduler.scheduleAfter(new VarTask() {
-        @Override
-        public int weight() {
-          return valueList.size();
-        }
-
-        @Override
-        public void run() {
-          innerStatus.setBulk(valueList);
-        }
-      });
-    }
-  }
-
-  protected boolean hasSinks() {
+  protected boolean hasConsumers() {
     for (final ScopeReceiver<V> scopeReceiver : receivers.values()) {
       if (scopeReceiver.isConsumer()) {
         return true;
@@ -394,22 +399,17 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   protected void pullFromReceiver() {
   }
 
+  @Override
+  protected void resumePaused(@NotNull final StreamingFuture<V> pausedFuture) {
+    resumeFuture(pausedFuture);
+  }
+
   protected @NotNull Scheduler scheduler() {
     return scheduler;
   }
 
   protected @NotNull String taskID() {
     return taskID;
-  }
-
-  @Override
-  protected @NotNull StreamingFuture<V> createPaused() {
-    return pauseFuture(this);
-  }
-
-  @Override
-  protected void resumePaused(@NotNull final StreamingFuture<V> pausedFuture) {
-    resumeFuture(pausedFuture);
   }
 
   private interface Result<V> extends Supplier<List<V>> {
@@ -496,6 +496,39 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   private class IndefiniteIterator<E> extends FutureIterator<E> {
 
     @Override
+    public boolean hasNext() {
+      final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
+      final Semaphore semaphore = this.semaphore;
+      final AtomicInteger iteratorStatus = status;
+      final JoinAlert joinAlert = VarFuture.joinAlert;
+      boolean firstLoop = true;
+      while (true) {
+        if (!queue.isEmpty()) {
+          return true;
+        }
+        final int status = iteratorStatus.get();
+        if (status == IDLE) {
+          return false;
+        }
+        if (status == FAILED) {
+          throw UncheckedException.toUnchecked(failureException);
+        }
+        if (firstLoop) {
+          firstLoop = false;
+          pullFromIterator();
+        }
+        joinAlert.notifyJoinStart();
+        try {
+          semaphore.acquire();
+        } catch (final InterruptedException e) {
+          throw UncheckedException.toUnchecked(e);
+        } finally {
+          joinAlert.notifyJoinStop();
+        }
+      }
+    }
+
+    @Override
     public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
       final long startTime = System.currentTimeMillis();
       long remainingTime = unit.toMillis(Require.positive(timeout, "timeout"));
@@ -533,39 +566,6 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
       }
       throw UncheckedException.timeout();
     }
-
-    @Override
-    public boolean hasNext() {
-      final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
-      final Semaphore semaphore = this.semaphore;
-      final AtomicInteger iteratorStatus = status;
-      final JoinAlert joinAlert = VarFuture.joinAlert;
-      boolean firstLoop = true;
-      while (true) {
-        if (!queue.isEmpty()) {
-          return true;
-        }
-        final int status = iteratorStatus.get();
-        if (status == IDLE) {
-          return false;
-        }
-        if (status == FAILED) {
-          throw UncheckedException.toUnchecked(failureException);
-        }
-        if (firstLoop) {
-          firstLoop = false;
-          pullFromIterator();
-        }
-        joinAlert.notifyJoinStart();
-        try {
-          semaphore.acquire();
-        } catch (final InterruptedException e) {
-          throw UncheckedException.toUnchecked(e);
-        } finally {
-          joinAlert.notifyJoinStop();
-        }
-      }
-    }
   }
 
   private class TimeoutIterator<E> extends FutureIterator<E> {
@@ -577,10 +577,9 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     }
 
     @Override
-    public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
+    public boolean hasNext() {
       final long startTime = System.currentTimeMillis();
-      long remainingTime = Math.min(totalTimeoutMillis,
-          unit.toMillis(Require.positive(timeout, "timeout")));
+      long remainingTime = totalTimeoutMillis;
       try {
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
@@ -621,9 +620,10 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     }
 
     @Override
-    public boolean hasNext() {
+    public boolean hasNext(final long timeout, @NotNull final TimeUnit unit) {
       final long startTime = System.currentTimeMillis();
-      long remainingTime = totalTimeoutMillis;
+      long remainingTime = Math.min(totalTimeoutMillis,
+          unit.toMillis(Require.positive(timeout, "timeout")));
       try {
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
@@ -684,7 +684,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
 
     private final ExecutionException result;
 
-    private FailureResult(final Exception error) {
+    private FailureResult(@NotNull final Exception error) {
       result = new ExecutionException(error);
     }
 
@@ -730,7 +730,336 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
 
 // Status
 
+  private class CancelledStatus extends Status {
+
+    @Override
+    void get(@NotNull final Semaphore semaphore) {
+      semaphore.release();
+    }
+
+    @Override
+    void iterator(@NotNull final FutureIterator<V> iterator) {
+      super.iterator(iterator);
+      iterator.fail(failureException);
+    }
+
+    @Override
+    void subscribe(@NotNull final Receiver<V> receiver,
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      super.subscribe(receiver, scopeReceiver);
+      subscribeNext(receiver, scopeReceiver);
+    }
+
+    @Override
+    void subscribeNext(@NotNull final Receiver<V> receiver,
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      try {
+        scopeReceiver.fail(failureException);
+      } catch (final RuntimeException e) {
+        scopeReceiver.onReceiverError(e);
+      }
+      scopeReceiver.onUnsubscribe();
+    }
+  }
+
+  private class ClosedStatus extends Status {
+
+    @Override
+    void get(@NotNull final Semaphore semaphore) {
+      semaphore.release();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    void iterator(@NotNull final FutureIterator<V> iterator) {
+      super.iterator(iterator);
+      if (lastValue != UNSET) {
+        iterator.add((V) lastValue);
+      }
+      iterator.end();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    void subscribe(@NotNull final Receiver<V> receiver,
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      super.subscribe(receiver, scopeReceiver);
+      try {
+        if (scopeReceiver.isConsumer() && lastValue != UNSET) {
+          scopeReceiver.set((V) lastValue);
+        }
+        scopeReceiver.close();
+      } catch (final RuntimeException e) {
+        scopeReceiver.onReceiverError(e);
+      }
+      scopeReceiver.onUnsubscribe();
+    }
+
+    @Override
+    void subscribeNext(@NotNull final Receiver<V> receiver,
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      try {
+        scopeReceiver.close();
+      } catch (final RuntimeException e) {
+        scopeReceiver.onReceiverError(e);
+      }
+      scopeReceiver.onUnsubscribe();
+    }
+  }
+
+  private class RunningStatus extends Status {
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void close() {
+      status.set(CLOSED);
+      innerStatus = new ClosedStatus();
+      result = new ValueResult<V>((V) lastValue);
+      try {
+        historyStrategy.onClose();
+      } catch (final RuntimeException e) {
+        logInvocationException("history strategy", "onClose", e);
+      }
+      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
+      for (final ScopeReceiver<V> scopeReceiver : receivers.values()) {
+        try {
+          scopeReceiver.close();
+        } catch (final RuntimeException e) {
+          scopeReceiver.onReceiverError(e);
+        }
+        scopeReceiver.onUnsubscribe();
+      }
+      receivers.clear();
+      final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
+      for (final FutureIterator<V> futureIterator : iterators.keySet()) {
+        futureIterator.end();
+      }
+      iterators.clear();
+      final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
+      for (final Semaphore semaphore : semaphores.keySet()) {
+        semaphore.release();
+      }
+      semaphores.clear();
+      registration.cancel();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public boolean fail(@NotNull final Exception error) {
+      status.set(CANCELLED);
+      innerStatus = new CancelledStatus();
+      if (lastValue != UNSET) {
+        try {
+          historyStrategy.onPush((V) lastValue);
+        } catch (final RuntimeException e) {
+          logInvocationException("history strategy", "onSet", e);
+        }
+      }
+      lastValue = UNSET;
+      failureException = error;
+      if (FutureCancellationException.class.equals(error.getClass())) {
+        result = new CancellationResult<V>();
+      } else {
+        result = new FailureResult<V>(error);
+      }
+      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
+      final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
+      final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
+      for (final ScopeReceiver<V> scopeReceiver : receivers.values()) {
+        try {
+          scopeReceiver.fail(error);
+        } catch (final RuntimeException e) {
+          scopeReceiver.onReceiverError(e);
+        }
+        scopeReceiver.onUnsubscribe();
+      }
+      receivers.clear();
+      for (final FutureIterator<V> futureIterator : iterators.keySet()) {
+        futureIterator.fail(error);
+      }
+      iterators.clear();
+      for (final Semaphore semaphore : semaphores.keySet()) {
+        semaphore.release();
+      }
+      semaphores.clear();
+      if (hasConsumers()) {
+        registration.cancel();
+      } else {
+        registration.onUncaughtError(error);
+      }
+      return true;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void set(final V value) {
+      if (lastValue != UNSET) {
+        try {
+          historyStrategy.onPush((V) lastValue);
+        } catch (final RuntimeException e) {
+          logInvocationException("history strategy", "onSet", e);
+        }
+      }
+      lastValue = value;
+      boolean firstSink = true;
+      for (final Entry<Receiver<?>, ScopeReceiver<V>> entry : receivers.entrySet()) {
+        final ScopeReceiver<V> scopeReceiver = entry.getValue();
+        if (scopeReceiver.isConsumer()) {
+          try {
+            scopeReceiver.set(value);
+          } catch (final RuntimeException e) {
+            scopeReceiver.onReceiverError(e);
+          }
+          if (firstSink) {
+            firstSink = false;
+            pullFromReceiver();
+          }
+        }
+      }
+      for (final FutureIterator<V> futureIterator : iterators.keySet()) {
+        futureIterator.add(value);
+      }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void setBulk(@NotNull final Collection<V> values) {
+      if (lastValue != UNSET) {
+        try {
+          historyStrategy.onPush((V) lastValue);
+        } catch (final RuntimeException e) {
+          logInvocationException("history strategy", "onSet", e);
+        }
+      }
+      final int lastIndex = values.size() - 1;
+      final List<V> valuesList = (List<V>) values;
+      lastValue = valuesList.get(lastIndex);
+      try {
+        historyStrategy.onPushBulk(valuesList.subList(0, lastIndex));
+      } catch (final RuntimeException e) {
+        logInvocationException("history strategy", "onSetBulk", e);
+      }
+      boolean firstSink = true;
+      for (final Entry<Receiver<?>, ScopeReceiver<V>> entry : receivers.entrySet()) {
+        final ScopeReceiver<V> scopeReceiver = entry.getValue();
+        if (scopeReceiver.isConsumer()) {
+          try {
+            if (values.size() == 1) {
+              scopeReceiver.set(valuesList.get(0));
+            } else {
+              scopeReceiver.setBulk(values);
+            }
+          } catch (final RuntimeException e) {
+            scopeReceiver.onReceiverError(e);
+          }
+          if (firstSink) {
+            firstSink = false;
+            pullFromReceiver();
+          }
+        }
+      }
+      for (final FutureIterator<V> futureIterator : iterators.keySet()) {
+        futureIterator.addAll(values);
+      }
+    }
+
+    @Override
+    void clear() {
+      lastValue = UNSET;
+      try {
+        historyStrategy.onClear();
+      } catch (final RuntimeException e) {
+        logInvocationException("history strategy", "onClear", e);
+      }
+    }
+
+    @Override
+    void compute(@NotNull final Scope scope,
+        @NotNull final Function<? super V, ? extends V> function) {
+      if (lastValue != UNSET) {
+        scheduler.pause();
+        try {
+          scope.runTask(new VarTask() {
+            @Override
+            @SuppressWarnings({"unchecked", "NonAtomicOperationOnVolatileField"})
+            public void run() {
+              try {
+                lastValue = function.apply((V) lastValue);
+              } catch (final Exception e) {
+                Log.err(VarFuture.class, "Failed to compute next value: %s", Log.printable(e));
+                innerStatus.fail(e);
+              }
+              scheduler.resume();
+            }
+          });
+        } catch (final RuntimeException e) {
+          logInvocationException("context", "onTask", e);
+          innerStatus.fail(e);
+          scheduler.resume();
+        }
+      }
+    }
+
+    @Override
+    void get(@NotNull final Semaphore semaphore) {
+      semaphores.put(semaphore, null);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    void iterator(@NotNull final FutureIterator<V> iterator) {
+      super.iterator(iterator);
+      if (lastValue != UNSET) {
+        iterator.add((V) lastValue);
+      }
+      iterators.put(iterator, null);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    void subscribe(@NotNull final Receiver<V> receiver,
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
+      if (!receivers.containsKey(receiver)) {
+        super.subscribe(receiver, scopeReceiver);
+        if (scopeReceiver.isConsumer() && lastValue != UNSET) {
+          try {
+            scopeReceiver.set((V) lastValue);
+          } catch (final RuntimeException e) {
+            scopeReceiver.onReceiverError(e);
+          }
+        }
+        receivers.put(receiver, scopeReceiver);
+        if (hasConsumers()) {
+          pullFromReceiver();
+        }
+      }
+    }
+
+    @Override
+    void subscribeNext(@NotNull final Receiver<V> receiver,
+        @NotNull final ScopeReceiver<V> scopeReceiver) {
+      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
+      if (!receivers.containsKey(receiver)) {
+        receivers.put(receiver, scopeReceiver);
+        if (hasConsumers()) {
+          pullFromReceiver();
+        }
+      }
+    }
+
+    @Override
+    void remove(@NotNull final Semaphore semaphore) {
+      semaphores.remove(semaphore);
+    }
+  }
+
   private abstract class Status implements Receiver<V> {
+
+    @Override
+    public void close() {
+      Log.dbg(VarFuture.class, "Ignoring 'close' operation: future is already closed");
+    }
 
     @Override
     public boolean fail(@NotNull final Exception error) {
@@ -746,11 +1075,6 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     @Override
     public void setBulk(@NotNull final Collection<V> values) {
       Log.dbg(VarFuture.class, "Ignoring 'setBulk' operation: future is already closed");
-    }
-
-    @Override
-    public void close() {
-      Log.dbg(VarFuture.class, "Ignoring 'close' operation: future is already closed");
     }
 
     void clear() {
@@ -806,330 +1130,6 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     }
   }
 
-  private class CancelledStatus extends Status {
-
-    @Override
-    public void get(@NotNull final Semaphore semaphore) {
-      semaphore.release();
-    }
-
-    @Override
-    public void iterator(@NotNull final FutureIterator<V> iterator) {
-      super.iterator(iterator);
-      iterator.fail(failureException);
-    }
-
-    @Override
-    void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final ScopeReceiver<V> scopeReceiver) {
-      super.subscribe(receiver, scopeReceiver);
-      subscribeNext(receiver, scopeReceiver);
-    }
-
-    @Override
-    void subscribeNext(@NotNull final Receiver<V> receiver,
-        @NotNull final ScopeReceiver<V> scopeReceiver) {
-      try {
-        scopeReceiver.fail(failureException);
-      } catch (final RuntimeException e) {
-        scopeReceiver.onReceiverError(e);
-      }
-      scopeReceiver.onUnsubscribe();
-    }
-  }
-
-  private class ClosedStatus extends Status {
-
-    @Override
-    public void get(@NotNull final Semaphore semaphore) {
-      semaphore.release();
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public void iterator(@NotNull final FutureIterator<V> iterator) {
-      super.iterator(iterator);
-      if (lastValue != UNSET) {
-        iterator.add((V) lastValue);
-      }
-      iterator.end();
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final ScopeReceiver<V> scopeReceiver) {
-      super.subscribe(receiver, scopeReceiver);
-      try {
-        if (scopeReceiver.isConsumer() && lastValue != UNSET) {
-          scopeReceiver.set((V) lastValue);
-        }
-        scopeReceiver.close();
-      } catch (final RuntimeException e) {
-        scopeReceiver.onReceiverError(e);
-      }
-      scopeReceiver.onUnsubscribe();
-    }
-
-    @Override
-    void subscribeNext(@NotNull final Receiver<V> receiver,
-        @NotNull final ScopeReceiver<V> scopeReceiver) {
-      try {
-        scopeReceiver.close();
-      } catch (final RuntimeException e) {
-        scopeReceiver.onReceiverError(e);
-      }
-      scopeReceiver.onUnsubscribe();
-    }
-  }
-
-  private class RunningStatus extends Status {
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public boolean fail(@NotNull final Exception error) {
-      status.set(CANCELLED);
-      innerStatus = new CancelledStatus();
-      if (lastValue != UNSET) {
-        try {
-          historyStrategy.onPush((V) lastValue);
-        } catch (final RuntimeException e) {
-          logInvocationException("history strategy", "onSet", e);
-        }
-      }
-      lastValue = UNSET;
-      failureException = error;
-      if (FutureCancellationException.class.equals(error.getClass())) {
-        result = new CancellationResult<V>();
-      } else {
-        result = new FailureResult<V>(error);
-      }
-      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
-      final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
-      final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
-      for (final ScopeReceiver<V> scopeReceiver : receivers.values()) {
-        try {
-          scopeReceiver.fail(error);
-        } catch (final RuntimeException e) {
-          scopeReceiver.onReceiverError(e);
-        }
-        scopeReceiver.onUnsubscribe();
-      }
-      receivers.clear();
-      for (final FutureIterator<V> futureIterator : iterators.keySet()) {
-        futureIterator.fail(error);
-      }
-      iterators.clear();
-      for (final Semaphore semaphore : semaphores.keySet()) {
-        semaphore.release();
-      }
-      semaphores.clear();
-      if (hasSinks()) {
-        registration.cancel();
-      } else {
-        registration.onUncaughtError(error);
-      }
-      return true;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public void setBulk(@NotNull final Collection<V> values) {
-      if (lastValue != UNSET) {
-        try {
-          historyStrategy.onPush((V) lastValue);
-        } catch (final RuntimeException e) {
-          logInvocationException("history strategy", "onSet", e);
-        }
-      }
-      final int lastIndex = values.size() - 1;
-      final List<V> valuesList = (List<V>) values;
-      lastValue = valuesList.get(lastIndex);
-      try {
-        historyStrategy.onPushBulk(valuesList.subList(0, lastIndex));
-      } catch (final RuntimeException e) {
-        logInvocationException("history strategy", "onSetBulk", e);
-      }
-      boolean firstSink = true;
-      for (final Entry<Receiver<?>, ScopeReceiver<V>> entry : receivers.entrySet()) {
-        final ScopeReceiver<V> scopeReceiver = entry.getValue();
-        if (scopeReceiver.isConsumer()) {
-          try {
-            if (values.size() == 1) {
-              scopeReceiver.set(valuesList.get(0));
-            } else {
-              scopeReceiver.setBulk(values);
-            }
-          } catch (final RuntimeException e) {
-            scopeReceiver.onReceiverError(e);
-          }
-          if (firstSink) {
-            firstSink = false;
-            pullFromReceiver();
-          }
-        }
-      }
-      for (final FutureIterator<V> futureIterator : iterators.keySet()) {
-        futureIterator.addAll(values);
-      }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public void set(final V value) {
-      if (lastValue != UNSET) {
-        try {
-          historyStrategy.onPush((V) lastValue);
-        } catch (final RuntimeException e) {
-          logInvocationException("history strategy", "onSet", e);
-        }
-      }
-      lastValue = value;
-      boolean firstSink = true;
-      for (final Entry<Receiver<?>, ScopeReceiver<V>> entry : receivers.entrySet()) {
-        final ScopeReceiver<V> scopeReceiver = entry.getValue();
-        if (scopeReceiver.isConsumer()) {
-          try {
-            scopeReceiver.set(value);
-          } catch (final RuntimeException e) {
-            scopeReceiver.onReceiverError(e);
-          }
-          if (firstSink) {
-            firstSink = false;
-            pullFromReceiver();
-          }
-        }
-      }
-      for (final FutureIterator<V> futureIterator : iterators.keySet()) {
-        futureIterator.add(value);
-      }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public void close() {
-      status.set(CLOSED);
-      innerStatus = new ClosedStatus();
-      result = new ValueResult<V>((V) lastValue);
-      try {
-        historyStrategy.onClose();
-      } catch (final RuntimeException e) {
-        logInvocationException("history strategy", "onClose", e);
-      }
-      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
-      for (final ScopeReceiver<V> scopeReceiver : receivers.values()) {
-        try {
-          scopeReceiver.close();
-        } catch (final RuntimeException e) {
-          scopeReceiver.onReceiverError(e);
-        }
-        scopeReceiver.onUnsubscribe();
-      }
-      receivers.clear();
-      final WeakHashMap<FutureIterator<V>, Void> iterators = VarFuture.this.iterators;
-      for (final FutureIterator<V> futureIterator : iterators.keySet()) {
-        futureIterator.end();
-      }
-      iterators.clear();
-      final WeakHashMap<Semaphore, Void> semaphores = VarFuture.this.semaphores;
-      for (final Semaphore semaphore : semaphores.keySet()) {
-        semaphore.release();
-      }
-      semaphores.clear();
-      registration.cancel();
-    }
-
-    @Override
-    public void clear() {
-      lastValue = UNSET;
-      try {
-        historyStrategy.onClear();
-      } catch (final RuntimeException e) {
-        logInvocationException("history strategy", "onClear", e);
-      }
-    }
-
-    @Override
-    public void compute(@NotNull final Scope scope,
-        @NotNull final Function<? super V, ? extends V> function) {
-      if (lastValue != UNSET) {
-        scheduler.pause();
-        try {
-          scope.runTask(new VarTask() {
-            @Override
-            @SuppressWarnings({"unchecked", "NonAtomicOperationOnVolatileField"})
-            public void run() {
-              try {
-                lastValue = function.apply((V) lastValue);
-              } catch (final Exception e) {
-                Log.err(VarFuture.class, "Failed to compute next value: %s", Log.printable(e));
-                innerStatus.fail(e);
-              }
-              scheduler.resume();
-            }
-          });
-        } catch (final RuntimeException e) {
-          logInvocationException("context", "onTask", e);
-          innerStatus.fail(e);
-          scheduler.resume();
-        }
-      }
-    }
-
-    @Override
-    public void get(@NotNull final Semaphore semaphore) {
-      semaphores.put(semaphore, null);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public void iterator(@NotNull final FutureIterator<V> iterator) {
-      super.iterator(iterator);
-      if (lastValue != UNSET) {
-        iterator.add((V) lastValue);
-      }
-      iterators.put(iterator, null);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    void subscribe(@NotNull final Receiver<V> receiver,
-        @NotNull final ScopeReceiver<V> scopeReceiver) {
-      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
-      if (!receivers.containsKey(receiver)) {
-        super.subscribe(receiver, scopeReceiver);
-        if (scopeReceiver.isConsumer() && lastValue != UNSET) {
-          try {
-            scopeReceiver.set((V) lastValue);
-          } catch (final RuntimeException e) {
-            scopeReceiver.onReceiverError(e);
-          }
-        }
-        receivers.put(receiver, scopeReceiver);
-        if (hasSinks()) {
-          pullFromReceiver();
-        }
-      }
-    }
-
-    @Override
-    void subscribeNext(@NotNull final Receiver<V> receiver,
-        @NotNull final ScopeReceiver<V> scopeReceiver) {
-      final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
-      if (!receivers.containsKey(receiver)) {
-        receivers.put(receiver, scopeReceiver);
-        if (hasSinks()) {
-          pullFromReceiver();
-        }
-      }
-    }
-
-    @Override
-    void remove(@NotNull final Semaphore semaphore) {
-      semaphores.remove(semaphore);
-    }
-  }
-
 // Tasks
 
   private class GetTask extends Semaphore implements Task {
@@ -1139,18 +1139,18 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     }
 
     @Override
+    public void run() {
+      innerStatus.get(this);
+    }
+
+    @Override
     public @NotNull String taskID() {
-      return taskID;
+      return VarFuture.this.taskID();
     }
 
     @Override
     public int weight() {
       return 1;
-    }
-
-    @Override
-    public void run() {
-      innerStatus.get(this);
     }
   }
 
@@ -1186,7 +1186,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
 
     @Override
     public @NotNull String taskID() {
-      return taskID;
+      return VarFuture.this.taskID();
     }
 
     @Override
