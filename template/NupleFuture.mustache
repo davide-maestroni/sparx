@@ -17,16 +17,45 @@ package sparx.concurrent.tuple;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TupleFuture;
+import sparx.function.Function;
 import sparx.tuple.Tuple;
 import sparx.util.ImmutableList;
+import sparx.util.UncheckedException;
+
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
 public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> implements
     Tuple<StreamingFuture<? extends V>> {
+
+  private static final HashMap<Integer, Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>> factories =
+      new HashMap<Integer, Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>>() {
+        {
+          put(1, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+            @Override
+            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+              return SingleFuture.of(input.next());
+            }
+          });
+{{#tuples}}          put({{count}}, new Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>>() {
+            @Override
+            public TupleFuture<?, ?> apply(final Iterator<StreamingFuture<?>> input) {
+              return {{name}}Future.of(
+{{#indexes}}                  input.next(){{^last}},{{/last}}
+{{/indexes}}
+              );
+            }
+          });
+{{/tuples}}
+        }
+      };
 
   private final List<? extends StreamingFuture<? extends V>> futures;
 
@@ -39,21 +68,23 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
     return new NupleFuture<V>(ImmutableList.ofElementsIn(futures));
   }
 
+  @SuppressWarnings("unchecked")
   public static @NotNull <V> TupleFuture<V, ?> tupleOf(
       @NotNull final Collection<? extends StreamingFuture<V>> futures) {
-    final int size = futures.size();
-    if (size == 0) {
+    if (futures.isEmpty()) {
       return EmptyFuture.instance();
-    } else if (size == 1) {
-      return SingleFuture.of(futures.iterator().next());
-{{#tuples}}
-    } else if (size == {{count}}) {
-      final Iterator<? extends StreamingFuture<V>> iterator = futures.iterator();
-      return {{name}}Future.of(
-{{#indexes}}          iterator.next(){{^last}},{{/last}}
-{{/indexes}}
-      );
-{{/tuples}}    }
+    } else {
+      final Function<Iterator<StreamingFuture<?>>, TupleFuture<?, ?>> factory =
+          factories.get(futures.size());
+      if (factory != null) {
+        try {
+          return (TupleFuture<V, ?>) factory.apply(
+              (Iterator<StreamingFuture<?>>) futures.iterator());
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+    }
     return new NupleFuture<V>(ImmutableList.ofElementsIn(futures));
   }
 
