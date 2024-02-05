@@ -127,7 +127,7 @@ public class DecoratedFuture<V> implements StreamingFuture<V> {
   }
 
   @Override
-  public void setBulk(@NotNull final V... values) {
+  public void setBulk(@Nullable final V... values) {
     wrapped.setBulk(values);
   }
 

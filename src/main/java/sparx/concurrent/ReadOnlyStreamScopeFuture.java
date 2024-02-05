@@ -17,6 +17,7 @@ package sparx.concurrent;
 
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import sparx.function.Function;
 
 public abstract class ReadOnlyStreamScopeFuture<V, F extends SignalFuture<V>> extends
@@ -62,7 +63,7 @@ public abstract class ReadOnlyStreamScopeFuture<V, F extends SignalFuture<V>> ex
   }
 
   @Override
-  public void setBulk(@NotNull final V... values) {
+  public void setBulk(@Nullable final V... values) {
     fail("setBulk");
   }
 }

@@ -64,7 +64,10 @@ public abstract class ValFuture<V> extends
     return new ValuesFuture<V>(ImmutableList.ofElementsIn(values));
   }
 
-  public static @NotNull <V> ValFuture<V> ofBulk(@NotNull final V... values) {
+  public static @NotNull <V> ValFuture<V> ofBulk(@Nullable final V... values) {
+    if (values == null) {
+      return of();
+    }
     if (values.length == 0) {
       return of();
     } else if (values.length == 1) {

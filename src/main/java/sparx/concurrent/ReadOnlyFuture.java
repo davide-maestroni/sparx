@@ -17,6 +17,7 @@ package sparx.concurrent;
 
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import sparx.function.Function;
 
 public class ReadOnlyFuture<V> extends DecoratedFuture<V> {
@@ -70,7 +71,7 @@ public class ReadOnlyFuture<V> extends DecoratedFuture<V> {
   }
 
   @Override
-  public void setBulk(@NotNull final V... values) {
+  public void setBulk(@Nullable final V... values) {
     fail("setBulk");
   }
 }

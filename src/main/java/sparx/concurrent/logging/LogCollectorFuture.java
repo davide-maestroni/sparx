@@ -19,6 +19,7 @@ import static java.lang.Boolean.parseBoolean;
 
 import java.util.Properties;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.ReadOnlyFuture;
 import sparx.concurrent.VarFuture;
 import sparx.logging.Log.LogCollector;
@@ -50,8 +51,8 @@ public class LogCollectorFuture extends ReadOnlyFuture<LogMessage> implements Lo
   }
 
   @Override
-  public void log(@NotNull final LogLevel level, final Object tag, final String msgFmt,
-      final Object... args) {
+  public void log(@NotNull final LogLevel level, @Nullable final Object tag,
+      @Nullable final String msgFmt, @Nullable final Object... args) {
     wrapped().set(factory.create(level, tag, msgFmt, args));
   }
 }

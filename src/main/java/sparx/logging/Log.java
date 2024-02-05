@@ -70,41 +70,43 @@ public class Log {
     level = LogLevel.WARNING;
   }
 
-  public static void dbg(final Object tag, final String msg) {
+  public static void dbg(@Nullable final Object tag, @Nullable final String msg) {
     if (level == LogLevel.DEBUG) {
       collector.log(LogLevel.DEBUG, tag, msg);
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object firstArg) {
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg) {
     if (level == LogLevel.DEBUG) {
       collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg);
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg) {
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg) {
     if (level == LogLevel.DEBUG) {
       collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg, secondArg);
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg) {
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg) {
     if (level == LogLevel.DEBUG) {
       collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg, secondArg, thirdArg);
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg) {
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg,
+      final Object fourthArg) {
     if (level == LogLevel.DEBUG) {
       collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg);
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg) {
     if (level == LogLevel.DEBUG) {
       collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg,
@@ -112,8 +114,8 @@ public class Log {
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg) {
     if (level == LogLevel.DEBUG) {
       collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg,
@@ -121,8 +123,8 @@ public class Log {
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg) {
     if (level == LogLevel.DEBUG) {
       collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg,
@@ -130,8 +132,8 @@ public class Log {
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg,
       final Object eighthArg) {
     if (level == LogLevel.DEBUG) {
@@ -140,8 +142,8 @@ public class Log {
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg,
       final Object eighthArg, final Object ninthArg) {
     if (level == LogLevel.DEBUG) {
@@ -150,8 +152,8 @@ public class Log {
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg,
       final Object eighthArg, final Object ninthArg, final Object tenthArg) {
     if (level == LogLevel.DEBUG) {
@@ -160,47 +162,50 @@ public class Log {
     }
   }
 
-  public static void dbg(final Object tag, final String msgFmt, final Object... args) {
+  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
+      @Nullable final Object... args) {
     if (level == LogLevel.DEBUG) {
       collector.log(LogLevel.DEBUG, tag, msgFmt, args);
     }
   }
 
-  public static void err(final Object tag, final String msg) {
+  public static void err(@Nullable final Object tag, @Nullable final String msg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
       collector.log(LogLevel.ERROR, tag, msg);
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object firstArg) {
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
       collector.log(LogLevel.ERROR, tag, msgFmt, firstArg);
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg) {
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
       collector.log(LogLevel.ERROR, tag, msgFmt, firstArg, secondArg);
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg) {
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
       collector.log(LogLevel.ERROR, tag, msgFmt, firstArg, secondArg, thirdArg);
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg) {
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg,
+      final Object fourthArg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
       collector.log(LogLevel.ERROR, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg);
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
       collector.log(LogLevel.ERROR, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg,
@@ -208,8 +213,8 @@ public class Log {
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
       collector.log(LogLevel.ERROR, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg,
@@ -217,8 +222,8 @@ public class Log {
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
       collector.log(LogLevel.ERROR, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg,
@@ -226,8 +231,8 @@ public class Log {
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg,
       final Object eighthArg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
@@ -236,8 +241,8 @@ public class Log {
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg,
       final Object eighthArg, final Object ninthArg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
@@ -246,8 +251,8 @@ public class Log {
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg,
       final Object eighthArg, final Object ninthArg, final Object tenthArg) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
@@ -256,47 +261,50 @@ public class Log {
     }
   }
 
-  public static void err(final Object tag, final String msgFmt, final Object... args) {
+  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
+      @Nullable final Object... args) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
       collector.log(LogLevel.ERROR, tag, msgFmt, args);
     }
   }
 
-  public static void wrn(final Object tag, final String msg) {
+  public static void wrn(@Nullable final Object tag, @Nullable final String msg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msg);
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object firstArg) {
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msgFmt, firstArg);
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg) {
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msgFmt, firstArg, secondArg);
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg) {
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msgFmt, firstArg, secondArg, thirdArg);
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg) {
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg,
+      final Object fourthArg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg);
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg,
@@ -304,8 +312,8 @@ public class Log {
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg,
@@ -313,8 +321,8 @@ public class Log {
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg,
@@ -322,8 +330,8 @@ public class Log {
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg,
       final Object eighthArg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
@@ -332,8 +340,8 @@ public class Log {
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg,
       final Object eighthArg, final Object ninthArg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
@@ -342,8 +350,8 @@ public class Log {
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object firstArg,
-      final Object secondArg, final Object thirdArg, final Object fourthArg,
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg,
       final Object fifthArg, final Object sixthArg, final Object seventhArg,
       final Object eighthArg, final Object ninthArg, final Object tenthArg) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
@@ -352,7 +360,8 @@ public class Log {
     }
   }
 
-  public static void wrn(final Object tag, final String msgFmt, final Object... args) {
+  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
+      @Nullable final Object... args) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
       collector.log(LogLevel.WARNING, tag, msgFmt, args);
     }
@@ -363,7 +372,8 @@ public class Log {
 
   public interface LogCollector {
 
-    void log(@NotNull LogLevel level, Object tag, String msgFmt, Object... args);
+    void log(@NotNull LogLevel level, @Nullable Object tag, @Nullable String msgFmt,
+        @Nullable Object... args);
   }
 
   public enum LogLevel {
@@ -376,8 +386,8 @@ public class Log {
   private static class DummyCollector implements LogCollector {
 
     @Override
-    public void log(@NotNull final LogLevel level, final Object tag, final String msgFmt,
-        final Object... args) {
+    public void log(@NotNull final LogLevel level, @Nullable final Object tag,
+        @Nullable final String msgFmt, @Nullable final Object... args) {
     }
   }
 }

@@ -19,6 +19,7 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.HashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -164,8 +165,8 @@ public class LogMessageFactory {
     return this;
   }
 
-  public @NotNull LogMessage create(@NotNull final LogLevel level, final Object tag,
-      final String msgFmt, final Object... args) {
+  public @NotNull LogMessage create(@NotNull final LogLevel level, @Nullable final Object tag,
+      @Nullable final String msgFmt, @Nullable final Object... args) {
     final String tagName;
     if (tag == null) {
       tagName = "UNKNOWN";
@@ -193,7 +194,7 @@ public class LogMessageFactory {
     }
     final String formattedText;
     if (msgFmt == null) {
-      formattedText = "";
+      formattedText = Arrays.deepToString(args);
     } else {
       if (args == null) {
         formattedText = msgFmt;

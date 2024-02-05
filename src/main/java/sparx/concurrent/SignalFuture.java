@@ -41,7 +41,7 @@ public interface SignalFuture<V> extends Future<List<V>>, Iterable<V>, Receiver<
 
   @NotNull SignalFuture<V> readOnly();
 
-  void setBulk(@NotNull V... values);
+  void setBulk(@Nullable V... values);
 
   @NotNull Subscription subscribe(@Nullable Consumer<? super V> onValueConsumer,
       @Nullable Consumer<? super Collection<V>> onBulkConsumer,

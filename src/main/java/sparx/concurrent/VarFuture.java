@@ -299,8 +299,8 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   }
 
   @Override
-  public void setBulk(@NotNull final V... values) {
-    if (values.length > 0) {
+  public void setBulk(@Nullable final V... values) {
+    if (values != null && values.length > 0) {
       final List<V> valueList = ImmutableList.of(values);
       scheduler.scheduleAfter(new VarTask() {
         @Override
