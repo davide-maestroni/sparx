@@ -15,7 +15,11 @@
  */
 package sparx.function;
 
-public interface Supplier<R> {
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
-  R get() throws Exception;
+public interface SeptenaryFunction<P1, P2, P3, P4, P5, P6, P7, R> {
+
+  R apply(P1 firstParam, P2 secondParam, P3 thirdParam, P4 fourthParam, P5 fifthParam, P6 sixthParam, P7 seventhParam) throws Exception;
 }

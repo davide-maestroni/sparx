@@ -15,7 +15,7 @@
  */
 package sparx.function;
 
-public interface Predicate<I> {
+public interface Predicate<P> {
 
-  boolean test(I input) throws Exception;
+  boolean test(P param) throws Exception;
 }

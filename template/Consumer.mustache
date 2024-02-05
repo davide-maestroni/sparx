@@ -15,7 +15,11 @@
  */
 package sparx.function;
 
-public interface Supplier<R> {
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
-  R get() throws Exception;
+public interface {{name}}Consumer<{{#indexes}}P{{value}}{{^last}}, {{/last}}{{/indexes}}> {
+
+  void accept({{#ordinals}}P{{value.prevIndex}} {{value.prevName}}Param, {{#last}}P{{value.index}} {{value.name}}Param{{/last}}{{/ordinals}}) throws Exception;
 }

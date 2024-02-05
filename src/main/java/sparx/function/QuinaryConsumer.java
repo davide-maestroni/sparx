@@ -15,7 +15,11 @@
  */
 package sparx.function;
 
-public interface Supplier<R> {
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
-  R get() throws Exception;
+public interface QuinaryConsumer<P1, P2, P3, P4, P5> {
+
+  void accept(P1 firstParam, P2 secondParam, P3 thirdParam, P4 fourthParam, P5 fifthParam) throws Exception;
 }

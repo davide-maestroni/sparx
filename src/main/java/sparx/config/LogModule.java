@@ -187,17 +187,17 @@ public class LogModule implements ConfigModule {
 
     @Override
     public void accept(
-        final TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>> input) {
-      input.getThird().subscribe(
+        final TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>> tuple) {
+      tuple.getThird().subscribe(
           new Receiver<Couple<Object, String, Properties>>() {
             @Override
             public void close() {
-              input.getSecond().close();
+              tuple.getSecond().close();
             }
 
             @Override
             public boolean fail(@NotNull final Exception error) {
-              return input.getSecond().fail(error);
+              return tuple.getSecond().fail(error);
             }
 
             @Override
@@ -207,10 +207,10 @@ public class LogModule implements ConfigModule {
                 final Receiver<LogMessage> logPrinter = instantiateLogPrinter(
                     value.getFirst(), value.getSecond());
                 if (logPrinter != null) {
-                  input.getFirst().subscribe(logPrinter);
+                  tuple.getFirst().subscribe(logPrinter);
                 }
               } catch (final Exception e) {
-                input.getSecond().fail(e);
+                tuple.getSecond().fail(e);
               }
             }
 

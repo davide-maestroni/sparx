@@ -31,8 +31,8 @@ public class SparxDSL {
       @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
     return new Function<F, StreamingFuture<U>>() {
       @Override
-      public StreamingFuture<U> apply(final F input) {
-        return context.call(input, function);
+      public StreamingFuture<U> apply(final F tuple) {
+        return context.call(tuple, function);
       }
     };
   }
@@ -41,8 +41,8 @@ public class SparxDSL {
       @NotNull final ExecutionContext context, @NotNull final Consumer<? super F> consumer) {
     return new Function<F, StreamingFuture<Nothing>>() {
       @Override
-      public StreamingFuture<Nothing> apply(final F input) {
-        return context.run(input, consumer);
+      public StreamingFuture<Nothing> apply(final F tuple) {
+        return context.run(tuple, consumer);
       }
     };
   }
@@ -92,9 +92,9 @@ public class SparxDSL {
       final Consumer<? super V> consumer) {
     return new Function<Signal<V>, StreamingFuture<Nothing>>() {
       @Override
-      public StreamingFuture<Nothing> apply(final Signal<V> input) {
+      public StreamingFuture<Nothing> apply(final Signal<V> signal) {
         final VarFuture<Nothing> future = VarFuture.create();
-        input.subscribe(new Receiver<V>() {
+        signal.subscribe(new Receiver<V>() {
           @Override
           public void close() {
             future.close();
@@ -113,7 +113,7 @@ public class SparxDSL {
             } catch (final Exception e) {
               future.fail(e);
             } finally {
-              input.unsubscribe(this);
+              signal.unsubscribe(this);
             }
           }
 
@@ -126,7 +126,7 @@ public class SparxDSL {
               } catch (final Exception e) {
                 future.fail(e);
               } finally {
-                input.unsubscribe(this);
+                signal.unsubscribe(this);
               }
             }
           }
@@ -185,10 +185,10 @@ public class SparxDSL {
       final int maxSize) {
     return new Function<Signal<V>, StreamingFuture<V>>() {
       @Override
-      public StreamingFuture<V> apply(final Signal<V> input) {
+      public StreamingFuture<V> apply(final Signal<V> signal) {
         final VarFuture<V> future = VarFuture.create();
         if (maxSize == 1) {
-          input.subscribe(new Receiver<V>() {
+          signal.subscribe(new Receiver<V>() {
 
             @Override
             public boolean fail(@NotNull final Exception error) {
@@ -213,7 +213,7 @@ public class SparxDSL {
             }
           });
         } else {
-          input.subscribe(new Receiver<V>() {
+          signal.subscribe(new Receiver<V>() {
 
             private final ArrayList<V> buffer = new ArrayList<V>(maxSize);
 
@@ -263,9 +263,9 @@ public class SparxDSL {
       @NotNull final Function<? super V, ? extends U> function) {
     return new Function<Signal<V>, StreamingFuture<U>>() {
       @Override
-      public StreamingFuture<U> apply(final Signal<V> input) {
+      public StreamingFuture<U> apply(final Signal<V> signal) {
         final VarFuture<U> future = VarFuture.create();
-        input.subscribe(new Receiver<V>() {
+        signal.subscribe(new Receiver<V>() {
           @Override
           public boolean fail(@NotNull final Exception error) {
             return future.fail(error);
@@ -307,9 +307,9 @@ public class SparxDSL {
       final U identity, @NotNull final BinaryFunction<? super U, ? super V, ? extends U> function) {
     return new Function<Signal<V>, StreamingFuture<U>>() {
       @Override
-      public StreamingFuture<U> apply(final Signal<V> input) {
+      public StreamingFuture<U> apply(final Signal<V> signal) {
         final VarFuture<U> future = VarFuture.create();
-        input.subscribe(new Receiver<V>() {
+        signal.subscribe(new Receiver<V>() {
 
           private U accumulated = identity;
 

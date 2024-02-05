@@ -32,7 +32,7 @@ public class FunctionalReceiver<V> implements Receiver<V> {
   };
   private static final Consumer<?> EMPTY_CONSUMER = new Consumer<Object>() {
     @Override
-    public void accept(final Object input) {
+    public void accept(final Object param) {
     }
   };
 

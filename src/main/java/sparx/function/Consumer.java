@@ -15,7 +15,7 @@
  */
 package sparx.function;
 
-public interface Consumer<I> {
+public interface Consumer<P> {
 
-  void accept(I input) throws Exception;
+  void accept(P param) throws Exception;
 }

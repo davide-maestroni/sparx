@@ -40,15 +40,15 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
         {
           put(1, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
-              return SingleFuture.of(input.next());
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
+              return SingleFuture.of(itr.next());
             }
           });
 {{#tuples}}          put({{count}}, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return {{name}}Future.of(
-{{#indexes}}                  input.next(){{^last}},{{/last}}
+{{#indexes}}                  itr.next(){{^last}},{{/last}}
 {{/indexes}}
               );
             }

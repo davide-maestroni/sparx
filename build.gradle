@@ -48,6 +48,11 @@ tasks.register('generateCode') {
         'Decuple', 'Undecuple', 'Duodecuple', 'Tredecuple', 'Quattuordecuple', 'Quindecuple',
         'Sexdecuple', 'Septendecuple', 'Octodecuple', 'Novemdecuple', 'Viguple'
     ]
+    def arityNames = [
+        'Binary', 'Ternary', 'Quaternary', 'Quinary', 'Senary', 'Septenary', 'Octonary', 'Nonary',
+        'Denary', 'Undenary', 'Duodenary', 'Terdenary', 'Quaterdenary', 'Quindenary', 'Sexdenary',
+        'Septendenary', 'Octodenary', 'Novemdenary', 'Vigenary'
+    ]
     def index = 2
     def prevName = 'first'
     def ordinalNames = [
@@ -68,6 +73,17 @@ tasks.register('generateCode') {
       element
     }.collect(Collectors.toList())
     def count = 1
+    def arities = arityNames.stream().map {
+      ++count
+      [
+          name    : it,
+          count   : count,
+          indexes : new DecoratedCollection<Integer>(new IntRange(1, count).stream().collect(Collectors.toList())),
+          ordinals: new DecoratedCollection<Map<String, String>>(ordinalNames.subList(0, count - 1)),
+          last    : count == arityNames.size() + 1
+      ]
+    }.toArray()
+    count = 1
     def tuples = tupleNames.stream().map {
       ++count
       [
@@ -78,7 +94,21 @@ tasks.register('generateCode') {
           last    : count == tupleNames.size() + 1
       ]
     }.toArray()
-    def factory = new DefaultMustacheFactory();
+    def factory = new DefaultMustacheFactory()
+    Stream.of(arities).forEach {
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/function/${it.name}Function.java"))
+        def mustache = factory.compile("template/Function.mustache")
+        mustache.execute(writer, it)
+        writer.close()
+      }
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/function/${it.name}Consumer.java"))
+        def mustache = factory.compile("template/Consumer.mustache")
+        mustache.execute(writer, it)
+        writer.close()
+      }
+    };
     {
       def scope = [
           methodName: 'then',

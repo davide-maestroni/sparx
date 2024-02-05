@@ -15,7 +15,7 @@
  */
 package sparx.function;
 
-public interface Function<I, O> {
+public interface Function<P, R> {
 
-  O apply(I input) throws Exception;
+  R apply(P param) throws Exception;
 }

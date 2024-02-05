@@ -40,349 +40,349 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
         {
           put(1, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
-              return SingleFuture.of(input.next());
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
+              return SingleFuture.of(itr.next());
             }
           });
           put(2, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return CoupleFuture.of(
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(3, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return TripleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(4, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return QuadrupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(5, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return QuintupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(6, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return SextupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(7, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return SeptupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(8, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return OctupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(9, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return NonupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(10, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return DecupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(11, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return UndecupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(12, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return DuodecupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(13, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return TredecupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(14, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return QuattuordecupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(15, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return QuindecupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(16, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return SexdecupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(17, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return SeptendecupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(18, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return OctodecupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(19, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return NovemdecupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
           put(20, new Function<Iterator<? extends StreamingFuture<?>>, TupleFuture<?, ?>>() {
             @Override
-            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> input) {
+            public TupleFuture<?, ?> apply(final Iterator<? extends StreamingFuture<?>> itr) {
               return VigupleFuture.of(
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next(),
-                  input.next()
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next(),
+                  itr.next()
               );
             }
           });
