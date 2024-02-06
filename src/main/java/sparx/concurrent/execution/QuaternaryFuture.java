@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util;
+package sparx.concurrent.execution;
 
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.StreamingFuture;
+import sparx.tuple.Quadruple;
 
-public interface LiveIterator<E> extends Iterator<E> {
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+///////////////////////////////////////////////
 
-  boolean hasNext(long timeout, @NotNull TimeUnit unit);
+public interface QuaternaryFuture<P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, R> extends ExecutionFuture<P, R> {
 
-  E next(long timeout, @NotNull TimeUnit unit);
+  @Override
+  @NotNull Quadruple<StreamingFuture<? extends P>, StreamingFuture<P1>, StreamingFuture<P2>, StreamingFuture<P3>, StreamingFuture<P4>> parameters();
 }

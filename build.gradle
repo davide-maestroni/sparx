@@ -73,17 +73,6 @@ tasks.register('generateCode') {
       element
     }.collect(Collectors.toList())
     def count = 1
-    def arities = arityNames.stream().map {
-      ++count
-      [
-          name    : it,
-          count   : count,
-          indexes : new DecoratedCollection<Integer>(new IntRange(1, count).stream().collect(Collectors.toList())),
-          ordinals: new DecoratedCollection<Map<String, String>>(ordinalNames.subList(0, count - 1)),
-          last    : count == arityNames.size() + 1
-      ]
-    }.toArray()
-    count = 1
     def tuples = tupleNames.stream().map {
       ++count
       [
@@ -92,6 +81,18 @@ tasks.register('generateCode') {
           indexes : new DecoratedCollection<Integer>(new IntRange(1, count).stream().collect(Collectors.toList())),
           ordinals: new DecoratedCollection<Map<String, String>>(ordinalNames.subList(0, count - 1)),
           last    : count == tupleNames.size() + 1
+      ]
+    }.toArray()
+    count = 1
+    def arities = arityNames.stream().map {
+      ++count
+      [
+          name     : it,
+          count    : count,
+          tupleName: tupleNames.get(count - 2),
+          indexes  : new DecoratedCollection<Integer>(new IntRange(1, count).stream().collect(Collectors.toList())),
+          ordinals : new DecoratedCollection<Map<String, String>>(ordinalNames.subList(0, count - 1)),
+          last     : count == arityNames.size() + 1
       ]
     }.toArray()
     def factory = new DefaultMustacheFactory()
@@ -108,7 +109,42 @@ tasks.register('generateCode') {
         mustache.execute(writer, it)
         writer.close()
       }
+      {
+        def scope = [
+            arity  : it.name,
+            tuple  : tupleNames.get(it.count - 2),
+            indexes: it.indexes
+        ]
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/concurrent/execution/${it.name}Future.java"))
+        def mustache = factory.compile("template/ExecutionFuture.mustache")
+        mustache.execute(writer, scope)
+        writer.close()
+      }
     };
+    {
+      def scope = [
+          methodName: 'submit',
+          arities   : arities
+      ];
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/ExecutionContext.java'))
+        def mustache = factory.compile("template/ExecutionContext.mustache")
+        mustache.execute(writer, scope)
+        writer.close()
+      }
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/concurrent/ExecutorContext.java"))
+        def mustache = factory.compile("template/ExecutorContext.mustache")
+        mustache.execute(writer, scope)
+        writer.close()
+      }
+      {
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/concurrent/ExecutionScope.java"))
+        def mustache = factory.compile("template/ExecutionScope.mustache")
+        mustache.execute(writer, scope)
+        writer.close()
+      }
+    }
     {
       def scope = [
           methodName: 'then',

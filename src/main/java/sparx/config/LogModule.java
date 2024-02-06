@@ -154,12 +154,13 @@ public class LogModule implements ConfigModule {
                   });
                 }
                 executors.add(executor);
+                final LogPrintersSetup setup = new LogPrintersSetup();
                 for (final String printerName : printerNames) {
                   final VarFuture<Nothing> ready = VarFuture.create();
                   ExecutorContext.of(executor)
                       .run(TripleFuture.of(future, ready,
                               ValFuture.of(Tuples.asTuple(printerName, properties))),
-                          new LogPrintersSetup());
+                          setup);
                   ready.get();
                 }
               }

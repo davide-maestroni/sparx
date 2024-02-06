@@ -30,10 +30,15 @@ public class SharedTimer {
 
   private static final Object lock = new Object();
   private static final ReferenceQueue<SharedTimer> referenceQueue = new ReferenceQueue<SharedTimer>();
+
   private static ScheduledExecutorService executorService;
   private static int sharedCount = 0;
 
   private final AtomicBoolean released;
+
+  private SharedTimer(@NotNull final AtomicBoolean released) {
+    this.released = released;
+  }
 
   public static @NotNull SharedTimer acquire() {
     synchronized (lock) {
@@ -91,10 +96,6 @@ public class SharedTimer {
         }, 3, TimeUnit.SECONDS);
       }
     }
-  }
-
-  private SharedTimer(@NotNull final AtomicBoolean released) {
-    this.released = released;
   }
 
   public void release() {

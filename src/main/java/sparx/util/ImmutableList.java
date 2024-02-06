@@ -205,6 +205,8 @@ public class ImmutableList<E> extends AbstractList<E> implements RandomAccess, S
     };
   }
 
+  // TODO: generate
+
   @SuppressWarnings("unchecked")
   public static @NotNull <E> ImmutableList<E> of(final E firstElement, final E secondElement) {
     return new ImmutableList<E>(firstElement, secondElement);

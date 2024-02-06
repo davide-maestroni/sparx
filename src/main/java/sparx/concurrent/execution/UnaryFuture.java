@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util;
+package sparx.concurrent.execution;
 
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.StreamingFuture;
+import sparx.tuple.Single;
 
-public interface LiveIterator<E> extends Iterator<E> {
+public interface UnaryFuture<P, R> extends ExecutionFuture<P, R> {
 
-  boolean hasNext(long timeout, @NotNull TimeUnit unit);
-
-  E next(long timeout, @NotNull TimeUnit unit);
+  @Override
+  @NotNull Single<StreamingFuture<? extends P>> parameters();
 }

@@ -16,7 +16,6 @@
 package sparx.tuple;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Nothing;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!! //
@@ -27,7 +26,7 @@ public class Tuples {
   private Tuples() {
   }
 
-  public static @NotNull Empty<Nothing> asTuple() {
+  public static @NotNull <T> Empty<T> asTuple() {
     return EmptyTuple.instance();
   }
 

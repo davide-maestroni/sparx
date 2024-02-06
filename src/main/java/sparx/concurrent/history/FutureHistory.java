@@ -37,45 +37,17 @@ public class FutureHistory {
     return (HistoryStrategy<V>) NO_HISTORY;
   }
 
-  public static @NotNull <V> HistoryStrategy<V> untilSubscribe(
-      @NotNull final HistoryStrategy<V> initialStrategy) {
-    return new FlushOnSubscribeStrategy<V>(initialStrategy);
+  public static @NotNull <V> HistoryStrategy<V> switchOnSubscribe(
+      @NotNull final HistoryStrategy<V> initialStrategy,
+      @NotNull final HistoryStrategy<V> finalStrategy) {
+    return new SwitchOnSubscribeStrategy<V>(Require.notNull(initialStrategy, "initialStrategy"),
+        Require.notNull(finalStrategy, "finalStrategy"));
   }
 
-  private static class FlushOnSubscribeStrategy<V> implements HistoryStrategy<V> {
-
-    private HistoryStrategy<V> status;
-
-    private FlushOnSubscribeStrategy(@NotNull final HistoryStrategy<V> initialStrategy) {
-      status = Require.notNull(initialStrategy, "initialStrategy");
-    }
-
-    @Override
-    public void onClear() {
-      status.onClear();
-    }
-
-    @Override
-    public void onClose() {
-      status.onClose();
-    }
-
-    @Override
-    public void onPush(final V value) {
-      status.onPush(value);
-    }
-
-    @Override
-    public void onPushBulk(@NotNull final List<V> values) {
-      status.onPushBulk(values);
-    }
-
-    @Override
-    public @NotNull List<V> onSubscribe() {
-      final List<V> values = status.onSubscribe();
-      status = noHistory();
-      return values;
-    }
+  public static @NotNull <V> HistoryStrategy<V> untilSubscribe(
+      @NotNull final HistoryStrategy<V> initialStrategy) {
+    return new SwitchOnSubscribeStrategy<V>(Require.notNull(initialStrategy, "initialStrategy"),
+        FutureHistory.<V>noHistory());
   }
 
   private static class KeepAllStrategy<V> implements HistoryStrategy<V> {
@@ -91,6 +63,7 @@ public class FutureHistory {
     public void onClose() {
     }
 
+    // TODO: alert
     @Override
     public void onPush(final V value) {
       history.add(value);
@@ -128,6 +101,45 @@ public class FutureHistory {
     @Override
     public @NotNull List<V> onSubscribe() {
       return ImmutableList.of();
+    }
+  }
+
+  private static class SwitchOnSubscribeStrategy<V> implements HistoryStrategy<V> {
+
+    private final HistoryStrategy<V> strategy;
+    private HistoryStrategy<V> status;
+
+    private SwitchOnSubscribeStrategy(@NotNull final HistoryStrategy<V> initialStrategy,
+        @NotNull final HistoryStrategy<V> finalStrategy) {
+      status = initialStrategy;
+      strategy = finalStrategy;
+    }
+
+    @Override
+    public void onClear() {
+      status.onClear();
+    }
+
+    @Override
+    public void onClose() {
+      status.onClose();
+    }
+
+    @Override
+    public void onPush(final V value) {
+      status.onPush(value);
+    }
+
+    @Override
+    public void onPushBulk(@NotNull final List<V> values) {
+      status.onPushBulk(values);
+    }
+
+    @Override
+    public @NotNull List<V> onSubscribe() {
+      final List<V> values = status.onSubscribe();
+      status = strategy;
+      return values;
     }
   }
 }

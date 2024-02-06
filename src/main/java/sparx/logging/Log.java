@@ -70,6 +70,7 @@ public class Log {
     level = LogLevel.WARNING;
   }
 
+  // TODO: generate
   public static void dbg(@Nullable final Object tag, @Nullable final String msg) {
     if (level == LogLevel.DEBUG) {
       collector.log(LogLevel.DEBUG, tag, msg);
