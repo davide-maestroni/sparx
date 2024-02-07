@@ -23,7 +23,9 @@ import sparx.util.ImmutableList;
 import sparx.util.Require;
 
 ///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/TupleFuture.mustache
 ///////////////////////////////////////////////
 
 public class SextupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V> extends

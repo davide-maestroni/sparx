@@ -19,7 +19,9 @@ import org.jetbrains.annotations.NotNull;
 import sparx.function.Function;
 
 ///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/StreamableFuture.mustache
 ///////////////////////////////////////////////
 
 public interface StreamableFuture<V, F extends SignalFuture<V>> extends SignalFuture<V> {

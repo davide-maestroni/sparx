@@ -39,6 +39,12 @@ import sparx.tuple.*;
 import sparx.util.Nothing;
 import sparx.util.Require;
 
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/ExecutionScope.mustache
+///////////////////////////////////////////////
+
 class ExecutionScope implements ExecutionContext {
 
   private static final ExecutionContextTaskAlert taskAlert = Alerts.executionContextTaskAlert();

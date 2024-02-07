@@ -30,6 +30,12 @@ import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/ExecutorContext.mustache
+///////////////////////////////////////////////
+
 public class ExecutorContext implements ExecutionContext {
 
   private static final FutureRegistry DUMMY_REGISTRY = new FutureRegistry() {

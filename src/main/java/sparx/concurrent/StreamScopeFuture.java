@@ -20,7 +20,9 @@ import sparx.function.Function;
 import sparx.util.UncheckedException;
 
 ///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/StreamScopeFuture.mustache
 ///////////////////////////////////////////////
 
 public abstract class StreamScopeFuture<V, F extends SignalFuture<V>> implements

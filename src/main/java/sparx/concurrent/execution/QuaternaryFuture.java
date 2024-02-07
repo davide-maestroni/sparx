@@ -20,7 +20,9 @@ import sparx.concurrent.StreamingFuture;
 import sparx.tuple.Quadruple;
 
 ///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/ExecutionFuture.mustache
 ///////////////////////////////////////////////
 
 public interface QuaternaryFuture<P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, R> extends ExecutionFuture<P, R> {

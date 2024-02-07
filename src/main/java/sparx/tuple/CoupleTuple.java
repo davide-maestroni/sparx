@@ -16,7 +16,9 @@
 package sparx.tuple;
 
 ///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/TupleClass.mustache
 ///////////////////////////////////////////////
 
 class CoupleTuple<T, T1 extends T, T2 extends T> extends GenericTuple<T>

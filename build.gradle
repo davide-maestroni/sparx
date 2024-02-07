@@ -6,7 +6,7 @@ import java.util.stream.Stream
 
 buildscript {
   dependencies {
-    classpath 'com.github.spullara.mustache.java:compiler:0.9.11'
+    classpath "com.github.spullara.mustache.java:compiler:0.9.11"
   }
 }
 
@@ -43,6 +43,7 @@ test {
 
 tasks.register('generateCode') {
   doLast {
+    def engine = "Mustache 0.9.11"
     def tupleNames = [
         'Couple', 'Triple', 'Quadruple', 'Quintuple', 'Sextuple', 'Septuple', 'Octuple', 'Nonuple',
         'Decuple', 'Undecuple', 'Duodecuple', 'Tredecuple', 'Quattuordecuple', 'Quindecuple',
@@ -98,122 +99,177 @@ tasks.register('generateCode') {
     def factory = new DefaultMustacheFactory()
     Stream.of(arities).forEach {
       {
+        def path = 'template/Function.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/function/${it.name}Function.java"))
-        def mustache = factory.compile("template/Function.mustache")
-        mustache.execute(writer, it)
+        def mustache = factory.compile(path)
+        def scope = it.clone()
+        scope['engine'] = engine
+        scope['path'] = path
+        mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/Consumer.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/function/${it.name}Consumer.java"))
-        def mustache = factory.compile("template/Consumer.mustache")
-        mustache.execute(writer, it)
+        def mustache = factory.compile(path)
+        def scope = it.clone()
+        scope['engine'] = engine
+        scope['path'] = path
+        mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/ExecutionFuture.mustache'
         def scope = [
+            engine : engine,
+            path   : path,
             arity  : it.name,
             tuple  : tupleNames.get(it.count - 2),
             indexes: it.indexes
         ]
         def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/concurrent/execution/${it.name}Future.java"))
-        def mustache = factory.compile("template/ExecutionFuture.mustache")
+        def mustache = factory.compile(path)
         mustache.execute(writer, scope)
         writer.close()
       }
     };
     {
-      def scope = [
+      def src = [
+          engine    : engine,
           methodName: 'submit',
           arities   : arities
       ];
       {
+        def path = 'template/ExecutionContext.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/ExecutionContext.java'))
-        def mustache = factory.compile("template/ExecutionContext.mustache")
+        def mustache = factory.compile(path)
+        def scope = src.clone()
+        scope['path'] = path
         mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/ExecutorContext.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/concurrent/ExecutorContext.java"))
-        def mustache = factory.compile("template/ExecutorContext.mustache")
+        def mustache = factory.compile(path)
+        def scope = src.clone()
+        scope['path'] = path
         mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/ExecutionScope.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/concurrent/ExecutionScope.java"))
-        def mustache = factory.compile("template/ExecutionScope.mustache")
+        def mustache = factory.compile(path)
+        def scope = src.clone()
+        scope['path'] = path
         mustache.execute(writer, scope)
         writer.close()
       }
     }
     {
-      def scope = [
+      def src = [
+          engine    : engine,
           methodName: 'then',
           tuples    : tuples
       ];
       {
+        def path = 'template/StreamableFuture.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/StreamableFuture.java'))
-        def mustache = factory.compile("template/StreamableFuture.mustache")
+        def mustache = factory.compile(path)
+        def scope = src.clone()
+        scope['path'] = path
         mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/StreamScopeFuture.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/StreamScopeFuture.java'))
-        def mustache = factory.compile("template/StreamScopeFuture.mustache")
+        def mustache = factory.compile(path)
+        def scope = src.clone()
+        scope['path'] = path
         mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/GeneratingFuture.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/GeneratingFuture.java'))
-        def mustache = factory.compile("template/GeneratingFuture.mustache")
+        def mustache = factory.compile(path)
+        def scope = src.clone()
+        scope['path'] = path
         mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/GeneratorScopeFuture.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/GeneratorScopeFuture.java'))
-        def mustache = factory.compile("template/GeneratorScopeFuture.mustache")
+        def mustache = factory.compile(path)
+        def scope = src.clone()
+        scope['path'] = path
         mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/DecoratedFuture.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/DecoratedFuture.java'))
-        def mustache = factory.compile("template/DecoratedFuture.mustache")
+        def mustache = factory.compile(path)
+        def scope = src.clone()
+        scope['path'] = path
         mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/NupleFuture.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/concurrent/tuple/NupleFuture.java'))
-        def mustache = factory.compile("template/NupleFuture.mustache")
+        def mustache = factory.compile(path)
+        def scope = src.clone()
+        scope['path'] = path
         mustache.execute(writer, scope)
         writer.close()
       }
     }
     {
+      def path = 'template/Tuples.mustache'
       def scope = [
+          engine    : engine,
+          path      : path,
           methodName: 'asTuple',
           tuples    : tuples
       ]
       def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/tuple/Tuples.java'))
-      def mustache = factory.compile("template/Tuples.mustache")
+      def mustache = factory.compile(path)
       mustache.execute(writer, scope)
       writer.close()
     }
     Stream.of(tuples).forEach {
       {
+        def path = 'template/Tuple.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/tuple/${it.name}.java"))
-        def mustache = factory.compile("template/Tuple.mustache")
-        mustache.execute(writer, it)
+        def mustache = factory.compile(path)
+        def scope = it.clone()
+        scope['engine'] = engine
+        scope['path'] = path
+        mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/TupleClass.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/tuple/${it.name}Tuple.java"))
-        def mustache = factory.compile("template/TupleClass.mustache")
-        mustache.execute(writer, it)
+        def mustache = factory.compile(path)
+        def scope = it.clone()
+        scope['engine'] = engine
+        scope['path'] = path
+        mustache.execute(writer, scope)
         writer.close()
       }
       {
+        def path = 'template/TupleFuture.mustache'
         def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/concurrent/tuple/${it.name}Future.java"))
-        def mustache = factory.compile("template/TupleFuture.mustache")
-        mustache.execute(writer, it)
+        def mustache = factory.compile(path)
+        def scope = it.clone()
+        scope['engine'] = engine
+        scope['path'] = path
+        mustache.execute(writer, scope)
         writer.close()
       }
     }

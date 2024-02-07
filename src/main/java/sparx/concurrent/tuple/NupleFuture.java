@@ -29,7 +29,9 @@ import sparx.util.ImmutableList;
 import sparx.util.UncheckedException;
 
 ///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/NupleFuture.mustache
 ///////////////////////////////////////////////
 
 public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> implements

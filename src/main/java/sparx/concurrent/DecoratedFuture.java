@@ -29,7 +29,9 @@ import sparx.util.LiveIterator;
 import sparx.util.Require;
 
 ///////////////////////////////////////////////
-// WARNING: GENERATED CODE - DO NOT MODIFY!! //
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/DecoratedFuture.mustache
 ///////////////////////////////////////////////
 
 public class DecoratedFuture<V> implements StreamingFuture<V> {
