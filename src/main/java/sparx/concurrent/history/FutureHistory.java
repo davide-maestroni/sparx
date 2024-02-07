@@ -40,14 +40,17 @@ public class FutureHistory {
   public static @NotNull <V> HistoryStrategy<V> switchOnSubscribe(
       @NotNull final HistoryStrategy<V> initialStrategy,
       @NotNull final HistoryStrategy<V> finalStrategy) {
-    return new SwitchOnSubscribeStrategy<V>(Require.notNull(initialStrategy, "initialStrategy"),
-        Require.notNull(finalStrategy, "finalStrategy"));
+    Require.notNull(initialStrategy, "initialStrategy");
+    Require.notNull(finalStrategy, "finalStrategy");
+    if (initialStrategy == finalStrategy) {
+      return initialStrategy;
+    }
+    return new SwitchOnSubscribeStrategy<V>(initialStrategy, finalStrategy);
   }
 
   public static @NotNull <V> HistoryStrategy<V> untilSubscribe(
       @NotNull final HistoryStrategy<V> initialStrategy) {
-    return new SwitchOnSubscribeStrategy<V>(Require.notNull(initialStrategy, "initialStrategy"),
-        FutureHistory.<V>noHistory());
+    return switchOnSubscribe(initialStrategy, FutureHistory.<V>noHistory());
   }
 
   private static class KeepAllStrategy<V> implements HistoryStrategy<V> {

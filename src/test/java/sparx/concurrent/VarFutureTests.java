@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import sparx.concurrent.history.HistoryStrategy;
-import sparx.concurrent.tuple.CoupleFuture;
 import sparx.config.AlertModule;
 import sparx.config.LogModule;
 import sparx.config.SparxConfig;
@@ -746,10 +745,8 @@ public class VarFutureTests {
     var executor = Executors.newSingleThreadExecutor();
     try {
       var context = ExecutorContext.of(executor);
-      var input = VarFuture.<String>create();
-      var output = VarFuture.<Exception>create();
-      var result = context.run(CoupleFuture.of(input, output),
-          f -> f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), null));
+      var result = context.<Object, String, Exception>submit((input, output) ->
+          input.subscribe(null, null, output::set, null));
       Thread.sleep(1000);
       assertFalse(result.isDone());
       assertTrue(result.cancel(false));
@@ -757,6 +754,8 @@ public class VarFutureTests {
       assertTrue(result.isCancelled());
       assertThrows(CancellationException.class, result::get);
       Thread.sleep(1000);
+      var input = result.parameters().getFirst();
+      var output = result.parameters().getSecond();
       assertFalse(input.isDone());
       assertFalse(output.isDone());
       assertInstanceOf(FutureCancellationException.class, output.getCurrent());
@@ -770,13 +769,10 @@ public class VarFutureTests {
     var executor = Executors.newSingleThreadExecutor();
     try {
       var context = ExecutorContext.of(executor);
-      var input = VarFuture.<String>create();
-      var output = VarFuture.<Exception>create();
-      var result = context.call(CoupleFuture.of(input, output),
-          f -> {
-            f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), null);
-            return f.getSecond();
-          });
+      var result = context.<Object, String, Exception, Exception>submit((input, output) -> {
+        input.subscribe(null, null, output::set, null);
+        return output;
+      });
       Thread.sleep(1000);
       assertFalse(result.isDone());
       assertTrue(result.cancel(false));
@@ -784,6 +780,8 @@ public class VarFutureTests {
       assertTrue(result.isCancelled());
       assertThrows(CancellationException.class, result::get);
       Thread.sleep(1000);
+      var input = result.parameters().getFirst();
+      var output = result.parameters().getSecond();
       assertFalse(input.isDone());
       assertFalse(output.isDone());
       assertInstanceOf(FutureCancellationException.class, output.getCurrent());
@@ -797,12 +795,12 @@ public class VarFutureTests {
     var executor = Executors.newSingleThreadExecutor();
     try {
       var context = ExecutorContext.of(executor);
-      var input = VarFuture.<String>create();
-      var output = VarFuture.<Exception>create();
-      var result = context.run(CoupleFuture.of(input, output),
-          f -> f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), f.getSecond()::close));
+      var result = context.<Object, String, Exception>submit((input, output) ->
+          input.subscribe(null, null, output::set, output::close));
       Thread.sleep(1000);
       assertFalse(result.isDone());
+      var input = result.parameters().getFirst();
+      var output = result.parameters().getSecond();
       input.close();
       assertTrue(input.isDone());
       assertTrue(output.get().isEmpty());
@@ -819,15 +817,14 @@ public class VarFutureTests {
     var executor = Executors.newSingleThreadExecutor();
     try {
       var context = ExecutorContext.of(executor);
-      var input = VarFuture.<String>create();
-      var output = VarFuture.<Exception>create();
-      var result = context.call(CoupleFuture.of(input, output),
-          f -> {
-            f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), f.getSecond()::close);
-            return f.getSecond();
-          });
+      var result = context.<Object, String, Exception, Exception>submit((input, output) -> {
+        input.subscribe(null, null, output::set, output::close);
+        return output;
+      });
       Thread.sleep(1000);
       assertFalse(result.isDone());
+      var input = result.parameters().getFirst();
+      var output = result.parameters().getSecond();
       input.close();
       assertTrue(input.isDone());
       assertTrue(output.get().isEmpty());
@@ -844,12 +841,12 @@ public class VarFutureTests {
     var executor = Executors.newSingleThreadExecutor();
     try {
       var context = ExecutorContext.of(executor);
-      var input = VarFuture.<String>create();
-      var output = VarFuture.<Exception>create();
-      var result = context.run(CoupleFuture.of(input, output),
-          f -> f.getFirst().subscribe(null, null, e -> f.getSecond().set(e), null));
+      var result = context.<Object, String, Exception>submit(
+          (input, output) -> input.subscribe(null, null, output::set, null));
       Thread.sleep(1000);
       assertFalse(result.isDone());
+      var input = result.parameters().getFirst();
+      var output = result.parameters().getSecond();
       assertTrue(input.cancel(false));
       assertTrue(input.isDone());
       assertTrue(input.isCancelled());
@@ -868,15 +865,14 @@ public class VarFutureTests {
     var executor = Executors.newSingleThreadExecutor();
     try {
       var context = ExecutorContext.of(executor);
-      var input = VarFuture.<String>create();
-      var output = VarFuture.<Exception>create();
-      var result = context.call(CoupleFuture.of(input, output),
-          f -> {
-            f.getFirst().subscribe(null, null, e -> f.getSecond().fail(e), null);
-            return f.getSecond();
-          });
+      var result = context.<Object, String, Exception, Exception>submit((input, output) -> {
+        input.subscribe(null, null, output::fail, null);
+        return output;
+      });
       Thread.sleep(1000);
       assertFalse(result.isDone());
+      var input = result.parameters().getFirst();
+      var output = result.parameters().getSecond();
       assertTrue(input.cancel(false));
       assertTrue(input.isDone());
       assertTrue(input.isCancelled());

@@ -101,6 +101,7 @@ class ExecutionScope implements ExecutionContext {
   public @NotNull <P> UnaryFuture<P, Nothing> submit(
       @NotNull final Consumer<? super StreamingFuture<P>> consumer) {
     Require.notNull(consumer, "consumer");
+    // TODO: add to scope?
     final VarFuture<P> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {

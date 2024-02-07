@@ -28,14 +28,12 @@ import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.ExecutorContext;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.StreamingFuture;
-import sparx.concurrent.ValFuture;
-import sparx.concurrent.VarFuture;
+import sparx.concurrent.execution.TernaryFuture;
 import sparx.concurrent.logging.ConsoleLogPrinter;
 import sparx.concurrent.logging.JavaLogPrinter;
 import sparx.concurrent.logging.LogCollectorFuture;
-import sparx.concurrent.tuple.TripleFuture;
 import sparx.config.SparxConfig.ConfigModule;
-import sparx.function.Consumer;
+import sparx.function.TernaryConsumer;
 import sparx.logging.Log;
 import sparx.logging.Log.LogCollector;
 import sparx.logging.Log.LogLevel;
@@ -156,12 +154,11 @@ public class LogModule implements ConfigModule {
                 executors.add(executor);
                 final LogPrintersSetup setup = new LogPrintersSetup();
                 for (final String printerName : printerNames) {
-                  final VarFuture<Nothing> ready = VarFuture.create();
-                  ExecutorContext.of(executor)
-                      .run(TripleFuture.of(future, ready,
-                              ValFuture.of(Tuples.asTuple(printerName, properties))),
-                          setup);
-                  ready.get();
+                  final TernaryFuture<Object, Couple<Object, String, Properties>, LogMessage, Nothing, Nothing> result =
+                      ExecutorContext.of(executor).submit(setup);
+                  future.subscribe(result.parameters().getSecond());
+                  result.parameters().getFirst().set(Tuples.asTuple(printerName, properties));
+                  result.parameters().getThird().get();
                 }
               }
             }
@@ -184,45 +181,45 @@ public class LogModule implements ConfigModule {
   }
 
   private static class LogPrintersSetup implements
-      Consumer<TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>>> {
+      TernaryConsumer<StreamingFuture<Couple<Object, String, Properties>>, StreamingFuture<LogMessage>, StreamingFuture<Nothing>> {
 
     @Override
-    public void accept(
-        final TripleFuture<Object, LogMessage, Nothing, Couple<Object, String, Properties>> tuple) {
-      tuple.getThird().subscribe(
-          new Receiver<Couple<Object, String, Properties>>() {
-            @Override
-            public void close() {
-              tuple.getSecond().close();
-            }
+    public void accept(final StreamingFuture<Couple<Object, String, Properties>> configFuture,
+        final StreamingFuture<LogMessage> collectorFuture,
+        final StreamingFuture<Nothing> readyFuture) {
+      configFuture.subscribe(new Receiver<Couple<Object, String, Properties>>() {
+        @Override
+        public void close() {
+          readyFuture.close();
+        }
 
-            @Override
-            public boolean fail(@NotNull final Exception error) {
-              return tuple.getSecond().fail(error);
-            }
+        @Override
+        public boolean fail(@NotNull final Exception error) {
+          return readyFuture.fail(error);
+        }
 
-            @Override
-            public void set(
-                final Couple<Object, String, Properties> value) {
-              try {
-                final Receiver<LogMessage> logPrinter = instantiateLogPrinter(
-                    value.getFirst(), value.getSecond());
-                if (logPrinter != null) {
-                  tuple.getFirst().subscribe(logPrinter);
-                }
-              } catch (final Exception e) {
-                tuple.getSecond().fail(e);
-              }
+        @Override
+        public void set(
+            final Couple<Object, String, Properties> value) {
+          try {
+            final Receiver<LogMessage> logPrinter = instantiateLogPrinter(
+                value.getFirst(), value.getSecond());
+            if (logPrinter != null) {
+              collectorFuture.subscribe(logPrinter);
             }
+          } catch (final Exception e) {
+            readyFuture.fail(e);
+          }
+        }
 
-            @Override
-            public void setBulk(
-                @NotNull final Collection<Couple<Object, String, Properties>> values) {
-              for (final Couple<Object, String, Properties> value : values) {
-                set(value);
-              }
-            }
-          });
+        @Override
+        public void setBulk(
+            @NotNull final Collection<Couple<Object, String, Properties>> values) {
+          for (final Couple<Object, String, Properties> value : values) {
+            set(value);
+          }
+        }
+      });
     }
   }
 }

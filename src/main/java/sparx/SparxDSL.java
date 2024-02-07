@@ -44,22 +44,12 @@ public class SparxDSL {
   public static @NotNull <V, F extends TupleFuture<V, ?>, U> Function<F, StreamingFuture<U>> callInContext(
       @NotNull final ExecutionContext context,
       @NotNull final Function<? super F, ? extends SignalFuture<U>> function) {
-    return new Function<F, StreamingFuture<U>>() {
-      @Override
-      public StreamingFuture<U> apply(final F tuple) {
-        return context.call(tuple, function);
-      }
-    };
+    return null;
   }
 
   public static @NotNull <V, F extends TupleFuture<V, ?>> Function<F, StreamingFuture<Nothing>> runInContext(
       @NotNull final ExecutionContext context, @NotNull final Consumer<? super F> consumer) {
-    return new Function<F, StreamingFuture<Nothing>>() {
-      @Override
-      public StreamingFuture<Nothing> apply(final F tuple) {
-        return context.run(tuple, consumer);
-      }
-    };
+    return null;
   }
 
   public static @NotNull <V, V1 extends V, V2 extends V> Function<CoupleFuture<V, V1, V2>, StreamingFuture<Couple<V, V1, V2>>> combineLatestBinary(

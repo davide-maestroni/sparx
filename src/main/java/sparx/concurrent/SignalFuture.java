@@ -32,16 +32,23 @@ public interface SignalFuture<V> extends Future<List<V>>, Iterable<V>, Receiver<
 
   void compute(@NotNull Function<? super V, ? extends V> function);
 
+  // TODO: getHistory??????
+
   boolean isReadOnly();
 
   @Override
   @NotNull LiveIterator<V> iterator();
+
+  // TODO: iteratorNext(); ???
 
   @NotNull LiveIterator<V> iterator(long timeout, @NotNull TimeUnit unit);
 
   @NotNull SignalFuture<V> readOnly();
 
   void setBulk(@Nullable V... values);
+
+  // TODO: subscribe(); ???
+  // TODO: subscribe leak future if it fails or is closed
 
   @NotNull Subscription subscribe(@Nullable Consumer<? super V> onValueConsumer,
       @Nullable Consumer<? super Collection<V>> onBulkConsumer,
