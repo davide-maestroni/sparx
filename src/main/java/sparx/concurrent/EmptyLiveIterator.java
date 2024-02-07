@@ -18,7 +18,6 @@ package sparx.concurrent;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.LiveIterator;
 
 public class EmptyLiveIterator<E> implements LiveIterator<E> {
 

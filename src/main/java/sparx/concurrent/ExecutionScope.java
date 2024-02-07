@@ -42,7 +42,7 @@ import sparx.util.Require;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/ExecutionScope.mustache
+// - template path: template/concurrent/ExecutionScope.mustache
 ///////////////////////////////////////////////
 
 class ExecutionScope implements ExecutionContext {
@@ -107,12 +107,12 @@ class ExecutionScope implements ExecutionContext {
   public @NotNull <P> UnaryFuture<P, Nothing> submit(
       @NotNull final Consumer<? super StreamingFuture<P>> consumer) {
     Require.notNull(consumer, "consumer");
-    // TODO: add to scope?
     final VarFuture<P> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        // TODO: registerFuture(first);
         consumer.accept(first);
         complete();
       }
@@ -131,6 +131,7 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
         function.apply(first).subscribe(this);
       }
     };
@@ -150,6 +151,8 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
         consumer.accept(first, second);
         complete();
       }
@@ -170,6 +173,8 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
         function.apply(first, second).subscribe(this);
       }
     };
@@ -191,6 +196,9 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
         consumer.accept(first, second, third);
         complete();
       }
@@ -213,6 +221,9 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
         function.apply(first, second, third).subscribe(this);
       }
     };
@@ -236,6 +247,10 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
         consumer.accept(first, second, third, fourth);
         complete();
       }
@@ -260,6 +275,10 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
         function.apply(first, second, third, fourth).subscribe(this);
       }
     };
@@ -285,6 +304,11 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
         consumer.accept(first, second, third, fourth, fifth);
         complete();
       }
@@ -311,6 +335,11 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
         function.apply(first, second, third, fourth, fifth).subscribe(this);
       }
     };
@@ -338,6 +367,12 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
         consumer.accept(first, second, third, fourth, fifth, sixth);
         complete();
       }
@@ -366,6 +401,12 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
         function.apply(first, second, third, fourth, fifth, sixth).subscribe(this);
       }
     };
@@ -395,6 +436,13 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh);
         complete();
       }
@@ -425,6 +473,13 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
         function.apply(first, second, third, fourth, fifth, sixth, seventh).subscribe(this);
       }
     };
@@ -456,6 +511,14 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth);
         complete();
       }
@@ -488,6 +551,14 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth).subscribe(this);
       }
     };
@@ -521,6 +592,15 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth);
         complete();
       }
@@ -555,6 +635,15 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth).subscribe(this);
       }
     };
@@ -590,6 +679,16 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth);
         complete();
       }
@@ -626,6 +725,16 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth).subscribe(this);
       }
     };
@@ -663,6 +772,17 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh);
         complete();
       }
@@ -701,6 +821,17 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh).subscribe(this);
       }
     };
@@ -740,6 +871,18 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth);
         complete();
       }
@@ -780,6 +923,18 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth).subscribe(this);
       }
     };
@@ -821,6 +976,19 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth);
         complete();
       }
@@ -863,6 +1031,19 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth).subscribe(this);
       }
     };
@@ -906,6 +1087,20 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth);
         complete();
       }
@@ -950,6 +1145,20 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth).subscribe(this);
       }
     };
@@ -995,6 +1204,21 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth);
         complete();
       }
@@ -1041,6 +1265,21 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth).subscribe(this);
       }
     };
@@ -1088,6 +1327,22 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
+        //registerFuture(sixteenth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth);
         complete();
       }
@@ -1136,6 +1391,22 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
+        //registerFuture(sixteenth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth).subscribe(this);
       }
     };
@@ -1185,6 +1456,23 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
+        //registerFuture(sixteenth);
+        //registerFuture(seventeenth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth);
         complete();
       }
@@ -1235,6 +1523,23 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
+        //registerFuture(sixteenth);
+        //registerFuture(seventeenth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth).subscribe(this);
       }
     };
@@ -1286,6 +1591,24 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
+        //registerFuture(sixteenth);
+        //registerFuture(seventeenth);
+        //registerFuture(eighteenth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth, eighteenth);
         complete();
       }
@@ -1338,6 +1661,24 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
+        //registerFuture(sixteenth);
+        //registerFuture(seventeenth);
+        //registerFuture(eighteenth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth, eighteenth).subscribe(this);
       }
     };
@@ -1391,6 +1732,25 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
+        //registerFuture(sixteenth);
+        //registerFuture(seventeenth);
+        //registerFuture(eighteenth);
+        //registerFuture(nineteenth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth, eighteenth, nineteenth);
         complete();
       }
@@ -1445,6 +1805,25 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
+        //registerFuture(sixteenth);
+        //registerFuture(seventeenth);
+        //registerFuture(eighteenth);
+        //registerFuture(nineteenth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth, eighteenth, nineteenth).subscribe(this);
       }
     };
@@ -1500,6 +1879,26 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
+        //registerFuture(sixteenth);
+        //registerFuture(seventeenth);
+        //registerFuture(eighteenth);
+        //registerFuture(nineteenth);
+        //registerFuture(twentieth);
         consumer.accept(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth, eighteenth, nineteenth, twentieth);
         complete();
       }
@@ -1556,6 +1955,26 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
+        //registerFuture(second);
+        //registerFuture(third);
+        //registerFuture(fourth);
+        //registerFuture(fifth);
+        //registerFuture(sixth);
+        //registerFuture(seventh);
+        //registerFuture(eighth);
+        //registerFuture(ninth);
+        //registerFuture(tenth);
+        //registerFuture(eleventh);
+        //registerFuture(twelfth);
+        //registerFuture(thirteenth);
+        //registerFuture(fourteenth);
+        //registerFuture(fifteenth);
+        //registerFuture(sixteenth);
+        //registerFuture(seventeenth);
+        //registerFuture(eighteenth);
+        //registerFuture(nineteenth);
+        //registerFuture(twentieth);
         function.apply(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth, eighteenth, nineteenth, twentieth).subscribe(this);
       }
     };

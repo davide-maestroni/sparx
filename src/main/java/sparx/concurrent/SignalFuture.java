@@ -24,7 +24,6 @@ import org.jetbrains.annotations.Nullable;
 import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.function.Function;
-import sparx.util.LiveIterator;
 
 public interface SignalFuture<V> extends Future<List<V>>, Iterable<V>, Receiver<V>, Signal<V> {
 
@@ -32,22 +31,19 @@ public interface SignalFuture<V> extends Future<List<V>>, Iterable<V>, Receiver<
 
   void compute(@NotNull Function<? super V, ? extends V> function);
 
-  // TODO: getHistory??????
-
   boolean isReadOnly();
 
   @Override
   @NotNull LiveIterator<V> iterator();
 
-  // TODO: iteratorNext(); ???
-
   @NotNull LiveIterator<V> iterator(long timeout, @NotNull TimeUnit unit);
+
+  // TODO: iteratorNext(); ???
 
   @NotNull SignalFuture<V> readOnly();
 
   void setBulk(@Nullable V... values);
 
-  // TODO: subscribe(); ???
   // TODO: subscribe leak future if it fails or is closed
 
   @NotNull Subscription subscribe(@Nullable Consumer<? super V> onValueConsumer,

@@ -18,7 +18,7 @@ package sparx.function;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/Function.mustache
+// - template path: template/function/Function.mustache
 ///////////////////////////////////////////////
 
 public interface TernaryFunction<P1, P2, P3, R> {

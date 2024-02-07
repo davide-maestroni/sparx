@@ -22,7 +22,7 @@ import sparx.tuple.Undecuple;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/ExecutionFuture.mustache
+// - template path: template/concurrent/ExecutionFuture.mustache
 ///////////////////////////////////////////////
 
 public interface UndenaryFuture<P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, R> extends ExecutionFuture<P, R> {

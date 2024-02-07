@@ -26,7 +26,7 @@ import sparx.util.UncheckedException;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/GeneratorScopeFuture.mustache
+// - template path: template/concurrent/GeneratorScopeFuture.mustache
 ///////////////////////////////////////////////
 
 abstract class GeneratorScopeFuture<V> extends ReadOnlyFuture<V> implements GeneratingFuture<V> {

@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/Tuples.mustache
+// - template path: template/tuple/Tuples.mustache
 ///////////////////////////////////////////////
 
 public class Tuples {

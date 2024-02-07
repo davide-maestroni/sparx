@@ -25,13 +25,12 @@ import org.jetbrains.annotations.Nullable;
 import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.function.Function;
-import sparx.util.LiveIterator;
 import sparx.util.Require;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/DecoratedFuture.mustache
+// - template path: template/concurrent/DecoratedFuture.mustache
 ///////////////////////////////////////////////
 
 public class DecoratedFuture<V> implements StreamingFuture<V> {

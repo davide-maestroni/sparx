@@ -18,7 +18,7 @@ package sparx.tuple;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/Tuple.mustache
+// - template path: template/tuple/Tuple.mustache
 ///////////////////////////////////////////////
 
 public interface Quintuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5 extends T> extends Tuple<T> {

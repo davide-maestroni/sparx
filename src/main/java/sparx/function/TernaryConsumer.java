@@ -18,7 +18,7 @@ package sparx.function;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/Consumer.mustache
+// - template path: template/function/Consumer.mustache
 ///////////////////////////////////////////////
 
 public interface TernaryConsumer<P1, P2, P3> {

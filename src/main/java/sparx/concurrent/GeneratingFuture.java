@@ -21,7 +21,7 @@ import sparx.function.Function;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/GeneratingFuture.mustache
+// - template path: template/concurrent/GeneratingFuture.mustache
 ///////////////////////////////////////////////
 
 public interface GeneratingFuture<V> extends StreamingFuture<V> {

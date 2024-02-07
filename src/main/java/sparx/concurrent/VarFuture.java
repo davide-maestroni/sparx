@@ -45,7 +45,6 @@ import sparx.logging.Log;
 import sparx.logging.alert.Alerts;
 import sparx.logging.alert.JoinAlert;
 import sparx.util.ImmutableList;
-import sparx.util.LiveIterator;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 

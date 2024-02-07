@@ -107,12 +107,12 @@ class ExecutionScope implements ExecutionContext {
   public @NotNull <P> UnaryFuture<P, Nothing> {{methodName}}(
       @NotNull final Consumer<? super StreamingFuture<P>> consumer) {
     Require.notNull(consumer, "consumer");
-    // TODO: add to scope?
     final VarFuture<P> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+        // TODO: registerFuture(first);
         consumer.accept(first);
         complete();
       }
@@ -131,6 +131,7 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+        //registerFuture(first);
         function.apply(first).subscribe(this);
       }
     };
@@ -154,6 +155,11 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
+{{#ordinals}}
+        //registerFuture({{value.prevName}});
+{{#last}}        //registerFuture({{value.name}});
+{{/last}}
+{{/ordinals}}
         consumer.accept({{#ordinals}}{{value.prevName}}, {{#last}}{{value.name}}{{/last}}{{/ordinals}});
         complete();
       }
@@ -177,6 +183,11 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
+{{#ordinals}}
+        //registerFuture({{value.prevName}});
+{{#last}}        //registerFuture({{value.name}});
+{{/last}}
+{{/ordinals}}
         function.apply({{#ordinals}}{{value.prevName}}, {{#last}}{{value.name}}{{/last}}{{/ordinals}}).subscribe(this);
       }
     };

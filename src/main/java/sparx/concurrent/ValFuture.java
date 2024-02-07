@@ -27,7 +27,6 @@ import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.logging.Log;
 import sparx.util.ImmutableList;
-import sparx.util.LiveIterator;
 import sparx.util.Require;
 
 public abstract class ValFuture<V> extends

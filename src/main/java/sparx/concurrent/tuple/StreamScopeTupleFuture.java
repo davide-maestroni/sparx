@@ -37,7 +37,7 @@ import sparx.concurrent.TupleFuture;
 import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.util.ImmutableList;
-import sparx.util.LiveIterator;
+import sparx.concurrent.LiveIterator;
 import sparx.util.Nothing;
 import sparx.util.Require;
 import sparx.util.UncheckedException;

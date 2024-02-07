@@ -22,7 +22,7 @@ import sparx.tuple.Triple;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/ExecutionFuture.mustache
+// - template path: template/concurrent/ExecutionFuture.mustache
 ///////////////////////////////////////////////
 
 public interface TernaryFuture<P, P1 extends P, P2 extends P, P3 extends P, R> extends ExecutionFuture<P, R> {

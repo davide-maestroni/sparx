@@ -23,7 +23,7 @@ import sparx.util.Nothing;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/ExecutionContext.mustache
+// - template path: template/concurrent/ExecutionContext.mustache
 ///////////////////////////////////////////////
 
 public interface ExecutionContext {

@@ -25,7 +25,7 @@ import sparx.util.Require;
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
 // - templating engine: Mustache 0.9.11
-// - template path: template/TupleFuture.mustache
+// - template path: template/concurrent/TupleFuture.mustache
 ///////////////////////////////////////////////
 
 public class SeptendecupleFuture<V, V1 extends V, V2 extends V, V3 extends V, V4 extends V, V5 extends V, V6 extends V, V7 extends V, V8 extends V, V9 extends V, V10 extends V, V11 extends V, V12 extends V, V13 extends V, V14 extends V, V15 extends V, V16 extends V, V17 extends V> extends

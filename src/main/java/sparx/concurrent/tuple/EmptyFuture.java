@@ -30,7 +30,7 @@ import sparx.function.Consumer;
 import sparx.logging.Log;
 import sparx.tuple.Empty;
 import sparx.util.ImmutableList;
-import sparx.util.LiveIterator;
+import sparx.concurrent.LiveIterator;
 import sparx.util.Nothing;
 import sparx.util.Require;
 

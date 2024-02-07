@@ -23,8 +23,8 @@ import sparx.util.Require;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
-// - templating engine: Mustache 0.9.11
-// - template path: template/logging/Log.mustache
+// - templating engine: {{engine}}
+// - template path: {{path}}
 ///////////////////////////////////////////////
 
 public class Log {
@@ -88,34 +88,15 @@ public class Log {
       collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg);
     }
   }
+{{#arities}}
 
   public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg) {
+      {{#ordinals}}final Object {{value.prevName}}Arg, {{#last}}final Object {{value.name}}Arg{{/last}}{{/ordinals}}) {
     if (level == LogLevel.DEBUG) {
-      collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg, secondArg);
+      collector.log(LogLevel.DEBUG, tag, msgFmt, {{#ordinals}}{{value.prevName}}Arg, {{#last}}{{value.name}}Arg{{/last}}{{/ordinals}});
     }
   }
-
-  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg, final Object thirdArg) {
-    if (level == LogLevel.DEBUG) {
-      collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg, secondArg, thirdArg);
-    }
-  }
-
-  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg) {
-    if (level == LogLevel.DEBUG) {
-      collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg);
-    }
-  }
-
-  public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg, final Object fifthArg) {
-    if (level == LogLevel.DEBUG) {
-      collector.log(LogLevel.DEBUG, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg, fifthArg);
-    }
-  }
+{{/arities}}
 
   public static void dbg(@Nullable final Object tag, @Nullable final String msgFmt,
       @Nullable final Object... args) {
@@ -136,34 +117,15 @@ public class Log {
       collector.log(LogLevel.ERROR, tag, msgFmt, firstArg);
     }
   }
+{{#arities}}
 
   public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg) {
+      {{#ordinals}}final Object {{value.prevName}}Arg, {{#last}}final Object {{value.name}}Arg{{/last}}{{/ordinals}}) {
     if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
-      collector.log(LogLevel.ERROR, tag, msgFmt, firstArg, secondArg);
+      collector.log(LogLevel.ERROR, tag, msgFmt, {{#ordinals}}{{value.prevName}}Arg, {{#last}}{{value.name}}Arg{{/last}}{{/ordinals}});
     }
   }
-
-  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg, final Object thirdArg) {
-    if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
-      collector.log(LogLevel.ERROR, tag, msgFmt, firstArg, secondArg, thirdArg);
-    }
-  }
-
-  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg) {
-    if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
-      collector.log(LogLevel.ERROR, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg);
-    }
-  }
-
-  public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg, final Object fifthArg) {
-    if (level.ordinal() <= LogLevel.ERROR.ordinal()) {
-      collector.log(LogLevel.ERROR, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg, fifthArg);
-    }
-  }
+{{/arities}}
 
   public static void err(@Nullable final Object tag, @Nullable final String msgFmt,
       @Nullable final Object... args) {
@@ -184,34 +146,15 @@ public class Log {
       collector.log(LogLevel.WARNING, tag, msgFmt, firstArg);
     }
   }
+{{#arities}}
 
   public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg) {
+      {{#ordinals}}final Object {{value.prevName}}Arg, {{#last}}final Object {{value.name}}Arg{{/last}}{{/ordinals}}) {
     if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
-      collector.log(LogLevel.WARNING, tag, msgFmt, firstArg, secondArg);
+      collector.log(LogLevel.WARNING, tag, msgFmt, {{#ordinals}}{{value.prevName}}Arg, {{#last}}{{value.name}}Arg{{/last}}{{/ordinals}});
     }
   }
-
-  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg, final Object thirdArg) {
-    if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
-      collector.log(LogLevel.WARNING, tag, msgFmt, firstArg, secondArg, thirdArg);
-    }
-  }
-
-  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg) {
-    if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
-      collector.log(LogLevel.WARNING, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg);
-    }
-  }
-
-  public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
-      final Object firstArg, final Object secondArg, final Object thirdArg, final Object fourthArg, final Object fifthArg) {
-    if (level.ordinal() <= LogLevel.WARNING.ordinal()) {
-      collector.log(LogLevel.WARNING, tag, msgFmt, firstArg, secondArg, thirdArg, fourthArg, fifthArg);
-    }
-  }
+{{/arities}}
 
   public static void wrn(@Nullable final Object tag, @Nullable final String msgFmt,
       @Nullable final Object... args) {
