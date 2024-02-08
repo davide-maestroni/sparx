@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -744,9 +745,13 @@ public class VarFutureTests {
   public void futureCancelRun() throws InterruptedException {
     var executor = Executors.newSingleThreadExecutor();
     try {
+      var failure = new AtomicReference<Exception>();
       var context = ExecutorContext.of(executor);
       var result = context.<Object, String, Exception>submit((input, output) ->
-          input.subscribe(null, null, output::set, null));
+          input.subscribe(null, null, e -> {
+            failure.set(e);
+            output.set(e);
+          }, null));
       Thread.sleep(1000);
       assertFalse(result.isDone());
       assertTrue(result.cancel(false));
@@ -756,9 +761,10 @@ public class VarFutureTests {
       Thread.sleep(1000);
       var input = result.parameters().getFirst();
       var output = result.parameters().getSecond();
-      assertFalse(input.isDone());
-      assertFalse(output.isDone());
-      assertInstanceOf(FutureCancellationException.class, output.getCurrent());
+      assertTrue(input.isDone());
+      assertTrue(output.isDone());
+      assertNull(output.getCurrentOr(null));
+      assertInstanceOf(FutureCancellationException.class, failure.get());
     } finally {
       executor.shutdown();
     }
@@ -768,9 +774,13 @@ public class VarFutureTests {
   public void futureCancelCall() throws InterruptedException {
     var executor = Executors.newSingleThreadExecutor();
     try {
+      var failure = new AtomicReference<Exception>();
       var context = ExecutorContext.of(executor);
       var result = context.<Object, String, Exception, Exception>submit((input, output) -> {
-        input.subscribe(null, null, output::set, null);
+        input.subscribe(null, null, e -> {
+          failure.set(e);
+          output.set(e);
+        }, null);
         return output;
       });
       Thread.sleep(1000);
@@ -782,9 +792,10 @@ public class VarFutureTests {
       Thread.sleep(1000);
       var input = result.parameters().getFirst();
       var output = result.parameters().getSecond();
-      assertFalse(input.isDone());
-      assertFalse(output.isDone());
-      assertInstanceOf(FutureCancellationException.class, output.getCurrent());
+      assertTrue(input.isDone());
+      assertTrue(output.isDone());
+      assertNull(output.getCurrentOr(null));
+      assertInstanceOf(FutureCancellationException.class, failure.get());
     } finally {
       executor.shutdown();
     }

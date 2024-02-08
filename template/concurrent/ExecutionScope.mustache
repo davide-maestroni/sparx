@@ -16,6 +16,7 @@
 package sparx.concurrent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -112,7 +113,7 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
-        // TODO: registerFuture(first);
+        setParameters(Collections.<StreamingFuture<?>>singleton(first));
         consumer.accept(first);
         complete();
       }
@@ -131,7 +132,7 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
-        //registerFuture(first);
+        setParameters(Collections.<StreamingFuture<?>>singleton(first));
         function.apply(first).subscribe(this);
       }
     };
@@ -155,11 +156,7 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
-{{#ordinals}}
-        //registerFuture({{value.prevName}});
-{{#last}}        //registerFuture({{value.name}});
-{{/last}}
-{{/ordinals}}
+        setParameters(Arrays.<StreamingFuture<?>>asList({{#ordinals}}{{value.prevName}}, {{#last}}{{value.name}}{{/last}}{{/ordinals}}));
         consumer.accept({{#ordinals}}{{value.prevName}}, {{#last}}{{value.name}}{{/last}}{{/ordinals}});
         complete();
       }
@@ -183,11 +180,7 @@ class ExecutionScope implements ExecutionContext {
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
-{{#ordinals}}
-        //registerFuture({{value.prevName}});
-{{#last}}        //registerFuture({{value.name}});
-{{/last}}
-{{/ordinals}}
+        setParameters(Arrays.<StreamingFuture<?>>asList({{#ordinals}}{{value.prevName}}, {{#last}}{{value.name}}{{/last}}{{/ordinals}}));
         function.apply({{#ordinals}}{{value.prevName}}, {{#last}}{{value.name}}{{/last}}{{/ordinals}}).subscribe(this);
       }
     };
@@ -293,6 +286,7 @@ class ExecutionScope implements ExecutionContext {
     private static final int FAILED = 3;
 
     private final HashSet<StreamingFuture<?>> futures = new HashSet<StreamingFuture<?>>();
+    private final HashSet<StreamingFuture<?>> parameters = new HashSet<StreamingFuture<?>>();
     private final HashSet<ExecutionScopeReceiver<?>> receivers = new HashSet<ExecutionScopeReceiver<?>>();
     private final AtomicInteger status = new AtomicInteger(IDLE);
 
@@ -419,6 +413,10 @@ class ExecutionScope implements ExecutionContext {
     }
 
     protected abstract void innerRun() throws Exception;
+
+    protected void setParameters(@NotNull final Collection<StreamingFuture<?>> parameters) {
+      this.parameters.addAll(parameters);
+    }
 
     private void innerFail(@NotNull final Exception error) {
       final ScopeTask task = new ScopeTask() {
@@ -693,6 +691,9 @@ class ExecutionScope implements ExecutionContext {
           }
         }
         futures.clear();
+        for (final StreamingFuture<?> parameter : parameters) {
+          parameter.fail(error);
+        }
       }
 
       @Override
