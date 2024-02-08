@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.EmptyLiveIterator;
+import sparx.concurrent.LiveIterator;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.Scheduler;
 import sparx.concurrent.Scheduler.Task;
@@ -30,7 +31,6 @@ import sparx.function.Consumer;
 import sparx.logging.Log;
 import sparx.tuple.Empty;
 import sparx.util.ImmutableList;
-import sparx.concurrent.LiveIterator;
 import sparx.util.Nothing;
 import sparx.util.Require;
 
@@ -93,7 +93,17 @@ public class EmptyFuture<V> extends StreamScopeTupleFuture<V, EmptyFuture<V>> im
   }
 
   @Override
-  public @NotNull EmptyFuture readOnly() {
+  public @NotNull LiveIterator<Nothing> iteratorNext() {
+    return iterator();
+  }
+
+  @Override
+  public @NotNull LiveIterator<Nothing> iteratorNext(long timeout, @NotNull TimeUnit unit) {
+    return iterator();
+  }
+
+  @Override
+  public @NotNull EmptyFuture<V> readOnly() {
     return this;
   }
 

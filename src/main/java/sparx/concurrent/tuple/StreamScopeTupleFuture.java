@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.FunctionalReceiver;
+import sparx.concurrent.LiveIterator;
 import sparx.concurrent.ReadOnlyStreamScopeFuture;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.StreamingFuture;
@@ -37,7 +38,6 @@ import sparx.concurrent.TupleFuture;
 import sparx.function.Action;
 import sparx.function.Consumer;
 import sparx.util.ImmutableList;
-import sparx.concurrent.LiveIterator;
 import sparx.util.Nothing;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
@@ -113,6 +113,17 @@ abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
   @Override
   public @NotNull LiveIterator<Nothing> iterator(final long timeout, @NotNull final TimeUnit unit) {
     return new TimeoutIterator(unit.toMillis(Require.positive(timeout, "timeout")));
+  }
+
+  @Override
+  public @NotNull LiveIterator<Nothing> iteratorNext() {
+    return iterator();
+  }
+
+  @Override
+  public @NotNull LiveIterator<Nothing> iteratorNext(final long timeout,
+      @NotNull final TimeUnit unit) {
+    return iterator(timeout, unit);
   }
 
   @Override

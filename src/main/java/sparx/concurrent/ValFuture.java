@@ -108,6 +108,11 @@ public abstract class ValFuture<V> extends
   }
 
   @Override
+  public @NotNull LiveIterator<V> iteratorNext(final long timeout, @NotNull final TimeUnit unit) {
+    return iteratorNext();
+  }
+
+  @Override
   public @NotNull ValFuture<V> readOnly() {
     return this;
   }
@@ -169,6 +174,11 @@ public abstract class ValFuture<V> extends
 
     @Override
     public @NotNull LiveIterator<V> iterator() {
+      return iterator;
+    }
+
+    @Override
+    public @NotNull LiveIterator<V> iteratorNext() {
       return iterator;
     }
 
@@ -329,6 +339,11 @@ public abstract class ValFuture<V> extends
     @Override
     public @NotNull LiveIterator<V> iterator() {
       return new ValuesIterator<V>(values);
+    }
+
+    @Override
+    public @NotNull LiveIterator<V> iteratorNext() {
+      return EmptyLiveIterator.instance();
     }
 
     @Override

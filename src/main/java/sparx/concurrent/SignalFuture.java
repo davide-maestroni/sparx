@@ -38,7 +38,9 @@ public interface SignalFuture<V> extends Future<List<V>>, Iterable<V>, Receiver<
 
   @NotNull LiveIterator<V> iterator(long timeout, @NotNull TimeUnit unit);
 
-  // TODO: iteratorNext(); ???
+  @NotNull LiveIterator<V> iteratorNext();
+
+  @NotNull LiveIterator<V> iteratorNext(long timeout, @NotNull TimeUnit unit);
 
   @NotNull SignalFuture<V> readOnly();
 

@@ -262,6 +262,21 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   }
 
   @Override
+  public @NotNull LiveIterator<V> iteratorNext() {
+    final IndefiniteIterator<V> iterator = new IndefiniteIterator<V>();
+    scheduler.scheduleBefore(new IteratorNextTask(iterator));
+    return iterator;
+  }
+
+  @Override
+  public @NotNull LiveIterator<V> iteratorNext(final long timeout, @NotNull final TimeUnit unit) {
+    final TimeoutIterator<V> iterator = new TimeoutIterator<V>(
+        unit.toMillis(Require.positive(timeout, "timeout")));
+    scheduler.scheduleBefore(new IteratorNextTask(iterator));
+    return iterator;
+  }
+
+  @Override
   public @NotNull StreamingFuture<V> readOnly() {
     if (readonly == null) {
       readonly = new ReadOnlyFuture<V>(this);
@@ -743,6 +758,11 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     }
 
     @Override
+    void iteratorNext(@NotNull final FutureIterator<V> iterator) {
+      iterator.fail(failureException);
+    }
+
+    @Override
     void subscribe(@NotNull final Receiver<V> receiver,
         @NotNull final ScopeReceiver<V> scopeReceiver) {
       super.subscribe(receiver, scopeReceiver);
@@ -775,6 +795,11 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
       if (lastValue != UNSET) {
         iterator.add((V) lastValue);
       }
+      iterator.end();
+    }
+
+    @Override
+    void iteratorNext(@NotNull final FutureIterator<V> iterator) {
       iterator.end();
     }
 
@@ -1015,6 +1040,11 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     }
 
     @Override
+    void iteratorNext(@NotNull final FutureIterator<V> iterator) {
+      iterators.put(iterator, null);
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     void subscribe(@NotNull final Receiver<V> receiver,
         @NotNull final ScopeReceiver<V> scopeReceiver) {
@@ -1099,6 +1129,9 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
       }
     }
 
+    void iteratorNext(@NotNull final FutureIterator<V> iterator) {
+    }
+
     void subscribe(@NotNull final Receiver<V> receiver,
         @NotNull final ScopeReceiver<V> scopeReceiver) {
       if (scopeReceiver.isConsumer()) {
@@ -1164,6 +1197,20 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     @Override
     public void run() {
       innerStatus.iterator(iterator);
+    }
+  }
+
+  private class IteratorNextTask extends VarTask {
+
+    private final FutureIterator<V> iterator;
+
+    private IteratorNextTask(@NotNull final FutureIterator<V> iterator) {
+      this.iterator = iterator;
+    }
+
+    @Override
+    public void run() {
+      innerStatus.iteratorNext(iterator);
     }
   }
 

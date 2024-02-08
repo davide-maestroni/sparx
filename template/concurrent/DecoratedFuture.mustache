@@ -113,6 +113,16 @@ public class DecoratedFuture<V> implements StreamingFuture<V> {
   }
 
   @Override
+  public @NotNull LiveIterator<V> iteratorNext() {
+    return wrapped.iteratorNext();
+  }
+
+  @Override
+  public @NotNull LiveIterator<V> iteratorNext(final long timeout, @NotNull final TimeUnit unit) {
+    return wrapped.iteratorNext(timeout, unit);
+  }
+
+  @Override
   public @NotNull StreamingFuture<V> readOnly() {
     return wrapped.readOnly();
   }
