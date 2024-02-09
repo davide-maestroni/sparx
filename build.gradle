@@ -53,7 +53,7 @@ tasks.register('generateCode') {
     ]
     def arityNames = [
         'Binary', 'Ternary', 'Quaternary', 'Quinary', 'Senary', 'Septenary', 'Octonary', 'Nonary',
-        'Denary', 'Undenary', 'Duodenary', 'Terdenary', 'Quaterdenary', 'Quindenary', 'Sexdenary',
+        'Denary', 'Undenary', 'Duodenary', 'Tredenary', 'Quattuordenary', 'Quindenary', 'Sexdenary',
         'Septendenary', 'Octodenary', 'Novemdenary', 'Vigenary'
     ]
     def index = 2

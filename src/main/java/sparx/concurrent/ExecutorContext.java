@@ -254,26 +254,26 @@ public class ExecutorContext implements ExecutionContext {
   }
 
   @Override
-  public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P> TerdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, Nothing> submit(
-      @NotNull final TerdenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>> consumer) {
+  public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P> TredenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, Nothing> submit(
+      @NotNull final TredenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>> consumer) {
     return new ExecutionScope(this, objects, scheduler, registry).submit(consumer);
   }
 
   @Override
-  public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, R> TerdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, R> submit(
-      @NotNull final TerdenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? extends Signal<R>> function) {
+  public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, R> TredenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, R> submit(
+      @NotNull final TredenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? extends Signal<R>> function) {
     return new ExecutionScope(this, objects, scheduler, registry).submit(function);
   }
 
   @Override
-  public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P> QuaterdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, Nothing> submit(
-      @NotNull final QuaterdenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>> consumer) {
+  public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P> QuattuordenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, Nothing> submit(
+      @NotNull final QuattuordenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>> consumer) {
     return new ExecutionScope(this, objects, scheduler, registry).submit(consumer);
   }
 
   @Override
-  public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, R> QuaterdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, R> submit(
-      @NotNull final QuaterdenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? extends Signal<R>> function) {
+  public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, R> QuattuordenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, R> submit(
+      @NotNull final QuattuordenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? extends Signal<R>> function) {
     return new ExecutionScope(this, objects, scheduler, registry).submit(function);
   }
 

@@ -21,7 +21,7 @@ package sparx.function;
 // - template path: template/function/Consumer.mustache
 ///////////////////////////////////////////////
 
-public interface TerdenaryConsumer<P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13> {
+public interface QuattuordenaryConsumer<P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14> {
 
-  void accept(P1 firstParam, P2 secondParam, P3 thirdParam, P4 fourthParam, P5 fifthParam, P6 sixthParam, P7 seventhParam, P8 eighthParam, P9 ninthParam, P10 tenthParam, P11 eleventhParam, P12 twelfthParam, P13 thirteenthParam) throws Exception;
+  void accept(P1 firstParam, P2 secondParam, P3 thirdParam, P4 fourthParam, P5 fifthParam, P6 sixthParam, P7 seventhParam, P8 eighthParam, P9 ninthParam, P10 tenthParam, P11 eleventhParam, P12 twelfthParam, P13 thirteenthParam, P14 fourteenthParam) throws Exception;
 }

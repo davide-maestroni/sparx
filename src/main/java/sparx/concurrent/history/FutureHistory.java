@@ -18,6 +18,9 @@ package sparx.concurrent.history;
 import java.util.ArrayList;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
+import sparx.logging.alert.Alerts;
+import sparx.logging.alert.Alerts.Alert;
+import sparx.logging.alert.HistorySizeAlert;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
 
@@ -55,6 +58,8 @@ public class FutureHistory {
 
   private static class KeepAllStrategy<V> implements HistoryStrategy<V> {
 
+    private static final Alert<Void> historyAlert = Alerts.get(HistorySizeAlert.class);
+
     private final ArrayList<V> history = new ArrayList<V>();
 
     @Override
@@ -66,15 +71,18 @@ public class FutureHistory {
     public void onClose() {
     }
 
-    // TODO: alert
     @Override
     public void onPush(final V value) {
+      final ArrayList<V> history = this.history;
       history.add(value);
+      historyAlert.notify(history.size(), null);
     }
 
     @Override
     public void onPushBulk(@NotNull final List<V> values) {
+      final ArrayList<V> history = this.history;
       history.addAll(values);
+      historyAlert.notify(history.size(), null);
     }
 
     @Override

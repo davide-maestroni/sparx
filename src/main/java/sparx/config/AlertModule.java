@@ -24,6 +24,7 @@ import sparx.logging.alert.Alerts;
 import sparx.logging.alert.Alerts.Alert;
 import sparx.logging.alert.BackpressureAlert;
 import sparx.logging.alert.ExecutionContextTaskAlert;
+import sparx.logging.alert.HistorySizeAlert;
 import sparx.logging.alert.JoinAlert;
 import sparx.logging.alert.SchedulerQueueAlert;
 import sparx.logging.alert.SchedulerWorkerAlert;
@@ -49,6 +50,9 @@ public class AlertModule implements ConfigModule {
     }
     if (ExecutionContextTaskAlert.class.getName().equals(alertName)) {
       return new ExecutionContextTaskAlert();
+    }
+    if (HistorySizeAlert.class.getName().equals(alertName)) {
+      return new HistorySizeAlert(properties);
     }
     if (JoinAlert.class.getName().equals(alertName)) {
       return new JoinAlert(properties);

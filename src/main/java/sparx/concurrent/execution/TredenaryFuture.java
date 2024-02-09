@@ -17,7 +17,7 @@ package sparx.concurrent.execution;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.tuple.Quattuordecuple;
+import sparx.tuple.Tredecuple;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!
@@ -25,8 +25,8 @@ import sparx.tuple.Quattuordecuple;
 // - template path: template/concurrent/ExecutionFuture.mustache
 ///////////////////////////////////////////////
 
-public interface QuaterdenaryFuture<P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, R> extends ExecutionFuture<P, R> {
+public interface TredenaryFuture<P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, R> extends ExecutionFuture<P, R> {
 
   @Override
-  @NotNull Quattuordecuple<StreamingFuture<? extends P>, StreamingFuture<P1>, StreamingFuture<P2>, StreamingFuture<P3>, StreamingFuture<P4>, StreamingFuture<P5>, StreamingFuture<P6>, StreamingFuture<P7>, StreamingFuture<P8>, StreamingFuture<P9>, StreamingFuture<P10>, StreamingFuture<P11>, StreamingFuture<P12>, StreamingFuture<P13>, StreamingFuture<P14>> parameters();
+  @NotNull Tredecuple<StreamingFuture<? extends P>, StreamingFuture<P1>, StreamingFuture<P2>, StreamingFuture<P3>, StreamingFuture<P4>, StreamingFuture<P5>, StreamingFuture<P6>, StreamingFuture<P7>, StreamingFuture<P8>, StreamingFuture<P9>, StreamingFuture<P10>, StreamingFuture<P11>, StreamingFuture<P12>, StreamingFuture<P13>> parameters();
 }
