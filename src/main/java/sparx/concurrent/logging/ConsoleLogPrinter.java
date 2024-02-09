@@ -24,6 +24,7 @@ import sparx.concurrent.Receiver;
 import sparx.logging.LogMessage;
 import sparx.logging.LogTemplate;
 import sparx.logging.LogTemplate.VariableResolver;
+import sparx.util.Require;
 
 public class ConsoleLogPrinter implements Receiver<LogMessage> {
 
@@ -41,7 +42,13 @@ public class ConsoleLogPrinter implements Receiver<LogMessage> {
   private final String varPrefix;
   private final String varSuffix;
 
-  // TODO: constructor
+  public ConsoleLogPrinter(@NotNull final String template, @NotNull final String varPrefix,
+      @NotNull final String varSuffix, @NotNull final PrintStream printStream) {
+    this.template = Require.notNull(template, "template");
+    this.varPrefix = Require.notNull(varPrefix, "varPrefix");
+    this.varSuffix = Require.notNull(varSuffix, "varSuffix");
+    this.printStream = Require.notNull(printStream, "printStream");
+  }
 
   public ConsoleLogPrinter(@NotNull final Properties properties) {
     varPrefix = properties.getProperty(VAR_PREFIX_PROP, "{");

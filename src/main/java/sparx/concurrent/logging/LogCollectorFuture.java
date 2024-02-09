@@ -26,6 +26,7 @@ import sparx.logging.Log.LogCollector;
 import sparx.logging.Log.LogLevel;
 import sparx.logging.LogMessage;
 import sparx.logging.LogMessageFactory;
+import sparx.util.Require;
 
 public class LogCollectorFuture extends ReadOnlyFuture<LogMessage> implements LogCollector {
 
@@ -37,7 +38,10 @@ public class LogCollectorFuture extends ReadOnlyFuture<LogMessage> implements Lo
 
   private final LogMessageFactory factory;
 
-  // TODO: constructor
+  public LogCollectorFuture(@NotNull final LogMessageFactory factory) {
+    super(VarFuture.<LogMessage>create());
+    this.factory = Require.notNull(factory, "factory");
+  }
 
   public LogCollectorFuture(@NotNull final Properties properties) {
     super(VarFuture.<LogMessage>create());

@@ -29,6 +29,7 @@ import sparx.logging.Log.LogLevel;
 import sparx.logging.LogMessage;
 import sparx.logging.LogTemplate;
 import sparx.logging.LogTemplate.VariableResolver;
+import sparx.util.Require;
 
 public class JavaLogPrinter implements Receiver<LogMessage> {
 
@@ -50,7 +51,12 @@ public class JavaLogPrinter implements Receiver<LogMessage> {
   private final String varPrefix;
   private final String varSuffix;
 
-  // TODO: constructor
+  public JavaLogPrinter(@NotNull final String template, @NotNull final String varPrefix,
+      @NotNull final String varSuffix) {
+    this.template = Require.notNull(template, "template");
+    this.varPrefix = Require.notNull(varPrefix, "varPrefix");
+    this.varSuffix = Require.notNull(varSuffix, "varSuffix");
+  }
 
   public JavaLogPrinter(@NotNull final Properties properties) {
     varPrefix = properties.getProperty(VAR_PREFIX_PROP, "{");
