@@ -35,6 +35,7 @@ import sparx.concurrent.history.FutureHistory;
 import sparx.function.*;
 import sparx.logging.Log;
 import sparx.logging.alert.Alerts;
+import sparx.logging.alert.Alerts.Alert;
 import sparx.logging.alert.ExecutionContextTaskAlert;
 import sparx.tuple.*;
 import sparx.util.Nothing;
@@ -48,7 +49,7 @@ import sparx.util.Require;
 
 class ExecutionScope implements ExecutionContext {
 
-  private static final ExecutionContextTaskAlert taskAlert = Alerts.executionContextTaskAlert();
+  private static final Alert<Object> taskAlert = Alerts.get(ExecutionContextTaskAlert.class);
 
   private final ExecutionContext context;
   private final FutureRegistry registry;
@@ -76,7 +77,7 @@ class ExecutionScope implements ExecutionContext {
 
   @Override
   public @NotNull <P> NullaryFuture<P, Nothing> {{methodName}}(@NotNull final Action action) {
-    Require.notNull(action, "action");
+    taskAlert.notify(0, Require.notNull(action, "action"));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -92,7 +93,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, R> NullaryFuture<P, R> {{methodName}}(
       @NotNull final Supplier<? extends Signal<R>> supplier) {
-    Require.notNull(supplier, "supplier");
+    taskAlert.notify(0, Require.notNull(supplier, "supplier"));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -107,7 +108,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P> UnaryFuture<P, Nothing> {{methodName}}(
       @NotNull final Consumer<? super StreamingFuture<P>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
@@ -126,7 +127,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, R> UnaryFuture<P, R> {{methodName}}(
       @NotNull final Function<? super StreamingFuture<P>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
@@ -145,7 +146,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, {{#indexes}}P{{value}} extends P{{^last}}, {{/last}}{{/indexes}}> {{name}}Future<P, {{#indexes}}P{{value}}, {{/indexes}}Nothing> {{methodName}}(
       @NotNull final {{name}}Consumer<{{#indexes}}? super StreamingFuture<P{{value}}>{{^last}}, {{/last}}{{/indexes}}> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
 {{#ordinals}}
     final VarFuture<P{{value.prevIndex}}> {{value.prevName}} = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P{{value.prevIndex}}>keepAll()));
@@ -169,7 +170,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, {{#indexes}}P{{value}} extends P, {{/indexes}}R> {{name}}Future<P, {{#indexes}}P{{value}}, {{/indexes}}R> {{methodName}}(
       @NotNull final {{name}}Function<{{#indexes}}? super StreamingFuture<P{{value}}>, {{/indexes}}? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
 {{#ordinals}}
     final VarFuture<P{{value.prevIndex}}> {{value.prevName}} = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P{{value.prevIndex}}>keepAll()));

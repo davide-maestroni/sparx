@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.backpressure.BackpressureStrategy;
 import sparx.logging.Log;
 import sparx.logging.alert.Alerts;
+import sparx.logging.alert.Alerts.Alert;
 import sparx.logging.alert.BackpressureAlert;
 import sparx.logging.alert.SchedulerQueueAlert;
 import sparx.logging.alert.SchedulerWorkerAlert;
@@ -42,9 +43,9 @@ public class Scheduler {
   private static final int PAUSING = 2;
   private static final int PAUSED = 3;
 
-  private static final BackpressureAlert backpressureAlert = Alerts.backpressureAlert();
-  private static final SchedulerQueueAlert queueAlert = Alerts.schedulerQueueAlert();
-  private static final SchedulerWorkerAlert workerAlert = Alerts.schedulerWorkerAlert();
+  private static final Alert<Thread> backpressureAlert = Alerts.get(BackpressureAlert.class);
+  private static final Alert<Integer> queueAlert = Alerts.get(SchedulerQueueAlert.class);
+  private static final Alert<Thread> workerAlert = Alerts.get(SchedulerWorkerAlert.class);
 
   private final ArrayDeque<Task> afterQueue = new ArrayDeque<Task>();
   private final ArrayDeque<Task> beforeQueue = new ArrayDeque<Task>();
@@ -179,7 +180,7 @@ public class Scheduler {
       task = applyBackpressure(task, lock, runningThread);
       final ArrayDeque<Task> afterQueue = this.afterQueue;
       afterQueue.offer(task);
-      queueAlert.notifyPendingTasks(beforeQueue.size(), afterQueue.size());
+      queueAlert.notify(afterQueue.size(), beforeQueue.size());
       if (needsExecution = status == IDLE) {
         status = RUNNING;
       }
@@ -195,7 +196,7 @@ public class Scheduler {
     synchronized (lock) {
       final ArrayDeque<Task> beforeQueue = this.beforeQueue;
       beforeQueue.offer(task);
-      queueAlert.notifyPendingTasks(beforeQueue.size(), afterQueue.size());
+      queueAlert.notify(afterQueue.size(), beforeQueue.size());
       if (needsExecution = status == IDLE) {
         status = RUNNING;
       }
@@ -250,15 +251,15 @@ public class Scheduler {
         if (!currentThread.equals(runningThread)) {
           final long delayMillis = backpressureStrategy.getDelayMillis(pendingCount, waitingCount,
               throughput);
-          final BackpressureAlert backpressureAlert = Scheduler.backpressureAlert;
-          backpressureAlert.notifyWaitStart(currentThread);
+          final Alert<Thread> backpressureAlert = Scheduler.backpressureAlert;
+          backpressureAlert.notify(BackpressureAlert.WAIT_START, currentThread);
           waitingTasks.offer(task);
           try {
             lock.wait(delayMillis);
           } catch (final InterruptedException e) {
             throw UncheckedException.toUnchecked(e);
           } finally {
-            backpressureAlert.notifyWaitStop(currentThread);
+            backpressureAlert.notify(BackpressureAlert.WAIT_STOP, currentThread);
           }
         }
         return waitingTasks.pop();
@@ -280,11 +281,11 @@ public class Scheduler {
 
     @Override
     public void run() {
-      final SchedulerWorkerAlert workerAlert = Scheduler.workerAlert;
+      final Alert<Thread> workerAlert = Scheduler.workerAlert;
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
       final Thread currentThread = Thread.currentThread();
-      workerAlert.notifyTaskStart(currentThread);
+      workerAlert.notify(SchedulerWorkerAlert.WAIT_START, currentThread);
       while (true) {
         Task task;
         synchronized (lock) {
@@ -292,7 +293,7 @@ public class Scheduler {
           runningThread = null;
           if (status == PAUSING) {
             status = PAUSED;
-            workerAlert.notifyTaskStop(currentThread);
+            workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
             return;
           }
 
@@ -302,7 +303,7 @@ public class Scheduler {
             if (task == null) {
               // move to IDLE
               status = IDLE;
-              workerAlert.notifyTaskStop(currentThread);
+              workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
               return;
             }
           }
@@ -318,7 +319,7 @@ public class Scheduler {
           synchronized (lock) {
             runningTask = null;
             runningThread = null;
-            workerAlert.notifyTaskStop(currentThread);
+            workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
             if (status == PAUSING) {
               status = PAUSED;
             } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
@@ -339,17 +340,17 @@ public class Scheduler {
 
     @Override
     public void run() {
-      final SchedulerWorkerAlert workerAlert = Scheduler.workerAlert;
+      final Alert<Thread> workerAlert = Scheduler.workerAlert;
       final Executor executor = Scheduler.this.executor;
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
       final Thread currentThread = Thread.currentThread();
-      workerAlert.notifyTaskStart(currentThread);
+      workerAlert.notify(SchedulerWorkerAlert.WAIT_START, currentThread);
       Task task;
       synchronized (lock) {
         if (status == PAUSING) {
           status = PAUSED;
-          workerAlert.notifyTaskStop(currentThread);
+          workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
           return;
         }
 
@@ -359,7 +360,7 @@ public class Scheduler {
           if (task == null) {
             // move to IDLE
             status = IDLE;
-            workerAlert.notifyTaskStop(currentThread);
+            workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
             return;
           }
         }
@@ -378,7 +379,7 @@ public class Scheduler {
         synchronized (lock) {
           runningTask = null;
           runningThread = null;
-          workerAlert.notifyTaskStop(currentThread);
+          workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
           if (status == PAUSING) {
             status = PAUSED;
           } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
@@ -396,11 +397,11 @@ public class Scheduler {
 
     @Override
     public void run() {
-      final SchedulerWorkerAlert workerAlert = Scheduler.workerAlert;
+      final Alert<Thread> workerAlert = Scheduler.workerAlert;
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
       final Thread currentThread = Thread.currentThread();
-      workerAlert.notifyTaskStart(currentThread);
+      workerAlert.notify(SchedulerWorkerAlert.WAIT_START, currentThread);
       int minThroughput = Scheduler.this.minThroughput;
       while (minThroughput > 0) {
         Task task;
@@ -409,7 +410,7 @@ public class Scheduler {
           runningThread = null;
           if (status == PAUSING) {
             status = PAUSED;
-            workerAlert.notifyTaskStop(currentThread);
+            workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
             return;
           }
 
@@ -419,7 +420,7 @@ public class Scheduler {
             if (task == null) {
               // move to IDLE
               status = IDLE;
-              workerAlert.notifyTaskStop(currentThread);
+              workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
               return;
             }
           }
@@ -436,7 +437,7 @@ public class Scheduler {
           synchronized (lock) {
             runningTask = null;
             runningThread = null;
-            workerAlert.notifyTaskStop(currentThread);
+            workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
             if (status == PAUSING) {
               status = PAUSED;
             } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
@@ -453,7 +454,7 @@ public class Scheduler {
 
       boolean hasNext = false;
       synchronized (lock) {
-        workerAlert.notifyTaskStop(currentThread);
+        workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
         if (status == PAUSING) {
           status = PAUSED;
           return;
@@ -478,11 +479,11 @@ public class Scheduler {
 
     @Override
     public void run() {
-      final SchedulerWorkerAlert workerAlert = Scheduler.workerAlert;
+      final Alert<Thread> workerAlert = Scheduler.workerAlert;
       final ArrayDeque<Task> beforeQueue = Scheduler.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = Scheduler.this.afterQueue;
       final Thread currentThread = Thread.currentThread();
-      workerAlert.notifyTaskStart(currentThread);
+      workerAlert.notify(SchedulerWorkerAlert.WAIT_START, currentThread);
       long minTimeMillis = this.minTimeMillis;
       while (minTimeMillis > 0) {
         Task task;
@@ -491,7 +492,7 @@ public class Scheduler {
           runningThread = null;
           if (status == PAUSING) {
             status = PAUSED;
-            workerAlert.notifyTaskStop(currentThread);
+            workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
             return;
           }
 
@@ -501,7 +502,7 @@ public class Scheduler {
             if (task == null) {
               // move to IDLE
               status = IDLE;
-              workerAlert.notifyTaskStop(currentThread);
+              workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
               return;
             }
           }
@@ -519,7 +520,7 @@ public class Scheduler {
           synchronized (lock) {
             runningTask = null;
             runningThread = null;
-            workerAlert.notifyTaskStop(currentThread);
+            workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
             if (status == PAUSING) {
               status = PAUSED;
             } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
@@ -536,7 +537,7 @@ public class Scheduler {
 
       boolean hasNext = false;
       synchronized (lock) {
-        workerAlert.notifyTaskStop(currentThread);
+        workerAlert.notify(SchedulerWorkerAlert.WAIT_STOP, currentThread);
         if (status == PAUSING) {
           status = PAUSED;
           return;

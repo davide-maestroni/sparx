@@ -35,6 +35,7 @@ import sparx.concurrent.history.FutureHistory;
 import sparx.function.*;
 import sparx.logging.Log;
 import sparx.logging.alert.Alerts;
+import sparx.logging.alert.Alerts.Alert;
 import sparx.logging.alert.ExecutionContextTaskAlert;
 import sparx.tuple.*;
 import sparx.util.Nothing;
@@ -48,7 +49,7 @@ import sparx.util.Require;
 
 class ExecutionScope implements ExecutionContext {
 
-  private static final ExecutionContextTaskAlert taskAlert = Alerts.executionContextTaskAlert();
+  private static final Alert<Object> taskAlert = Alerts.get(ExecutionContextTaskAlert.class);
 
   private final ExecutionContext context;
   private final FutureRegistry registry;
@@ -76,7 +77,7 @@ class ExecutionScope implements ExecutionContext {
 
   @Override
   public @NotNull <P> NullaryFuture<P, Nothing> submit(@NotNull final Action action) {
-    Require.notNull(action, "action");
+    taskAlert.notify(0, Require.notNull(action, "action"));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -92,7 +93,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, R> NullaryFuture<P, R> submit(
       @NotNull final Supplier<? extends Signal<R>> supplier) {
-    Require.notNull(supplier, "supplier");
+    taskAlert.notify(0, Require.notNull(supplier, "supplier"));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -107,7 +108,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P> UnaryFuture<P, Nothing> submit(
       @NotNull final Consumer<? super StreamingFuture<P>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
@@ -126,7 +127,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, R> UnaryFuture<P, R> submit(
       @NotNull final Function<? super StreamingFuture<P>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
@@ -144,7 +145,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P> BinaryFuture<P, P1, P2, Nothing> submit(
       @NotNull final BinaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -165,7 +166,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, R> BinaryFuture<P, P1, P2, R> submit(
       @NotNull final BinaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -185,7 +186,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P> TernaryFuture<P, P1, P2, P3, Nothing> submit(
       @NotNull final TernaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -208,7 +209,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, R> TernaryFuture<P, P1, P2, P3, R> submit(
       @NotNull final TernaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -230,7 +231,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P> QuaternaryFuture<P, P1, P2, P3, P4, Nothing> submit(
       @NotNull final QuaternaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -255,7 +256,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, R> QuaternaryFuture<P, P1, P2, P3, P4, R> submit(
       @NotNull final QuaternaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -279,7 +280,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P> QuinaryFuture<P, P1, P2, P3, P4, P5, Nothing> submit(
       @NotNull final QuinaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -306,7 +307,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, R> QuinaryFuture<P, P1, P2, P3, P4, P5, R> submit(
       @NotNull final QuinaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -332,7 +333,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P> SenaryFuture<P, P1, P2, P3, P4, P5, P6, Nothing> submit(
       @NotNull final SenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -361,7 +362,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, R> SenaryFuture<P, P1, P2, P3, P4, P5, P6, R> submit(
       @NotNull final SenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -389,7 +390,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P> SeptenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, Nothing> submit(
       @NotNull final SeptenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -420,7 +421,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, R> SeptenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, R> submit(
       @NotNull final SeptenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -450,7 +451,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P> OctonaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, Nothing> submit(
       @NotNull final OctonaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -483,7 +484,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, R> OctonaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, R> submit(
       @NotNull final OctonaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -515,7 +516,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P> NonaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, Nothing> submit(
       @NotNull final NonaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -550,7 +551,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, R> NonaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, R> submit(
       @NotNull final NonaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -584,7 +585,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P> DenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, Nothing> submit(
       @NotNull final DenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -621,7 +622,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, R> DenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, R> submit(
       @NotNull final DenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -657,7 +658,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P> UndenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, Nothing> submit(
       @NotNull final UndenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -696,7 +697,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, R> UndenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, R> submit(
       @NotNull final UndenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -734,7 +735,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P> DuodenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, Nothing> submit(
       @NotNull final DuodenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -775,7 +776,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, R> DuodenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, R> submit(
       @NotNull final DuodenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -815,7 +816,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P> TerdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, Nothing> submit(
       @NotNull final TerdenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -858,7 +859,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, R> TerdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, R> submit(
       @NotNull final TerdenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -900,7 +901,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P> QuaterdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, Nothing> submit(
       @NotNull final QuaterdenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -945,7 +946,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, R> QuaterdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, R> submit(
       @NotNull final QuaterdenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -989,7 +990,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P> QuindenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, Nothing> submit(
       @NotNull final QuindenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1036,7 +1037,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, R> QuindenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, R> submit(
       @NotNull final QuindenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1082,7 +1083,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, P16 extends P> SexdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, Nothing> submit(
       @NotNull final SexdenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1131,7 +1132,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, P16 extends P, R> SexdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, R> submit(
       @NotNull final SexdenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1179,7 +1180,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, P16 extends P, P17 extends P> SeptendenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, Nothing> submit(
       @NotNull final SeptendenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1230,7 +1231,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, P16 extends P, P17 extends P, R> SeptendenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, R> submit(
       @NotNull final SeptendenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1280,7 +1281,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, P16 extends P, P17 extends P, P18 extends P> OctodenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, Nothing> submit(
       @NotNull final OctodenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1333,7 +1334,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, P16 extends P, P17 extends P, P18 extends P, R> OctodenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, R> submit(
       @NotNull final OctodenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1385,7 +1386,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, P16 extends P, P17 extends P, P18 extends P, P19 extends P> NovemdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19, Nothing> submit(
       @NotNull final NovemdenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>, ? super StreamingFuture<P19>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1440,7 +1441,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, P16 extends P, P17 extends P, P18 extends P, P19 extends P, R> NovemdenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19, R> submit(
       @NotNull final NovemdenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>, ? super StreamingFuture<P19>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1494,7 +1495,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, P16 extends P, P17 extends P, P18 extends P, P19 extends P, P20 extends P> VigenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19, P20, Nothing> submit(
       @NotNull final VigenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>, ? super StreamingFuture<P19>, ? super StreamingFuture<P20>> consumer) {
-    Require.notNull(consumer, "consumer");
+    taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
@@ -1551,7 +1552,7 @@ class ExecutionScope implements ExecutionContext {
   @Override
   public @NotNull <P, P1 extends P, P2 extends P, P3 extends P, P4 extends P, P5 extends P, P6 extends P, P7 extends P, P8 extends P, P9 extends P, P10 extends P, P11 extends P, P12 extends P, P13 extends P, P14 extends P, P15 extends P, P16 extends P, P17 extends P, P18 extends P, P19 extends P, P20 extends P, R> VigenaryFuture<P, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19, P20, R> submit(
       @NotNull final VigenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>, ? super StreamingFuture<P19>, ? super StreamingFuture<P20>, ? extends Signal<R>> function) {
-    Require.notNull(function, "function");
+    taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
         FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(

@@ -43,6 +43,7 @@ import sparx.function.Function;
 import sparx.function.Supplier;
 import sparx.logging.Log;
 import sparx.logging.alert.Alerts;
+import sparx.logging.alert.Alerts.Alert;
 import sparx.logging.alert.JoinAlert;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
@@ -57,7 +58,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   private static final int COMPLETING = 3;
   private static final Object UNSET = new Object();
 
-  private static final JoinAlert joinAlert = Alerts.joinAlert();
+  private static final Alert<Void> joinAlert = Alerts.get(JoinAlert.class);
 
   private final HistoryStrategy<V> historyStrategy;
   private final WeakHashMap<FutureIterator<V>, Void> iterators = new WeakHashMap<FutureIterator<V>, Void>();
@@ -174,12 +175,12 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
     pullFromJoinStart();
-    final JoinAlert joinAlert = VarFuture.joinAlert;
-    joinAlert.notifyJoinStart();
+    final Alert<Void> joinAlert = VarFuture.joinAlert;
+    joinAlert.notify(JoinAlert.WAIT_START, null);
     try {
       task.acquire();
     } finally {
-      joinAlert.notifyJoinStop();
+      joinAlert.notify(JoinAlert.WAIT_STOP, null);
       scheduler.scheduleBefore(new RemoveTask(task));
       pullFromJoinStop();
     }
@@ -197,14 +198,14 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     final GetTask task = new GetTask();
     scheduler.scheduleAfter(task);
     pullFromJoinStart();
-    final JoinAlert joinAlert = VarFuture.joinAlert;
-    joinAlert.notifyJoinStart();
+    final Alert<Void> joinAlert = VarFuture.joinAlert;
+    joinAlert.notify(JoinAlert.WAIT_START, null);
     try {
       if (!task.tryAcquire(timeout, unit)) {
         throw new TimeoutException();
       }
     } finally {
-      joinAlert.notifyJoinStop();
+      joinAlert.notify(JoinAlert.WAIT_STOP, null);
       scheduler.scheduleBefore(new RemoveTask(task));
       pullFromJoinStop();
     }
@@ -514,7 +515,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
-      final JoinAlert joinAlert = VarFuture.joinAlert;
+      final Alert<Void> joinAlert = VarFuture.joinAlert;
       boolean firstLoop = true;
       while (true) {
         if (!queue.isEmpty()) {
@@ -531,13 +532,13 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
           firstLoop = false;
           pullFromIterator();
         }
-        joinAlert.notifyJoinStart();
+        joinAlert.notify(JoinAlert.WAIT_START, null);
         try {
           semaphore.acquire();
         } catch (final InterruptedException e) {
           throw UncheckedException.toUnchecked(e);
         } finally {
-          joinAlert.notifyJoinStop();
+          joinAlert.notify(JoinAlert.WAIT_STOP, null);
         }
       }
     }
@@ -549,7 +550,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
       final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
       final Semaphore semaphore = this.semaphore;
       final AtomicInteger iteratorStatus = status;
-      final JoinAlert joinAlert = VarFuture.joinAlert;
+      final Alert<Void> joinAlert = VarFuture.joinAlert;
       boolean firstLoop = true;
       while (remainingTime > 0) {
         if (!queue.isEmpty()) {
@@ -566,7 +567,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
           firstLoop = false;
           pullFromIterator();
         }
-        joinAlert.notifyJoinStart();
+        joinAlert.notify(JoinAlert.WAIT_START, null);
         try {
           if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
             throw UncheckedException.timeout();
@@ -574,7 +575,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
         } catch (final InterruptedException e) {
           throw UncheckedException.toUnchecked(e);
         } finally {
-          joinAlert.notifyJoinStop();
+          joinAlert.notify(JoinAlert.WAIT_STOP, null);
         }
         remainingTime -= System.currentTimeMillis() - startTime;
       }
@@ -598,7 +599,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
-        final JoinAlert joinAlert = VarFuture.joinAlert;
+        final Alert<Void> joinAlert = VarFuture.joinAlert;
         boolean firstLoop = true;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
@@ -615,7 +616,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
             firstLoop = false;
             pullFromIterator();
           }
-          joinAlert.notifyJoinStart();
+          joinAlert.notify(JoinAlert.WAIT_START, null);
           try {
             if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
               throw UncheckedException.timeout();
@@ -623,7 +624,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
           } catch (final InterruptedException e) {
             throw UncheckedException.toUnchecked(e);
           } finally {
-            joinAlert.notifyJoinStop();
+            joinAlert.notify(JoinAlert.WAIT_STOP, null);
           }
           remainingTime -= System.currentTimeMillis() - startTime;
         }
@@ -642,7 +643,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
         final ConcurrentLinkedQueue<ArrayDeque<E>> queue = this.queue;
         final Semaphore semaphore = this.semaphore;
         final AtomicInteger iteratorStatus = status;
-        final JoinAlert joinAlert = VarFuture.joinAlert;
+        final Alert<Void> joinAlert = VarFuture.joinAlert;
         boolean firstLoop = true;
         while (remainingTime > 0) {
           if (!queue.isEmpty()) {
@@ -659,7 +660,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
             firstLoop = false;
             pullFromIterator();
           }
-          joinAlert.notifyJoinStart();
+          joinAlert.notify(JoinAlert.WAIT_START, null);
           try {
             if (!semaphore.tryAcquire(remainingTime, TimeUnit.MILLISECONDS)) {
               throw UncheckedException.timeout();
@@ -667,7 +668,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
           } catch (final InterruptedException e) {
             throw UncheckedException.toUnchecked(e);
           } finally {
-            joinAlert.notifyJoinStop();
+            joinAlert.notify(JoinAlert.WAIT_STOP, null);
           }
           remainingTime -= System.currentTimeMillis() - startTime;
         }

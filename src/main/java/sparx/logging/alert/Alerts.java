@@ -15,193 +15,103 @@
  */
 package sparx.logging.alert;
 
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import org.jetbrains.annotations.NotNull;
-import sparx.function.Consumer;
-import sparx.function.Function;
 
 public class Alerts {
 
-  private static volatile BackpressureAlert backpressureAlert;
-  private static volatile ExecutionContextTaskAlert executionContextTaskAlert;
-  private static volatile JoinAlert joinAlert;
-  private static volatile SchedulerQueueAlert queueAlert;
-  private static volatile SchedulerWorkerAlert workerAlert;
-
-  private static final BackpressureAlert BACKPRESSURE_ALERT = new BackpressureAlert() {
-
+  private static final Alert<?> DISABLED = new Alert<Object>() {
     @Override
-    public void notifyWaitStart(@NotNull final Thread currentThread) {
-      backpressureAlert.notifyWaitStart(currentThread);
+    public void disable() {
     }
 
     @Override
-    public void notifyWaitStop(@NotNull final Thread currentThread) {
-      backpressureAlert.notifyWaitStop(currentThread);
-    }
-
-    @Override
-    public void turnOff() {
-      throw new UnsupportedOperationException("turnOff");
-    }
-  };
-  private static final ExecutionContextTaskAlert EXECUTION_CONTEXT_TASK_ALERT = new ExecutionContextTaskAlert() {
-
-    @Override
-    public void notifyCall(@NotNull final Function<?, ?> function) {
-      executionContextTaskAlert.notifyCall(function);
-    }
-
-    @Override
-    public void notifyRun(@NotNull final Consumer<?> consumer) {
-      executionContextTaskAlert.notifyRun(consumer);
-    }
-  };
-  private static final JoinAlert JOIN_ALERT = new JoinAlert() {
-    @Override
-    public void notifyJoinStart() {
-      joinAlert.notifyJoinStart();
-    }
-
-    @Override
-    public void notifyJoinStop() {
-      joinAlert.notifyJoinStop();
-    }
-
-    @Override
-    public void turnOff() {
-      throw new UnsupportedOperationException("turnOff");
-    }
-  };
-  private static final SchedulerQueueAlert SCHEDULER_QUEUE_ALERT = new SchedulerQueueAlert() {
-    @Override
-    public void notifyPendingTasks(final int beforeQueueCount, final int afterQueueCount) {
-      queueAlert.notifyPendingTasks(beforeQueueCount, afterQueueCount);
-    }
-  };
-  private static final SchedulerWorkerAlert SCHEDULER_WORKER_ALERT = new SchedulerWorkerAlert() {
-    @Override
-    public void notifyTaskStart(@NotNull final Thread currentThread) {
-      workerAlert.notifyTaskStart(currentThread);
-    }
-
-    @Override
-    public void notifyTaskStop(@NotNull final Thread currentThread) {
-      workerAlert.notifyTaskStop(currentThread);
-    }
-
-    @Override
-    public void turnOff() {
-      throw new UnsupportedOperationException("turnOff");
+    public void notify(final int state, final Object payload) {
     }
   };
 
-  private static final Object lock;
-
-  static {
-    lock = new Object();
-    backpressureAlert = DummyBackpressureAlert.instance();
-    joinAlert = DummyJoinAlert.instance();
-    workerAlert = DummySchedulerWorkerAlert.instance();
-    resetDefaults();
-  }
+  private static final HashMap<Class<?>, DynamicAlert<?>> alerts = new HashMap<Class<?>, DynamicAlert<?>>();
 
   private Alerts() {
   }
 
-  public static @NotNull BackpressureAlert backpressureAlert() {
-    return BACKPRESSURE_ALERT;
-  }
-
-  public static @NotNull ExecutionContextTaskAlert executionContextTaskAlert() {
-    return EXECUTION_CONTEXT_TASK_ALERT;
-  }
-
-  public static @NotNull JoinAlert joinAlert() {
-    return JOIN_ALERT;
-  }
-
-  public static @NotNull SchedulerQueueAlert schedulerQueueAlert() {
-    return SCHEDULER_QUEUE_ALERT;
-  }
-
-  public static @NotNull SchedulerWorkerAlert schedulerWorkerAlert() {
-    return SCHEDULER_WORKER_ALERT;
-  }
-
-  public static void disableBackpressureAlert() {
-    synchronized (lock) {
-      backpressureAlert.turnOff();
-      backpressureAlert = DummyBackpressureAlert.instance();
+  public static <P, A extends Alert<P>> void disable(@NotNull final Class<A> type) {
+    final DynamicAlert<?> dynamicAlert;
+    synchronized (alerts) {
+      dynamicAlert = alerts.get(type);
+    }
+    if (dynamicAlert != null) {
+      dynamicAlert.disable();
     }
   }
 
-  public static void disableExecutionContextTaskAlert() {
-    executionContextTaskAlert = DummyExecutionContextTaskAlert.instance();
-  }
-
-  public static void disableJoinAlert() {
-    synchronized (lock) {
-      joinAlert.turnOff();
-      joinAlert = DummyJoinAlert.instance();
+  @SuppressWarnings("unchecked")
+  public static @NotNull <P, A extends Alert<P>> Alert<P> enable(@NotNull final Class<A> type,
+      @NotNull final A alert) {
+    DynamicAlert<P> dynamicAlert;
+    synchronized (alerts) {
+      dynamicAlert = (DynamicAlert<P>) alerts.get(type);
+      if (dynamicAlert == null) {
+        dynamicAlert = new DynamicAlert<P>();
+        alerts.put(type, dynamicAlert);
+      }
     }
+    dynamicAlert.enable(alert);
+    return dynamicAlert;
   }
 
-  public static void disableSchedulerQueueAlert() {
-    queueAlert = DummySchedulerQueueAlert.instance();
-  }
-
-  public static void disableSchedulerWorkerAlert() {
-    synchronized (lock) {
-      workerAlert.turnOff();
-      workerAlert = DummySchedulerWorkerAlert.instance();
+  @SuppressWarnings("unchecked")
+  public static @NotNull <P, A extends Alert<P>> Alert<P> get(@NotNull final Class<A> type) {
+    DynamicAlert<P> dynamicAlert;
+    synchronized (alerts) {
+      dynamicAlert = (DynamicAlert<P>) alerts.get(type);
+      if (dynamicAlert == null) {
+        dynamicAlert = new DynamicAlert<P>();
+        alerts.put(type, dynamicAlert);
+      }
     }
-  }
-
-  public static void enableBackpressureAlert(final long interval,
-      @NotNull final TimeUnit intervalUnit, final long timeout,
-      @NotNull final TimeUnit timeoutUnit) {
-    synchronized (lock) {
-      backpressureAlert.turnOff();
-      backpressureAlert = new WaitTimeoutAlert(interval, intervalUnit, timeout, timeoutUnit);
-    }
-  }
-
-  public static void enableExecutionContextTaskAlert() {
-    executionContextTaskAlert = new SerializableTaskAlert();
-  }
-
-  public static void enableJoinAlert(final long interval, @NotNull final TimeUnit intervalUnit,
-      final long timeout, @NotNull final TimeUnit timeoutUnit) {
-    synchronized (lock) {
-      joinAlert.turnOff();
-      joinAlert = new AcquireTimeoutAlert(interval, intervalUnit, timeout, timeoutUnit);
-    }
-  }
-
-  public static void enableSchedulerQueueAlert(final int maxCount) {
-    queueAlert = new PendingTasksWorkerAlert(maxCount);
-  }
-
-  public static void enableSchedulerWorkerAlert(final long interval,
-      @NotNull final TimeUnit intervalUnit, final long timeout,
-      @NotNull final TimeUnit timeoutUnit) {
-    synchronized (lock) {
-      workerAlert.turnOff();
-      workerAlert = new WorkerTimeoutAlert(interval, intervalUnit, timeout, timeoutUnit);
-    }
+    return dynamicAlert;
   }
 
   public static void resetDefaults() {
-    executionContextTaskAlert = DummyExecutionContextTaskAlert.instance();
-    queueAlert = DummySchedulerQueueAlert.instance();
-    synchronized (lock) {
-      backpressureAlert.turnOff();
-      backpressureAlert = DummyBackpressureAlert.instance();
-      joinAlert.turnOff();
-      joinAlert = DummyJoinAlert.instance();
-      workerAlert.turnOff();
-      workerAlert = DummySchedulerWorkerAlert.instance();
+    final ArrayList<DynamicAlert<?>> dynamicAlerts;
+    synchronized (alerts) {
+      dynamicAlerts = new ArrayList<DynamicAlert<?>>(alerts.values());
+    }
+    for (final DynamicAlert<?> dynamicAlert : dynamicAlerts) {
+      dynamicAlert.disable();
+    }
+  }
+
+  public interface Alert<P> {
+
+    void disable();
+
+    void notify(int state, P payload);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static class DynamicAlert<P> implements Alert<P> {
+
+    private volatile Alert<P> alert = (Alert<P>) DISABLED;
+
+    @Override
+    public void disable() {
+      final Alert<P> oldAlert = alert;
+      alert = (Alert<P>) DISABLED;
+      oldAlert.disable();
+    }
+
+    @Override
+    public void notify(final int state, final P payload) {
+      alert.notify(state, payload);
+    }
+
+    private void enable(@NotNull final Alert<P> alert) {
+      final Alert<P> oldAlert = this.alert;
+      this.alert = alert;
+      oldAlert.disable();
     }
   }
 }

@@ -15,7 +15,38 @@
  */
 package sparx.logging.alert;
 
-public interface SchedulerQueueAlert {
+import java.util.Properties;
+import org.jetbrains.annotations.NotNull;
+import sparx.logging.Log;
+import sparx.logging.alert.Alerts.Alert;
+import sparx.util.Require;
 
-  void notifyPendingTasks(int beforeQueueCount, int afterQueueCount);
+public class SchedulerQueueAlert implements Alert<Integer> {
+
+  private static final String PROP_PREFIX = SchedulerQueueAlert.class.getName();
+  public static final String MAX_TASK_COUNT_PROP = PROP_PREFIX + ".maxCount";
+
+  private final int maxTasksCount;
+
+  public SchedulerQueueAlert(final int maxTasksCount) {
+    this.maxTasksCount = Require.positive(maxTasksCount, "maxTasksCount");
+  }
+
+  public SchedulerQueueAlert(@NotNull final Properties properties) {
+    this(Integer.parseInt(properties.getProperty(MAX_TASK_COUNT_PROP, "1000")));
+  }
+
+  @Override
+  public void disable() {
+  }
+
+  @Override
+  public void notify(final int afterQueueSize, final Integer beforeQueueSize) {
+    final int totalSize = afterQueueSize + beforeQueueSize;
+    if (totalSize > maxTasksCount) {
+      Log.wrn(SchedulerQueueAlert.class,
+          "Pending tasks count exceeded the limit of %d: %d!\nPlease consider adding backpressure to the consumer future.",
+          maxTasksCount, totalSize);
+    }
+  }
 }

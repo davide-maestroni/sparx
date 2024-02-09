@@ -15,13 +15,31 @@
  */
 package sparx.logging.alert;
 
+import java.lang.reflect.Constructor;
 import org.jetbrains.annotations.NotNull;
-import sparx.function.Consumer;
-import sparx.function.Function;
+import sparx.logging.Log;
+import sparx.logging.alert.Alerts.Alert;
 
-public interface ExecutionContextTaskAlert {
+public class ExecutionContextTaskAlert implements Alert<Object> {
 
-  void notifyCall(@NotNull Function<?, ?> function);
+  private static void checkConstructors(@NotNull final Class<?> taskClass) {
+    final Constructor<?>[] ctors = taskClass.getConstructors();
+    final Constructor<?>[] declaredCtors = taskClass.getDeclaredConstructors();
+    if (ctors.length + declaredCtors.length != 1
+        || (ctors.length > 0 && ctors[0].getParameterTypes().length != 0)
+        || (declaredCtors.length > 0 && declaredCtors[0].getParameterTypes().length != 0)) {
+      Log.wrn(ExecutionContextTaskAlert.class,
+          "Execution context task might not be serializable, only one default constructor should be declared: %s\nPlease consider avoiding referencing external objects or modifying the task implementation.",
+          taskClass);
+    }
+  }
 
-  void notifyRun(@NotNull Consumer<?> consumer);
+  @Override
+  public void disable() {
+  }
+
+  @Override
+  public void notify(final int state, final Object function) {
+    checkConstructors(function.getClass());
+  }
 }
