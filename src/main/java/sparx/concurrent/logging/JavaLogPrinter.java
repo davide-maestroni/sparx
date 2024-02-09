@@ -50,6 +50,8 @@ public class JavaLogPrinter implements Receiver<LogMessage> {
   private final String varPrefix;
   private final String varSuffix;
 
+  // TODO: constructor
+
   public JavaLogPrinter(@NotNull final Properties properties) {
     varPrefix = properties.getProperty(VAR_PREFIX_PROP, "{");
     varSuffix = properties.getProperty(VAR_SUFFIX_PROP, "}");

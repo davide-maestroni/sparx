@@ -36,6 +36,7 @@ dependencies {
 
 javadoc {
   destinationDir = file("${layout.buildDirectory.get()}/docs/javadoc")
+  options.memberLevel = JavadocMemberLevel.PUBLIC
 }
 
 test {

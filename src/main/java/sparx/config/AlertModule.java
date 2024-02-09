@@ -34,6 +34,9 @@ public class AlertModule implements ConfigModule {
   public static final String ALERTS_PROP_PREFIX = PROP_PREFIX + ".alerts";
   public static final String ENABLE_PROP_SUFFIX = ".enable";
 
+  private AlertModule() {
+  }
+
   public static void addModule() {
     SparxConfig.addModule(ALERTS_PROP_PREFIX, new AlertModule());
   }

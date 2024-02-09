@@ -38,6 +38,9 @@ public class LogTemplate {
     TIME_FORMAT.setTimeZone(utc);
   }
 
+  private LogTemplate() {
+  }
+
   public static @NotNull Map<String, VariableResolver> defaultResolvers() {
     return new HashMap<String, VariableResolver>() {{
       put("tag", new CachedVariableResolver() {
@@ -226,9 +229,6 @@ public class LogTemplate {
       }
     }
     return builder.toString();
-  }
-
-  private LogTemplate() {
   }
 
   public interface VariableResolver {

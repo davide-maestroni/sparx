@@ -37,6 +37,8 @@ public class LogCollectorFuture extends ReadOnlyFuture<LogMessage> implements Lo
 
   private final LogMessageFactory factory;
 
+  // TODO: constructor
+
   public LogCollectorFuture(@NotNull final Properties properties) {
     super(VarFuture.<LogMessage>create());
     factory = new LogMessageFactory()

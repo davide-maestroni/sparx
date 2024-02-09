@@ -35,6 +35,9 @@ public class FutureScope {
     }
   };
 
+  private FutureScope() {
+  }
+
   public static @Nullable ExecutionContext currentContext() {
     return currentScope().executionContext();
   }

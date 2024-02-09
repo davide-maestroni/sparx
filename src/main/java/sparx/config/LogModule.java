@@ -53,7 +53,9 @@ public class LogModule implements ConfigModule {
   public static final String LOG_PRINTER_THREAD_PREFIX = "sparx-log-printer-";
 
   private final HashSet<ExecutorService> executors = new HashSet<ExecutorService>();
-  private final Object lock = new Object();
+
+  private LogModule() {
+  }
 
   public static void addModule() {
     SparxConfig.addModule(LOGGING_PROP_PREFIX, new LogModule());
@@ -103,7 +105,8 @@ public class LogModule implements ConfigModule {
 
   @Override
   public void configure(@NotNull final Properties properties) throws Exception {
-    synchronized (lock) {
+    final HashSet<ExecutorService> executors = this.executors;
+    synchronized (executors) {
       final String levelName = properties.getProperty(LOG_LEVEL_PROP);
       if (levelName != null) {
         Log.setLevel(LogLevel.valueOf(levelName.toUpperCase()));
@@ -170,8 +173,8 @@ public class LogModule implements ConfigModule {
 
   @Override
   public void reset() {
-    synchronized (lock) {
-      final HashSet<ExecutorService> executors = this.executors;
+    final HashSet<ExecutorService> executors = this.executors;
+    synchronized (executors) {
       for (final ExecutorService executor : executors) {
         executor.shutdown();
       }
