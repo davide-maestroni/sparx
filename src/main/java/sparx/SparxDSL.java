@@ -27,19 +27,59 @@ import sparx.concurrent.TupleFuture;
 import sparx.concurrent.VarFuture;
 import sparx.concurrent.tuple.CoupleFuture;
 import sparx.concurrent.tuple.TripleFuture;
-import sparx.function.Action;
-import sparx.function.BinaryFunction;
-import sparx.function.Consumer;
-import sparx.function.Function;
-import sparx.function.Predicate;
-import sparx.tuple.Couple;
-import sparx.tuple.Triple;
 import sparx.util.Nothing;
 import sparx.util.UncheckedException;
+import sparx.util.function.Action;
+import sparx.util.function.BinaryFunction;
+import sparx.util.function.Consumer;
+import sparx.util.function.Function;
+import sparx.util.function.Predicate;
+import sparx.util.tuple.Couple;
+import sparx.util.tuple.Triple;
 
 public class SparxDSL {
 
-  // TODO: f.then(takeMap(1, v -> ...<to future>...))
+  /*
+   take(int)
+   takeWhile
+   takeUntil
+   keep(int)
+   keepWhile
+   keepUntil
+   skip(int)
+   skipWhile
+   skipUntil
+   drop(int)
+   dropWhile
+   dropUntil
+   filter
+   map(v -> r) <= Future<V> => Future<R>
+   any
+   all
+   none
+   notAll ??? // at least one fail
+   //  take(int1, int2, ...), ..., map(v1 -> r1, v2 -> r2, ...) ???
+   flatten  <= Future<Collection> => Future<V>
+   combineMap(missingValue, onFailure) <= TupleFuture => Future<Tuple>
+   concatMap(concurrency, v => future) <= Future<V> => Future<R>
+   mergeMap
+   switchMap
+   exceptionallyMap
+   race
+   spread(future -> future1, future -> future2, ...) <= Future => TupleFuture
+   weakSubscribe
+   autoUnsubscribe // when receiver future is done unsubscribe
+   doOnce
+   doForEach
+   doFinally
+   doExceptionally
+   do* // then(until(), do()) ?????
+   repeat* ?????
+   until ???
+   while ???
+   [submitTo/submit](context, <function>) <= TupleFuture // all futures are inputs
+   withHistory
+   */
 
   public static @NotNull <V, F extends TupleFuture<V, ?>, U> Function<F, StreamingFuture<U>> callInContext(
       @NotNull final ExecutionContext context,
@@ -78,17 +118,17 @@ public class SparxDSL {
     return null;
   }
 
-  public static @NotNull <V, U> Function<SignalFuture<V>, StreamingFuture<U>> concatMap(
+  public static @NotNull <V, U> Function<Signal<V>, StreamingFuture<U>> concatMap(
       Function<? super V, ? extends SignalFuture<U>> function) {
     return null;
   }
 
-  public static @NotNull <V, U> Function<SignalFuture<V>, StreamingFuture<U>> concatMap(
+  public static @NotNull <V, U> Function<Signal<V>, StreamingFuture<U>> concatMap(
       int maxConcurrency, Function<? super V, ? extends SignalFuture<U>> function) {
     return null;
   }
 
-  public static @NotNull Function<SignalFuture<?>, StreamingFuture<Nothing>> doFinally(
+  public static @NotNull <V> Function<Signal<V>, StreamingFuture<V>> doFinally(
       Action action) {
     return null;
   }

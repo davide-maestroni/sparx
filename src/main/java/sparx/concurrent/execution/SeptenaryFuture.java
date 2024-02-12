@@ -17,7 +17,7 @@ package sparx.concurrent.execution;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.tuple.Septuple;
+import sparx.util.tuple.Septuple;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

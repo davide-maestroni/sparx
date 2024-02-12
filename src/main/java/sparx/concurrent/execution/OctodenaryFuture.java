@@ -17,7 +17,7 @@ package sparx.concurrent.execution;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.tuple.Octodecuple;
+import sparx.util.tuple.Octodecuple;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

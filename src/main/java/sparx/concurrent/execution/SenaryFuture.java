@@ -17,7 +17,7 @@ package sparx.concurrent.execution;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.tuple.Sextuple;
+import sparx.util.tuple.Sextuple;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

@@ -21,9 +21,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.function.Action;
-import sparx.function.Consumer;
-import sparx.function.Function;
+import sparx.util.function.Action;
+import sparx.util.function.Consumer;
+import sparx.util.function.Function;
 
 public interface SignalFuture<V> extends Future<List<V>>, Iterable<V>, Receiver<V>, Signal<V> {
 

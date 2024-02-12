@@ -18,9 +18,9 @@ package sparx.concurrent.tuple;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.tuple.Sextuple;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
+import sparx.util.tuple.Sextuple;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

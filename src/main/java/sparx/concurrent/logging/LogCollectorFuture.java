@@ -22,11 +22,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.ReadOnlyFuture;
 import sparx.concurrent.VarFuture;
-import sparx.logging.Log.LogCollector;
-import sparx.logging.Log.LogLevel;
-import sparx.logging.LogMessage;
-import sparx.logging.LogMessageFactory;
 import sparx.util.Require;
+import sparx.util.logging.Log.LogCollector;
+import sparx.util.logging.Log.LogLevel;
+import sparx.util.logging.LogMessage;
+import sparx.util.logging.LogMessageFactory;
 
 public class LogCollectorFuture extends ReadOnlyFuture<LogMessage> implements LogCollector {
 

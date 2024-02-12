@@ -17,7 +17,7 @@ package sparx.concurrent.execution;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.tuple.Tuple;
+import sparx.util.tuple.Tuple;
 
 public interface ExecutionFuture<P, R> extends StreamingFuture<R> {
 

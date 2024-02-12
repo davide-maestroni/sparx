@@ -26,13 +26,13 @@ import sparx.concurrent.Receiver;
 import sparx.concurrent.Scheduler;
 import sparx.concurrent.Scheduler.Task;
 import sparx.concurrent.StreamingFuture;
-import sparx.function.Action;
-import sparx.function.Consumer;
-import sparx.logging.Log;
-import sparx.tuple.Empty;
 import sparx.util.ImmutableList;
 import sparx.util.Nothing;
 import sparx.util.Require;
+import sparx.util.function.Action;
+import sparx.util.function.Consumer;
+import sparx.util.logging.Log;
+import sparx.util.tuple.Empty;
 
 public class EmptyFuture<V> extends StreamScopeTupleFuture<V, EmptyFuture<V>> implements
     Empty<StreamingFuture<? extends V>> {

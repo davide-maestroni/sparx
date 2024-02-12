@@ -20,14 +20,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.backpressure.BackpressureStrategy;
-import sparx.logging.Log;
-import sparx.logging.alert.Alerts;
-import sparx.logging.alert.Alerts.Alert;
-import sparx.logging.alert.BackpressureAlert;
-import sparx.logging.alert.SchedulerQueueAlert;
-import sparx.logging.alert.SchedulerWorkerAlert;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
+import sparx.util.logging.Log;
+import sparx.util.logging.alert.Alerts;
+import sparx.util.logging.alert.Alerts.Alert;
+import sparx.util.logging.alert.BackpressureAlert;
+import sparx.util.logging.alert.SchedulerQueueAlert;
+import sparx.util.logging.alert.SchedulerWorkerAlert;
 
 public class Scheduler {
 

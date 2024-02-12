@@ -16,7 +16,7 @@
 package sparx.concurrent;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.function.Function;
+import sparx.util.function.Function;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

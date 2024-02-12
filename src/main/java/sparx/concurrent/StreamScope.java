@@ -25,8 +25,8 @@ import sparx.concurrent.FutureScope.Registration;
 import sparx.concurrent.FutureScope.Scope;
 import sparx.concurrent.FutureScope.ScopeReceiver;
 import sparx.concurrent.Scheduler.Task;
-import sparx.logging.Log;
 import sparx.util.Require;
+import sparx.util.logging.Log;
 
 class StreamScope<U> implements Scope, ScopeReceiver<U> {
 

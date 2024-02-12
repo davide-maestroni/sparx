@@ -23,10 +23,10 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TupleFuture;
-import sparx.function.Function;
-import sparx.tuple.Tuple;
 import sparx.util.ImmutableList;
 import sparx.util.UncheckedException;
+import sparx.util.function.Function;
+import sparx.util.tuple.Tuple;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

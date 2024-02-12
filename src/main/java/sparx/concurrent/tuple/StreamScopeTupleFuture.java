@@ -35,12 +35,12 @@ import sparx.concurrent.ReadOnlyStreamScopeFuture;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TupleFuture;
-import sparx.function.Action;
-import sparx.function.Consumer;
 import sparx.util.ImmutableList;
 import sparx.util.Nothing;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
+import sparx.util.function.Action;
+import sparx.util.function.Consumer;
 
 abstract class StreamScopeTupleFuture<V, F extends TupleFuture<V, F>> extends
     ReadOnlyStreamScopeFuture<Nothing, F> implements TupleFuture<V, F> {

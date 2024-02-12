@@ -102,7 +102,7 @@ tasks.register('generateCode') {
     Stream.of(arities).forEach {
       {
         def path = 'template/function/Function.mustache'
-        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/function/${it.name}Function.java"))
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/util/function/${it.name}Function.java"))
         def mustache = factory.compile(path)
         def scope = it.clone()
         scope['engine'] = engine
@@ -112,7 +112,7 @@ tasks.register('generateCode') {
       }
       {
         def path = 'template/function/Consumer.mustache'
-        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/function/${it.name}Consumer.java"))
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/util/function/${it.name}Consumer.java"))
         def mustache = factory.compile(path)
         def scope = it.clone()
         scope['engine'] = engine
@@ -176,7 +176,7 @@ tasks.register('generateCode') {
           path   : path,
           arities: arities.take(4)
       ]
-      def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/logging/Log.java'))
+      def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/util/logging/Log.java'))
       def mustache = factory.compile(path)
       mustache.execute(writer, scope)
       writer.close()
@@ -259,7 +259,7 @@ tasks.register('generateCode') {
           methodName: 'asTuple',
           tuples    : tuples
       ]
-      def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/tuple/Tuples.java'))
+      def writer = new OutputStreamWriter(new FileOutputStream('src/main/java/sparx/util/tuple/Tuples.java'))
       def mustache = factory.compile(path)
       mustache.execute(writer, scope)
       writer.close()
@@ -267,7 +267,7 @@ tasks.register('generateCode') {
     Stream.of(tuples).forEach {
       {
         def path = 'template/tuple/Tuple.mustache'
-        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/tuple/${it.name}.java"))
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/util/tuple/${it.name}.java"))
         def mustache = factory.compile(path)
         def scope = it.clone()
         scope['engine'] = engine
@@ -277,7 +277,7 @@ tasks.register('generateCode') {
       }
       {
         def path = 'template/tuple/TupleClass.mustache'
-        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/tuple/${it.name}Tuple.java"))
+        def writer = new OutputStreamWriter(new FileOutputStream("src/main/java/sparx/util/tuple/${it.name}Tuple.java"))
         def mustache = factory.compile(path)
         def scope = it.clone()
         scope['engine'] = engine

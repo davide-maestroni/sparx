@@ -20,11 +20,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.Scheduler.Task;
-import sparx.function.Function;
-import sparx.function.Predicate;
-import sparx.function.Supplier;
-import sparx.logging.Log;
 import sparx.util.Require;
+import sparx.util.function.Function;
+import sparx.util.function.Predicate;
+import sparx.util.function.Supplier;
+import sparx.util.logging.Log;
 
 public class GeneratorFuture<V> extends GeneratorScopeFuture<V> {
 

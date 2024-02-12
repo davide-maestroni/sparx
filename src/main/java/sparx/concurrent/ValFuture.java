@@ -23,11 +23,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.function.Action;
-import sparx.function.Consumer;
-import sparx.logging.Log;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
+import sparx.util.function.Action;
+import sparx.util.function.Consumer;
+import sparx.util.logging.Log;
 
 public abstract class ValFuture<V> extends
     ReadOnlyStreamScopeFuture<V, StreamingFuture<V>> implements StreamingFuture<V> {

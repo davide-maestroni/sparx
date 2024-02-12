@@ -21,10 +21,10 @@ import java.util.Map;
 import java.util.Properties;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.Receiver;
-import sparx.logging.LogMessage;
-import sparx.logging.LogTemplate;
-import sparx.logging.LogTemplate.VariableResolver;
 import sparx.util.Require;
+import sparx.util.logging.LogMessage;
+import sparx.util.logging.LogTemplate;
+import sparx.util.logging.LogTemplate.VariableResolver;
 
 public class ConsoleLogPrinter implements Receiver<LogMessage> {
 

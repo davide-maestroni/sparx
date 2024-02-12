@@ -18,9 +18,9 @@ package sparx.concurrent.tuple;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.tuple.Quattuordecuple;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
+import sparx.util.tuple.Quattuordecuple;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

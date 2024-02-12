@@ -38,10 +38,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import sparx.concurrent.history.HistoryStrategy;
-import sparx.config.AlertModule;
-import sparx.config.LogModule;
-import sparx.config.SparxConfig;
 import sparx.util.UncheckedException;
+import sparx.util.config.AlertModule;
+import sparx.util.config.LogModule;
+import sparx.util.config.SparxConfig;
 
 public class VarFutureTests {
 

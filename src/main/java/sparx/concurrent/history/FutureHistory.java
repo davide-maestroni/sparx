@@ -16,13 +16,17 @@
 package sparx.concurrent.history;
 
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
-import sparx.logging.alert.Alerts;
-import sparx.logging.alert.Alerts.Alert;
-import sparx.logging.alert.HistorySizeAlert;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
+import sparx.util.UncheckedException;
+import sparx.util.function.Function;
+import sparx.util.logging.alert.Alerts;
+import sparx.util.logging.alert.Alerts.Alert;
+import sparx.util.logging.alert.HistorySizeAlert;
 
 public class FutureHistory {
 
@@ -54,6 +58,61 @@ public class FutureHistory {
   public static @NotNull <V> HistoryStrategy<V> untilSubscribe(
       @NotNull final HistoryStrategy<V> initialStrategy) {
     return switchOnSubscribe(initialStrategy, FutureHistory.<V>noHistory());
+  }
+
+  public static @NotNull <V> HistoryStrategy<V> withDropping() {
+    return null;
+  }
+
+  public enum DropIteration {
+    ASCENDING(new Function<Deque<?>, Iterator<?>>() {
+      @Override
+      public Iterator<?> apply(final Deque<?> deque) {
+        return deque.iterator();
+      }
+    }),
+    DESCENDING(new Function<Deque<?>, Iterator<?>>() {
+      @Override
+      public Iterator<?> apply(final Deque<?> deque) {
+        return deque.descendingIterator();
+      }
+    });
+
+    private final Function<Deque<?>, Iterator<?>> function;
+
+    DropIteration(@NotNull final Function<Deque<?>, Iterator<?>> function) {
+      this.function = function;
+    }
+
+    @SuppressWarnings("unchecked")
+    public @NotNull <E> Iterator<E> iterator(@NotNull final Deque<E> deque) {
+      try {
+        return (Iterator<E>) function.apply(deque);
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+  }
+
+  public enum DropTermination {
+
+  }
+
+  public interface DropStrategy<V> {
+
+    @NotNull DropIteration getIteration();
+
+    @NotNull DropTermination getTermination();
+
+    void onClear();
+
+    void onClose();
+
+    void onPush(V value);
+
+    void onPushBulk(@NotNull List<V> values);
+
+    void onRemove(int index, V value);
   }
 
   private static class KeepAllStrategy<V> implements HistoryStrategy<V> {

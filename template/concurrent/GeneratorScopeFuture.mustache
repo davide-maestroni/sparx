@@ -18,10 +18,10 @@ package sparx.concurrent;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
-import sparx.function.Function;
-import sparx.function.Supplier;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
+import sparx.util.function.Function;
+import sparx.util.function.Supplier;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

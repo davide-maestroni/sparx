@@ -19,8 +19,8 @@ import java.util.Collections;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.tuple.Single;
 import sparx.util.Require;
+import sparx.util.tuple.Single;
 
 public class SingleFuture<V> extends StreamScopeTupleFuture<V, SingleFuture<V>> implements
     Single<StreamingFuture<? extends V>> {

@@ -19,8 +19,8 @@ import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.Scheduler.Task;
-import sparx.function.Action;
-import sparx.function.Consumer;
+import sparx.util.function.Action;
+import sparx.util.function.Consumer;
 
 class PausedFuture<V> extends DecoratedFuture<V> {
 

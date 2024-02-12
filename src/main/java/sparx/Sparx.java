@@ -23,8 +23,8 @@ import sparx.concurrent.history.HistoryStrategy;
 import sparx.concurrent.tuple.CoupleFuture;
 import sparx.concurrent.tuple.SingleFuture;
 import sparx.concurrent.tuple.TripleFuture;
-import sparx.function.BinaryFunction;
-import sparx.function.Consumer;
+import sparx.util.function.BinaryFunction;
+import sparx.util.function.Consumer;
 
 public class Sparx {
 

@@ -17,8 +17,8 @@ package sparx.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.execution.*;
-import sparx.function.*;
 import sparx.util.Nothing;
+import sparx.util.function.*;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

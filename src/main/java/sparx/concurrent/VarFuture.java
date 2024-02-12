@@ -37,17 +37,17 @@ import sparx.concurrent.FutureScope.ScopeReceiver;
 import sparx.concurrent.Scheduler.Task;
 import sparx.concurrent.history.FutureHistory;
 import sparx.concurrent.history.HistoryStrategy;
-import sparx.function.Action;
-import sparx.function.Consumer;
-import sparx.function.Function;
-import sparx.function.Supplier;
-import sparx.logging.Log;
-import sparx.logging.alert.Alerts;
-import sparx.logging.alert.Alerts.Alert;
-import sparx.logging.alert.JoinAlert;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
+import sparx.util.function.Action;
+import sparx.util.function.Consumer;
+import sparx.util.function.Function;
+import sparx.util.function.Supplier;
+import sparx.util.logging.Log;
+import sparx.util.logging.alert.Alerts;
+import sparx.util.logging.alert.Alerts.Alert;
+import sparx.util.logging.alert.JoinAlert;
 
 public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> implements
     StreamingFuture<V> {

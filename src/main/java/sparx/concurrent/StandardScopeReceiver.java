@@ -18,8 +18,8 @@ package sparx.concurrent;
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.FutureScope.ScopeReceiver;
-import sparx.logging.Log;
 import sparx.util.Require;
+import sparx.util.logging.Log;
 
 class StandardScopeReceiver<V> implements ScopeReceiver<V> {
 

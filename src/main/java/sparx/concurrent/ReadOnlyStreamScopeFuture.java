@@ -18,7 +18,7 @@ package sparx.concurrent;
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.function.Function;
+import sparx.util.function.Function;
 
 public abstract class ReadOnlyStreamScopeFuture<V, F extends SignalFuture<V>> extends
     StreamScopeFuture<V, F> {

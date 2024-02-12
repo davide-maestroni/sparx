@@ -15,8 +15,8 @@
  */
 package sparx.concurrent;
 
-import sparx.tuple.Tuple;
 import sparx.util.Nothing;
+import sparx.util.tuple.Tuple;
 
 public interface TupleFuture<V, F extends TupleFuture<V, F>> extends
     StreamableFuture<Nothing, F>, Tuple<StreamingFuture<? extends V>> {

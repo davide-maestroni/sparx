@@ -17,7 +17,7 @@ package sparx.concurrent.execution;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
-import sparx.tuple.Empty;
+import sparx.util.tuple.Empty;
 
 public interface NullaryFuture<P, R> extends ExecutionFuture<P, R> {
 

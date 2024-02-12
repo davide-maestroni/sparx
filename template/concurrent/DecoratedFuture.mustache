@@ -22,10 +22,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.function.Action;
-import sparx.function.Consumer;
-import sparx.function.Function;
 import sparx.util.Require;
+import sparx.util.function.Action;
+import sparx.util.function.Consumer;
+import sparx.util.function.Function;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

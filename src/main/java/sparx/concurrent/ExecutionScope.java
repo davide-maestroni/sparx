@@ -32,14 +32,14 @@ import sparx.concurrent.FutureScope.ScopeReceiver;
 import sparx.concurrent.Scheduler.Task;
 import sparx.concurrent.execution.*;
 import sparx.concurrent.history.FutureHistory;
-import sparx.function.*;
-import sparx.logging.Log;
-import sparx.logging.alert.Alerts;
-import sparx.logging.alert.Alerts.Alert;
-import sparx.logging.alert.ExecutionContextTaskAlert;
-import sparx.tuple.*;
 import sparx.util.Nothing;
 import sparx.util.Require;
+import sparx.util.function.*;
+import sparx.util.logging.Log;
+import sparx.util.logging.alert.Alerts;
+import sparx.util.logging.alert.Alerts.Alert;
+import sparx.util.logging.alert.ExecutionContextTaskAlert;
+import sparx.util.tuple.*;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

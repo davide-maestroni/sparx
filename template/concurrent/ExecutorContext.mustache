@@ -23,12 +23,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionScope.FutureRegistry;
 import sparx.concurrent.backpressure.BackpressureStrategy;
 import sparx.concurrent.execution.*;
-import sparx.function.*;
-import sparx.logging.Log;
 import sparx.util.Nothing;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
+import sparx.util.function.*;
+import sparx.util.logging.Log;
 
 ///////////////////////////////////////////////
 // WARNING: GENERATED CODE - DO NOT MODIFY!!

@@ -18,10 +18,10 @@ package sparx.concurrent;
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sparx.function.Action;
-import sparx.function.Consumer;
-import sparx.logging.Log;
 import sparx.util.UncheckedException;
+import sparx.util.function.Action;
+import sparx.util.function.Consumer;
+import sparx.util.logging.Log;
 
 public class FunctionalReceiver<V> implements Receiver<V> {
 
