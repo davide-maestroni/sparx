@@ -20,12 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 import sparx.util.Require;
 
-class DropLeftHistory<V> implements SignalHistory<V> {
+class DropNewerHistory<V> implements SignalHistory<V> {
 
   private final DequeueList<V> history = new DequeueList<V>();
   private final int maxSize;
 
-  DropLeftHistory(final int maxSize) {
+  DropNewerHistory(final int maxSize) {
     this.maxSize = Require.positive(maxSize, "maxSize");
   }
 
@@ -59,7 +59,7 @@ class DropLeftHistory<V> implements SignalHistory<V> {
     final int maxSize = this.maxSize;
     final DequeueList<V> history = this.history;
     while (history.size() > maxSize) {
-      history.removeFirst();
+      history.removeLast();
     }
   }
 }

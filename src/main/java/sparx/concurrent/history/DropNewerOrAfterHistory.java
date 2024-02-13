@@ -21,14 +21,14 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 import sparx.util.Require;
 
-class DropLeftOrAfterHistory<V> implements SignalHistory<V> {
+class DropNewerOrAfterHistory<V> implements SignalHistory<V> {
 
   private final DequeueList<V> history = new DequeueList<V>();
   private final int maxSize;
   private final DequeueList<Long> timestamps = new DequeueList<Long>();
   private final long timeoutMillis;
 
-  DropLeftOrAfterHistory(final int maxSize, final long timeout, @NotNull final TimeUnit unit) {
+  DropNewerOrAfterHistory(final int maxSize, final long timeout, @NotNull final TimeUnit unit) {
     this.maxSize = Require.positive(maxSize, "maxSize");
     timeoutMillis = unit.toMillis(timeout);
   }
@@ -70,13 +70,16 @@ class DropLeftOrAfterHistory<V> implements SignalHistory<V> {
 
   private void drop(final long currentTimeMillis) {
     final long minTimestamp = currentTimeMillis - timeoutMillis;
-    final int maxSize = this.maxSize;
     final DequeueList<V> history = this.history;
     final DequeueList<Long> timestamps = this.timestamps;
-    while (!timestamps.isEmpty() &&
-        (timestamps.size() > maxSize || timestamps.getFirst() < minTimestamp)) {
+    while (!timestamps.isEmpty() && timestamps.getFirst() < minTimestamp) {
       timestamps.removeFirst();
       history.removeFirst();
+    }
+    final int maxSize = this.maxSize;
+    while (timestamps.size() > maxSize) {
+      timestamps.removeLast();
+      history.removeLast();
     }
   }
 }

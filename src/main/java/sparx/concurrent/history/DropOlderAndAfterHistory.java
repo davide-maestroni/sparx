@@ -24,7 +24,7 @@ import sparx.util.logging.alert.Alerts;
 import sparx.util.logging.alert.Alerts.Alert;
 import sparx.util.logging.alert.HistorySizeAlert;
 
-class DropLeftAndAfterHistory<V> implements SignalHistory<V> {
+class DropOlderAndAfterHistory<V> implements SignalHistory<V> {
 
   private static final Alert<Void> historyAlert = Alerts.get(HistorySizeAlert.class);
 
@@ -33,7 +33,7 @@ class DropLeftAndAfterHistory<V> implements SignalHistory<V> {
   private final DequeueList<Long> timestamps = new DequeueList<Long>();
   private final long timeoutMillis;
 
-  DropLeftAndAfterHistory(final int maxSize, final long timeout, @NotNull final TimeUnit unit) {
+  DropOlderAndAfterHistory(final int maxSize, final long timeout, @NotNull final TimeUnit unit) {
     this.maxSize = Require.positive(maxSize, "maxSize");
     timeoutMillis = unit.toMillis(timeout);
   }

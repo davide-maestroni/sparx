@@ -2468,7 +2468,7 @@ class ExecutionScope implements ExecutionContext {
             if (chunk.size() == 1) {
               status.set(chunk.get(0));
             } else {
-              status.setBulk(values);
+              status.setBulk(chunk);
             }
           }
         }
@@ -2562,7 +2562,6 @@ class ExecutionScope implements ExecutionContext {
 
         @Override
         public void setBulk(@NotNull final Collection<R> values) {
-          Require.notNull(values, "values");
           scheduler.scheduleAfter(new ReceiverTask() {
             @Override
             protected void runInScheduler() {

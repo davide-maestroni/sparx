@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.TupleFuture;
 import sparx.util.ImmutableList;
+import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 import sparx.util.tuple.Tuple;
@@ -399,7 +400,8 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
 
   public static @NotNull <V> NupleFuture<V> of(
       @NotNull final Collection<? extends StreamingFuture<V>> futures) {
-    return new NupleFuture<V>(ImmutableList.ofElementsIn(futures));
+    return new NupleFuture<V>(
+        ImmutableList.ofElementsIn(Require.notContainsNull(futures, "futures")));
   }
 
   @SuppressWarnings("unchecked")
@@ -418,7 +420,8 @@ public class NupleFuture<V> extends StreamScopeTupleFuture<V, NupleFuture<V>> im
         }
       }
     }
-    return new NupleFuture<V>(ImmutableList.ofElementsIn(futures));
+    return new NupleFuture<V>(
+        ImmutableList.ofElementsIn(Require.notContainsNull(futures, "futures")));
   }
 
   @Override

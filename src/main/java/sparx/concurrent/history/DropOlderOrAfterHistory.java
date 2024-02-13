@@ -16,21 +16,26 @@
 package sparx.concurrent.history;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 import sparx.util.Require;
 
-class DropRightHistory<V> implements SignalHistory<V> {
+class DropOlderOrAfterHistory<V> implements SignalHistory<V> {
 
   private final DequeueList<V> history = new DequeueList<V>();
   private final int maxSize;
+  private final DequeueList<Long> timestamps = new DequeueList<Long>();
+  private final long timeoutMillis;
 
-  DropRightHistory(final int maxSize) {
+  DropOlderOrAfterHistory(final int maxSize, final long timeout, @NotNull final TimeUnit unit) {
     this.maxSize = Require.positive(maxSize, "maxSize");
+    timeoutMillis = unit.toMillis(timeout);
   }
 
   @Override
   public void onClear() {
+    timestamps.clear();
     history.clear();
   }
 
@@ -40,14 +45,22 @@ class DropRightHistory<V> implements SignalHistory<V> {
 
   @Override
   public void onPush(final V value) {
+    final long timestamp = System.currentTimeMillis();
+    timestamps.add(timestamp);
     history.add(value);
-    drop();
+    drop(timestamp);
   }
 
   @Override
   public void onPushBulk(@NotNull final List<V> values) {
-    history.addAll(values);
-    drop();
+    final Long timestamp = System.currentTimeMillis();
+    final DequeueList<V> history = this.history;
+    final DequeueList<Long> timestamps = this.timestamps;
+    for (final V value : values) {
+      timestamps.add(timestamp);
+      history.add(value);
+    }
+    drop(timestamp);
   }
 
   @Override
@@ -55,11 +68,15 @@ class DropRightHistory<V> implements SignalHistory<V> {
     return history;
   }
 
-  private void drop() {
+  private void drop(final long currentTimeMillis) {
+    final long minTimestamp = currentTimeMillis - timeoutMillis;
     final int maxSize = this.maxSize;
     final DequeueList<V> history = this.history;
-    while (history.size() > maxSize) {
-      history.removeLast();
+    final DequeueList<Long> timestamps = this.timestamps;
+    while (!timestamps.isEmpty() &&
+        (timestamps.size() > maxSize || timestamps.getFirst() < minTimestamp)) {
+      timestamps.removeFirst();
+      history.removeFirst();
     }
   }
 }

@@ -15,6 +15,7 @@
  */
 package sparx.util;
 
+import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 
 public class Require {
@@ -22,7 +23,16 @@ public class Require {
   private Require() {
   }
 
-  // TODO: null collections vs collections of nulls
+  public static @NotNull <E, T extends Collection<E>> T notContainsNull(final T ref,
+      final String name) {
+    if (ref == null) {
+      throw new NullPointerException("'" + name + "' must not be null!");
+    }
+    if (ref.contains(null)) {
+      throw new NullPointerException("'" + name + "' must not contain null elements!");
+    }
+    return ref;
+  }
 
   public static @NotNull <T> T notNull(final T ref, final String name) {
     if (ref == null) {

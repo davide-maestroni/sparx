@@ -16,26 +16,21 @@
 package sparx.concurrent.history;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 import sparx.util.Require;
 
-class DropRightOrAfterHistory<V> implements SignalHistory<V> {
+class DropOlderHistory<V> implements SignalHistory<V> {
 
   private final DequeueList<V> history = new DequeueList<V>();
   private final int maxSize;
-  private final DequeueList<Long> timestamps = new DequeueList<Long>();
-  private final long timeoutMillis;
 
-  DropRightOrAfterHistory(final int maxSize, final long timeout, @NotNull final TimeUnit unit) {
+  DropOlderHistory(final int maxSize) {
     this.maxSize = Require.positive(maxSize, "maxSize");
-    timeoutMillis = unit.toMillis(timeout);
   }
 
   @Override
   public void onClear() {
-    timestamps.clear();
     history.clear();
   }
 
@@ -45,22 +40,14 @@ class DropRightOrAfterHistory<V> implements SignalHistory<V> {
 
   @Override
   public void onPush(final V value) {
-    final long timestamp = System.currentTimeMillis();
-    timestamps.add(timestamp);
     history.add(value);
-    drop(timestamp);
+    drop();
   }
 
   @Override
   public void onPushBulk(@NotNull final List<V> values) {
-    final Long timestamp = System.currentTimeMillis();
-    final DequeueList<V> history = this.history;
-    final DequeueList<Long> timestamps = this.timestamps;
-    for (final V value : values) {
-      timestamps.add(timestamp);
-      history.add(value);
-    }
-    drop(timestamp);
+    history.addAll(values);
+    drop();
   }
 
   @Override
@@ -68,18 +55,11 @@ class DropRightOrAfterHistory<V> implements SignalHistory<V> {
     return history;
   }
 
-  private void drop(final long currentTimeMillis) {
-    final long minTimestamp = currentTimeMillis - timeoutMillis;
-    final DequeueList<V> history = this.history;
-    final DequeueList<Long> timestamps = this.timestamps;
-    while (!timestamps.isEmpty() && timestamps.getFirst() < minTimestamp) {
-      timestamps.removeFirst();
-      history.removeFirst();
-    }
+  private void drop() {
     final int maxSize = this.maxSize;
-    while (timestamps.size() > maxSize) {
-      timestamps.removeLast();
-      history.removeLast();
+    final DequeueList<V> history = this.history;
+    while (history.size() > maxSize) {
+      history.removeFirst();
     }
   }
 }

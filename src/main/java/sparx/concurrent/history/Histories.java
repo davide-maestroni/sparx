@@ -58,27 +58,27 @@ public class Histories {
     return new DropAfterHistory<V>(timeout, unit);
   }
 
-  public static @NotNull <V> SignalHistory<V> dropLeft(final int maxSize) {
-    return new DropLeftHistory<V>(maxSize);
+  public static @NotNull <V> SignalHistory<V> dropNewer(final int maxSize) {
+    return new DropNewerHistory<V>(maxSize);
   }
 
-  public static @NotNull <V> SignalHistory<V> dropLeftAndAfter(final int maxSize,
+  public static @NotNull <V> SignalHistory<V> dropNewerOrAfter(final int maxSize,
       final long timeout, @NotNull final TimeUnit unit) {
-    return new DropLeftAndAfterHistory<V>(maxSize, timeout, unit);
+    return new DropNewerOrAfterHistory<V>(maxSize, timeout, unit);
   }
 
-  public static @NotNull <V> SignalHistory<V> dropLeftOrAfter(final int maxSize,
+  public static @NotNull <V> SignalHistory<V> dropOlder(final int maxSize) {
+    return new DropOlderHistory<V>(maxSize);
+  }
+
+  public static @NotNull <V> SignalHistory<V> dropOlderAfter(final int maxSize,
       final long timeout, @NotNull final TimeUnit unit) {
-    return new DropLeftOrAfterHistory<V>(maxSize, timeout, unit);
+    return new DropOlderAndAfterHistory<V>(maxSize, timeout, unit);
   }
 
-  public static @NotNull <V> SignalHistory<V> dropRight(final int maxSize) {
-    return new DropRightHistory<V>(maxSize);
-  }
-
-  public static @NotNull <V> SignalHistory<V> dropRightOrAfter(final int maxSize,
+  public static @NotNull <V> SignalHistory<V> dropOlderOrAfter(final int maxSize,
       final long timeout, @NotNull final TimeUnit unit) {
-    return new DropRightOrAfterHistory<V>(maxSize, timeout, unit);
+    return new DropOlderOrAfterHistory<V>(maxSize, timeout, unit);
   }
 
   private static class NoHistory<V> implements SignalHistory<V> {
