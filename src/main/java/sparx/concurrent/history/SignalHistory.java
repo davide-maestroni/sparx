@@ -18,7 +18,7 @@ package sparx.concurrent.history;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
-public interface HistoryStrategy<V> {
+public interface SignalHistory<V> {
 
   void onClear();
 

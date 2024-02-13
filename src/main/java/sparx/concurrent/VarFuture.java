@@ -35,8 +35,8 @@ import sparx.concurrent.FutureScope.Registration;
 import sparx.concurrent.FutureScope.Scope;
 import sparx.concurrent.FutureScope.ScopeReceiver;
 import sparx.concurrent.Scheduler.Task;
-import sparx.concurrent.history.FutureHistory;
-import sparx.concurrent.history.HistoryStrategy;
+import sparx.concurrent.history.Histories;
+import sparx.concurrent.history.SignalHistory;
 import sparx.util.ImmutableList;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
@@ -60,7 +60,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
 
   private static final Alert<Void> joinAlert = Alerts.get(JoinAlert.class);
 
-  private final HistoryStrategy<V> historyStrategy;
+  private final SignalHistory<V> history;
   private final WeakHashMap<FutureIterator<V>, Void> iterators = new WeakHashMap<FutureIterator<V>, Void>();
   private final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = new HashMap<Receiver<?>, ScopeReceiver<V>>();
   private final Registration registration;
@@ -76,11 +76,11 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
   private volatile Result<V> result;
 
   VarFuture() {
-    this(FutureHistory.<V>noHistory());
+    this(Histories.<V>noHistory());
   }
 
-  VarFuture(@NotNull final HistoryStrategy<V> historyStrategy) {
-    this.historyStrategy = Require.notNull(historyStrategy, "historyStrategy");
+  VarFuture(@NotNull final SignalHistory<V> history) {
+    this.history = Require.notNull(history, "history");
     this.registration = FutureScope.currentScope().registerFuture(this);
   }
 
@@ -88,9 +88,8 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     return new VarFuture<V>();
   }
 
-  public static @NotNull <V> VarFuture<V> create(
-      @NotNull final HistoryStrategy<V> historyStrategy) {
-    return new VarFuture<V>(historyStrategy);
+  public static @NotNull <V> VarFuture<V> create(@NotNull final SignalHistory<V> history) {
+    return new VarFuture<V>(history);
   }
 
   private static void logInvocationException(final String name, final String method,
@@ -841,9 +840,9 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
       innerStatus = new ClosedStatus();
       result = new ValueResult<V>((V) lastValue);
       try {
-        historyStrategy.onClose();
+        history.onClose();
       } catch (final RuntimeException e) {
-        logInvocationException("history strategy", "onClose", e);
+        logInvocationException("history", "onClose", e);
       }
       final HashMap<Receiver<?>, ScopeReceiver<V>> receivers = VarFuture.this.receivers;
       for (final ScopeReceiver<V> scopeReceiver : receivers.values()) {
@@ -875,9 +874,9 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
       innerStatus = new CancelledStatus();
       if (lastValue != UNSET) {
         try {
-          historyStrategy.onPush((V) lastValue);
+          history.onPush((V) lastValue);
         } catch (final RuntimeException e) {
-          logInvocationException("history strategy", "onSet", e);
+          logInvocationException("history", "onSet", e);
         }
       }
       lastValue = UNSET;
@@ -920,9 +919,9 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     public void set(final V value) {
       if (lastValue != UNSET) {
         try {
-          historyStrategy.onPush((V) lastValue);
+          history.onPush((V) lastValue);
         } catch (final RuntimeException e) {
-          logInvocationException("history strategy", "onSet", e);
+          logInvocationException("history", "onSet", e);
         }
       }
       lastValue = value;
@@ -951,18 +950,18 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     public void setBulk(@NotNull final Collection<V> values) {
       if (lastValue != UNSET) {
         try {
-          historyStrategy.onPush((V) lastValue);
+          history.onPush((V) lastValue);
         } catch (final RuntimeException e) {
-          logInvocationException("history strategy", "onSet", e);
+          logInvocationException("history", "onSet", e);
         }
       }
       final int lastIndex = values.size() - 1;
       final List<V> valuesList = (List<V>) values;
       lastValue = valuesList.get(lastIndex);
       try {
-        historyStrategy.onPushBulk(valuesList.subList(0, lastIndex));
+        history.onPushBulk(valuesList.subList(0, lastIndex));
       } catch (final RuntimeException e) {
-        logInvocationException("history strategy", "onSetBulk", e);
+        logInvocationException("history", "onSetBulk", e);
       }
       boolean firstSink = true;
       for (final Entry<Receiver<?>, ScopeReceiver<V>> entry : receivers.entrySet()) {
@@ -992,9 +991,9 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
     void clear() {
       lastValue = UNSET;
       try {
-        historyStrategy.onClear();
+        history.onClear();
       } catch (final RuntimeException e) {
-        logInvocationException("history strategy", "onClear", e);
+        logInvocationException("history", "onClear", e);
       }
     }
 
@@ -1121,12 +1120,12 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
 
     void iterator(@NotNull final FutureIterator<V> iterator) {
       try {
-        final List<V> values = historyStrategy.onSubscribe();
+        final List<V> values = history.onSubscribe();
         if (!values.isEmpty()) {
           iterator.addAll(values);
         }
       } catch (final RuntimeException e) {
-        logInvocationException("history strategy", "onSubscribe", e);
+        logInvocationException("history", "onSubscribe", e);
       }
     }
 
@@ -1137,7 +1136,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
         @NotNull final ScopeReceiver<V> scopeReceiver) {
       if (scopeReceiver.isConsumer()) {
         try {
-          final List<V> values = historyStrategy.onSubscribe();
+          final List<V> values = history.onSubscribe();
           if (!values.isEmpty()) {
             try {
               if (values.size() == 1) {
@@ -1150,7 +1149,7 @@ public class VarFuture<V> extends StreamScopeFuture<V, StreamingFuture<V>> imple
             }
           }
         } catch (final RuntimeException e) {
-          logInvocationException("history strategy", "onSubscribe", e);
+          logInvocationException("history", "onSubscribe", e);
         }
       }
     }

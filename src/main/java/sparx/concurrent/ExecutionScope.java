@@ -31,7 +31,7 @@ import sparx.concurrent.FutureScope.Scope;
 import sparx.concurrent.FutureScope.ScopeReceiver;
 import sparx.concurrent.Scheduler.Task;
 import sparx.concurrent.execution.*;
-import sparx.concurrent.history.FutureHistory;
+import sparx.concurrent.history.Histories;
 import sparx.util.Nothing;
 import sparx.util.Require;
 import sparx.util.function.*;
@@ -110,7 +110,7 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final Consumer<? super StreamingFuture<P>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
+        Histories.untilSubscribe(Histories.<P>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -129,7 +129,7 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final Function<? super StreamingFuture<P>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
+        Histories.untilSubscribe(Histories.<P>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -147,9 +147,9 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final BinaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -168,9 +168,9 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final BinaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -188,11 +188,11 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final TernaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -211,11 +211,11 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final TernaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -233,13 +233,13 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final QuaternaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -258,13 +258,13 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final QuaternaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -282,15 +282,15 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final QuinaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -309,15 +309,15 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final QuinaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -335,17 +335,17 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final SenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -364,17 +364,17 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final SenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -392,19 +392,19 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final SeptenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -423,19 +423,19 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final SeptenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -453,21 +453,21 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final OctonaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -486,21 +486,21 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final OctonaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -518,23 +518,23 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final NonaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -553,23 +553,23 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final NonaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -587,25 +587,25 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final DenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -624,25 +624,25 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final DenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -660,27 +660,27 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final UndenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -699,27 +699,27 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final UndenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -737,29 +737,29 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final DuodenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -778,29 +778,29 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final DuodenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -818,31 +818,31 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final TredenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -861,31 +861,31 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final TredenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -903,33 +903,33 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final QuattuordenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -948,33 +948,33 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final QuattuordenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -992,35 +992,35 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final QuindenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1039,35 +1039,35 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final QuindenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1085,37 +1085,37 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final SexdenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final VarFuture<P16> sixteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P16>keepAll()));
+        Histories.untilSubscribe(Histories.<P16>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1134,37 +1134,37 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final SexdenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final VarFuture<P16> sixteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P16>keepAll()));
+        Histories.untilSubscribe(Histories.<P16>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1182,39 +1182,39 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final SeptendenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final VarFuture<P16> sixteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P16>keepAll()));
+        Histories.untilSubscribe(Histories.<P16>keepAll()));
     final VarFuture<P17> seventeenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P17>keepAll()));
+        Histories.untilSubscribe(Histories.<P17>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1233,39 +1233,39 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final SeptendenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final VarFuture<P16> sixteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P16>keepAll()));
+        Histories.untilSubscribe(Histories.<P16>keepAll()));
     final VarFuture<P17> seventeenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P17>keepAll()));
+        Histories.untilSubscribe(Histories.<P17>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1283,41 +1283,41 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final OctodenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final VarFuture<P16> sixteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P16>keepAll()));
+        Histories.untilSubscribe(Histories.<P16>keepAll()));
     final VarFuture<P17> seventeenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P17>keepAll()));
+        Histories.untilSubscribe(Histories.<P17>keepAll()));
     final VarFuture<P18> eighteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P18>keepAll()));
+        Histories.untilSubscribe(Histories.<P18>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1336,41 +1336,41 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final OctodenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final VarFuture<P16> sixteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P16>keepAll()));
+        Histories.untilSubscribe(Histories.<P16>keepAll()));
     final VarFuture<P17> seventeenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P17>keepAll()));
+        Histories.untilSubscribe(Histories.<P17>keepAll()));
     final VarFuture<P18> eighteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P18>keepAll()));
+        Histories.untilSubscribe(Histories.<P18>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1388,43 +1388,43 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final NovemdenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>, ? super StreamingFuture<P19>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final VarFuture<P16> sixteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P16>keepAll()));
+        Histories.untilSubscribe(Histories.<P16>keepAll()));
     final VarFuture<P17> seventeenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P17>keepAll()));
+        Histories.untilSubscribe(Histories.<P17>keepAll()));
     final VarFuture<P18> eighteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P18>keepAll()));
+        Histories.untilSubscribe(Histories.<P18>keepAll()));
     final VarFuture<P19> nineteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P19>keepAll()));
+        Histories.untilSubscribe(Histories.<P19>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1443,43 +1443,43 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final NovemdenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>, ? super StreamingFuture<P19>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final VarFuture<P16> sixteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P16>keepAll()));
+        Histories.untilSubscribe(Histories.<P16>keepAll()));
     final VarFuture<P17> seventeenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P17>keepAll()));
+        Histories.untilSubscribe(Histories.<P17>keepAll()));
     final VarFuture<P18> eighteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P18>keepAll()));
+        Histories.untilSubscribe(Histories.<P18>keepAll()));
     final VarFuture<P19> nineteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P19>keepAll()));
+        Histories.untilSubscribe(Histories.<P19>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1497,45 +1497,45 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final VigenaryConsumer<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>, ? super StreamingFuture<P19>, ? super StreamingFuture<P20>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final VarFuture<P16> sixteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P16>keepAll()));
+        Histories.untilSubscribe(Histories.<P16>keepAll()));
     final VarFuture<P17> seventeenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P17>keepAll()));
+        Histories.untilSubscribe(Histories.<P17>keepAll()));
     final VarFuture<P18> eighteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P18>keepAll()));
+        Histories.untilSubscribe(Histories.<P18>keepAll()));
     final VarFuture<P19> nineteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P19>keepAll()));
+        Histories.untilSubscribe(Histories.<P19>keepAll()));
     final VarFuture<P20> twentieth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P20>keepAll()));
+        Histories.untilSubscribe(Histories.<P20>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -1554,45 +1554,45 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final VigenaryFunction<? super StreamingFuture<P1>, ? super StreamingFuture<P2>, ? super StreamingFuture<P3>, ? super StreamingFuture<P4>, ? super StreamingFuture<P5>, ? super StreamingFuture<P6>, ? super StreamingFuture<P7>, ? super StreamingFuture<P8>, ? super StreamingFuture<P9>, ? super StreamingFuture<P10>, ? super StreamingFuture<P11>, ? super StreamingFuture<P12>, ? super StreamingFuture<P13>, ? super StreamingFuture<P14>, ? super StreamingFuture<P15>, ? super StreamingFuture<P16>, ? super StreamingFuture<P17>, ? super StreamingFuture<P18>, ? super StreamingFuture<P19>, ? super StreamingFuture<P20>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P1> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P1>keepAll()));
+        Histories.untilSubscribe(Histories.<P1>keepAll()));
     final VarFuture<P2> second = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P2>keepAll()));
+        Histories.untilSubscribe(Histories.<P2>keepAll()));
     final VarFuture<P3> third = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P3>keepAll()));
+        Histories.untilSubscribe(Histories.<P3>keepAll()));
     final VarFuture<P4> fourth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P4>keepAll()));
+        Histories.untilSubscribe(Histories.<P4>keepAll()));
     final VarFuture<P5> fifth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P5>keepAll()));
+        Histories.untilSubscribe(Histories.<P5>keepAll()));
     final VarFuture<P6> sixth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P6>keepAll()));
+        Histories.untilSubscribe(Histories.<P6>keepAll()));
     final VarFuture<P7> seventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P7>keepAll()));
+        Histories.untilSubscribe(Histories.<P7>keepAll()));
     final VarFuture<P8> eighth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P8>keepAll()));
+        Histories.untilSubscribe(Histories.<P8>keepAll()));
     final VarFuture<P9> ninth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P9>keepAll()));
+        Histories.untilSubscribe(Histories.<P9>keepAll()));
     final VarFuture<P10> tenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P10>keepAll()));
+        Histories.untilSubscribe(Histories.<P10>keepAll()));
     final VarFuture<P11> eleventh = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P11>keepAll()));
+        Histories.untilSubscribe(Histories.<P11>keepAll()));
     final VarFuture<P12> twelfth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P12>keepAll()));
+        Histories.untilSubscribe(Histories.<P12>keepAll()));
     final VarFuture<P13> thirteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P13>keepAll()));
+        Histories.untilSubscribe(Histories.<P13>keepAll()));
     final VarFuture<P14> fourteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P14>keepAll()));
+        Histories.untilSubscribe(Histories.<P14>keepAll()));
     final VarFuture<P15> fifteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P15>keepAll()));
+        Histories.untilSubscribe(Histories.<P15>keepAll()));
     final VarFuture<P16> sixteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P16>keepAll()));
+        Histories.untilSubscribe(Histories.<P16>keepAll()));
     final VarFuture<P17> seventeenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P17>keepAll()));
+        Histories.untilSubscribe(Histories.<P17>keepAll()));
     final VarFuture<P18> eighteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P18>keepAll()));
+        Histories.untilSubscribe(Histories.<P18>keepAll()));
     final VarFuture<P19> nineteenth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P19>keepAll()));
+        Histories.untilSubscribe(Histories.<P19>keepAll()));
     final VarFuture<P20> twentieth = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P20>keepAll()));
+        Histories.untilSubscribe(Histories.<P20>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {

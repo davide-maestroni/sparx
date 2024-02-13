@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.Receiver;
 import sparx.concurrent.StreamingFuture;
 import sparx.concurrent.VarFuture;
-import sparx.concurrent.history.HistoryStrategy;
+import sparx.concurrent.history.SignalHistory;
 import sparx.concurrent.tuple.CoupleFuture;
 import sparx.concurrent.tuple.SingleFuture;
 import sparx.concurrent.tuple.TripleFuture;
@@ -32,9 +32,8 @@ public class Sparx {
     return VarFuture.create();
   }
 
-  public static @NotNull <V> StreamingFuture<V> future(
-      @NotNull final HistoryStrategy<V> historyStrategy) {
-    return VarFuture.create(historyStrategy);
+  public static @NotNull <V> StreamingFuture<V> future(@NotNull final SignalHistory<V> history) {
+    return VarFuture.create(history);
   }
 
   public static @NotNull <V> SingleFuture<V> tupleFuture(@NotNull StreamingFuture<V> first) {

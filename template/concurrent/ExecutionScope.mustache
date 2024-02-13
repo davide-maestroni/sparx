@@ -31,7 +31,7 @@ import sparx.concurrent.FutureScope.Scope;
 import sparx.concurrent.FutureScope.ScopeReceiver;
 import sparx.concurrent.Scheduler.Task;
 import sparx.concurrent.execution.*;
-import sparx.concurrent.history.FutureHistory;
+import sparx.concurrent.history.Histories;
 import sparx.util.Nothing;
 import sparx.util.Require;
 import sparx.util.function.*;
@@ -110,7 +110,7 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final Consumer<? super StreamingFuture<P>> consumer) {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
     final VarFuture<P> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
+        Histories.untilSubscribe(Histories.<P>keepAll()));
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
       @Override
       protected void innerRun() throws Exception {
@@ -129,7 +129,7 @@ class ExecutionScope implements ExecutionContext {
       @NotNull final Function<? super StreamingFuture<P>, ? extends Signal<R>> function) {
     taskAlert.notify(0, Require.notNull(function, "function"));
     final VarFuture<P> first = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P>keepAll()));
+        Histories.untilSubscribe(Histories.<P>keepAll()));
     final ScopeFuture<R> future = new ScopeFuture<R>() {
       @Override
       protected void innerRun() throws Exception {
@@ -149,9 +149,9 @@ class ExecutionScope implements ExecutionContext {
     taskAlert.notify(0, Require.notNull(consumer, "consumer"));
 {{#ordinals}}
     final VarFuture<P{{value.prevIndex}}> {{value.prevName}} = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P{{value.prevIndex}}>keepAll()));
+        Histories.untilSubscribe(Histories.<P{{value.prevIndex}}>keepAll()));
 {{#last}}    final VarFuture<P{{value.index}}> {{value.name}} = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P{{value.index}}>keepAll()));
+        Histories.untilSubscribe(Histories.<P{{value.index}}>keepAll()));
 {{/last}}
 {{/ordinals}}
     final ScopeFuture<Nothing> future = new ScopeFuture<Nothing>() {
@@ -173,9 +173,9 @@ class ExecutionScope implements ExecutionContext {
     taskAlert.notify(0, Require.notNull(function, "function"));
 {{#ordinals}}
     final VarFuture<P{{value.prevIndex}}> {{value.prevName}} = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P{{value.prevIndex}}>keepAll()));
+        Histories.untilSubscribe(Histories.<P{{value.prevIndex}}>keepAll()));
 {{#last}}    final VarFuture<P{{value.index}}> {{value.name}} = VarFuture.create(
-        FutureHistory.untilSubscribe(FutureHistory.<P{{value.index}}>keepAll()));
+        Histories.untilSubscribe(Histories.<P{{value.index}}>keepAll()));
 {{/last}}
 {{/ordinals}}
     final ScopeFuture<R> future = new ScopeFuture<R>() {

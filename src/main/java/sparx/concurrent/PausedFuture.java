@@ -27,6 +27,8 @@ class PausedFuture<V> extends DecoratedFuture<V> {
   private final Scheduler scheduler = Scheduler.trampoline();
   private final String taskID = toString();
 
+  private volatile ReadOnlyFuture<V> readOnly;
+
   PausedFuture(@NotNull final StreamingFuture<V> wrapped) {
     super(wrapped);
     scheduler.pause();
@@ -34,7 +36,10 @@ class PausedFuture<V> extends DecoratedFuture<V> {
 
   @Override
   public @NotNull StreamingFuture<V> readOnly() {
-    return new ReadOnlyFuture<V>(this);
+    if (readOnly == null) {
+      readOnly = new ReadOnlyFuture<V>(this);
+    }
+    return readOnly;
   }
 
   @Override

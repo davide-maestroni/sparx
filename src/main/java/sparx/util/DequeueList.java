@@ -17,15 +17,18 @@ package sparx.util;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.util.AbstractCollection;
+import java.util.AbstractList;
 import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.NoSuchElementException;
+import java.util.RandomAccess;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>, Serializable {
+public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomAccess,
+    Serializable {
 
   private static final int DEFAULT_SIZE = 1 << 3;
   private Object[] data;
@@ -37,7 +40,7 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
   /**
    * Creates a new empty queue with a pre-defined initial capacity.
    */
-  public CircularQueue() {
+  public DequeueList() {
     data = new Object[DEFAULT_SIZE];
     mask = DEFAULT_SIZE - 1;
   }
@@ -48,7 +51,7 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
    * @param minCapacity the minimum capacity.
    * @throws IllegalArgumentException if the specified capacity is less than 1.
    */
-  public CircularQueue(final int minCapacity) {
+  public DequeueList(final int minCapacity) {
     final int msb = Integer.highestOneBit(Require.positive(minCapacity, "minCapacity"));
     final int initialCapacity = (minCapacity == msb) ? msb : msb << 1;
     data = new Object[initialCapacity];
@@ -62,6 +65,14 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
   public boolean add(@Nullable final E element) {
     addLast(element);
     return true;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void add(final int index, @Nullable final E element) {
+    addElement(index, element);
   }
 
   /**
@@ -126,12 +137,9 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
   }
 
   /**
-   * Returns the element at the specified position in this queue.
-   *
-   * @param index index of the element to return.
-   * @return the element at the specified position in this queue.
-   * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index >= size()).
+   * {@inheritDoc}
    */
+  @Override
   @SuppressWarnings("unchecked")
   public E get(final int index) {
     if ((index < 0) || (index >= size)) {
@@ -168,6 +176,34 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
    * {@inheritDoc}
    */
   @Override
+  public int indexOf(final Object o) {
+    final int first = this.first;
+    final int last = this.last;
+    final int mask = this.mask;
+    final Object[] data = this.data;
+    int index = first;
+    if (o == null) {
+      while (index != last) {
+        if (data[index] == null) {
+          return (index + first) & mask;
+        }
+        index = (index + 1) & mask;
+      }
+    } else {
+      while (index != last) {
+        if (o.equals(data[index])) {
+          return (index + first) & mask;
+        }
+        index = (index + 1) & mask;
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public boolean isEmpty() {
     return size == 0;
   }
@@ -178,6 +214,42 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
   @Override
   public @NotNull Iterator<E> iterator() {
     return new AscendingIterator();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public int lastIndexOf(final Object o) {
+    final int first = this.first;
+    final int last = this.last;
+    final int mask = this.mask;
+    final Object[] data = this.data;
+    int index = last;
+    if (o == null) {
+      while (index != first) {
+        if (data[index] == null) {
+          return (index + first) & mask;
+        }
+        index = (index - 1) & mask;
+      }
+    } else {
+      while (index != first) {
+        if (o.equals(data[index])) {
+          return (index + first) & mask;
+        }
+        index = (index - 1) & mask;
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public @NotNull ListIterator<E> listIterator(final int index) {
+    return new DequeueListIterator();
   }
 
   /**
@@ -211,36 +283,24 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
    * {@inheritDoc}
    */
   @Override
-  @SuppressWarnings("unchecked")
   public E peek() {
-    if (isEmpty()) {
-      return null;
-    }
-    return (E) data[first];
+    throw new UnsupportedOperationException("peek");
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  @SuppressWarnings("unchecked")
   public E peekFirst() {
-    if (isEmpty()) {
-      return null;
-    }
-    return (E) data[first];
+    throw new UnsupportedOperationException("peekFirst");
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  @SuppressWarnings("unchecked")
   public E peekLast() {
-    if (isEmpty()) {
-      return null;
-    }
-    return (E) data[(last - 1) & mask];
+    throw new UnsupportedOperationException("peekLast");
   }
 
   /**
@@ -248,10 +308,7 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
    */
   @Override
   public E poll() {
-    if (isEmpty()) {
-      return null;
-    }
-    return unsafeRemoveFirst();
+    throw new UnsupportedOperationException("poll");
   }
 
   /**
@@ -259,10 +316,7 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
    */
   @Override
   public E pollFirst() {
-    if (isEmpty()) {
-      return null;
-    }
-    return unsafeRemoveFirst();
+    throw new UnsupportedOperationException("pollFirst");
   }
 
   /**
@@ -270,10 +324,7 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
    */
   @Override
   public E pollLast() {
-    if (isEmpty()) {
-      return null;
-    }
-    return unsafeRemoveLast();
+    throw new UnsupportedOperationException("pollLast");
   }
 
   /**
@@ -298,6 +349,27 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
   @Override
   public E remove() {
     return removeFirst();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public E remove(final int index) {
+    final E element = get(index);
+    removeElement((first + index) & mask);
+    return element;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public E removeFirst() {
+    if (isEmpty()) {
+      throw new NoSuchElementException();
+    }
+    return unsafeRemoveFirst();
   }
 
   /**
@@ -334,6 +406,17 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
    * {@inheritDoc}
    */
   @Override
+  public E removeLast() {
+    if (isEmpty()) {
+      throw new NoSuchElementException();
+    }
+    return unsafeRemoveLast();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public boolean removeLastOccurrence(final Object o) {
     final int first = this.first;
     final int last = this.last;
@@ -358,6 +441,22 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
       }
     }
     return false;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  @SuppressWarnings("unchecked")
+  public E set(final int index, @Nullable final E element) {
+    if ((index < 0) || (index >= size())) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
+    final Object[] data = this.data;
+    final int pos = (first + index) & mask;
+    final E old = (E) data[pos];
+    data[pos] = element;
+    return old;
   }
 
   /**
@@ -396,60 +495,45 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
     return array;
   }
 
-  /**
-   * Removes the element at the specified position in this queue. Shifts any subsequent elements to
-   * the left (subtracts one from their indices).
-   *
-   * @param index the index of the element to be removed.
-   * @return the element that was removed from the queue.
-   * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index >= size()).
-   */
-  public E remove(final int index) {
-    final E element = get(index);
-    removeElement((first + index) & mask);
-    return element;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public E removeFirst() {
-    if (isEmpty()) {
-      throw new NoSuchElementException();
-    }
-    return unsafeRemoveFirst();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public E removeLast() {
-    if (isEmpty()) {
-      throw new NoSuchElementException();
-    }
-    return unsafeRemoveLast();
-  }
-
-  /**
-   * Replaces the element at the specified position in this queue with the specified element.
-   *
-   * @param index   the index of the element to replace
-   * @param element element to be stored at the specified position.
-   * @return the element that was removed from the queue.
-   * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index >= size()).
-   */
-  @SuppressWarnings("unchecked")
-  public E set(final int index, @Nullable final E element) {
-    if ((index < 0) || (index >= size())) {
-      throw new IndexOutOfBoundsException(Integer.toString(index));
-    }
+  private boolean addElement(final int index, final E element) {
+    final int first = this.first;
+    final int last = this.last;
     final Object[] data = this.data;
-    final int pos = (first + index) & mask;
-    final E old = (E) data[pos];
-    data[pos] = element;
-    return old;
+    final int mask = this.mask;
+    final int front = (index - first) & mask;
+    final int back = (last - index) & mask;
+    final boolean isForward;
+    if (front > back) {
+      if (index < last) {
+        System.arraycopy(data, index, data, index + 1, back);
+
+      } else {
+        System.arraycopy(data, 0, data, 1, last);
+        data[0] = data[mask];
+        System.arraycopy(data, index, data, index + 1, mask - index);
+      }
+      this.data[index] = element;
+      this.last = (last + 1) & mask;
+      isForward = true;
+
+    } else {
+      if (first == 0) {
+        data[mask] = data[0];
+        System.arraycopy(data, 1, data, 0, index - 1);
+      } else if (first <= index) {
+        System.arraycopy(data, first, data, first - 1, index - first);
+      } else {
+        System.arraycopy(data, first, data, first - 1, mask - first + 1);
+      }
+      this.data[(index - 1) & mask] = element;
+      this.first = (first - 1) & mask;
+      isForward = false;
+    }
+    --size;
+    if (this.first == this.last) {
+      doubleCapacity();
+    }
+    return isForward;
   }
 
   @NotNull
@@ -517,6 +601,7 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
         data[mask] = data[0];
         System.arraycopy(data, 1, data, 0, last);
       }
+      this.data[last] = null;
       this.last = (last - 1) & mask;
       isForward = false;
     }
@@ -549,20 +634,22 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
 
   private class AscendingIterator implements Iterator<E> {
 
-    private boolean isRemoved;
-    private int originalFirst;
-    private int originalLast;
-    private int pointer;
+    protected boolean isRemoved;
+    protected int originalFirst;
+    protected int originalLast;
+    protected int pointer;
 
     private AscendingIterator() {
       pointer = (originalFirst = first);
       originalLast = last;
     }
 
+    @Override
     public boolean hasNext() {
       return (pointer != originalLast);
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public E next() {
       final int pointer = this.pointer;
@@ -578,6 +665,7 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
       return (E) data[pointer];
     }
 
+    @Override
     public void remove() {
       if (isRemoved) {
         throw new IllegalStateException("element already removed");
@@ -590,16 +678,100 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
       if ((first != originalFirst) || (last != originalLast)) {
         throw new ConcurrentModificationException();
       }
-      final int mask = CircularQueue.this.mask;
+      final int mask = DequeueList.this.mask;
       final int index = (pointer - 1) & mask;
       if (removeElement(index)) {
         this.originalFirst = first;
 
       } else {
         originalLast = last;
-        this.pointer = (this.pointer - 1) & mask;
+        this.pointer = index;
       }
       isRemoved = true;
+    }
+  }
+
+  private class DequeueListIterator extends AscendingIterator implements ListIterator<E> {
+
+    private boolean isForward = true;
+
+    @Override
+    public boolean hasPrevious() {
+      return (pointer != originalFirst);
+    }
+
+    @Override
+    public E next() {
+      final E e = super.next();
+      isForward = true;
+      return e;
+    }
+
+    @Override
+    public int nextIndex() {
+      return pointer & mask;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public E previous() {
+      final int pointer = this.pointer;
+      final int originalFirst = this.originalFirst;
+      if (pointer == originalFirst) {
+        throw new NoSuchElementException();
+      }
+      if ((first != originalFirst) || (last != originalLast)) {
+        throw new ConcurrentModificationException();
+      }
+      isForward = false;
+      isRemoved = false;
+      return (E) data[this.pointer = (pointer - 1) & mask];
+    }
+
+    @Override
+    public int previousIndex() {
+      final int pointer = this.pointer;
+      if (pointer == originalFirst) {
+        return -1;
+      }
+      return (pointer - 1) & mask;
+    }
+
+    @Override
+    public void remove() {
+      if (!isForward) {
+        if (isRemoved) {
+          throw new IllegalStateException("element already removed");
+        }
+        final int pointer = this.pointer;
+        final int originalFirst = this.originalFirst;
+        if (pointer == originalFirst) {
+          throw new IllegalStateException();
+        }
+        if ((first != originalFirst) || (last != originalLast)) {
+          throw new ConcurrentModificationException();
+        }
+        if (removeElement(pointer)) {
+          this.originalFirst = first;
+        } else {
+          originalLast = last;
+        }
+        isRemoved = true;
+      } else {
+        super.remove();
+      }
+    }
+
+    @Override
+    public void set(final E e) {
+      DequeueList.this.set(pointer, e);
+    }
+
+    @Override
+    public void add(final E e) {
+      final int pointer = this.pointer;
+      DequeueList.this.add(pointer, e);
+      this.pointer = (pointer + 1) & mask;
     }
   }
 
@@ -615,10 +787,12 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
       pointer = (originalLast = last);
     }
 
+    @Override
     public boolean hasNext() {
       return (pointer != originalFirst);
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public E next() {
       final int pointer = this.pointer;
@@ -633,6 +807,7 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
       return (E) data[this.pointer = (pointer - 1) & mask];
     }
 
+    @Override
     public void remove() {
       if (isRemoved) {
         throw new IllegalStateException("element already removed");
@@ -645,13 +820,10 @@ public class CircularQueue<E> extends AbstractCollection<E> implements Deque<E>,
       if ((first != originalFirst) || (last != originalLast)) {
         throw new ConcurrentModificationException();
       }
-      final int mask = CircularQueue.this.mask;
-      final int index = (pointer - 1) & mask;
-      if (removeElement(index)) {
+      if (removeElement(pointer)) {
         this.originalFirst = first;
       } else {
         originalLast = last;
-        this.pointer = (this.pointer - 1) & mask;
       }
       isRemoved = true;
     }

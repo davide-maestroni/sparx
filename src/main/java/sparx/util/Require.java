@@ -22,6 +22,8 @@ public class Require {
   private Require() {
   }
 
+  // TODO: null collections vs collections of nulls
+
   public static @NotNull <T> T notNull(final T ref, final String name) {
     if (ref == null) {
       throw new NullPointerException("'" + name + "' must not be null!");

@@ -37,7 +37,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import sparx.concurrent.history.HistoryStrategy;
+import sparx.concurrent.history.SignalHistory;
 import sparx.util.UncheckedException;
 import sparx.util.config.AlertModule;
 import sparx.util.config.LogModule;
@@ -69,7 +69,7 @@ public class VarFutureTests {
     assertFalse(future.isReadOnly());
     assertFalse(future.isCancelled());
     assertTrue(future.isDone());
-    future = VarFuture.create(new HistoryStrategy<>() {
+    future = VarFuture.create(new SignalHistory<>() {
       @Override
       public void onClear() {
       }
