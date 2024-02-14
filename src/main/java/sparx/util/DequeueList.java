@@ -190,14 +190,14 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     if (o == null) {
       while (index != last) {
         if (data[index] == null) {
-          return (index + first) & mask;
+          return (index - first) & mask;
         }
         index = (index + 1) & mask;
       }
     } else {
       while (index != last) {
         if (o.equals(data[index])) {
-          return (index + first) & mask;
+          return (index - first) & mask;
         }
         index = (index + 1) & mask;
       }
@@ -233,17 +233,17 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     int index = last;
     if (o == null) {
       while (index != first) {
-        if (data[index] == null) {
-          return (index + first) & mask;
-        }
         index = (index - 1) & mask;
+        if (data[index] == null) {
+          return (index - first) & mask;
+        }
       }
     } else {
       while (index != first) {
-        if (o.equals(data[index])) {
-          return (index + first) & mask;
-        }
         index = (index - 1) & mask;
+        if (o.equals(data[index])) {
+          return (index - first) & mask;
+        }
       }
     }
     return -1;

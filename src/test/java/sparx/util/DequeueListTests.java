@@ -17,10 +17,12 @@ package sparx.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 
 public class DequeueListTests {
@@ -165,11 +167,28 @@ public class DequeueListTests {
     list.add("11");
     list.add("12");
     // 6 7 8 9 10 11 12
+    assertEquals(7, list.size());
     list.add(1, "13");
     // 6 13 7 8 9 10 11 12
+    assertEquals(8, list.size());
     list.add(6, "14");
     // 6 13 7 8 9 10 14 11 12
+    assertEquals(9, list.size());
     assertEquals(Arrays.asList("6", "13", "7", "8", "9", "10", "14", "11", "12"), list);
+    list.clear();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add(1, "4");
+    assertEquals(Arrays.asList("1", "4", "2", "3"), list);
+    list.clear();
+    list.add("1");
+    list.addFirst("2");
+    list.addFirst("3");
+    list.addFirst("4");
+    list.addFirst("5");
+    list.add(3, "6");
+    assertEquals(Arrays.asList("5", "4", "3", "6", "2", "1"), list);
   }
 
   @Test
@@ -210,9 +229,9 @@ public class DequeueListTests {
     assertTrue(list.isEmpty());
     assertEquals(0, list.size());
     assertThrows(IndexOutOfBoundsException.class, () -> list.get(0));
-    assertThrows(IndexOutOfBoundsException.class, list::element);
-    assertThrows(IndexOutOfBoundsException.class, list::getFirst);
-    assertThrows(IndexOutOfBoundsException.class, list::getLast);
+    assertThrows(NoSuchElementException.class, list::element);
+    assertThrows(NoSuchElementException.class, list::getFirst);
+    assertThrows(NoSuchElementException.class, list::getLast);
   }
 
   @Test
@@ -264,30 +283,124 @@ public class DequeueListTests {
     list.add("5");
     list.add("6");
     list.add("7");
-    assertEquals("1", list.get(0));
-    assertEquals("2", list.get(1));
-    assertEquals("4", list.get(3));
-    assertEquals("6", list.get(5));
-    assertEquals("7", list.get(6));
+    assertEquals(0, list.indexOf("1"));
+    assertEquals(1, list.indexOf("2"));
+    assertEquals(3, list.indexOf("4"));
+    assertEquals(5, list.indexOf("6"));
+    assertEquals(6, list.indexOf("7"));
+    assertEquals(-1, list.indexOf("8"));
     for (int i = 0; i < 5; i++) {
       list.removeFirst();
-      assertEquals(Integer.toString(i + 2), list.get(0));
+      assertEquals(0, list.indexOf(Integer.toString(i + 2)));
     }
     list.add("8");
     list.add("9");
     list.add("10");
     list.add("11");
     list.add("12");
-    assertEquals("6", list.get(0));
-    assertEquals("7", list.get(1));
-    assertEquals("9", list.get(3));
-    assertEquals("11", list.get(5));
-    assertEquals("12", list.get(6));
+    assertEquals(0, list.indexOf("6"));
+    assertEquals(1, list.indexOf("7"));
+    assertEquals(3, list.indexOf("9"));
+    assertEquals(5, list.indexOf("11"));
+    assertEquals(6, list.indexOf("12"));
+    assertEquals(-1, list.indexOf("5"));
     for (int i = 0; i < 5; i++) {
       list.removeFirst();
-      assertEquals(Integer.toString(i + 7), list.get(0));
+      assertEquals(1, list.indexOf(Integer.toString(i + 8)));
     }
-    assertThrows(IndexOutOfBoundsException.class, () -> list.get(-1));
-    assertThrows(IndexOutOfBoundsException.class, () -> list.get(3));
+    list.add("12");
+    list.add("11");
+    assertEquals(0, list.indexOf("11"));
+    assertEquals(1, list.indexOf("12"));
+    list.set(1, null);
+    assertEquals(1, list.indexOf(null));
+    assertEquals(2, list.indexOf("12"));
+  }
+
+  @Test
+  public void lastIndexOf() {
+    var list = new DequeueList<String>();
+    assertTrue(list.isEmpty());
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    list.add("6");
+    list.add("7");
+    assertEquals(0, list.lastIndexOf("1"));
+    assertEquals(1, list.lastIndexOf("2"));
+    assertEquals(3, list.lastIndexOf("4"));
+    assertEquals(5, list.lastIndexOf("6"));
+    assertEquals(6, list.lastIndexOf("7"));
+    assertEquals(-1, list.lastIndexOf("8"));
+    for (int i = 0; i < 5; i++) {
+      list.removeFirst();
+      assertEquals(0, list.lastIndexOf(Integer.toString(i + 2)));
+    }
+    list.add("8");
+    list.add("9");
+    list.add("10");
+    list.add("11");
+    list.add("12");
+    assertEquals(0, list.lastIndexOf("6"));
+    assertEquals(1, list.lastIndexOf("7"));
+    assertEquals(3, list.lastIndexOf("9"));
+    assertEquals(5, list.lastIndexOf("11"));
+    assertEquals(6, list.lastIndexOf("12"));
+    assertEquals(-1, list.lastIndexOf("5"));
+    for (int i = 0; i < 5; i++) {
+      list.removeFirst();
+      assertEquals(1, list.lastIndexOf(Integer.toString(i + 8)));
+    }
+    list.add("12");
+    list.add("11");
+    assertEquals(3, list.lastIndexOf("11"));
+    assertEquals(2, list.lastIndexOf("12"));
+    list.set(1, null);
+    assertEquals(1, list.lastIndexOf(null));
+    assertEquals(2, list.lastIndexOf("12"));
+  }
+
+  // TODO: iterators
+  // TODO: remove
+
+  @Test
+  public void set() {
+    var list = new DequeueList<String>();
+    assertTrue(list.isEmpty());
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    list.add("6");
+    list.add("7");
+    assertEquals("3", list.set(2, "30"));
+    assertEquals("5", list.set(4, "50"));
+    assertEquals("30", list.get(2));
+    assertEquals("50", list.get(4));
+    for (int i = 0; i < 5; i++) {
+      list.removeFirst();
+    }
+    list.add("8");
+    list.add("9");
+    list.add("10");
+    list.add("11");
+    list.add("12");
+    assertEquals("8", list.set(2, "80"));
+    assertEquals("10", list.set(4, "100"));
+    assertEquals("80", list.get(2));
+    assertEquals("100", list.get(4));
+    for (int i = 0; i < 5; i++) {
+      list.removeFirst();
+    }
+    list.add("13");
+    list.add("14");
+    assertEquals("12", list.set(1, null));
+    assertNull(list.set(1, "12"));
+    list.set(1, "120");
+    assertEquals("120", list.set(1, null));
+    assertThrows(IndexOutOfBoundsException.class, () -> list.set(4, "4"));
   }
 }
