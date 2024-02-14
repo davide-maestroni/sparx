@@ -430,19 +430,19 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     int index = last;
     if (o == null) {
       while (index != first) {
+        index = (index - 1) & mask;
         if (data[index] == null) {
           removeElement(index);
           return true;
         }
-        index = (index - 1) & mask;
       }
     } else {
       while (index != first) {
+        index = (index - 1) & mask;
         if (o.equals(data[index])) {
           removeElement(index);
           return true;
         }
-        index = (index - 1) & mask;
       }
     }
     return false;
@@ -673,7 +673,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     @Override
     public void remove() {
       if (isRemoved) {
-        throw new IllegalStateException("element already removed");
+        throw new IllegalStateException();
       }
       final int pointer = this.pointer;
       final int originalFirst = this.originalFirst;
@@ -705,6 +705,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
       final int pointer = this.pointer;
       DequeueList.this.add(pointer, e);
       this.pointer = (pointer + 1) & mask;
+      isRemoved = true; // disable remove
     }
 
     @Override
@@ -753,7 +754,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     public void remove() {
       if (!isForward) {
         if (isRemoved) {
-          throw new IllegalStateException("element already removed");
+          throw new IllegalStateException();
         }
         final int pointer = this.pointer;
         final int originalFirst = this.originalFirst;
@@ -815,7 +816,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     @Override
     public void remove() {
       if (isRemoved) {
-        throw new IllegalStateException("element already removed");
+        throw new IllegalStateException();
       }
       final int pointer = this.pointer;
       final int originalFirst = this.originalFirst;
