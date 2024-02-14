@@ -38,7 +38,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
   private int size;
 
   /**
-   * Creates a new empty queue with a pre-defined initial capacity.
+   * Creates a new empty list with a pre-defined initial capacity.
    */
   public DequeueList() {
     data = new Object[DEFAULT_SIZE];
@@ -46,7 +46,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
   }
 
   /**
-   * Creates a new empty queue with the specified minimum capacity.
+   * Creates a new empty list with the specified minimum capacity.
    *
    * @param minCapacity the minimum capacity.
    * @throws IllegalArgumentException if the specified capacity is less than 1.
@@ -72,7 +72,13 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
    */
   @Override
   public void add(final int index, @Nullable final E element) {
-    addElement(index, element);
+    if (index == 0) {
+      addFirst(element);
+    } else if (index == size) {
+      addLast(element);
+    } else {
+      addElement((first + index) & mask, element);
+    }
   }
 
   /**
@@ -80,7 +86,6 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
    */
   @Override
   public void addFirst(@Nullable final E element) {
-    int mask = this.mask;
     int newFirst = (first = (first - 1) & mask);
     data[newFirst] = element;
     if (newFirst == last) {
@@ -529,7 +534,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
       this.first = (first - 1) & mask;
       isForward = false;
     }
-    --size;
+    ++size;
     if (this.first == this.last) {
       doubleCapacity();
     }
@@ -696,6 +701,13 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     private boolean isForward = true;
 
     @Override
+    public void add(final E e) {
+      final int pointer = this.pointer;
+      DequeueList.this.add(pointer, e);
+      this.pointer = (pointer + 1) & mask;
+    }
+
+    @Override
     public boolean hasPrevious() {
       return (pointer != originalFirst);
     }
@@ -765,13 +777,6 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     @Override
     public void set(final E e) {
       DequeueList.this.set(pointer, e);
-    }
-
-    @Override
-    public void add(final E e) {
-      final int pointer = this.pointer;
-      DequeueList.this.add(pointer, e);
-      this.pointer = (pointer + 1) & mask;
     }
   }
 
