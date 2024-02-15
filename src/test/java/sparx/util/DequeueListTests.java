@@ -768,7 +768,7 @@ public class DequeueListTests {
     assertEquals("4", list.removeLast());
     assertEquals(List.of("3"), list);
     list.clear();
-    list.push("1");
+    list.add("1");
     list.push("2");
     list.push("3");
     list.push("4");
@@ -817,5 +817,16 @@ public class DequeueListTests {
     list.set(1, "120");
     assertEquals("120", list.set(1, null));
     assertThrows(IndexOutOfBoundsException.class, () -> list.set(4, "4"));
+  }
+
+  @Test
+  public void unsupported() {
+    var list = new DequeueList<String>();
+    assertThrows(UnsupportedOperationException.class, list::peek);
+    assertThrows(UnsupportedOperationException.class, list::peekFirst);
+    assertThrows(UnsupportedOperationException.class, list::peekLast);
+    assertThrows(UnsupportedOperationException.class, list::poll);
+    assertThrows(UnsupportedOperationException.class, list::pollFirst);
+    assertThrows(UnsupportedOperationException.class, list::pollLast);
   }
 }

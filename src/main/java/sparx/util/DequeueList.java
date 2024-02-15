@@ -458,7 +458,6 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
    * {@inheritDoc}
    */
   @Override
-  @SuppressWarnings("unchecked")
   public E set(final int index, @Nullable final E element) {
     final E old = get(index);
     data[(first + index) & mask] = element;
@@ -487,7 +486,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
    */
   @Override
   @SuppressWarnings("unchecked")
-  public @NotNull <T> T[] toArray(@NotNull T[] array) {
+  public @NotNull <T> T[] toArray(T[] array) {
     final int size = size();
     if (array.length < size) {
       array = (T[]) Array.newInstance(array.getClass().getComponentType(), size);
