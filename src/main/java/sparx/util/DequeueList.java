@@ -460,13 +460,8 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
   @Override
   @SuppressWarnings("unchecked")
   public E set(final int index, @Nullable final E element) {
-    if ((index < 0) || (index >= size())) {
-      throw new IndexOutOfBoundsException(Integer.toString(index));
-    }
-    final Object[] data = this.data;
-    final int pos = (first + index) & mask;
-    final E old = (E) data[pos];
-    data[pos] = element;
+    final E old = get(index);
+    data[(first + index) & mask] = element;
     ++modCount;
     return old;
   }
@@ -493,7 +488,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
   @Override
   @SuppressWarnings("unchecked")
   public @NotNull <T> T[] toArray(@NotNull T[] array) {
-    int size = size();
+    final int size = size();
     if (array.length < size) {
       array = (T[]) Array.newInstance(array.getClass().getComponentType(), size);
       copyElements(array);
@@ -519,7 +514,6 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
       if (back != 0) {
         if (index < last) {
           System.arraycopy(data, index, data, index + 1, back);
-
         } else {
           System.arraycopy(data, 0, data, 1, last);
           data[0] = data[mask];
@@ -560,7 +554,6 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     final int last = this.last;
     if (first <= last) {
       System.arraycopy(data, first, dst, 0, size);
-
     } else {
       final int length = data.length - first;
       System.arraycopy(data, first, dst, 0, length);
@@ -599,7 +592,6 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     if (front <= back) {
       if (first <= index) {
         System.arraycopy(data, first, data, first + 1, front);
-
       } else {
         System.arraycopy(data, 0, data, 1, index);
         data[0] = data[mask];
@@ -612,7 +604,6 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     } else {
       if (index < last) {
         System.arraycopy(data, index + 1, data, index, back);
-
       } else {
         System.arraycopy(data, index + 1, data, index, mask - index);
         data[mask] = data[0];
@@ -783,7 +774,11 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     @Override
     public void set(final E e) {
       checkForComodification();
-      DequeueList.this.set(pointer, e);
+      int index = pointer - first;
+      if (isForward) {
+        --index;
+      }
+      DequeueList.this.set(index & mask, e);
       expectedModCount = modCount;
     }
   }

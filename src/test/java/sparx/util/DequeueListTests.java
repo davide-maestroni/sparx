@@ -704,6 +704,83 @@ public class DequeueListTests {
   }
 
   @Test
+  public void listIteratorSet() {
+    var list = new DequeueList<String>();
+    var emptyIterator = list.listIterator();
+    assertThrows(IndexOutOfBoundsException.class, () -> emptyIterator.set("1"));
+    list.offer("1");
+    list.offer("2");
+    list.offer("3");
+    list.offer("4");
+    var iterator = list.listIterator();
+    iterator.next();
+    iterator.next();
+    iterator.set("5");
+    assertEquals(List.of("1", "5", "3", "4"), list);
+    assertEquals("5", iterator.previous());
+    iterator.set("6");
+    assertEquals(List.of("1", "6", "3", "4"), list);
+    iterator.next();
+    iterator.next();
+    iterator.next();
+    iterator.set("7");
+    assertEquals(List.of("1", "6", "3", "7"), list);
+    iterator.previous();
+    iterator.set("8");
+    assertEquals(List.of("1", "6", "3", "8"), list);
+    list.clear();
+    list.offerFirst("1");
+    list.offerFirst("2");
+    list.offerFirst("3");
+    list.offerFirst("4");
+    iterator = list.listIterator();
+    iterator.next();
+    iterator.next();
+    iterator.set("5");
+    assertEquals(List.of("4", "5", "2", "1"), list);
+    assertEquals("5", iterator.previous());
+    iterator.set("6");
+    assertEquals(List.of("4", "6", "2", "1"), list);
+    iterator.next();
+    iterator.next();
+    iterator.next();
+    iterator.set("7");
+    assertEquals(List.of("4", "6", "2", "7"), list);
+    iterator.set("8");
+    assertEquals(List.of("4", "6", "2", "8"), list);
+  }
+
+  @Test
+  public void remove() {
+    var list = new DequeueList<String>();
+    assertThrows(NoSuchElementException.class, list::remove);
+    assertThrows(NoSuchElementException.class, list::removeFirst);
+    assertThrows(NoSuchElementException.class, list::removeLast);
+    assertThrows(NoSuchElementException.class, list::pop);
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertEquals("1", list.remove());
+    assertEquals(List.of("2", "3", "4"), list);
+    assertEquals("2", list.removeFirst());
+    assertEquals(List.of("3", "4"), list);
+    assertEquals("4", list.removeLast());
+    assertEquals(List.of("3"), list);
+    list.clear();
+    list.push("1");
+    list.push("2");
+    list.push("3");
+    list.push("4");
+    assertEquals("4", list.remove());
+    assertEquals(List.of("3", "2", "1"), list);
+    assertEquals("3", list.removeFirst());
+    assertEquals(List.of("2", "1"), list);
+    assertEquals("1", list.removeLast());
+    assertEquals(List.of("2"), list);
+  }
+
+  @Test
   public void set() {
     var list = new DequeueList<String>();
     assertTrue(list.isEmpty());
