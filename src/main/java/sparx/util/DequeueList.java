@@ -78,6 +78,9 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
       addLast(element);
     } else {
       addElement((first + index) & mask, element);
+      if (first == last) {
+        doubleCapacity();
+      }
     }
   }
 
@@ -92,6 +95,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
       doubleCapacity();
     }
     ++size;
+    ++modCount;
   }
 
   /**
@@ -105,6 +109,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
       doubleCapacity();
     }
     ++size;
+    ++modCount;
   }
 
   /**
@@ -123,6 +128,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     first = 0;
     this.last = 0;
     size = 0;
+    ++modCount;
   }
 
   /**
@@ -461,6 +467,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     final int pos = (first + index) & mask;
     final E old = (E) data[pos];
     data[pos] = element;
+    ++modCount;
     return old;
   }
 
@@ -508,36 +515,40 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     final int front = (index - first) & mask;
     final int back = (last - index) & mask;
     final boolean isForward;
-    if (front > back) {
-      if (index < last) {
-        System.arraycopy(data, index, data, index + 1, back);
+    if (front >= back) {
+      if (back != 0) {
+        if (index < last) {
+          System.arraycopy(data, index, data, index + 1, back);
 
-      } else {
-        System.arraycopy(data, 0, data, 1, last);
-        data[0] = data[mask];
-        System.arraycopy(data, index, data, index + 1, mask - index);
+        } else {
+          System.arraycopy(data, 0, data, 1, last);
+          data[0] = data[mask];
+          System.arraycopy(data, index, data, index + 1, mask - index);
+        }
       }
       this.data[index] = element;
       this.last = (last + 1) & mask;
       isForward = true;
 
     } else {
-      if (first == 0) {
-        data[mask] = data[0];
-        System.arraycopy(data, 1, data, 0, index - 1);
-      } else if (first <= index) {
-        System.arraycopy(data, first, data, first - 1, index - first);
-      } else {
-        System.arraycopy(data, first, data, first - 1, mask - first + 1);
+      if (front != 0) {
+        if (first == 0) {
+          data[mask] = data[0];
+          System.arraycopy(data, 1, data, 0, index - 1);
+        } else if (first < index) {
+          System.arraycopy(data, first, data, first - 1, index - first);
+        } else {
+          System.arraycopy(data, first, data, first - 1, mask - first + 1);
+          data[mask] = data[0];
+          System.arraycopy(data, 1, data, 0, index - 1);
+        }
       }
       this.data[(index - 1) & mask] = element;
       this.first = (first - 1) & mask;
       isForward = false;
     }
     ++size;
-    if (this.first == this.last) {
-      doubleCapacity();
-    }
+    ++modCount;
     return isForward;
   }
 
@@ -574,6 +585,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     this.first = 0;
     last = size;
     mask = newSize - 1;
+    ++modCount;
   }
 
   private boolean removeElement(final int index) {
@@ -611,6 +623,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
       isForward = false;
     }
     --size;
+    ++modCount;
     return isForward;
   }
 
@@ -622,6 +635,7 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     final Object output = data[first];
     data[first] = null;
     --size;
+    ++modCount;
     return (E) output;
   }
 
@@ -634,36 +648,28 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     final Object output = data[newLast];
     data[newLast] = null;
     --size;
+    ++modCount;
     return (E) output;
   }
 
   private class AscendingIterator implements Iterator<E> {
 
-    protected boolean isRemoved;
-    protected int originalFirst;
-    protected int originalLast;
-    protected int pointer;
-
-    private AscendingIterator() {
-      pointer = (originalFirst = first);
-      originalLast = last;
-    }
+    protected int expectedModCount = modCount;
+    protected boolean isRemoved = true;
+    protected int pointer = first;
 
     @Override
     public boolean hasNext() {
-      return (pointer != originalLast);
+      return (pointer != last);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public E next() {
+      checkForComodification();
       final int pointer = this.pointer;
-      final int originalLast = this.originalLast;
-      if (pointer == originalLast) {
+      if (pointer == last) {
         throw new NoSuchElementException();
-      }
-      if ((first != originalFirst) || (last != originalLast)) {
-        throw new ConcurrentModificationException();
       }
       isRemoved = false;
       this.pointer = (pointer + 1) & mask;
@@ -676,23 +682,20 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
         throw new IllegalStateException();
       }
       final int pointer = this.pointer;
-      final int originalFirst = this.originalFirst;
-      if (pointer == originalFirst) {
-        throw new IllegalStateException();
-      }
-      if ((first != originalFirst) || (last != originalLast)) {
-        throw new ConcurrentModificationException();
-      }
       final int mask = DequeueList.this.mask;
       final int index = (pointer - 1) & mask;
-      if (removeElement(index)) {
-        this.originalFirst = first;
-
-      } else {
-        originalLast = last;
+      checkForComodification();
+      if (!removeElement(index)) {
         this.pointer = index;
       }
+      expectedModCount = modCount;
       isRemoved = true;
+    }
+
+    final void checkForComodification() {
+      if (modCount != expectedModCount) {
+        throw new ConcurrentModificationException();
+      }
     }
   }
 
@@ -702,15 +705,25 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
 
     @Override
     public void add(final E e) {
+      checkForComodification();
       final int pointer = this.pointer;
-      DequeueList.this.add(pointer, e);
-      this.pointer = (pointer + 1) & mask;
+      if (addElement(pointer, e)) {
+        this.pointer = (pointer + 1) & mask;
+      }
+      final int first = DequeueList.this.first;
+      final int last = DequeueList.this.last;
+      if (first == last) {
+        final int index = (pointer - first) & mask;
+        doubleCapacity();
+        this.pointer = index;
+      }
+      expectedModCount = modCount;
       isRemoved = true; // disable remove
     }
 
     @Override
     public boolean hasPrevious() {
-      return (pointer != originalFirst);
+      return (pointer != first);
     }
 
     @Override
@@ -722,19 +735,17 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
 
     @Override
     public int nextIndex() {
-      return pointer & mask;
+      checkForComodification();
+      return (pointer - first) & mask;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public E previous() {
+      checkForComodification();
       final int pointer = this.pointer;
-      final int originalFirst = this.originalFirst;
-      if (pointer == originalFirst) {
+      if (pointer == first) {
         throw new NoSuchElementException();
-      }
-      if ((first != originalFirst) || (last != originalLast)) {
-        throw new ConcurrentModificationException();
       }
       isForward = false;
       isRemoved = false;
@@ -743,11 +754,12 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
 
     @Override
     public int previousIndex() {
+      checkForComodification();
       final int pointer = this.pointer;
-      if (pointer == originalFirst) {
+      if (pointer == first) {
         return -1;
       }
-      return (pointer - 1) & mask;
+      return (pointer - first - 1) & mask;
     }
 
     @Override
@@ -756,19 +768,12 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
         if (isRemoved) {
           throw new IllegalStateException();
         }
+        checkForComodification();
         final int pointer = this.pointer;
-        final int originalFirst = this.originalFirst;
-        if (pointer == originalFirst) {
-          throw new IllegalStateException();
-        }
-        if ((first != originalFirst) || (last != originalLast)) {
-          throw new ConcurrentModificationException();
-        }
         if (removeElement(pointer)) {
-          this.originalFirst = first;
-        } else {
-          originalLast = last;
+          this.pointer = (pointer + 1) & mask;
         }
+        expectedModCount = modCount;
         isRemoved = true;
       } else {
         super.remove();
@@ -777,37 +782,30 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
 
     @Override
     public void set(final E e) {
+      checkForComodification();
       DequeueList.this.set(pointer, e);
+      expectedModCount = modCount;
     }
   }
 
   private class DescendingIterator implements Iterator<E> {
 
-    private boolean isRemoved;
-    private int originalFirst;
-    private int originalLast;
-    private int pointer;
-
-    private DescendingIterator() {
-      originalFirst = first;
-      pointer = (originalLast = last);
-    }
+    private int expectedModCount = modCount;
+    private boolean isRemoved = true;
+    private int pointer = last;
 
     @Override
     public boolean hasNext() {
-      return (pointer != originalFirst);
+      return (pointer != first);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public E next() {
+      checkForComodification();
       final int pointer = this.pointer;
-      final int originalFirst = this.originalFirst;
-      if (pointer == originalFirst) {
+      if (pointer == first) {
         throw new NoSuchElementException();
-      }
-      if ((first != originalFirst) || (last != originalLast)) {
-        throw new ConcurrentModificationException();
       }
       isRemoved = false;
       return (E) data[this.pointer = (pointer - 1) & mask];
@@ -818,20 +816,19 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
       if (isRemoved) {
         throw new IllegalStateException();
       }
+      checkForComodification();
       final int pointer = this.pointer;
-      final int originalFirst = this.originalFirst;
-      if (pointer == originalFirst) {
-        throw new IllegalStateException();
+      if (removeElement(pointer)) {
+        this.pointer = (pointer + 1) & mask;
       }
-      if ((first != originalFirst) || (last != originalLast)) {
+      expectedModCount = modCount;
+      isRemoved = true;
+    }
+
+    private void checkForComodification() {
+      if (modCount != expectedModCount) {
         throw new ConcurrentModificationException();
       }
-      if (removeElement(pointer)) {
-        this.originalFirst = first;
-      } else {
-        originalLast = last;
-      }
-      isRemoved = true;
     }
   }
 }

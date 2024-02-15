@@ -21,7 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
+import java.util.ConcurrentModificationException;
+import java.util.List;
 import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 
@@ -174,13 +175,13 @@ public class DequeueListTests {
     list.add(6, "14");
     // 6 13 7 8 9 10 14 11 12
     assertEquals(9, list.size());
-    assertEquals(Arrays.asList("6", "13", "7", "8", "9", "10", "14", "11", "12"), list);
+    assertEquals(List.of("6", "13", "7", "8", "9", "10", "14", "11", "12"), list);
     list.clear();
     list.add("1");
     list.add("2");
     list.add("3");
     list.add(1, "4");
-    assertEquals(Arrays.asList("1", "4", "2", "3"), list);
+    assertEquals(List.of("1", "4", "2", "3"), list);
     list.clear();
     list.add("1");
     list.addFirst("2");
@@ -188,7 +189,7 @@ public class DequeueListTests {
     list.addFirst("4");
     list.addFirst("5");
     list.add(3, "6");
-    assertEquals(Arrays.asList("5", "4", "3", "6", "2", "1"), list);
+    assertEquals(List.of("5", "4", "3", "6", "2", "1"), list);
   }
 
   @Test
@@ -364,6 +365,343 @@ public class DequeueListTests {
 
   // TODO: iterators
   // TODO: remove
+
+  @Test
+  public void ascendingIterator() {
+    var list = new DequeueList<String>();
+    var iterator = list.iterator();
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    list.offer("1");
+    list.offer("2");
+    list.offer("3");
+    list.offer("4");
+    list.offerLast("5");
+    iterator = list.iterator();
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasNext());
+      assertEquals(Integer.toString(i + 1), iterator.next());
+    }
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    iterator = list.iterator();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("2", "3", "4", "5"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("2", "4", "5"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("2", "4"), list);
+    list.clear();
+    list.offer("1");
+    list.offerFirst("2");
+    list.offerFirst("3");
+    list.offerFirst("4");
+    list.offerFirst("5");
+    iterator = list.iterator();
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasNext());
+      assertEquals(Integer.toString(5 - i), iterator.next());
+    }
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    iterator = list.iterator();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("4", "3", "2", "1"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("4", "2", "1"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("4", "2"), list);
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    list.clear();
+    list.offer("1");
+    list.offer("2");
+    list.offer("3");
+    list.offer("4");
+    iterator = list.iterator();
+    iterator.next();
+    list.remove(2);
+    assertThrows(ConcurrentModificationException.class, iterator::next);
+    assertThrows(ConcurrentModificationException.class, iterator::remove);
+    list.clear();
+    list.offer("1");
+    list.offerFirst("2");
+    list.offerFirst("3");
+    list.offerFirst("4");
+    iterator = list.iterator();
+    iterator.next();
+    list.remove(2);
+    assertThrows(ConcurrentModificationException.class, iterator::next);
+    assertThrows(ConcurrentModificationException.class, iterator::remove);
+  }
+
+  @Test
+  public void descendingIterator() {
+    var list = new DequeueList<String>();
+    var iterator = list.descendingIterator();
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    list.offer("1");
+    list.offer("2");
+    list.offer("3");
+    list.offer("4");
+    list.offerLast("5");
+    iterator = list.descendingIterator();
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasNext());
+      assertEquals(Integer.toString(5 - i), iterator.next());
+    }
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    iterator = list.descendingIterator();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("1", "2", "3", "4"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("1", "2", "4"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("2", "4"), list);
+    list.clear();
+    list.offer("1");
+    list.offerFirst("2");
+    list.offerFirst("3");
+    list.offerFirst("4");
+    list.offerFirst("5");
+    iterator = list.iterator();
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasNext());
+      assertEquals(Integer.toString(5 - i), iterator.next());
+    }
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    iterator = list.iterator();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("4", "3", "2", "1"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("4", "2", "1"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("4", "2"), list);
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    list.clear();
+    list.offer("1");
+    list.offer("2");
+    list.offer("3");
+    list.offer("4");
+    iterator = list.descendingIterator();
+    iterator.next();
+    list.remove(2);
+    assertThrows(ConcurrentModificationException.class, iterator::next);
+    assertThrows(ConcurrentModificationException.class, iterator::remove);
+    list.clear();
+    list.offer("1");
+    list.offerFirst("2");
+    list.offerFirst("3");
+    list.offerFirst("4");
+    iterator = list.descendingIterator();
+    iterator.next();
+    list.remove(2);
+    assertThrows(ConcurrentModificationException.class, iterator::next);
+    assertThrows(ConcurrentModificationException.class, iterator::remove);
+  }
+
+  @Test
+  public void listIterator() {
+    var list = new DequeueList<String>();
+    var iterator = list.listIterator();
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    assertThrows(NoSuchElementException.class, iterator::previous);
+    list.offer("1");
+    list.offer("2");
+    list.offer("3");
+    list.offer("4");
+    list.offerLast("5");
+    iterator = list.listIterator();
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasNext());
+      assertEquals(i, iterator.nextIndex());
+      assertEquals(i - 1, iterator.previousIndex());
+      assertEquals(Integer.toString(i + 1), iterator.next());
+      assertEquals(i + 1, iterator.nextIndex());
+      assertEquals(i, iterator.previousIndex());
+    }
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasPrevious());
+      assertEquals(5 - i, iterator.nextIndex());
+      assertEquals(4 - i, iterator.previousIndex());
+      assertEquals(Integer.toString(5 - i), iterator.previous());
+      assertEquals(4 - i, iterator.nextIndex());
+      assertEquals(3 - i, iterator.previousIndex());
+    }
+    assertFalse(iterator.hasPrevious());
+    assertThrows(NoSuchElementException.class, iterator::previous);
+    iterator = list.listIterator();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertFalse(iterator.hasPrevious());
+    assertThrows(NoSuchElementException.class, iterator::previous);
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("2", "3", "4", "5"), list);
+    iterator.next();
+    iterator.next();
+    iterator.previous();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("2", "4", "5"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("2", "4"), list);
+    list.clear();
+    list.offer("1");
+    list.offerFirst("2");
+    list.offerFirst("3");
+    list.offerFirst("4");
+    list.offerFirst("5");
+    iterator = list.listIterator();
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasNext());
+      assertEquals(i, iterator.nextIndex());
+      assertEquals(i - 1, iterator.previousIndex());
+      assertEquals(Integer.toString(5 - i), iterator.next());
+      assertEquals(i + 1, iterator.nextIndex());
+      assertEquals(i, iterator.previousIndex());
+    }
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasPrevious());
+      assertEquals(5 - i, iterator.nextIndex());
+      assertEquals(4 - i, iterator.previousIndex());
+      assertEquals(Integer.toString(i + 1), iterator.previous());
+      assertEquals(4 - i, iterator.nextIndex());
+      assertEquals(3 - i, iterator.previousIndex());
+    }
+    assertFalse(iterator.hasPrevious());
+    assertThrows(NoSuchElementException.class, iterator::previous);
+    iterator = list.listIterator();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertFalse(iterator.hasPrevious());
+    assertThrows(NoSuchElementException.class, iterator::previous);
+    assertEquals(List.of("4", "3", "2", "1"), list);
+    iterator.next();
+    iterator.next();
+    iterator.previous();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("4", "2", "1"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("4", "2"), list);
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    list.clear();
+    list.offer("1");
+    list.offer("2");
+    list.offer("3");
+    list.offer("4");
+    iterator = list.listIterator();
+    iterator.next();
+    list.remove(2);
+    assertThrows(ConcurrentModificationException.class, iterator::next);
+    assertThrows(ConcurrentModificationException.class, iterator::previous);
+    assertThrows(ConcurrentModificationException.class, iterator::remove);
+    list.clear();
+    list.offer("1");
+    list.offerFirst("2");
+    list.offerFirst("3");
+    list.offerFirst("4");
+    iterator = list.listIterator();
+    iterator.next();
+    iterator.previous();
+    list.remove(2);
+    assertThrows(ConcurrentModificationException.class, iterator::next);
+    assertThrows(ConcurrentModificationException.class, iterator::previous);
+    assertThrows(ConcurrentModificationException.class, iterator::remove);
+  }
+
+  @Test
+  public void listIteratorAdd() {
+    var list = new DequeueList<String>();
+    var iterator = list.listIterator();
+    iterator.add("1");
+    assertEquals(List.of("1"), list);
+    list.clear();
+    list.offer("1");
+    list.offer("2");
+    list.offer("3");
+    list.offer("4");
+    iterator = list.listIterator();
+    iterator.next();
+    iterator.next();
+    iterator.add("5");
+    assertEquals(List.of("1", "2", "5", "3", "4"), list);
+    assertEquals("5", iterator.previous());
+    iterator.add("6");
+    assertEquals(List.of("1", "2", "6", "5", "3", "4"), list);
+    iterator.next();
+    iterator.next();
+    iterator.next();
+    iterator.add("7");
+    assertEquals(List.of("1", "2", "6", "5", "3", "4", "7"), list);
+    for (int i = 0; i < 7; i++) {
+      iterator.previous();
+    }
+    iterator.add("8");
+    assertEquals(List.of("8", "1", "2", "6", "5", "3", "4", "7"), list);
+    iterator.add("9");
+    assertEquals(List.of("8", "9", "1", "2", "6", "5", "3", "4", "7"), list);
+    iterator.next();
+    iterator.next();
+    iterator.previous();
+    iterator.add("10");
+    assertEquals(List.of("8", "9", "1", "10", "2", "6", "5", "3", "4", "7"), list);
+  }
 
   @Test
   public void set() {
