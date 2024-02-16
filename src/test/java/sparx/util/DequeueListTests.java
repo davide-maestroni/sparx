@@ -15,12 +15,14 @@
  */
 package sparx.util;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -781,6 +783,69 @@ public class DequeueListTests {
   }
 
   @Test
+  public void removeIndex() {
+    var list = new DequeueList<String>();
+    assertThrows(IndexOutOfBoundsException.class, () -> list.remove(1));
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertEquals("2", list.remove(1));
+    assertEquals(List.of("1", "3", "4"), list);
+    assertEquals("4", list.remove(2));
+    assertEquals(List.of("1", "3"), list);
+    assertEquals("1", list.remove(0));
+    assertEquals(List.of("3"), list);
+    list.clear();
+    list.add("1");
+    list.push("2");
+    list.push("3");
+    list.push("4");
+    assertEquals("4", list.remove(0));
+    assertEquals(List.of("3", "2", "1"), list);
+    assertEquals("3", list.remove(0));
+    assertEquals(List.of("2", "1"), list);
+    assertEquals("1", list.remove(1));
+    assertEquals(List.of("2"), list);
+    list.addFirst("3");
+    list.addFirst("4");
+    list.addFirst("5");
+    list.addFirst("6");
+    assertEquals("3", list.remove(3));
+    assertEquals(List.of("6", "5", "4", "2"), list);
+  }
+
+  @Test
+  public void removeOccurrence() {
+    var list = new DequeueList<String>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertFalse(list.removeFirstOccurrence(null));
+    assertFalse(list.removeFirstOccurrence("0"));
+    assertFalse(list.removeLastOccurrence(null));
+    assertFalse(list.removeLastOccurrence("0"));
+    assertTrue(list.removeFirstOccurrence("2"));
+    assertEquals(List.of("1", "3", "4"), list);
+    assertTrue(list.removeLastOccurrence("4"));
+    assertEquals(List.of("1", "3"), list);
+    list.add(null);
+    list.add(1, null);
+    list.add(1, null);
+    list.add(1, null);
+    list.addFirst(null);
+    assertTrue(list.removeFirstOccurrence(null));
+    assertEquals(Arrays.asList("1", null, null, null, "3", null), list);
+    assertTrue(list.removeLastOccurrence(null));
+    assertEquals(Arrays.asList("1", null, null, null, "3"), list);
+    assertTrue(list.removeFirstOccurrence(null));
+    assertEquals(Arrays.asList("1", null, null, "3"), list);
+    assertTrue(list.removeLastOccurrence(null));
+    assertEquals(Arrays.asList("1", null, "3"), list);
+  }
+
+  @Test
   public void set() {
     var list = new DequeueList<String>();
     assertTrue(list.isEmpty());
@@ -817,6 +882,58 @@ public class DequeueListTests {
     list.set(1, "120");
     assertEquals("120", list.set(1, null));
     assertThrows(IndexOutOfBoundsException.class, () -> list.set(4, "4"));
+  }
+
+  @Test
+  public void toArray() {
+    var list = new DequeueList<String>();
+    assertArrayEquals(new Object[0], list.toArray());
+    assertArrayEquals(new String[0], list.toArray(new String[0]));
+    assertArrayEquals(new String[]{null}, list.toArray(new String[1]));
+    list.add(null);
+    list.add("1");
+    list.add("2");
+    list.add(null);
+    list.add("3");
+    list.add("4");
+    list.add(null);
+    assertArrayEquals(new Object[]{null, "1", "2", null, "3", "4", null}, list.toArray());
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[0]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[1]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[7]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null, null, null, null},
+        list.toArray(new String[10]));
+    var array = new String[10];
+    Arrays.fill(array, "9");
+    list.toArray(array);
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null, null, "9", "9"}, array);
+    list.clear();
+    assertArrayEquals(new Object[0], list.toArray());
+    assertArrayEquals(new String[0], list.toArray(new String[0]));
+    assertArrayEquals(new String[]{null}, list.toArray(new String[1]));
+    list.add("4");
+    list.add(null);
+    list.addFirst("3");
+    list.addFirst(null);
+    list.addFirst("2");
+    list.addFirst("1");
+    list.addFirst(null);
+    assertArrayEquals(new Object[]{null, "1", "2", null, "3", "4", null}, list.toArray());
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[0]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[1]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[7]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null, null, null, null},
+        list.toArray(new String[10]));
+    array = new String[10];
+    Arrays.fill(array, "9");
+    list.toArray(array);
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null, null, "9", "9"}, array);
   }
 
   @Test

@@ -533,7 +533,9 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
         } else {
           System.arraycopy(data, first, data, first - 1, mask - first + 1);
           data[mask] = data[0];
-          System.arraycopy(data, 1, data, 0, index - 1);
+          if (index != 0) {
+            System.arraycopy(data, 1, data, 0, index - 1);
+          }
         }
       }
       this.data[(index - 1) & mask] = element;
