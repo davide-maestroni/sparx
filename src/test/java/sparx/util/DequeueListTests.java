@@ -365,9 +365,6 @@ public class DequeueListTests {
     assertEquals(2, list.lastIndexOf("12"));
   }
 
-  // TODO: iterators
-  // TODO: remove
-
   @Test
   public void ascendingIterator() {
     var list = new DequeueList<String>();
