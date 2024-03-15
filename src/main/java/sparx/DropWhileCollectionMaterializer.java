@@ -42,6 +42,15 @@ class DropWhileCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
+  public int knownSize() {
+    final int wrappedSize = wrapped.knownSize();
+    if (wrappedSize == 0) {
+      return 0;
+    }
+    return -1;
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return wrapped.materializeElement(index + state.materialized());
   }

@@ -33,13 +33,17 @@ class AllCollectionMaterializer<E> implements CollectionMaterializer<Boolean> {
 
   AllCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"));
+    state = new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"));
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
     return index == 0;
+  }
+
+  @Override
+  public int knownSize() {
+    return 1;
   }
 
   @Override

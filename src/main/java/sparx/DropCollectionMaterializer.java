@@ -40,6 +40,15 @@ class DropCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
+  public int knownSize() {
+    final int wrappedSize = wrapped.knownSize();
+    if (wrappedSize >= 0) {
+      return Math.max(0, wrappedSize - maxElements);
+    }
+    return -1;
+  }
+
+  @Override
   public E materializeElement(final int index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));

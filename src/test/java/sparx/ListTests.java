@@ -496,4 +496,96 @@ public class ListTests {
     assertThrows(NullPointerException.class,
         () -> List.of(1, null, 3).dropRightWhile(e -> e > 0).size());
   }
+
+  @Test
+  public void endsWith() {
+    var l = List.<Integer>of().endsWith(List.of());
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertTrue(l.head());
+
+    l = List.<Integer>of().endsWith(List.of(1));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertFalse(l.head());
+
+    l = List.of(1, null, 3).endsWith(List.of());
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertTrue(l.head());
+
+    l = List.of(1, null, 3).endsWith(List.of(3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertTrue(l.head());
+
+    l = List.of(1, null, 3).endsWith(List.of(null));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertFalse(l.head());
+
+    l = List.of(1, null, 3).endsWith(List.of(null, 3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertTrue(l.head());
+
+    l = List.of(1, null, 3).endsWith(List.of(1, null));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertFalse(l.head());
+
+    l = List.of(1, null, 3).endsWith(List.of(1, null, 3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertTrue(l.head());
+
+    l = List.of(1, null, 3).endsWith(List.of(null, null, 3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertFalse(l.head());
+  }
+
+  @Test
+  public void exists() {
+    assertFalse(List.of().exists(Objects::nonNull).isEmpty());
+    assertTrue(List.of().exists(Objects::nonNull).notEmpty());
+    assertEquals(1, List.of().exists(Objects::nonNull).size());
+    assertFalse(List.of().exists(Objects::nonNull).head());
+    assertFalse(List.of(1, 2, 3).exists(i -> i > 3).head());
+    {
+      var itr = List.of(1, 2, 3).exists(i -> i > 3).iterator();
+      assertTrue(itr.hasNext());
+      assertFalse(itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    assertTrue(List.of(1, 2, 3).exists(i -> i > 0).head());
+    {
+      var itr = List.of(1, 2, 3).exists(i -> i > 0).iterator();
+      assertTrue(itr.hasNext());
+      assertTrue(itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    var l = List.of(1, null, 3).exists(i -> i > 1);
+    assertThrows(NullPointerException.class, l::head);
+    {
+      var itr = l.iterator();
+      assertTrue(itr.hasNext());
+      assertThrows(NullPointerException.class, itr::next);
+    }
+  }
+
+  // TODO: filter
 }

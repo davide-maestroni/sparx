@@ -31,13 +31,22 @@ class FilterCollectionMaterializer<E> implements CollectionMaterializer<E> {
 
   FilterCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate) {
-    state = new ImmaterialState(wrapped.materializeIterator(),
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"));
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
     return state.canMaterializeElement(index);
+  }
+
+  @Override
+  public int knownSize() {
+    final int wrappedSize = state.knownSize();
+    if (wrappedSize == 0) {
+      return 0;
+    }
+    return -1;
   }
 
   @Override
@@ -74,6 +83,11 @@ class FilterCollectionMaterializer<E> implements CollectionMaterializer<E> {
     }
 
     @Override
+    public int knownSize() {
+      throw UncheckedException.throwUnchecked(ex);
+    }
+
+    @Override
     public E materializeElement(final int index) {
       throw UncheckedException.throwUnchecked(ex);
     }
@@ -98,12 +112,14 @@ class FilterCollectionMaterializer<E> implements CollectionMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
     private final Iterator<E> iterator;
+    private final int knownSize;
     private final AtomicInteger modCount = new AtomicInteger();
     private final Predicate<? super E> predicate;
 
-    private ImmaterialState(@NotNull final Iterator<E> iterator,
+    private ImmaterialState(@NotNull final CollectionMaterializer<E> wrapped,
         @NotNull final Predicate<? super E> predicate) {
-      this.iterator = Require.notNull(iterator, "iterator");
+      iterator = wrapped.materializeIterator();
+      knownSize = wrapped.knownSize();
       this.predicate = predicate;
     }
 
@@ -137,6 +153,11 @@ class FilterCollectionMaterializer<E> implements CollectionMaterializer<E> {
         }
       }
       return true;
+    }
+
+    @Override
+    public int knownSize() {
+      return knownSize;
     }
 
     @Override

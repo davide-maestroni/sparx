@@ -43,6 +43,11 @@ class ExistsCollectionMaterializer<E> implements CollectionMaterializer<Boolean>
   }
 
   @Override
+  public int knownSize() {
+    return 1;
+  }
+
+  @Override
   public Boolean materializeElement(final int index) {
     if (index != 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));

@@ -44,6 +44,11 @@ class FindFirstCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
+  public int knownSize() {
+    return state.knownSize();
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return state.materialized().get(index);
   }
@@ -65,10 +70,17 @@ class FindFirstCollectionMaterializer<E> implements CollectionMaterializer<E> {
 
   private interface State<E> {
 
+    int knownSize();
+
     @NotNull List<E> materialized();
   }
 
   private static class EmptyState<E> implements State<E> {
+
+    @Override
+    public int knownSize() {
+      return 0;
+    }
 
     @Override
     public @NotNull List<E> materialized() {
@@ -85,6 +97,11 @@ class FindFirstCollectionMaterializer<E> implements CollectionMaterializer<E> {
     }
 
     @Override
+    public int knownSize() {
+      return 1;
+    }
+
+    @Override
     public @NotNull List<E> materialized() {
       throw UncheckedException.throwUnchecked(ex);
     }
@@ -96,6 +113,11 @@ class FindFirstCollectionMaterializer<E> implements CollectionMaterializer<E> {
 
     private ElementState(@NotNull final E element) {
       this.elements = Collections.singletonList(element);
+    }
+
+    @Override
+    public int knownSize() {
+      return elements.size();
     }
 
     @Override
@@ -114,6 +136,11 @@ class FindFirstCollectionMaterializer<E> implements CollectionMaterializer<E> {
         @NotNull final Predicate<? super E> predicate) {
       this.wrapped = wrapped;
       this.predicate = predicate;
+    }
+
+    @Override
+    public int knownSize() {
+      return -1;
     }
 
     @Override

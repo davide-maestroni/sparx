@@ -42,6 +42,11 @@ class EndsWithCollectionMaterializer<E> implements CollectionMaterializer<Boolea
   }
 
   @Override
+  public int knownSize() {
+    return 1;
+  }
+
+  @Override
   public Boolean materializeElement(final int index) {
     if (index != 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));
@@ -119,7 +124,13 @@ class EndsWithCollectionMaterializer<E> implements CollectionMaterializer<Boolea
       try {
         final CollectionMaterializer<E> wrapped = this.wrapped;
         final CollectionMaterializer<?> elementsMaterializer = this.elementsMaterializer;
-        for (int i = wrapped.materializeSize() - 1, j = elementsMaterializer.materializeSize() - 1;
+        final int wrappedSize = wrapped.materializeSize();
+        final int elementsSize = elementsMaterializer.materializeSize();
+        if (wrappedSize < elementsSize) {
+          state = FALSE_STATE;
+          return false;
+        }
+        for (int i = wrappedSize - 1, j = elementsSize - 1;
             i >= 0 && j >= 0; --i, --j) {
           final E left = wrapped.materializeElement(i);
           final Object right = elementsMaterializer.materializeElement(j);

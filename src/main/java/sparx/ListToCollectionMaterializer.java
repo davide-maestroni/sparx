@@ -34,6 +34,11 @@ class ListToCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
+  public int knownSize() {
+    return elements.size();
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return elements.get(index);
   }

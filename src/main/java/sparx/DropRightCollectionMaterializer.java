@@ -41,6 +41,15 @@ class DropRightCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
+  public int knownSize() {
+    final int wrappedSize = wrapped.knownSize();
+    if (wrappedSize >= 0) {
+      return Math.max(0, wrappedSize - maxElements);
+    }
+    return -1;
+  }
+
+  @Override
   public E materializeElement(final int index) {
     final CollectionMaterializer<E> wrapped = this.wrapped;
     if (index >= wrapped.materializeSize() - maxElements) {

@@ -22,6 +22,8 @@ public interface CollectionMaterializer<E> {
 
   boolean canMaterializeElement(int index);
 
+  int knownSize();
+
   E materializeElement(int index);
 
   boolean materializeEmpty();

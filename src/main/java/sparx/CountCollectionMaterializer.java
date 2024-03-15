@@ -37,6 +37,11 @@ class CountCollectionMaterializer<E> implements CollectionMaterializer<Integer> 
   }
 
   @Override
+  public int knownSize() {
+    return 1;
+  }
+
+  @Override
   public Integer materializeElement(final int index) {
     if (index != 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));

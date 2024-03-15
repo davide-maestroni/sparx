@@ -33,6 +33,11 @@ class ElementToCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
+  public int knownSize() {
+    return 1;
+  }
+
+  @Override
   public E materializeElement(final int index) {
     if (index != 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));

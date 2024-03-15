@@ -61,8 +61,8 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   @Override
   public int indexOf(final Object o) {
     final Iterator<E> iterator = materializer.materializeIterator();
+    int index = 0;
     if (o == null) {
-      int index = 0;
       while (iterator.hasNext()) {
         if (iterator.next() == null) {
           return index;
@@ -70,7 +70,6 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
         ++index;
       }
     } else {
-      int index = 0;
       while (iterator.hasNext()) {
         if (o.equals(iterator.next())) {
           return index;

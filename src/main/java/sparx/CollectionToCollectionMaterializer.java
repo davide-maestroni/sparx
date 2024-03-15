@@ -44,6 +44,11 @@ class CollectionToCollectionMaterializer<E> implements CollectionMaterializer<E>
   }
 
   @Override
+  public int knownSize() {
+    return state.knownSize();
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return state.materializeElement(index);
   }
@@ -79,6 +84,11 @@ class CollectionToCollectionMaterializer<E> implements CollectionMaterializer<E>
     @Override
     public boolean canMaterializeElement(final int index) {
       return index >= 0 && index < size;
+    }
+
+    @Override
+    public int knownSize() {
+      return size;
     }
 
     @Override
@@ -131,6 +141,11 @@ class CollectionToCollectionMaterializer<E> implements CollectionMaterializer<E>
     @Override
     public boolean canMaterializeElement(final int index) {
       return index >= 0 && index < elements.size();
+    }
+
+    @Override
+    public int knownSize() {
+      return elements.size();
     }
 
     @Override

@@ -28,6 +28,11 @@ class EmptyCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
+  public int knownSize() {
+    return 0;
+  }
+
+  @Override
   public E materializeElement(final int index) {
     throw new IndexOutOfBoundsException(String.valueOf(index));
   }

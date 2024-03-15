@@ -37,6 +37,11 @@ class IteratorToCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
+  public int knownSize() {
+    return state.knownSize();
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return state.materializeElement(index);
   }
@@ -88,6 +93,11 @@ class IteratorToCollectionMaterializer<E> implements CollectionMaterializer<E> {
         }
       }
       return true;
+    }
+
+    @Override
+    public int knownSize() {
+      return -1;
     }
 
     @Override

@@ -33,6 +33,11 @@ class ArrayToCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
+  public int knownSize() {
+    return elements.length;
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return elements[index];
   }

@@ -41,6 +41,11 @@ class FindLastIndexOfSliceCollectionMaterializer<E> implements CollectionMateria
   }
 
   @Override
+  public int knownSize() {
+    return state.knownSize();
+  }
+
+  @Override
   public Integer materializeElement(final int index) {
     final int i = state.materialized();
     if (i >= 0 && index == 0) {
@@ -66,6 +71,8 @@ class FindLastIndexOfSliceCollectionMaterializer<E> implements CollectionMateria
 
   private interface State {
 
+    int knownSize();
+
     int materialized();
   }
 
@@ -75,6 +82,11 @@ class FindLastIndexOfSliceCollectionMaterializer<E> implements CollectionMateria
 
     private ExceptionState(@NotNull final Exception ex) {
       this.ex = ex;
+    }
+
+    @Override
+    public int knownSize() {
+      return 1;
     }
 
     @Override
@@ -92,12 +104,22 @@ class FindLastIndexOfSliceCollectionMaterializer<E> implements CollectionMateria
     }
 
     @Override
+    public int knownSize() {
+      return 1;
+    }
+
+    @Override
     public int materialized() {
       return index;
     }
   }
 
   private static class NotFoundState implements State {
+
+    @Override
+    public int knownSize() {
+      return 0;
+    }
 
     @Override
     public int materialized() {
@@ -115,6 +137,11 @@ class FindLastIndexOfSliceCollectionMaterializer<E> implements CollectionMateria
         @NotNull final CollectionMaterializer<?> elementsMaterializer) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
+    }
+
+    @Override
+    public int knownSize() {
+      return -1;
     }
 
     @Override

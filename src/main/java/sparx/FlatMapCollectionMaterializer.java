@@ -32,13 +32,18 @@ class FlatMapCollectionMaterializer<E, F> implements CollectionMaterializer<F> {
 
   FlatMapCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapper,
       @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
-    state = new ImmaterialState<E>(Require.notNull(wrapper, "wrapper"),
+    state = new ImmaterialState(Require.notNull(wrapper, "wrapper"),
         Require.notNull(mapper, "mapper"));
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
     return state.canMaterializeElement(index);
+  }
+
+  @Override
+  public int knownSize() {
+    return state.knownSize();
   }
 
   @Override
@@ -75,6 +80,11 @@ class FlatMapCollectionMaterializer<E, F> implements CollectionMaterializer<F> {
     }
 
     @Override
+    public int knownSize() {
+      return 1;
+    }
+
+    @Override
     public E materializeElement(final int index) {
       throw UncheckedException.throwUnchecked(ex);
     }
@@ -95,7 +105,7 @@ class FlatMapCollectionMaterializer<E, F> implements CollectionMaterializer<F> {
     }
   }
 
-  private class ImmaterialState<E> implements CollectionMaterializer<F> {
+  private class ImmaterialState implements CollectionMaterializer<F> {
 
     private final ArrayList<F> elements = new ArrayList<F>();
     private final Iterator<E> iterator;
@@ -116,6 +126,11 @@ class FlatMapCollectionMaterializer<E, F> implements CollectionMaterializer<F> {
         return false;
       }
       return materializeUntil(index) > index;
+    }
+
+    @Override
+    public int knownSize() {
+      return -1;
     }
 
     @Override
