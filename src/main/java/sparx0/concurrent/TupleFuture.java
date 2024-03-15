@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.concurrent;
 
-public interface BinaryFunction<P1, P2, R> {
+import sparx0.util.Nothing;
+import sparx0.util.tuple.Tuple;
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+public interface TupleFuture<V, F extends TupleFuture<V, F>> extends
+    StreamableFuture<Nothing, F>, Tuple<StreamingFuture<? extends V>> {
+
 }

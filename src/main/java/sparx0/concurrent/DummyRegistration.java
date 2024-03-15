@@ -13,9 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.concurrent;
 
-public interface BinaryFunction<P1, P2, R> {
+import org.jetbrains.annotations.NotNull;
+import sparx0.concurrent.FutureScope.Registration;
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+class DummyRegistration implements Registration {
+
+  private final static DummyRegistration INSTANCE = new DummyRegistration();
+
+  private DummyRegistration() {
+  }
+
+  public static @NotNull DummyRegistration instance() {
+    return INSTANCE;
+  }
+
+  @Override
+  public void cancel() {
+  }
+
+  @Override
+  public void onUncaughtError(@NotNull final Exception error) {
+  }
 }

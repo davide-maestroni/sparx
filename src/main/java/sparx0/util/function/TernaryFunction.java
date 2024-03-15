@@ -13,9 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.util.function;
 
-public interface BinaryFunction<P1, P2, R> {
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/function/Function.mustache
+///////////////////////////////////////////////
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+public interface TernaryFunction<P1, P2, P3, R> {
+
+  R apply(P1 firstParam, P2 secondParam, P3 thirdParam) throws Exception;
 }

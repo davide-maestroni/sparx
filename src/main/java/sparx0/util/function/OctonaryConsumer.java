@@ -13,9 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.util.function;
 
-public interface BinaryFunction<P1, P2, R> {
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/function/Consumer.mustache
+///////////////////////////////////////////////
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+public interface OctonaryConsumer<P1, P2, P3, P4, P5, P6, P7, P8> {
+
+  void accept(P1 firstParam, P2 secondParam, P3 thirdParam, P4 fourthParam, P5 fifthParam, P6 sixthParam, P7 seventhParam, P8 eighthParam) throws Exception;
 }

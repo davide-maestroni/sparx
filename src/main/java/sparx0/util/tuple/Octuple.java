@@ -13,9 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.util.tuple;
 
-public interface BinaryFunction<P1, P2, R> {
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/tuple/Tuple.mustache
+///////////////////////////////////////////////
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+public interface Octuple<T, T1 extends T, T2 extends T, T3 extends T, T4 extends T, T5 extends T, T6 extends T, T7 extends T, T8 extends T> extends Tuple<T> {
+
+  T1 getFirst();
+
+  T2 getSecond();
+
+  T3 getThird();
+
+  T4 getFourth();
+
+  T5 getFifth();
+
+  T6 getSixth();
+
+  T7 getSeventh();
+
+  T8 getEighth();
 }

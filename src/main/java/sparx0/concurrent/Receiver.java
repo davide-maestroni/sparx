@@ -13,9 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.concurrent;
 
-public interface BinaryFunction<P1, P2, R> {
+import java.io.Closeable;
+import java.util.Collection;
+import org.jetbrains.annotations.NotNull;
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+public interface Receiver<V> extends Closeable {
+
+  void close();
+
+  boolean fail(@NotNull Exception error);
+
+  void set(V value);
+
+  void setBulk(@NotNull Collection<V> values);
 }

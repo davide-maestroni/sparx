@@ -13,9 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.util.tuple;
 
-public interface BinaryFunction<P1, P2, R> {
+import java.util.List;
+import org.jetbrains.annotations.NotNull;
+import sparx0.util.ImmutableList;
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+class GenericTuple<T> implements Tuple<T> {
+
+  private final List<T> values;
+
+  GenericTuple() {
+    this.values = ImmutableList.of();
+  }
+
+  GenericTuple(final T value) {
+    this.values = ImmutableList.of(value);
+  }
+
+  GenericTuple(@NotNull final T... values) {
+    this.values = ImmutableList.of(values);
+  }
+
+  @Override
+  public @NotNull List<T> asList() {
+    return values;
+  }
 }

@@ -13,9 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.util.tuple;
 
-public interface BinaryFunction<P1, P2, R> {
+import org.jetbrains.annotations.NotNull;
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+class EmptyTuple<T> extends GenericTuple<T> implements Empty<T> {
+
+  private static final EmptyTuple<?> INSTANCE = new EmptyTuple<Object>();
+
+  @SuppressWarnings("unchecked")
+  static @NotNull <T> EmptyTuple<T> instance() {
+    return (EmptyTuple<T>) INSTANCE;
+  }
+
+  private EmptyTuple() {
+  }
 }

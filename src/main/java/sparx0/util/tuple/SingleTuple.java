@@ -13,9 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.util.tuple;
 
-public interface BinaryFunction<P1, P2, R> {
+class SingleTuple<T> extends GenericTuple<T> implements Single<T> {
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+  private final T first;
+
+  SingleTuple(final T first) {
+    super(first);
+    this.first = first;
+  }
+
+  @Override
+  public T getFirst() {
+    return first;
+  }
 }

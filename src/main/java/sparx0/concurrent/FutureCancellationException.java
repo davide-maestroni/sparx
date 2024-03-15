@@ -13,9 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.concurrent;
 
-public interface BinaryFunction<P1, P2, R> {
+public class FutureCancellationException extends IllegalStateException {
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+  private final boolean mayInterruptIfRunning;
+
+  FutureCancellationException(final boolean mayInterruptIfRunning) {
+    this.mayInterruptIfRunning = mayInterruptIfRunning;
+  }
+
+  public boolean mayInterruptIfRunning() {
+    return mayInterruptIfRunning;
+  }
 }

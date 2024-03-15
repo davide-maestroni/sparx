@@ -13,9 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util.function;
+package sparx0.util.tuple;
 
-public interface BinaryFunction<P1, P2, R> {
+///////////////////////////////////////////////
+// WARNING: GENERATED CODE - DO NOT MODIFY!!
+// - templating engine: Mustache 0.9.11
+// - template path: template/tuple/Tuple.mustache
+///////////////////////////////////////////////
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+public interface Couple<T, T1 extends T, T2 extends T> extends Tuple<T> {
+
+  T1 getFirst();
+
+  T2 getSecond();
 }
