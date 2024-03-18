@@ -138,7 +138,7 @@ class FlatMapCollectionMaterializer<E, F> implements CollectionMaterializer<F> {
       if (index < 0 || materializeUntil(index) <= index) {
         throw new IndexOutOfBoundsException(String.valueOf(index));
       }
-      return null;
+      return elements.get(index);
     }
 
     @Override

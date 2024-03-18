@@ -38,7 +38,7 @@ class FindIndexOfSliceCollectionMaterializer<E> implements CollectionMaterialize
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return state.materialized() >= 0 && index == 0;
+    return index == 0 && state.materialized() >= 0;
   }
 
   @Override
@@ -186,6 +186,7 @@ class FindIndexOfSliceCollectionMaterializer<E> implements CollectionMaterialize
             if (!matches) {
               elementsIterator = elementsMaterializer.materializeIterator();
             }
+            ++index;
           } else {
             queue.add(left);
           }

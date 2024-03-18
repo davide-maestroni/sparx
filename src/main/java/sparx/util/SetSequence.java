@@ -89,6 +89,9 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull SetSequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull SetSequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
   @Override
@@ -99,6 +102,9 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull SetSequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull SetSequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull SetSequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
@@ -147,7 +153,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> min(@NotNull Comparator<? super E> comparator);
 
   @Override
-  @NotNull SetSequence<Boolean> nonExists(@NotNull Predicate<? super E> predicate);
+  @NotNull SetSequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull SetSequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);

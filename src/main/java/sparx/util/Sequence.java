@@ -36,7 +36,7 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<Integer> countNot(@NotNull Predicate<? super E> predicate);
 
-  void doEach(@NotNull Consumer<? super E> consumer);
+  void doFor(@NotNull Consumer<? super E> consumer);
 
   void doUntil(@NotNull Predicate<? super E> predicate, @NotNull Consumer<? super E> consumer);
 
@@ -78,6 +78,8 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
 
+  @NotNull Sequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
+
   @NotNull Sequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
   @NotNull Sequence<E> findLast(@NotNull Predicate<? super E> predicate);
@@ -85,6 +87,8 @@ public interface Sequence<E> extends Iterable<E> {
   @NotNull Sequence<Integer> findLastIndexOf(Object element);
 
   @NotNull Sequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
+
+  @NotNull Sequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
 
@@ -102,7 +106,7 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<? extends Sequence<E>> group(int size, E filler);
 
-  E head();
+  E head(); // TODO: first??
 
   @NotNull Sequence<Boolean> includes(Object element);
 
@@ -124,7 +128,7 @@ public interface Sequence<E> extends Iterable<E> {
 
   boolean notEmpty();
 
-  @NotNull Sequence<Boolean> nonExists(@NotNull Predicate<? super E> predicate);
+  @NotNull Sequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<E> peek(@NotNull Consumer<? super E> consumer);
 
@@ -170,7 +174,7 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull <F extends Number> Sequence<F> sum(@NotNull Function<? super E, F> mapper);
 
-  E tail();
+  E tail(); // TODO: last??
 
   @NotNull Sequence<E> take(int maxElements);
 

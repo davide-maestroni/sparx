@@ -93,6 +93,9 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull ListSequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull ListSequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
   @Override
@@ -103,6 +106,9 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
   @NotNull ListSequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull ListSequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull ListSequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
@@ -157,7 +163,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull ListSequence<Boolean> nonExists(@NotNull Predicate<? super E> predicate);
+  @NotNull ListSequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull ListSequence<E> peek(@NotNull Consumer<? super E> consumer);

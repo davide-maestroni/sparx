@@ -20,16 +20,18 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.CollectionMaterializer;
+import sparx.util.DequeueList;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 
-class FindLastIndexOfSliceCollectionMaterializer<E> implements CollectionMaterializer<Integer> {
+class IncludesSliceCollectionMaterializer<E> implements CollectionMaterializer<Boolean> {
 
-  private static final State NOT_FOUND = new NotFoundState();
+  private static final State FALSE_STATE = new FalseState();
+  private static final State TRUE_STATE = new TrueState();
 
   private volatile State state;
 
-  FindLastIndexOfSliceCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapped,
+  IncludesSliceCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapped,
       @NotNull final CollectionMaterializer<?> elementsMaterializer) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(elementsMaterializer, "elementsMaterializer"));
@@ -37,43 +39,40 @@ class FindLastIndexOfSliceCollectionMaterializer<E> implements CollectionMateria
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return index == 0 && state.materialized() >= 0;
+    return index == 0;
   }
 
   @Override
   public int knownSize() {
-    return state.knownSize();
+    return 1;
   }
 
   @Override
-  public Integer materializeElement(final int index) {
-    final int i = state.materialized();
-    if (i >= 0 && index == 0) {
-      return i;
+  public Boolean materializeElement(final int index) {
+    if (index == 0) {
+      return state.materialized();
     }
     throw new IndexOutOfBoundsException(String.valueOf(index));
   }
 
   @Override
   public boolean materializeEmpty() {
-    return state.materialized() < 0;
+    return false;
   }
 
   @Override
-  public @NotNull Iterator<Integer> materializeIterator() {
-    return new CollectionMaterializerIterator<Integer>(this);
+  public @NotNull Iterator<Boolean> materializeIterator() {
+    return new CollectionMaterializerIterator<Boolean>(this);
   }
 
   @Override
   public int materializeSize() {
-    return state.materialized() < 0 ? 0 : 1;
+    return 1;
   }
 
   private interface State {
 
-    int knownSize();
-
-    int materialized();
+    boolean materialized();
   }
 
   private static class ExceptionState implements State {
@@ -85,45 +84,24 @@ class FindLastIndexOfSliceCollectionMaterializer<E> implements CollectionMateria
     }
 
     @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public int materialized() {
+    public boolean materialized() {
       throw UncheckedException.throwUnchecked(ex);
     }
   }
 
-  private static class IndexState implements State {
-
-    private final int index;
-
-    private IndexState(final int index) {
-      this.index = index;
-    }
+  private static class FalseState implements State {
 
     @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public int materialized() {
-      return index;
+    public boolean materialized() {
+      return false;
     }
   }
 
-  private static class NotFoundState implements State {
+  private static class TrueState implements State {
 
     @Override
-    public int knownSize() {
-      return 0;
-    }
-
-    @Override
-    public int materialized() {
-      return -1;
+    public boolean materialized() {
+      return true;
     }
   }
 
@@ -140,40 +118,49 @@ class FindLastIndexOfSliceCollectionMaterializer<E> implements CollectionMateria
     }
 
     @Override
-    public int knownSize() {
-      return -1;
-    }
-
-    @Override
-    public int materialized() {
+    public boolean materialized() {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
       }
-      final CollectionMaterializer<E> wrapped = this.wrapped;
-      final CollectionMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       try {
-        final int elements = elementsMaterializer.materializeSize();
-        int i = wrapped.materializeSize();
-        for (; i >= elements; --i) {
-          int j = elements - 1;
-          for (int n = i - 1; j >= 0; --j, --n) {
-            final E left = wrapped.materializeElement(n);
-            final Object right = elementsMaterializer.materializeElement(j);
-            if (left != right && (left == null || !left.equals(right))) {
-              break;
+        final DequeueList<E> queue = new DequeueList<E>();
+        final Iterator<E> iterator = wrapped.materializeIterator();
+        final CollectionMaterializer<?> elementsMaterializer = this.elementsMaterializer;
+        Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
+        while (iterator.hasNext()) {
+          if (!elementsIterator.hasNext()) {
+            state = TRUE_STATE;
+            return true;
+          }
+          final E left = iterator.next();
+          Object right = elementsIterator.next();
+          if (left != right && (left == null || !left.equals(right))) {
+            boolean matches = false;
+            while (!queue.isEmpty() && !matches) {
+              queue.pop();
+              matches = true;
+              elementsIterator = elementsMaterializer.materializeIterator();
+              for (final E e : queue) {
+                if (!iterator.hasNext()) {
+                  state = TRUE_STATE;
+                  return true;
+                }
+                right = elementsIterator.next();
+                if (e != right && (e == null || !e.equals(right))) {
+                  matches = false;
+                  break;
+                }
+              }
             }
-          }
-          if (j < 0) {
-            break;
+            if (!matches) {
+              elementsIterator = elementsMaterializer.materializeIterator();
+            }
+          } else {
+            queue.add(left);
           }
         }
-        final int index = i - elements;
-        if (index >= 0) {
-          state = new IndexState(index);
-          return index;
-        }
-        state = NOT_FOUND;
-        return -1;
+        state = FALSE_STATE;
+        return false;
       } catch (final Exception e) {
         state = new ExceptionState(e);
         throw UncheckedException.throwUnchecked(e);

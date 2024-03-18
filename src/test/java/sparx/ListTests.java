@@ -17,6 +17,7 @@ package sparx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -235,11 +236,9 @@ public class ListTests {
   }
 
   @Test
-  public void doEach() {
+  public void doFor() {
     var list = new ArrayList<>();
-    List.of(1, 2, 3).doEach(list::add);
-    // List.of(1, 2, 3).each(list::add);
-    // List.of(1, 2, 3).doFor(list::add);
+    List.of(1, 2, 3).doFor(list::add);
     assertEquals(List.of(1, 2, 3), list);
   }
 
@@ -587,5 +586,376 @@ public class ListTests {
     }
   }
 
-  // TODO: filter
+  @Test
+  public void filter() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.filter(Objects::nonNull).isEmpty());
+    assertEquals(List.of(1, 2, 4), l.filter(Objects::nonNull));
+    assertEquals(List.of(1, 2), l.filter(Objects::nonNull).filter(i -> i < 3));
+    assertEquals(List.of(4), l.filter(Objects::nonNull).filter(i -> i > 3));
+    assertEquals(List.of(), l.filter(Objects::nonNull).filter(i -> i > 4));
+    assertThrows(NullPointerException.class, () -> l.filter(i -> i > 4).size());
+
+    assertTrue(List.of().filter(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().filter(Objects::isNull).size());
+  }
+
+  @Test
+  public void filterNot() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.filterNot(Objects::isNull).isEmpty());
+    assertEquals(List.of(1, 2, 4), l.filterNot(Objects::isNull));
+    assertEquals(List.of(1, 2), l.filterNot(Objects::isNull).filterNot(i -> i > 3));
+    assertEquals(List.of(4), l.filterNot(Objects::isNull).filterNot(i -> i < 3));
+    assertEquals(List.of(), l.filterNot(Objects::isNull).filterNot(i -> i <= 4));
+    assertThrows(NullPointerException.class, () -> l.filterNot(i -> i <= 4).size());
+
+    assertTrue(List.of().filterNot(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().filterNot(Objects::isNull).size());
+  }
+
+  @Test
+  public void findAny() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.findAny(Objects::isNull).isEmpty());
+    assertEquals(1, l.findAny(Objects::isNull).size());
+    assertEquals(List.of(null), l.findAny(Objects::isNull));
+    assertFalse(l.findAny(i -> i < 4).isEmpty());
+    assertEquals(1, l.findAny(i -> i < 4).size());
+
+    assertTrue(List.of().findAny(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().findAny(Objects::isNull).size());
+  }
+
+  @Test
+  public void findAnyNot() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.findAnyNot(Objects::nonNull).isEmpty());
+    assertEquals(1, l.findAnyNot(Objects::nonNull).size());
+    assertEquals(List.of(null), l.findAnyNot(Objects::nonNull));
+    assertFalse(l.findAnyNot(i -> i > 4).isEmpty());
+    assertEquals(1, l.findAnyNot(i -> i > 4).size());
+
+    assertTrue(List.of().findAnyNot(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().findAnyNot(Objects::isNull).size());
+  }
+
+  @Test
+  public void findIndexOf() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.findIndexOf(null).isEmpty());
+    assertEquals(1, l.findIndexOf(null).size());
+    assertEquals(2, l.findIndexOf(null).head());
+    assertEquals(List.of(2), l.findIndexOf(null));
+    assertFalse(l.findIndexOf(4).isEmpty());
+    assertEquals(1, l.findIndexOf(4).size());
+    assertEquals(3, l.findIndexOf(4).head());
+    assertEquals(List.of(3), l.findIndexOf(4));
+    assertTrue(l.findIndexOf(3).isEmpty());
+    assertEquals(0, l.findIndexOf(3).size());
+    assertThrows(IndexOutOfBoundsException.class, () -> l.findIndexOf(3).head());
+    assertEquals(List.of(), l.findIndexOf(3));
+
+    assertTrue(List.of().findIndexOf(null).isEmpty());
+    assertEquals(0, List.of().findIndexOf(null).size());
+  }
+
+  @Test
+  public void findIndexOfSlice() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.findIndexOfSlice(List.of(2, null)).isEmpty());
+    assertEquals(1, l.findIndexOfSlice(List.of(2, null)).size());
+    assertEquals(1, l.findIndexOfSlice(List.of(2, null)).head());
+    assertEquals(List.of(1), l.findIndexOfSlice(List.of(2, null)));
+    assertFalse(l.findIndexOfSlice(List.of(null)).isEmpty());
+    assertEquals(1, l.findIndexOfSlice(List.of(null)).size());
+    assertEquals(2, l.findIndexOfSlice(List.of(null)).head());
+    assertEquals(List.of(2), l.findIndexOfSlice(List.of(null)));
+    assertTrue(l.findIndexOfSlice(List.of(null, 2)).isEmpty());
+    assertEquals(0, l.findIndexOfSlice(List.of(null, 2)).size());
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.findIndexOfSlice(List.of(null, 2)).head());
+    assertEquals(List.of(), l.findIndexOfSlice(List.of(null, 2)));
+    assertFalse(l.findIndexOfSlice(List.of()).isEmpty());
+    assertEquals(1, l.findIndexOfSlice(List.of()).size());
+    assertEquals(0, l.findIndexOfSlice(List.of()).head());
+    assertEquals(List.of(0), l.findIndexOfSlice(List.of()));
+
+    assertEquals(2, List.of(1, 1, 1, 1, 2, 1).findIndexOfSlice(List.of(1, 1, 2)).head());
+
+    assertTrue(List.of().findIndexOfSlice(List.of(null)).isEmpty());
+    assertEquals(0, List.of().findIndexOfSlice(List.of(null)).size());
+  }
+
+  @Test
+  public void findIndexWhere() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.findIndexWhere(Objects::isNull).isEmpty());
+    assertEquals(1, l.findIndexWhere(Objects::isNull).size());
+    assertEquals(2, l.findIndexWhere(Objects::isNull).head());
+    assertEquals(List.of(2), l.findIndexWhere(Objects::isNull));
+    assertFalse(l.findIndexWhere(i -> i > 1).isEmpty());
+    assertEquals(1, l.findIndexWhere(i -> i > 1).size());
+    assertEquals(1, l.findIndexWhere(i -> i > 1).head());
+    assertEquals(List.of(1), l.findIndexWhere(i -> i > 1));
+    assertThrows(NullPointerException.class, () -> l.findIndexWhere(i -> i > 3).isEmpty());
+    assertThrows(NullPointerException.class, () -> l.findIndexWhere(i -> i > 3).head());
+
+    assertTrue(List.of().findIndexWhere(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().findIndexWhere(Objects::isNull).size());
+  }
+
+  @Test
+  public void findIndexWhereNot() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.findIndexWhereNot(Objects::nonNull).isEmpty());
+    assertEquals(1, l.findIndexWhereNot(Objects::nonNull).size());
+    assertEquals(2, l.findIndexWhereNot(Objects::nonNull).head());
+    assertEquals(List.of(2), l.findIndexWhereNot(Objects::nonNull));
+    assertFalse(l.findIndexWhereNot(i -> i < 2).isEmpty());
+    assertEquals(1, l.findIndexWhereNot(i -> i < 2).size());
+    assertEquals(1, l.findIndexWhereNot(i -> i < 2).head());
+    assertEquals(List.of(1), l.findIndexWhereNot(i -> i < 2));
+    assertThrows(NullPointerException.class, () -> l.findIndexWhereNot(i -> i < 3).isEmpty());
+    assertThrows(NullPointerException.class, () -> l.findIndexWhereNot(i -> i < 3).head());
+
+    assertTrue(List.of().findIndexWhereNot(Objects::nonNull).isEmpty());
+    assertEquals(0, List.of().findIndexWhereNot(Objects::nonNull).size());
+  }
+
+  @Test
+  public void findLast() {
+    var l = List.of(1, 2, null, 4, 5);
+    assertFalse(l.findLast(Objects::isNull).isEmpty());
+    assertEquals(1, l.findLast(Objects::isNull).size());
+    assertNull(l.findLast(Objects::isNull).head());
+    assertEquals(List.of(null), l.findLast(Objects::isNull));
+    assertThrows(NullPointerException.class, () -> l.findLast(i -> i < 4).head());
+    assertFalse(l.findLast(i -> i < 5).isEmpty());
+    assertEquals(1, l.findLast(i -> i < 5).size());
+    assertEquals(4, l.findLast(i -> i < 5).head());
+    assertEquals(List.of(4), l.findLast(i -> i < 5));
+    assertTrue(l.findLast(i -> i != null && i > 5).isEmpty());
+    assertEquals(0, l.findLast(i -> i != null && i > 5).size());
+    assertThrows(IndexOutOfBoundsException.class, () -> l.findLast(i -> i != null && i > 5).head());
+    assertEquals(List.of(), l.findLast(i -> i != null && i > 5));
+
+    assertTrue(List.of().findLast(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().findLast(Objects::isNull).size());
+  }
+
+  @Test
+  public void findLastIndexOf() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.findLastIndexOf(null).isEmpty());
+    assertEquals(1, l.findLastIndexOf(null).size());
+    assertEquals(2, l.findLastIndexOf(null).head());
+    assertEquals(List.of(2), l.findLastIndexOf(null));
+    assertFalse(l.findLastIndexOf(4).isEmpty());
+    assertEquals(1, l.findLastIndexOf(4).size());
+    assertEquals(3, l.findLastIndexOf(4).head());
+    assertEquals(List.of(3), l.findLastIndexOf(4));
+    assertTrue(l.findLastIndexOf(3).isEmpty());
+    assertEquals(0, l.findLastIndexOf(3).size());
+    assertThrows(IndexOutOfBoundsException.class, () -> l.findLastIndexOf(3).head());
+    assertEquals(List.of(), l.findLastIndexOf(3));
+
+    assertTrue(List.of().findLastIndexOf(null).isEmpty());
+    assertEquals(0, List.of().findLastIndexOf(null).size());
+  }
+
+  @Test
+  public void findLastIndexOfSlice() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.findLastIndexOfSlice(List.of(2, null)).isEmpty());
+    assertEquals(1, l.findLastIndexOfSlice(List.of(2, null)).size());
+    assertEquals(1, l.findLastIndexOfSlice(List.of(2, null)).head());
+    assertEquals(List.of(1), l.findLastIndexOfSlice(List.of(2, null)));
+    assertFalse(l.findLastIndexOfSlice(List.of(null)).isEmpty());
+    assertEquals(1, l.findLastIndexOfSlice(List.of(null)).size());
+    assertEquals(2, l.findLastIndexOfSlice(List.of(null)).head());
+    assertEquals(List.of(2), l.findLastIndexOfSlice(List.of(null)));
+    assertTrue(l.findLastIndexOfSlice(List.of(null, 2)).isEmpty());
+    assertEquals(0, l.findLastIndexOfSlice(List.of(null, 2)).size());
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.findLastIndexOfSlice(List.of(null, 2)).head());
+    assertEquals(List.of(), l.findLastIndexOfSlice(List.of(null, 2)));
+    assertFalse(l.findLastIndexOfSlice(List.of()).isEmpty());
+    assertEquals(1, l.findLastIndexOfSlice(List.of()).size());
+    assertEquals(4, l.findLastIndexOfSlice(List.of()).head());
+    assertEquals(List.of(4), l.findLastIndexOfSlice(List.of()));
+
+    assertEquals(2, List.of(1, 1, 1, 1, 2, 1).findLastIndexOfSlice(List.of(1, 1, 2)).head());
+
+    assertTrue(List.of().findLastIndexOfSlice(List.of(null)).isEmpty());
+    assertEquals(0, List.of().findLastIndexOfSlice(List.of(null)).size());
+  }
+
+  @Test
+  public void findLastIndexWhere() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.findLastIndexWhere(Objects::isNull).isEmpty());
+    assertEquals(1, l.findLastIndexWhere(Objects::isNull).size());
+    assertEquals(2, l.findLastIndexWhere(Objects::isNull).head());
+    assertEquals(List.of(2), l.findLastIndexWhere(Objects::isNull));
+    assertFalse(l.findLastIndexWhere(i -> i > 1).isEmpty());
+    assertEquals(1, l.findLastIndexWhere(i -> i > 1).size());
+    assertEquals(3, l.findLastIndexWhere(i -> i > 1).head());
+    assertEquals(List.of(3), l.findLastIndexWhere(i -> i > 1));
+    assertThrows(NullPointerException.class, () -> l.findLastIndexWhere(i -> i < 3).isEmpty());
+    assertThrows(NullPointerException.class, () -> l.findLastIndexWhere(i -> i < 3).head());
+
+    assertTrue(List.of().findLastIndexWhere(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().findLastIndexWhere(Objects::isNull).size());
+  }
+
+  @Test
+  public void findLastIndexWhereNot() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.findLastIndexWhereNot(Objects::nonNull).isEmpty());
+    assertEquals(1, l.findLastIndexWhereNot(Objects::nonNull).size());
+    assertEquals(2, l.findLastIndexWhereNot(Objects::nonNull).head());
+    assertEquals(List.of(2), l.findLastIndexWhereNot(Objects::nonNull));
+    assertFalse(l.findLastIndexWhereNot(i -> i < 2).isEmpty());
+    assertEquals(1, l.findLastIndexWhereNot(i -> i < 2).size());
+    assertEquals(3, l.findLastIndexWhereNot(i -> i < 2).head());
+    assertEquals(List.of(3), l.findLastIndexWhereNot(i -> i < 2));
+    assertThrows(NullPointerException.class, () -> l.findLastIndexWhereNot(i -> i > 3).isEmpty());
+    assertThrows(NullPointerException.class, () -> l.findLastIndexWhereNot(i -> i > 3).head());
+
+    assertTrue(List.of().findLastIndexWhereNot(Objects::nonNull).isEmpty());
+    assertEquals(0, List.of().findLastIndexWhereNot(Objects::nonNull).size());
+  }
+
+  @Test
+  public void findLastNot() {
+    var l = List.of(1, 2, null, 4, 5);
+    assertFalse(l.findLastNot(Objects::nonNull).isEmpty());
+    assertEquals(1, l.findLastNot(Objects::nonNull).size());
+    assertNull(l.findLastNot(Objects::nonNull).head());
+    assertEquals(List.of(null), l.findLastNot(Objects::nonNull));
+    assertFalse(l.findLastNot(Objects::isNull).isEmpty());
+    assertEquals(1, l.findLastNot(Objects::isNull).size());
+    assertEquals(5, l.findLastNot(Objects::isNull).head());
+    assertEquals(List.of(5), l.findLastNot(Objects::isNull));
+    assertFalse(l.findLastNot(i -> i < 4).isEmpty());
+    assertEquals(1, l.findLastNot(i -> i < 4).size());
+    assertEquals(5, l.findLastNot(i -> i < 4).head());
+    assertEquals(List.of(5), l.findLastNot(i -> i < 4));
+    assertThrows(NullPointerException.class, () -> l.findLastNot(i -> i > 3).head());
+    assertTrue(l.findLastNot(i -> i == null || i < 6).isEmpty());
+    assertEquals(0, l.findLastNot(i -> i == null || i < 6).size());
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.findLastNot(i -> i == null || i < 6).head());
+    assertEquals(List.of(), l.findLastNot(i -> i == null || i < 6));
+
+    assertTrue(List.of().findLastNot(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().findLastNot(Objects::isNull).size());
+  }
+
+  @Test
+  public void flatMap() {
+    var l = List.of(1, 2);
+    assertFalse(l.flatMap(i -> List.of(i, i)).isEmpty());
+    assertEquals(4, l.flatMap(i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2, 2), l.flatMap(i -> List.of(i, i)));
+    assertEquals(2, l.flatMap(i -> List.of(i, i)).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.flatMap(i -> List.of(i, i)).get(4));
+    assertTrue(l.flatMap(i -> List.of()).isEmpty());
+    assertEquals(0, l.flatMap(i -> List.of()).size());
+    assertEquals(List.of(), l.flatMap(i -> List.of()));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.flatMap(i -> List.of()).head());
+    assertFalse(l.flatMap(i -> List.of(null)).isEmpty());
+    assertEquals(2, l.flatMap(i -> List.of(null)).size());
+    assertEquals(List.of(null, null), l.flatMap(i -> List.of(null)));
+    assertNull(l.flatMap(i -> List.of(null)).get(1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.flatMap(i -> List.of(null)).get(2));
+  }
+
+  @Test
+  public void foldLeft() {
+    var l = List.of(1, 2, 3, 4, 5);
+    assertFalse(l.foldLeft(1, Integer::sum).isEmpty());
+    assertEquals(1, l.foldLeft(1, Integer::sum).size());
+    assertEquals(List.of(16), l.foldLeft(1, Integer::sum));
+    assertEquals(16, l.foldLeft(1, Integer::sum).get(0));
+
+    assertEquals(List.of(1, 2), List.of(1, 2).foldLeft(List.of(), List::append).get(0));
+
+    assertFalse(List.<Integer>of().foldLeft(1, Integer::sum).isEmpty());
+    assertEquals(1, List.<Integer>of().foldLeft(1, Integer::sum).size());
+    assertEquals(List.of(1), List.<Integer>of().foldLeft(1, Integer::sum));
+    assertEquals(1, List.<Integer>of().foldLeft(1, Integer::sum).get(0));
+    assertEquals(List.of(), List.of().foldLeft(List.of(), List::append).get(0));
+  }
+
+  @Test
+  public void foldRight() {
+    var l = List.of(1, 2, 3, 4, 5);
+    assertFalse(l.foldRight(1, Integer::sum).isEmpty());
+    assertEquals(1, l.foldRight(1, Integer::sum).size());
+    assertEquals(List.of(16), l.foldRight(1, Integer::sum));
+    assertEquals(16, l.foldRight(1, Integer::sum).get(0));
+
+    assertEquals(List.of(2, 1), List.of(1, 2).foldRight(List.of(), List::append).get(0));
+
+    assertFalse(List.<Integer>of().foldRight(1, Integer::sum).isEmpty());
+    assertEquals(1, List.<Integer>of().foldRight(1, Integer::sum).size());
+    assertEquals(List.of(1), List.<Integer>of().foldRight(1, Integer::sum));
+    assertEquals(1, List.<Integer>of().foldRight(1, Integer::sum).get(0));
+    assertEquals(List.of(), List.of().foldRight(List.of(), List::append).get(0));
+  }
+
+  @Test
+  public void group() {
+    var l = List.of(1, 2, 3, 4, 5);
+    assertThrows(IllegalArgumentException.class, () -> l.group(0));
+    assertFalse(l.group(1).isEmpty());
+    assertEquals(5, l.group(1).size());
+    assertEquals(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)), l.group(1));
+    assertEquals(List.of(3), l.group(1).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.group(1).get(5));
+    assertFalse(l.group(2).isEmpty());
+    assertEquals(3, l.group(2).size());
+    assertEquals(List.of(List.of(1, 2), List.of(3, 4), List.of(5)), l.group(2));
+    assertEquals(List.of(3, 4), l.group(2).get(1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.group(2).get(3));
+    assertFalse(l.group(3).isEmpty());
+    assertEquals(2, l.group(3).size());
+    assertEquals(List.of(List.of(1, 2, 3), List.of(4, 5)), l.group(3));
+    assertEquals(List.of(4, 5), l.group(3).get(1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.group(3).get(2));
+    assertFalse(l.group(10).isEmpty());
+    assertEquals(1, l.group(10).size());
+    assertEquals(List.of(List.of(1, 2, 3, 4, 5)), l.group(10));
+    assertEquals(List.of(1, 2, 3, 4, 5), l.group(10).get(0));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.group(10).get(1));
+  }
+
+  @Test
+  public void groupFiller() {
+    var l = List.of(1, 2, 3, 4, 5);
+    assertThrows(IllegalArgumentException.class, () -> l.group(0, null));
+    assertFalse(l.group(1, null).isEmpty());
+    assertEquals(5, l.group(1, null).size());
+    assertEquals(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)),
+        l.group(1, null));
+    assertEquals(List.of(3), l.group(1, null).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.group(1, null).get(5));
+    assertFalse(l.group(2, null).isEmpty());
+    assertEquals(3, l.group(2, null).size());
+    assertEquals(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)), l.group(2, null));
+    assertEquals(List.of(3, 4), l.group(2, null).get(1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.group(2, null).get(3));
+    assertFalse(l.group(3, -1).isEmpty());
+    assertEquals(2, l.group(3, -1).size());
+    assertEquals(List.of(List.of(1, 2, 3), List.of(4, 5, -1)), l.group(3, -1));
+    assertEquals(List.of(4, 5, -1), l.group(3, -1).get(1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.group(3, -1).get(2));
+    assertFalse(l.group(10, -1).isEmpty());
+    assertEquals(1, l.group(10, -1).size());
+    assertEquals(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)), l.group(10, -1));
+    assertEquals(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1), l.group(10, -1).get(0));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.group(10, -1).get(1));
+  }
 }

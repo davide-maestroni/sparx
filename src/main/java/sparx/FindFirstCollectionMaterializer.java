@@ -40,7 +40,7 @@ class FindFirstCollectionMaterializer<E> implements CollectionMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return !state.materialized().isEmpty() && index == 0;
+    return index == 0 && !state.materialized().isEmpty();
   }
 
   @Override

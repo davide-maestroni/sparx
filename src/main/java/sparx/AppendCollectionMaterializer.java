@@ -37,8 +37,7 @@ class AppendCollectionMaterializer<E> implements CollectionMaterializer<E> {
     if (wrapped.canMaterializeElement(index)) {
       return true;
     }
-    final int size = wrapped.materializeSize();
-    return index == size;
+    return index == wrapped.materializeSize();
   }
 
   @Override

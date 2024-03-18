@@ -24,18 +24,17 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.CollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Predicate;
+import sparx.util.function.BinaryFunction;
 
-class FindLastCollectionMaterializer<E> implements CollectionMaterializer<E> {
+class FoldRightCollectionMaterializer<E, F> implements CollectionMaterializer<F> {
 
-  private static final EmptyState<?> EMPTY_STATE = new EmptyState<Object>();
+  private volatile State<F> state;
 
-  private volatile State<E> state;
-
-  FindLastCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"));
+  FoldRightCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapped,
+      final F identity,
+      @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), identity,
+        Require.notNull(operation, "operation"));
   }
 
   @Override
@@ -49,7 +48,7 @@ class FindLastCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public F materializeElement(final int index) {
     return state.materialized().get(index);
   }
 
@@ -59,7 +58,7 @@ class FindLastCollectionMaterializer<E> implements CollectionMaterializer<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> materializeIterator() {
+  public @NotNull Iterator<F> materializeIterator() {
     return state.materialized().iterator();
   }
 
@@ -73,19 +72,6 @@ class FindLastCollectionMaterializer<E> implements CollectionMaterializer<E> {
     int knownSize();
 
     @NotNull List<E> materialized();
-  }
-
-  private static class EmptyState<E> implements State<E> {
-
-    @Override
-    public int knownSize() {
-      return 0;
-    }
-
-    @Override
-    public @NotNull List<E> materialized() {
-      return Collections.emptyList();
-    }
   }
 
   private static class ExceptionState<E> implements State<E> {
@@ -126,45 +112,40 @@ class FindLastCollectionMaterializer<E> implements CollectionMaterializer<E> {
     }
   }
 
-  private class ImmaterialState implements State<E> {
+  private class ImmaterialState implements State<F> {
 
+    private final F identity;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Predicate<? super E> predicate;
+    private final BinaryFunction<? super F, ? super E, ? extends F> operation;
     private final CollectionMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final CollectionMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate) {
+    private ImmaterialState(@NotNull final CollectionMaterializer<E> wrapped, final F identity,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
+      this.identity = identity;
+      this.operation = operation;
     }
 
     @Override
     public int knownSize() {
-      return -1;
+      return 1;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public @NotNull List<E> materialized() {
+    public @NotNull List<F> materialized() {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
       }
       try {
         final CollectionMaterializer<E> wrapped = this.wrapped;
-        final Predicate<? super E> predicate = this.predicate;
-        final int size = wrapped.materializeSize();
-        for (int i = size - 1; i >= 0; --i) {
-          final E element = wrapped.materializeElement(i);
-          if (predicate.test(element)) {
-            final ElementState<E> elementState = new ElementState<E>(element);
-            state = elementState;
-            return elementState.materialized();
-          }
+        F current = identity;
+        for (int i = wrapped.materializeSize() - 1; i >= 0; --i) {
+          current = operation.apply(current, wrapped.materializeElement(i));
         }
-        state = (State<E>) EMPTY_STATE;
-        return Collections.emptyList();
+        state = new ElementState<F>(current);
+        return state.materialized();
       } catch (final Exception e) {
-        state = new ExceptionState<E>(e);
+        state = new ExceptionState<F>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }

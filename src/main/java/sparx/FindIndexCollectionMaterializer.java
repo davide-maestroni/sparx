@@ -38,7 +38,7 @@ class FindIndexCollectionMaterializer<E> implements CollectionMaterializer<Integ
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return state.materialized() >= 0 && index == 0;
+    return index == 0 && state.materialized() >= 0;
   }
 
   @Override

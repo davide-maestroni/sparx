@@ -16,65 +16,63 @@
 package sparx;
 
 import java.util.ConcurrentModificationException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.CollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Predicate;
 
-class FindLastIndexCollectionMaterializer<E> implements CollectionMaterializer<Integer> {
+class IncludesAllCollectionMaterializer<E> implements CollectionMaterializer<Boolean> {
 
-  private static final State NOT_FOUND = new NotFoundState();
+  private static final State FALSE_STATE = new FalseState();
+  private static final State TRUE_STATE = new TrueState();
 
   private volatile State state;
 
-  FindLastIndexCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate) {
+  IncludesAllCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapped,
+      @NotNull final Iterable<?> elements) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"));
+        elements.iterator());
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return index == 0 && state.materialized() >= 0;
+    return index == 0;
   }
 
   @Override
   public int knownSize() {
-    return state.knownSize();
+    return 1;
   }
 
   @Override
-  public Integer materializeElement(final int index) {
-    final int i = state.materialized();
-    if (i >= 0 && index == 0) {
-      return i;
+  public Boolean materializeElement(final int index) {
+    if (index == 0) {
+      return state.materialized();
     }
     throw new IndexOutOfBoundsException(String.valueOf(index));
   }
 
   @Override
   public boolean materializeEmpty() {
-    return state.materialized() < 0;
+    return false;
   }
 
   @Override
-  public @NotNull Iterator<Integer> materializeIterator() {
-    return new CollectionMaterializerIterator<Integer>(this);
+  public @NotNull Iterator<Boolean> materializeIterator() {
+    return new CollectionMaterializerIterator<Boolean>(this);
   }
 
   @Override
   public int materializeSize() {
-    return state.materialized() < 0 ? 0 : 1;
+    return 1;
   }
 
   private interface State {
 
-    int knownSize();
-
-    int materialized();
+    boolean materialized();
   }
 
   private static class ExceptionState implements State {
@@ -86,84 +84,60 @@ class FindLastIndexCollectionMaterializer<E> implements CollectionMaterializer<I
     }
 
     @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public int materialized() {
+    public boolean materialized() {
       throw UncheckedException.throwUnchecked(ex);
     }
   }
 
-  private static class IndexState implements State {
-
-    private final int index;
-
-    private IndexState(final int index) {
-      this.index = index;
-    }
+  private static class FalseState implements State {
 
     @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public int materialized() {
-      return index;
+    public boolean materialized() {
+      return false;
     }
   }
 
-  private static class NotFoundState implements State {
+  private static class TrueState implements State {
 
     @Override
-    public int knownSize() {
-      return 0;
-    }
-
-    @Override
-    public int materialized() {
-      return -1;
+    public boolean materialized() {
+      return true;
     }
   }
 
   private class ImmaterialState implements State {
 
+    private final Iterator<?> elementsIterator;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Predicate<? super E> predicate;
     private final CollectionMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final CollectionMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate) {
+        @NotNull final Iterator<?> elementsIterator) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
+      this.elementsIterator = elementsIterator;
     }
 
     @Override
-    public int knownSize() {
-      return -1;
-    }
-
-    @Override
-    public int materialized() {
+    public boolean materialized() {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
       }
       try {
-        final CollectionMaterializer<E> wrapped = this.wrapped;
-        final Predicate<? super E> predicate = this.predicate;
-        final int size = wrapped.materializeSize();
-        int i = size - 1;
-        for (; i >= 0; --i) {
-          final E element = wrapped.materializeElement(i);
-          if (predicate.test(element)) {
-            state = new IndexState(i);
-            return i;
+        final HashSet<Object> elements = new HashSet<Object>();
+        final Iterator<?> elementsIterator = this.elementsIterator;
+        while (elementsIterator.hasNext()) {
+          elements.add(elementsIterator.next());
+        }
+        final Iterator<E> iterator = wrapped.materializeIterator();
+        while (iterator.hasNext()) {
+          elements.remove(iterator.next());
+          if (elements.isEmpty()) {
+            state = TRUE_STATE;
+            return true;
           }
         }
-        state = NOT_FOUND;
-        return -1;
+        state = FALSE_STATE;
+        return false;
       } catch (final Exception e) {
         state = new ExceptionState(e);
         throw UncheckedException.throwUnchecked(e);

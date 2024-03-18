@@ -96,6 +96,9 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull IteratorSequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull IteratorSequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
   @Override
@@ -106,6 +109,9 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
   @NotNull IteratorSequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull IteratorSequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
@@ -162,7 +168,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> min(@NotNull Comparator<? super E> comparator);
 
   @Override
-  @NotNull IteratorSequence<Boolean> nonExists(@NotNull Predicate<? super E> predicate);
+  @NotNull IteratorSequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull IteratorSequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);
