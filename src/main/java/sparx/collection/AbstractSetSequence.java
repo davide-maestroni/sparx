@@ -22,9 +22,9 @@ import sparx.util.Require;
 
 public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements SetSequence<E> {
 
-  private final CollectionMaterializer<E> materializer;
+  private final ListMaterializer<E> materializer;
 
-  public AbstractSetSequence(@NotNull final CollectionMaterializer<E> materializer) {
+  public AbstractSetSequence(@NotNull final ListMaterializer<E> materializer) {
     this.materializer = Require.notNull(materializer, "materializer");
   }
 

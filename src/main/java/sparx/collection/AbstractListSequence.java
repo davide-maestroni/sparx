@@ -23,9 +23,9 @@ import sparx.util.Require;
 
 public abstract class AbstractListSequence<E> extends AbstractList<E> implements ListSequence<E> {
 
-  private final CollectionMaterializer<E> materializer;
+  private final ListMaterializer<E> materializer;
 
-  public AbstractListSequence(@NotNull final CollectionMaterializer<E> materializer) {
+  public AbstractListSequence(@NotNull final ListMaterializer<E> materializer) {
     this.materializer = Require.notNull(materializer, "materializer");
   }
 

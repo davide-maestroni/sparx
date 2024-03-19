@@ -16,36 +16,47 @@
 package sparx;
 
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
-import sparx.util.Require;
 
-class CollectionMaterializerIterator<E> implements Iterator<E> {
+class ElementToListMaterializer<E> implements ListMaterializer<E> {
 
-  private final ListMaterializer<E> materializer;
-  private int nextIndex;
+  private final E element;
 
-  // Cannot use materializer.materializeIterator()
-  CollectionMaterializerIterator(@NotNull final ListMaterializer<E> materializer) {
-    this.materializer = Require.notNull(materializer, "materializer");
+  ElementToListMaterializer(final E element) {
+    this.element = element;
   }
 
   @Override
-  public boolean hasNext() {
-    return materializer.canMaterializeElement(nextIndex);
+  public boolean canMaterializeElement(final int index) {
+    return index == 0;
   }
 
   @Override
-  public E next() {
-    if (!hasNext()) {
-      throw new NoSuchElementException();
+  public int knownSize() {
+    return 1;
+  }
+
+  @Override
+  public E materializeElement(final int index) {
+    if (index != 0) {
+      throw new IndexOutOfBoundsException(String.valueOf(index));
     }
-    return materializer.materializeElement(nextIndex++);
+    return element;
   }
 
   @Override
-  public void remove() {
-    throw new UnsupportedOperationException("remove");
+  public boolean materializeEmpty() {
+    return false;
+  }
+
+  @Override
+  public @NotNull Iterator<E> materializeIterator() {
+    return new CollectionMaterializerIterator<E>(this);
+  }
+
+  @Override
+  public int materializeSize() {
+    return 1;
   }
 }

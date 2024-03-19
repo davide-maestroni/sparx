@@ -1097,4 +1097,21 @@ public class ListTests {
     assertEquals(1, List.wrap(iterable).insertAt(5, null).size());
     assertEquals(List.of(null), List.wrap(iterable).insertAt(5, null));
   }
+
+  @Test
+  public void map() {
+    var l = List.of(1, 2, 3);
+    assertFalse(l.map(x -> x + 1).isEmpty());
+    assertEquals(3, l.map(x -> x + 1).size());
+    assertEquals(List.of(2, 3, 4), l.map(x -> x + 1));
+    assertFalse(l.append(null).map(x -> x + 1).isEmpty());
+    assertEquals(4, l.append(null).map(x -> x + 1).size());
+    assertEquals(4, l.append(null).map(x -> x + 1).get(2));
+    assertEquals(2, l.append(null).map(x -> x + 1).get(0));
+    assertThrows(NullPointerException.class, () -> l.append(null).map(x -> x + 1).get(3));
+
+    assertTrue(List.<Integer>of().map(x -> x + 1).isEmpty());
+    assertEquals(0, List.<Integer>of().map(x -> x + 1).size());
+    assertEquals(List.of(), List.<Integer>of().map(x -> x + 1));
+  }
 }

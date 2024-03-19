@@ -15,16 +15,9 @@
  */
 package sparx.collection;
 
-import java.util.Iterator;
-import org.jetbrains.annotations.NotNull;
+public interface ListMaterializer<E> extends CollectionMaterializer<E> {
 
-public interface CollectionMaterializer<E> {
+  boolean canMaterializeElement(int index);
 
-  int knownSize();
-
-  boolean materializeEmpty();
-
-  @NotNull Iterator<E> materializeIterator();
-
-  int materializeSize();
+  E materializeElement(int index);
 }
