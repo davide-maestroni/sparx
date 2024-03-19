@@ -74,45 +74,6 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
     return state.materializeSize();
   }
 
-  private static class ExceptionState<E> implements ListMaterializer<E> {
-
-    private final Exception ex;
-
-    private ExceptionState(@NotNull final Exception ex) {
-      this.ex = ex;
-    }
-
-    @Override
-    public boolean canMaterializeElement(final int index) {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public E materializeElement(final int index) {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public boolean materializeEmpty() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public @NotNull Iterator<E> materializeIterator() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public int materializeSize() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-  }
-
   private class ImmaterialFillerState implements ListMaterializer<L> {
 
     private final ArrayList<L> elements = new ArrayList<L>();
@@ -173,6 +134,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
         for (int i = index * maxSize; i < endIndex && wrapped.canMaterializeElement(i); ++i) {
           chunk.add(wrapped.materializeElement(i));
         }
+        final E filler = this.filler;
         while (chunk.size() < maxSize) {
           chunk.add(filler);
         }
@@ -184,15 +146,14 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
           elements.add(null);
         }
         elements.set(index, element);
+        if (expectedCount != modCount.get()) {
+          throw new ConcurrentModificationException();
+        }
         if (++elementsCount == (wrapped.knownSize() + maxSize - 1) / maxSize) {
-          if (expectedCount != modCount.get()) {
-            throw new ConcurrentModificationException();
-          }
           state = new ListToListMaterializer<L>(elements);
         }
         return element;
       } catch (final Exception e) {
-        state = new ExceptionState<L>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }
@@ -279,12 +240,14 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
           elements.add(null);
         }
         elements.set(index, element);
+        if (expectedCount != modCount.get()) {
+          throw new ConcurrentModificationException();
+        }
         if (++elementsCount == (wrapped.knownSize() + maxSize - 1) / maxSize) {
           state = new ListToListMaterializer<L>(elements);
         }
         return element;
       } catch (final Exception e) {
-        state = new ExceptionState<L>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }

@@ -75,20 +75,6 @@ class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolean> {
     boolean materialized();
   }
 
-  private static class ExceptionState implements State {
-
-    private final Exception ex;
-
-    private ExceptionState(@NotNull final Exception ex) {
-      this.ex = ex;
-    }
-
-    @Override
-    public boolean materialized() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-  }
-
   private static class FalseState implements State {
 
     @Override
@@ -166,7 +152,7 @@ class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolean> {
         state = FALSE_STATE;
         return false;
       } catch (final Exception e) {
-        state = new ExceptionState(e);
+        isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
     }

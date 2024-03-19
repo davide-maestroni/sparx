@@ -67,9 +67,11 @@ class InsertAtListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));
     }
-    if (this.index == index) {
+    final int i = this.index;
+    if (i == index) {
       return element;
-    } else if (this.index < index) {
+    }
+    if (i < index) {
       return wrapped.materializeElement(index - 1);
     }
     final ListMaterializer<E> wrapped = this.wrapped;

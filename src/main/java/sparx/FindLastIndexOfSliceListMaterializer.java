@@ -47,9 +47,11 @@ class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer<Intege
 
   @Override
   public Integer materializeElement(final int index) {
-    final int i = state.materialized();
-    if (i >= 0 && index == 0) {
-      return i;
+    if (index == 0) {
+      final int i = state.materialized();
+      if (i >= 0) {
+        return i;
+      }
     }
     throw new IndexOutOfBoundsException(String.valueOf(index));
   }
@@ -74,25 +76,6 @@ class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer<Intege
     int knownSize();
 
     int materialized();
-  }
-
-  private static class ExceptionState implements State {
-
-    private final Exception ex;
-
-    private ExceptionState(@NotNull final Exception ex) {
-      this.ex = ex;
-    }
-
-    @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public int materialized() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
   }
 
   private static class IndexState implements State {
@@ -175,7 +158,7 @@ class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer<Intege
         state = NOT_FOUND;
         return -1;
       } catch (final Exception e) {
-        state = new ExceptionState(e);
+        isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
     }

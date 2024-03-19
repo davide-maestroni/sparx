@@ -26,7 +26,7 @@ import sparx.util.function.Predicate;
 public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
-  @NotNull SetSequence<Boolean> all(@NotNull Predicate<? super E> predicate);
+  @NotNull SetSequence<Boolean> all(@NotNull Predicate<? super E> condition);
 
   @Override
   @NotNull SetSequence<Boolean> exists(@NotNull Predicate<? super E> predicate);

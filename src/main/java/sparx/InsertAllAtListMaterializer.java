@@ -39,7 +39,8 @@ class InsertAllAtListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       return false;
     }
-    if (this.index == 0) {
+    final int i = this.index;
+    if (i == 0) {
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(index)) {
         return true;
@@ -47,22 +48,21 @@ class InsertAllAtListMaterializer<E> implements ListMaterializer<E> {
       final int size = elementsMaterializer.materializeSize();
       return wrapped.canMaterializeElement(index + size);
 
-    } else if (this.index <= index) {
+    }
+    if (i <= index) {
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-      if (elementsMaterializer.canMaterializeElement(index - this.index)) {
+      if (elementsMaterializer.canMaterializeElement(index - i)) {
         return true;
       }
       final int size = elementsMaterializer.materializeSize();
       return wrapped.canMaterializeElement(index + size);
-
-    } else {
-      final ListMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.canMaterializeElement(index)) {
-        return true;
-      }
-      final int size = wrapped.materializeSize();
-      return elementsMaterializer.canMaterializeElement(index + size);
     }
+    final ListMaterializer<E> wrapped = this.wrapped;
+    if (wrapped.canMaterializeElement(index)) {
+      return true;
+    }
+    final int size = wrapped.materializeSize();
+    return elementsMaterializer.canMaterializeElement(index + size);
   }
 
   @Override
@@ -82,31 +82,30 @@ class InsertAllAtListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));
     }
-    if (this.index == 0) {
+    final int i = this.index;
+    if (i == 0) {
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(index)) {
         return elementsMaterializer.materializeElement(index);
       }
       final int size = elementsMaterializer.materializeSize();
       return wrapped.materializeElement(index - size);
-
-    } else if (this.index <= index) {
-      final int i = index - this.index;
+    }
+    if (i <= index) {
+      final int j = index - i;
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-      if (elementsMaterializer.canMaterializeElement(i)) {
-        return elementsMaterializer.materializeElement(i);
+      if (elementsMaterializer.canMaterializeElement(j)) {
+        return elementsMaterializer.materializeElement(j);
       }
       final int size = elementsMaterializer.materializeSize();
       return wrapped.materializeElement(index - size);
-
-    } else {
-      final ListMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.canMaterializeElement(index)) {
-        return wrapped.materializeElement(index);
-      }
-      final int size = wrapped.materializeSize();
-      return elementsMaterializer.materializeElement(index - size);
     }
+    final ListMaterializer<E> wrapped = this.wrapped;
+    if (wrapped.canMaterializeElement(index)) {
+      return wrapped.materializeElement(index);
+    }
+    final int size = wrapped.materializeSize();
+    return elementsMaterializer.materializeElement(index - size);
   }
 
   @Override

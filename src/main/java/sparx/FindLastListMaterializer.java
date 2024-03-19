@@ -88,25 +88,6 @@ class FindLastListMaterializer<E> implements ListMaterializer<E> {
     }
   }
 
-  private static class ExceptionState<E> implements State<E> {
-
-    private final Exception ex;
-
-    private ExceptionState(@NotNull final Exception ex) {
-      this.ex = ex;
-    }
-
-    @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public @NotNull List<E> materialized() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-  }
-
   private static class ElementState<E> implements State<E> {
 
     private final List<E> elements;
@@ -164,7 +145,7 @@ class FindLastListMaterializer<E> implements ListMaterializer<E> {
         state = (State<E>) EMPTY_STATE;
         return Collections.emptyList();
       } catch (final Exception e) {
-        state = new ExceptionState<E>(e);
+        isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
     }

@@ -201,12 +201,12 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<Boolean> all(@NotNull final Predicate<? super E> predicate) {
+      public @NotNull List<Boolean> all(@NotNull final Predicate<? super E> condition) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return FALSE_LIST;
         }
-        return new List<Boolean>(new AllListMaterializer<E>(materializer, predicate, false));
+        return new List<Boolean>(new AllListMaterializer<E>(materializer, condition, false));
       }
 
       @Override

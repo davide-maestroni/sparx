@@ -27,7 +27,7 @@ import sparx.util.function.Predicate;
 public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
-  @NotNull IteratorSequence<Boolean> all(@NotNull Predicate<? super E> predicate);
+  @NotNull IteratorSequence<Boolean> all(@NotNull Predicate<? super E> condition);
 
   @Override
   @NotNull IteratorSequence<Boolean> exists(@NotNull Predicate<? super E> predicate);

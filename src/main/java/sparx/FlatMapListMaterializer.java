@@ -66,45 +66,6 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
     return state.materializeSize();
   }
 
-  private static class ExceptionState<E> implements ListMaterializer<E> {
-
-    private final Exception ex;
-
-    private ExceptionState(@NotNull final Exception ex) {
-      this.ex = ex;
-    }
-
-    @Override
-    public boolean canMaterializeElement(final int index) {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public E materializeElement(final int index) {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public boolean materializeEmpty() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public @NotNull Iterator<E> materializeIterator() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public int materializeSize() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-  }
-
   private class ImmaterialState implements ListMaterializer<F> {
 
     private final ArrayList<F> elements = new ArrayList<F>();
@@ -157,14 +118,17 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
     }
 
     private int materializeUntil(final int index) {
+      final ArrayList<F> elements = this.elements;
       int currSize = elements.size();
       if (currSize > index) {
         return currSize;
       }
       final Iterator<E> iterator = this.iterator;
+      final Function<? super E, ? extends Iterable<F>> mapper = this.mapper;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.getAndIncrement() + 1;
       try {
+        Iterator<F> elementIterator = this.elementIterator;
         while (true) {
           while (elementIterator.hasNext()) {
             elements.add(elementIterator.next());
@@ -176,7 +140,7 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
             }
           }
           if (iterator.hasNext()) {
-            elementIterator = mapper.apply(iterator.next()).iterator();
+            elementIterator = this.elementIterator = mapper.apply(iterator.next()).iterator();
           } else {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();
@@ -186,7 +150,6 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
           }
         }
       } catch (final Exception e) {
-        state = new ExceptionState<F>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }

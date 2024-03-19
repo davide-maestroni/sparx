@@ -55,11 +55,7 @@ class MapListMaterializer<E, F> implements ListMaterializer<F> {
 
   @Override
   public int knownSize() {
-    final int wrappedSize = state.knownSize();
-    if (wrappedSize == 0) {
-      return 0;
-    }
-    return -1;
+    return state.knownSize();
   }
 
   @Override
@@ -80,45 +76,6 @@ class MapListMaterializer<E, F> implements ListMaterializer<F> {
   @Override
   public int materializeSize() {
     return state.materializeSize();
-  }
-
-  private static class ExceptionState<E> implements ListMaterializer<E> {
-
-    private final Exception ex;
-
-    private ExceptionState(@NotNull final Exception ex) {
-      this.ex = ex;
-    }
-
-    @Override
-    public boolean canMaterializeElement(final int index) {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public int knownSize() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public E materializeElement(final int index) {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public boolean materializeEmpty() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public @NotNull Iterator<E> materializeIterator() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-
-    @Override
-    public int materializeSize() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
   }
 
   private class ArrayState implements ListMaterializer<F> {
@@ -162,7 +119,6 @@ class MapListMaterializer<E, F> implements ListMaterializer<F> {
         }
         return (F) (elements[index] = element);
       } catch (final Exception e) {
-        state = new ExceptionState<F>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }
@@ -236,7 +192,6 @@ class MapListMaterializer<E, F> implements ListMaterializer<F> {
         }
         return element;
       } catch (final Exception e) {
-        state = new ExceptionState<F>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }

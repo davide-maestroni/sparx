@@ -24,7 +24,7 @@ import sparx.util.function.Predicate;
 
 public interface Sequence<E> extends Iterable<E> {
 
-  @NotNull Sequence<Boolean> all(@NotNull Predicate<? super E> predicate);
+  @NotNull Sequence<Boolean> all(@NotNull Predicate<? super E> condition);
 
   <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper); // TODO: cannot inherit!!!
 

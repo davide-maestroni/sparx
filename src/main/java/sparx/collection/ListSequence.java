@@ -26,7 +26,7 @@ import sparx.util.function.Predicate;
 public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
-  @NotNull ListSequence<Boolean> all(@NotNull Predicate<? super E> predicate);
+  @NotNull ListSequence<Boolean> all(@NotNull Predicate<? super E> condition);
 
   @NotNull ListSequence<E> append(E element);
 

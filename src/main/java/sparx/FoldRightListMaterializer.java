@@ -74,25 +74,6 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
     @NotNull List<E> materialized();
   }
 
-  private static class ExceptionState<E> implements State<E> {
-
-    private final Exception ex;
-
-    private ExceptionState(@NotNull final Exception ex) {
-      this.ex = ex;
-    }
-
-    @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public @NotNull List<E> materialized() {
-      throw UncheckedException.throwUnchecked(ex);
-    }
-  }
-
   private static class ElementState<E> implements State<E> {
 
     private final List<E> elements;
@@ -137,6 +118,7 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
         throw new ConcurrentModificationException();
       }
       try {
+        final BinaryFunction<? super F, ? super E, ? extends F> operation = this.operation;
         final ListMaterializer<E> wrapped = this.wrapped;
         F current = identity;
         for (int i = wrapped.materializeSize() - 1; i >= 0; --i) {
@@ -145,7 +127,7 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
         state = new ElementState<F>(current);
         return state.materialized();
       } catch (final Exception e) {
-        state = new ExceptionState<F>(e);
+        isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
     }
