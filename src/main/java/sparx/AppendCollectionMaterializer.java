@@ -18,7 +18,7 @@ package sparx;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.CollectionMaterializer;
+import sparx.collection.CollectionMaterializer;
 import sparx.util.Require;
 
 class AppendCollectionMaterializer<E> implements CollectionMaterializer<E> {

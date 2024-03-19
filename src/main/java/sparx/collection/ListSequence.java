@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util;
+package sparx.collection;
 
 import java.util.Comparator;
 import java.util.List;
@@ -142,7 +142,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @Override
   @NotNull ListSequence<Boolean> includesSlice(@NotNull Iterable<?> elements);
 
-  @NotNull ListSequence<E> insertAllAt(int index, @NotNull Iterable<? extends E> patch);
+  @NotNull ListSequence<E> insertAllAt(int index, @NotNull Iterable<? extends E> elements);
 
   @NotNull ListSequence<E> insertAt(int index, E element);
 

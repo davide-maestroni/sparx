@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.CollectionMaterializer;
+import sparx.collection.CollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 
@@ -127,6 +127,10 @@ class IncludesAllCollectionMaterializer<E> implements CollectionMaterializer<Boo
         final Iterator<?> elementsIterator = this.elementsIterator;
         while (elementsIterator.hasNext()) {
           elements.add(elementsIterator.next());
+        }
+        if (elements.isEmpty()) {
+          state = TRUE_STATE;
+          return true;
         }
         final Iterator<E> iterator = wrapped.materializeIterator();
         while (iterator.hasNext()) {

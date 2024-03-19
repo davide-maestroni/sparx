@@ -685,6 +685,10 @@ public class ListTests {
 
     assertTrue(List.of().findIndexOfSlice(List.of(null)).isEmpty());
     assertEquals(0, List.of().findIndexOfSlice(List.of(null)).size());
+    assertFalse(List.of().findIndexOfSlice(List.of()).isEmpty());
+    assertEquals(1, List.of().findIndexOfSlice(List.of()).size());
+    assertEquals(0, List.of().findIndexOfSlice(List.of()).head());
+    assertEquals(List.of(0), List.of().findIndexOfSlice(List.of()));
   }
 
   @Test
@@ -762,6 +766,10 @@ public class ListTests {
 
     assertTrue(List.of().findLastIndexOf(null).isEmpty());
     assertEquals(0, List.of().findLastIndexOf(null).size());
+    assertFalse(List.of().findLastIndexOfSlice(List.of()).isEmpty());
+    assertEquals(1, List.of().findLastIndexOfSlice(List.of()).size());
+    assertEquals(0, List.of().findLastIndexOfSlice(List.of()).head());
+    assertEquals(List.of(0), List.of().findLastIndexOfSlice(List.of()));
   }
 
   @Test
@@ -957,5 +965,136 @@ public class ListTests {
     assertEquals(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)), l.group(10, -1));
     assertEquals(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1), l.group(10, -1).get(0));
     assertThrows(IndexOutOfBoundsException.class, () -> l.group(10, -1).get(1));
+  }
+
+  @Test
+  public void includes() {
+    var l = List.of(1, 2, 3, null, 5);
+    assertFalse(l.includes(null).isEmpty());
+    assertEquals(1, l.includes(null).size());
+    assertTrue(l.includes(null).head());
+    assertEquals(List.of(true), l.includes(null));
+    assertFalse(l.includes(0).isEmpty());
+    assertEquals(1, l.includes(0).size());
+    assertFalse(l.includes(0).head());
+    assertEquals(List.of(false), l.includes(0));
+    assertFalse(List.of().includes(0).isEmpty());
+    assertEquals(1, List.of().includes(0).size());
+    assertFalse(List.of().includes(0).head());
+    assertEquals(List.of(false), List.of().includes(null));
+  }
+
+  @Test
+  public void includesAll() {
+    var l = List.of(1, 2, 3, null, 5);
+    assertFalse(l.includesAll(List.of(null, 1)).isEmpty());
+    assertEquals(1, l.includesAll(List.of(null, 1)).size());
+    assertTrue(l.includesAll(List.of(null, 1)).head());
+    assertEquals(List.of(true), l.includesAll(List.of(null, 1)));
+    assertFalse(l.includesAll(List.of(0, 1)).isEmpty());
+    assertEquals(1, l.includesAll(List.of(0, 1)).size());
+    assertFalse(l.includesAll(List.of(0, 1)).head());
+    assertEquals(List.of(false), l.includesAll(List.of(0, 1)));
+    assertFalse(l.includesAll(List.of()).isEmpty());
+    assertEquals(1, l.includesAll(List.of()).size());
+    assertTrue(l.includesAll(List.of()).head());
+    assertEquals(List.of(true), l.includesAll(List.of()));
+    assertFalse(List.of().includesAll(List.of(null, 1)).isEmpty());
+    assertEquals(1, List.of().includesAll(List.of(null, 1)).size());
+    assertFalse(List.of().includesAll(List.of(null, 1)).head());
+    assertEquals(List.of(false), List.of().includesAll(List.of(null, 1)));
+    assertFalse(List.of().includesAll(List.of()).isEmpty());
+    assertEquals(1, List.of().includesAll(List.of()).size());
+    assertTrue(List.of().includesAll(List.of()).head());
+    assertEquals(List.of(true), List.of().includesAll(List.of()));
+  }
+
+  @Test
+  public void includesSlice() {
+    var l = List.of(1, 2, 3, null, 5);
+    assertFalse(l.includesSlice(List.of(3, null)).isEmpty());
+    assertEquals(1, l.includesSlice(List.of(3, null)).size());
+    assertTrue(l.includesSlice(List.of(3, null)).head());
+    assertEquals(List.of(true), l.includesSlice(List.of(3, null)));
+    assertFalse(l.includesSlice(List.of(null, 3)).isEmpty());
+    assertEquals(1, l.includesSlice(List.of(null, 3)).size());
+    assertFalse(l.includesSlice(List.of(null, 3)).head());
+    assertEquals(List.of(false), l.includesSlice(List.of(null, 3)));
+    assertFalse(l.includesSlice(List.of()).isEmpty());
+    assertEquals(1, l.includesSlice(List.of()).size());
+    assertTrue(l.includesSlice(List.of()).head());
+    assertEquals(List.of(true), l.includesSlice(List.of()));
+    assertFalse(List.of().includesSlice(List.of(null, 1)).isEmpty());
+    assertEquals(1, List.of().includesSlice(List.of(null, 1)).size());
+    assertFalse(List.of().includesSlice(List.of(null, 1)).head());
+    assertEquals(List.of(false), List.of().includesSlice(List.of(null, 1)));
+    assertFalse(List.of().includesSlice(List.of()).isEmpty());
+    assertEquals(1, List.of().includesSlice(List.of()).size());
+    assertTrue(List.of().includesSlice(List.of()).head());
+    assertEquals(List.of(true), List.of().includesSlice(List.of()));
+  }
+
+  @Test
+  public void insertAllAt() {
+    var l = List.of(1, 2, 3);
+    assertFalse(l.insertAllAt(5, List.of(null, 5)).isEmpty());
+    assertEquals(5, l.insertAllAt(5, List.of(null, 5)).size());
+    assertEquals(List.of(1, 2, 3, null, 5), l.insertAllAt(5, List.of(null, 5)));
+    assertFalse(l.insertAllAt(3, List.of(null, 5)).isEmpty());
+    assertEquals(5, l.insertAllAt(3, List.of(null, 5)).size());
+    assertEquals(List.of(1, 2, 3, null, 5), l.insertAllAt(3, List.of(null, 5)));
+    assertFalse(l.insertAllAt(2, List.of(null, 5)).isEmpty());
+    assertEquals(5, l.insertAllAt(2, List.of(null, 5)).size());
+    assertEquals(List.of(1, 2, null, 5, 3), l.insertAllAt(2, List.of(null, 5)));
+    assertFalse(l.insertAllAt(1, List.of(null, 5)).isEmpty());
+    assertEquals(5, l.insertAllAt(1, List.of(null, 5)).size());
+    assertEquals(List.of(1, null, 5, 2, 3), l.insertAllAt(1, List.of(null, 5)));
+    assertFalse(l.insertAllAt(0, List.of(null, 5)).isEmpty());
+    assertEquals(5, l.insertAllAt(0, List.of(null, 5)).size());
+    assertEquals(List.of(null, 5, 1, 2, 3), l.insertAllAt(0, List.of(null, 5)));
+    assertFalse(l.insertAllAt(-7, List.of(null, 5)).isEmpty());
+    assertEquals(5, l.insertAllAt(-7, List.of(null, 5)).size());
+    assertEquals(List.of(null, 5, 1, 2, 3), l.insertAllAt(-7, List.of(null, 5)));
+
+    assertFalse(List.of().insertAllAt(5, List.of(null, 5)).isEmpty());
+    assertEquals(2, List.of().insertAllAt(5, List.of(null, 5)).size());
+    assertEquals(List.of(null, 5), List.of().insertAllAt(5, List.of(null, 5)));
+
+    Iterable<Object> iterable = () -> List.of().iterator();
+    assertFalse(List.wrap(iterable).insertAllAt(5, List.of(null, 5)).isEmpty());
+    assertEquals(2, List.wrap(iterable).insertAllAt(5, List.of(null, 5)).size());
+    assertEquals(List.of(null, 5), List.wrap(iterable).insertAllAt(5, List.of(null, 5)));
+  }
+
+  @Test
+  public void insertAt() {
+    var l = List.of(1, 2, 3);
+    assertFalse(l.insertAt(5, null).isEmpty());
+    assertEquals(4, l.insertAt(5, null).size());
+    assertEquals(List.of(1, 2, 3, null), l.insertAt(5, null));
+    assertFalse(l.insertAt(3, null).isEmpty());
+    assertEquals(4, l.insertAt(3, null).size());
+    assertEquals(List.of(1, 2, 3, null), l.insertAt(3, null));
+    assertFalse(l.insertAt(2, null).isEmpty());
+    assertEquals(4, l.insertAt(2, null).size());
+    assertEquals(List.of(1, 2, null, 3), l.insertAt(2, null));
+    assertFalse(l.insertAt(1, null).isEmpty());
+    assertEquals(4, l.insertAt(1, null).size());
+    assertEquals(List.of(1, null, 2, 3), l.insertAt(1, null));
+    assertFalse(l.insertAt(0, null).isEmpty());
+    assertEquals(4, l.insertAt(0, null).size());
+    assertEquals(List.of(null, 1, 2, 3), l.insertAt(0, null));
+    assertFalse(l.insertAt(-7, null).isEmpty());
+    assertEquals(4, l.insertAt(-7, null).size());
+    assertEquals(List.of(null, 1, 2, 3), l.insertAt(-7, null));
+
+    assertFalse(List.of().insertAt(5, null).isEmpty());
+    assertEquals(1, List.of().insertAt(5, null).size());
+    assertEquals(List.of(null), List.of().insertAt(5, null));
+
+    Iterable<Object> iterable = () -> List.of().iterator();
+    assertFalse(List.wrap(iterable).insertAt(5, null).isEmpty());
+    assertEquals(1, List.wrap(iterable).insertAt(5, null).size());
+    assertEquals(List.of(null), List.wrap(iterable).insertAt(5, null));
   }
 }

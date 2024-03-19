@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util;
+package sparx.collection;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;

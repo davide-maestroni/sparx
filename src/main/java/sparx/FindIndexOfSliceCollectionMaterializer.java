@@ -19,7 +19,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.CollectionMaterializer;
+import sparx.collection.CollectionMaterializer;
 import sparx.util.DequeueList;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
@@ -156,6 +156,10 @@ class FindIndexOfSliceCollectionMaterializer<E> implements CollectionMaterialize
         final CollectionMaterializer<?> elementsMaterializer = this.elementsMaterializer;
         Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
         int index = 0;
+        if (!elementsIterator.hasNext()) {
+          state = new IndexState(index);
+          return index;
+        }
         while (iterator.hasNext()) {
           if (!elementsIterator.hasNext()) {
             state = new IndexState(index);

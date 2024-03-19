@@ -19,7 +19,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.CollectionMaterializer;
+import sparx.collection.CollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.Predicate;
@@ -74,6 +74,7 @@ class AllCollectionMaterializer<E> implements CollectionMaterializer<Boolean> {
     boolean materialized();
   }
 
+  // TODO: keep failed state???
   private static class ExceptionState implements State {
 
     private final Exception ex;

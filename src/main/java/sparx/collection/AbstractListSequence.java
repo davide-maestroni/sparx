@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util;
+package sparx.collection;
 
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.Require;
 
 public abstract class AbstractListSequence<E> extends AbstractList<E> implements ListSequence<E> {
 
@@ -39,7 +40,7 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   }
 
   @Override
-  public boolean addAll(final int index, final Collection<? extends E> c) {
+  public boolean addAll(final int index, final @NotNull Collection<? extends E> c) {
     throw new UnsupportedOperationException();
   }
 

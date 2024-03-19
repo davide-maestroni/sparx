@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.util;
+package sparx.collection;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -200,7 +200,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> removeFirst(E element);
 
   @Override
-  @NotNull IteratorSequence<E> removeLast(E element);
+  @NotNull IteratorSequence<E> removeLast(E element); // TODO: ???
 
   @Override
   @NotNull IteratorSequence<E> removeSegment(int from, int maxSize);
@@ -218,7 +218,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> replaceFirst(E current, E replacement);
 
   @Override
-  @NotNull IteratorSequence<E> replaceLast(E current, E replacement);
+  @NotNull IteratorSequence<E> replaceLast(E current, E replacement); // TODO: ???
 
   @Override
   @NotNull IteratorSequence<E> replaceSegment(int from, @NotNull Iterable<? extends E> patch,

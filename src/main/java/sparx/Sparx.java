@@ -20,11 +20,11 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.AbstractListSequence;
-import sparx.util.CollectionMaterializer;
-import sparx.util.ListSequence;
+import sparx.collection.AbstractListSequence;
+import sparx.collection.CollectionMaterializer;
+import sparx.collection.ListSequence;
+import sparx.collection.Sequence;
 import sparx.util.Require;
-import sparx.util.Sequence;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
@@ -76,6 +76,8 @@ public class Sparx {
 
       private static final List<?> EMPTY_LIST = new List<Object>(EMPTY_MATERIALIZER);
       private static final List<Boolean> FALSE_LIST = new List<Boolean>(
+          new ElementToCollectionMaterializer<Boolean>(false));
+      private static final List<Boolean> TRUE_LIST = new List<Boolean>(
           new ElementToCollectionMaterializer<Boolean>(false));
       private static final List<Integer> ZERO_LIST = new List<Integer>(
           new ElementToCollectionMaterializer<Integer>(0));
@@ -180,7 +182,7 @@ public class Sparx {
 
       @SuppressWarnings("unchecked")
       private static @NotNull <E> CollectionMaterializer<E> getElementsMaterializer(
-          @NotNull final Iterable<E> elements) {
+          @NotNull final Iterable<? extends E> elements) {
         if (elements instanceof java.util.List) {
           final java.util.List<E> list = (java.util.List<E>) elements;
           if (list.isEmpty()) {
@@ -194,7 +196,7 @@ public class Sparx {
           }
           return new CollectionToCollectionMaterializer<E>(collection);
         } else {
-          return new IteratorToCollectionMaterializer<E>(elements.iterator());
+          return new IteratorToCollectionMaterializer<E>((Iterator<E>) elements.iterator());
         }
       }
 
@@ -614,13 +616,29 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> insertAllAt(int index, @NotNull Iterable<? extends E> patch) {
-        return null;
+      public @NotNull List<E> insertAllAt(final int index,
+          @NotNull final Iterable<? extends E> elements) {
+        final CollectionMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        final CollectionMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new List<E>(elementsMaterializer);
+        }
+        return new List<E>(
+            new InsertAllAtCollectionMaterializer<E>(materializer, index, elementsMaterializer));
       }
 
       @Override
-      public @NotNull ListSequence<E> insertAt(int index, E element) {
-        return null;
+      public @NotNull List<E> insertAt(final int index, final E element) {
+        final CollectionMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new List<E>(new ElementToCollectionMaterializer<E>(element));
+        }
+        return new List<E>(new InsertAtCollectionMaterializer<E>(materializer, index, element));
+      }
+
+      @Override
+      public @NotNull Iterator<E> iterator() {
+        return materializer.materializeIterator();
       }
 
       @Override
@@ -645,13 +663,19 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<Boolean> notAll(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<Boolean> notAll(@NotNull final Predicate<? super E> predicate) {
+        if (materializer.knownSize() == 0) {
+          return TRUE_LIST;
+        }
+        return exists(negated(predicate));
       }
 
       @Override
-      public @NotNull ListSequence<Boolean> notExists(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<Boolean> notExists(@NotNull final Predicate<? super E> predicate) {
+        if (materializer.knownSize() == 0) {
+          return TRUE_LIST;
+        }
+        return all(negated(predicate));
       }
 
       @Override

@@ -21,80 +21,91 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.CollectionMaterializer;
 import sparx.util.Require;
 
-class AppendAllCollectionMaterializer<E> implements CollectionMaterializer<E> {
+class InsertAtCollectionMaterializer<E> implements CollectionMaterializer<E> {
 
-  private final CollectionMaterializer<E> elementsMaterializer;
+  private final E element;
+  private final int index;
   private final CollectionMaterializer<E> wrapped;
 
-  AppendAllCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapped,
-      @NotNull final CollectionMaterializer<E> elementsMaterializer) {
+  InsertAtCollectionMaterializer(@NotNull final CollectionMaterializer<E> wrapped,
+      final int index, final E element) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.elementsMaterializer = Require.notNull(elementsMaterializer, "elementsMaterializer");
+    this.index = Math.max(0, index);
+    this.element = element;
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
+    if (index < 0) {
+      return false;
+    }
+    if (index == 0) {
+      return true;
+    }
+    if (this.index <= index) {
+      return wrapped.canMaterializeElement(index - 1);
+    }
     final CollectionMaterializer<E> wrapped = this.wrapped;
     if (wrapped.canMaterializeElement(index)) {
       return true;
     }
     final int size = wrapped.materializeSize();
-    return elementsMaterializer.canMaterializeElement(index - size);
+    return index <= size;
   }
 
   @Override
   public int knownSize() {
     final int wrappedSize = wrapped.knownSize();
     if (wrappedSize >= 0) {
-      final int elementsKnownSize = elementsMaterializer.knownSize();
-      if (elementsKnownSize >= 0) {
-        return wrappedSize + elementsKnownSize;
-      }
+      return wrappedSize + 1;
     }
     return -1;
   }
 
   @Override
   public E materializeElement(final int index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(String.valueOf(index));
+    }
+    if (this.index == index) {
+      return element;
+    } else if (this.index < index) {
+      return wrapped.materializeElement(index - 1);
+    }
     final CollectionMaterializer<E> wrapped = this.wrapped;
     if (wrapped.canMaterializeElement(index)) {
       return wrapped.materializeElement(index);
     }
-    final int size = wrapped.materializeSize();
-    return elementsMaterializer.materializeElement(index - size);
+    if (index > wrapped.materializeSize()) {
+      throw new IndexOutOfBoundsException(String.valueOf(index));
+    }
+    return element;
   }
 
   @Override
   public boolean materializeEmpty() {
-    return wrapped.materializeEmpty() && elementsMaterializer.materializeEmpty();
+    return false;
   }
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new AppendIterator();
+    return new InsertIterator();
   }
 
   @Override
   public int materializeSize() {
-    return wrapped.materializeSize() + elementsMaterializer.materializeSize();
+    return wrapped.materializeSize() + 1;
   }
 
-  private class AppendIterator implements Iterator<E> {
+  private class InsertIterator implements Iterator<E> {
 
-    private Iterator<E> iterator = wrapped.materializeIterator();
+    private final Iterator<E> iterator = wrapped.materializeIterator();
 
-    private boolean consumedElements;
+    private int pos = 0;
 
     @Override
     public boolean hasNext() {
-      if (iterator.hasNext()) {
-        return true;
-      }
-      if (!consumedElements) {
-        consumedElements = true;
-        iterator = elementsMaterializer.materializeIterator();
-      }
-      return iterator.hasNext();
+      return iterator.hasNext() || pos <= index;
     }
 
     @Override
@@ -102,7 +113,19 @@ class AppendAllCollectionMaterializer<E> implements CollectionMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      return iterator.next();
+      if (pos != index) {
+        final Iterator<E> iterator = this.iterator;
+        if (iterator.hasNext()) {
+          ++pos;
+          return iterator.next();
+        } else if (pos > index) {
+          throw new NoSuchElementException();
+        }
+        pos = index + 1;
+        return element;
+      }
+      ++pos;
+      return element;
     }
 
     @Override
