@@ -32,8 +32,8 @@ class AllListMaterializer<E> implements ListMaterializer<Boolean> {
   private volatile State state;
 
   AllListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> condition, final boolean defaultState) {
-    state = new ImmaterialState(wrapped, Require.notNull(condition, "condition"), defaultState);
+      @NotNull final Predicate<? super E> predicate, final boolean defaultState) {
+    state = new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"), defaultState);
   }
 
   @Override
@@ -61,7 +61,7 @@ class AllListMaterializer<E> implements ListMaterializer<Boolean> {
 
   @Override
   public @NotNull Iterator<Boolean> materializeIterator() {
-    return new CollectionMaterializerIterator<Boolean>(this);
+    return new ListMaterializerIterator<Boolean>(this);
   }
 
   @Override
@@ -92,15 +92,15 @@ class AllListMaterializer<E> implements ListMaterializer<Boolean> {
 
   private class ImmaterialState implements State {
 
-    private final Predicate<? super E> condition;
+    private final Predicate<? super E> predicate;
     private final boolean defaultState;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> condition, final boolean defaultState) {
+        @NotNull final Predicate<? super E> predicate, final boolean defaultState) {
       this.wrapped = wrapped;
-      this.condition = condition;
+      this.predicate = predicate;
       this.defaultState = defaultState;
     }
 
@@ -120,10 +120,10 @@ class AllListMaterializer<E> implements ListMaterializer<Boolean> {
             return false;
           }
         }
-        final Predicate<? super E> condition = this.condition;
+        final Predicate<? super E> predicate = this.predicate;
         while (iterator.hasNext()) {
           final E next = iterator.next();
-          if (!condition.test(next)) {
+          if (!predicate.test(next)) {
             state = FALSE_STATE;
             return false;
           }

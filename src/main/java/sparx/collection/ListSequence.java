@@ -26,7 +26,7 @@ import sparx.util.function.Predicate;
 public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
-  @NotNull ListSequence<Boolean> all(@NotNull Predicate<? super E> condition);
+  @NotNull ListSequence<Boolean> all(@NotNull Predicate<? super E> predicate);
 
   @NotNull ListSequence<E> append(E element);
 
@@ -90,13 +90,27 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<Integer> findIndexOf(Object element);
 
   @Override
+  @NotNull ListSequence<Integer> findIndexOf(int minIndex, Object element);
+
+  @Override
   @NotNull ListSequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull ListSequence<Integer> findIndexWhere(int minIndex,
+      @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull ListSequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull ListSequence<Integer> findIndexWhereNot(int minIndex,
+      @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull ListSequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+
+  @Override
+  @NotNull ListSequence<Integer> findIndexOfSlice(int minIndex, @NotNull Iterable<?> elements);
 
   @Override
   @NotNull ListSequence<E> findLast(@NotNull Predicate<? super E> predicate);
@@ -105,13 +119,27 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<Integer> findLastIndexOf(Object element);
 
   @Override
+  @NotNull ListSequence<Integer> findLastIndexOf(int maxIndex, Object element);
+
+  @Override
   @NotNull ListSequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull ListSequence<Integer> findLastIndexWhere(int maxIndex,
+      @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull ListSequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull ListSequence<Integer> findLastIndexWhereNot(int maxIndex,
+      @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull ListSequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
+
+  @Override
+  @NotNull ListSequence<Integer> findLastIndexOfSlice(int maxIndex, @NotNull Iterable<?> elements);
 
   @Override
   @NotNull ListSequence<E> findLastNot(@NotNull Predicate<? super E> predicate);
@@ -125,7 +153,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
   @NotNull <F> ListSequence<F> foldRight(F identity,
-      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+      @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
   @Override
   @NotNull ListSequence<? extends ListSequence<E>> group(int maxSize);
@@ -148,10 +176,6 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
   @NotNull <F> ListSequence<F> map(@NotNull Function<? super E, F> mapper);
-
-  @Override
-  @NotNull ListSequence<E> mapExceptionally(
-      @NotNull Function<? super Throwable, ? extends E> mapper);
 
   @Override
   @NotNull ListSequence<E> max(@NotNull Comparator<? super E> comparator);
@@ -179,12 +203,12 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<E> prependAll(@NotNull Iterable<E> elements);
 
   @Override
-  @NotNull <F extends E> ListSequence<F> reduceLeft(
-      @NotNull BinaryFunction<? super E, ? super E, F> operation);
+  @NotNull ListSequence<E> reduceLeft(
+      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
-  @NotNull <F extends E> ListSequence<F> reduceRight(
-      @NotNull BinaryFunction<? super E, ? super E, F> operation);
+  @NotNull ListSequence<E> reduceRight(
+      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull ListSequence<E> removeAt(int index);
@@ -196,13 +220,38 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<E> removeFirst(E element);
 
   @Override
+  @NotNull ListSequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull ListSequence<E> removeFirstWhere(int minIndex, @NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull ListSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull ListSequence<E> removeFirstWhereNot(int minIndex,
+      @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull ListSequence<E> removeLast(E element);
 
   @Override
-  @NotNull ListSequence<E> removeSegment(int from, int maxSize);
+  @NotNull ListSequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull ListSequence<E> removeSlice(int from, int until);
+  @NotNull ListSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull ListSequence<E> removeSegment(int start, int maxSize);
+
+  @Override
+  @NotNull ListSequence<E> removeSlice(int start, int end);
+
+  @Override
+  @NotNull ListSequence<E> removeWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull ListSequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull ListSequence<E> replaceAt(int index, E element);
@@ -211,17 +260,17 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<E> replaceEach(E element, E replacement);
 
   @Override
-  @NotNull ListSequence<E> replaceFirst(E current, E replacement);
+  @NotNull ListSequence<E> replaceFirst(E element, E replacement);
 
   @Override
-  @NotNull ListSequence<E> replaceLast(E current, E replacement);
+  @NotNull ListSequence<E> replaceLast(E element, E replacement);
 
   @Override
-  @NotNull ListSequence<E> replaceSegment(int from, @NotNull Iterable<? extends E> patch,
+  @NotNull ListSequence<E> replaceSegment(int start, @NotNull Iterable<? extends E> patch,
       int maxSize);
 
   @Override
-  @NotNull ListSequence<E> replaceSlice(int from, @NotNull Iterable<? extends E> patch, int until);
+  @NotNull ListSequence<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch, int end);
 
   @NotNull ListSequence<E> reverse();
 
@@ -232,9 +281,6 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<Boolean> startsWith(@NotNull Iterable<?> elements);
 
   @NotNull ListSequence<E> sorted(@NotNull Comparator<? super E> comparator);
-
-  @Override
-  @NotNull <F extends Number> ListSequence<F> sum(@NotNull Function<? super E, F> mapper);
 
   @Override
   @NotNull ListSequence<E> take(int maxElements);

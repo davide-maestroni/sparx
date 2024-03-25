@@ -16,6 +16,7 @@
 package sparx;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
@@ -24,17 +25,17 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.BinaryFunction;
 
-class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
+class MaxListMaterializer<E> implements ListMaterializer<E> {
 
-  private volatile State<F> state;
+  private static final EmptyState<?> EMPTY_STATE = new EmptyState<Object>();
 
-  FoldRightListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      final F identity,
-      @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), identity,
-        Require.notNull(operation, "operation"));
+  private volatile State<E> state;
+
+  MaxListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @NotNull final Comparator<? super E> comparator) {
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+        Require.notNull(comparator, "comparator"));
   }
 
   @Override
@@ -48,7 +49,7 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
-  public F materializeElement(final int index) {
+  public E materializeElement(final int index) {
     return state.materialized().get(index);
   }
 
@@ -58,7 +59,7 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
-  public @NotNull Iterator<F> materializeIterator() {
+  public @NotNull Iterator<E> materializeIterator() {
     return state.materialized().iterator();
   }
 
@@ -72,6 +73,19 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
     int knownSize();
 
     @NotNull List<E> materialized();
+  }
+
+  private static class EmptyState<E> implements State<E> {
+
+    @Override
+    public int knownSize() {
+      return 0;
+    }
+
+    @Override
+    public @NotNull List<E> materialized() {
+      return Collections.emptyList();
+    }
   }
 
   private static class ElementState<E> implements State<E> {
@@ -93,38 +107,44 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
     }
   }
 
-  private class ImmaterialState implements State<F> {
+  private class ImmaterialState implements State<E> {
 
-    private final F identity;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final BinaryFunction<? super E, ? super F, ? extends F> operation;
+    private final Comparator<? super E> comparator;
     private final ListMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final ListMaterializer<E> wrapped, final F identity,
-        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+    private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
+        @NotNull final Comparator<? super E> comparator) {
       this.wrapped = wrapped;
-      this.identity = identity;
-      this.operation = operation;
+      this.comparator = comparator;
     }
 
     @Override
     public int knownSize() {
-      return 1;
+      return -1;
     }
 
     @Override
-    public @NotNull List<F> materialized() {
+    @SuppressWarnings("unchecked")
+    public @NotNull List<E> materialized() {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
       }
       try {
-        final BinaryFunction<? super E, ? super F, ? extends F> operation = this.operation;
-        final ListMaterializer<E> wrapped = this.wrapped;
-        F current = identity;
-        for (int i = wrapped.materializeSize() - 1; i >= 0; --i) {
-          current = operation.apply(wrapped.materializeElement(i), current);
+        final Comparator<? super E> comparator = this.comparator;
+        final Iterator<E> iterator = wrapped.materializeIterator();
+        if (!iterator.hasNext()) {
+          state = (State<E>) EMPTY_STATE;
+          return Collections.emptyList();
         }
-        state = new ElementState<F>(current);
+        E max = iterator.next();
+        while (iterator.hasNext()) {
+          final E next = iterator.next();
+          if (comparator.compare(next, max) > 0) {
+            max = next;
+          }
+        }
+        state = new ElementState<E>(max);
         return state.materialized();
       } catch (final Exception e) {
         isMaterialized.set(false);

@@ -165,7 +165,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
     @Override
     public @NotNull Iterator<L> materializeIterator() {
-      return new CollectionMaterializerIterator<L>(this);
+      return new ListMaterializerIterator<L>(this);
     }
 
     @Override
@@ -259,7 +259,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
     @Override
     public @NotNull Iterator<L> materializeIterator() {
-      return new CollectionMaterializerIterator<L>(this);
+      return new ListMaterializerIterator<L>(this);
     }
 
     @Override

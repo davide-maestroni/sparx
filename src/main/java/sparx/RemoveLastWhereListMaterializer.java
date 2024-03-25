@@ -17,6 +17,7 @@ package sparx;
 
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
@@ -24,13 +25,13 @@ import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.Predicate;
 
-class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
+class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
 
   private volatile State state;
 
-  DropRightWhileListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+  RemoveLastWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     state = new ImmaterialState(Require.notNull(predicate, "predicate"));
@@ -38,9 +39,11 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    final ListMaterializer<E> wrapped = this.wrapped;
-    if (index >= wrapped.materializeSize() - state.materialized()) {
+    if (index < 0) {
       return false;
+    }
+    if (state.materialized() <= index) {
+      return wrapped.canMaterializeElement(index + 1);
     }
     return wrapped.canMaterializeElement(index);
   }
@@ -48,12 +51,13 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public int knownSize() {
     final int wrappedSize = wrapped.knownSize();
-    if (wrappedSize == 0) {
-      return 0;
-    } else if (wrappedSize > 0) {
-      final int stateSize = state.knownSize();
-      if (stateSize >= 0) {
-        return wrappedSize - stateSize;
+    if (wrappedSize >= 0) {
+      if (wrappedSize == 0) {
+        return 0;
+      }
+      final int index = state.known();
+      if (index >= 0 && wrappedSize > index) {
+        return wrappedSize - 1;
       }
     }
     return -1;
@@ -61,51 +65,60 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public E materializeElement(final int index) {
-    final ListMaterializer<E> wrapped = this.wrapped;
-    if (index >= wrapped.materializeSize() - state.materialized()) {
+    if (index < 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));
+    }
+    if (state.materialized() <= index) {
+      return wrapped.materializeElement(index + 1);
     }
     return wrapped.materializeElement(index);
   }
 
   @Override
   public boolean materializeEmpty() {
-    return wrapped.materializeSize() <= state.materialized();
+    if (wrapped.materializeEmpty()) {
+      return true;
+    }
+    return materializeSize() == 0;
   }
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return new RemoveIterator();
   }
 
   @Override
   public int materializeSize() {
-    return Math.max(0, wrapped.materializeSize() - state.materialized());
+    final int size = wrapped.materializeSize();
+    if (size > state.materialized()) {
+      return size - 1;
+    }
+    return size;
   }
 
   private interface State {
 
-    int knownSize();
+    int known();
 
     int materialized();
   }
 
-  private static class ElementsState implements State {
+  private static class IndexState implements State {
 
-    private final int elements;
+    private final int index;
 
-    private ElementsState(final int elements) {
-      this.elements = elements;
+    private IndexState(final int index) {
+      this.index = index;
     }
 
     @Override
-    public int knownSize() {
-      return elements;
+    public int known() {
+      return index;
     }
 
     @Override
     public int materialized() {
-      return elements;
+      return index;
     }
   }
 
@@ -119,7 +132,7 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public int knownSize() {
+    public int known() {
       return -1;
     }
 
@@ -129,22 +142,62 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
         throw new ConcurrentModificationException();
       }
       try {
-        final ListMaterializer<E> wrapped = DropRightWhileListMaterializer.this.wrapped;
+        final ListMaterializer<E> wrapped = RemoveLastWhereListMaterializer.this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
         final int size = wrapped.materializeSize();
         int i = size - 1;
         for (; i >= 0; --i) {
-          if (!predicate.test(wrapped.materializeElement(i))) {
-            break;
+          final E element = wrapped.materializeElement(i);
+          if (predicate.test(element)) {
+            state = new IndexState(i);
+            return i;
           }
         }
-        final int elements = size - i - 1;
-        state = new ElementsState(elements);
-        return elements;
+        state = new IndexState(size);
+        return size;
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
+    }
+  }
+
+  private class RemoveIterator implements Iterator<E> {
+
+    private final Iterator<E> iterator = wrapped.materializeIterator();
+
+    private int pos = 0;
+
+    @Override
+    public boolean hasNext() {
+      if (pos == state.materialized()) {
+        return wrapped.canMaterializeElement(pos + 1);
+      }
+      return iterator.hasNext();
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      final Iterator<E> iterator = this.iterator;
+      if (!iterator.hasNext()) {
+        throw new NoSuchElementException();
+      }
+      if (pos == state.materialized()) {
+        iterator.next();
+        if (!iterator.hasNext()) {
+          throw new NoSuchElementException();
+        }
+      }
+      ++pos;
+      return iterator.next();
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
     }
   }
 }

@@ -130,7 +130,7 @@ class MapListMaterializer<E, F> implements ListMaterializer<F> {
 
     @Override
     public @NotNull Iterator<F> materializeIterator() {
-      return new CollectionMaterializerIterator<F>(this);
+      return new ListMaterializerIterator<F>(this);
     }
 
     @Override
@@ -203,7 +203,7 @@ class MapListMaterializer<E, F> implements ListMaterializer<F> {
 
     @Override
     public @NotNull Iterator<F> materializeIterator() {
-      return new CollectionMaterializerIterator<F>(this);
+      return new ListMaterializerIterator<F>(this);
     }
 
     @Override

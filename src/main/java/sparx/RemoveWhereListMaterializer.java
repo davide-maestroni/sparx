@@ -25,11 +25,11 @@ import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.Predicate;
 
-class FilterListMaterializer<E> implements ListMaterializer<E> {
+class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile ListMaterializer<E> state;
 
-  FilterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+  RemoveWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"));
@@ -92,7 +92,7 @@ class FilterListMaterializer<E> implements ListMaterializer<E> {
               return false;
             }
             final E next = iterator.next();
-            if (predicate.test(next)) {
+            if (!predicate.test(next)) {
               elements.add(next);
             }
           } while (elements.size() <= index);
@@ -116,31 +116,8 @@ class FilterListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public E materializeElement(final int index) {
-      final ArrayList<E> elements = this.elements;
-      if (elements.size() <= index) {
-        final AtomicInteger modCount = this.modCount;
-        final int expectedCount = modCount.getAndIncrement() + 1;
-        final Predicate<? super E> predicate = this.predicate;
-        try {
-          final Iterator<E> iterator = this.iterator;
-          do {
-            if (!iterator.hasNext()) {
-              throw new IndexOutOfBoundsException(String.valueOf(index));
-            }
-            final E next = iterator.next();
-            if (predicate.test(next)) {
-              elements.add(next);
-            }
-          } while (elements.size() <= index);
-          if (expectedCount != modCount.get()) {
-            throw new ConcurrentModificationException();
-          }
-          if (!iterator.hasNext()) {
-            state = new ListToListMaterializer<E>(elements);
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
+      if (!canMaterializeElement(index)) {
+        throw new IndexOutOfBoundsException(String.valueOf(index));
       }
       return elements.get(index);
     }
@@ -155,30 +132,12 @@ class FilterListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public @NotNull Iterator<E> materializeIterator() {
-      return new CollectionMaterializerIterator<E>(this);
+      return new ListMaterializerIterator<E>(this);
     }
 
     @Override
     public int materializeSize() {
-      final ArrayList<E> elements = this.elements;
-      final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
-      final Predicate<? super E> predicate = this.predicate;
-      try {
-        final Iterator<E> iterator = this.iterator;
-        while (iterator.hasNext()) {
-          final E next = iterator.next();
-          if (predicate.test(next)) {
-            elements.add(next);
-          }
-        }
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
-      if (expectedCount != modCount.get()) {
-        throw new ConcurrentModificationException();
-      }
-      state = new ListToListMaterializer<E>(elements);
+      canMaterializeElement(Integer.MAX_VALUE);
       return elements.size();
     }
   }

@@ -61,7 +61,7 @@ class EndsWithListMaterializer<E> implements ListMaterializer<Boolean> {
 
   @Override
   public @NotNull Iterator<Boolean> materializeIterator() {
-    return new CollectionMaterializerIterator<Boolean>(this);
+    return new ListMaterializerIterator<Boolean>(this);
   }
 
   @Override

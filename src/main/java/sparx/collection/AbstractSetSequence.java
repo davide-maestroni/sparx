@@ -17,6 +17,7 @@ package sparx.collection;
 
 import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 
@@ -39,13 +40,23 @@ public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements S
   }
 
   @Override
-  public E head() {
+  public E first() {
     return materializer.materializeElement(0);
   }
 
   @Override
   public boolean isEmpty() {
     return materializer.materializeEmpty();
+  }
+
+  @Override
+  public @NotNull Iterator<E> iterator() {
+    return materializer.materializeIterator();
+  }
+
+  @Override
+  public E last() {
+    return materializer.materializeElement(size() - 1);
   }
 
   @Override
@@ -71,10 +82,5 @@ public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements S
   @Override
   public int size() {
     return materializer.materializeSize();
-  }
-
-  @Override
-  public E tail() {
-    return materializer.materializeElement(size() - 1);
   }
 }

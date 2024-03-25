@@ -63,7 +63,7 @@ class DropListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new CollectionMaterializerIterator<E>(this);
+    return new ListMaterializerIterator<E>(this);
   }
 
   @Override

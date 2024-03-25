@@ -18,36 +18,45 @@ package sparx;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
+import sparx.util.Require;
+import sparx.util.UncheckedException;
+import sparx.util.function.Consumer;
 
-class ElementToListMaterializer<E> implements ListMaterializer<E> {
+class PeekListMaterializer<E> implements ListMaterializer<E> {
 
-  private final E element;
+  private final Consumer<? super E> consumer;
+  private final ListMaterializer<E> wrapped;
 
-  ElementToListMaterializer(final E element) {
-    this.element = element;
+  PeekListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @NotNull final Consumer<? super E> consumer) {
+    this.wrapped = Require.notNull(wrapped, "wrapped");
+    this.consumer = Require.notNull(consumer, "consumer");
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return index == 0;
+    return wrapped.canMaterializeElement(index);
   }
 
   @Override
   public int knownSize() {
-    return 1;
+    return wrapped.knownSize();
   }
 
   @Override
   public E materializeElement(final int index) {
-    if (index != 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+    final E element = wrapped.materializeElement(index);
+    try {
+      consumer.accept(element);
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
     }
     return element;
   }
 
   @Override
   public boolean materializeEmpty() {
-    return false;
+    return wrapped.materializeEmpty();
   }
 
   @Override
@@ -57,6 +66,6 @@ class ElementToListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return 1;
+    return wrapped.materializeSize();
   }
 }

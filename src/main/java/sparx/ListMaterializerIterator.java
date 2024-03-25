@@ -21,13 +21,13 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-class CollectionMaterializerIterator<E> implements Iterator<E> {
+class ListMaterializerIterator<E> implements Iterator<E> {
 
   private final ListMaterializer<E> materializer;
   private int nextIndex;
 
   // Cannot use materializer.materializeIterator()
-  CollectionMaterializerIterator(@NotNull final ListMaterializer<E> materializer) {
+  ListMaterializerIterator(@NotNull final ListMaterializer<E> materializer) {
     this.materializer = Require.notNull(materializer, "materializer");
   }
 

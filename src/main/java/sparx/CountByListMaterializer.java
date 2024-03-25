@@ -59,7 +59,7 @@ class CountByListMaterializer<E> implements ListMaterializer<Integer> {
 
   @Override
   public @NotNull Iterator<Integer> materializeIterator() {
-    return new CollectionMaterializerIterator<Integer>(this);
+    return new ListMaterializerIterator<Integer>(this);
   }
 
   @Override

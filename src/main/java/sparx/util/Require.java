@@ -34,6 +34,13 @@ public class Require {
     return ref;
   }
 
+  public static int notNegative(final int value, final String name) {
+    if (value < 0) {
+      throw new IllegalArgumentException("'" + name + "' must not be negative, but is " + value);
+    }
+    return value;
+  }
+
   public static @NotNull <T> T notNull(final T ref, final String name) {
     if (ref == null) {
       throw new NullPointerException("'" + name + "' must not be null!");

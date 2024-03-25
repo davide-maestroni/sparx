@@ -27,7 +27,7 @@ import sparx.util.function.Predicate;
 public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
-  @NotNull IteratorSequence<Boolean> all(@NotNull Predicate<? super E> condition);
+  @NotNull IteratorSequence<Boolean> all(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull IteratorSequence<Boolean> exists(@NotNull Predicate<? super E> predicate);
@@ -93,13 +93,27 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<Integer> findIndexOf(Object element);
 
   @Override
+  @NotNull IteratorSequence<Integer> findIndexOf(int minIndex, Object element);
+
+  @Override
   @NotNull IteratorSequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<Integer> findIndexWhere(int minIndex,
+      @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull IteratorSequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull IteratorSequence<Integer> findIndexWhereNot(int minIndex,
+      @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull IteratorSequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+
+  @Override
+  @NotNull IteratorSequence<Integer> findIndexOfSlice(int minIndex, @NotNull Iterable<?> elements);
 
   @Override
   @NotNull IteratorSequence<E> findLast(@NotNull Predicate<? super E> predicate);
@@ -108,13 +122,28 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<Integer> findLastIndexOf(Object element);
 
   @Override
+  @NotNull IteratorSequence<Integer> findLastIndexOf(int maxIndex, Object element);
+
+  @Override
   @NotNull IteratorSequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<Integer> findLastIndexWhere(int maxIndex,
+      @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull IteratorSequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull IteratorSequence<Integer> findLastIndexWhereNot(int maxIndex,
+      @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull IteratorSequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
+
+  @Override
+  @NotNull IteratorSequence<Integer> findLastIndexOfSlice(int maxIndex,
+      @NotNull Iterable<?> elements);
 
   @Override
   @NotNull IteratorSequence<E> findLastNot(@NotNull Predicate<? super E> predicate);
@@ -123,13 +152,20 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull <F> IteratorSequence<F> flatMap(
       @NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
+  @NotNull <T extends Throwable> IteratorSequence<E> flatMapExceptionally(
+      @NotNull Class<T> exceptionType,
+      @NotNull Function<? super T, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull IteratorSequence<E> flatMapExceptionally(
+      @NotNull Function<? super Throwable, ? extends Iterable<? extends E>> mapper);
+
   @Override
   @NotNull <F> IteratorSequence<F> foldLeft(F identity,
       @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
   @Override
   @NotNull <F> IteratorSequence<F> foldRight(F identity,
-      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+      @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
   @Override
   @NotNull IteratorSequence<? extends IteratorSequence<E>> group(int maxSize);
@@ -157,9 +193,10 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @Override
   @NotNull <F> IteratorSequence<F> map(@NotNull Function<? super E, F> mapper);
 
-  @Override
-  @NotNull IteratorSequence<E> mapExceptionally(
-      @NotNull Function<? super Throwable, ? extends E> mapper);
+  @NotNull <T extends Throwable> IteratorSequence<E> mapExceptionally(
+      @NotNull Class<T> exceptionType, @NotNull Function<? super T, E> mapper);
+
+  @NotNull IteratorSequence<E> mapExceptionally(@NotNull Function<? super Throwable, E> mapper);
 
   @Override
   @NotNull IteratorSequence<E> max(@NotNull Comparator<? super E> comparator);
@@ -183,12 +220,12 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> plusAll(@NotNull Iterable<E> elements);
 
   @Override
-  @NotNull <F extends E> IteratorSequence<F> reduceLeft(
-      @NotNull BinaryFunction<? super E, ? super E, F> operation);
+  @NotNull IteratorSequence<E> reduceLeft(
+      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
-  @NotNull <F extends E> IteratorSequence<F> reduceRight(
-      @NotNull BinaryFunction<? super E, ? super E, F> operation);
+  @NotNull IteratorSequence<E> reduceRight(
+      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull IteratorSequence<E> removeAt(int index);
@@ -200,13 +237,39 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> removeFirst(E element);
 
   @Override
+  @NotNull IteratorSequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<E> removeFirstWhere(int minIndex,
+      @NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<E> removeFirstWhereNot(int minIndex,
+      @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull IteratorSequence<E> removeLast(E element); // TODO: ???
 
   @Override
-  @NotNull IteratorSequence<E> removeSegment(int from, int maxSize);
+  @NotNull IteratorSequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull IteratorSequence<E> removeSlice(int from, int until);
+  @NotNull IteratorSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<E> removeSegment(int start, int maxSize);
+
+  @Override
+  @NotNull IteratorSequence<E> removeSlice(int start, int end);
+
+  @Override
+  @NotNull IteratorSequence<E> removeWhere(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull IteratorSequence<E> replaceAt(int index, E element);
@@ -215,27 +278,24 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> replaceEach(E element, E replacement);
 
   @Override
-  @NotNull IteratorSequence<E> replaceFirst(E current, E replacement);
+  @NotNull IteratorSequence<E> replaceFirst(E element, E replacement);
 
   @Override
-  @NotNull IteratorSequence<E> replaceLast(E current, E replacement); // TODO: ???
+  @NotNull IteratorSequence<E> replaceLast(E element, E replacement); // TODO: ???
 
   @Override
-  @NotNull IteratorSequence<E> replaceSegment(int from, @NotNull Iterable<? extends E> patch,
+  @NotNull IteratorSequence<E> replaceSegment(int start, @NotNull Iterable<? extends E> patch,
       int maxSize);
 
   @Override
-  @NotNull IteratorSequence<E> replaceSlice(int from, @NotNull Iterable<? extends E> patch,
-      int until);
+  @NotNull IteratorSequence<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch,
+      int end);
 
   @Override
   @NotNull IteratorSequence<E> slice(int from, int until);
 
   @Override
   @NotNull IteratorSequence<Boolean> startsWith(@NotNull Iterable<?> elements);
-
-  @Override
-  @NotNull <F extends Number> IteratorSequence<F> sum(@NotNull Function<? super E, F> mapper);
 
   @Override
   @NotNull IteratorSequence<E> take(int maxElements);

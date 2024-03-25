@@ -26,14 +26,15 @@ import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 
-class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
+class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
 
-  private volatile State<F> state;
+  private static final State<?> EMPTY = new EmptyState<Object>();
 
-  FoldRightListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      final F identity,
-      @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), identity,
+  private volatile State<E> state;
+
+  ReduceLeftListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(operation, "operation"));
   }
 
@@ -48,7 +49,7 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
-  public F materializeElement(final int index) {
+  public E materializeElement(final int index) {
     return state.materialized().get(index);
   }
 
@@ -58,7 +59,7 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
-  public @NotNull Iterator<F> materializeIterator() {
+  public @NotNull Iterator<E> materializeIterator() {
     return state.materialized().iterator();
   }
 
@@ -93,17 +94,28 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
     }
   }
 
-  private class ImmaterialState implements State<F> {
+  private static class EmptyState<E> implements State<E> {
 
-    private final F identity;
+    @Override
+    public int knownSize() {
+      return 0;
+    }
+
+    @Override
+    public @NotNull List<E> materialized() {
+      return Collections.emptyList();
+    }
+  }
+
+  private class ImmaterialState implements State<E> {
+
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final BinaryFunction<? super E, ? super F, ? extends F> operation;
+    private final BinaryFunction<? super E, ? super E, ? extends E> operation;
     private final ListMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final ListMaterializer<E> wrapped, final F identity,
-        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+    private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       this.wrapped = wrapped;
-      this.identity = identity;
       this.operation = operation;
     }
 
@@ -113,19 +125,24 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
     }
 
     @Override
-    public @NotNull List<F> materialized() {
+    @SuppressWarnings("unchecked")
+    public @NotNull List<E> materialized() {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
       }
       try {
-        final BinaryFunction<? super E, ? super F, ? extends F> operation = this.operation;
-        final ListMaterializer<E> wrapped = this.wrapped;
-        F current = identity;
-        for (int i = wrapped.materializeSize() - 1; i >= 0; --i) {
-          current = operation.apply(wrapped.materializeElement(i), current);
+        final BinaryFunction<? super E, ? super E, ? extends E> operation = this.operation;
+        final Iterator<E> iterator = wrapped.materializeIterator();
+        if (iterator.hasNext()) {
+          E current = iterator.next();
+          while (iterator.hasNext()) {
+            current = operation.apply(current, iterator.next());
+          }
+          state = new ElementState<E>(current);
+          return state.materialized();
         }
-        state = new ElementState<F>(current);
-        return state.materialized();
+        state = (State<E>) EMPTY;
+        return Collections.emptyList();
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);

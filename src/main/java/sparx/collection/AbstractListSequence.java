@@ -50,13 +50,13 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   }
 
   @Override
-  public E get(final int index) {
-    return materializer.materializeElement(index);
+  public E first() {
+    return materializer.materializeElement(0);
   }
 
   @Override
-  public E head() {
-    return materializer.materializeElement(0);
+  public E get(final int index) {
+    return materializer.materializeElement(index);
   }
 
   @Override
@@ -92,6 +92,11 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   }
 
   @Override
+  public E last() {
+    return materializer.materializeElement(size() - 1);
+  }
+
+  @Override
   public boolean notEmpty() {
     return !isEmpty();
   }
@@ -119,10 +124,5 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   @Override
   public int size() {
     return materializer.materializeSize();
-  }
-
-  @Override
-  public E tail() {
-    return materializer.materializeElement(size() - 1);
   }
 }

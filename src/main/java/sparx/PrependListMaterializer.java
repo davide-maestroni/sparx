@@ -20,56 +20,88 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-class DropRightListMaterializer<E> implements ListMaterializer<E> {
+class PrependListMaterializer<E> implements ListMaterializer<E> {
 
-  private final int maxElements;
+  private final E element;
   private final ListMaterializer<E> wrapped;
 
-  DropRightListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      final int maxElements) {
+  PrependListMaterializer(@NotNull final ListMaterializer<E> wrapped, final E element) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.maxElements = Require.positive(maxElements, "maxElements");
+    this.element = element;
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    final ListMaterializer<E> wrapped = this.wrapped;
-    if (index >= wrapped.materializeSize() - maxElements) {
-      return false;
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(String.valueOf(index));
     }
-    return wrapped.canMaterializeElement(index);
+    if (index == 0) {
+      return true;
+    }
+    return wrapped.canMaterializeElement(index - 1);
   }
 
   @Override
   public int knownSize() {
     final int wrappedSize = wrapped.knownSize();
     if (wrappedSize >= 0) {
-      return Math.max(0, wrappedSize - maxElements);
+      return wrappedSize + 1;
     }
     return -1;
   }
 
   @Override
   public E materializeElement(final int index) {
-    final ListMaterializer<E> wrapped = this.wrapped;
-    if (index >= wrapped.materializeSize() - maxElements) {
+    if (index < 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));
     }
-    return wrapped.materializeElement(index);
+    if (index == 0) {
+      return element;
+    }
+    return wrapped.materializeElement(index - 1);
   }
 
   @Override
   public boolean materializeEmpty() {
-    return wrapped.materializeSize() <= maxElements;
+    return false;
   }
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return new PrependIterator();
   }
 
   @Override
   public int materializeSize() {
-    return Math.max(0, wrapped.materializeSize() - maxElements);
+    return wrapped.materializeSize() + 1;
+  }
+
+  private class PrependIterator implements Iterator<E> {
+
+    private final Iterator<E> iterator = wrapped.materializeIterator();
+
+    private boolean consumedElement;
+
+    @Override
+    public boolean hasNext() {
+      if (!consumedElement) {
+        return true;
+      }
+      return iterator.hasNext();
+    }
+
+    @Override
+    public E next() {
+      if (!consumedElement) {
+        consumedElement = true;
+        return element;
+      }
+      return iterator.next();
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
   }
 }
