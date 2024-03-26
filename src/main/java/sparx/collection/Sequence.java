@@ -73,7 +73,11 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> findFirst(@NotNull Predicate<? super E> predicate);
 
+  @NotNull Sequence<E> findFirst(int minIndex, @NotNull Predicate<? super E> predicate);
+
   @NotNull Sequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
+
+  @NotNull Sequence<E> findFirstNot(int minIndex, @NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<Integer> findIndexOf(Object element);
 
@@ -93,6 +97,8 @@ public interface Sequence<E> extends Iterable<E> {
   @NotNull Sequence<Integer> findIndexOfSlice(int minIndex, @NotNull Iterable<?> elements);
 
   @NotNull Sequence<E> findLast(@NotNull Predicate<? super E> predicate);
+
+  @NotNull Sequence<E> findLast(int maxIndex, @NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<Integer> findLastIndexOf(Object element);
 
@@ -114,9 +120,17 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> findLastNot(@NotNull Predicate<? super E> predicate);
 
+  @NotNull Sequence<E> findLastNot(int maxIndex, @NotNull Predicate<? super E> predicate);
+
   E first();
 
   @NotNull <F> Sequence<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
+
+  @NotNull Sequence<E> flatMapAt(int index,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull <F> Sequence<F> fold(F identity,
+      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
   @NotNull <F> Sequence<F> foldLeft(F identity,
       @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
@@ -148,17 +162,20 @@ public interface Sequence<E> extends Iterable<E> {
 
   boolean notEmpty();
 
+  @NotNull Sequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
+
   @NotNull Sequence<E> orElse(@NotNull Iterable<E> elements);
 
   @NotNull Sequence<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
-
-  @NotNull Sequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<E> peek(@NotNull Consumer<? super E> consumer);
 
   @NotNull Sequence<E> plus(E element);
 
   @NotNull Sequence<E> plusAll(@NotNull Iterable<E> elements);
+
+  @NotNull Sequence<E> reduce(
+      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @NotNull Sequence<E> reduceLeft(
       @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);

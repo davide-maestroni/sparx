@@ -87,7 +87,13 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> findFirst(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull IteratorSequence<E> findFirst(int minIndex, @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull IteratorSequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<E> findFirstNot(int minIndex, @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull IteratorSequence<Integer> findIndexOf(Object element);
@@ -117,6 +123,9 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
   @NotNull IteratorSequence<E> findLast(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<E> findLast(int maxIndex, @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull IteratorSequence<Integer> findLastIndexOf(Object element);
@@ -149,8 +158,15 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> findLastNot(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull IteratorSequence<E> findLastNot(int maxIndex, @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull <F> IteratorSequence<F> flatMap(
       @NotNull Function<? super E, ? extends Iterable<F>> mapper);
+
+  @Override
+  @NotNull IteratorSequence<E> flatMapAt(int index,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @NotNull <T extends Throwable> IteratorSequence<E> flatMapExceptionally(
       @NotNull Class<T> exceptionType,
@@ -158,6 +174,10 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @NotNull IteratorSequence<E> flatMapExceptionally(
       @NotNull Function<? super Throwable, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull <F> IteratorSequence<F> fold(F identity,
+      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
   @Override
   @NotNull <F> IteratorSequence<F> foldLeft(F identity,
@@ -220,6 +240,10 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> plusAll(@NotNull Iterable<E> elements);
 
   @Override
+  @NotNull IteratorSequence<E> reduce(
+      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+  @Override
   @NotNull IteratorSequence<E> reduceLeft(
       @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
@@ -235,6 +259,9 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
   @NotNull IteratorSequence<E> removeFirst(E element);
+
+  @Override
+  @NotNull IteratorSequence<E> removeFirst(int minIndex, E element);
 
   @Override
   @NotNull IteratorSequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
@@ -254,10 +281,21 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> removeLast(E element); // TODO: ???
 
   @Override
+  @NotNull IteratorSequence<E> removeLast(int maxIndex, E element);
+
+  @Override
   @NotNull IteratorSequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull IteratorSequence<E> removeLastWhere(int maxIndex,
+      @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull IteratorSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull IteratorSequence<E> removeLastWhereNot(int maxIndex,
+      @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull IteratorSequence<E> removeSegment(int start, int maxSize);
@@ -281,7 +319,13 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> replaceFirst(E element, E replacement);
 
   @Override
+  @NotNull IteratorSequence<E> replaceFirst(int minIndex, E element, E replacement);
+
+  @Override
   @NotNull IteratorSequence<E> replaceLast(E element, E replacement); // TODO: ???
+
+  @Override
+  @NotNull IteratorSequence<E> replaceLast(int maxIndex, E element, E replacement);
 
   @Override
   @NotNull IteratorSequence<E> replaceSegment(int start, @NotNull Iterable<? extends E> patch,

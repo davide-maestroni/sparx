@@ -30,16 +30,16 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
   private volatile ListMaterializer<L> state;
 
-  GroupListMaterializer(@NotNull final ListMaterializer<E> wrapper, final int maxSize,
+  GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
       @NotNull final Function<? super List<E>, ? extends L> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapper, "wrapper"),
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.positive(maxSize, "maxSize"),
         Require.notNull(mapper, "mapper"));
   }
 
-  GroupListMaterializer(@NotNull final ListMaterializer<E> wrapper, final int maxSize,
+  GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
       final E filler, @NotNull final Function<? super List<E>, ? extends L> mapper) {
-    state = new ImmaterialFillerState(Require.notNull(wrapper, "wrapper"),
+    state = new ImmaterialFillerState(Require.notNull(wrapped, "wrapped"),
         Require.positive(maxSize, "maxSize"), filler,
         Require.notNull(mapper, "mapper"));
   }

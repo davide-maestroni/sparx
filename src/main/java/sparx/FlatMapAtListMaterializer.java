@@ -26,18 +26,28 @@ import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 
-class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
+class FlatMapAtListMaterializer<E> implements ListMaterializer<E> {
 
-  private volatile ListMaterializer<F> state;
+  private final int index;
+  private final ListMaterializer<E> wrapped;
 
-  FlatMapListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(mapper, "mapper"));
+  private volatile ListMaterializer<E> state;
+
+  FlatMapAtListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int index,
+      @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+    this.wrapped = Require.notNull(wrapped, "wrapped");
+    this.index = Require.notNegative(index, "index");
+    state = new ImmaterialState(Require.notNull(mapper, "mapper"));
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
+    if (index < 0) {
+      return false;
+    }
+    if (index < this.index) {
+      return wrapped.canMaterializeElement(index);
+    }
     return state.canMaterializeElement(index);
   }
 
@@ -47,7 +57,7 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
-  public F materializeElement(final int index) {
+  public E materializeElement(final int index) {
     return state.materializeElement(index);
   }
 
@@ -57,7 +67,7 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
-  public @NotNull Iterator<F> materializeIterator() {
+  public @NotNull Iterator<E> materializeIterator() {
     return state.materializeIterator();
   }
 
@@ -66,17 +76,17 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
     return state.materializeSize();
   }
 
-  private class ImmaterialState implements ListMaterializer<F> {
+  private class ImmaterialState implements ListMaterializer<E> {
 
-    private final ArrayList<F> elements = new ArrayList<F>();
+    private final ArrayList<E> elements = new ArrayList<E>();
     private final Iterator<E> iterator;
-    private final Function<? super E, ? extends Iterable<F>> mapper;
+    private final Function<? super E, ? extends Iterable<? extends E>> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
 
-    private Iterator<F> elementIterator = Collections.<F>emptySet().iterator();
+    private Iterator<? extends E> elementIterator = Collections.<E>emptySet().iterator();
 
-    private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
+    private ImmaterialState(
+        @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
       this.mapper = mapper;
       iterator = wrapped.materializeIterator();
     }
@@ -95,7 +105,7 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
     }
 
     @Override
-    public F materializeElement(final int index) {
+    public E materializeElement(final int index) {
       if (index < 0 || materializeUntil(index) <= index) {
         throw new IndexOutOfBoundsException(String.valueOf(index));
       }
@@ -108,8 +118,8 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
     }
 
     @Override
-    public @NotNull Iterator<F> materializeIterator() {
-      return new ListMaterializerIterator<F>(this);
+    public @NotNull Iterator<E> materializeIterator() {
+      return new ListMaterializerIterator<E>(this);
     }
 
     @Override
@@ -118,17 +128,17 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
     }
 
     private int materializeUntil(final int index) {
-      final ArrayList<F> elements = this.elements;
+      final ArrayList<E> elements = this.elements;
       int currSize = elements.size();
       if (currSize > index) {
         return currSize;
       }
       final Iterator<E> iterator = this.iterator;
-      final Function<? super E, ? extends Iterable<F>> mapper = this.mapper;
+      final Function<? super E, ? extends Iterable<? extends E>> mapper = this.mapper;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.getAndIncrement() + 1;
       try {
-        Iterator<F> elementIterator = this.elementIterator;
+        Iterator<? extends E> elementIterator = this.elementIterator;
         while (true) {
           while (elementIterator.hasNext()) {
             elements.add(elementIterator.next());
@@ -145,7 +155,7 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();
             }
-            state = new ListToListMaterializer<F>(elements);
+            state = new ListToListMaterializer<E>(elements);
             return currSize;
           }
         }

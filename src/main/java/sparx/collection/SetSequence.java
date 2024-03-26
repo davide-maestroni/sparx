@@ -22,6 +22,7 @@ import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
 import sparx.util.function.Predicate;
+import sparx.util.function.Supplier;
 
 public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
@@ -80,7 +81,13 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> findFirst(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull SetSequence<E> findFirst(int minIndex, @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull SetSequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull SetSequence<E> findFirstNot(int minIndex, @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull SetSequence<Integer> findIndexOf(Object element);
@@ -110,6 +117,9 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull SetSequence<E> findLast(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull SetSequence<E> findLast(int maxIndex, @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull SetSequence<Integer> findLastIndexOf(Object element);
@@ -145,6 +155,14 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
       @NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
   @Override
+  @NotNull SetSequence<E> flatMapAt(int index,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull <F> SetSequence<F> fold(F identity,
+      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+  @Override
   @NotNull <F> SetSequence<F> foldLeft(F identity,
       @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
@@ -177,10 +195,16 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> min(@NotNull Comparator<? super E> comparator);
 
   @Override
+  @NotNull SetSequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull SetSequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);
+  @NotNull SetSequence<E> orElse(@NotNull Iterable<E> elements);
+
+  @Override
+  @NotNull SetSequence<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
 
   @Override
   @NotNull SetSequence<E> peek(@NotNull Consumer<? super E> consumer);
@@ -190,6 +214,10 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull SetSequence<E> plusAll(@NotNull Iterable<E> elements);
+
+  @Override
+  @NotNull SetSequence<E> reduce(
+      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull SetSequence<E> reduceLeft(
@@ -209,6 +237,9 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> removeFirst(E element);
 
   @Override
+  @NotNull SetSequence<E> removeFirst(int minIndex, E element);
+
+  @Override
   @NotNull SetSequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
@@ -225,10 +256,19 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> removeLast(E element);
 
   @Override
+  @NotNull SetSequence<E> removeLast(int maxIndex, E element);
+
+  @Override
   @NotNull SetSequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull SetSequence<E> removeLastWhere(int maxIndex, @NotNull Predicate<? super E> predicate);
+
+  @Override
   @NotNull SetSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull SetSequence<E> removeLastWhereNot(int maxIndex, @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull SetSequence<E> removeSegment(int start, int maxSize);
@@ -252,7 +292,13 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> replaceFirst(E element, E replacement);
 
   @Override
+  @NotNull SetSequence<E> replaceFirst(int minIndex, E element, E replacement);
+
+  @Override
   @NotNull SetSequence<E> replaceLast(E element, E replacement);
+
+  @Override
+  @NotNull SetSequence<E> replaceLast(int maxIndex, E element, E replacement);
 
   @Override
   @NotNull SetSequence<E> replaceSegment(int start, @NotNull Iterable<? extends E> patch,
