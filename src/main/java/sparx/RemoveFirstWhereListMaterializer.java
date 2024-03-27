@@ -31,14 +31,10 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile State state;
 
-  RemoveFirstWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int minIndex,
+  RemoveFirstWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
-    if (minIndex <= 0) {
-      state = new ImmaterialState(Require.notNull(predicate, "predicate"));
-    } else {
-      state = new IndexImmaterialState(minIndex, Require.notNull(predicate, "predicate"));
-    }
+    state = new ImmaterialState(Require.notNull(predicate, "predicate"));
   }
 
   @Override
@@ -164,55 +160,6 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
           throw new ConcurrentModificationException();
         }
         if (!iterator.hasNext()) {
-          state = new IndexState(pos);
-        }
-        return pos;
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
-    }
-  }
-
-  private class IndexImmaterialState implements State {
-
-    private final int minIndex;
-    private final AtomicInteger modCount = new AtomicInteger();
-    private final Predicate<? super E> predicate;
-
-    private int pos;
-
-    private IndexImmaterialState(final int minIndex,
-        @NotNull final Predicate<? super E> predicate) {
-      this.minIndex = minIndex;
-      this.predicate = predicate;
-    }
-
-    @Override
-    public int known() {
-      return -1;
-    }
-
-    @Override
-    public int materializeUntil(final int index) {
-      final ListMaterializer<E> wrapped = RemoveFirstWhereListMaterializer.this.wrapped;
-      final Predicate<? super E> predicate = this.predicate;
-      final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
-      try {
-        while (pos <= index && wrapped.canMaterializeElement(pos)) {
-          if (predicate.test(wrapped.materializeElement(pos))) {
-            if (expectedCount != modCount.get()) {
-              throw new ConcurrentModificationException();
-            }
-            state = new IndexState(pos);
-            return pos;
-          }
-          ++pos;
-        }
-        if (expectedCount != modCount.get()) {
-          throw new ConcurrentModificationException();
-        }
-        if (!wrapped.canMaterializeElement(pos)) {
           state = new IndexState(pos);
         }
         return pos;

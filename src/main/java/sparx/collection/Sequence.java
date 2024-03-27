@@ -73,60 +73,45 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> findFirst(@NotNull Predicate<? super E> predicate);
 
-  @NotNull Sequence<E> findFirst(int minIndex, @NotNull Predicate<? super E> predicate);
-
   @NotNull Sequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
-
-  @NotNull Sequence<E> findFirstNot(int minIndex, @NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<Integer> findIndexOf(Object element);
 
-  @NotNull Sequence<Integer> findIndexOf(int minIndex, Object element);
-
   @NotNull Sequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
-
-  @NotNull Sequence<Integer> findIndexWhere(int minIndex, @NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
-  @NotNull Sequence<Integer> findIndexWhereNot(int minIndex,
-      @NotNull Predicate<? super E> predicate);
-
   @NotNull Sequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
-
-  @NotNull Sequence<Integer> findIndexOfSlice(int minIndex, @NotNull Iterable<?> elements);
 
   @NotNull Sequence<E> findLast(@NotNull Predicate<? super E> predicate);
 
-  @NotNull Sequence<E> findLast(int maxIndex, @NotNull Predicate<? super E> predicate);
-
   @NotNull Sequence<Integer> findLastIndexOf(Object element);
-
-  @NotNull Sequence<Integer> findLastIndexOf(int maxIndex, Object element);
 
   @NotNull Sequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
 
-  @NotNull Sequence<Integer> findLastIndexWhere(int maxIndex,
-      @NotNull Predicate<? super E> predicate);
-
   @NotNull Sequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @NotNull Sequence<Integer> findLastIndexWhereNot(int maxIndex,
-      @NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
 
-  @NotNull Sequence<Integer> findLastIndexOfSlice(int maxIndex, @NotNull Iterable<?> elements);
-
   @NotNull Sequence<E> findLastNot(@NotNull Predicate<? super E> predicate);
-
-  @NotNull Sequence<E> findLastNot(int maxIndex, @NotNull Predicate<? super E> predicate);
 
   E first();
 
   @NotNull <F> Sequence<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
-  @NotNull Sequence<E> flatMapAt(int index,
+  @NotNull Sequence<E> flatMapAfter(int numElements,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull Sequence<E> flatMapFirstWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull Sequence<E> flatMapFirstWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull Sequence<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull Sequence<E> flatMapWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @NotNull <F> Sequence<F> fold(F identity,
@@ -183,33 +168,21 @@ public interface Sequence<E> extends Iterable<E> {
   @NotNull Sequence<E> reduceRight(
       @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
-  @NotNull Sequence<E> removeAt(int index);
+  @NotNull Sequence<E> removeAfter(int numElements);
 
   @NotNull Sequence<E> removeEach(E element);
 
   @NotNull Sequence<E> removeFirst(E element);
 
-  @NotNull Sequence<E> removeFirst(int minIndex, E element);
-
   @NotNull Sequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
-
-  @NotNull Sequence<E> removeFirstWhere(int minIndex, @NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
 
-  @NotNull Sequence<E> removeFirstWhereNot(int minIndex, @NotNull Predicate<? super E> predicate);
-
   @NotNull Sequence<E> removeLast(E element);
-
-  @NotNull Sequence<E> removeLast(int maxIndex, E element);
 
   @NotNull Sequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
 
-  @NotNull Sequence<E> removeLastWhere(int maxIndex, @NotNull Predicate<? super E> predicate);
-
   @NotNull Sequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @NotNull Sequence<E> removeLastWhereNot(int maxIndex, @NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<E> removeSegment(int start, int maxSize);
 
@@ -219,17 +192,13 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
 
-  @NotNull Sequence<E> replaceAt(int index, E element);
+  @NotNull Sequence<E> replaceAfter(int numElements, E element);
 
   @NotNull Sequence<E> replaceEach(E element, E replacement);
 
   @NotNull Sequence<E> replaceFirst(E element, E replacement);
 
-  @NotNull Sequence<E> replaceFirst(int minIndex, E element, E replacement);
-
   @NotNull Sequence<E> replaceLast(E element, E replacement);
-
-  @NotNull Sequence<E> replaceLast(int maxIndex, E element, E replacement);
 
   @NotNull Sequence<E> replaceSegment(int start, @NotNull Iterable<? extends E> patch, int maxSize);
 

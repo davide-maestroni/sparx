@@ -30,8 +30,8 @@ class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer<Intege
   private volatile State state;
 
   FindLastIndexOfSliceListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      final int maxIndex, @NotNull final ListMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), maxIndex,
+      @NotNull final ListMaterializer<?> elementsMaterializer) {
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(elementsMaterializer, "elementsMaterializer"));
   }
 
@@ -114,13 +114,11 @@ class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer<Intege
 
     private final ListMaterializer<?> elementsMaterializer;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final int maxIndex;
     private final ListMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final ListMaterializer<E> wrapped, final int maxIndex,
+    private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
         @NotNull final ListMaterializer<?> elementsMaterializer) {
       this.wrapped = wrapped;
-      this.maxIndex = maxIndex;
       this.elementsMaterializer = elementsMaterializer;
     }
 
@@ -138,8 +136,7 @@ class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer<Intege
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       try {
         final int elements = elementsMaterializer.materializeSize();
-        int i = maxIndex < Integer.MAX_VALUE ?
-            Math.min(maxIndex + elements, wrapped.materializeSize()) : wrapped.materializeSize();
+        int i = wrapped.materializeSize();
         for (; i >= elements; --i) {
           int j = elements - 1;
           for (int n = i - 1; j >= 0; --j, --n) {

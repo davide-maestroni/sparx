@@ -81,71 +81,34 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> findFirst(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<E> findFirst(int minIndex, @NotNull Predicate<? super E> predicate);
-
-  @Override
   @NotNull SetSequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull SetSequence<E> findFirstNot(int minIndex, @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull SetSequence<Integer> findIndexOf(Object element);
 
   @Override
-  @NotNull SetSequence<Integer> findIndexOf(int minIndex, Object element);
-
-  @Override
   @NotNull SetSequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull SetSequence<Integer> findIndexWhere(int minIndex,
-      @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull SetSequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<Integer> findIndexWhereNot(int minIndex,
-      @NotNull Predicate<? super E> predicate);
-
-  @Override
   @NotNull SetSequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
-
-  @Override
-  @NotNull SetSequence<Integer> findIndexOfSlice(int minIndex, @NotNull Iterable<?> elements);
 
   @Override
   @NotNull SetSequence<E> findLast(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<E> findLast(int maxIndex, @NotNull Predicate<? super E> predicate);
-
-  @Override
   @NotNull SetSequence<Integer> findLastIndexOf(Object element);
-
-  @Override
-  @NotNull SetSequence<Integer> findLastIndexOf(int maxIndex, Object element);
 
   @Override
   @NotNull SetSequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<Integer> findLastIndexWhere(int maxIndex,
-      @NotNull Predicate<? super E> predicate);
-
-  @Override
   @NotNull SetSequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<Integer> findLastIndexWhereNot(int maxIndex,
-      @NotNull Predicate<? super E> predicate);
-
-  @Override
   @NotNull SetSequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
-
-  @Override
-  @NotNull SetSequence<Integer> findLastIndexOfSlice(int maxIndex, @NotNull Iterable<?> elements);
 
   @Override
   @NotNull SetSequence<E> findLastNot(@NotNull Predicate<? super E> predicate);
@@ -155,7 +118,23 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
       @NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
   @Override
-  @NotNull SetSequence<E> flatMapAt(int index,
+  @NotNull SetSequence<E> flatMapAfter(int numElements,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull SetSequence<E> flatMapFirstWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull SetSequence<E> flatMapFirstWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull SetSequence<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull SetSequence<E> flatMapWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
@@ -228,7 +207,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
       @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
-  @NotNull SetSequence<E> removeAt(int index);
+  @NotNull SetSequence<E> removeAfter(int numElements);
 
   @Override
   @NotNull SetSequence<E> removeEach(E element);
@@ -237,38 +216,19 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> removeFirst(E element);
 
   @Override
-  @NotNull SetSequence<E> removeFirst(int minIndex, E element);
-
-  @Override
   @NotNull SetSequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull SetSequence<E> removeFirstWhere(int minIndex, @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull SetSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<E> removeFirstWhereNot(int minIndex,
-      @NotNull Predicate<? super E> predicate);
-
-  @Override
   @NotNull SetSequence<E> removeLast(E element);
-
-  @Override
-  @NotNull SetSequence<E> removeLast(int maxIndex, E element);
 
   @Override
   @NotNull SetSequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<E> removeLastWhere(int maxIndex, @NotNull Predicate<? super E> predicate);
-
-  @Override
   @NotNull SetSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull SetSequence<E> removeLastWhereNot(int maxIndex, @NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull SetSequence<E> removeSegment(int start, int maxSize);
@@ -283,7 +243,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<E> replaceAt(int index, E element);
+  @NotNull SetSequence<E> replaceAfter(int numElements, E element);
 
   @Override
   @NotNull SetSequence<E> replaceEach(E element, E replacement);
@@ -292,13 +252,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> replaceFirst(E element, E replacement);
 
   @Override
-  @NotNull SetSequence<E> replaceFirst(int minIndex, E element, E replacement);
-
-  @Override
   @NotNull SetSequence<E> replaceLast(E element, E replacement);
-
-  @Override
-  @NotNull SetSequence<E> replaceLast(int maxIndex, E element, E replacement);
 
   @Override
   @NotNull SetSequence<E> replaceSegment(int start, @NotNull Iterable<? extends E> patch,

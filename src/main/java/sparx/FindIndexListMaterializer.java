@@ -31,14 +31,9 @@ class FindIndexListMaterializer<E> implements ListMaterializer<Integer> {
   private volatile State state;
 
   FindIndexListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      final int minIndex, @NotNull final Predicate<? super E> predicate) {
-    if (minIndex <= 0) {
-      state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-          Require.notNull(predicate, "predicate"));
-    } else {
-      state = new IndexImmaterialState(Require.notNull(wrapped, "wrapped"), minIndex,
-          Require.notNull(predicate, "predicate"));
-    }
+      @NotNull final Predicate<? super E> predicate) {
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+        Require.notNull(predicate, "predicate"));
   }
 
   @Override
@@ -145,51 +140,6 @@ class FindIndexListMaterializer<E> implements ListMaterializer<Integer> {
         while (iterator.hasNext()) {
           final E next = iterator.next();
           if (predicate.test(next)) {
-            state = new IndexState(index);
-            return index;
-          }
-          ++index;
-        }
-        state = NOT_FOUND;
-        return -1;
-      } catch (final Exception e) {
-        isMaterialized.set(false);
-        throw UncheckedException.throwUnchecked(e);
-      }
-    }
-  }
-
-  private class IndexImmaterialState implements State {
-
-    private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final int minIndex;
-    private final Predicate<? super E> predicate;
-    private final ListMaterializer<E> wrapped;
-
-    private IndexImmaterialState(@NotNull final ListMaterializer<E> wrapped, final int minIndex,
-        @NotNull final Predicate<? super E> predicate) {
-      this.wrapped = wrapped;
-      this.minIndex = minIndex;
-      this.predicate = predicate;
-    }
-
-    @Override
-    public int knownSize() {
-      return -1;
-    }
-
-    @Override
-    public int materialized() {
-      if (!isMaterialized.compareAndSet(false, true)) {
-        throw new ConcurrentModificationException();
-      }
-      try {
-        final Predicate<? super E> predicate = this.predicate;
-        final ListMaterializer<E> wrapped = this.wrapped;
-        int index = minIndex;
-        while (wrapped.canMaterializeElement(index)) {
-          final E element = wrapped.materializeElement(index);
-          if (predicate.test(element)) {
             state = new IndexState(index);
             return index;
           }

@@ -1338,33 +1338,33 @@ public class ListTests {
   @Test
   public void removeAt() {
     var l = List.of(1, 2, 3);
-    assertFalse(l.removeAt(5).isEmpty());
-    assertEquals(3, l.removeAt(5).size());
-    assertEquals(List.of(1, 2, 3), l.removeAt(5));
-    assertFalse(l.removeAt(3).isEmpty());
-    assertEquals(3, l.removeAt(3).size());
-    assertEquals(List.of(1, 2, 3), l.removeAt(3));
-    assertFalse(l.removeAt(2).isEmpty());
-    assertEquals(2, l.removeAt(2).size());
-    assertEquals(List.of(1, 2), l.removeAt(2));
-    assertFalse(l.removeAt(1).isEmpty());
-    assertEquals(2, l.removeAt(1).size());
-    assertEquals(List.of(1, 3), l.removeAt(1));
-    assertFalse(l.removeAt(0).isEmpty());
-    assertEquals(2, l.removeAt(0).size());
-    assertEquals(List.of(2, 3), l.removeAt(0));
-    assertFalse(l.removeAt(-7).isEmpty());
-    assertEquals(3, l.removeAt(-7).size());
-    assertEquals(List.of(1, 2, 3), l.removeAt(-7));
+    assertFalse(l.removeAfter(5).isEmpty());
+    assertEquals(3, l.removeAfter(5).size());
+    assertEquals(List.of(1, 2, 3), l.removeAfter(5));
+    assertFalse(l.removeAfter(3).isEmpty());
+    assertEquals(3, l.removeAfter(3).size());
+    assertEquals(List.of(1, 2, 3), l.removeAfter(3));
+    assertFalse(l.removeAfter(2).isEmpty());
+    assertEquals(2, l.removeAfter(2).size());
+    assertEquals(List.of(1, 2), l.removeAfter(2));
+    assertFalse(l.removeAfter(1).isEmpty());
+    assertEquals(2, l.removeAfter(1).size());
+    assertEquals(List.of(1, 3), l.removeAfter(1));
+    assertFalse(l.removeAfter(0).isEmpty());
+    assertEquals(2, l.removeAfter(0).size());
+    assertEquals(List.of(2, 3), l.removeAfter(0));
+    assertFalse(l.removeAfter(-7).isEmpty());
+    assertEquals(3, l.removeAfter(-7).size());
+    assertEquals(List.of(1, 2, 3), l.removeAfter(-7));
 
-    assertTrue(List.of().removeAt(5).isEmpty());
-    assertEquals(0, List.of().removeAt(5).size());
-    assertEquals(List.of(), List.of().removeAt(5));
+    assertTrue(List.of().removeAfter(5).isEmpty());
+    assertEquals(0, List.of().removeAfter(5).size());
+    assertEquals(List.of(), List.of().removeAfter(5));
 
     Iterable<Object> iterable = () -> List.of().iterator();
-    assertTrue(List.wrap(iterable).removeAt(5).isEmpty());
-    assertEquals(0, List.wrap(iterable).removeAt(5).size());
-    assertEquals(List.of(), List.wrap(iterable).removeAt(5));
+    assertTrue(List.wrap(iterable).removeAfter(5).isEmpty());
+    assertEquals(0, List.wrap(iterable).removeAfter(5).size());
+    assertEquals(List.of(), List.wrap(iterable).removeAfter(5));
   }
 
   @Test

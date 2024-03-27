@@ -31,10 +31,10 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile State state;
 
-  RemoveLastWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxIndex,
+  RemoveLastWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
-    state = new ImmaterialState(maxIndex, Require.notNull(predicate, "predicate"));
+    state = new ImmaterialState(Require.notNull(predicate, "predicate"));
   }
 
   @Override
@@ -125,11 +125,9 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState implements State {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final int maxIndex;
     private final Predicate<? super E> predicate;
 
-    private ImmaterialState(final int maxIndex, @NotNull final Predicate<? super E> predicate) {
-      this.maxIndex = maxIndex;
+    private ImmaterialState(@NotNull final Predicate<? super E> predicate) {
       this.predicate = predicate;
     }
 
@@ -147,8 +145,7 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
         final ListMaterializer<E> wrapped = RemoveLastWhereListMaterializer.this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
         final int size = wrapped.materializeSize();
-        int i = Math.min(maxIndex, size - 1);
-        for (; i >= 0; --i) {
+        for (int i = size - 1; i >= 0; --i) {
           final E element = wrapped.materializeElement(i);
           if (predicate.test(element)) {
             state = new IndexState(i);

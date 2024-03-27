@@ -32,15 +32,10 @@ class FindFirstListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile State<E> state;
 
-  FindFirstListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int minIndex,
+  FindFirstListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate) {
-    if (minIndex <= 0) {
-      state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-          Require.notNull(predicate, "predicate"));
-    } else {
-      state = new IndexImmaterialState(Require.notNull(wrapped, "wrapped"), minIndex,
-          Require.notNull(predicate, "predicate"));
-    }
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+        Require.notNull(predicate, "predicate"));
   }
 
   @Override
@@ -142,52 +137,6 @@ class FindFirstListMaterializer<E> implements ListMaterializer<E> {
           final E next = iterator.next();
           if (predicate.test(next)) {
             final ElementState<E> elementState = new ElementState<E>(next);
-            state = elementState;
-            return elementState.materialized();
-          }
-        }
-        state = (State<E>) EMPTY_STATE;
-        return Collections.emptyList();
-      } catch (final Exception e) {
-        isMaterialized.set(false);
-        throw UncheckedException.throwUnchecked(e);
-      }
-    }
-  }
-
-  private class IndexImmaterialState implements State<E> {
-
-    private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final int minIndex;
-    private final Predicate<? super E> predicate;
-    private final ListMaterializer<E> wrapped;
-
-    private IndexImmaterialState(@NotNull final ListMaterializer<E> wrapped, final int minIndex,
-        @NotNull final Predicate<? super E> predicate) {
-      this.wrapped = wrapped;
-      this.minIndex = minIndex;
-      this.predicate = predicate;
-    }
-
-    @Override
-    public int knownSize() {
-      return -1;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public @NotNull List<E> materialized() {
-      if (!isMaterialized.compareAndSet(false, true)) {
-        throw new ConcurrentModificationException();
-      }
-      try {
-        final Predicate<? super E> predicate = this.predicate;
-        final ListMaterializer<E> wrapped = this.wrapped;
-        int index = minIndex;
-        while (wrapped.canMaterializeElement(index)) {
-          final E element = wrapped.materializeElement(index);
-          if (predicate.test(element)) {
-            final ElementState<E> elementState = new ElementState<E>(element);
             state = elementState;
             return elementState.materialized();
           }

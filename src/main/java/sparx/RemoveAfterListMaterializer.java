@@ -21,14 +21,14 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-class RemoveAtListMaterializer<E> implements ListMaterializer<E> {
+class RemoveAfterListMaterializer<E> implements ListMaterializer<E> {
 
-  private final int index;
+  private final int numElements;
   private final ListMaterializer<E> wrapped;
 
-  RemoveAtListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int index) {
+  RemoveAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int numElements) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.index = Require.notNegative(index, "index");
+    this.numElements = Require.notNegative(numElements, "numElements");
   }
 
   @Override
@@ -36,7 +36,7 @@ class RemoveAtListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       return false;
     }
-    if (this.index <= index) {
+    if (numElements <= index) {
       return wrapped.canMaterializeElement(index + 1);
     }
     return wrapped.canMaterializeElement(index);
@@ -49,7 +49,7 @@ class RemoveAtListMaterializer<E> implements ListMaterializer<E> {
       if (wrappedSize == 0) {
         return 0;
       }
-      if (wrappedSize > index) {
+      if (wrappedSize > numElements) {
         return wrappedSize - 1;
       }
     }
@@ -61,7 +61,7 @@ class RemoveAtListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));
     }
-    if (this.index <= index) {
+    if (numElements <= index) {
       return wrapped.materializeElement(index + 1);
     }
     return wrapped.materializeElement(index);
@@ -83,7 +83,7 @@ class RemoveAtListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public int materializeSize() {
     final int size = wrapped.materializeSize();
-    if (size > index) {
+    if (size > numElements) {
       return size - 1;
     }
     return size;
@@ -97,7 +97,7 @@ class RemoveAtListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean hasNext() {
-      if (pos == index) {
+      if (pos == numElements) {
         return wrapped.canMaterializeElement(pos + 1);
       }
       return iterator.hasNext();
@@ -112,7 +112,7 @@ class RemoveAtListMaterializer<E> implements ListMaterializer<E> {
       if (!iterator.hasNext()) {
         throw new NoSuchElementException();
       }
-      if (pos == index) {
+      if (pos == numElements) {
         iterator.next();
         if (!iterator.hasNext()) {
           throw new NoSuchElementException();

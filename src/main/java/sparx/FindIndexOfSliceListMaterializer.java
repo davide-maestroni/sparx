@@ -30,15 +30,10 @@ class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Integer> {
 
   private volatile State state;
 
-  FindIndexOfSliceListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int minIndex,
+  FindIndexOfSliceListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    if (minIndex <= 0) {
-      state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-          Require.notNull(elementsMaterializer, "elementsMaterializer"));
-    } else {
-      state = new IndexImmaterialState(Require.notNull(wrapped, "wrapped"), minIndex,
-          Require.notNull(elementsMaterializer, "elementsMaterializer"));
-    }
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+        Require.notNull(elementsMaterializer, "elementsMaterializer"));
   }
 
   @Override
@@ -164,84 +159,6 @@ class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Integer> {
               elementsIterator = elementsMaterializer.materializeIterator();
               for (final E e : queue) {
                 if (!iterator.hasNext()) {
-                  final int i = index - queue.size();
-                  state = new IndexState(i);
-                  return i;
-                }
-                right = elementsIterator.next();
-                if (e != right && (e == null || !e.equals(right))) {
-                  matches = false;
-                  break;
-                }
-              }
-            }
-            if (!matches) {
-              elementsIterator = elementsMaterializer.materializeIterator();
-            }
-            ++index;
-          } else {
-            queue.add(left);
-          }
-        }
-        state = NOT_FOUND;
-        return -1;
-      } catch (final Exception e) {
-        isMaterialized.set(false);
-        throw UncheckedException.throwUnchecked(e);
-      }
-    }
-  }
-
-  private class IndexImmaterialState implements State {
-
-    private final ListMaterializer<?> elementsMaterializer;
-    private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final int minIndex;
-    private final ListMaterializer<E> wrapped;
-
-    private IndexImmaterialState(@NotNull final ListMaterializer<E> wrapped, final int minIndex,
-        @NotNull final ListMaterializer<?> elementsMaterializer) {
-      this.wrapped = wrapped;
-      this.minIndex = minIndex;
-      this.elementsMaterializer = elementsMaterializer;
-    }
-
-    @Override
-    public int knownSize() {
-      return -1;
-    }
-
-    @Override
-    public int materialized() {
-      if (!isMaterialized.compareAndSet(false, true)) {
-        throw new ConcurrentModificationException();
-      }
-      try {
-        final DequeueList<E> queue = new DequeueList<E>();
-        final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
-        Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
-        int index = minIndex;
-        if (!elementsIterator.hasNext()) {
-          state = new IndexState(index);
-          return index;
-        }
-        final ListMaterializer<E> wrapped = this.wrapped;
-        while (wrapped.canMaterializeElement(index)) {
-          if (!elementsIterator.hasNext()) {
-            state = new IndexState(index);
-            return index;
-          }
-          final E left = wrapped.materializeElement(index);
-          Object right = elementsIterator.next();
-          if (left != right && (left == null || !left.equals(right))) {
-            boolean matches = false;
-            while (!queue.isEmpty() && !matches) {
-              ++index;
-              queue.pop();
-              matches = true;
-              elementsIterator = elementsMaterializer.materializeIterator();
-              for (final E e : queue) {
-                if (!wrapped.canMaterializeElement(index)) {
                   final int i = index - queue.size();
                   state = new IndexState(i);
                   return i;
