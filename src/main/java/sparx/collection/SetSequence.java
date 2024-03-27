@@ -130,6 +130,14 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
+  @NotNull SetSequence<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull SetSequence<E> flatMapLastWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
   @NotNull SetSequence<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
@@ -243,7 +251,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<E> replaceAfter(int numElements, E element);
+  @NotNull SetSequence<E> replaceAfter(int numElements, E replacement);
 
   @Override
   @NotNull SetSequence<E> replaceEach(E element, E replacement);

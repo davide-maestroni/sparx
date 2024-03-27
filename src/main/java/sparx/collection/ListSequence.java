@@ -133,6 +133,14 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
+  @NotNull ListSequence<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull ListSequence<E> flatMapLastWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
   @NotNull ListSequence<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
@@ -167,9 +175,9 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @Override
   @NotNull ListSequence<Boolean> includesSlice(@NotNull Iterable<?> elements);
 
-  @NotNull ListSequence<E> insertAllAt(int index, @NotNull Iterable<? extends E> elements);
+  @NotNull ListSequence<E> insertAfter(int numElements, E element);
 
-  @NotNull ListSequence<E> insertAt(int index, E element);
+  @NotNull ListSequence<E> insertAllAfter(int numElements, @NotNull Iterable<? extends E> elements);
 
   @Override
   @NotNull <F> ListSequence<F> map(@NotNull Function<? super E, F> mapper);
@@ -254,7 +262,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull ListSequence<E> replaceAfter(int numElements, E element);
+  @NotNull ListSequence<E> replaceAfter(int numElements, E replacement);
 
   @Override
   @NotNull ListSequence<E> replaceEach(E element, E replacement);

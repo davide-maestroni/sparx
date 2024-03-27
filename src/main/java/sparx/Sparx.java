@@ -709,7 +709,39 @@ public class Sparx {
             negated(predicate), getElementToMaterializer(mapper)));
       }
 
-      // TODO: flatMapLastWhere, flatMapLastWhereNot
+      @Override
+      public @NotNull ListSequence<E> flatMapLastWhere(
+          @NotNull final Predicate<? super E> predicate,
+          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return List.of();
+        }
+        if (knownSize == 1) {
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, predicate,
+              getElementToMaterializer(mapper)));
+        }
+        return new List<E>(new FlatMapLastWhereListMaterializer<E>(materializer, predicate,
+            getElementToMaterializer(mapper)));
+      }
+
+      @Override
+      public @NotNull ListSequence<E> flatMapLastWhereNot(
+          @NotNull final Predicate<? super E> predicate,
+          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return List.of();
+        }
+        if (knownSize == 1) {
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, negated(predicate),
+              getElementToMaterializer(mapper)));
+        }
+        return new List<E>(new FlatMapLastWhereListMaterializer<E>(materializer,
+            negated(predicate), getElementToMaterializer(mapper)));
+      }
 
       @Override
       public @NotNull ListSequence<E> flatMapWhere(@NotNull final Predicate<? super E> predicate,
@@ -821,7 +853,16 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> insertAllAt(final int index,
+      public @NotNull List<E> insertAfter(final int numElements, final E element) {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new List<E>(new ElementToListMaterializer<E>(element));
+        }
+        return new List<E>(new InsertAfterListMaterializer<E>(materializer, numElements, element));
+      }
+
+      @Override
+      public @NotNull List<E> insertAllAfter(final int numElements,
           @NotNull final Iterable<? extends E> elements) {
         final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
         final ListMaterializer<E> materializer = this.materializer;
@@ -829,16 +870,7 @@ public class Sparx {
           return new List<E>(elementsMaterializer);
         }
         return new List<E>(
-            new InsertAllAtListMaterializer<E>(materializer, index, elementsMaterializer));
-      }
-
-      @Override
-      public @NotNull List<E> insertAt(final int index, final E element) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return new List<E>(new ElementToListMaterializer<E>(element));
-        }
-        return new List<E>(new InsertAtListMaterializer<E>(materializer, index, element));
+            new InsertAllAfterListMaterializer<E>(materializer, numElements, elementsMaterializer));
       }
 
       @Override
@@ -855,7 +887,7 @@ public class Sparx {
         return new List<F>(new MapListMaterializer<E, F>(materializer, mapper));
       }
 
-      // TODO: mapAt, mapWhere, mapFirstWhere, mapFirstWhereNot, mapLastWhere, mapLastWhereNot
+      // TODO: mapAfter, mapWhere, mapWhereNot, mapFirstWhere, mapFirstWhereNot, mapLastWhere, mapLastWhereNot
 
       @Override
       public @NotNull List<E> max(@NotNull final Comparator<? super E> comparator) {
@@ -1091,7 +1123,7 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> replaceAfter(int numElements, E element) {
+      public @NotNull ListSequence<E> replaceAfter(int numElements, E replacement) {
         return null;
       }
 

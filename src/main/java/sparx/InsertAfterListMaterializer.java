@@ -21,16 +21,16 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-class InsertAtListMaterializer<E> implements ListMaterializer<E> {
+class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
 
   private final E element;
-  private final int index;
+  private final int numElements;
   private final ListMaterializer<E> wrapped;
 
-  InsertAtListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      final int index, final E element) {
+  InsertAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      final int numElements, final E element) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.index = Math.max(0, index);
+    this.numElements = Math.max(0, numElements);
     this.element = element;
   }
 
@@ -42,7 +42,7 @@ class InsertAtListMaterializer<E> implements ListMaterializer<E> {
     if (index == 0) {
       return true;
     }
-    if (this.index <= index) {
+    if (numElements <= index) {
       return wrapped.canMaterializeElement(index - 1);
     }
     final ListMaterializer<E> wrapped = this.wrapped;
@@ -67,7 +67,7 @@ class InsertAtListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));
     }
-    final int i = this.index;
+    final int i = numElements;
     if (i == index) {
       return element;
     }
@@ -107,7 +107,7 @@ class InsertAtListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean hasNext() {
-      return iterator.hasNext() || pos <= index;
+      return iterator.hasNext() || pos <= numElements;
     }
 
     @Override
@@ -115,15 +115,16 @@ class InsertAtListMaterializer<E> implements ListMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      if (pos != index) {
+      final int numElements = InsertAfterListMaterializer.this.numElements;
+      if (pos != numElements) {
         final Iterator<E> iterator = this.iterator;
         if (iterator.hasNext()) {
           ++pos;
           return iterator.next();
-        } else if (pos > index) {
+        } else if (pos > numElements) {
           throw new NoSuchElementException();
         }
-        pos = index + 1;
+        pos = numElements + 1;
         return element;
       }
       ++pos;

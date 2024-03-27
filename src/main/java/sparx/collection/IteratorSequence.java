@@ -151,6 +151,14 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
+  @NotNull IteratorSequence<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull IteratorSequence<E> flatMapLastWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
   @NotNull <F> IteratorSequence<F> fold(F identity,
       @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
@@ -263,7 +271,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull IteratorSequence<E> replaceAfter(int numElements, E element);
+  @NotNull IteratorSequence<E> replaceAfter(int numElements, E replacement);
 
   @Override
   @NotNull IteratorSequence<E> replaceEach(E element, E replacement);

@@ -108,6 +108,12 @@ public interface Sequence<E> extends Iterable<E> {
   @NotNull Sequence<E> flatMapFirstWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
+  @NotNull Sequence<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull Sequence<E> flatMapLastWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
   @NotNull Sequence<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
@@ -192,7 +198,7 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
 
-  @NotNull Sequence<E> replaceAfter(int numElements, E element);
+  @NotNull Sequence<E> replaceAfter(int numElements, E replacement);
 
   @NotNull Sequence<E> replaceEach(E element, E replacement);
 

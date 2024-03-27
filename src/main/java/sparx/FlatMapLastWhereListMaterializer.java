@@ -25,11 +25,11 @@ import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 import sparx.util.function.Predicate;
 
-class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
+class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile ListMaterializer<E> state;
 
-  FlatMapFirstWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+  FlatMapLastWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate,
       @NotNull final Function<? super E, ? extends ListMaterializer<E>> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
@@ -267,18 +267,18 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
         return index;
       }
       try {
-        int i = 0;
         final Predicate<? super E> predicate = this.predicate;
-        final Iterator<E> iterator = wrapped.materializeIterator();
-        while (iterator.hasNext()) {
-          final E next = iterator.next();
+        final ListMaterializer<E> wrapped = this.wrapped;
+        final int size = wrapped.materializeSize();
+        for (int i = size - 1; i >= 0; --i) {
+          final E next = wrapped.materializeElement(i);
           if (predicate.test(next)) {
-            break;
+            index = i;
+            return i;
           }
-          ++i;
         }
-        index = i;
-        return i;
+        index = size;
+        return size;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }

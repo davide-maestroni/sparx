@@ -21,16 +21,16 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-class InsertAllAtListMaterializer<E> implements ListMaterializer<E> {
+class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
 
   private final ListMaterializer<E> elementsMaterializer;
-  private final int index;
+  private final int numElements;
   private final ListMaterializer<E> wrapped;
 
-  InsertAllAtListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      final int index, @NotNull final ListMaterializer<E> elementsMaterializer) {
+  InsertAllAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      final int numElements, @NotNull final ListMaterializer<E> elementsMaterializer) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.index = Math.max(0, index);
+    this.numElements = Math.max(0, numElements);
     this.elementsMaterializer = Require.notNull(elementsMaterializer, "elementsMaterializer");
   }
 
@@ -39,7 +39,7 @@ class InsertAllAtListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       return false;
     }
-    final int i = this.index;
+    final int i = numElements;
     if (i == 0) {
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(index)) {
@@ -82,7 +82,7 @@ class InsertAllAtListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       throw new IndexOutOfBoundsException(String.valueOf(index));
     }
-    final int i = this.index;
+    final int i = numElements;
     if (i == 0) {
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(index)) {
@@ -140,7 +140,7 @@ class InsertAllAtListMaterializer<E> implements ListMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      if (pos != index) {
+      if (pos != numElements) {
         final Iterator<E> iterator = this.iterator;
         if (iterator.hasNext()) {
           ++pos;
