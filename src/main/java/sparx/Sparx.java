@@ -253,11 +253,6 @@ public class Sparx {
       }
 
       @Override
-      public <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper) {
-        return null;
-      }
-
-      @Override
       public @NotNull List<E> append(final E element) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
@@ -274,6 +269,11 @@ public class Sparx {
           return new List<E>(elementsMaterializer);
         }
         return new List<E>(new AppendAllListMaterializer<E>(materializer, elementsMaterializer));
+      }
+
+      @Override
+      public <T> T apply(@NotNull final Function<? super Sequence<E>, T> mapper) {
+        return null;
       }
 
       @Override
@@ -297,7 +297,7 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return ZERO_LIST;
         }
-        return new List<Integer>(new CountByListMaterializer<E>(materializer, predicate));
+        return new List<Integer>(new CountWhereListMaterializer<E>(materializer, predicate));
       }
 
       @Override
@@ -306,7 +306,8 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return ZERO_LIST;
         }
-        return new List<Integer>(new CountByListMaterializer<E>(materializer, negated(predicate)));
+        return new List<Integer>(
+            new CountWhereListMaterializer<E>(materializer, negated(predicate)));
       }
 
       @Override
@@ -319,9 +320,10 @@ public class Sparx {
           if (materializer.knownSize() == 1) {
             consumer.accept(materializer.materializeElement(0));
           } else {
-            final Iterator<E> iterator = materializer.materializeIterator();
-            while (iterator.hasNext()) {
-              consumer.accept(iterator.next());
+            int i = 0;
+            while (materializer.canMaterializeElement(i)) {
+              consumer.accept(materializer.materializeElement(i));
+              ++i;
             }
           }
         } catch (final Exception e) {
@@ -343,13 +345,14 @@ public class Sparx {
               consumer.accept(element);
             }
           } else {
-            final Iterator<E> iterator = materializer.materializeIterator();
-            while (iterator.hasNext()) {
-              final E next = iterator.next();
+            int i = 0;
+            while (materializer.canMaterializeElement(i)) {
+              final E next = materializer.materializeElement(i);
               if (condition.test(next)) {
                 break;
               }
               consumer.accept(next);
+              ++i;
             }
           }
         } catch (final Exception e) {
@@ -367,11 +370,12 @@ public class Sparx {
           if (materializer.knownSize() == 1) {
             predicate.test(materializer.materializeElement(0));
           } else {
-            final Iterator<E> iterator = materializer.materializeIterator();
-            while (iterator.hasNext()) {
-              if (predicate.test(iterator.next())) {
+            int i = 0;
+            while (materializer.canMaterializeElement(i)) {
+              if (predicate.test(materializer.materializeElement(i))) {
                 break;
               }
+              ++i;
             }
           }
         } catch (final Exception e) {
@@ -393,13 +397,14 @@ public class Sparx {
               consumer.accept(element);
             }
           } else {
-            final Iterator<E> iterator = materializer.materializeIterator();
-            while (iterator.hasNext()) {
-              final E next = iterator.next();
+            int i = 0;
+            while (materializer.canMaterializeElement(i)) {
+              final E next = materializer.materializeElement(i);
               if (!condition.test(next)) {
                 break;
               }
               consumer.accept(next);
+              ++i;
             }
           }
         } catch (final Exception e) {
@@ -417,11 +422,12 @@ public class Sparx {
           if (materializer.knownSize() == 1) {
             predicate.test(materializer.materializeElement(0));
           } else {
-            final Iterator<E> iterator = materializer.materializeIterator();
-            while (iterator.hasNext()) {
-              if (!predicate.test(iterator.next())) {
+            int i = 0;
+            while (materializer.canMaterializeElement(i)) {
+              if (!predicate.test(materializer.materializeElement(i))) {
                 break;
               }
+              ++i;
             }
           }
         } catch (final Exception e) {
@@ -650,7 +656,7 @@ public class Sparx {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<F>(new SingleMapListMaterializer<E, F>(materializer,
+          return new List<F>(new SingleFlatMapListMaterializer<E, F>(materializer,
               getElementToMaterializer(mapper)));
         }
         return new List<F>(new FlatMapListMaterializer<E, F>(materializer, mapper));
@@ -668,7 +674,7 @@ public class Sparx {
           return this;
         }
         if (numElements == 0 && knownSize == 1) {
-          return new List<E>(new SingleMapListMaterializer<E, E>(materializer,
+          return new List<E>(new SingleFlatMapListMaterializer<E, E>(materializer,
               getElementToMaterializer(mapper)));
         }
         return new List<E>(new FlatMapAfterListMaterializer<E>(materializer, numElements,
@@ -685,7 +691,7 @@ public class Sparx {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, predicate,
+          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer, predicate,
               getElementToMaterializer(mapper)));
         }
         return new List<E>(new FlatMapFirstWhereListMaterializer<E>(materializer, predicate,
@@ -702,8 +708,9 @@ public class Sparx {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, negated(predicate),
-              getElementToMaterializer(mapper)));
+          return new List<E>(
+              new SingleFlatMapWhereListMaterializer<E>(materializer, negated(predicate),
+                  getElementToMaterializer(mapper)));
         }
         return new List<E>(new FlatMapFirstWhereListMaterializer<E>(materializer,
             negated(predicate), getElementToMaterializer(mapper)));
@@ -719,7 +726,7 @@ public class Sparx {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, predicate,
+          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer, predicate,
               getElementToMaterializer(mapper)));
         }
         return new List<E>(new FlatMapLastWhereListMaterializer<E>(materializer, predicate,
@@ -736,8 +743,9 @@ public class Sparx {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, negated(predicate),
-              getElementToMaterializer(mapper)));
+          return new List<E>(
+              new SingleFlatMapWhereListMaterializer<E>(materializer, negated(predicate),
+                  getElementToMaterializer(mapper)));
         }
         return new List<E>(new FlatMapLastWhereListMaterializer<E>(materializer,
             negated(predicate), getElementToMaterializer(mapper)));
@@ -752,7 +760,7 @@ public class Sparx {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, predicate,
+          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer, predicate,
               getElementToMaterializer(mapper)));
         }
         return new List<E>(new FlatMapWhereListMaterializer<E>(materializer, predicate, mapper));
@@ -767,8 +775,8 @@ public class Sparx {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, negated(predicate),
-              getElementToMaterializer(mapper)));
+          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer,
+              negated(predicate), getElementToMaterializer(mapper)));
         }
         return new List<E>(
             new FlatMapWhereListMaterializer<E>(materializer, negated(predicate), mapper));
@@ -825,9 +833,8 @@ public class Sparx {
         if (size == 1) {
           return group(1);
         }
-        return new List<List<E>>(
-            new GroupListMaterializer<E, List<E>>(materializer, size, filler,
-                (Function<? super java.util.List<E>, ? extends List<E>>) FROM_JAVA_LIST));
+        return new List<List<E>>(new GroupListMaterializer<E, List<E>>(materializer, size, filler,
+            (Function<? super java.util.List<E>, ? extends List<E>>) FROM_JAVA_LIST));
       }
 
       @Override
@@ -855,8 +862,12 @@ public class Sparx {
       @Override
       public @NotNull List<E> insertAfter(final int numElements, final E element) {
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return new List<E>(new ElementToListMaterializer<E>(element));
+        }
+        if (knownSize > 0 && knownSize < numElements) {
+          return this;
         }
         return new List<E>(new InsertAfterListMaterializer<E>(materializer, numElements, element));
       }
@@ -866,8 +877,12 @@ public class Sparx {
           @NotNull final Iterable<? extends E> elements) {
         final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return new List<E>(elementsMaterializer);
+        }
+        if (knownSize > 0 && knownSize < numElements) {
+          return this;
         }
         return new List<E>(
             new InsertAllAfterListMaterializer<E>(materializer, numElements, elementsMaterializer));
@@ -881,8 +896,12 @@ public class Sparx {
       @Override
       public @NotNull <F> List<F> map(@NotNull final Function<? super E, F> mapper) {
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return List.of();
+        }
+        if (knownSize == 1) {
+          return new List<F>(new SingleMapListMaterializer<E, F>(materializer, mapper));
         }
         return new List<F>(new MapListMaterializer<E, F>(materializer, mapper));
       }

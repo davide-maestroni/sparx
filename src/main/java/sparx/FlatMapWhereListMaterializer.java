@@ -72,27 +72,24 @@ class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState implements ListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
-    private final Iterator<E> iterator;
     private final Function<? super E, ? extends Iterable<? extends E>> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
     private final Predicate<? super E> predicate;
+    private final ListMaterializer<E> wrapped;
 
     private Iterator<? extends E> elementIterator = Collections.<E>emptySet().iterator();
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
         @NotNull final Predicate<? super E> predicate,
         @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      this.wrapped = wrapped;
       this.mapper = mapper;
       this.predicate = predicate;
-      iterator = wrapped.materializeIterator();
     }
 
     @Override
     public boolean canMaterializeElement(final int index) {
-      if (index < 0) {
-        return false;
-      }
-      return materializeUntil(index) > index;
+      return index >= 0 && materializeUntil(index) > index;
     }
 
     @Override
@@ -103,7 +100,7 @@ class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public E materializeElement(final int index) {
       if (index < 0 || materializeUntil(index) <= index) {
-        throw new IndexOutOfBoundsException(String.valueOf(index));
+        throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       return elements.get(index);
     }
@@ -129,13 +126,14 @@ class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
       if (currSize > index) {
         return currSize;
       }
-      final Iterator<E> iterator = this.iterator;
+      final ListMaterializer<E> wrapped = this.wrapped;
       final Predicate<? super E> predicate = this.predicate;
       final Function<? super E, ? extends Iterable<? extends E>> mapper = this.mapper;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.getAndIncrement() + 1;
       try {
         Iterator<? extends E> elementIterator = this.elementIterator;
+        int i = 0;
         while (true) {
           while (elementIterator.hasNext()) {
             elements.add(elementIterator.next());
@@ -146,13 +144,14 @@ class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
               return currSize;
             }
           }
-          if (iterator.hasNext()) {
-            final E next = iterator.next();
-            if (predicate.test(next)) {
-              elementIterator = this.elementIterator = mapper.apply(next).iterator();
+          if (wrapped.canMaterializeElement(i)) {
+            final E element = wrapped.materializeElement(i);
+            if (predicate.test(element)) {
+              elementIterator = this.elementIterator = mapper.apply(element).iterator();
             } else {
-              elements.add(next);
+              elements.add(element);
             }
+            ++i;
           } else {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();

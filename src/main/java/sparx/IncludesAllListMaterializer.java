@@ -52,7 +52,7 @@ class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean> {
     if (index == 0) {
       return state.materialized();
     }
-    throw new IndexOutOfBoundsException(String.valueOf(index));
+    throw new IndexOutOfBoundsException(Integer.toString(index));
   }
 
   @Override
@@ -118,13 +118,15 @@ class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean> {
           state = TRUE_STATE;
           return true;
         }
-        final Iterator<E> iterator = wrapped.materializeIterator();
-        while (iterator.hasNext()) {
-          elements.remove(iterator.next());
+        final ListMaterializer<E> wrapped = this.wrapped;
+        int i = 0;
+        while (wrapped.canMaterializeElement(i)) {
+          elements.remove(wrapped.materializeElement(i));
           if (elements.isEmpty()) {
             state = TRUE_STATE;
             return true;
           }
+          ++i;
         }
         state = FALSE_STATE;
         return false;

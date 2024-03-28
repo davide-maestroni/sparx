@@ -46,11 +46,7 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
       return wrapped.canMaterializeElement(index - 1);
     }
     final ListMaterializer<E> wrapped = this.wrapped;
-    if (wrapped.canMaterializeElement(index)) {
-      return true;
-    }
-    final int size = wrapped.materializeSize();
-    return index <= size;
+    return wrapped.canMaterializeElement(index) || index <= wrapped.materializeSize();
   }
 
   @Override
@@ -65,7 +61,7 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public E materializeElement(final int index) {
     if (index < 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     final int i = numElements;
     if (i == index) {
@@ -79,7 +75,7 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
       return wrapped.materializeElement(index);
     }
     if (index > wrapped.materializeSize()) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return element;
   }
@@ -101,13 +97,12 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
 
   private class InsertIterator implements Iterator<E> {
 
-    private final Iterator<E> iterator = wrapped.materializeIterator();
-
-    private int pos = 0;
+    private int index;
+    private int pos;
 
     @Override
     public boolean hasNext() {
-      return iterator.hasNext() || pos <= numElements;
+      return wrapped.canMaterializeElement(index) || pos <= numElements;
     }
 
     @Override
@@ -117,10 +112,10 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
       }
       final int numElements = InsertAfterListMaterializer.this.numElements;
       if (pos != numElements) {
-        final Iterator<E> iterator = this.iterator;
-        if (iterator.hasNext()) {
+        final ListMaterializer<E> wrapped = InsertAfterListMaterializer.this.wrapped;
+        if (wrapped.canMaterializeElement(index)) {
           ++pos;
-          return iterator.next();
+          return wrapped.materializeElement(index++);
         } else if (pos > numElements) {
           throw new NoSuchElementException();
         }

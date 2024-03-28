@@ -112,7 +112,7 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public E materializeElement(final int index) {
       if (index < 0) {
-        throw new IndexOutOfBoundsException(String.valueOf(index));
+        throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final int numElements = this.numElements;
       if (index < numElements) {
@@ -182,10 +182,8 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       }
       final int elementIndex = index - numElements;
       final ListMaterializer<E> materializer = materialized();
-      if (materializer.canMaterializeElement(elementIndex)) {
-        return true;
-      }
-      return wrapped.canMaterializeElement(index - materializer.materializeSize());
+      return materializer.canMaterializeElement(elementIndex) ||
+          wrapped.canMaterializeElement(index - materializer.materializeSize());
     }
 
     @Override
@@ -200,7 +198,7 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public E materializeElement(final int index) {
       if (index < 0) {
-        throw new IndexOutOfBoundsException(String.valueOf(index));
+        throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final int numElements = materializeIndex();
       if (index < numElements) {
@@ -258,6 +256,7 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
           return wrapped;
         }
       } catch (final Exception e) {
+        isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
     }
@@ -268,11 +267,10 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       }
       try {
         int i = 0;
+        final ListMaterializer<E> wrapped = this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
-        final Iterator<E> iterator = wrapped.materializeIterator();
-        while (iterator.hasNext()) {
-          final E next = iterator.next();
-          if (predicate.test(next)) {
+        while (wrapped.canMaterializeElement(i)) {
+          if (predicate.test(wrapped.materializeElement(i))) {
             break;
           }
           ++i;

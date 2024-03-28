@@ -80,7 +80,7 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public E materializeElement(final int index) {
     if (index < 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     final int i = numElements;
     if (i == 0) {
@@ -125,14 +125,14 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
 
   private class InsertIterator implements Iterator<E> {
 
-    private final Iterator<E> iterator = wrapped.materializeIterator();
     private final Iterator<E> elementsIterator = elementsMaterializer.materializeIterator();
 
-    private int pos = 0;
+    private int index;
+    private int pos;
 
     @Override
     public boolean hasNext() {
-      return iterator.hasNext() || elementsIterator.hasNext();
+      return wrapped.canMaterializeElement(index) || elementsIterator.hasNext();
     }
 
     @Override
@@ -141,10 +141,10 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
         throw new NoSuchElementException();
       }
       if (pos != numElements) {
-        final Iterator<E> iterator = this.iterator;
-        if (iterator.hasNext()) {
+        final ListMaterializer<E> wrapped = InsertAllAfterListMaterializer.this.wrapped;
+        if (wrapped.canMaterializeElement(index)) {
           ++pos;
-          return iterator.next();
+          return wrapped.materializeElement(index++);
         }
         return elementsIterator.next();
       } else {
@@ -154,7 +154,7 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
         }
       }
       ++pos;
-      return iterator.next();
+      return wrapped.materializeElement(index++);
     }
 
     @Override

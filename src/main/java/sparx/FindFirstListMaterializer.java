@@ -131,15 +131,17 @@ class FindFirstListMaterializer<E> implements ListMaterializer<E> {
         throw new ConcurrentModificationException();
       }
       try {
+        final ListMaterializer<E> wrapped = this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
-        final Iterator<E> iterator = wrapped.materializeIterator();
-        while (iterator.hasNext()) {
-          final E next = iterator.next();
-          if (predicate.test(next)) {
-            final ElementState<E> elementState = new ElementState<E>(next);
+        int i = 0;
+        while (wrapped.canMaterializeElement(i)) {
+          final E element = wrapped.materializeElement(i);
+          if (predicate.test(element)) {
+            final ElementState<E> elementState = new ElementState<E>(element);
             state = elementState;
             return elementState.materialized();
           }
+          ++i;
         }
         state = (State<E>) EMPTY_STATE;
         return Collections.emptyList();

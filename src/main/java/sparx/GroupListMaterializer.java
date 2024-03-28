@@ -85,8 +85,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
     private int elementsCount;
 
-    private ImmaterialFillerState(@NotNull final ListMaterializer<E> wrapped,
-        final int maxSize,
+    private ImmaterialFillerState(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
         final E filler, @NotNull final Function<? super List<E>, ? extends L> mapper) {
       this.wrapped = wrapped;
       this.maxSize = maxSize;
@@ -96,10 +95,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
     @Override
     public boolean canMaterializeElement(final int index) {
-      if (index < 0) {
-        return false;
-      }
-      return wrapped.canMaterializeElement(index * maxSize);
+      return index >= 0 && wrapped.canMaterializeElement(index * maxSize);
     }
 
     @Override
@@ -117,7 +113,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
       final int maxSize = this.maxSize;
       final ListMaterializer<E> wrapped = this.wrapped;
       if (index < 0 || !wrapped.canMaterializeElement(index * maxSize)) {
-        throw new IndexOutOfBoundsException(String.valueOf(index));
+        throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final ArrayList<L> elements = this.elements;
       if (elements.size() > index) {
@@ -194,10 +190,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
     @Override
     public boolean canMaterializeElement(final int index) {
-      if (index < 0) {
-        return false;
-      }
-      return wrapped.canMaterializeElement(index * maxSize);
+      return index >= 0 && wrapped.canMaterializeElement(index * maxSize);
     }
 
     @Override
@@ -215,7 +208,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
       final int maxSize = this.maxSize;
       final ListMaterializer<E> wrapped = this.wrapped;
       if (index < 0 || !wrapped.canMaterializeElement(index * maxSize)) {
-        throw new IndexOutOfBoundsException(String.valueOf(index));
+        throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final ArrayList<L> elements = this.elements;
       if (elements.size() > index) {

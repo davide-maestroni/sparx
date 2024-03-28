@@ -38,11 +38,7 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    final ListMaterializer<E> wrapped = this.wrapped;
-    if (index >= wrapped.materializeSize() - state.materialized()) {
-      return false;
-    }
-    return wrapped.canMaterializeElement(index);
+    return index >= 0 && index < wrapped.materializeSize() - state.materialized();
   }
 
   @Override
@@ -63,14 +59,14 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
   public E materializeElement(final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
     if (index >= wrapped.materializeSize() - state.materialized()) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return wrapped.materializeElement(index);
   }
 
   @Override
   public boolean materializeEmpty() {
-    return wrapped.materializeSize() <= state.materialized();
+    return !wrapped.canMaterializeElement(state.materialized());
   }
 
   @Override

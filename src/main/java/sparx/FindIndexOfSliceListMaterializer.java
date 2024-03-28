@@ -54,7 +54,7 @@ class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Integer> {
         return i;
       }
     }
-    throw new IndexOutOfBoundsException(String.valueOf(index));
+    throw new IndexOutOfBoundsException(Integer.toString(index));
   }
 
   @Override
@@ -135,20 +135,21 @@ class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Integer> {
       }
       try {
         final DequeueList<E> queue = new DequeueList<E>();
-        final Iterator<E> iterator = wrapped.materializeIterator();
+        final ListMaterializer<E> wrapped = this.wrapped;
         final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
         Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
-        int index = 0;
         if (!elementsIterator.hasNext()) {
-          state = new IndexState(index);
-          return index;
+          state = new IndexState(0);
+          return 0;
         }
-        while (iterator.hasNext()) {
+        int i = 0;
+        int index = 0;
+        while (wrapped.canMaterializeElement(i)) {
           if (!elementsIterator.hasNext()) {
             state = new IndexState(index);
             return index;
           }
-          final E left = iterator.next();
+          final E left = wrapped.materializeElement(i);
           Object right = elementsIterator.next();
           if (left != right && (left == null || !left.equals(right))) {
             boolean matches = false;
@@ -158,10 +159,10 @@ class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Integer> {
               matches = true;
               elementsIterator = elementsMaterializer.materializeIterator();
               for (final E e : queue) {
-                if (!iterator.hasNext()) {
-                  final int i = index - queue.size();
-                  state = new IndexState(i);
-                  return i;
+                if (!wrapped.canMaterializeElement(i + 1)) {
+                  final int result = index - queue.size();
+                  state = new IndexState(result);
+                  return result;
                 }
                 right = elementsIterator.next();
                 if (e != right && (e == null || !e.equals(right))) {
@@ -177,6 +178,7 @@ class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Integer> {
           } else {
             queue.add(left);
           }
+          ++i;
         }
         state = NOT_FOUND;
         return -1;

@@ -54,7 +54,7 @@ class FindLastIndexListMaterializer<E> implements ListMaterializer<Integer> {
         return i;
       }
     }
-    throw new IndexOutOfBoundsException(String.valueOf(index));
+    throw new IndexOutOfBoundsException(Integer.toString(index));
   }
 
   @Override

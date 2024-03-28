@@ -54,7 +54,7 @@ class FindIndexListMaterializer<E> implements ListMaterializer<Integer> {
         return i;
       }
     }
-    throw new IndexOutOfBoundsException(String.valueOf(index));
+    throw new IndexOutOfBoundsException(Integer.toString(index));
   }
 
   @Override
@@ -134,16 +134,15 @@ class FindIndexListMaterializer<E> implements ListMaterializer<Integer> {
         throw new ConcurrentModificationException();
       }
       try {
+        final ListMaterializer<E> wrapped = this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
-        final Iterator<E> iterator = wrapped.materializeIterator();
-        int index = 0;
-        while (iterator.hasNext()) {
-          final E next = iterator.next();
-          if (predicate.test(next)) {
-            state = new IndexState(index);
-            return index;
+        int i = 0;
+        while (wrapped.canMaterializeElement(i)) {
+          if (predicate.test(wrapped.materializeElement(i))) {
+            state = new IndexState(i);
+            return i;
           }
-          ++index;
+          ++i;
         }
         state = NOT_FOUND;
         return -1;

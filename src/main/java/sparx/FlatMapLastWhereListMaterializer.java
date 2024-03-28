@@ -69,8 +69,8 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private static class MaterialState<E> implements ListMaterializer<E> {
 
-    private final int numElements;
     private final ListMaterializer<E> materializer;
+    private final int numElements;
     private final ListMaterializer<E> wrapped;
 
     private MaterialState(@NotNull final ListMaterializer<E> wrapped,
@@ -91,10 +91,8 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
       }
       final int elementIndex = index - numElements;
       final ListMaterializer<E> materializer = this.materializer;
-      if (materializer.canMaterializeElement(elementIndex)) {
-        return true;
-      }
-      return wrapped.canMaterializeElement(index - materializer.materializeSize());
+      return materializer.canMaterializeElement(elementIndex) ||
+          wrapped.canMaterializeElement(index - materializer.materializeSize());
     }
 
     @Override
@@ -112,7 +110,7 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public E materializeElement(final int index) {
       if (index < 0) {
-        throw new IndexOutOfBoundsException(String.valueOf(index));
+        throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final int numElements = this.numElements;
       if (index < numElements) {
@@ -182,10 +180,8 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
       }
       final int elementIndex = index - numElements;
       final ListMaterializer<E> materializer = materialized();
-      if (materializer.canMaterializeElement(elementIndex)) {
-        return true;
-      }
-      return wrapped.canMaterializeElement(index - materializer.materializeSize());
+      return materializer.canMaterializeElement(elementIndex) ||
+          wrapped.canMaterializeElement(index - materializer.materializeSize());
     }
 
     @Override
@@ -200,7 +196,7 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public E materializeElement(final int index) {
       if (index < 0) {
-        throw new IndexOutOfBoundsException(String.valueOf(index));
+        throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final int numElements = materializeIndex();
       if (index < numElements) {
@@ -258,6 +254,7 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
           return wrapped;
         }
       } catch (final Exception e) {
+        isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
     }
@@ -271,8 +268,7 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
         final ListMaterializer<E> wrapped = this.wrapped;
         final int size = wrapped.materializeSize();
         for (int i = size - 1; i >= 0; --i) {
-          final E next = wrapped.materializeElement(i);
-          if (predicate.test(next)) {
+          if (predicate.test(wrapped.materializeElement(i))) {
             index = i;
             return i;
           }

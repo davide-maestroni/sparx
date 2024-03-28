@@ -49,7 +49,7 @@ class EndsWithListMaterializer<E> implements ListMaterializer<Boolean> {
   @Override
   public Boolean materializeElement(final int index) {
     if (index != 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return state.materialized();
   }

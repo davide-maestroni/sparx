@@ -24,11 +24,11 @@ import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.Predicate;
 
-class CountByListMaterializer<E> implements ListMaterializer<Integer> {
+class CountWhereListMaterializer<E> implements ListMaterializer<Integer> {
 
   private volatile State state;
 
-  CountByListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+  CountWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"));
@@ -47,7 +47,7 @@ class CountByListMaterializer<E> implements ListMaterializer<Integer> {
   @Override
   public Integer materializeElement(final int index) {
     if (index != 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return state.materialized();
   }
@@ -104,14 +104,15 @@ class CountByListMaterializer<E> implements ListMaterializer<Integer> {
         throw new ConcurrentModificationException();
       }
       try {
-        int count = 0;
+        final ListMaterializer<E> wrapped = this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
-        final Iterator<E> iterator = wrapped.materializeIterator();
-        while (iterator.hasNext()) {
-          final E next = iterator.next();
-          if (predicate.test(next)) {
+        int i = 0;
+        int count = 0;
+        while (wrapped.canMaterializeElement(i)) {
+          if (predicate.test(wrapped.materializeElement(i))) {
             ++count;
           }
+          ++i;
         }
         state = new CountState(count);
         return count;

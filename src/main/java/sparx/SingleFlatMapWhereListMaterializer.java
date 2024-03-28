@@ -25,11 +25,11 @@ import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 import sparx.util.function.Predicate;
 
-class SingleMapWhereListMaterializer<E> implements ListMaterializer<E> {
+class SingleFlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile ListMaterializer<E> state;
 
-  SingleMapWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+  SingleFlatMapWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate,
       @NotNull final Function<? super E, ? extends ListMaterializer<E>> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
@@ -101,6 +101,7 @@ class SingleMapWhereListMaterializer<E> implements ListMaterializer<E> {
         state = wrapped;
         return true;
       } catch (final Exception e) {
+        isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
     }

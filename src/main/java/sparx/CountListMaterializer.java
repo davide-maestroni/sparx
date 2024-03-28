@@ -44,7 +44,7 @@ class CountListMaterializer<E> implements ListMaterializer<Integer> {
   @Override
   public Integer materializeElement(final int index) {
     if (index != 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return state.materialized();
   }
@@ -98,12 +98,7 @@ class CountListMaterializer<E> implements ListMaterializer<Integer> {
         throw new ConcurrentModificationException();
       }
       try {
-        int count = 0;
-        final Iterator<E> iterator = wrapped.materializeIterator();
-        while (iterator.hasNext()) {
-          iterator.next();
-          ++count;
-        }
+        final int count = wrapped.materializeSize();
         state = new CountState(count);
         return count;
       } catch (final Exception e) {

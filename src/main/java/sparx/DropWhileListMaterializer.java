@@ -121,10 +121,11 @@ class DropWhileListMaterializer<E> implements ListMaterializer<E> {
         throw new ConcurrentModificationException();
       }
       try {
+        final ListMaterializer<E> wrapped = DropWhileListMaterializer.this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
-        final Iterator<E> iterator = wrapped.materializeIterator();
         int elements = 0;
-        while (iterator.hasNext() && predicate.test(iterator.next())) {
+        while (wrapped.canMaterializeElement(elements) &&
+            predicate.test(wrapped.materializeElement(elements))) {
           ++elements;
         }
         state = new ElementsState(elements);

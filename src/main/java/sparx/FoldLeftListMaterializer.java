@@ -117,11 +117,13 @@ class FoldLeftListMaterializer<E, F> implements ListMaterializer<F> {
         throw new ConcurrentModificationException();
       }
       try {
+        final ListMaterializer<E> wrapped = this.wrapped;
         final BinaryFunction<? super F, ? super E, ? extends F> operation = this.operation;
-        final Iterator<E> iterator = wrapped.materializeIterator();
         F current = identity;
-        while (iterator.hasNext()) {
-          current = operation.apply(current, iterator.next());
+        int i = 0;
+        while (wrapped.canMaterializeElement(i)) {
+          current = operation.apply(current, wrapped.materializeElement(i));
+          ++i;
         }
         state = new ElementState<F>(current);
         return state.materialized();

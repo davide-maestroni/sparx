@@ -29,7 +29,7 @@ class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
   private volatile ListMaterializer<F> state;
 
   SingleMapListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Function<? super E, ? extends ListMaterializer<F>> mapper) {
+      @NotNull final Function<? super E, F> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(mapper, "mapper"));
   }
@@ -67,49 +67,39 @@ class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
   private class ImmaterialState implements ListMaterializer<F> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Function<? super E, ? extends ListMaterializer<F>> mapper;
+    private final Function<? super E, F> mapper;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Function<? super E, ? extends ListMaterializer<F>> mapper) {
+        @NotNull final Function<? super E, F> mapper) {
       this.wrapped = wrapped;
       this.mapper = mapper;
     }
 
     @Override
     public boolean canMaterializeElement(final int index) {
-      if (index < 0) {
-        return false;
-      }
-      if (!isMaterialized.compareAndSet(false, true)) {
-        throw new ConcurrentModificationException();
-      }
-      try {
-        final ListMaterializer<F> elementsMaterializer =
-            mapper.apply(wrapped.materializeElement(0));
-        state = elementsMaterializer;
-        return elementsMaterializer.canMaterializeElement(index);
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
+      return index == 0;
     }
 
     @Override
     public int knownSize() {
-      return -1;
+      return 1;
     }
 
     @Override
     public F materializeElement(final int index) {
+      if (index != 0) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
       }
       try {
-        final ListMaterializer<F> elementsMaterializer =
-            mapper.apply(wrapped.materializeElement(0));
-        state = elementsMaterializer;
-        return elementsMaterializer.materializeElement(index);
+        final F element = mapper.apply(wrapped.materializeElement(0));
+        state = new ElementToListMaterializer<F>(element);
+        return element;
       } catch (final Exception e) {
+        isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
     }
@@ -126,17 +116,7 @@ class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
 
     @Override
     public int materializeSize() {
-      if (!isMaterialized.compareAndSet(false, true)) {
-        throw new ConcurrentModificationException();
-      }
-      try {
-        final ListMaterializer<F> elementsMaterializer =
-            mapper.apply(wrapped.materializeElement(0));
-        state = elementsMaterializer;
-        return elementsMaterializer.materializeSize();
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
+      return 1;
     }
   }
 }

@@ -118,8 +118,8 @@ class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
         throw new ConcurrentModificationException();
       }
       try {
-        final BinaryFunction<? super E, ? super F, ? extends F> operation = this.operation;
         final ListMaterializer<E> wrapped = this.wrapped;
+        final BinaryFunction<? super E, ? super F, ? extends F> operation = this.operation;
         F current = identity;
         for (int i = wrapped.materializeSize() - 1; i >= 0; --i) {
           current = operation.apply(wrapped.materializeElement(i), current);

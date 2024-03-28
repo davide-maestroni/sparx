@@ -52,7 +52,7 @@ class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolean> {
     if (index == 0) {
       return state.materialized();
     }
-    throw new IndexOutOfBoundsException(String.valueOf(index));
+    throw new IndexOutOfBoundsException(Integer.toString(index));
   }
 
   @Override
@@ -110,19 +110,20 @@ class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolean> {
       }
       try {
         final DequeueList<E> queue = new DequeueList<E>();
-        final Iterator<E> iterator = wrapped.materializeIterator();
         final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
         Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
         if (!elementsIterator.hasNext()) {
           state = TRUE_STATE;
           return true;
         }
-        while (iterator.hasNext()) {
+        final ListMaterializer<E> wrapped = this.wrapped;
+        int i = 0;
+        while (wrapped.canMaterializeElement(i)) {
           if (!elementsIterator.hasNext()) {
             state = TRUE_STATE;
             return true;
           }
-          final E left = iterator.next();
+          final E left = wrapped.materializeElement(i);
           Object right = elementsIterator.next();
           if (left != right && (left == null || !left.equals(right))) {
             boolean matches = false;
@@ -131,7 +132,7 @@ class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolean> {
               matches = true;
               elementsIterator = elementsMaterializer.materializeIterator();
               for (final E e : queue) {
-                if (!iterator.hasNext()) {
+                if (!wrapped.canMaterializeElement(i + 1)) {
                   state = TRUE_STATE;
                   return true;
                 }
@@ -148,6 +149,7 @@ class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolean> {
           } else {
             queue.add(left);
           }
+          ++i;
         }
         state = FALSE_STATE;
         return false;

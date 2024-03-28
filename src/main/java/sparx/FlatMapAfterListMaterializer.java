@@ -67,7 +67,7 @@ class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public E materializeElement(final int index) {
     if (index < 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     final int numElements = this.numElements;
     if (index < numElements) {
@@ -105,8 +105,7 @@ class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
     if (size <= numElements) {
       return size;
     }
-    final ListMaterializer<E> materializer = state.materialized();
-    return size + materializer.materializeSize() - 1;
+    return size + state.materialized().materializeSize() - 1;
   }
 
   private interface State<E> {
@@ -149,6 +148,7 @@ class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
         state = new MaterialState<E>(materializer);
         return materializer;
       } catch (final Exception e) {
+        isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
     }

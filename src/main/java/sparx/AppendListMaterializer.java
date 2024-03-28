@@ -34,10 +34,7 @@ class AppendListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public boolean canMaterializeElement(final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
-    if (wrapped.canMaterializeElement(index)) {
-      return true;
-    }
-    return index == wrapped.materializeSize();
+    return wrapped.canMaterializeElement(index) || index == wrapped.materializeSize();
   }
 
   @Override
@@ -57,7 +54,7 @@ class AppendListMaterializer<E> implements ListMaterializer<E> {
     }
     final int size = wrapped.materializeSize();
     if (index != size) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return element;
   }
@@ -85,10 +82,7 @@ class AppendListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean hasNext() {
-      if (iterator.hasNext()) {
-        return true;
-      }
-      return !consumedElement;
+      return iterator.hasNext() || !consumedElement;
     }
 
     @Override
