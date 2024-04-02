@@ -30,7 +30,7 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
   InsertAllAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       final int numElements, @NotNull final ListMaterializer<E> elementsMaterializer) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.numElements = Math.max(0, numElements);
+    this.numElements = Require.notNegative(numElements, "numElements");
     this.elementsMaterializer = Require.notNull(elementsMaterializer, "elementsMaterializer");
   }
 
@@ -39,8 +39,8 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       return false;
     }
-    final int i = numElements;
-    if (i == 0) {
+    final int numElements = this.numElements;
+    if (numElements == 0) {
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(index)) {
         return true;
@@ -49,9 +49,9 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
       return wrapped.canMaterializeElement(index + size);
 
     }
-    if (i <= index) {
+    if (numElements <= index) {
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-      if (elementsMaterializer.canMaterializeElement(index - i)) {
+      if (elementsMaterializer.canMaterializeElement(index - numElements)) {
         return true;
       }
       final int size = elementsMaterializer.materializeSize();
@@ -61,17 +61,24 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
     if (wrapped.canMaterializeElement(index)) {
       return true;
     }
-    final int size = wrapped.materializeSize();
-    return elementsMaterializer.canMaterializeElement(index + size);
+    final int wrappedSize = wrapped.materializeSize();
+    if (wrappedSize < numElements) {
+      return elementsMaterializer.canMaterializeElement(index + wrappedSize);
+    }
+    return false;
   }
 
   @Override
   public int knownSize() {
     final int wrappedSize = wrapped.knownSize();
     if (wrappedSize >= 0) {
-      final int elementsKnownSize = elementsMaterializer.knownSize();
-      if (elementsKnownSize >= 0) {
-        return wrappedSize + elementsKnownSize;
+      if (wrappedSize < numElements) {
+        final int elementsKnownSize = elementsMaterializer.knownSize();
+        if (elementsKnownSize >= 0) {
+          return wrappedSize + elementsKnownSize;
+        }
+      } else {
+        return wrappedSize;
       }
     }
     return -1;
@@ -82,8 +89,8 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    final int i = numElements;
-    if (i == 0) {
+    final int numElements = this.numElements;
+    if (numElements == 0) {
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(index)) {
         return elementsMaterializer.materializeElement(index);
@@ -91,8 +98,8 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
       final int size = elementsMaterializer.materializeSize();
       return wrapped.materializeElement(index - size);
     }
-    if (i <= index) {
-      final int j = index - i;
+    if (numElements <= index) {
+      final int j = index - numElements;
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(j)) {
         return elementsMaterializer.materializeElement(j);
@@ -104,13 +111,19 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
     if (wrapped.canMaterializeElement(index)) {
       return wrapped.materializeElement(index);
     }
-    final int size = wrapped.materializeSize();
-    return elementsMaterializer.materializeElement(index - size);
+    final int wrappedSize = wrapped.materializeSize();
+    if (wrappedSize < numElements) {
+      return elementsMaterializer.materializeElement(index - wrappedSize);
+    }
+    throw new IndexOutOfBoundsException(Integer.toString(index));
   }
 
   @Override
   public boolean materializeEmpty() {
-    return wrapped.materializeEmpty() && elementsMaterializer.materializeEmpty();
+    if (wrapped.materializeEmpty()) {
+      return numElements != 0 || elementsMaterializer.materializeEmpty();
+    }
+    return false;
   }
 
   @Override
@@ -120,19 +133,24 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return wrapped.materializeSize() + elementsMaterializer.materializeSize();
+    final int wrappedSize = wrapped.materializeSize();
+    if (wrappedSize < numElements) {
+      return wrappedSize;
+    }
+    return wrappedSize + elementsMaterializer.materializeSize();
   }
 
   private class InsertIterator implements Iterator<E> {
 
     private final Iterator<E> elementsIterator = elementsMaterializer.materializeIterator();
 
-    private int index;
     private int pos;
 
     @Override
     public boolean hasNext() {
-      return wrapped.canMaterializeElement(index) || elementsIterator.hasNext();
+      final int pos = this.pos;
+      return wrapped.canMaterializeElement(pos) ||
+          (pos == numElements && elementsIterator.hasNext());
     }
 
     @Override
@@ -140,21 +158,13 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      if (pos != numElements) {
-        final ListMaterializer<E> wrapped = InsertAllAfterListMaterializer.this.wrapped;
-        if (wrapped.canMaterializeElement(index)) {
-          ++pos;
-          return wrapped.materializeElement(index++);
-        }
-        return elementsIterator.next();
-      } else {
+      if (pos == numElements) {
         final Iterator<E> elementsIterator = this.elementsIterator;
         if (elementsIterator.hasNext()) {
           return elementsIterator.next();
         }
       }
-      ++pos;
-      return wrapped.materializeElement(index++);
+      return wrapped.materializeElement(pos++);
     }
 
     @Override

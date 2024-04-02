@@ -31,7 +31,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @NotNull ListSequence<E> append(E element);
 
-  @NotNull ListSequence<E> appendAll(@NotNull Iterable<E> elements);
+  @NotNull ListSequence<E> appendAll(@NotNull Iterable<? extends E> elements);
 
   @Override
   @NotNull <F> ListSequence<F> as();
@@ -183,6 +183,34 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull <F> ListSequence<F> map(@NotNull Function<? super E, F> mapper);
 
   @Override
+  @NotNull ListSequence<E> mapAfter(int numElements,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull ListSequence<E> mapFirstWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull ListSequence<E> mapFirstWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull ListSequence<E> mapLastWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull ListSequence<E> mapLastWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull ListSequence<E> mapWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull ListSequence<E> mapWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
   @NotNull ListSequence<E> max(@NotNull Comparator<? super E> comparator);
 
   @Override
@@ -211,7 +239,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @NotNull ListSequence<E> prepend(E element);
 
-  @NotNull ListSequence<E> prependAll(@NotNull Iterable<E> elements);
+  @NotNull ListSequence<E> prependAll(@NotNull Iterable<? extends E> elements);
 
   @Override
   @NotNull ListSequence<E> reduce(

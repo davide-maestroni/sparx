@@ -177,6 +177,34 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull <F> CollectionSequence<F> map(@NotNull Function<? super E, F> mapper);
 
   @Override
+  @NotNull CollectionSequence<E> mapAfter(int numElements,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull CollectionSequence<E> mapFirstWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull CollectionSequence<E> mapFirstWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull CollectionSequence<E> mapLastWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull CollectionSequence<E> mapLastWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull CollectionSequence<E> mapWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull CollectionSequence<E> mapWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
   @NotNull CollectionSequence<E> max(@NotNull Comparator<? super E> comparator);
 
   @Override

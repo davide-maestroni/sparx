@@ -23,14 +23,17 @@ import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
+import sparx.util.function.Predicate;
 
-class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
+class SingleMapWhereListMaterializer<E> implements ListMaterializer<E> {
 
-  private volatile ListMaterializer<F> state;
+  private volatile ListMaterializer<E> state;
 
-  SingleMapListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Function<? super E, ? extends F> mapper) {
+  SingleMapWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @NotNull final Predicate<? super E> predicate,
+      @NotNull final Function<? super E, ? extends E> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+        Require.notNull(predicate, "predicate"),
         Require.notNull(mapper, "mapper"));
   }
 
@@ -45,7 +48,7 @@ class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
-  public F materializeElement(final int index) {
+  public E materializeElement(final int index) {
     return state.materializeElement(index);
   }
 
@@ -55,7 +58,7 @@ class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
-  public @NotNull Iterator<F> materializeIterator() {
+  public @NotNull Iterator<E> materializeIterator() {
     return state.materializeIterator();
   }
 
@@ -64,15 +67,18 @@ class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
     return state.materializeSize();
   }
 
-  private class ImmaterialState implements ListMaterializer<F> {
+  private class ImmaterialState implements ListMaterializer<E> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Function<? super E, ? extends F> mapper;
+    private final Function<? super E, ? extends E> mapper;
+    private final Predicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Function<? super E, ? extends F> mapper) {
+        @NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends E> mapper) {
       this.wrapped = wrapped;
+      this.predicate = predicate;
       this.mapper = mapper;
     }
 
@@ -87,7 +93,7 @@ class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
     }
 
     @Override
-    public F materializeElement(final int index) {
+    public E materializeElement(final int index) {
       if (index != 0) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
@@ -95,8 +101,11 @@ class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
         throw new ConcurrentModificationException();
       }
       try {
-        final F element = mapper.apply(wrapped.materializeElement(0));
-        state = new ElementToListMaterializer<F>(element);
+        E element = wrapped.materializeElement(0);
+        if (predicate.test(element)) {
+          element = mapper.apply(element);
+        }
+        state = new ElementToListMaterializer<E>(element);
         return element;
       } catch (final Exception e) {
         isMaterialized.set(false);
@@ -110,8 +119,8 @@ class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
     }
 
     @Override
-    public @NotNull Iterator<F> materializeIterator() {
-      return new ListMaterializerIterator<F>(this);
+    public @NotNull Iterator<E> materializeIterator() {
+      return new ListMaterializerIterator<E>(this);
     }
 
     @Override

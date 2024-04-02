@@ -145,6 +145,26 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull <F> Sequence<F> map(@NotNull Function<? super E, F> mapper);
 
+  @NotNull Sequence<E> mapAfter(int numElements, @NotNull Function<? super E, ? extends E> mapper);
+
+  @NotNull Sequence<E> mapFirstWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @NotNull Sequence<E> mapFirstWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @NotNull Sequence<E> mapLastWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @NotNull Sequence<E> mapLastWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @NotNull Sequence<E> mapWhere(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
+  @NotNull Sequence<E> mapWhereNot(@NotNull Predicate<? super E> predicate,
+      @NotNull Function<? super E, ? extends E> mapper);
+
   @NotNull Sequence<E> max(@NotNull Comparator<? super E> comparator);
 
   @NotNull Sequence<E> min(@NotNull Comparator<? super E> comparator);

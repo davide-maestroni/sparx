@@ -1039,8 +1039,8 @@ public class ListTests {
   public void insertAllAt() {
     var l = List.of(1, 2, 3);
     assertFalse(l.insertAllAfter(5, List.of(null, 5)).isEmpty());
-    assertEquals(5, l.insertAllAfter(5, List.of(null, 5)).size());
-    assertEquals(List.of(1, 2, 3, null, 5), l.insertAllAfter(5, List.of(null, 5)));
+    assertEquals(3, l.insertAllAfter(5, List.of(null, 5)).size());
+    assertEquals(l, l.insertAllAfter(5, List.of(null, 5)));
     assertFalse(l.insertAllAfter(3, List.of(null, 5)).isEmpty());
     assertEquals(5, l.insertAllAfter(3, List.of(null, 5)).size());
     assertEquals(List.of(1, 2, 3, null, 5), l.insertAllAfter(3, List.of(null, 5)));
@@ -1054,25 +1054,31 @@ public class ListTests {
     assertEquals(5, l.insertAllAfter(0, List.of(null, 5)).size());
     assertEquals(List.of(null, 5, 1, 2, 3), l.insertAllAfter(0, List.of(null, 5)));
     assertFalse(l.insertAllAfter(-7, List.of(null, 5)).isEmpty());
-    assertEquals(5, l.insertAllAfter(-7, List.of(null, 5)).size());
-    assertEquals(List.of(null, 5, 1, 2, 3), l.insertAllAfter(-7, List.of(null, 5)));
+    assertEquals(3, l.insertAllAfter(-7, List.of(null, 5)).size());
+    assertEquals(l, l.insertAllAfter(-7, List.of(null, 5)));
 
-    assertFalse(List.of().insertAllAfter(5, List.of(null, 5)).isEmpty());
-    assertEquals(2, List.of().insertAllAfter(5, List.of(null, 5)).size());
-    assertEquals(List.of(null, 5), List.of().insertAllAfter(5, List.of(null, 5)));
+    assertTrue(List.of().insertAllAfter(5, List.of(null, 5)).isEmpty());
+    assertEquals(0, List.of().insertAllAfter(5, List.of(null, 5)).size());
+    assertEquals(List.of(), List.of().insertAllAfter(5, List.of(null, 5)));
+    assertFalse(List.of().insertAllAfter(0, List.of(null, 5)).isEmpty());
+    assertEquals(2, List.of().insertAllAfter(0, List.of(null, 5)).size());
+    assertEquals(List.of(null, 5), List.of().insertAllAfter(0, List.of(null, 5)));
 
     Iterable<Object> iterable = () -> List.of().iterator();
-    assertFalse(List.wrap(iterable).insertAllAfter(5, List.of(null, 5)).isEmpty());
-    assertEquals(2, List.wrap(iterable).insertAllAfter(5, List.of(null, 5)).size());
-    assertEquals(List.of(null, 5), List.wrap(iterable).insertAllAfter(5, List.of(null, 5)));
+    assertTrue(List.wrap(iterable).insertAllAfter(5, List.of(null, 5)).isEmpty());
+    assertEquals(0, List.wrap(iterable).insertAllAfter(5, List.of(null, 5)).size());
+    assertEquals(List.of(), List.wrap(iterable).insertAllAfter(5, List.of(null, 5)));
+    assertFalse(List.wrap(iterable).insertAllAfter(0, List.of(null, 5)).isEmpty());
+    assertEquals(2, List.wrap(iterable).insertAllAfter(0, List.of(null, 5)).size());
+    assertEquals(List.of(null, 5), List.wrap(iterable).insertAllAfter(0, List.of(null, 5)));
   }
 
   @Test
   public void insertAt() {
     var l = List.of(1, 2, 3);
     assertFalse(l.insertAfter(5, null).isEmpty());
-    assertEquals(4, l.insertAfter(5, null).size());
-    assertEquals(List.of(1, 2, 3, null), l.insertAfter(5, null));
+    assertEquals(3, l.insertAfter(5, null).size());
+    assertEquals(l, l.insertAfter(5, null));
     assertFalse(l.insertAfter(3, null).isEmpty());
     assertEquals(4, l.insertAfter(3, null).size());
     assertEquals(List.of(1, 2, 3, null), l.insertAfter(3, null));
@@ -1086,17 +1092,23 @@ public class ListTests {
     assertEquals(4, l.insertAfter(0, null).size());
     assertEquals(List.of(null, 1, 2, 3), l.insertAfter(0, null));
     assertFalse(l.insertAfter(-7, null).isEmpty());
-    assertEquals(4, l.insertAfter(-7, null).size());
-    assertEquals(List.of(null, 1, 2, 3), l.insertAfter(-7, null));
+    assertEquals(3, l.insertAfter(-7, null).size());
+    assertEquals(l, l.insertAfter(-7, null));
 
-    assertFalse(List.of().insertAfter(5, null).isEmpty());
-    assertEquals(1, List.of().insertAfter(5, null).size());
-    assertEquals(List.of(null), List.of().insertAfter(5, null));
+    assertTrue(List.of().insertAfter(5, null).isEmpty());
+    assertEquals(0, List.of().insertAfter(5, null).size());
+    assertEquals(List.of(), List.of().insertAfter(5, null));
+    assertFalse(List.of().insertAfter(0, null).isEmpty());
+    assertEquals(1, List.of().insertAfter(0, null).size());
+    assertEquals(List.of(null), List.of().insertAfter(0, null));
 
     Iterable<Object> iterable = () -> List.of().iterator();
-    assertFalse(List.wrap(iterable).insertAfter(5, null).isEmpty());
-    assertEquals(1, List.wrap(iterable).insertAfter(5, null).size());
-    assertEquals(List.of(null), List.wrap(iterable).insertAfter(5, null));
+    assertTrue(List.wrap(iterable).insertAfter(5, null).isEmpty());
+    assertEquals(0, List.wrap(iterable).insertAfter(5, null).size());
+    assertEquals(List.of(), List.wrap(iterable).insertAfter(5, null));
+    assertFalse(List.wrap(iterable).insertAfter(0, null).isEmpty());
+    assertEquals(1, List.wrap(iterable).insertAfter(0, null).size());
+    assertEquals(List.of(null), List.wrap(iterable).insertAfter(0, null));
   }
 
   @Test

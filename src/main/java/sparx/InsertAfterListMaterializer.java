@@ -30,7 +30,7 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
   InsertAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       final int numElements, final E element) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.numElements = Math.max(0, numElements);
+    this.numElements = Require.notNegative(numElements, "numElements");
     this.element = element;
   }
 
@@ -53,7 +53,10 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
   public int knownSize() {
     final int wrappedSize = wrapped.knownSize();
     if (wrappedSize >= 0) {
-      return wrappedSize + 1;
+      if (wrappedSize < numElements) {
+        return wrappedSize + 1;
+      }
+      return wrappedSize;
     }
     return -1;
   }
@@ -63,26 +66,30 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    final int i = numElements;
-    if (i == index) {
+    final int numElements = this.numElements;
+    if (numElements == index) {
       return element;
     }
-    if (i < index) {
+    if (numElements < index) {
       return wrapped.materializeElement(index - 1);
     }
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.canMaterializeElement(index)) {
       return wrapped.materializeElement(index);
     }
-    if (index > wrapped.materializeSize()) {
-      throw new IndexOutOfBoundsException(Integer.toString(index));
+    final int wrappedSize = wrapped.materializeSize();
+    if (wrappedSize < numElements) {
+      if (index > wrappedSize) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      return element;
     }
-    return element;
+    throw new IndexOutOfBoundsException(Integer.toString(index));
   }
 
   @Override
   public boolean materializeEmpty() {
-    return false;
+    return wrapped.materializeEmpty() && numElements != 0;
   }
 
   @Override
@@ -92,17 +99,21 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return wrapped.materializeSize() + 1;
+    final int wrappedSize = wrapped.materializeSize();
+    if (wrappedSize < numElements) {
+      return wrappedSize;
+    }
+    return wrappedSize + 1;
   }
 
   private class InsertIterator implements Iterator<E> {
 
-    private int index;
     private int pos;
 
     @Override
     public boolean hasNext() {
-      return wrapped.canMaterializeElement(index) || pos <= numElements;
+      final int pos = this.pos;
+      return wrapped.canMaterializeElement(pos) || pos == numElements;
     }
 
     @Override
@@ -113,14 +124,10 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
       final int numElements = InsertAfterListMaterializer.this.numElements;
       if (pos != numElements) {
         final ListMaterializer<E> wrapped = InsertAfterListMaterializer.this.wrapped;
-        if (wrapped.canMaterializeElement(index)) {
-          ++pos;
-          return wrapped.materializeElement(index++);
-        } else if (pos > numElements) {
-          throw new NoSuchElementException();
+        if (wrapped.canMaterializeElement(pos)) {
+          return wrapped.materializeElement(pos++);
         }
-        pos = numElements + 1;
-        return element;
+        throw new NoSuchElementException();
       }
       ++pos;
       return element;

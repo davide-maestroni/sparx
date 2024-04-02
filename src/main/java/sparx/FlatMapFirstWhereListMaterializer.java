@@ -17,7 +17,7 @@ package sparx;
 
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
@@ -146,22 +146,23 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public int materializeSize() {
       final ListMaterializer<E> wrapped = this.wrapped;
-      final int size = wrapped.materializeSize();
-      if (size <= numElements) {
-        return size;
+      final int wrappedSize = wrapped.materializeSize();
+      if (wrappedSize <= numElements) {
+        return wrappedSize;
       }
-      return size + materializer.materializeSize() - 1;
+      return wrappedSize + materializer.materializeSize() - 1;
     }
   }
 
   private class ImmaterialState implements ListMaterializer<E> {
 
-    private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
     private final Function<? super E, ? extends ListMaterializer<E>> mapper;
+    private final AtomicInteger modCount = new AtomicInteger();
     private final Predicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
-    private int index;
+    private boolean found;
+    private int pos;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
         @NotNull final Predicate<? super E> predicate,
@@ -176,8 +177,8 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       if (index < 0) {
         return false;
       }
-      final int numElements = materializeIndex();
-      if (index < numElements) {
+      final int numElements = materializeUntil(index);
+      if (index <= numElements) {
         return wrapped.canMaterializeElement(index);
       }
       final int elementIndex = index - numElements;
@@ -200,8 +201,8 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       if (index < 0) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
-      final int numElements = materializeIndex();
-      if (index < numElements) {
+      final int numElements = materializeUntil(index);
+      if (index <= numElements) {
         return wrapped.materializeElement(index);
       }
       final int elementIndex = index - numElements;
@@ -218,7 +219,7 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       if (wrapped.materializeEmpty()) {
         return true;
       }
-      if (wrapped.materializeSize() == 1 && materializeIndex() == 0) {
+      if (wrapped.materializeSize() == 1 && materializeUntil(0) == 0) {
         return materialized().materializeEmpty();
       }
       return false;
@@ -232,50 +233,63 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public int materializeSize() {
       final ListMaterializer<E> wrapped = this.wrapped;
-      final int size = wrapped.materializeSize();
-      if (size <= materializeIndex()) {
-        return size;
+      final int wrappedSize = wrapped.materializeSize();
+      if (wrappedSize <= materializeUntil(wrappedSize)) {
+        state = wrapped;
+        return wrappedSize;
       }
       final ListMaterializer<E> materializer = materialized();
-      return size + materializer.materializeSize() - 1;
+      return wrappedSize + materializer.materializeSize() - 1;
     }
 
     private @NotNull ListMaterializer<E> materialized() {
-      if (!isMaterialized.compareAndSet(false, true)) {
-        throw new ConcurrentModificationException();
-      }
       try {
-        final int index = materializeIndex();
+        final int numElements = materializeUntil(Integer.MAX_VALUE);
+        final AtomicInteger modCount = this.modCount;
+        final int expectedCount = modCount.getAndIncrement() + 1;
         final ListMaterializer<E> wrapped = this.wrapped;
-        if (wrapped.canMaterializeElement(index)) {
-          final ListMaterializer<E> materializer = mapper.apply(wrapped.materializeElement(index));
-          state = new MaterialState<E>(wrapped, materializer, index);
+        if (wrapped.canMaterializeElement(numElements)) {
+          final ListMaterializer<E> materializer = mapper.apply(
+              wrapped.materializeElement(numElements));
+          if (expectedCount != modCount.get()) {
+            throw new ConcurrentModificationException();
+          }
+          state = new MaterialState<E>(wrapped, materializer, numElements);
           return materializer;
         } else {
           state = wrapped;
           return wrapped;
         }
       } catch (final Exception e) {
-        isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
     }
 
-    private int materializeIndex() {
-      if (index >= 0) {
-        return index;
+    private int materializeUntil(final int index) {
+      if (found) {
+        return pos;
       }
+      final AtomicInteger modCount = this.modCount;
+      final int expectedCount = modCount.getAndIncrement() + 1;
       try {
-        int i = 0;
+        int i = pos;
         final ListMaterializer<E> wrapped = this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
-        while (wrapped.canMaterializeElement(i)) {
+        while (i <= index && wrapped.canMaterializeElement(i)) {
           if (predicate.test(wrapped.materializeElement(i))) {
-            break;
+            if (expectedCount != modCount.get()) {
+              throw new ConcurrentModificationException();
+            }
+            found = true;
+            pos = i;
+            return i;
           }
           ++i;
         }
-        index = i;
+        if (expectedCount != modCount.get()) {
+          throw new ConcurrentModificationException();
+        }
+        pos = i;
         return i;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
