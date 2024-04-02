@@ -42,9 +42,9 @@ class DropRightListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int knownSize() {
-    final int wrappedSize = wrapped.knownSize();
-    if (wrappedSize >= 0) {
-      return Math.max(0, wrappedSize - maxElements);
+    final int knownSize = wrapped.knownSize();
+    if (knownSize >= 0) {
+      return Math.max(0, knownSize - maxElements);
     }
     return -1;
   }

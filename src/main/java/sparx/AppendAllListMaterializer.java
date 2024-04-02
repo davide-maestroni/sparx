@@ -38,8 +38,8 @@ class AppendAllListMaterializer<E> implements ListMaterializer<E> {
     if (wrapped.canMaterializeElement(index)) {
       return true;
     }
-    final int size = wrapped.materializeSize();
-    return elementsMaterializer.canMaterializeElement(index - size);
+    final int wrappedSize = wrapped.materializeSize();
+    return elementsMaterializer.canMaterializeElement(index - wrappedSize);
   }
 
   @Override
@@ -60,8 +60,8 @@ class AppendAllListMaterializer<E> implements ListMaterializer<E> {
     if (wrapped.canMaterializeElement(index)) {
       return wrapped.materializeElement(index);
     }
-    final int size = wrapped.materializeSize();
-    return elementsMaterializer.materializeElement(index - size);
+    final int wrappedSize = wrapped.materializeSize();
+    return elementsMaterializer.materializeElement(index - wrappedSize);
   }
 
   @Override

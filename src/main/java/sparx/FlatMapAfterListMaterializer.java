@@ -52,7 +52,7 @@ class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
     if (materializer.canMaterializeElement(elementIndex)) {
       return true;
     }
-    return wrapped.canMaterializeElement(index - materializer.materializeSize());
+    return wrapped.canMaterializeElement(index - materializer.materializeSize() + 1);
   }
 
   @Override
@@ -78,19 +78,15 @@ class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
     if (materializer.canMaterializeElement(elementIndex)) {
       return materializer.materializeElement(elementIndex);
     }
-    return wrapped.materializeElement(index - materializer.materializeSize());
+    return wrapped.materializeElement(index - materializer.materializeSize() + 1);
   }
 
   @Override
   public boolean materializeEmpty() {
     final ListMaterializer<E> wrapped = this.wrapped;
-    if (wrapped.materializeEmpty()) {
-      return true;
-    }
-    if (wrapped.materializeSize() == 1 && numElements == 0) {
-      return state.materialized().materializeEmpty();
-    }
-    return false;
+    return wrapped.materializeEmpty() ||
+        (wrapped.materializeSize() == 1 && numElements == 0 &&
+            state.materialized().materializeEmpty());
   }
 
   @Override
@@ -101,11 +97,11 @@ class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public int materializeSize() {
     final ListMaterializer<E> wrapped = this.wrapped;
-    final int size = wrapped.materializeSize();
-    if (size <= numElements) {
-      return size;
+    final int wrappedSize = wrapped.materializeSize();
+    if (wrappedSize <= numElements) {
+      return wrappedSize;
     }
-    return size + state.materialized().materializeSize() - 1;
+    return wrappedSize + state.materialized().materializeSize() - 1;
   }
 
   private interface State<E> {

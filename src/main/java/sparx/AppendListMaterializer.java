@@ -52,8 +52,7 @@ class AppendListMaterializer<E> implements ListMaterializer<E> {
     if (wrapped.canMaterializeElement(index)) {
       return wrapped.materializeElement(index);
     }
-    final int size = wrapped.materializeSize();
-    if (index != size) {
+    if (index != wrapped.materializeSize()) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return element;

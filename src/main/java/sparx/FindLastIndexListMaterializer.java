@@ -136,8 +136,8 @@ class FindLastIndexListMaterializer<E> implements ListMaterializer<Integer> {
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
-        final int size = wrapped.materializeSize();
-        for (int i = size - 1; i >= 0; --i) {
+        final int wrappedSize = wrapped.materializeSize();
+        for (int i = wrappedSize - 1; i >= 0; --i) {
           final E element = wrapped.materializeElement(i);
           if (predicate.test(element)) {
             state = new IndexState(i);
