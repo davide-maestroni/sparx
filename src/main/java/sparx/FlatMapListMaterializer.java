@@ -84,10 +84,7 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
 
     @Override
     public boolean canMaterializeElement(final int index) {
-      if (index < 0) {
-        return false;
-      }
-      return materializeUntil(index) > index;
+      return index >= 0 && materializeUntil(index) > index;
     }
 
     @Override
@@ -130,6 +127,7 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
       final int expectedCount = modCount.getAndIncrement() + 1;
       try {
         Iterator<F> elementIterator = this.elementIterator;
+        int i = pos;
         while (true) {
           while (elementIterator.hasNext()) {
             elements.add(elementIterator.next());
@@ -137,13 +135,14 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
               if (expectedCount != modCount.get()) {
                 throw new ConcurrentModificationException();
               }
+              pos = i;
               return currSize;
             }
           }
-          if (wrapped.canMaterializeElement(pos)) {
-            final E element = wrapped.materializeElement(pos);
+          if (wrapped.canMaterializeElement(i)) {
+            final E element = wrapped.materializeElement(i);
             elementIterator = this.elementIterator = mapper.apply(element).iterator();
-            ++pos;
+            ++i;
           } else {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();

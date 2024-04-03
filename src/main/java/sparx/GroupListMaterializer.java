@@ -100,10 +100,10 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
     @Override
     public int knownSize() {
-      final int wrappedSize = wrapped.knownSize();
-      if (wrappedSize > 0) {
+      final int knownSize = wrapped.knownSize();
+      if (knownSize > 0) {
         final int maxSize = this.maxSize;
-        return (wrappedSize + (maxSize >> 1)) / maxSize;
+        return (knownSize + (maxSize >> 1)) / maxSize;
       }
       return -1;
     }
@@ -195,10 +195,10 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
     @Override
     public int knownSize() {
-      final int wrappedSize = wrapped.knownSize();
-      if (wrappedSize > 0) {
+      final int knownSize = wrapped.knownSize();
+      if (knownSize > 0) {
         final int maxSize = this.maxSize;
-        return (wrappedSize + (maxSize >> 1)) / maxSize;
+        return (knownSize + (maxSize >> 1)) / maxSize;
       }
       return -1;
     }

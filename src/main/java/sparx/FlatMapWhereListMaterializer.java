@@ -78,6 +78,7 @@ class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
     private final ListMaterializer<E> wrapped;
 
     private Iterator<? extends E> elementIterator = Collections.<E>emptySet().iterator();
+    private int pos;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
         @NotNull final Predicate<? super E> predicate,
@@ -133,7 +134,7 @@ class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
       final int expectedCount = modCount.getAndIncrement() + 1;
       try {
         Iterator<? extends E> elementIterator = this.elementIterator;
-        int i = 0;
+        int i = pos;
         while (true) {
           while (elementIterator.hasNext()) {
             elements.add(elementIterator.next());
@@ -141,6 +142,7 @@ class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
               if (expectedCount != modCount.get()) {
                 throw new ConcurrentModificationException();
               }
+              pos = i;
               return currSize;
             }
           }
@@ -150,6 +152,13 @@ class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
               elementIterator = this.elementIterator = mapper.apply(element).iterator();
             } else {
               elements.add(element);
+              if (++currSize > index) {
+                if (expectedCount != modCount.get()) {
+                  throw new ConcurrentModificationException();
+                }
+                pos = i;
+                return currSize;
+              }
             }
             ++i;
           } else {
