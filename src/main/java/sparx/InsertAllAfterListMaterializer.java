@@ -70,15 +70,15 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int knownSize() {
-    final int wrappedSize = wrapped.knownSize();
-    if (wrappedSize >= 0) {
-      if (wrappedSize < numElements) {
-        final int elementsKnownSize = elementsMaterializer.knownSize();
-        if (elementsKnownSize >= 0) {
-          return wrappedSize + elementsKnownSize;
+    final int knownSize = wrapped.knownSize();
+    if (knownSize >= 0) {
+      if (knownSize < numElements) {
+        final int elementsSize = elementsMaterializer.knownSize();
+        if (elementsSize >= 0) {
+          return knownSize + elementsSize;
         }
       } else {
-        return wrappedSize;
+        return knownSize;
       }
     }
     return -1;

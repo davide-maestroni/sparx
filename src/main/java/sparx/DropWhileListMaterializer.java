@@ -43,13 +43,13 @@ class DropWhileListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int knownSize() {
-    final int wrappedSize = wrapped.knownSize();
-    if (wrappedSize == 0) {
+    final int knownSize = wrapped.knownSize();
+    if (knownSize == 0) {
       return 0;
-    } else if (wrappedSize > 0) {
+    } else if (knownSize > 0) {
       final int stateSize = state.knownSize();
       if (stateSize >= 0) {
-        return wrappedSize - stateSize;
+        return knownSize - stateSize;
       }
     }
     return -1;

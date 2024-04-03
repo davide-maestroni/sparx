@@ -44,13 +44,13 @@ class RemoveAfterListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int knownSize() {
-    final int wrappedSize = wrapped.knownSize();
-    if (wrappedSize >= 0) {
-      if (wrappedSize == 0) {
+    final int knownSize = wrapped.knownSize();
+    if (knownSize >= 0) {
+      if (knownSize == 0) {
         return 0;
       }
-      if (wrappedSize > numElements) {
-        return wrappedSize - 1;
+      if (knownSize > numElements) {
+        return knownSize - 1;
       }
     }
     return -1;

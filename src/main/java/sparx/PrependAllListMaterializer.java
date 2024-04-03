@@ -44,11 +44,11 @@ class PrependAllListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int knownSize() {
-    final int wrappedSize = elementsMaterializer.knownSize();
-    if (wrappedSize >= 0) {
-      final int elementsKnownSize = wrapped.knownSize();
-      if (elementsKnownSize >= 0) {
-        return wrappedSize + elementsKnownSize;
+    final int knownSize = elementsMaterializer.knownSize();
+    if (knownSize >= 0) {
+      final int elementsSize = wrapped.knownSize();
+      if (elementsSize >= 0) {
+        return knownSize + elementsSize;
       }
     }
     return -1;

@@ -48,12 +48,12 @@ class RemoveSegmentListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int knownSize() {
-    final int wrappedSize = wrapped.knownSize();
-    if (wrappedSize >= 0) {
-      if (wrappedSize == 0) {
+    final int knownSize = wrapped.knownSize();
+    if (knownSize >= 0) {
+      if (knownSize == 0) {
         return 0;
       }
-      return Math.max(Math.max(0, start), wrappedSize - shift);
+      return Math.max(Math.max(0, start), knownSize - shift);
     }
     return -1;
   }

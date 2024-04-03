@@ -39,9 +39,9 @@ class AppendListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int knownSize() {
-    final int wrappedSize = wrapped.knownSize();
-    if (wrappedSize >= 0) {
-      return wrappedSize + 1;
+    final int knownSize = wrapped.knownSize();
+    if (knownSize >= 0) {
+      return knownSize + 1;
     }
     return -1;
   }
