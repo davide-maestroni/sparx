@@ -56,6 +56,7 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
       if (knownSize == 0) {
         return 0;
       }
+      final State state = this.state;
       final int knownStart = state.knownStart();
       final int knownLength = state.knownLength();
       if (knownStart >= 0 && knownLength >= 0) {
@@ -68,7 +69,7 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public E materializeElement(final int index) {
     if (index < 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     final State state = this.state;
     if (state.materializedStart() <= index) {
@@ -79,10 +80,7 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean materializeEmpty() {
-    if (wrapped.materializeEmpty()) {
-      return true;
-    }
-    return materializeSize() == 0;
+    return wrapped.materializeEmpty() || materializeSize() == 0;
   }
 
   @Override

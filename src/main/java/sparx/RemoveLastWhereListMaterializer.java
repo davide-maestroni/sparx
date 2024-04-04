@@ -66,7 +66,7 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public E materializeElement(final int index) {
     if (index < 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     if (state.materialized() <= index) {
       return wrapped.materializeElement(index + 1);
@@ -76,10 +76,7 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean materializeEmpty() {
-    if (wrapped.materializeEmpty()) {
-      return true;
-    }
-    return materializeSize() == 0;
+    return wrapped.materializeEmpty() || materializeSize() == 0;
   }
 
   @Override
@@ -89,11 +86,11 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    final int size = wrapped.materializeSize();
-    if (size > state.materialized()) {
-      return size - 1;
+    final int wrappedSize = wrapped.materializeSize();
+    if (wrappedSize > state.materialized()) {
+      return wrappedSize - 1;
     }
-    return size;
+    return wrappedSize;
   }
 
   private interface State {
@@ -169,6 +166,7 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean hasNext() {
+      final int pos = this.pos;
       if (pos == state.materialized()) {
         return wrapped.canMaterializeElement(pos + 1);
       }

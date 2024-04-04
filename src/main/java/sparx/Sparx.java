@@ -1247,7 +1247,7 @@ public class Sparx {
         if (maxLength <= 0 || materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new RemoveSectionListMaterializer<E>(materializer, start, maxLength));
+        return new List<E>(new RemovePortionListMaterializer<E>(materializer, start, maxLength));
       }
 
       @Override

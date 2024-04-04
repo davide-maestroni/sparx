@@ -21,13 +21,13 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-class RemoveSectionListMaterializer<E> implements ListMaterializer<E> {
+class RemovePortionListMaterializer<E> implements ListMaterializer<E> {
 
   private final int length;
   private final int start;
   private final ListMaterializer<E> wrapped;
 
-  RemoveSectionListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
+  RemovePortionListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
       final int maxLength) {
     Require.positive(maxLength, "maxLength");
     this.wrapped = Require.notNull(wrapped, "wrapped");
@@ -61,7 +61,7 @@ class RemoveSectionListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public E materializeElement(final int index) {
     if (index < 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     if (start <= index) {
       return wrapped.materializeElement(index + length);
@@ -71,10 +71,7 @@ class RemoveSectionListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean materializeEmpty() {
-    if (wrapped.materializeEmpty()) {
-      return true;
-    }
-    return materializeSize() == 0;
+    return wrapped.materializeEmpty() || materializeSize() == 0;
   }
 
   @Override

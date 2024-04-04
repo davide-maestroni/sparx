@@ -109,7 +109,7 @@ class IteratorToListMaterializer<E> implements ListMaterializer<E> {
         final Iterator<E> iterator = this.iterator;
         do {
           if (!iterator.hasNext()) {
-            throw new IndexOutOfBoundsException(String.valueOf(index));
+            throw new IndexOutOfBoundsException(Integer.toString(index));
           }
           elements.add(iterator.next());
         } while (elements.size() <= index);

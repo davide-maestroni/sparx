@@ -270,8 +270,7 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
               throw new ConcurrentModificationException();
             }
             found = true;
-            pos = i;
-            return i;
+            return pos = i;
           }
           ++i;
         }

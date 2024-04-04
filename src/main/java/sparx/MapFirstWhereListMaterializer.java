@@ -143,8 +143,7 @@ class MapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
           state = new ElementState<E>(i, null);
           return index + 1;
         }
-        pos = i;
-        return i;
+        return pos = i;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }

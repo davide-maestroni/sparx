@@ -66,7 +66,7 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public E materializeElement(final int index) {
     if (index < 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     if (state.materializeUntil(index) <= index) {
       return wrapped.materializeElement(index + 1);
@@ -76,10 +76,7 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean materializeEmpty() {
-    if (wrapped.materializeEmpty()) {
-      return true;
-    }
-    return materializeSize() == 0;
+    return wrapped.materializeEmpty() || materializeSize() == 0;
   }
 
   @Override
@@ -89,11 +86,11 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    final int size = wrapped.materializeSize();
-    if (size > state.materializeUntil(size)) {
-      return size - 1;
+    final int wrappedSize = wrapped.materializeSize();
+    if (wrappedSize > state.materializeUntil(wrappedSize)) {
+      return wrappedSize - 1;
     }
-    return size;
+    return wrappedSize;
   }
 
   private interface State {
@@ -146,23 +143,24 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.getAndIncrement() + 1;
       try {
-        while (pos <= index && iterator.hasNext()) {
+        int i = pos;
+        while (i <= index && iterator.hasNext()) {
           if (predicate.test(iterator.next())) {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();
             }
-            state = new IndexState(pos);
-            return pos;
+            state = new IndexState(i);
+            return i;
           }
-          ++pos;
+          ++i;
         }
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();
         }
         if (!iterator.hasNext()) {
-          state = new IndexState(pos);
+          state = new IndexState(i);
         }
-        return pos;
+        return pos = i;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
@@ -193,13 +191,14 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       if (!iterator.hasNext()) {
         throw new NoSuchElementException();
       }
+      final int pos = this.pos;
       if (pos == state.materializeUntil(pos)) {
         iterator.next();
         if (!iterator.hasNext()) {
           throw new NoSuchElementException();
         }
       }
-      ++pos;
+      ++this.pos;
       return iterator.next();
     }
 
