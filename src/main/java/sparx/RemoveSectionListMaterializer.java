@@ -21,18 +21,18 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-class RemoveSegmentListMaterializer<E> implements ListMaterializer<E> {
+class RemoveSectionListMaterializer<E> implements ListMaterializer<E> {
 
+  private final int length;
   private final int start;
-  private final int shift;
   private final ListMaterializer<E> wrapped;
 
-  RemoveSegmentListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
-      final int maxSize) {
-    Require.positive(maxSize, "maxSize");
+  RemoveSectionListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
+      final int maxLength) {
+    Require.positive(maxLength, "maxLength");
     this.wrapped = Require.notNull(wrapped, "wrapped");
     this.start = start;
-    shift = start >= 0 ? maxSize : Math.max(0, start + maxSize);
+    length = start >= 0 ? maxLength : Math.max(0, start + maxLength);
   }
 
   @Override
@@ -41,7 +41,7 @@ class RemoveSegmentListMaterializer<E> implements ListMaterializer<E> {
       return false;
     }
     if (start <= index) {
-      return wrapped.canMaterializeElement(index + shift);
+      return wrapped.canMaterializeElement(index + length);
     }
     return wrapped.canMaterializeElement(index);
   }
@@ -53,7 +53,7 @@ class RemoveSegmentListMaterializer<E> implements ListMaterializer<E> {
       if (knownSize == 0) {
         return 0;
       }
-      return Math.max(Math.max(0, start), knownSize - shift);
+      return Math.max(Math.max(0, start), knownSize - length);
     }
     return -1;
   }
@@ -64,7 +64,7 @@ class RemoveSegmentListMaterializer<E> implements ListMaterializer<E> {
       throw new IndexOutOfBoundsException(String.valueOf(index));
     }
     if (start <= index) {
-      return wrapped.materializeElement(index + shift);
+      return wrapped.materializeElement(index + length);
     }
     return wrapped.materializeElement(index);
   }
@@ -84,7 +84,7 @@ class RemoveSegmentListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return Math.max(Math.max(0, start), wrapped.materializeSize() - shift);
+    return Math.max(Math.max(0, start), wrapped.materializeSize() - length);
   }
 
   private class RemoveIterator implements Iterator<E> {
@@ -96,8 +96,9 @@ class RemoveSegmentListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean hasNext() {
+      final int pos = this.pos;
       if (pos == index) {
-        return wrapped.canMaterializeElement(pos + shift);
+        return wrapped.canMaterializeElement(pos + length);
       }
       return iterator.hasNext();
     }
@@ -112,13 +113,13 @@ class RemoveSegmentListMaterializer<E> implements ListMaterializer<E> {
         throw new NoSuchElementException();
       }
       if (pos == index) {
-        for (int i = 0; i < shift; ++i) {
+        for (int i = 0; i < length; ++i) {
           iterator.next();
         }
         if (!iterator.hasNext()) {
           throw new NoSuchElementException();
         }
-        pos += shift;
+        pos += length;
       }
       ++pos;
       return iterator.next();

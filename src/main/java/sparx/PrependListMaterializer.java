@@ -32,13 +32,7 @@ class PrependListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(String.valueOf(index));
-    }
-    if (index == 0) {
-      return true;
-    }
-    return wrapped.canMaterializeElement(index - 1);
+    return index == 0 || wrapped.canMaterializeElement(index - 1);
   }
 
   @Override
@@ -84,10 +78,7 @@ class PrependListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean hasNext() {
-      if (!consumedElement) {
-        return true;
-      }
-      return iterator.hasNext();
+      return !consumedElement || iterator.hasNext();
     }
 
     @Override

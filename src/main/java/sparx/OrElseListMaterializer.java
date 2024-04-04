@@ -73,17 +73,7 @@ class OrElseListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean canMaterializeElement(final int index) {
-      final ListMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.canMaterializeElement(index)) {
-        state = wrapped;
-        return true;
-      }
-      if (wrapped.materializeEmpty()) {
-        final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-        state = elementsMaterializer;
-        return elementsMaterializer.canMaterializeElement(index);
-      }
-      return false;
+      return materialized().canMaterializeElement(index);
     }
 
     @Override
@@ -104,44 +94,29 @@ class OrElseListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public E materializeElement(final int index) {
-      return wrapped.materializeElement(index);
+      return materialized().materializeElement(index);
     }
 
     @Override
     public boolean materializeEmpty() {
-      final ListMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.materializeEmpty()) {
-        final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-        state = elementsMaterializer;
-        return elementsMaterializer.materializeEmpty();
-      }
-      state = wrapped;
-      return false;
+      return materialized().materializeEmpty();
     }
 
     @Override
     public @NotNull Iterator<E> materializeIterator() {
-      final ListMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.materializeEmpty()) {
-        final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-        state = elementsMaterializer;
-        return elementsMaterializer.materializeIterator();
-      }
-      state = wrapped;
-      return wrapped.materializeIterator();
+      return materialized().materializeIterator();
     }
 
     @Override
     public int materializeSize() {
-      final ListMaterializer<E> wrapped = this.wrapped;
-      final int size = wrapped.materializeSize();
-      if (size == 0) {
-        final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-        state = elementsMaterializer;
-        return elementsMaterializer.materializeSize();
+      return materialized().materializeSize();
+    }
+
+    private @NotNull ListMaterializer<E> materialized() {
+      if (wrapped.materializeEmpty()) {
+        return state = elementsMaterializer;
       }
-      state = wrapped;
-      return size;
+      return state = wrapped;
     }
   }
 }

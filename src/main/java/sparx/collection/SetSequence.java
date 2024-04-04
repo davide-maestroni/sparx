@@ -267,7 +267,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull SetSequence<E> removeSegment(int start, int maxSize);
+  @NotNull SetSequence<E> removePortion(int start, int maxLength);
 
   @Override
   @NotNull SetSequence<E> removeSlice(int start, int end);
@@ -291,7 +291,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> replaceLast(E element, E replacement);
 
   @Override
-  @NotNull SetSequence<E> replaceSegment(int start, @NotNull Iterable<? extends E> patch,
+  @NotNull SetSequence<E> replacePortion(int start, @NotNull Iterable<? extends E> patch,
       int maxSize);
 
   @Override

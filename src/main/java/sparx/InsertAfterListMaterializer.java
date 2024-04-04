@@ -51,12 +51,12 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int knownSize() {
-    final int wrappedSize = wrapped.knownSize();
-    if (wrappedSize >= 0) {
-      if (wrappedSize < numElements) {
-        return wrappedSize + 1;
+    final int knownSize = wrapped.knownSize();
+    if (knownSize >= 0) {
+      if (knownSize < numElements) {
+        return knownSize + 1;
       }
-      return wrappedSize;
+      return knownSize;
     }
     return -1;
   }
@@ -122,9 +122,10 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
         throw new NoSuchElementException();
       }
       final int numElements = InsertAfterListMaterializer.this.numElements;
-      if (pos != numElements) {
+      final int i = this.pos;
+      if (i != numElements) {
         final ListMaterializer<E> wrapped = InsertAfterListMaterializer.this.wrapped;
-        if (wrapped.canMaterializeElement(pos)) {
+        if (wrapped.canMaterializeElement(i)) {
           return wrapped.materializeElement(pos++);
         }
         throw new NoSuchElementException();

@@ -69,10 +69,7 @@ class RemoveAfterListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean materializeEmpty() {
-    if (wrapped.materializeEmpty()) {
-      return true;
-    }
-    return materializeSize() == 0;
+    return wrapped.materializeEmpty() || materializeSize() == 0;
   }
 
   @Override
@@ -82,11 +79,11 @@ class RemoveAfterListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    final int size = wrapped.materializeSize();
-    if (size > numElements) {
-      return size - 1;
+    final int wrappedSize = wrapped.materializeSize();
+    if (wrappedSize > numElements) {
+      return wrappedSize - 1;
     }
-    return size;
+    return wrappedSize;
   }
 
   private class RemoveIterator implements Iterator<E> {

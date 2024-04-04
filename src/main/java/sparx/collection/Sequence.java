@@ -71,6 +71,8 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> findAnyNot(@NotNull Predicate<? super E> predicate);
 
+  // TODO: @NotNull Sequence<E> findFirst()?? @NotNull Sequence<E> findAny()???
+
   @NotNull Sequence<E> findFirst(@NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
@@ -210,7 +212,7 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
 
-  @NotNull Sequence<E> removeSegment(int start, int maxSize);
+  @NotNull Sequence<E> removePortion(int start, int maxLength);
 
   @NotNull Sequence<E> removeSlice(int start, int end);
 
@@ -226,7 +228,7 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> replaceLast(E element, E replacement);
 
-  @NotNull Sequence<E> replaceSegment(int start, @NotNull Iterable<? extends E> patch, int maxSize);
+  @NotNull Sequence<E> replacePortion(int start, @NotNull Iterable<? extends E> patch, int maxSize);
 
   @NotNull Sequence<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch, int end);
 

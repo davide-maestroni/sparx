@@ -184,6 +184,7 @@ class MapWhereListMaterializer<E> implements ListMaterializer<E> {
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.getAndIncrement() + 1;
       try {
+        final Predicate<? super E> predicate = this.predicate;
         final Function<? super E, ? extends E> mapper = this.mapper;
         final ListMaterializer<E> wrapped = this.wrapped;
         E element = wrapped.materializeElement(index);

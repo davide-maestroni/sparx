@@ -287,7 +287,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull IteratorSequence<E> removeSegment(int start, int maxSize);
+  @NotNull IteratorSequence<E> removePortion(int start, int maxLength);
 
   @Override
   @NotNull IteratorSequence<E> removeSlice(int start, int end);
@@ -311,7 +311,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> replaceLast(E element, E replacement); // TODO: ???
 
   @Override
-  @NotNull IteratorSequence<E> replaceSegment(int start, @NotNull Iterable<? extends E> patch,
+  @NotNull IteratorSequence<E> replacePortion(int start, @NotNull Iterable<? extends E> patch,
       int maxSize);
 
   @Override

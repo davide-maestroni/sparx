@@ -263,12 +263,12 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> appendAll(@NotNull final Iterable<? extends E> elements) {
-        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return new List<E>(elementsMaterializer);
+          return new List<E>(getElementsMaterializer(elements));
         }
-        return new List<E>(new AppendAllListMaterializer<E>(materializer, elementsMaterializer));
+        return new List<E>(
+            new AppendAllListMaterializer<E>(materializer, getElementsMaterializer(elements)));
       }
 
       @Override
@@ -313,11 +313,12 @@ public class Sparx {
       @Override
       public void doFor(@NotNull final Consumer<? super E> consumer) {
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return;
         }
         try {
-          if (materializer.knownSize() == 1) {
+          if (knownSize == 1) {
             consumer.accept(materializer.materializeElement(0));
           } else {
             int i = 0;
@@ -335,11 +336,12 @@ public class Sparx {
       public void doUntil(@NotNull final Predicate<? super E> condition,
           @NotNull final Consumer<? super E> consumer) {
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return;
         }
         try {
-          if (materializer.knownSize() == 1) {
+          if (knownSize == 1) {
             final E element = materializer.materializeElement(0);
             if (!condition.test(element)) {
               consumer.accept(element);
@@ -363,11 +365,12 @@ public class Sparx {
       @Override
       public void doUntil(@NotNull final Predicate<? super E> predicate) {
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return;
         }
         try {
-          if (materializer.knownSize() == 1) {
+          if (knownSize == 1) {
             predicate.test(materializer.materializeElement(0));
           } else {
             int i = 0;
@@ -387,11 +390,12 @@ public class Sparx {
       public void doWhile(@NotNull final Predicate<? super E> condition,
           @NotNull final Consumer<? super E> consumer) {
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return;
         }
         try {
-          if (materializer.knownSize() == 1) {
+          if (knownSize == 1) {
             final E element = materializer.materializeElement(0);
             if (condition.test(element)) {
               consumer.accept(element);
@@ -415,11 +419,12 @@ public class Sparx {
       @Override
       public void doWhile(@NotNull final Predicate<? super E> predicate) {
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return;
         }
         try {
-          if (materializer.knownSize() == 1) {
+          if (knownSize == 1) {
             predicate.test(materializer.materializeElement(0));
           } else {
             int i = 0;
@@ -1153,9 +1158,12 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> removeAfter(final int numElements) {
+        if (numElements < 0) {
+          return this;
+        }
         final ListMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
-        if (numElements < 0 || knownSize == 0) {
+        if (knownSize == 0) {
           return this;
         }
         if (numElements == 0 && knownSize == 1) {
@@ -1234,17 +1242,21 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> removeSegment(final int start, final int maxSize) {
+      public @NotNull List<E> removePortion(final int start, final int maxLength) {
         final ListMaterializer<E> materializer = this.materializer;
-        if (maxSize <= 0 || materializer.knownSize() == 0) {
+        if (maxLength <= 0 || materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new RemoveSegmentListMaterializer<E>(materializer, start, maxSize));
+        return new List<E>(new RemoveSectionListMaterializer<E>(materializer, start, maxLength));
       }
 
       @Override
       public @NotNull List<E> removeSlice(final int start, final int end) {
-        return null;
+        final ListMaterializer<E> materializer = this.materializer;
+        if ((end <= start && start >= 0 && end >= 0) || materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new RemoveSliceListMaterializer<E>(materializer, start, end));
       }
 
       @Override
@@ -1266,42 +1278,42 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> replaceAfter(int numElements, E replacement) {
+      public @NotNull List<E> replaceAfter(int numElements, E replacement) {
         return null;
       }
 
       @Override
-      public @NotNull ListSequence<E> replaceEach(E element, E replacement) {
+      public @NotNull List<E> replaceEach(E element, E replacement) {
         return null;
       }
 
       @Override
-      public @NotNull ListSequence<E> replaceFirst(E element, E replacement) {
+      public @NotNull List<E> replaceFirst(E element, E replacement) {
         return null;
       }
 
       // TODO: replaceFirstWhere, replaceFirstWhereNot (map)
 
       @Override
-      public @NotNull ListSequence<E> replaceLast(E element, E replacement) {
+      public @NotNull List<E> replaceLast(E element, E replacement) {
         return null;
       }
 
       // TODO: replaceLastWhere, replaceLastWhereNot (map)
 
       @Override
-      public @NotNull ListSequence<E> replaceSegment(int start,
+      public @NotNull List<E> replacePortion(int start,
           @NotNull Iterable<? extends E> patch, int maxSize) {
         return null;
       }
 
       @Override
-      public @NotNull ListSequence<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch,
+      public @NotNull List<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch,
           int end) {
         return null;
       }
 
-      // TODO: replaceWhere
+      // TODO: replaceWhere (map)
 
       @Override
       public @NotNull ListSequence<E> reverse() {

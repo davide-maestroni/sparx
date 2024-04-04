@@ -35,11 +35,8 @@ class PrependAllListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public boolean canMaterializeElement(final int index) {
     final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-    if (elementsMaterializer.canMaterializeElement(index)) {
-      return true;
-    }
-    final int size = elementsMaterializer.materializeSize();
-    return wrapped.canMaterializeElement(index - size);
+    return elementsMaterializer.canMaterializeElement(index) ||
+        wrapped.canMaterializeElement(index - elementsMaterializer.materializeSize());
   }
 
   @Override
@@ -60,8 +57,7 @@ class PrependAllListMaterializer<E> implements ListMaterializer<E> {
     if (elementsMaterializer.canMaterializeElement(index)) {
       return elementsMaterializer.materializeElement(index);
     }
-    final int size = elementsMaterializer.materializeSize();
-    return wrapped.materializeElement(index - size);
+    return wrapped.materializeElement(index - elementsMaterializer.materializeSize());
   }
 
   @Override

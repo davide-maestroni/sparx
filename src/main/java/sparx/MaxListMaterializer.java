@@ -15,11 +15,9 @@
  */
 package sparx;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
@@ -28,9 +26,9 @@ import sparx.util.UncheckedException;
 
 class MaxListMaterializer<E> implements ListMaterializer<E> {
 
-  private static final EmptyState<?> EMPTY_STATE = new EmptyState<Object>();
+  private static final EmptyListMaterializer<?> EMPTY_STATE = new EmptyListMaterializer<Object>();
 
-  private volatile State<E> state;
+  private volatile ListMaterializer<E> state;
 
   MaxListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Comparator<? super E> comparator) {
@@ -40,7 +38,7 @@ class MaxListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return index == 0 && !state.materialized().isEmpty();
+    return state.canMaterializeElement(index);
   }
 
   @Override
@@ -50,64 +48,25 @@ class MaxListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public E materializeElement(final int index) {
-    return state.materialized().get(index);
+    return state.materializeElement(index);
   }
 
   @Override
   public boolean materializeEmpty() {
-    return state.materialized().isEmpty();
+    return state.materializeEmpty();
   }
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return state.materialized().iterator();
+    return state.materializeIterator();
   }
 
   @Override
   public int materializeSize() {
-    return state.materialized().size();
+    return state.materializeSize();
   }
 
-  private interface State<E> {
-
-    int knownSize();
-
-    @NotNull List<E> materialized();
-  }
-
-  private static class EmptyState<E> implements State<E> {
-
-    @Override
-    public int knownSize() {
-      return 0;
-    }
-
-    @Override
-    public @NotNull List<E> materialized() {
-      return Collections.emptyList();
-    }
-  }
-
-  private static class ElementState<E> implements State<E> {
-
-    private final List<E> elements;
-
-    private ElementState(@NotNull final E element) {
-      this.elements = Collections.singletonList(element);
-    }
-
-    @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public @NotNull List<E> materialized() {
-      return elements;
-    }
-  }
-
-  private class ImmaterialState implements State<E> {
+  private class ImmaterialState implements ListMaterializer<E> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
     private final Comparator<? super E> comparator;
@@ -120,13 +79,47 @@ class MaxListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
+    public boolean canMaterializeElement(final int index) {
+      return index == 0 && !materializeEmpty();
+    }
+
+    @Override
     public int knownSize() {
+      final int knownSize = wrapped.knownSize();
+      if (knownSize > 0) {
+        return 1;
+      }
+      if (knownSize == 0) {
+        return 0;
+      }
       return -1;
     }
 
     @Override
+    public E materializeElement(final int index) {
+      if (index != 0) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      return materialized().materializeElement(index);
+    }
+
+    @Override
+    public boolean materializeEmpty() {
+      return wrapped.materializeEmpty();
+    }
+
+    @Override
+    public @NotNull Iterator<E> materializeIterator() {
+      return materialized().materializeIterator();
+    }
+
+    @Override
+    public int materializeSize() {
+      return materializeEmpty() ? 0 : 1;
+    }
+
     @SuppressWarnings("unchecked")
-    public @NotNull List<E> materialized() {
+    private @NotNull ListMaterializer<E> materialized() {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
       }
@@ -134,8 +127,7 @@ class MaxListMaterializer<E> implements ListMaterializer<E> {
         final Comparator<? super E> comparator = this.comparator;
         final Iterator<E> iterator = wrapped.materializeIterator();
         if (!iterator.hasNext()) {
-          state = (State<E>) EMPTY_STATE;
-          return Collections.emptyList();
+          return state = (ListMaterializer<E>) EMPTY_STATE;
         }
         E max = iterator.next();
         while (iterator.hasNext()) {
@@ -144,8 +136,7 @@ class MaxListMaterializer<E> implements ListMaterializer<E> {
             max = next;
           }
         }
-        state = new ElementState<E>(max);
-        return state.materialized();
+        return state = new ElementToListMaterializer<E>(max);
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);

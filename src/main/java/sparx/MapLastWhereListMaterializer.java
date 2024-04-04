@@ -144,9 +144,9 @@ class MapLastWhereListMaterializer<E> implements ListMaterializer<E> {
         }
         if (!wrapped.canMaterializeElement(i)) {
           state = new ElementState<E>(i, null);
-        } else {
-          pos = i;
+          return index - 1;
         }
+        pos = i;
         return i;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);

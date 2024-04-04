@@ -278,7 +278,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull ListSequence<E> removeSegment(int start, int maxSize);
+  @NotNull ListSequence<E> removePortion(int start, int maxLength);
 
   @Override
   @NotNull ListSequence<E> removeSlice(int start, int end);
@@ -302,7 +302,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<E> replaceLast(E element, E replacement);
 
   @Override
-  @NotNull ListSequence<E> replaceSegment(int start, @NotNull Iterable<? extends E> patch,
+  @NotNull ListSequence<E> replacePortion(int start, @NotNull Iterable<? extends E> patch,
       int maxSize);
 
   @Override

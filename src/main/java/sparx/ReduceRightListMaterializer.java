@@ -15,10 +15,8 @@
  */
 package sparx;
 
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
@@ -28,9 +26,9 @@ import sparx.util.function.BinaryFunction;
 
 class ReduceRightListMaterializer<E> implements ListMaterializer<E> {
 
-  private static final State<?> EMPTY = new EmptyState<Object>();
+  private static final EmptyListMaterializer<?> EMPTY_STATE = new EmptyListMaterializer<Object>();
 
-  private volatile State<E> state;
+  private volatile ListMaterializer<E> state;
 
   ReduceRightListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
@@ -40,7 +38,7 @@ class ReduceRightListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return index == 0 && !state.materialized().isEmpty();
+    return state.canMaterializeElement(index);
   }
 
   @Override
@@ -50,64 +48,25 @@ class ReduceRightListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public E materializeElement(final int index) {
-    return state.materialized().get(index);
+    return state.materializeElement(index);
   }
 
   @Override
   public boolean materializeEmpty() {
-    return state.materialized().isEmpty();
+    return state.materializeEmpty();
   }
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return state.materialized().iterator();
+    return state.materializeIterator();
   }
 
   @Override
   public int materializeSize() {
-    return state.materialized().size();
+    return state.materializeSize();
   }
 
-  private interface State<E> {
-
-    int knownSize();
-
-    @NotNull List<E> materialized();
-  }
-
-  private static class ElementState<E> implements State<E> {
-
-    private final List<E> elements;
-
-    private ElementState(@NotNull final E element) {
-      this.elements = Collections.singletonList(element);
-    }
-
-    @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public @NotNull List<E> materialized() {
-      return elements;
-    }
-  }
-
-  private static class EmptyState<E> implements State<E> {
-
-    @Override
-    public int knownSize() {
-      return 0;
-    }
-
-    @Override
-    public @NotNull List<E> materialized() {
-      return Collections.emptyList();
-    }
-  }
-
-  private class ImmaterialState implements State<E> {
+  private class ImmaterialState implements ListMaterializer<E> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
     private final BinaryFunction<? super E, ? super E, ? extends E> operation;
@@ -120,13 +79,40 @@ class ReduceRightListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public int knownSize() {
-      return 1;
+    public boolean canMaterializeElement(final int index) {
+      return index == 0 && !materializeEmpty();
     }
 
     @Override
+    public int knownSize() {
+      return Math.min(1, wrapped.knownSize());
+    }
+
+    @Override
+    public E materializeElement(final int index) {
+      if (index != 0) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      return materialized().materializeElement(index);
+    }
+
+    @Override
+    public boolean materializeEmpty() {
+      return wrapped.materializeEmpty();
+    }
+
+    @Override
+    public @NotNull Iterator<E> materializeIterator() {
+      return materialized().materializeIterator();
+    }
+
+    @Override
+    public int materializeSize() {
+      return materializeEmpty() ? 0 : 1;
+    }
+
     @SuppressWarnings("unchecked")
-    public @NotNull List<E> materialized() {
+    private @NotNull ListMaterializer<E> materialized() {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
       }
@@ -134,16 +120,14 @@ class ReduceRightListMaterializer<E> implements ListMaterializer<E> {
         final BinaryFunction<? super E, ? super E, ? extends E> operation = this.operation;
         final ListMaterializer<E> wrapped = this.wrapped;
         if (wrapped.materializeEmpty()) {
-          state = (State<E>) EMPTY;
-          return Collections.emptyList();
+          return state = (ListMaterializer<E>) EMPTY_STATE;
         }
         final int size = wrapped.materializeSize();
         E current = wrapped.materializeElement(size - 1);
         for (int i = size - 2; i >= 0; --i) {
           current = operation.apply(wrapped.materializeElement(i), current);
         }
-        state = new ElementState<E>(current);
-        return state.materialized();
+        return state = new ElementToListMaterializer<E>(current);
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
