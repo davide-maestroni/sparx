@@ -258,6 +258,9 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull SetSequence<E> removeFraction(int start, int maxLength);
+
+  @Override
   @NotNull SetSequence<E> removeLast(E element);
 
   @Override
@@ -265,9 +268,6 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull SetSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull SetSequence<E> removePortion(int start, int maxLength);
 
   @Override
   @NotNull SetSequence<E> removeSlice(int start, int end);
@@ -288,15 +288,31 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull SetSequence<E> replaceFirst(E element, E replacement);
 
   @Override
+  @NotNull SetSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate, E replacement);
+
+  @Override
+  @NotNull SetSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull SetSequence<E> replaceFraction(int start, int maxLength,
+      @NotNull Iterable<? extends E> patch);
+
+  @Override
   @NotNull SetSequence<E> replaceLast(E element, E replacement);
 
   @Override
-  @NotNull SetSequence<E> replacePortion(int start, @NotNull Iterable<? extends E> patch,
-      int maxSize);
+  @NotNull SetSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
-  @NotNull SetSequence<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch,
-      int end);
+  @NotNull SetSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull SetSequence<E> replaceSlice(int start, int end, @NotNull Iterable<? extends E> patch);
+
+  @Override
+  @NotNull SetSequence<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull SetSequence<E> slice(int from, int until);

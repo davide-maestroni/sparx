@@ -278,6 +278,9 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull IteratorSequence<E> removeFraction(int start, int maxLength);
+
+  @Override
   @NotNull IteratorSequence<E> removeLast(E element); // TODO: ???
 
   @Override
@@ -285,9 +288,6 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
   @NotNull IteratorSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull IteratorSequence<E> removePortion(int start, int maxLength);
 
   @Override
   @NotNull IteratorSequence<E> removeSlice(int start, int end);
@@ -308,15 +308,34 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull IteratorSequence<E> replaceFirst(E element, E replacement);
 
   @Override
+  @NotNull IteratorSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull IteratorSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull IteratorSequence<E> replaceFraction(int start, int maxLength,
+      @NotNull Iterable<? extends E> patch);
+
+  @Override
   @NotNull IteratorSequence<E> replaceLast(E element, E replacement); // TODO: ???
 
   @Override
-  @NotNull IteratorSequence<E> replacePortion(int start, @NotNull Iterable<? extends E> patch,
-      int maxSize);
+  @NotNull IteratorSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate,
+      E replacement);
 
   @Override
-  @NotNull IteratorSequence<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch,
-      int end);
+  @NotNull IteratorSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull IteratorSequence<E> replaceSlice(int start, int end,
+      @NotNull Iterable<? extends E> patch);
+
+  @Override
+  @NotNull IteratorSequence<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull IteratorSequence<E> slice(int from, int until);

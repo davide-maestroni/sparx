@@ -124,7 +124,7 @@ class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
       final Function<? super E, ? extends Iterable<F>> mapper = this.mapper;
       final ListMaterializer<E> wrapped = this.wrapped;
       final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
+      final int expectedCount = modCount.incrementAndGet();
       try {
         Iterator<F> elementIterator = this.elementIterator;
         int i = pos;

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 import sparx.util.function.Predicate;
@@ -143,7 +144,8 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       if (wrappedSize <= numElements) {
         return wrappedSize;
       }
-      return wrappedSize + materializer.materializeSize() - 1;
+      final long size = (long) wrappedSize + materializer.materializeSize() - 1;
+      return SizeOverflowException.safeCast(size);
     }
   }
 
@@ -171,7 +173,7 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
         return false;
       }
       final int numElements = materializeUntil(index);
-      if (index < numElements) {
+      if (numElements < 0 || index < numElements) {
         return wrapped.canMaterializeElement(index);
       }
       final int elementIndex = index - numElements;
@@ -195,7 +197,7 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final int numElements = materializeUntil(index);
-      if (index < numElements) {
+      if (numElements < 0 || index < numElements) {
         return wrapped.materializeElement(index);
       }
       final int elementIndex = index - numElements;
@@ -223,19 +225,19 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
     public int materializeSize() {
       final ListMaterializer<E> wrapped = this.wrapped;
       final int wrappedSize = wrapped.materializeSize();
-      if (wrappedSize <= materializeUntil(wrappedSize)) {
+      if (materializeUntil(wrappedSize) < 0) {
         state = wrapped;
         return wrappedSize;
       }
-      final ListMaterializer<E> materializer = materialized();
-      return wrappedSize + materializer.materializeSize() - 1;
+      final long size = (long) wrappedSize + materialized().materializeSize() - 1;
+      return SizeOverflowException.safeCast(size);
     }
 
     private @NotNull ListMaterializer<E> materialized() {
       try {
         final int numElements = materializeUntil(Integer.MAX_VALUE);
         final AtomicInteger modCount = this.modCount;
-        final int expectedCount = modCount.getAndIncrement() + 1;
+        final int expectedCount = modCount.incrementAndGet();
         final ListMaterializer<E> wrapped = this.wrapped;
         if (wrapped.canMaterializeElement(numElements)) {
           final ListMaterializer<E> materializer = mapper.apply(
@@ -259,7 +261,7 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
         return pos;
       }
       final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
+      final int expectedCount = modCount.incrementAndGet();
       try {
         int i = pos;
         final ListMaterializer<E> wrapped = this.wrapped;
@@ -278,7 +280,7 @@ class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
           throw new ConcurrentModificationException();
         }
         pos = i;
-        return index + 1;
+        return -1;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }

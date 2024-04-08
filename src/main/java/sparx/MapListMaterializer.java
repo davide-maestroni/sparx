@@ -111,7 +111,7 @@ class MapListMaterializer<E, F> implements ListMaterializer<F> {
         return (F) current;
       }
       final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
+      final int expectedCount = modCount.incrementAndGet();
       try {
         final F element = mapper.apply(wrapped.materializeElement(index));
         if (expectedCount != modCount.get()) {
@@ -169,7 +169,7 @@ class MapListMaterializer<E, F> implements ListMaterializer<F> {
         return elements.get(index);
       }
       final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
+      final int expectedCount = modCount.incrementAndGet();
       try {
         final Function<? super E, F> mapper = this.mapper;
         final ListMaterializer<E> wrapped = this.wrapped;
@@ -179,7 +179,8 @@ class MapListMaterializer<E, F> implements ListMaterializer<F> {
         }
         elements.put(index, element);
         final int knownSize = wrapped.knownSize();
-        if (knownSize >= 0 && knownSize < (elements.size() << 4)) {
+        if ((knownSize >= 0 && knownSize < (elements.size() << 4)) ||
+            elements.size() > (Integer.MAX_VALUE >> 4)) {
           final Object[] elementsArray = new Object[knownSize];
           Arrays.fill(elementsArray, EMPTY);
           for (final Entry<Integer, F> entry : elements.entrySet()) {

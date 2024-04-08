@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 import sparx.util.function.Predicate;
@@ -143,7 +144,8 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
       if (wrappedSize <= numElements) {
         return wrappedSize;
       }
-      return wrappedSize + materializer.materializeSize() - 1;
+      final long size = (long) wrappedSize + materializer.materializeSize() - 1;
+      return SizeOverflowException.safeCast(size);
     }
   }
 
@@ -232,7 +234,7 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
       try {
         final int index = materializeUntil(0);
         final AtomicInteger modCount = this.modCount;
-        final int expectedCount = modCount.getAndIncrement() + 1;
+        final int expectedCount = modCount.incrementAndGet();
         final ListMaterializer<E> wrapped = this.wrapped;
         if (wrapped.canMaterializeElement(index)) {
           final ListMaterializer<E> materializer = mapper.apply(wrapped.materializeElement(index));
@@ -255,7 +257,7 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
         return pos;
       }
       final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
+      final int expectedCount = modCount.incrementAndGet();
       final ListMaterializer<E> wrapped = this.wrapped;
       if (pos == Integer.MIN_VALUE) {
         pos = wrapped.materializeSize() - 1;
@@ -277,7 +279,7 @@ class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> {
           throw new ConcurrentModificationException();
         }
         pos = i;
-        return index - 1;
+        return -1;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }

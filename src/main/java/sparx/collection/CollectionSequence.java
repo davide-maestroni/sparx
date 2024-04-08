@@ -260,6 +260,9 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull CollectionSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull CollectionSequence<E> removeFraction(int start, int maxLength);
+
+  @Override
   @NotNull CollectionSequence<E> removeLast(E element);
 
   @Override
@@ -267,9 +270,6 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull CollectionSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull CollectionSequence<E> removePortion(int start, int maxLength);
 
   @Override
   @NotNull CollectionSequence<E> removeSlice(int start, int end);
@@ -290,15 +290,35 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
   @NotNull CollectionSequence<E> replaceFirst(E element, E replacement);
 
   @Override
+  @NotNull CollectionSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull CollectionSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull CollectionSequence<E> replaceFraction(int start, int maxLength,
+      @NotNull Iterable<? extends E> patch);
+
+  @Override
   @NotNull CollectionSequence<E> replaceLast(E element, E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> replacePortion(int start, @NotNull Iterable<? extends E> patch,
-      int maxSize);
+  @NotNull CollectionSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate,
+      E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch,
-      int end);
+  @NotNull CollectionSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull CollectionSequence<E> replaceSlice(int start, int end,
+      @NotNull Iterable<? extends E> patch);
+
+  @Override
+  @NotNull CollectionSequence<E> replaceWhere(@NotNull Predicate<? super E> predicate,
+      E replacement);
 
   @Override
   @NotNull CollectionSequence<E> slice(int from, int until);

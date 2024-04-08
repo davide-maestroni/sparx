@@ -34,10 +34,7 @@ class DropRightListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public boolean canMaterializeElement(final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
-    if (index >= wrapped.materializeSize() - maxElements) {
-      return false;
-    }
-    return wrapped.canMaterializeElement(index);
+    return index < wrapped.materializeSize() - maxElements && wrapped.canMaterializeElement(index);
   }
 
   @Override

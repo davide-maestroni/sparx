@@ -20,6 +20,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 
 class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
 
@@ -54,7 +55,7 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
       if (knownSize < numElements) {
-        return knownSize + 1;
+        return SizeOverflowException.safeCast((long) knownSize + 1);
       }
       return knownSize;
     }
@@ -103,7 +104,7 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
     if (wrappedSize < numElements) {
       return wrappedSize;
     }
-    return wrappedSize + 1;
+    return SizeOverflowException.safeCast((long) wrappedSize + 1);
   }
 
   private class InsertIterator implements Iterator<E> {

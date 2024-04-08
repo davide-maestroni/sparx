@@ -43,7 +43,7 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       return false;
     }
     if (state.materializeUntil(index) <= index) {
-      return wrapped.canMaterializeElement(index + 1);
+      return index < Integer.MAX_VALUE && wrapped.canMaterializeElement(index + 1);
     }
     return wrapped.canMaterializeElement(index);
   }
@@ -69,7 +69,11 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     if (state.materializeUntil(index) <= index) {
-      return wrapped.materializeElement(index + 1);
+      final long wrappedIndex = (long) index + 1;
+      if (wrappedIndex >= Integer.MAX_VALUE) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      return wrapped.materializeElement((int) wrappedIndex);
     }
     return wrapped.materializeElement(index);
   }
@@ -141,7 +145,7 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       final Iterator<E> iterator = this.iterator;
       final Predicate<? super E> predicate = this.predicate;
       final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
+      final int expectedCount = modCount.incrementAndGet();
       try {
         int i = pos;
         while (i <= index && iterator.hasNext()) {
@@ -169,17 +173,15 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private class RemoveIterator implements Iterator<E> {
 
-    private final Iterator<E> iterator = wrapped.materializeIterator();
-
     private int pos = 0;
 
     @Override
     public boolean hasNext() {
       final int pos = this.pos;
       if (pos == state.materializeUntil(pos)) {
-        return wrapped.canMaterializeElement(pos + 1);
+        return pos < Integer.MAX_VALUE && wrapped.canMaterializeElement(pos + 1);
       }
-      return iterator.hasNext();
+      return wrapped.canMaterializeElement(pos);
     }
 
     @Override
@@ -187,19 +189,15 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      final Iterator<E> iterator = this.iterator;
-      if (!iterator.hasNext()) {
-        throw new NoSuchElementException();
-      }
-      final int pos = this.pos;
+      final ListMaterializer<E> wrapped = RemoveFirstWhereListMaterializer.this.wrapped;
       if (pos == state.materializeUntil(pos)) {
-        iterator.next();
-        if (!iterator.hasNext()) {
+        if (!wrapped.canMaterializeElement(++pos)) {
           throw new NoSuchElementException();
         }
+      } else if (!wrapped.canMaterializeElement(pos)) {
+        throw new NoSuchElementException();
       }
-      ++this.pos;
-      return iterator.next();
+      return wrapped.materializeElement(pos++);
     }
 
     @Override

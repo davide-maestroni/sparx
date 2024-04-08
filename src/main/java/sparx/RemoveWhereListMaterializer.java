@@ -83,7 +83,7 @@ class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
       final ArrayList<E> elements = this.elements;
       if (elements.size() <= index) {
         final AtomicInteger modCount = this.modCount;
-        final int expectedCount = modCount.getAndIncrement() + 1;
+        final int expectedCount = modCount.incrementAndGet();
         final Predicate<? super E> predicate = this.predicate;
         try {
           final Iterator<E> iterator = this.iterator;
@@ -125,7 +125,7 @@ class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public boolean materializeEmpty() {
       if (elements.isEmpty()) {
-        return !iterator.hasNext();
+        return !canMaterializeElement(0);
       }
       return false;
     }

@@ -71,8 +71,6 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> findAnyNot(@NotNull Predicate<? super E> predicate);
 
-  // TODO: @NotNull Sequence<E> findFirst()?? @NotNull Sequence<E> findAny()???
-
   @NotNull Sequence<E> findFirst(@NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
@@ -206,13 +204,13 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
 
+  @NotNull Sequence<E> removeFraction(int start, int maxLength);
+
   @NotNull Sequence<E> removeLast(E element);
 
   @NotNull Sequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
 
   @NotNull Sequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @NotNull Sequence<E> removePortion(int start, int maxLength);
 
   @NotNull Sequence<E> removeSlice(int start, int end);
 
@@ -226,11 +224,22 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull Sequence<E> replaceFirst(E element, E replacement);
 
+  @NotNull Sequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate, E replacement);
+
+  @NotNull Sequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
+
+  @NotNull Sequence<E> replaceFraction(int start, int maxLength,
+      @NotNull Iterable<? extends E> patch);
+
   @NotNull Sequence<E> replaceLast(E element, E replacement);
 
-  @NotNull Sequence<E> replacePortion(int start, @NotNull Iterable<? extends E> patch, int maxSize);
+  @NotNull Sequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
-  @NotNull Sequence<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch, int end);
+  @NotNull Sequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
+
+  @NotNull Sequence<E> replaceSlice(int start, int end, @NotNull Iterable<? extends E> patch);
+
+  @NotNull Sequence<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   int size();
 

@@ -96,7 +96,7 @@ class CollectionToListMaterializer<E> implements ListMaterializer<E> {
       final ArrayList<E> elements = this.elements;
       if (elements.size() <= index) {
         final AtomicInteger modCount = this.modCount;
-        final int expectedCount = modCount.getAndIncrement() + 1;
+        final int expectedCount = modCount.incrementAndGet();
         final Iterator<E> iterator = this.iterator;
         do {
           if (!iterator.hasNext()) {

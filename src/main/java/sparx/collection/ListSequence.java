@@ -66,6 +66,8 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @Override
   @NotNull ListSequence<Boolean> endsWith(@NotNull Iterable<?> elements);
 
+  // TODO: enumerate()
+
   @Override
   @NotNull ListSequence<Boolean> exists(@NotNull Predicate<? super E> predicate);
 
@@ -228,6 +230,8 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @Override
   @NotNull ListSequence<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
 
+  // TODO: padTo(size, element), padLeftTo(size, element), padRightTo(size, element)
+
   @Override
   @NotNull ListSequence<E> peek(@NotNull Consumer<? super E> consumer);
 
@@ -269,6 +273,9 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
+  @NotNull ListSequence<E> removeFraction(int start, int maxLength);
+
+  @Override
   @NotNull ListSequence<E> removeLast(E element);
 
   @Override
@@ -276,9 +283,6 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
   @NotNull ListSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull ListSequence<E> removePortion(int start, int maxLength);
 
   @Override
   @NotNull ListSequence<E> removeSlice(int start, int end);
@@ -299,14 +303,33 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull ListSequence<E> replaceFirst(E element, E replacement);
 
   @Override
+  @NotNull ListSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull ListSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull ListSequence<E> replaceFraction(int start, int maxLength,
+      @NotNull Iterable<? extends E> patch);
+
+  @Override
   @NotNull ListSequence<E> replaceLast(E element, E replacement);
 
   @Override
-  @NotNull ListSequence<E> replacePortion(int start, @NotNull Iterable<? extends E> patch,
-      int maxSize);
+  @NotNull ListSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate,
+      E replacement);
 
   @Override
-  @NotNull ListSequence<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch, int end);
+  @NotNull ListSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate,
+      E replacement);
+
+  @Override
+  @NotNull ListSequence<E> replaceSlice(int start, int end, @NotNull Iterable<? extends E> patch);
+
+  @Override
+  @NotNull ListSequence<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @NotNull ListSequence<E> reverse();
 

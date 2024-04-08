@@ -43,7 +43,7 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
       return false;
     }
     if (state.materialized() <= index) {
-      return wrapped.canMaterializeElement(index + 1);
+      return index < Integer.MAX_VALUE && wrapped.canMaterializeElement(index + 1);
     }
     return wrapped.canMaterializeElement(index);
   }
@@ -69,7 +69,11 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     if (state.materialized() <= index) {
-      return wrapped.materializeElement(index + 1);
+      final long wrappedIndex = (long) index + 1;
+      if (wrappedIndex >= Integer.MAX_VALUE) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      return wrapped.materializeElement((int) wrappedIndex);
     }
     return wrapped.materializeElement(index);
   }
@@ -160,17 +164,15 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private class RemoveIterator implements Iterator<E> {
 
-    private final Iterator<E> iterator = wrapped.materializeIterator();
-
     private int pos = 0;
 
     @Override
     public boolean hasNext() {
       final int pos = this.pos;
       if (pos == state.materialized()) {
-        return wrapped.canMaterializeElement(pos + 1);
+        return pos < Integer.MAX_VALUE && wrapped.canMaterializeElement(pos + 1);
       }
-      return iterator.hasNext();
+      return wrapped.canMaterializeElement(pos);
     }
 
     @Override
@@ -178,18 +180,15 @@ class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      final Iterator<E> iterator = this.iterator;
-      if (!iterator.hasNext()) {
-        throw new NoSuchElementException();
-      }
+      final ListMaterializer<E> wrapped = RemoveLastWhereListMaterializer.this.wrapped;
       if (pos == state.materialized()) {
-        iterator.next();
-        if (!iterator.hasNext()) {
+        if (!wrapped.canMaterializeElement(++pos)) {
           throw new NoSuchElementException();
         }
+      } else if (!wrapped.canMaterializeElement(pos)) {
+        throw new NoSuchElementException();
       }
-      ++pos;
-      return iterator.next();
+      return wrapped.materializeElement(pos++);
     }
 
     @Override

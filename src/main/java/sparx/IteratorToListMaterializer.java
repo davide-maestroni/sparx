@@ -77,7 +77,7 @@ class IteratorToListMaterializer<E> implements ListMaterializer<E> {
       final ArrayList<E> elements = this.elements;
       if (elements.size() <= index) {
         final AtomicInteger modCount = this.modCount;
-        final int expectedCount = modCount.getAndIncrement() + 1;
+        final int expectedCount = modCount.incrementAndGet();
         final Iterator<E> iterator = this.iterator;
         do {
           if (!iterator.hasNext()) {
@@ -105,7 +105,7 @@ class IteratorToListMaterializer<E> implements ListMaterializer<E> {
       final ArrayList<E> elements = this.elements;
       if (elements.size() <= index) {
         final AtomicInteger modCount = this.modCount;
-        final int expectedCount = modCount.getAndIncrement() + 1;
+        final int expectedCount = modCount.incrementAndGet();
         final Iterator<E> iterator = this.iterator;
         do {
           if (!iterator.hasNext()) {
@@ -140,7 +140,7 @@ class IteratorToListMaterializer<E> implements ListMaterializer<E> {
     public int materializeSize() {
       final ArrayList<E> elements = this.elements;
       final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
+      final int expectedCount = modCount.incrementAndGet();
       final Iterator<E> iterator = this.iterator;
       while (iterator.hasNext()) {
         elements.add(iterator.next());

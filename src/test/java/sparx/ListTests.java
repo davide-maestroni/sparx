@@ -2269,6 +2269,62 @@ public class ListTests {
   }
 
   @Test
+  public void removeFraction() {
+    var l = List.of(1, 2, null, 4, 2);
+    assertFalse(l.removeFraction(-1, 1).isEmpty());
+    assertEquals(5, l.removeFraction(-1, 1).size());
+    assertEquals(List.of(1, 2, null, 4, 2), l.removeFraction(-1, 1));
+    assertEquals(2, l.removeFraction(-1, 1).get(1));
+    assertFalse(l.removeFraction(-1, 2).isEmpty());
+    assertEquals(4, l.removeFraction(-1, 2).size());
+    assertEquals(List.of(2, null, 4, 2), l.removeFraction(-1, 2));
+    assertNull(l.removeFraction(-1, 2).get(1));
+    assertFalse(l.removeFraction(-1, 3).isEmpty());
+    assertEquals(3, l.removeFraction(-1, 3).size());
+    assertEquals(List.of(null, 4, 2), l.removeFraction(-1, 3));
+    assertEquals(4, l.removeFraction(-1, 3).get(1));
+
+    assertFalse(l.removeFraction(2, -1).isEmpty());
+    assertEquals(5, l.removeFraction(2, -1).size());
+    assertEquals(List.of(1, 2, null, 4, 2), l.removeFraction(2, -1));
+    assertEquals(2, l.removeFraction(2, -1).get(1));
+    assertFalse(l.removeFraction(2, 0).isEmpty());
+    assertEquals(5, l.removeFraction(2, 0).size());
+    assertEquals(List.of(1, 2, null, 4, 2), l.removeFraction(2, 0));
+    assertEquals(2, l.removeFraction(2, 0).get(1));
+    assertFalse(l.removeFraction(2, 1).isEmpty());
+    assertEquals(4, l.removeFraction(2, 1).size());
+    assertEquals(List.of(1, 2, 4, 2), l.removeFraction(2, 1));
+    assertEquals(2, l.removeFraction(2, 1).get(1));
+    assertFalse(l.removeFraction(2, 2).isEmpty());
+    assertEquals(3, l.removeFraction(2, 2).size());
+    assertEquals(List.of(1, 2, 2), l.removeFraction(2, 2));
+    assertEquals(2, l.removeFraction(2, 2).get(1));
+    assertFalse(l.removeFraction(2, 3).isEmpty());
+    assertEquals(2, l.removeFraction(2, 3).size());
+    assertEquals(List.of(1, 2), l.removeFraction(2, 3));
+    assertEquals(2, l.removeFraction(2, 3).get(1));
+    assertFalse(l.removeFraction(2, 4).isEmpty());
+    assertEquals(2, l.removeFraction(2, 4).size());
+    assertEquals(List.of(1, 2), l.removeFraction(2, 4));
+    assertEquals(2, l.removeFraction(2, 4).get(1));
+
+    assertTrue(l.removeFraction(-1, 10).isEmpty());
+    assertEquals(0, l.removeFraction(-1, 10).size());
+    assertEquals(List.of(), l.removeFraction(-1, 10));
+    assertTrue(l.removeFraction(-1, 6).isEmpty());
+    assertEquals(0, l.removeFraction(-1, 6).size());
+    assertEquals(List.of(), l.removeFraction(-1, 6));
+    assertTrue(l.removeFraction(0, 5).isEmpty());
+    assertEquals(0, l.removeFraction(0, 5).size());
+    assertEquals(List.of(), l.removeFraction(0, 5));
+
+    assertTrue(List.of().removeFraction(1, 2).isEmpty());
+    assertEquals(0, List.of().removeFraction(1, 2).size());
+    assertEquals(List.of(), List.of().removeFraction(1, 2));
+  }
+
+  @Test
   public void removeLast() {
     var l = List.of(1, 2, null, 4, 2);
     assertFalse(l.removeLast(1).isEmpty());
@@ -2361,59 +2417,145 @@ public class ListTests {
   }
 
   @Test
-  public void removePortion() {
-    var l = List.of(1, 2, null, 4, 2);
-    assertFalse(l.removePortion(-1, 1).isEmpty());
-    assertEquals(5, l.removePortion(-1, 1).size());
-    assertEquals(List.of(1, 2, null, 4, 2), l.removePortion(-1, 1));
-    assertEquals(2, l.removePortion(-1, 1).get(1));
-    assertFalse(l.removePortion(-1, 2).isEmpty());
-    assertEquals(4, l.removePortion(-1, 2).size());
-    assertEquals(List.of(2, null, 4, 2), l.removePortion(-1, 2));
-    assertNull(l.removePortion(-1, 2).get(1));
-    assertFalse(l.removePortion(-1, 3).isEmpty());
-    assertEquals(3, l.removePortion(-1, 3).size());
-    assertEquals(List.of(null, 4, 2), l.removePortion(-1, 3));
-    assertEquals(4, l.removePortion(-1, 3).get(1));
+  public void removeSlice() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.removeSlice(1, 1).isEmpty());
+    assertEquals(4, l.removeSlice(1, 1).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeSlice(1, 1));
+    assertEquals(2, l.removeSlice(1, 1).get(1));
+    assertFalse(l.removeSlice(1, 0).isEmpty());
+    assertEquals(4, l.removeSlice(1, 0).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeSlice(1, 0));
+    assertEquals(2, l.removeSlice(1, 0).get(1));
+    assertFalse(l.removeSlice(1, -3).isEmpty());
+    assertEquals(4, l.removeSlice(1, -3).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeSlice(1, -3));
+    assertEquals(2, l.removeSlice(1, -3).get(1));
+    assertFalse(l.removeSlice(1, -4).isEmpty());
+    assertEquals(4, l.removeSlice(1, -4).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeSlice(1, -4));
+    assertEquals(2, l.removeSlice(1, -4).get(1));
+    assertFalse(l.removeSlice(1, -5).isEmpty());
+    assertEquals(4, l.removeSlice(1, -5).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeSlice(1, -5));
+    assertEquals(2, l.removeSlice(1, -5).get(1));
+    assertFalse(l.removeSlice(-1, 1).isEmpty());
+    assertEquals(4, l.removeSlice(-1, 1).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeSlice(-1, 1));
+    assertEquals(2, l.removeSlice(-1, 1).get(1));
+    assertFalse(l.removeSlice(-1, 3).isEmpty());
+    assertEquals(4, l.removeSlice(-1, 3).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeSlice(-1, 3));
+    assertEquals(2, l.removeSlice(-1, 3).get(1));
+    assertFalse(l.removeSlice(-1, -1).isEmpty());
+    assertEquals(4, l.removeSlice(-1, -1).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeSlice(-1, -1));
+    assertEquals(2, l.removeSlice(-1, -1).get(1));
+    assertFalse(l.removeSlice(-1, -4).isEmpty());
+    assertEquals(4, l.removeSlice(-1, -4).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeSlice(-1, -4));
+    assertEquals(2, l.removeSlice(-1, -4).get(1));
 
-    assertFalse(l.removePortion(2, -1).isEmpty());
-    assertEquals(5, l.removePortion(2, -1).size());
-    assertEquals(List.of(1, 2, null, 4, 2), l.removePortion(2, -1));
-    assertEquals(2, l.removePortion(2, -1).get(1));
-    assertFalse(l.removePortion(2, 0).isEmpty());
-    assertEquals(5, l.removePortion(2, 0).size());
-    assertEquals(List.of(1, 2, null, 4, 2), l.removePortion(2, 0));
-    assertEquals(2, l.removePortion(2, 0).get(1));
-    assertFalse(l.removePortion(2, 1).isEmpty());
-    assertEquals(4, l.removePortion(2, 1).size());
-    assertEquals(List.of(1, 2, 4, 2), l.removePortion(2, 1));
-    assertEquals(2, l.removePortion(2, 1).get(1));
-    assertFalse(l.removePortion(2, 2).isEmpty());
-    assertEquals(3, l.removePortion(2, 2).size());
-    assertEquals(List.of(1, 2, 2), l.removePortion(2, 2));
-    assertEquals(2, l.removePortion(2, 2).get(1));
-    assertFalse(l.removePortion(2, 3).isEmpty());
-    assertEquals(2, l.removePortion(2, 3).size());
-    assertEquals(List.of(1, 2), l.removePortion(2, 3));
-    assertEquals(2, l.removePortion(2, 3).get(1));
-    assertFalse(l.removePortion(2, 4).isEmpty());
-    assertEquals(2, l.removePortion(2, 4).size());
-    assertEquals(List.of(1, 2), l.removePortion(2, 4));
-    assertEquals(2, l.removePortion(2, 4).get(1));
+    assertFalse(l.removeSlice(1, -1).isEmpty());
+    assertEquals(2, l.removeSlice(1, -1).size());
+    assertEquals(List.of(1, 4), l.removeSlice(1, -1));
+    assertEquals(4, l.removeSlice(1, -1).get(1));
+    assertFalse(l.removeSlice(1, -2).isEmpty());
+    assertEquals(3, l.removeSlice(1, -2).size());
+    assertEquals(List.of(1, null, 4), l.removeSlice(1, -2));
+    assertNull(l.removeSlice(1, -2).get(1));
+    assertFalse(l.removeSlice(1, 3).isEmpty());
+    assertEquals(2, l.removeSlice(1, 3).size());
+    assertEquals(List.of(1, 4), l.removeSlice(1, 3));
+    assertEquals(4, l.removeSlice(1, 3).get(1));
+    assertFalse(l.removeSlice(1, 2).isEmpty());
+    assertEquals(3, l.removeSlice(1, 2).size());
+    assertEquals(List.of(1, null, 4), l.removeSlice(1, 2));
+    assertNull(l.removeSlice(1, 2).get(1));
+    assertFalse(l.removeSlice(-1, 4).isEmpty());
+    assertEquals(3, l.removeSlice(-1, 4).size());
+    assertEquals(List.of(1, 2, null), l.removeSlice(-1, 4));
+    assertEquals(2, l.removeSlice(-1, 4).get(1));
+    assertFalse(l.removeSlice(-2, -1).isEmpty());
+    assertEquals(3, l.removeSlice(-2, -1).size());
+    assertEquals(List.of(1, 2, 4), l.removeSlice(-2, -1));
+    assertEquals(2, l.removeSlice(-2, -1).get(1));
 
-    assertTrue(l.removePortion(-1, 10).isEmpty());
-    assertEquals(0, l.removePortion(-1, 10).size());
-    assertEquals(List.of(), l.removePortion(-1, 10));
-    assertTrue(l.removePortion(-1, 6).isEmpty());
-    assertEquals(0, l.removePortion(-1, 6).size());
-    assertEquals(List.of(), l.removePortion(-1, 6));
-    assertTrue(l.removePortion(0, 5).isEmpty());
-    assertEquals(0, l.removePortion(0, 5).size());
-    assertEquals(List.of(), l.removePortion(0, 5));
+    assertTrue(l.removeSlice(0, Integer.MAX_VALUE).isEmpty());
+    assertEquals(0, l.removeSlice(0, Integer.MAX_VALUE).size());
+    assertEquals(List.of(), l.removeSlice(0, Integer.MAX_VALUE));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.removeSlice(0, Integer.MAX_VALUE).get(1));
 
-    assertTrue(List.of().removePortion(1, 2).isEmpty());
-    assertEquals(0, List.of().removePortion(1, 2).size());
-    assertEquals(List.of(), List.of().removePortion(1, 2));
+    assertTrue(List.of().removeSlice(1, -1).isEmpty());
+    assertEquals(0, List.of().removeSlice(1, -1).size());
+    assertEquals(List.of(), List.of().removeSlice(1, -1));
+    assertThrows(IndexOutOfBoundsException.class, () -> List.of().removeSlice(1, -1).get(0));
+  }
+
+  @Test
+  public void removeWhere() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.removeWhere(i -> false).isEmpty());
+    assertEquals(4, l.removeWhere(i -> false).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeWhere(i -> false));
+    assertEquals(2, l.removeWhere(i -> false).get(1));
+    assertTrue(l.removeWhere(i -> true).isEmpty());
+    assertEquals(0, l.removeWhere(i -> true).size());
+    assertEquals(List.of(), l.removeWhere(i -> true));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.removeWhere(i -> true).get(0));
+
+    assertFalse(l.removeWhere(Objects::isNull).isEmpty());
+    assertEquals(3, l.removeWhere(Objects::isNull).size());
+    assertEquals(List.of(1, 2, 4), l.removeWhere(Objects::isNull));
+    assertEquals(2, l.removeWhere(Objects::isNull).get(1));
+    assertFalse(l.removeWhere(Objects::nonNull).isEmpty());
+    assertEquals(1, l.removeWhere(Objects::nonNull).size());
+    assertEquals(List.of(null), l.removeWhere(Objects::nonNull));
+    assertNull(l.removeWhere(Objects::nonNull).get(0));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.removeWhere(Objects::nonNull).get(1));
+
+    assertTrue(List.of().removeWhere(i -> false).isEmpty());
+    assertEquals(0, List.of().removeWhere(i -> false).size());
+    assertEquals(List.of(), List.of().removeWhere(i -> false));
+    assertThrows(IndexOutOfBoundsException.class, () -> List.of().removeWhere(i -> false).get(0));
+
+    assertFalse(l.removeWhere(i -> i < 2).isEmpty());
+    assertThrows(NullPointerException.class, () -> l.removeWhere(i -> i < 2).size());
+    assertEquals(2, l.removeWhere(i -> i < 2).get(0));
+    assertThrows(NullPointerException.class, () -> l.removeWhere(i -> i < 2).get(1));
+  }
+
+  @Test
+  public void removeWhereNot() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.removeWhereNot(i -> true).isEmpty());
+    assertEquals(4, l.removeWhereNot(i -> true).size());
+    assertEquals(List.of(1, 2, null, 4), l.removeWhereNot(i -> true));
+    assertEquals(2, l.removeWhereNot(i -> true).get(1));
+    assertTrue(l.removeWhereNot(i -> false).isEmpty());
+    assertEquals(0, l.removeWhereNot(i -> false).size());
+    assertEquals(List.of(), l.removeWhereNot(i -> false));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.removeWhereNot(i -> false).get(0));
+
+    assertFalse(l.removeWhereNot(Objects::nonNull).isEmpty());
+    assertEquals(3, l.removeWhereNot(Objects::nonNull).size());
+    assertEquals(List.of(1, 2, 4), l.removeWhereNot(Objects::nonNull));
+    assertEquals(2, l.removeWhereNot(Objects::nonNull).get(1));
+    assertFalse(l.removeWhereNot(Objects::isNull).isEmpty());
+    assertEquals(1, l.removeWhereNot(Objects::isNull).size());
+    assertEquals(List.of(null), l.removeWhereNot(Objects::isNull));
+    assertNull(l.removeWhereNot(Objects::isNull).get(0));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.removeWhereNot(Objects::isNull).get(1));
+
+    assertTrue(List.of().removeWhereNot(i -> true).isEmpty());
+    assertEquals(0, List.of().removeWhereNot(i -> true).size());
+    assertEquals(List.of(), List.of().removeWhereNot(i -> true));
+    assertThrows(IndexOutOfBoundsException.class, () -> List.of().removeWhereNot(i -> true).get(0));
+
+    assertFalse(l.removeWhereNot(i -> i > 1).isEmpty());
+    assertThrows(NullPointerException.class, () -> l.removeWhereNot(i -> i > 1).size());
+    assertEquals(2, l.removeWhereNot(i -> i > 1).get(0));
+    assertThrows(NullPointerException.class, () -> l.removeWhereNot(i -> i > 1).get(1));
   }
 
   @Test

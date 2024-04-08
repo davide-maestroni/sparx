@@ -34,6 +34,9 @@ class AppendAllListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
+    if (index < 0) {
+      return false;
+    }
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.canMaterializeElement(index)) {
       return true;
@@ -56,6 +59,9 @@ class AppendAllListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public E materializeElement(final int index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.canMaterializeElement(index)) {
       return wrapped.materializeElement(index);

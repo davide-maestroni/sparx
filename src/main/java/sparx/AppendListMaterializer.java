@@ -20,6 +20,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 
 class AppendListMaterializer<E> implements ListMaterializer<E> {
 
@@ -41,7 +42,7 @@ class AppendListMaterializer<E> implements ListMaterializer<E> {
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
-      return knownSize + 1;
+      return SizeOverflowException.safeCast((long) knownSize + 1);
     }
     return -1;
   }

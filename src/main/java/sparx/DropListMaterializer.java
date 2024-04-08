@@ -33,7 +33,7 @@ class DropListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    if (index < 0) {
+    if (index < 0 || index > Integer.MAX_VALUE - maxElements) {
       return false;
     }
     return wrapped.canMaterializeElement(index + maxElements);
@@ -50,7 +50,7 @@ class DropListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public E materializeElement(final int index) {
-    if (index < 0) {
+    if (index < 0 || index > Integer.MAX_VALUE - maxElements) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return wrapped.materializeElement(index + maxElements);

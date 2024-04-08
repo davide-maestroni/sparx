@@ -20,19 +20,20 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 
-class RemovePortionListMaterializer<E> implements ListMaterializer<E> {
+class RemoveFractionListMaterializer<E> implements ListMaterializer<E> {
 
-  private final int length;
+  private final long length;
   private final int start;
   private final ListMaterializer<E> wrapped;
 
-  RemovePortionListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
+  RemoveFractionListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
       final int maxLength) {
     Require.positive(maxLength, "maxLength");
     this.wrapped = Require.notNull(wrapped, "wrapped");
     this.start = start;
-    length = start >= 0 ? maxLength : Math.max(0, start + maxLength);
+    length = start >= 0 ? maxLength : Math.max(0, (long) start + maxLength);
   }
 
   @Override
@@ -41,7 +42,8 @@ class RemovePortionListMaterializer<E> implements ListMaterializer<E> {
       return false;
     }
     if (start <= index) {
-      return wrapped.canMaterializeElement(index + length);
+      final long wrappedIndex = index + length;
+      return wrappedIndex <= Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
     return wrapped.canMaterializeElement(index);
   }
@@ -53,7 +55,8 @@ class RemovePortionListMaterializer<E> implements ListMaterializer<E> {
       if (knownSize == 0) {
         return 0;
       }
-      return Math.max(Math.max(0, start), knownSize - length);
+      final long size = Math.min(knownSize, Math.max(Math.max(0, start), knownSize - length));
+      return SizeOverflowException.safeCast(size);
     }
     return -1;
   }
@@ -64,7 +67,11 @@ class RemovePortionListMaterializer<E> implements ListMaterializer<E> {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     if (start <= index) {
-      return wrapped.materializeElement(index + length);
+      final long wrappedIndex = index + length;
+      if (wrappedIndex >= Integer.MAX_VALUE) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      return wrapped.materializeElement((int) wrappedIndex);
     }
     return wrapped.materializeElement(index);
   }
@@ -81,23 +88,22 @@ class RemovePortionListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return Math.max(Math.max(0, start), wrapped.materializeSize() - length);
+    return (int) Math.max(Math.max(0, start), wrapped.materializeSize() - length);
   }
 
   private class RemoveIterator implements Iterator<E> {
 
     private final int index = Math.max(0, start);
-    private final Iterator<E> iterator = wrapped.materializeIterator();
 
-    private int pos = 0;
+    private long pos = 0;
 
     @Override
     public boolean hasNext() {
-      final int pos = this.pos;
+      final long pos = this.pos;
       if (pos == index) {
-        return wrapped.canMaterializeElement(pos + length);
+        return wrapped.canMaterializeElement(SizeOverflowException.safeCast(pos + length));
       }
-      return iterator.hasNext();
+      return wrapped.canMaterializeElement((int) pos);
     }
 
     @Override
@@ -105,21 +111,17 @@ class RemovePortionListMaterializer<E> implements ListMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      final Iterator<E> iterator = this.iterator;
-      if (!iterator.hasNext()) {
+      final ListMaterializer<E> wrapped = RemoveFractionListMaterializer.this.wrapped;
+      if (!wrapped.canMaterializeElement((int) pos)) {
         throw new NoSuchElementException();
       }
       if (pos == index) {
-        for (int i = 0; i < length; ++i) {
-          iterator.next();
-        }
-        if (!iterator.hasNext()) {
+        pos += length;
+        if (!wrapped.canMaterializeElement((int) pos)) {
           throw new NoSuchElementException();
         }
-        pos += length;
       }
-      ++pos;
-      return iterator.next();
+      return wrapped.materializeElement((int) pos++);
     }
 
     @Override

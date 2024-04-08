@@ -57,6 +57,9 @@ class DropWhileListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public E materializeElement(final int index) {
+    if (index < 0 || index > Integer.MAX_VALUE - state.materialized()) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
     return wrapped.materializeElement(index + state.materialized());
   }
 

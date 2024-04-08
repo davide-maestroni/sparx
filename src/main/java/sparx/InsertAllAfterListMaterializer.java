@@ -20,6 +20,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 
 class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
 
@@ -45,17 +46,16 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
       if (elementsMaterializer.canMaterializeElement(index)) {
         return true;
       }
-      final int size = elementsMaterializer.materializeSize();
-      return wrapped.canMaterializeElement(index + size);
-
+      final long wrappedIndex = (long) index + elementsMaterializer.materializeSize();
+      return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
     if (numElements <= index) {
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(index - numElements)) {
         return true;
       }
-      final int size = elementsMaterializer.materializeSize();
-      return wrapped.canMaterializeElement(index + size);
+      final long wrappedIndex = (long) index + elementsMaterializer.materializeSize();
+      return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.canMaterializeElement(index)) {
@@ -63,7 +63,9 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
     }
     final int wrappedSize = wrapped.materializeSize();
     if (wrappedSize < numElements) {
-      return elementsMaterializer.canMaterializeElement(index + wrappedSize);
+      final long wrappedIndex = (long) index + wrappedSize;
+      return wrappedIndex < Integer.MAX_VALUE &&
+          elementsMaterializer.canMaterializeElement((int) wrappedIndex);
     }
     return false;
   }
@@ -75,7 +77,7 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
       if (knownSize < numElements) {
         final int elementsSize = elementsMaterializer.knownSize();
         if (elementsSize >= 0) {
-          return knownSize + elementsSize;
+          return SizeOverflowException.safeCast((long) knownSize + elementsSize);
         }
       } else {
         return knownSize;
@@ -95,17 +97,17 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
       if (elementsMaterializer.canMaterializeElement(index)) {
         return elementsMaterializer.materializeElement(index);
       }
-      final int size = elementsMaterializer.materializeSize();
-      return wrapped.materializeElement(index - size);
+      final int elementsSize = elementsMaterializer.materializeSize();
+      return wrapped.materializeElement(index - elementsSize);
     }
     if (numElements <= index) {
-      final int j = index - numElements;
+      final int elementsIndex = index - numElements;
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-      if (elementsMaterializer.canMaterializeElement(j)) {
-        return elementsMaterializer.materializeElement(j);
+      if (elementsMaterializer.canMaterializeElement(elementsIndex)) {
+        return elementsMaterializer.materializeElement(elementsIndex);
       }
-      final int size = elementsMaterializer.materializeSize();
-      return wrapped.materializeElement(index - size);
+      final int elementsSize = elementsMaterializer.materializeSize();
+      return wrapped.materializeElement(index - elementsSize);
     }
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.canMaterializeElement(index)) {
@@ -137,7 +139,8 @@ class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
     if (wrappedSize < numElements) {
       return wrappedSize;
     }
-    return wrappedSize + elementsMaterializer.materializeSize();
+    return SizeOverflowException.safeCast(
+        (long) wrappedSize + elementsMaterializer.materializeSize());
   }
 
   private class InsertIterator implements Iterator<E> {

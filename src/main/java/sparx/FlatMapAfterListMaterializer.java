@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 
@@ -49,10 +50,8 @@ class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
     }
     final int elementIndex = index - numElements;
     final ListMaterializer<E> materializer = state.materialized();
-    if (materializer.canMaterializeElement(elementIndex)) {
-      return true;
-    }
-    return wrapped.canMaterializeElement(index - materializer.materializeSize() + 1);
+    return materializer.canMaterializeElement(elementIndex) ||
+        wrapped.canMaterializeElement(index - materializer.materializeSize() + 1);
   }
 
   @Override
@@ -101,7 +100,8 @@ class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
     if (wrappedSize <= numElements) {
       return wrappedSize;
     }
-    return wrappedSize + state.materialized().materializeSize() - 1;
+    final long size = (long) wrappedSize + state.materialized().materializeSize() - 1;
+    return SizeOverflowException.safeCast(size);
   }
 
   private interface State<E> {

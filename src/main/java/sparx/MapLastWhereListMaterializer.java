@@ -122,7 +122,7 @@ class MapLastWhereListMaterializer<E> implements ListMaterializer<E> {
       final ListMaterializer<E> wrapped = MapLastWhereListMaterializer.this.wrapped;
       final Predicate<? super E> predicate = this.predicate;
       final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
+      final int expectedCount = modCount.incrementAndGet();
       try {
         if (pos == -1) {
           pos = wrapped.materializeSize();
@@ -144,7 +144,7 @@ class MapLastWhereListMaterializer<E> implements ListMaterializer<E> {
         }
         if (!wrapped.canMaterializeElement(i)) {
           state = new ElementState<E>(i, null);
-          return index - 1;
+          return -1;
         }
         return pos = i;
       } catch (final Exception e) {

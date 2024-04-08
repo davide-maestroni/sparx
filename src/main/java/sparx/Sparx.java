@@ -87,6 +87,15 @@ public class Sparx {
     };
   }
 
+  private static @NotNull <E> Function<E, E> replacementMapper(final E element) {
+    return new Function<E, E>() {
+      @Override
+      public E apply(final E ignored) {
+        return element;
+      }
+    };
+  }
+
   private static @NotNull <T> Comparator<T> reversed(@NotNull final Comparator<T> comparator) {
     Require.notNull(comparator, "comparator");
     return new Comparator<T>() {
@@ -1212,6 +1221,15 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull List<E> removeFraction(final int start, final int maxLength) {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (maxLength <= 0 || materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new RemoveFractionListMaterializer<E>(materializer, start, maxLength));
+      }
+
+      @Override
       public @NotNull List<E> removeLast(final E element) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
@@ -1242,15 +1260,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> removePortion(final int start, final int maxLength) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (maxLength <= 0 || materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new RemovePortionListMaterializer<E>(materializer, start, maxLength));
-      }
-
-      @Override
       public @NotNull List<E> removeSlice(final int start, final int end) {
         final ListMaterializer<E> materializer = this.materializer;
         if ((end <= start && start >= 0 && end >= 0) || materializer.knownSize() == 0) {
@@ -1278,42 +1287,164 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> replaceAfter(int numElements, E replacement) {
+      public @NotNull List<E> replaceAfter(final int numElements, final E replacement) {
+        if (numElements < 0) {
+          return this;
+        }
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (numElements == 0 && knownSize == 1) {
+          return new List<E>(
+              new SingleMapListMaterializer<E, E>(materializer, replacementMapper(replacement)));
+        }
+        return new List<E>(new MapAfterListMaterializer<E>(materializer, numElements,
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull List<E> replaceEach(final E element, final E replacement) {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new MapWhereListMaterializer<E>(materializer, equalsElement(element),
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull List<E> replaceFirst(final E element, final E replacement) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize == 1) {
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
+              equalsElement(element), replacementMapper(replacement)));
+        }
+        return new List<E>(new MapFirstWhereListMaterializer<E>(materializer,
+            equalsElement(element), replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull List<E> replaceFirstWhere(@NotNull final Predicate<? super E> predicate,
+          final E replacement) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize == 1) {
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, predicate,
+              replacementMapper(replacement)));
+        }
+        return new List<E>(new MapFirstWhereListMaterializer<E>(materializer, predicate,
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull List<E> replaceFirstWhereNot(@NotNull final Predicate<? super E> predicate,
+          final E replacement) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize == 1) {
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, negated(predicate),
+              replacementMapper(replacement)));
+        }
+        return new List<E>(new MapFirstWhereListMaterializer<E>(materializer, negated(predicate),
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull List<E> replaceFraction(final int start, final int maxLength,
+          @NotNull final Iterable<? extends E> patch) {
+        if (maxLength == 0) {
+          return insertAllAfter(start, patch);
+        }
+        Require.positive(maxLength, "maxLength");
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize >= 0) {
+          if (start >= knownSize || (start < 0 && start + maxLength <= 0)) {
+            return this;
+          }
+          if (start <= 0 && knownSize - maxLength <= start) {
+            return new List<E>(getElementsMaterializer(patch));
+          }
+        }
+        return new List<E>(new ReplaceFractionListMaterializer<E>(materializer, start, maxLength,
+            getElementsMaterializer(patch)));
+      }
+
+      @Override
+      public @NotNull List<E> replaceLast(final E element, final E replacement) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize == 1) {
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
+              equalsElement(element), replacementMapper(replacement)));
+        }
+        return new List<E>(new MapLastWhereListMaterializer<E>(materializer, equalsElement(element),
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull List<E> replaceLastWhere(@NotNull final Predicate<? super E> predicate,
+          final E replacement) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize == 1) {
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, predicate,
+              replacementMapper(replacement)));
+        }
+        return new List<E>(new MapLastWhereListMaterializer<E>(materializer, predicate,
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull List<E> replaceLastWhereNot(@NotNull final Predicate<? super E> predicate,
+          final E replacement) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize == 1) {
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, negated(predicate),
+              replacementMapper(replacement)));
+        }
+        return new List<E>(new MapLastWhereListMaterializer<E>(materializer, negated(predicate),
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull List<E> replaceSlice(final int start, final int end,
+          @NotNull final Iterable<? extends E> patch) {
         return null;
       }
 
       @Override
-      public @NotNull List<E> replaceEach(E element, E replacement) {
-        return null;
+      public @NotNull List<E> replaceWhere(@NotNull final Predicate<? super E> predicate,
+          final E replacement) {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new MapWhereListMaterializer<E>(materializer, predicate,
+            replacementMapper(replacement)));
       }
-
-      @Override
-      public @NotNull List<E> replaceFirst(E element, E replacement) {
-        return null;
-      }
-
-      // TODO: replaceFirstWhere, replaceFirstWhereNot (map)
-
-      @Override
-      public @NotNull List<E> replaceLast(E element, E replacement) {
-        return null;
-      }
-
-      // TODO: replaceLastWhere, replaceLastWhereNot (map)
-
-      @Override
-      public @NotNull List<E> replacePortion(int start,
-          @NotNull Iterable<? extends E> patch, int maxSize) {
-        return null;
-      }
-
-      @Override
-      public @NotNull List<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch,
-          int end) {
-        return null;
-      }
-
-      // TODO: replaceWhere (map)
 
       @Override
       public @NotNull ListSequence<E> reverse() {
@@ -1337,6 +1468,7 @@ public class Sparx {
 
       @Override
       public @NotNull ListSequence<E> take(int maxElements) {
+        // TODO: optimize for maxElements == 1 ???
         return null;
       }
 
@@ -1352,6 +1484,7 @@ public class Sparx {
 
       @Override
       public @NotNull ListSequence<E> takeRight(int maxElements) {
+        // TODO: optimize for maxElements == 1 ???
         return null;
       }
 

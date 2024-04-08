@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 
@@ -102,17 +103,24 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
     public int knownSize() {
       final int knownSize = wrapped.knownSize();
       if (knownSize > 0) {
-        final int maxSize = this.maxSize;
-        return (knownSize + (maxSize >> 1)) / maxSize;
+        final long maxSize = this.maxSize;
+        if (knownSize < maxSize) {
+          return knownSize;
+        }
+        return (int) ((knownSize + (maxSize >> 1)) / maxSize);
       }
       return -1;
     }
 
     @Override
     public L materializeElement(final int index) {
-      final int maxSize = this.maxSize;
+      if (index < 0) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      final long maxSize = this.maxSize;
       final ListMaterializer<E> wrapped = this.wrapped;
-      if (index < 0 || !wrapped.canMaterializeElement(index * maxSize)) {
+      final long wrappedIndex = index * maxSize;
+      if (wrappedIndex > Integer.MAX_VALUE || !wrapped.canMaterializeElement((int) wrappedIndex)) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final ArrayList<L> elements = this.elements;
@@ -123,11 +131,11 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
         }
       }
       final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
+      final int expectedCount = modCount.incrementAndGet();
       try {
-        final int endIndex = (index + 1) * maxSize;
+        final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + maxSize - 1);
         final ArrayList<E> chunk = new ArrayList<E>();
-        for (int i = index * maxSize; i < endIndex && wrapped.canMaterializeElement(i); ++i) {
+        for (int i = (int) wrappedIndex; i <= endIndex && wrapped.canMaterializeElement(i); ++i) {
           chunk.add(wrapped.materializeElement(i));
         }
         final E filler = this.filler;
@@ -166,8 +174,8 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
     @Override
     public int materializeSize() {
-      final int maxSize = this.maxSize;
-      return (wrapped.materializeSize() + (maxSize >> 1)) / maxSize;
+      final long maxSize = this.maxSize;
+      return SizeOverflowException.safeCast((wrapped.materializeSize() + (maxSize >> 1)) / maxSize);
     }
   }
 
@@ -190,24 +198,33 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
     @Override
     public boolean canMaterializeElement(final int index) {
-      return index >= 0 && wrapped.canMaterializeElement(index * maxSize);
+      if (index < 0) {
+        return false;
+      }
+      final long maxSize = this.maxSize;
+      final long wrappedIndex = index * maxSize;
+      return wrappedIndex <= Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
 
     @Override
     public int knownSize() {
       final int knownSize = wrapped.knownSize();
       if (knownSize > 0) {
-        final int maxSize = this.maxSize;
-        return (knownSize + (maxSize >> 1)) / maxSize;
+        final long maxSize = this.maxSize;
+        return SizeOverflowException.safeCast((knownSize + (maxSize >> 1)) / maxSize);
       }
       return -1;
     }
 
     @Override
     public L materializeElement(final int index) {
-      final int maxSize = this.maxSize;
+      if (index < 0) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      final long maxSize = this.maxSize;
       final ListMaterializer<E> wrapped = this.wrapped;
-      if (index < 0 || !wrapped.canMaterializeElement(index * maxSize)) {
+      final long wrappedIndex = index * maxSize;
+      if (wrappedIndex > Integer.MAX_VALUE || !wrapped.canMaterializeElement((int) wrappedIndex)) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final ArrayList<L> elements = this.elements;
@@ -218,11 +235,11 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
         }
       }
       final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.getAndIncrement() + 1;
+      final int expectedCount = modCount.incrementAndGet();
       try {
-        final int endIndex = (index + 1) * maxSize;
+        final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + maxSize - 1);
         final ArrayList<E> chunk = new ArrayList<E>();
-        for (int i = index * maxSize; i < endIndex && wrapped.canMaterializeElement(i); ++i) {
+        for (int i = (int) wrappedIndex; i <= endIndex && wrapped.canMaterializeElement(i); ++i) {
           chunk.add(wrapped.materializeElement(i));
         }
         if (expectedCount != modCount.get()) {
@@ -257,8 +274,8 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
 
     @Override
     public int materializeSize() {
-      final int maxSize = this.maxSize;
-      return (wrapped.materializeSize() + (maxSize >> 1)) / maxSize;
+      final long maxSize = this.maxSize;
+      return SizeOverflowException.safeCast((wrapped.materializeSize() + (maxSize >> 1)) / maxSize);
     }
   }
 }

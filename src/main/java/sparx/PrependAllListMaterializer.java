@@ -20,6 +20,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 
 class PrependAllListMaterializer<E> implements ListMaterializer<E> {
 
@@ -34,6 +35,9 @@ class PrependAllListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
+    if (index < 0) {
+      return false;
+    }
     final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
     return elementsMaterializer.canMaterializeElement(index) ||
         wrapped.canMaterializeElement(index - elementsMaterializer.materializeSize());
@@ -45,7 +49,7 @@ class PrependAllListMaterializer<E> implements ListMaterializer<E> {
     if (knownSize >= 0) {
       final int elementsSize = wrapped.knownSize();
       if (elementsSize >= 0) {
-        return knownSize + elementsSize;
+        return SizeOverflowException.safeCast((long) knownSize + elementsSize);
       }
     }
     return -1;
@@ -53,6 +57,9 @@ class PrependAllListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public E materializeElement(final int index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
     final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
     if (elementsMaterializer.canMaterializeElement(index)) {
       return elementsMaterializer.materializeElement(index);
@@ -72,7 +79,8 @@ class PrependAllListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return wrapped.materializeSize() + elementsMaterializer.materializeSize();
+    final long wrappedSize = wrapped.materializeSize();
+    return SizeOverflowException.safeCast(wrappedSize + elementsMaterializer.materializeSize());
   }
 
   private class PrependIterator implements Iterator<E> {
