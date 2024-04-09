@@ -125,11 +125,7 @@ class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
       final int numElements = InsertAfterListMaterializer.this.numElements;
       final int i = this.pos;
       if (i != numElements) {
-        final ListMaterializer<E> wrapped = InsertAfterListMaterializer.this.wrapped;
-        if (wrapped.canMaterializeElement(i)) {
-          return wrapped.materializeElement(pos++);
-        }
-        throw new NoSuchElementException();
+        return wrapped.materializeElement(pos++);
       }
       ++pos;
       return element;

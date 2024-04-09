@@ -108,13 +108,8 @@ class RemoveAfterListMaterializer<E> implements ListMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      final ListMaterializer<E> wrapped = RemoveAfterListMaterializer.this.wrapped;
       if (pos == numElements) {
-        if (!wrapped.canMaterializeElement(++pos)) {
-          throw new NoSuchElementException();
-        }
-      } else if (!wrapped.canMaterializeElement(pos)) {
-        throw new NoSuchElementException();
+        ++pos;
       }
       return wrapped.materializeElement(pos++);
     }

@@ -189,13 +189,8 @@ class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      final ListMaterializer<E> wrapped = RemoveFirstWhereListMaterializer.this.wrapped;
       if (pos == state.materializeUntil(pos)) {
-        if (!wrapped.canMaterializeElement(++pos)) {
-          throw new NoSuchElementException();
-        }
-      } else if (!wrapped.canMaterializeElement(pos)) {
-        throw new NoSuchElementException();
+        ++pos;
       }
       return wrapped.materializeElement(pos++);
     }

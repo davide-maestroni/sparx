@@ -47,8 +47,8 @@ class ReplaceFractionListMaterializer<E> implements ListMaterializer<E> {
     }
     final int start = this.start;
     if (start <= index) {
-      if (index < end) {
-        return elementsMaterializer.canMaterializeElement(index - start);
+      if (elementsMaterializer.canMaterializeElement(index - start)) {
+        return true;
       }
       final long wrappedIndex = index + length;
       return wrappedIndex <= Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
@@ -79,8 +79,10 @@ class ReplaceFractionListMaterializer<E> implements ListMaterializer<E> {
     }
     final int start = this.start;
     if (start <= index) {
-      if (index < end) {
-        return elementsMaterializer.materializeElement(index - start);
+      final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
+      final int elementsIndex = index - start;
+      if (elementsMaterializer.canMaterializeElement(elementsIndex)) {
+        return elementsMaterializer.materializeElement(elementsIndex);
       }
       final long wrappedIndex = (long) index + elementsMaterializer.materializeSize();
       if (wrappedIndex >= Integer.MAX_VALUE) {
@@ -118,8 +120,8 @@ class ReplaceFractionListMaterializer<E> implements ListMaterializer<E> {
     public boolean hasNext() {
       final long pos = this.pos;
       if (pos == index) {
-        return iterator.hasNext() ||
-            wrapped.canMaterializeElement(SizeOverflowException.safeCast(pos + length));
+        return iterator.hasNext() || wrapped.canMaterializeElement(
+            SizeOverflowException.safeCast(pos + length));
       }
       return wrapped.canMaterializeElement((int) pos);
     }

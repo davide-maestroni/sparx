@@ -22,15 +22,17 @@ import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
-class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
+class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
 
+  private final ListMaterializer<E> elementsMaterializer;
   private final ListMaterializer<E> wrapped;
 
   private volatile State state;
 
-  RemoveSliceListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
-      final int end) {
+  ReplaceSliceListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
+      final int end, @NotNull final ListMaterializer<E> elementsMaterializer) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
+    this.elementsMaterializer = Require.notNull(elementsMaterializer, "elementsMaterializer");
     if (start >= 0 && end >= 0) {
       state = new MaterialState(start, Math.max(0, end - start));
     } else {
@@ -43,7 +45,11 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       return false;
     }
-    if (state.materializedStart() <= index) {
+    final int start = state.materializedStart();
+    if (start <= index) {
+      if (elementsMaterializer.canMaterializeElement(index - start)) {
+        return true;
+      }
       final long wrappedIndex = (long) index + state.materializedLength();
       return wrappedIndex <= Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
@@ -54,14 +60,18 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
-      if (knownSize == 0) {
-        return 0;
-      }
-      final State state = this.state;
-      final int knownStart = state.knownStart();
-      final int knownLength = state.knownLength();
-      if (knownStart >= 0 && knownLength >= 0) {
-        return Math.max(knownStart, knownSize - knownLength);
+      final int elementsSize = elementsMaterializer.knownSize();
+      if (elementsSize >= 0) {
+        final State state = this.state;
+        final int knownStart = state.knownStart();
+        final int knownLength = state.knownLength();
+        if (knownStart >= 0 && knownLength >= 0) {
+          final long size = Math.max(knownStart, knownSize - knownLength);
+          if (size > knownSize) {
+            return knownSize;
+          }
+          return SizeOverflowException.safeCast(size + elementsSize);
+        }
       }
     }
     return -1;
@@ -72,7 +82,13 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    if (state.materializedStart() <= index) {
+    final int start = state.materializedStart();
+    if (start <= index) {
+      final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
+      final int elementsIndex = index - start;
+      if (elementsMaterializer.canMaterializeElement(elementsIndex)) {
+        return elementsMaterializer.materializeElement(elementsIndex);
+      }
       final long wrappedIndex = (long) index + state.materializedLength();
       if (wrappedIndex > Integer.MAX_VALUE) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
@@ -89,13 +105,15 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new RemoveIterator();
+    return new ReplaceIterator();
   }
 
   @Override
   public int materializeSize() {
-    return Math.max(state.materializedStart(),
-        wrapped.materializeSize() - state.materializedLength());
+    final int start = state.materializedStart();
+    final int length = state.materializedLength();
+    final long size = Math.max(start, wrapped.materializeSize() - length);
+    return SizeOverflowException.safeCast(size + elementsMaterializer.materializeSize());
   }
 
   private interface State {
@@ -190,7 +208,9 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
     }
   }
 
-  private class RemoveIterator implements Iterator<E> {
+  private class ReplaceIterator implements Iterator<E> {
+
+    private final Iterator<E> iterator = elementsMaterializer.materializeIterator();
 
     private long pos = 0;
 
@@ -198,7 +218,7 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
     public boolean hasNext() {
       final long pos = this.pos;
       if (pos == state.materializedStart()) {
-        return wrapped.canMaterializeElement(
+        return iterator.hasNext() || wrapped.canMaterializeElement(
             SizeOverflowException.safeCast(pos + state.materializedLength()));
       }
       return wrapped.canMaterializeElement((int) pos);
@@ -210,6 +230,10 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
         throw new NoSuchElementException();
       }
       if (pos == state.materializedStart()) {
+        final Iterator<E> iterator = this.iterator;
+        if (iterator.hasNext()) {
+          return iterator.next();
+        }
         pos += state.materializedLength();
       }
       return wrapped.materializeElement((int) pos++);

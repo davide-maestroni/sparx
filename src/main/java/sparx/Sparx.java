@@ -1432,7 +1432,16 @@ public class Sparx {
       @Override
       public @NotNull List<E> replaceSlice(final int start, final int end,
           @NotNull final Iterable<? extends E> patch) {
-        return null;
+        if (start >= 0 && start == end) {
+          return insertAllAfter(start, patch);
+        }
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize >= 0 && start >= knownSize) {
+          return this;
+        }
+        return new List<E>(new ReplaceSliceListMaterializer<E>(materializer, start, end,
+            getElementsMaterializer(patch)));
       }
 
       @Override

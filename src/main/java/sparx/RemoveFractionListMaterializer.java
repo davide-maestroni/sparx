@@ -111,15 +111,8 @@ class RemoveFractionListMaterializer<E> implements ListMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      final ListMaterializer<E> wrapped = RemoveFractionListMaterializer.this.wrapped;
-      if (!wrapped.canMaterializeElement((int) pos)) {
-        throw new NoSuchElementException();
-      }
       if (pos == index) {
         pos += length;
-        if (!wrapped.canMaterializeElement((int) pos)) {
-          throw new NoSuchElementException();
-        }
       }
       return wrapped.materializeElement((int) pos++);
     }
