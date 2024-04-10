@@ -27,320 +27,416 @@ import sparx.util.function.Supplier;
 public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
-  @NotNull CollectionSequence<Boolean> all(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<Boolean> all(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull <F> CollectionSequence<F> as();
+  @NotNull
+  <F> CollectionSequence<F> as();
 
   @Override
-  @NotNull CollectionSequence<Integer> count();
+  @NotNull
+  CollectionSequence<Integer> count();
 
   @Override
-  @NotNull CollectionSequence<Integer> count(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<Integer> count(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<Integer> countNot(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<Integer> countNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> drop(int maxElements);
+  @NotNull
+  CollectionSequence<E> drop(int maxElements);
 
   @Override
-  @NotNull CollectionSequence<E> dropUntil(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> dropRight(int maxElements);
 
   @Override
-  @NotNull CollectionSequence<E> dropWhile(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> dropRightWhile(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> dropRight(int maxElements);
+  @NotNull
+  CollectionSequence<E> dropRightWhileNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> dropRightUntil(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> dropWhile(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> dropRightWhile(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> dropWhileNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<Boolean> endsWith(@NotNull Iterable<?> elements);
+  @NotNull
+  CollectionSequence<Boolean> endsWith(@NotNull Iterable<?> elements);
 
   @Override
-  @NotNull CollectionSequence<Boolean> exists(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<Boolean> exists(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> filter(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> filter(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> filterNot(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> filterNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> findAny(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> findAny(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> findAnyNot(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> findAnyNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> findFirst(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> findFirst(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<Integer> findIndexOf(Object element);
+  @NotNull
+  CollectionSequence<Integer> findIndexOf(Object element);
 
   @Override
-  @NotNull CollectionSequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+  @NotNull
+  CollectionSequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
   @Override
-  @NotNull CollectionSequence<E> findLast(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> findLast(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<Integer> findLastIndexOf(Object element);
+  @NotNull
+  CollectionSequence<Integer> findLastIndexOf(Object element);
 
   @Override
-  @NotNull CollectionSequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<Integer> findLastIndexWhereNot(
+  @NotNull
+  CollectionSequence<Integer> findLastIndexWhereNot(
       @NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
+  @NotNull
+  CollectionSequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
 
   @Override
-  @NotNull CollectionSequence<E> findLastNot(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> findLastNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull <F> CollectionSequence<F> flatMap(
+  @NotNull
+  <F> CollectionSequence<F> flatMap(
       @NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> flatMapAfter(int numElements,
+  @NotNull
+  CollectionSequence<E> flatMapAfter(int numElements,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> flatMapFirstWhere(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> flatMapFirstWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> flatMapFirstWhereNot(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> flatMapFirstWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> flatMapLastWhereNot(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> flatMapLastWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> flatMapWhereNot(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> flatMapWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
-  @NotNull <F> CollectionSequence<F> fold(F identity,
+  @NotNull
+  <F> CollectionSequence<F> fold(F identity,
       @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
   @Override
-  @NotNull <F> CollectionSequence<F> foldLeft(F identity,
+  @NotNull
+  <F> CollectionSequence<F> foldLeft(F identity,
       @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
   @Override
-  @NotNull <F> CollectionSequence<F> foldRight(F identity,
+  @NotNull
+  <F> CollectionSequence<F> foldRight(F identity,
       @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
   @Override
-  @NotNull CollectionSequence<? extends CollectionSequence<E>> group(int maxSize);
+  @NotNull
+  CollectionSequence<? extends CollectionSequence<E>> group(int maxSize);
 
   @Override
-  @NotNull CollectionSequence<? extends CollectionSequence<E>> group(int size, E filler);
+  @NotNull
+  CollectionSequence<? extends CollectionSequence<E>> group(int size, E filler);
 
   @Override
-  @NotNull CollectionSequence<Boolean> includes(Object element);
+  @NotNull
+  CollectionSequence<Boolean> includes(Object element);
 
   @Override
-  @NotNull CollectionSequence<Boolean> includesAll(@NotNull Iterable<?> elements);
+  @NotNull
+  CollectionSequence<Boolean> includesAll(@NotNull Iterable<?> elements);
 
   @Override
-  @NotNull CollectionSequence<Boolean> includesSlice(@NotNull Iterable<?> elements);
+  @NotNull
+  CollectionSequence<Boolean> includesSlice(@NotNull Iterable<?> elements);
 
   @Override
-  @NotNull <F> CollectionSequence<F> map(@NotNull Function<? super E, F> mapper);
+  @NotNull
+  <F> CollectionSequence<F> map(@NotNull Function<? super E, F> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> mapAfter(int numElements,
+  @NotNull
+  CollectionSequence<E> mapAfter(int numElements,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> mapFirstWhere(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> mapFirstWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> mapFirstWhereNot(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> mapFirstWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> mapLastWhere(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> mapLastWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> mapLastWhereNot(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> mapLastWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> mapWhere(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> mapWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> mapWhereNot(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> mapWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
-  @NotNull CollectionSequence<E> max(@NotNull Comparator<? super E> comparator);
+  @NotNull
+  CollectionSequence<E> max(@NotNull Comparator<? super E> comparator);
 
   @Override
-  @NotNull CollectionSequence<E> min(@NotNull Comparator<? super E> comparator);
+  @NotNull
+  CollectionSequence<E> min(@NotNull Comparator<? super E> comparator);
 
   @Override
-  @NotNull CollectionSequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> orElse(@NotNull Iterable<E> elements);
+  @NotNull
+  CollectionSequence<E> orElse(@NotNull Iterable<E> elements);
 
   @Override
-  @NotNull CollectionSequence<E> orElseGet(
+  @NotNull
+  CollectionSequence<E> orElseGet(
       @NotNull Supplier<? extends Iterable<? extends E>> supplier);
 
   @Override
-  @NotNull CollectionSequence<E> peek(@NotNull Consumer<? super E> consumer);
+  @NotNull
+  CollectionSequence<E> peek(@NotNull Consumer<? super E> consumer);
 
   @Override
-  @NotNull CollectionSequence<E> plus(E element);
+  @NotNull
+  CollectionSequence<E> plus(E element);
 
   @Override
-  @NotNull CollectionSequence<E> plusAll(@NotNull Iterable<E> elements);
+  @NotNull
+  CollectionSequence<E> plusAll(@NotNull Iterable<E> elements);
 
   @Override
-  @NotNull CollectionSequence<E> reduce(
+  @NotNull
+  CollectionSequence<E> reduce(
       @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
-  @NotNull CollectionSequence<E> reduceLeft(
+  @NotNull
+  CollectionSequence<E> reduceLeft(
       @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
-  @NotNull CollectionSequence<E> reduceRight(
+  @NotNull
+  CollectionSequence<E> reduceRight(
       @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
-  @NotNull CollectionSequence<E> removeAfter(int numElements);
+  @NotNull
+  CollectionSequence<E> removeAfter(int numElements);
 
   @Override
-  @NotNull CollectionSequence<E> removeEach(E element);
+  @NotNull
+  CollectionSequence<E> removeEach(E element);
 
   @Override
-  @NotNull CollectionSequence<E> removeFirst(E element);
+  @NotNull
+  CollectionSequence<E> removeFirst(E element);
 
   @Override
-  @NotNull CollectionSequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> removeFraction(int start, int maxLength);
+  @NotNull
+  CollectionSequence<E> removeFraction(int start, int maxLength);
 
   @Override
-  @NotNull CollectionSequence<E> removeLast(E element);
+  @NotNull
+  CollectionSequence<E> removeLast(E element);
 
   @Override
-  @NotNull CollectionSequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> removeSlice(int start, int end);
+  @NotNull
+  CollectionSequence<E> removeSlice(int start, int end);
 
   @Override
-  @NotNull CollectionSequence<E> removeWhere(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> removeWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> replaceAfter(int numElements, E replacement);
+  @NotNull
+  CollectionSequence<E> replaceAfter(int numElements, E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> replaceEach(E element, E replacement);
+  @NotNull
+  CollectionSequence<E> replaceEach(E element, E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> replaceFirst(E element, E replacement);
+  @NotNull
+  CollectionSequence<E> replaceFirst(E element, E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate,
       E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate,
       E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> replaceFraction(int start, int maxLength,
+  @NotNull
+  CollectionSequence<E> replaceFraction(int start, int maxLength,
       @NotNull Iterable<? extends E> patch);
 
   @Override
-  @NotNull CollectionSequence<E> replaceLast(E element, E replacement);
+  @NotNull
+  CollectionSequence<E> replaceLast(E element, E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate,
       E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate,
       E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> replaceSlice(int start, int end,
+  @NotNull
+  CollectionSequence<E> replaceSlice(int start, int end,
       @NotNull Iterable<? extends E> patch);
 
   @Override
-  @NotNull CollectionSequence<E> replaceWhere(@NotNull Predicate<? super E> predicate,
+  @NotNull
+  CollectionSequence<E> replaceWhere(@NotNull Predicate<? super E> predicate,
       E replacement);
 
   @Override
-  @NotNull CollectionSequence<E> slice(int from, int until);
+  @NotNull
+  CollectionSequence<E> slice(int start, int end);
 
   @Override
-  @NotNull CollectionSequence<Boolean> startsWith(@NotNull Iterable<?> elements);
+  @NotNull
+  CollectionSequence<Boolean> startsWith(@NotNull Iterable<?> elements);
 
   @Override
-  @NotNull CollectionSequence<E> take(int maxElements);
+  @NotNull
+  CollectionSequence<E> take(int maxElements);
 
   @Override
-  @NotNull CollectionSequence<E> takeUntil(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> takeRight(int maxElements);
 
   @Override
-  @NotNull CollectionSequence<E> takeWhile(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> takeRightWhileNot(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> takeRight(int maxElements);
+  @NotNull
+  CollectionSequence<E> takeRightWhile(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> takeRightUntil(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> takeWhile(@NotNull Predicate<? super E> predicate);
 
   @Override
-  @NotNull CollectionSequence<E> takeRightWhile(@NotNull Predicate<? super E> predicate);
+  @NotNull
+  CollectionSequence<E> takeWhileNot(@NotNull Predicate<? super E> predicate);
 }

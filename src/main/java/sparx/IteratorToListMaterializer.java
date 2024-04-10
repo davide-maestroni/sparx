@@ -28,7 +28,7 @@ class IteratorToListMaterializer<E> implements ListMaterializer<E> {
   private volatile ListMaterializer<E> state;
 
   IteratorToListMaterializer(@NotNull final Iterator<E> iterator) {
-    this.state = new ImmaterialState(iterator);
+    this.state = new ImmaterialState(Require.notNull(iterator, "iterator"));
   }
 
   @Override
@@ -69,7 +69,7 @@ class IteratorToListMaterializer<E> implements ListMaterializer<E> {
     private final AtomicInteger modCount = new AtomicInteger();
 
     private ImmaterialState(@NotNull final Iterator<E> iterator) {
-      this.iterator = Require.notNull(iterator, "iterator");
+      this.iterator = iterator;
     }
 
     @Override

@@ -245,19 +245,6 @@ public class ListTests {
   }
 
   @Test
-  public void doUntil() {
-    var list = new ArrayList<>();
-    List.of(1, 2, 3).doUntil(e -> e > 2, list::add);
-    assertEquals(List.of(1, 2), list);
-    list.clear();
-    List.of(1, 2, 3).doUntil(e -> {
-      list.add(e);
-      return e > 1;
-    });
-    assertEquals(List.of(1, 2), list);
-  }
-
-  @Test
   public void doWhile() {
     var list = new ArrayList<>();
     List.of(1, 2, 3).doWhile(e -> e < 3, list::add);
@@ -266,6 +253,19 @@ public class ListTests {
     List.of(1, 2, 3).doWhile(e -> {
       list.add(e);
       return e < 2;
+    });
+    assertEquals(List.of(1, 2), list);
+  }
+
+  @Test
+  public void doWhileNot() {
+    var list = new ArrayList<>();
+    List.of(1, 2, 3).doWhileNot(e -> e > 2, list::add);
+    assertEquals(List.of(1, 2), list);
+    list.clear();
+    List.of(1, 2, 3).doWhileNot(e -> {
+      list.add(e);
+      return e > 1;
     });
     assertEquals(List.of(1, 2), list);
   }
@@ -319,72 +319,6 @@ public class ListTests {
   }
 
   @Test
-  public void dropUntil() {
-    var l = List.<Integer>of().dropUntil(e -> e > 0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-
-    l = List.of(1, null, 3).dropUntil(Objects::isNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(2, l.size());
-    assertEquals(List.of(null, 3), l);
-    l = List.of(1, null, 3).dropUntil(Objects::nonNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-    l = List.of(1, null, 3).dropUntil(e -> e < 2);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-
-    l = List.of(1, 2, 3).dropUntil(e -> e > 3);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-
-    assertThrows(NullPointerException.class,
-        () -> List.of(1, null, 3).dropUntil(e -> e > 1).size());
-  }
-
-  @Test
-  public void dropWhile() {
-    var l = List.<Integer>of().dropWhile(e -> e > 0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-
-    l = List.of(1, null, 3).dropWhile(Objects::isNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-    l = List.of(1, null, 3).dropWhile(Objects::nonNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(2, l.size());
-    assertEquals(List.of(null, 3), l);
-    l = List.of(1, null, 3).dropWhile(e -> e < 1);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-
-    l = List.of(1, 2, 3).dropWhile(e -> e > 0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-
-    assertThrows(NullPointerException.class,
-        () -> List.of(1, null, 3).dropWhile(e -> e > 0).size());
-  }
-
-  @Test
   public void dropRight() {
     var l = List.<Integer>of().dropRight(1);
     assertTrue(l.isEmpty());
@@ -433,39 +367,6 @@ public class ListTests {
   }
 
   @Test
-  public void dropRightUntil() {
-    var l = List.<Integer>of().dropRightUntil(e -> e > 0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-
-    l = List.of(1, null, 3).dropRightUntil(Objects::isNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(2, l.size());
-    assertEquals(List.of(1, null), l);
-    l = List.of(1, null, 3).dropRightUntil(Objects::nonNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-    l = List.of(1, null, 3).dropRightUntil(e -> e > 2);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-
-    l = List.of(1, 2, 3).dropRightUntil(e -> e > 3);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-
-    assertThrows(NullPointerException.class,
-        () -> List.of(1, null, 3).dropRightUntil(e -> e < 1).size());
-  }
-
-  @Test
   public void dropRightWhile() {
     var l = List.<Integer>of().dropRightWhile(e -> e > 0);
     assertTrue(l.isEmpty());
@@ -496,6 +397,105 @@ public class ListTests {
 
     assertThrows(NullPointerException.class,
         () -> List.of(1, null, 3).dropRightWhile(e -> e > 0).size());
+  }
+
+  @Test
+  public void dropRightWhileNot() {
+    var l = List.<Integer>of().dropRightWhileNot(e -> e > 0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+
+    l = List.of(1, null, 3).dropRightWhileNot(Objects::isNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(2, l.size());
+    assertEquals(List.of(1, null), l);
+    l = List.of(1, null, 3).dropRightWhileNot(Objects::nonNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+    l = List.of(1, null, 3).dropRightWhileNot(e -> e > 2);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+
+    l = List.of(1, 2, 3).dropRightWhileNot(e -> e > 3);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).dropRightWhileNot(e -> e < 1).size());
+  }
+
+  @Test
+  public void dropWhile() {
+    var l = List.<Integer>of().dropWhile(e -> e > 0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+
+    l = List.of(1, null, 3).dropWhile(Objects::isNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+    l = List.of(1, null, 3).dropWhile(Objects::nonNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(2, l.size());
+    assertEquals(List.of(null, 3), l);
+    l = List.of(1, null, 3).dropWhile(e -> e < 1);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+
+    l = List.of(1, 2, 3).dropWhile(e -> e > 0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).dropWhile(e -> e > 0).size());
+  }
+
+  @Test
+  public void dropWhileNot() {
+    var l = List.<Integer>of().dropWhileNot(e -> e > 0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+
+    l = List.of(1, null, 3).dropWhileNot(Objects::isNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(2, l.size());
+    assertEquals(List.of(null, 3), l);
+    l = List.of(1, null, 3).dropWhileNot(Objects::nonNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+    l = List.of(1, null, 3).dropWhileNot(e -> e < 2);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+
+    l = List.of(1, 2, 3).dropWhileNot(e -> e > 3);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).dropWhileNot(e -> e > 1).size());
   }
 
   @Test

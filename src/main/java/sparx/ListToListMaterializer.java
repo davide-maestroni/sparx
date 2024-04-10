@@ -19,13 +19,14 @@ import java.util.Iterator;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
+import sparx.util.Require;
 
 class ListToListMaterializer<E> implements ListMaterializer<E> {
 
   private final List<E> elements;
 
   ListToListMaterializer(@NotNull final List<E> elements) {
-    this.elements = elements;
+    this.elements = Require.notNull(elements, "elements");
   }
 
   @Override

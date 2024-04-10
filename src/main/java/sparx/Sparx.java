@@ -342,60 +342,6 @@ public class Sparx {
       }
 
       @Override
-      public void doUntil(@NotNull final Predicate<? super E> condition,
-          @NotNull final Consumer<? super E> consumer) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return;
-        }
-        try {
-          if (knownSize == 1) {
-            final E element = materializer.materializeElement(0);
-            if (!condition.test(element)) {
-              consumer.accept(element);
-            }
-          } else {
-            int i = 0;
-            while (materializer.canMaterializeElement(i)) {
-              final E next = materializer.materializeElement(i);
-              if (condition.test(next)) {
-                break;
-              }
-              consumer.accept(next);
-              ++i;
-            }
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doUntil(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return;
-        }
-        try {
-          if (knownSize == 1) {
-            predicate.test(materializer.materializeElement(0));
-          } else {
-            int i = 0;
-            while (materializer.canMaterializeElement(i)) {
-              if (predicate.test(materializer.materializeElement(i))) {
-                break;
-              }
-              ++i;
-            }
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
       public void doWhile(@NotNull final Predicate<? super E> condition,
           @NotNull final Consumer<? super E> consumer) {
         final ListMaterializer<E> materializer = this.materializer;
@@ -450,6 +396,60 @@ public class Sparx {
       }
 
       @Override
+      public void doWhileNot(@NotNull final Predicate<? super E> condition,
+          @NotNull final Consumer<? super E> consumer) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return;
+        }
+        try {
+          if (knownSize == 1) {
+            final E element = materializer.materializeElement(0);
+            if (!condition.test(element)) {
+              consumer.accept(element);
+            }
+          } else {
+            int i = 0;
+            while (materializer.canMaterializeElement(i)) {
+              final E next = materializer.materializeElement(i);
+              if (condition.test(next)) {
+                break;
+              }
+              consumer.accept(next);
+              ++i;
+            }
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doWhileNot(@NotNull final Predicate<? super E> predicate) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return;
+        }
+        try {
+          if (knownSize == 1) {
+            predicate.test(materializer.materializeElement(0));
+          } else {
+            int i = 0;
+            while (materializer.canMaterializeElement(i)) {
+              if (predicate.test(materializer.materializeElement(i))) {
+                break;
+              }
+              ++i;
+            }
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
       public @NotNull List<E> drop(final int maxElements) {
         final ListMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
@@ -460,24 +460,6 @@ public class Sparx {
           return List.of();
         }
         return new List<E>(new DropListMaterializer<E>(materializer, maxElements));
-      }
-
-      @Override
-      public @NotNull List<E> dropUntil(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new DropWhileListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new DropWhileListMaterializer<E>(materializer, predicate));
       }
 
       @Override
@@ -494,7 +476,16 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> dropRightUntil(@NotNull Predicate<? super E> predicate) {
+      public @NotNull List<E> dropRightWhile(@NotNull Predicate<? super E> predicate) {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new DropRightWhileListMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull List<E> dropRightWhileNot(@NotNull Predicate<? super E> predicate) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return this;
@@ -503,12 +494,21 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> dropRightWhile(@NotNull Predicate<? super E> predicate) {
+      public @NotNull List<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new DropRightWhileListMaterializer<E>(materializer, predicate));
+        return new List<E>(new DropWhileListMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull List<E> dropWhileNot(@NotNull final Predicate<? super E> predicate) {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new DropWhileListMaterializer<E>(materializer, negated(predicate)));
       }
 
       @Override
@@ -1456,12 +1456,16 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> reverse() {
-        return null;
+      public @NotNull List<E> reverse() {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new ReversListMaterializer<E>(materializer));
       }
 
       @Override
-      public @NotNull ListSequence<E> slice(int from, int until) {
+      public @NotNull ListSequence<E> slice(int start, int end) {
         return null;
       }
 
@@ -1482,7 +1486,18 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> takeUntil(@NotNull Predicate<? super E> predicate) {
+      public @NotNull ListSequence<E> takeRight(int maxElements) {
+        // TODO: optimize for maxElements == 1 ???
+        return null;
+      }
+
+      @Override
+      public @NotNull ListSequence<E> takeRightWhile(@NotNull Predicate<? super E> predicate) {
+        return null;
+      }
+
+      @Override
+      public @NotNull ListSequence<E> takeRightWhileNot(@NotNull Predicate<? super E> predicate) {
         return null;
       }
 
@@ -1492,18 +1507,7 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> takeRight(int maxElements) {
-        // TODO: optimize for maxElements == 1 ???
-        return null;
-      }
-
-      @Override
-      public @NotNull ListSequence<E> takeRightUntil(@NotNull Predicate<? super E> predicate) {
-        return null;
-      }
-
-      @Override
-      public @NotNull ListSequence<E> takeRightWhile(@NotNull Predicate<? super E> predicate) {
+      public @NotNull ListSequence<E> takeWhileNot(@NotNull Predicate<? super E> predicate) {
         return null;
       }
 
