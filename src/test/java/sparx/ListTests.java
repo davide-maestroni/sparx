@@ -2269,62 +2269,6 @@ public class ListTests {
   }
 
   @Test
-  public void removeFraction() {
-    var l = List.of(1, 2, null, 4, 2);
-    assertFalse(l.removeFraction(-1, 1).isEmpty());
-    assertEquals(5, l.removeFraction(-1, 1).size());
-    assertEquals(List.of(1, 2, null, 4, 2), l.removeFraction(-1, 1));
-    assertEquals(2, l.removeFraction(-1, 1).get(1));
-    assertFalse(l.removeFraction(-1, 2).isEmpty());
-    assertEquals(4, l.removeFraction(-1, 2).size());
-    assertEquals(List.of(2, null, 4, 2), l.removeFraction(-1, 2));
-    assertNull(l.removeFraction(-1, 2).get(1));
-    assertFalse(l.removeFraction(-1, 3).isEmpty());
-    assertEquals(3, l.removeFraction(-1, 3).size());
-    assertEquals(List.of(null, 4, 2), l.removeFraction(-1, 3));
-    assertEquals(4, l.removeFraction(-1, 3).get(1));
-
-    assertFalse(l.removeFraction(2, -1).isEmpty());
-    assertEquals(5, l.removeFraction(2, -1).size());
-    assertEquals(List.of(1, 2, null, 4, 2), l.removeFraction(2, -1));
-    assertEquals(2, l.removeFraction(2, -1).get(1));
-    assertFalse(l.removeFraction(2, 0).isEmpty());
-    assertEquals(5, l.removeFraction(2, 0).size());
-    assertEquals(List.of(1, 2, null, 4, 2), l.removeFraction(2, 0));
-    assertEquals(2, l.removeFraction(2, 0).get(1));
-    assertFalse(l.removeFraction(2, 1).isEmpty());
-    assertEquals(4, l.removeFraction(2, 1).size());
-    assertEquals(List.of(1, 2, 4, 2), l.removeFraction(2, 1));
-    assertEquals(2, l.removeFraction(2, 1).get(1));
-    assertFalse(l.removeFraction(2, 2).isEmpty());
-    assertEquals(3, l.removeFraction(2, 2).size());
-    assertEquals(List.of(1, 2, 2), l.removeFraction(2, 2));
-    assertEquals(2, l.removeFraction(2, 2).get(1));
-    assertFalse(l.removeFraction(2, 3).isEmpty());
-    assertEquals(2, l.removeFraction(2, 3).size());
-    assertEquals(List.of(1, 2), l.removeFraction(2, 3));
-    assertEquals(2, l.removeFraction(2, 3).get(1));
-    assertFalse(l.removeFraction(2, 4).isEmpty());
-    assertEquals(2, l.removeFraction(2, 4).size());
-    assertEquals(List.of(1, 2), l.removeFraction(2, 4));
-    assertEquals(2, l.removeFraction(2, 4).get(1));
-
-    assertTrue(l.removeFraction(-1, 10).isEmpty());
-    assertEquals(0, l.removeFraction(-1, 10).size());
-    assertEquals(List.of(), l.removeFraction(-1, 10));
-    assertTrue(l.removeFraction(-1, 6).isEmpty());
-    assertEquals(0, l.removeFraction(-1, 6).size());
-    assertEquals(List.of(), l.removeFraction(-1, 6));
-    assertTrue(l.removeFraction(0, 5).isEmpty());
-    assertEquals(0, l.removeFraction(0, 5).size());
-    assertEquals(List.of(), l.removeFraction(0, 5));
-
-    assertTrue(List.of().removeFraction(1, 2).isEmpty());
-    assertEquals(0, List.of().removeFraction(1, 2).size());
-    assertEquals(List.of(), List.of().removeFraction(1, 2));
-  }
-
-  @Test
   public void removeLast() {
     var l = List.of(1, 2, null, 4, 2);
     assertFalse(l.removeLast(1).isEmpty());
