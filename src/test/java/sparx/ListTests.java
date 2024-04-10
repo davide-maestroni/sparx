@@ -39,7 +39,7 @@ public class ListTests {
     assertFalse(List.of().all(Objects::nonNull).isEmpty());
     assertTrue(List.of().all(Objects::nonNull).notEmpty());
     assertEquals(1, List.of().all(Objects::nonNull).size());
-    assertFalse(List.of().all(Objects::nonNull).first());
+    assertTrue(List.of().all(Objects::nonNull).first());
     assertFalse(List.of(1, 2, 3).all(i -> i < 3).first());
     {
       var itr = List.of(1, 2, 3).all(i -> i < 3).iterator();
@@ -1797,7 +1797,7 @@ public class ListTests {
     assertFalse(List.of().notExists(Objects::nonNull).isEmpty());
     assertTrue(List.of().notExists(Objects::nonNull).notEmpty());
     assertEquals(1, List.of().notExists(Objects::nonNull).size());
-    assertFalse(List.of().notExists(Objects::nonNull).first());
+    assertTrue(List.of().notExists(Objects::nonNull).first());
     assertFalse(List.of(1, 2, 3).notExists(i -> i > 2).first());
     {
       var itr = List.of(1, 2, 3).notExists(i -> i > 2).iterator();

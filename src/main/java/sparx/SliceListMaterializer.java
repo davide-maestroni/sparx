@@ -20,15 +20,14 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
-import sparx.util.SizeOverflowException;
 
-class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
+class SliceListMaterializer<E> implements ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
 
   private volatile State state;
 
-  RemoveSliceListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
+  SliceListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
       final int end) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     if (start >= 0 && end >= 0) {
@@ -40,14 +39,11 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    if (index < 0) {
+    if (index < 0 || index >= state.materializedLength()) {
       return false;
     }
-    if (state.materializedStart() <= index) {
-      final long wrappedIndex = (long) index + state.materializedLength();
-      return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
-    }
-    return wrapped.canMaterializeElement(index);
+    final long wrappedIndex = (long) index + state.materializedStart();
+    return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
   }
 
   @Override
@@ -61,7 +57,7 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
       final int knownStart = state.knownStart();
       final int knownLength = state.knownLength();
       if (knownStart >= 0 && knownLength >= 0) {
-        return Math.max(knownStart, knownSize - knownLength);
+        return Math.min(knownLength, knownSize - knownStart);
       }
     }
     return -1;
@@ -69,17 +65,14 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public E materializeElement(final int index) {
-    if (index < 0) {
+    if (index < 0 || index >= state.materializedLength()) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    if (state.materializedStart() <= index) {
-      final long wrappedIndex = (long) index + state.materializedLength();
-      if (wrappedIndex > Integer.MAX_VALUE) {
-        throw new IndexOutOfBoundsException(Integer.toString(index));
-      }
-      return wrapped.materializeElement((int) wrappedIndex);
+    final long wrappedIndex = (long) index + state.materializedStart();
+    if (wrappedIndex > Integer.MAX_VALUE) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    return wrapped.materializeElement(index);
+    return wrapped.materializeElement((int) wrappedIndex);
   }
 
   @Override
@@ -89,13 +82,13 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new RemoveIterator();
+    return new SliceIterator();
   }
 
   @Override
   public int materializeSize() {
-    return Math.max(state.materializedStart(),
-        wrapped.materializeSize() - state.materializedLength());
+    return Math.min(state.materializedLength(),
+        wrapped.materializeSize() - state.materializedStart());
   }
 
   private interface State {
@@ -190,17 +183,12 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
     }
   }
 
-  private class RemoveIterator implements Iterator<E> {
+  private class SliceIterator implements Iterator<E> {
 
-    private long pos = 0;
+    private long pos = state.materializedStart();
 
     @Override
     public boolean hasNext() {
-      final long pos = this.pos;
-      if (pos == state.materializedStart()) {
-        return wrapped.canMaterializeElement(
-            SizeOverflowException.safeCast(pos + state.materializedLength()));
-      }
       return wrapped.canMaterializeElement((int) pos);
     }
 
@@ -208,9 +196,6 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
     public E next() {
       if (!hasNext()) {
         throw new NoSuchElementException();
-      }
-      if (pos == state.materializedStart()) {
-        pos += state.materializedLength();
       }
       return wrapped.materializeElement((int) pos++);
     }

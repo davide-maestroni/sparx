@@ -22,19 +22,18 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Predicate;
 
-class ExistsListMaterializer<E> implements ListMaterializer<Boolean> {
+class StartsWithListMaterializer<E> implements ListMaterializer<Boolean> {
 
   private static final State FALSE_STATE = new FalseState();
   private static final State TRUE_STATE = new TrueState();
 
   private volatile State state;
 
-  ExistsListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate, final boolean defaultState) {
+  StartsWithListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @NotNull final ListMaterializer<?> elementsMaterializer) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"), defaultState ? TRUE_STATE : FALSE_STATE);
+        Require.notNull(elementsMaterializer, "elementsMaterializer"));
   }
 
   @Override
@@ -93,16 +92,14 @@ class ExistsListMaterializer<E> implements ListMaterializer<Boolean> {
 
   private class ImmaterialState implements State {
 
-    private final State defaultState;
+    private final ListMaterializer<?> elementsMaterializer;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Predicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate, final State defaultState) {
+        @NotNull final ListMaterializer<?> elementsMaterializer) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
-      this.defaultState = defaultState;
+      this.elementsMaterializer = elementsMaterializer;
     }
 
     @Override
@@ -111,21 +108,22 @@ class ExistsListMaterializer<E> implements ListMaterializer<Boolean> {
         throw new ConcurrentModificationException();
       }
       try {
-        final ListMaterializer<E> wrapped = this.wrapped;
-        if (wrapped.materializeEmpty()) {
-          return (state = defaultState).materialized();
-        }
-        final Predicate<? super E> predicate = this.predicate;
-        int i = 0;
-        do {
-          if (predicate.test(wrapped.materializeElement(i))) {
-            state = TRUE_STATE;
-            return true;
+        final Iterator<E> iterator = wrapped.materializeIterator();
+        final Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
+        while (iterator.hasNext() && elementsIterator.hasNext()) {
+          final E left = iterator.next();
+          final Object right = elementsIterator.next();
+          if (left != right && (left == null || !left.equals(right))) {
+            state = FALSE_STATE;
+            return false;
           }
-          ++i;
-        } while (wrapped.canMaterializeElement(i));
-        state = FALSE_STATE;
-        return false;
+        }
+        if (elementsIterator.hasNext()) {
+          state = FALSE_STATE;
+          return false;
+        }
+        state = TRUE_STATE;
+        return true;
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);

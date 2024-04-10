@@ -203,7 +203,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
       }
       final long maxSize = this.maxSize;
       final long wrappedIndex = index * maxSize;
-      return wrappedIndex <= Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
+      return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
 
     @Override

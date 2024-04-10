@@ -51,7 +51,7 @@ class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
         return true;
       }
       final long wrappedIndex = (long) index + state.materializedLength();
-      return wrappedIndex <= Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
+      return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
     return wrapped.canMaterializeElement(index);
   }
