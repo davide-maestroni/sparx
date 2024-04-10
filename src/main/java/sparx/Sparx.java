@@ -1221,15 +1221,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> removeFraction(final int start, final int maxLength) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (maxLength <= 0 || materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new RemoveFractionListMaterializer<E>(materializer, start, maxLength));
-      }
-
-      @Override
       public @NotNull List<E> removeLast(final E element) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
@@ -1359,27 +1350,6 @@ public class Sparx {
         }
         return new List<E>(new MapFirstWhereListMaterializer<E>(materializer, negated(predicate),
             replacementMapper(replacement)));
-      }
-
-      @Override
-      public @NotNull List<E> replaceFraction(final int start, final int maxLength,
-          @NotNull final Iterable<? extends E> patch) {
-        if (maxLength == 0) {
-          return insertAllAfter(start, patch);
-        }
-        Require.positive(maxLength, "maxLength");
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize >= 0) {
-          if (start >= knownSize || (start < 0 && start + maxLength <= 0)) {
-            return this;
-          }
-          if (start <= 0 && knownSize - maxLength <= start) {
-            return new List<E>(getElementsMaterializer(patch));
-          }
-        }
-        return new List<E>(new ReplaceFractionListMaterializer<E>(materializer, start, maxLength,
-            getElementsMaterializer(patch)));
       }
 
       @Override

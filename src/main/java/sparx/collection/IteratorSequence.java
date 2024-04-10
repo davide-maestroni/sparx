@@ -153,8 +153,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
   @NotNull
-  <F> IteratorSequence<F> flatMap(
-      @NotNull Function<? super E, ? extends Iterable<F>> mapper);
+  <F> IteratorSequence<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
   @Override
   @NotNull
@@ -162,8 +161,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @NotNull
-  <T extends Throwable> IteratorSequence<E> flatMapExceptionally(
-      @NotNull Class<T> exceptionType,
+  <T extends Throwable> IteratorSequence<E> flatMapExceptionally(@NotNull Class<T> exceptionType,
       @NotNull Function<? super T, ? extends Iterable<? extends E>> mapper);
 
   @NotNull
@@ -253,8 +251,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
   @NotNull
-  IteratorSequence<E> mapAfter(int numElements,
-      @NotNull Function<? super E, ? extends E> mapper);
+  IteratorSequence<E> mapAfter(int numElements, @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
   @NotNull
@@ -323,8 +320,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
   @NotNull
-  IteratorSequence<E> reduce(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+  IteratorSequence<E> reduce(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
@@ -355,10 +351,6 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @Override
   @NotNull
   IteratorSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull
-  IteratorSequence<E> removeFraction(int start, int maxLength);
 
   @Override
   @NotNull
@@ -398,18 +390,11 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
   @NotNull
-  IteratorSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  IteratorSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
-  IteratorSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate,
-      E replacement);
-
-  @Override
-  @NotNull
-  IteratorSequence<E> replaceFraction(int start, int maxLength,
-      @NotNull Iterable<? extends E> patch);
+  IteratorSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
@@ -417,18 +402,15 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
   @NotNull
-  IteratorSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  IteratorSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
-  IteratorSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  IteratorSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
-  IteratorSequence<E> replaceSlice(int start, int end,
-      @NotNull Iterable<? extends E> patch);
+  IteratorSequence<E> replaceSlice(int start, int end, @NotNull Iterable<? extends E> patch);
 
   @Override
   @NotNull

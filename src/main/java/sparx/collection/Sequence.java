@@ -275,9 +275,6 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
 
   @NotNull
-  Sequence<E> removeFraction(int start, int maxLength);
-
-  @NotNull
   Sequence<E> removeLast(E element);
 
   @NotNull
@@ -309,10 +306,6 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull
   Sequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
-
-  @NotNull
-  Sequence<E> replaceFraction(int start, int maxLength,
-      @NotNull Iterable<? extends E> patch);
 
   @NotNull
   Sequence<E> replaceLast(E element, E replacement);

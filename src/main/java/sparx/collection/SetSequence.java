@@ -144,8 +144,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  <F> SetSequence<F> flatMap(
-      @NotNull Function<? super E, ? extends Iterable<F>> mapper);
+  <F> SetSequence<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
   @Override
   @NotNull
@@ -223,8 +222,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  SetSequence<E> mapAfter(int numElements,
-      @NotNull Function<? super E, ? extends E> mapper);
+  SetSequence<E> mapAfter(int numElements, @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
   @NotNull
@@ -294,18 +292,15 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  SetSequence<E> reduce(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+  SetSequence<E> reduce(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
-  SetSequence<E> reduceLeft(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+  SetSequence<E> reduceLeft(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
-  SetSequence<E> reduceRight(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+  SetSequence<E> reduceRight(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
@@ -326,10 +321,6 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
   @Override
   @NotNull
   SetSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull
-  SetSequence<E> removeFraction(int start, int maxLength);
 
   @Override
   @NotNull
@@ -373,13 +364,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  SetSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate,
-      E replacement);
-
-  @Override
-  @NotNull
-  SetSequence<E> replaceFraction(int start, int maxLength,
-      @NotNull Iterable<? extends E> patch);
+  SetSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
@@ -391,8 +376,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  SetSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  SetSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull

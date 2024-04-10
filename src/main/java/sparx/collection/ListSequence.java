@@ -236,8 +236,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
   @NotNull
-  ListSequence<E> mapAfter(int numElements,
-      @NotNull Function<? super E, ? extends E> mapper);
+  ListSequence<E> mapAfter(int numElements, @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
   @NotNull
@@ -315,18 +314,15 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
   @NotNull
-  ListSequence<E> reduce(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+  ListSequence<E> reduce(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
-  ListSequence<E> reduceLeft(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+  ListSequence<E> reduceLeft(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
-  ListSequence<E> reduceRight(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+  ListSequence<E> reduceRight(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
@@ -347,10 +343,6 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @Override
   @NotNull
   ListSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
-
-  @Override
-  @NotNull
-  ListSequence<E> removeFraction(int start, int maxLength);
 
   @Override
   @NotNull
@@ -395,13 +387,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
   @NotNull
-  ListSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate,
-      E replacement);
-
-  @Override
-  @NotNull
-  ListSequence<E> replaceFraction(int start, int maxLength,
-      @NotNull Iterable<? extends E> patch);
+  ListSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
@@ -409,13 +395,11 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
   @NotNull
-  ListSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  ListSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
-  ListSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  ListSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull

@@ -132,8 +132,7 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<Integer> findLastIndexWhereNot(
-      @NotNull Predicate<? super E> predicate);
+  CollectionSequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -145,8 +144,7 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  <F> CollectionSequence<F> flatMap(
-      @NotNull Function<? super E, ? extends Iterable<F>> mapper);
+  <F> CollectionSequence<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
   @Override
   @NotNull
@@ -224,8 +222,7 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> mapAfter(int numElements,
-      @NotNull Function<? super E, ? extends E> mapper);
+  CollectionSequence<E> mapAfter(int numElements, @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
   @NotNull
@@ -279,8 +276,7 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> orElseGet(
-      @NotNull Supplier<? extends Iterable<? extends E>> supplier);
+  CollectionSequence<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
 
   @Override
   @NotNull
@@ -331,10 +327,6 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> removeFraction(int start, int maxLength);
-
-  @Override
-  @NotNull
   CollectionSequence<E> removeLast(E element);
 
   @Override
@@ -371,8 +363,7 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  CollectionSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
@@ -381,32 +372,23 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> replaceFraction(int start, int maxLength,
-      @NotNull Iterable<? extends E> patch);
-
-  @Override
-  @NotNull
   CollectionSequence<E> replaceLast(E element, E replacement);
 
   @Override
   @NotNull
-  CollectionSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  CollectionSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
-  CollectionSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  CollectionSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
-  CollectionSequence<E> replaceSlice(int start, int end,
-      @NotNull Iterable<? extends E> patch);
+  CollectionSequence<E> replaceSlice(int start, int end, @NotNull Iterable<? extends E> patch);
 
   @Override
   @NotNull
-  CollectionSequence<E> replaceWhere(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  CollectionSequence<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
