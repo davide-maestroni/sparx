@@ -22,8 +22,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
-import sparx.util.Require;
 import sparx.util.IndexOverflowException;
+import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 
@@ -94,7 +95,8 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
 
     @Override
     public boolean canMaterializeElement(final int index) {
-      return index >= 0 && wrapped.canMaterializeElement(index * maxSize);
+      return index >= 0 && wrapped.canMaterializeElement(
+          IndexOverflowException.safeCast((long) index * maxSize));
     }
 
     @Override
@@ -105,7 +107,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
         if (knownSize < maxSize) {
           return knownSize;
         }
-        return (int) ((knownSize + (maxSize >> 1)) / maxSize);
+        return SizeOverflowException.safeCast((knownSize + (maxSize >> 1)) / maxSize);
       }
       return -1;
     }
@@ -173,7 +175,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
     @Override
     public int materializeSize() {
       final long maxSize = this.maxSize;
-      return IndexOverflowException.safeCast((wrapped.materializeSize() + (maxSize >> 1)) / maxSize);
+      return SizeOverflowException.safeCast((wrapped.materializeSize() + (maxSize >> 1)) / maxSize);
     }
   }
 
@@ -209,7 +211,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
       final int knownSize = wrapped.knownSize();
       if (knownSize > 0) {
         final long maxSize = this.maxSize;
-        return IndexOverflowException.safeCast((knownSize + (maxSize >> 1)) / maxSize);
+        return SizeOverflowException.safeCast((knownSize + (maxSize >> 1)) / maxSize);
       }
       return -1;
     }
@@ -273,7 +275,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
     @Override
     public int materializeSize() {
       final long maxSize = this.maxSize;
-      return IndexOverflowException.safeCast((wrapped.materializeSize() + (maxSize >> 1)) / maxSize);
+      return SizeOverflowException.safeCast((wrapped.materializeSize() + (maxSize >> 1)) / maxSize);
     }
   }
 }

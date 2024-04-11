@@ -126,8 +126,7 @@ public class FoldLeftListMaterializer<E, F> implements ListMaterializer<F> {
           current = operation.apply(current, wrapped.materializeElement(i));
           ++i;
         }
-        state = new ElementState<F>(current);
-        return state.materialized();
+        return (state = new ElementState<F>(current)).materialized();
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);

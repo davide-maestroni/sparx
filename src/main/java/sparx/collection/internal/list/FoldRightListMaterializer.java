@@ -124,8 +124,7 @@ public class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
         for (int i = wrapped.materializeSize() - 1; i >= 0; --i) {
           current = operation.apply(wrapped.materializeElement(i), current);
         }
-        state = new ElementState<F>(current);
-        return state.materialized();
+        return (state = new ElementState<F>(current)).materialized();
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);

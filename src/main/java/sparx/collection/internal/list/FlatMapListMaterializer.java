@@ -136,12 +136,13 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
                 throw new ConcurrentModificationException();
               }
               pos = i;
+              this.elementIterator = elementIterator;
               return currSize;
             }
           }
           if (wrapped.canMaterializeElement(i)) {
             final E element = wrapped.materializeElement(i);
-            elementIterator = this.elementIterator = mapper.apply(element).iterator();
+            elementIterator = mapper.apply(element).iterator();
             ++i;
           } else {
             if (expectedCount != modCount.get()) {

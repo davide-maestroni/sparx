@@ -142,13 +142,14 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
                 throw new ConcurrentModificationException();
               }
               pos = i;
+              this.elementIterator = elementIterator;
               return currSize;
             }
           }
           if (wrapped.canMaterializeElement(i)) {
             final E element = wrapped.materializeElement(i);
             if (predicate.test(element)) {
-              elementIterator = this.elementIterator = mapper.apply(element).iterator();
+              elementIterator = mapper.apply(element).iterator();
             } else {
               elements.add(element);
               if (++currSize > index) {
@@ -156,6 +157,7 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
                   throw new ConcurrentModificationException();
                 }
                 pos = i;
+                this.elementIterator = elementIterator;
                 return currSize;
               }
             }

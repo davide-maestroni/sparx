@@ -20,8 +20,9 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
-import sparx.util.Require;
 import sparx.util.IndexOverflowException;
+import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 import sparx.util.function.Predicate;
@@ -91,8 +92,9 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       }
       final int elementIndex = index - numElements;
       final ListMaterializer<E> materializer = this.materializer;
-      return materializer.canMaterializeElement(elementIndex) || wrapped.canMaterializeElement(
-          index - materializer.materializeSize() + 1);
+      final long wrappedIndex = (long) index - materializer.materializeSize() + 1;
+      return materializer.canMaterializeElement(elementIndex) || (wrappedIndex < Integer.MAX_VALUE
+          && wrapped.canMaterializeElement((int) wrappedIndex));
     }
 
     @Override
@@ -101,7 +103,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       if (knownSize >= 0) {
         final int elementsSize = materializer.knownSize();
         if (elementsSize >= 0) {
-          return knownSize + elementsSize - 1;
+          return SizeOverflowException.safeCast((long) knownSize + elementsSize - 1);
         }
       }
       return -1;
@@ -121,7 +123,8 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       if (materializer.canMaterializeElement(elementIndex)) {
         return materializer.materializeElement(elementIndex);
       }
-      return wrapped.materializeElement(index - materializer.materializeSize() + 1);
+      return wrapped.materializeElement(
+          IndexOverflowException.safeCast((long) index - materializer.materializeSize() + 1));
     }
 
     @Override
@@ -177,8 +180,9 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       }
       final int elementIndex = index - numElements;
       final ListMaterializer<E> materializer = materialized();
-      return materializer.canMaterializeElement(elementIndex) || wrapped.canMaterializeElement(
-          index - materializer.materializeSize() + 1);
+      final long wrappedIndex = (long) index - materializer.materializeSize() + 1;
+      return materializer.canMaterializeElement(elementIndex) || (wrappedIndex < Integer.MAX_VALUE
+          && wrapped.canMaterializeElement((int) wrappedIndex));
     }
 
     @Override
@@ -204,7 +208,8 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       if (materializer.canMaterializeElement(elementIndex)) {
         return materializer.materializeElement(elementIndex);
       }
-      return wrapped.materializeElement(index - materializer.materializeSize() + 1);
+      return wrapped.materializeElement(
+          IndexOverflowException.safeCast((long) index - materializer.materializeSize() + 1));
     }
 
     @Override
@@ -228,7 +233,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
         return wrappedSize;
       }
       final long size = (long) wrappedSize + materialized().materializeSize() - 1;
-      return IndexOverflowException.safeCast(size);
+      return SizeOverflowException.safeCast(size);
     }
 
     private @NotNull ListMaterializer<E> materialized() {
