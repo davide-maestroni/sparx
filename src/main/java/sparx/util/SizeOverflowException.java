@@ -18,7 +18,7 @@ package sparx.util;
 public class SizeOverflowException extends IllegalStateException {
 
   public static int safeCast(final long size) {
-    if (size > Integer.MAX_VALUE) {
+    if (size >= Integer.MAX_VALUE) {
       throw new SizeOverflowException(size);
     }
     return (int) size;

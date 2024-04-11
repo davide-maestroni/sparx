@@ -34,15 +34,13 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
   GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
       @NotNull final Function<? super List<E>, ? extends L> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxSize, "maxSize"),
-        Require.notNull(mapper, "mapper"));
+        Require.positive(maxSize, "maxSize"), Require.notNull(mapper, "mapper"));
   }
 
   GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
       final E filler, @NotNull final Function<? super List<E>, ? extends L> mapper) {
     state = new ImmaterialFillerState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxSize, "maxSize"), filler,
-        Require.notNull(mapper, "mapper"));
+        Require.positive(maxSize, "maxSize"), filler, Require.notNull(mapper, "mapper"));
   }
 
   @Override
@@ -120,7 +118,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
       final long maxSize = this.maxSize;
       final ListMaterializer<E> wrapped = this.wrapped;
       final long wrappedIndex = index * maxSize;
-      if (wrappedIndex > Integer.MAX_VALUE || !wrapped.canMaterializeElement((int) wrappedIndex)) {
+      if (wrappedIndex >= Integer.MAX_VALUE || !wrapped.canMaterializeElement((int) wrappedIndex)) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final ArrayList<L> elements = this.elements;
@@ -224,7 +222,7 @@ class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L>
       final long maxSize = this.maxSize;
       final ListMaterializer<E> wrapped = this.wrapped;
       final long wrappedIndex = index * maxSize;
-      if (wrappedIndex > Integer.MAX_VALUE || !wrapped.canMaterializeElement((int) wrappedIndex)) {
+      if (wrappedIndex >= Integer.MAX_VALUE || !wrapped.canMaterializeElement((int) wrappedIndex)) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final ArrayList<L> elements = this.elements;

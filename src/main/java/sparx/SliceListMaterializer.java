@@ -69,7 +69,7 @@ class SliceListMaterializer<E> implements ListMaterializer<E> {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     final long wrappedIndex = (long) index + state.materializedStart();
-    if (wrappedIndex > Integer.MAX_VALUE) {
+    if (wrappedIndex >= Integer.MAX_VALUE) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return wrapped.materializeElement((int) wrappedIndex);

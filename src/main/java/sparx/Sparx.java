@@ -1456,40 +1456,73 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> sorted(@NotNull Comparator<? super E> comparator) {
-        return null;
+      public @NotNull List<E> sorted(@NotNull final Comparator<? super E> comparator) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0 || knownSize == 1) {
+          return this;
+        }
+        return new List<E>(new SortedListMaterializer<E>(materializer, comparator));
       }
 
       @Override
-      public @NotNull ListSequence<E> take(int maxElements) {
-        // TODO: optimize for maxElements == 1 ???
-        return null;
+      public @NotNull List<E> take(final int maxElements) {
+        if (maxElements <= 0) {
+          return List.of();
+        }
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new TakeListMaterializer<E>(materializer, maxElements));
       }
 
       @Override
-      public @NotNull ListSequence<E> takeRight(int maxElements) {
-        // TODO: optimize for maxElements == 1 ???
-        return null;
+      public @NotNull List<E> takeRight(final int maxElements) {
+        if (maxElements <= 0) {
+          return List.of();
+        }
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new TakeRightListMaterializer<E>(materializer, maxElements));
       }
 
       @Override
-      public @NotNull ListSequence<E> takeRightWhile(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> takeRightWhile(@NotNull final Predicate<? super E> predicate) {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new TakeRightWhileListMaterializer<E>(materializer, predicate));
       }
 
       @Override
-      public @NotNull ListSequence<E> takeRightWhileNot(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> takeRightWhileNot(@NotNull final Predicate<? super E> predicate) {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new TakeRightWhileListMaterializer<E>(materializer, negated(predicate)));
       }
 
       @Override
-      public @NotNull ListSequence<E> takeWhile(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> takeWhile(@NotNull final Predicate<? super E> predicate) {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new TakeWhileListMaterializer<E>(materializer, predicate));
       }
 
       @Override
-      public @NotNull ListSequence<E> takeWhileNot(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> takeWhileNot(@NotNull final Predicate<? super E> predicate) {
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new TakeWhileListMaterializer<E>(materializer, negated(predicate)));
       }
 
       private static class SuppliedMeterializer<E> implements ListMaterializer<E> {

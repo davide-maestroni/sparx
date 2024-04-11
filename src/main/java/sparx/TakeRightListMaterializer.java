@@ -19,45 +19,52 @@ import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 
-class DropListMaterializer<E> implements ListMaterializer<E> {
+class TakeRightListMaterializer<E> implements ListMaterializer<E> {
 
   private final int maxElements;
   private final ListMaterializer<E> wrapped;
 
-  DropListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxElements) {
+  TakeRightListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxElements) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     this.maxElements = Require.positive(maxElements, "maxElements");
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    final long wrappedIndex = (long) index + maxElements;
-    return index >= 0 && index < Integer.MAX_VALUE && wrapped.canMaterializeElement(
-        (int) wrappedIndex);
+    final int maxElements = this.maxElements;
+    if (index < 0 || index >= maxElements) {
+      return false;
+    }
+    final ListMaterializer<E> wrapped = this.wrapped;
+    final long wrappedIndex = (long) index + Math.max(0, wrapped.materializeSize() - maxElements);
+    return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
   }
 
   @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
-      return Math.max(0, knownSize - maxElements);
+      return Math.min(knownSize, maxElements);
     }
     return -1;
   }
 
   @Override
   public E materializeElement(final int index) {
-    final long wrappedIndex = (long) index + maxElements;
-    if (index < 0 || wrappedIndex >= Integer.MAX_VALUE) {
+    final int maxElements = this.maxElements;
+    if (index < 0 || index >= maxElements) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    return wrapped.materializeElement((int) wrappedIndex);
+    final ListMaterializer<E> wrapped = this.wrapped;
+    final long wrappedIndex = (long) index + Math.max(0, wrapped.materializeSize() - maxElements);
+    return wrapped.materializeElement(SizeOverflowException.safeCast(wrappedIndex));
   }
 
   @Override
   public boolean materializeEmpty() {
-    return !wrapped.canMaterializeElement(maxElements);
+    return wrapped.materializeEmpty();
   }
 
   @Override
@@ -67,6 +74,6 @@ class DropListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return Math.max(0, wrapped.materializeSize() - maxElements);
+    return Math.min(wrapped.materializeSize(), maxElements);
   }
 }

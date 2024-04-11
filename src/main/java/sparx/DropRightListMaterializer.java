@@ -33,8 +33,7 @@ class DropRightListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    final ListMaterializer<E> wrapped = this.wrapped;
-    return index < wrapped.materializeSize() - maxElements && wrapped.canMaterializeElement(index);
+    return index >= 0 && index < wrapped.materializeSize() - maxElements;
   }
 
   @Override
@@ -49,7 +48,7 @@ class DropRightListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public E materializeElement(final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
-    if (index >= wrapped.materializeSize() - maxElements) {
+    if (index < 0 || index >= wrapped.materializeSize() - maxElements) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return wrapped.materializeElement(index);

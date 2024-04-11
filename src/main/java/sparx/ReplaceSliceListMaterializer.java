@@ -90,7 +90,7 @@ class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
         return elementsMaterializer.materializeElement(elementsIndex);
       }
       final long wrappedIndex = (long) index + state.materializedLength();
-      if (wrappedIndex > Integer.MAX_VALUE) {
+      if (wrappedIndex >= Integer.MAX_VALUE) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       return wrapped.materializeElement((int) wrappedIndex);

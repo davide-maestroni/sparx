@@ -21,16 +21,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Predicate;
 
-class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
+class TakeRightWhileListMaterializer<E> implements ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
 
   private volatile State state;
 
-  DropRightWhileListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+  TakeRightWhileListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Predicate<? super E> predicate) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     state = new ImmaterialState(Require.notNull(predicate, "predicate"));
@@ -38,7 +39,13 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return index >= 0 && index < wrapped.materializeSize() - state.materialized();
+    final int maxElements = state.materialized();
+    if (index < 0 || index >= maxElements) {
+      return false;
+    }
+    final ListMaterializer<E> wrapped = this.wrapped;
+    final long wrappedIndex = (long) index + Math.max(0, wrapped.materializeSize() - maxElements);
+    return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
   }
 
   @Override
@@ -49,7 +56,7 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
     } else if (knownSize > 0) {
       final int stateSize = state.knownSize();
       if (stateSize >= 0) {
-        return knownSize - stateSize;
+        return Math.min(knownSize, stateSize);
       }
     }
     return -1;
@@ -57,16 +64,18 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public E materializeElement(final int index) {
-    final ListMaterializer<E> wrapped = this.wrapped;
-    if (index < 0 || index >= wrapped.materializeSize() - state.materialized()) {
+    final int maxElements = state.materialized();
+    if (index < 0 || index >= maxElements) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    return wrapped.materializeElement(index);
+    final ListMaterializer<E> wrapped = this.wrapped;
+    final long wrappedIndex = (long) index + Math.max(0, wrapped.materializeSize() - maxElements);
+    return wrapped.materializeElement(SizeOverflowException.safeCast(wrappedIndex));
   }
 
   @Override
   public boolean materializeEmpty() {
-    return !wrapped.canMaterializeElement(state.materialized());
+    return wrapped.materializeEmpty();
   }
 
   @Override
@@ -76,7 +85,7 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return Math.max(0, wrapped.materializeSize() - state.materialized());
+    return Math.min(wrapped.materializeSize(), state.materialized());
   }
 
   private interface State {
@@ -125,7 +134,7 @@ class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
         throw new ConcurrentModificationException();
       }
       try {
-        final ListMaterializer<E> wrapped = DropRightWhileListMaterializer.this.wrapped;
+        final ListMaterializer<E> wrapped = TakeRightWhileListMaterializer.this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
         final int size = wrapped.materializeSize();
         int i = size - 1;

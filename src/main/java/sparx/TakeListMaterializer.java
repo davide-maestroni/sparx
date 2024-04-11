@@ -20,44 +20,46 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-class DropListMaterializer<E> implements ListMaterializer<E> {
+class TakeListMaterializer<E> implements ListMaterializer<E> {
 
   private final int maxElements;
   private final ListMaterializer<E> wrapped;
 
-  DropListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxElements) {
+  TakeListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      final int maxElements) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     this.maxElements = Require.positive(maxElements, "maxElements");
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    final long wrappedIndex = (long) index + maxElements;
-    return index >= 0 && index < Integer.MAX_VALUE && wrapped.canMaterializeElement(
-        (int) wrappedIndex);
+    if (index < 0 || index >= maxElements) {
+      return false;
+    }
+    return wrapped.canMaterializeElement(index);
   }
 
   @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
-      return Math.max(0, knownSize - maxElements);
+      return Math.min(knownSize, maxElements);
     }
     return -1;
   }
 
   @Override
   public E materializeElement(final int index) {
-    final long wrappedIndex = (long) index + maxElements;
-    if (index < 0 || wrappedIndex >= Integer.MAX_VALUE) {
+    final ListMaterializer<E> wrapped = this.wrapped;
+    if (index < 0 || index >= maxElements || !wrapped.canMaterializeElement(index)) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    return wrapped.materializeElement((int) wrappedIndex);
+    return wrapped.materializeElement(index);
   }
 
   @Override
   public boolean materializeEmpty() {
-    return !wrapped.canMaterializeElement(maxElements);
+    return wrapped.materializeEmpty();
   }
 
   @Override
@@ -67,6 +69,6 @@ class DropListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return Math.max(0, wrapped.materializeSize() - maxElements);
+    return Math.min(wrapped.materializeSize(), maxElements);
   }
 }

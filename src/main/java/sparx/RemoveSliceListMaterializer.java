@@ -74,7 +74,7 @@ class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
     }
     if (state.materializedStart() <= index) {
       final long wrappedIndex = (long) index + state.materializedLength();
-      if (wrappedIndex > Integer.MAX_VALUE) {
+      if (wrappedIndex >= Integer.MAX_VALUE) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       return wrapped.materializeElement((int) wrappedIndex);
