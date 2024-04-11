@@ -15,16 +15,16 @@
  */
 package sparx.util;
 
-public class SizeOverflowException extends IllegalStateException {
+public class IndexOverflowException extends IllegalStateException {
 
-  public static int safeCast(final long size) {
-    if (size > Integer.MAX_VALUE) {
-      throw new SizeOverflowException(size);
+  public static int safeCast(final long index) {
+    if (index >= Integer.MAX_VALUE) {
+      throw new IndexOverflowException(index);
     }
-    return (int) size;
+    return (int) index;
   }
 
-  public SizeOverflowException(final long size) {
+  public IndexOverflowException(final long size) {
     super(Long.toString(size));
   }
 }
