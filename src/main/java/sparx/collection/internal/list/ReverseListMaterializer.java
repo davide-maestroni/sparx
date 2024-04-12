@@ -21,18 +21,18 @@ import sparx.collection.ListMaterializer;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 
-public class ReversListMaterializer<E> implements ListMaterializer<E> {
+public class ReverseListMaterializer<E> implements ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
 
-  public ReversListMaterializer(@NotNull final ListMaterializer<E> wrapped) {
+  public ReverseListMaterializer(@NotNull final ListMaterializer<E> wrapped) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
-    final long wrappedIndex = (long) wrapped.materializeSize() - index + 1;
+    final long wrappedIndex = (long) wrapped.materializeSize() - index - 1;
     return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
   }
 
@@ -44,7 +44,7 @@ public class ReversListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public E materializeElement(final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
-    final long wrappedIndex = (long) wrapped.materializeSize() - index + 1;
+    final long wrappedIndex = (long) wrapped.materializeSize() - index - 1;
     return wrapped.materializeElement(IndexOverflowException.safeCast(wrappedIndex));
   }
 

@@ -1002,6 +1002,79 @@ public class ListTests {
   }
 
   @Test
+  public void flatMapFirstWhereNot() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.flatMapFirstWhereNot(i -> true, i -> List.of(i, i)).isEmpty());
+    assertEquals(4, l.flatMapFirstWhereNot(i -> true, i -> List.of(i, i)).size());
+    assertEquals(l, l.flatMapFirstWhereNot(i -> true, i -> List.of(i, i)));
+    assertNull(l.flatMapFirstWhereNot(i -> true, i -> List.of(i, i)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhereNot(i -> true, i -> List.of(i, i)).get(4));
+    assertFalse(l.flatMapFirstWhereNot(i -> false, i -> List.of(i, i)).isEmpty());
+    assertEquals(5, l.flatMapFirstWhereNot(i -> false, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2, null, 4), l.flatMapFirstWhereNot(i -> false, i -> List.of(i, i)));
+    assertEquals(1, l.flatMapFirstWhereNot(i -> false, i -> List.of(i, i)).get(1));
+    assertNull(l.flatMapFirstWhereNot(i -> false, i -> List.of(i, i)).get(3));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhereNot(i -> false, i -> List.of(i, i)).get(5));
+    assertFalse(l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of(3)).isEmpty());
+    assertEquals(4, l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of(3)).size());
+    assertEquals(List.of(1, 2, 3, 4), l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of(3)));
+    assertEquals(2, l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of(3)).get(1));
+    assertEquals(3, l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of(3)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of(3)).get(4));
+
+    assertFalse(l.flatMapFirstWhereNot(i -> true, i -> List.of()).isEmpty());
+    assertEquals(4, l.flatMapFirstWhereNot(i -> true, i -> List.of()).size());
+    assertEquals(l, l.flatMapFirstWhereNot(i -> true, i -> List.of()));
+    assertNull(l.flatMapFirstWhereNot(i -> true, i -> List.of()).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhereNot(i -> true, i -> List.of()).get(4));
+    assertFalse(l.flatMapFirstWhereNot(i -> false, i -> List.of()).isEmpty());
+    assertEquals(3, l.flatMapFirstWhereNot(i -> false, i -> List.of()).size());
+    assertEquals(List.of(2, null, 4), l.flatMapFirstWhereNot(i -> false, i -> List.of()));
+    assertEquals(4, l.flatMapFirstWhereNot(i -> false, i -> List.of()).get(2));
+    assertNull(l.flatMapFirstWhereNot(i -> false, i -> List.of()).get(1));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhereNot(i -> false, i -> List.of()).get(3));
+    assertFalse(l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of()).isEmpty());
+    assertEquals(3, l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of()).size());
+    assertEquals(List.of(1, 2, 4), l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of()));
+    assertEquals(2, l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of()).get(1));
+    assertEquals(4, l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of()).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhereNot(Objects::nonNull, i -> List.of()).get(3));
+
+    assertFalse(l.flatMapFirstWhereNot(i -> i != 1, i -> List.of(i, i)).isEmpty());
+    assertEquals(5, l.flatMapFirstWhereNot(i -> i != 1, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2, null, 4),
+        l.flatMapFirstWhereNot(i -> i != 1, i -> List.of(i, i)));
+    assertEquals(1, l.flatMapFirstWhereNot(i -> i != 1, i -> List.of(i, i)).get(1));
+    assertNull(l.flatMapFirstWhereNot(i -> i != 1, i -> List.of(i, i)).get(3));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhereNot(i -> i != 1, i -> List.of(i, i)).get(5));
+    assertFalse(l.flatMapFirstWhereNot(i -> i <= 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapFirstWhereNot(i -> i <= 2, i -> List.of(i, i)).size());
+    assertEquals(1, l.flatMapFirstWhereNot(i -> i <= 2, i -> List.of(i, i)).get(0));
+    assertEquals(2, l.flatMapFirstWhereNot(i -> i <= 2, i -> List.of(i, i)).get(1));
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapFirstWhereNot(i -> i <= 2, i -> List.of(i, i)).get(2));
+
+    assertTrue(List.of().flatMapFirstWhereNot(i -> true, i -> List.of()).isEmpty());
+    assertEquals(0, List.of().flatMapFirstWhereNot(i -> true, i -> List.of()).size());
+    assertEquals(List.of(), List.of().flatMapFirstWhereNot(i -> true, i -> List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().flatMapFirstWhereNot(i -> true, i -> List.of()).get(2));
+    assertTrue(List.of().flatMapFirstWhereNot(i -> false, i -> List.of()).isEmpty());
+    assertEquals(0, List.of().flatMapFirstWhereNot(i -> false, i -> List.of()).size());
+    assertEquals(List.of(), List.of().flatMapFirstWhereNot(i -> false, i -> List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().flatMapFirstWhereNot(i -> false, i -> List.of()).get(2));
+  }
+
+  @Test
   public void flatMapLastWhere() {
     var l = List.of(1, 2, null, 4);
     assertFalse(l.flatMapLastWhere(i -> false, i -> List.of(i, i)).isEmpty());
@@ -1061,16 +1134,88 @@ public class ListTests {
     assertThrows(NullPointerException.class,
         () -> l.flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).get(2));
 
-    assertTrue(List.of().flatMapFirstWhere(i -> false, i -> List.of()).isEmpty());
-    assertEquals(0, List.of().flatMapFirstWhere(i -> false, i -> List.of()).size());
-    assertEquals(List.of(), List.of().flatMapFirstWhere(i -> false, i -> List.of()));
+    assertTrue(List.of().flatMapLastWhere(i -> false, i -> List.of()).isEmpty());
+    assertEquals(0, List.of().flatMapLastWhere(i -> false, i -> List.of()).size());
+    assertEquals(List.of(), List.of().flatMapLastWhere(i -> false, i -> List.of()));
     assertThrows(IndexOutOfBoundsException.class,
-        () -> List.of().flatMapFirstWhere(i -> false, i -> List.of()).get(2));
-    assertTrue(List.of().flatMapFirstWhere(i -> true, i -> List.of()).isEmpty());
-    assertEquals(0, List.of().flatMapFirstWhere(i -> true, i -> List.of()).size());
-    assertEquals(List.of(), List.of().flatMapFirstWhere(i -> true, i -> List.of()));
+        () -> List.of().flatMapLastWhere(i -> false, i -> List.of()).get(2));
+    assertTrue(List.of().flatMapLastWhere(i -> true, i -> List.of()).isEmpty());
+    assertEquals(0, List.of().flatMapLastWhere(i -> true, i -> List.of()).size());
+    assertEquals(List.of(), List.of().flatMapLastWhere(i -> true, i -> List.of()));
     assertThrows(IndexOutOfBoundsException.class,
-        () -> List.of().flatMapFirstWhere(i -> true, i -> List.of()).get(2));
+        () -> List.of().flatMapLastWhere(i -> true, i -> List.of()).get(2));
+  }
+
+  @Test
+  public void flatMapLastWhereNot() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.flatMapLastWhereNot(i -> true, i -> List.of(i, i)).isEmpty());
+    assertEquals(4, l.flatMapLastWhereNot(i -> true, i -> List.of(i, i)).size());
+    assertEquals(l, l.flatMapLastWhereNot(i -> true, i -> List.of(i, i)));
+    assertNull(l.flatMapLastWhereNot(i -> true, i -> List.of(i, i)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhereNot(i -> true, i -> List.of(i, i)).get(4));
+    assertFalse(l.flatMapLastWhereNot(i -> false, i -> List.of(i, i)).isEmpty());
+    assertEquals(5, l.flatMapLastWhereNot(i -> false, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2, null, 4, 4), l.flatMapLastWhereNot(i -> false, i -> List.of(i, i)));
+    assertEquals(2, l.flatMapLastWhereNot(i -> false, i -> List.of(i, i)).get(1));
+    assertNull(l.flatMapLastWhereNot(i -> false, i -> List.of(i, i)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhereNot(i -> false, i -> List.of(i, i)).get(5));
+    assertFalse(l.flatMapLastWhereNot(Objects::nonNull, i -> List.of(3)).isEmpty());
+    assertEquals(4, l.flatMapLastWhereNot(Objects::nonNull, i -> List.of(3)).size());
+    assertEquals(List.of(1, 2, 3, 4), l.flatMapLastWhereNot(Objects::nonNull, i -> List.of(3)));
+    assertEquals(2, l.flatMapLastWhereNot(Objects::nonNull, i -> List.of(3)).get(1));
+    assertEquals(3, l.flatMapLastWhereNot(Objects::nonNull, i -> List.of(3)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhereNot(Objects::nonNull, i -> List.of(3)).get(4));
+
+    assertFalse(l.flatMapLastWhereNot(i -> true, i -> List.of()).isEmpty());
+    assertEquals(4, l.flatMapLastWhereNot(i -> true, i -> List.of()).size());
+    assertEquals(l, l.flatMapLastWhereNot(i -> true, i -> List.of()));
+    assertNull(l.flatMapLastWhereNot(i -> true, i -> List.of()).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhereNot(i -> true, i -> List.of()).get(4));
+    assertFalse(l.flatMapLastWhereNot(i -> false, i -> List.of()).isEmpty());
+    assertEquals(3, l.flatMapLastWhereNot(i -> false, i -> List.of()).size());
+    assertEquals(List.of(1, 2, null), l.flatMapLastWhereNot(i -> false, i -> List.of()));
+    assertEquals(2, l.flatMapLastWhereNot(i -> false, i -> List.of()).get(1));
+    assertNull(l.flatMapLastWhereNot(i -> false, i -> List.of()).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhereNot(i -> false, i -> List.of()).get(3));
+    assertFalse(l.flatMapLastWhereNot(Objects::nonNull, i -> List.of()).isEmpty());
+    assertEquals(3, l.flatMapLastWhereNot(Objects::nonNull, i -> List.of()).size());
+    assertEquals(List.of(1, 2, 4), l.flatMapLastWhereNot(Objects::nonNull, i -> List.of()));
+    assertEquals(2, l.flatMapLastWhereNot(Objects::nonNull, i -> List.of()).get(1));
+    assertEquals(4, l.flatMapLastWhereNot(Objects::nonNull, i -> List.of()).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhereNot(Objects::nonNull, i -> List.of()).get(3));
+
+    assertFalse(l.flatMapLastWhereNot(i -> i != 4, i -> List.of(i, i)).isEmpty());
+    assertEquals(5, l.flatMapLastWhereNot(i -> i != 4, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2, null, 4, 4), l.flatMapLastWhereNot(i -> i != 4, i -> List.of(i, i)));
+    assertEquals(2, l.flatMapLastWhereNot(i -> i != 4, i -> List.of(i, i)).get(1));
+    assertNull(l.flatMapLastWhereNot(i -> i != 4, i -> List.of(i, i)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhereNot(i -> i != 4, i -> List.of(i, i)).get(5));
+    assertFalse(l.flatMapLastWhereNot(i -> i >= 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapLastWhereNot(i -> i >= 2, i -> List.of(i, i)).size());
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapLastWhereNot(i -> i >= 2, i -> List.of(i, i)).get(3));
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapLastWhereNot(i -> i >= 2, i -> List.of(i, i)).get(2));
+
+    assertTrue(List.of().flatMapLastWhereNot(i -> true, i -> List.of()).isEmpty());
+    assertEquals(0, List.of().flatMapLastWhereNot(i -> true, i -> List.of()).size());
+    assertEquals(List.of(), List.of().flatMapLastWhereNot(i -> true, i -> List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().flatMapLastWhereNot(i -> true, i -> List.of()).get(2));
+    assertTrue(List.of().flatMapLastWhereNot(i -> false, i -> List.of()).isEmpty());
+    assertEquals(0, List.of().flatMapLastWhereNot(i -> false, i -> List.of()).size());
+    assertEquals(List.of(), List.of().flatMapLastWhereNot(i -> false, i -> List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().flatMapLastWhereNot(i -> false, i -> List.of()).get(2));
   }
 
   @Test
@@ -1140,6 +1285,75 @@ public class ListTests {
     assertEquals(List.of(), List.of().flatMapWhere(i -> true, i -> List.of()));
     assertThrows(IndexOutOfBoundsException.class,
         () -> List.of().flatMapWhere(i -> true, i -> List.of()).get(2));
+  }
+
+  @Test
+  public void flatMapWhereNot() {
+    var l = List.of(1, null, null, 4);
+    assertFalse(l.flatMapWhereNot(i -> true, i -> List.of(i, i)).isEmpty());
+    assertEquals(4, l.flatMapWhereNot(i -> true, i -> List.of(i, i)).size());
+    assertEquals(l, l.flatMapWhereNot(i -> true, i -> List.of(i, i)));
+    assertNull(l.flatMapWhereNot(i -> true, i -> List.of(i, i)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapWhereNot(i -> true, i -> List.of(i, i)).get(4));
+    assertFalse(l.flatMapWhereNot(i -> false, i -> List.of(i, i)).isEmpty());
+    assertEquals(8, l.flatMapWhereNot(i -> false, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, null, null, null, null, 4, 4),
+        l.flatMapWhereNot(i -> false, i -> List.of(i, i)));
+    assertEquals(1, l.flatMapWhereNot(i -> false, i -> List.of(i, i)).get(1));
+    assertNull(l.flatMapWhereNot(i -> false, i -> List.of(i, i)).get(4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapWhereNot(i -> false, i -> List.of(i, i)).get(8));
+    assertFalse(l.flatMapWhereNot(Objects::nonNull, i -> List.of(3)).isEmpty());
+    assertEquals(4, l.flatMapWhereNot(Objects::nonNull, i -> List.of(3)).size());
+    assertEquals(List.of(1, 3, 3, 4), l.flatMapWhereNot(Objects::nonNull, i -> List.of(3)));
+    assertEquals(3, l.flatMapWhereNot(Objects::nonNull, i -> List.of(3)).get(1));
+    assertEquals(3, l.flatMapWhereNot(Objects::nonNull, i -> List.of(3)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapWhereNot(Objects::nonNull, i -> List.of(3)).get(4));
+
+    assertFalse(l.flatMapWhereNot(i -> true, i -> List.of()).isEmpty());
+    assertEquals(4, l.flatMapWhereNot(i -> true, i -> List.of()).size());
+    assertEquals(l, l.flatMapWhereNot(i -> true, i -> List.of()));
+    assertNull(l.flatMapWhereNot(i -> true, i -> List.of()).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapWhereNot(i -> true, i -> List.of()).get(4));
+    assertTrue(l.flatMapWhereNot(i -> false, i -> List.of()).isEmpty());
+    assertEquals(0, l.flatMapWhereNot(i -> false, i -> List.of()).size());
+    assertEquals(List.of(), l.flatMapWhereNot(i -> false, i -> List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapWhereNot(i -> false, i -> List.of()).get(0));
+    assertFalse(l.flatMapWhereNot(Objects::nonNull, i -> List.of()).isEmpty());
+    assertEquals(2, l.flatMapWhereNot(Objects::nonNull, i -> List.of()).size());
+    assertEquals(List.of(1, 4), l.flatMapWhereNot(Objects::nonNull, i -> List.of()));
+    assertEquals(4, l.flatMapWhereNot(Objects::nonNull, i -> List.of()).get(1));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapWhereNot(Objects::nonNull, i -> List.of()).get(2));
+
+    assertFalse(l.flatMapWhereNot(i -> i != 1, i -> List.of(i, i)).isEmpty());
+    assertEquals(1, l.flatMapWhereNot(i -> i != 1, i -> List.of(i, i)).get(0));
+    assertEquals(1, l.flatMapWhereNot(i -> i != 1, i -> List.of(i, i)).get(1));
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapWhereNot(i -> i != 1, i -> List.of(i, i)).size());
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapWhereNot(i -> i != 1, i -> List.of(i, i)).get(2));
+    assertFalse(l.flatMapWhereNot(i -> i <= 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapWhereNot(i -> i <= 2, i -> List.of(i, i)).size());
+    assertEquals(1, l.flatMapWhereNot(i -> i <= 2, i -> List.of(i, i)).get(0));
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapWhereNot(i -> i <= 2, i -> List.of(i, i)).get(1));
+
+    assertTrue(List.of().flatMapWhereNot(i -> true, i -> List.of()).isEmpty());
+    assertEquals(0, List.of().flatMapWhereNot(i -> true, i -> List.of()).size());
+    assertEquals(List.of(), List.of().flatMapWhereNot(i -> true, i -> List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().flatMapWhereNot(i -> true, i -> List.of()).get(2));
+    assertTrue(List.of().flatMapWhereNot(i -> false, i -> List.of()).isEmpty());
+    assertEquals(0, List.of().flatMapWhereNot(i -> false, i -> List.of()).size());
+    assertEquals(List.of(), List.of().flatMapWhereNot(i -> false, i -> List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().flatMapWhereNot(i -> false, i -> List.of()).get(2));
   }
 
   @Test
@@ -1632,14 +1846,12 @@ public class ListTests {
     assertEquals(4, l.mapWhere(i -> false, i -> i + 1).size());
     assertEquals(l, l.mapWhere(i -> false, i -> i + 1));
     assertEquals(3, l.mapWhere(i -> false, i -> i + 1).get(2));
-    assertThrows(IndexOutOfBoundsException.class,
-        () -> l.mapWhere(i -> false, i -> i + 1).get(4));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.mapWhere(i -> false, i -> i + 1).get(4));
     assertFalse(l.mapWhere(i -> true, i -> i + 1).isEmpty());
     assertEquals(4, l.mapWhere(i -> true, i -> i + 1).size());
     assertEquals(List.of(2, 3, 4, 5), l.mapWhere(i -> true, i -> i + 1));
     assertEquals(3, l.mapWhere(i -> true, i -> i + 1).get(1));
-    assertThrows(IndexOutOfBoundsException.class,
-        () -> l.mapWhere(i -> true, i -> i + 1).get(5));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.mapWhere(i -> true, i -> i + 1).get(5));
     assertFalse(l.mapWhere(i -> i == 2, i -> 3).isEmpty());
     assertEquals(4, l.mapWhere(i -> i == 2, i -> 3).size());
     assertEquals(List.of(1, 3, 3, 4), l.mapWhere(i -> i == 2, i -> 3));
@@ -2503,15 +2715,492 @@ public class ListTests {
   }
 
   @Test
-  public void test() {
-    var l = List.of(1, 2, null, 4, 2, null, 1);
+  public void replaceAfter() {
+    var l = List.of(1, 2, null);
+    assertFalse(l.replaceAfter(-1, 4).isEmpty());
+    assertEquals(3, l.replaceAfter(-1, 4).size());
+    assertEquals(List.of(1, 2, null), l.replaceAfter(-1, 4));
+    assertEquals(2, l.replaceAfter(-1, 4).get(1));
+    assertFalse(l.replaceAfter(0, 4).isEmpty());
+    assertEquals(3, l.replaceAfter(0, 4).size());
+    assertEquals(List.of(4, 2, null), l.replaceAfter(0, 4));
+    assertEquals(2, l.replaceAfter(0, 4).get(1));
+    assertFalse(l.replaceAfter(1, 4).isEmpty());
+    assertEquals(3, l.replaceAfter(1, 4).size());
+    assertEquals(List.of(1, 4, null), l.replaceAfter(1, 4));
+    assertEquals(4, l.replaceAfter(1, 4).get(1));
+    assertFalse(l.replaceAfter(2, 4).isEmpty());
+    assertEquals(3, l.replaceAfter(2, 4).size());
+    assertEquals(List.of(1, 2, 4), l.replaceAfter(2, 4));
+    assertEquals(2, l.replaceAfter(2, 4).get(1));
+    assertFalse(l.replaceAfter(3, 4).isEmpty());
+    assertEquals(3, l.replaceAfter(3, 4).size());
+    assertEquals(List.of(1, 2, null), l.replaceAfter(3, 4));
+    assertEquals(2, l.replaceAfter(3, 4).get(1));
 
+    assertTrue(List.<Integer>of().replaceAfter(0, 4).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceAfter(0, 4).size());
+    assertEquals(List.of(), List.<Integer>of().replaceAfter(0, 4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceAfter(0, 4).get(0));
   }
 
-  private static Function<List<Integer>, List<Integer>> removeSlices(List<Integer> slice) {
+  @Test
+  public void replaceEach() {
+    var l = List.of(1, 2, null);
+    assertFalse(l.replaceEach(-1, 4).isEmpty());
+    assertEquals(3, l.replaceEach(-1, 4).size());
+    assertEquals(List.of(1, 2, null), l.replaceEach(-1, 4));
+    assertEquals(2, l.replaceEach(-1, 4).get(1));
+    assertFalse(l.replaceEach(0, 4).isEmpty());
+    assertEquals(3, l.replaceEach(0, 4).size());
+    assertEquals(List.of(1, 2, null), l.replaceEach(0, 4));
+    assertEquals(2, l.replaceEach(0, 4).get(1));
+    assertFalse(l.replaceEach(1, 4).isEmpty());
+    assertEquals(3, l.replaceEach(1, 4).size());
+    assertEquals(List.of(4, 2, null), l.replaceEach(1, 4));
+    assertEquals(2, l.replaceEach(1, 4).get(1));
+    assertFalse(l.replaceEach(2, 4).isEmpty());
+    assertEquals(3, l.replaceEach(2, 4).size());
+    assertEquals(List.of(1, 4, null), l.replaceEach(2, 4));
+    assertEquals(4, l.replaceEach(2, 4).get(1));
+    assertFalse(l.replaceEach(null, 4).isEmpty());
+    assertEquals(3, l.replaceEach(null, 4).size());
+    assertEquals(List.of(1, 2, 4), l.replaceEach(null, 4));
+    assertEquals(2, l.replaceEach(null, 4).get(1));
+
+    assertFalse(l.append(1).replaceEach(1, 4).isEmpty());
+    assertEquals(4, l.append(1).replaceEach(1, 4).size());
+    assertEquals(List.of(4, 2, null, 4), l.append(1).replaceEach(1, 4));
+    assertEquals(2, l.append(1).replaceEach(1, 4).get(1));
+
+    assertTrue(List.<Integer>of().replaceEach(0, 4).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceEach(0, 4).size());
+    assertEquals(List.of(), List.<Integer>of().replaceEach(0, 4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceEach(0, 4).get(0));
+  }
+
+  @Test
+  public void replaceFirst() {
+    var l = List.of(1, 2, null);
+    assertFalse(l.replaceFirst(-1, 4).isEmpty());
+    assertEquals(3, l.replaceFirst(-1, 4).size());
+    assertEquals(List.of(1, 2, null), l.replaceFirst(-1, 4));
+    assertEquals(2, l.replaceFirst(-1, 4).get(1));
+    assertFalse(l.replaceFirst(0, 4).isEmpty());
+    assertEquals(3, l.replaceFirst(0, 4).size());
+    assertEquals(List.of(1, 2, null), l.replaceFirst(0, 4));
+    assertEquals(2, l.replaceFirst(0, 4).get(1));
+    assertFalse(l.replaceFirst(1, 4).isEmpty());
+    assertEquals(3, l.replaceFirst(1, 4).size());
+    assertEquals(List.of(4, 2, null), l.replaceFirst(1, 4));
+    assertEquals(2, l.replaceFirst(1, 4).get(1));
+    assertFalse(l.replaceFirst(2, 4).isEmpty());
+    assertEquals(3, l.replaceFirst(2, 4).size());
+    assertEquals(List.of(1, 4, null), l.replaceFirst(2, 4));
+    assertEquals(4, l.replaceFirst(2, 4).get(1));
+    assertFalse(l.replaceFirst(null, 4).isEmpty());
+    assertEquals(3, l.replaceFirst(null, 4).size());
+    assertEquals(List.of(1, 2, 4), l.replaceFirst(null, 4));
+    assertEquals(2, l.replaceFirst(null, 4).get(1));
+
+    assertFalse(l.append(1).replaceFirst(1, 4).isEmpty());
+    assertEquals(4, l.append(1).replaceFirst(1, 4).size());
+    assertEquals(List.of(4, 2, null, 1), l.append(1).replaceFirst(1, 4));
+    assertEquals(2, l.append(1).replaceFirst(1, 4).get(1));
+
+    assertTrue(List.<Integer>of().replaceFirst(0, 4).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceFirst(0, 4).size());
+    assertEquals(List.of(), List.<Integer>of().replaceFirst(0, 4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceFirst(0, 4).get(0));
+  }
+
+  @Test
+  public void replaceFirstWhere() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.replaceFirstWhere(i -> false, 4).isEmpty());
+    assertEquals(4, l.replaceFirstWhere(i -> false, 4).size());
+    assertEquals(l, l.replaceFirstWhere(i -> false, 4));
+    assertNull(l.replaceFirstWhere(i -> false, 4).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.replaceFirstWhere(i -> false, 4).get(4));
+    assertFalse(l.replaceFirstWhere(i -> true, 4).isEmpty());
+    assertEquals(4, l.replaceFirstWhere(i -> true, 4).size());
+    assertEquals(List.of(4, 2, null, 4), l.replaceFirstWhere(i -> true, 4));
+    assertEquals(2, l.replaceFirstWhere(i -> true, 4).get(1));
+    assertNull(l.replaceFirstWhere(i -> true, 4).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.replaceFirstWhere(i -> true, 4).get(5));
+    assertFalse(l.replaceFirstWhere(Objects::isNull, 3).isEmpty());
+    assertEquals(4, l.replaceFirstWhere(Objects::isNull, 3).size());
+    assertEquals(List.of(1, 2, 3, 4), l.replaceFirstWhere(Objects::isNull, 3));
+    assertEquals(2, l.replaceFirstWhere(Objects::isNull, 3).get(1));
+    assertEquals(3, l.replaceFirstWhere(Objects::isNull, 3).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceFirstWhere(Objects::isNull, 3).get(4));
+
+    assertFalse(l.replaceFirstWhere(i -> i == 1, 2).isEmpty());
+    assertEquals(4, l.replaceFirstWhere(i -> i == 1, 2).size());
+    assertEquals(List.of(2, 2, null, 4), l.replaceFirstWhere(i -> i == 1, 2));
+    assertEquals(2, l.replaceFirstWhere(i -> i == 1, 2).get(1));
+    assertNull(l.replaceFirstWhere(i -> i == 1, 2).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.replaceFirstWhere(i -> i == 1, 2).get(5));
+    assertFalse(l.replaceFirstWhere(i -> i > 2, 1).isEmpty());
+    assertEquals(4, l.replaceFirstWhere(i -> i > 2, 1).size());
+    assertEquals(1, l.replaceFirstWhere(i -> i > 2, 1).get(0));
+    assertEquals(2, l.replaceFirstWhere(i -> i > 2, 1).get(1));
+    assertThrows(NullPointerException.class, () -> l.replaceFirstWhere(i -> i > 2, 1).get(2));
+
+    assertTrue(List.<Integer>of().replaceFirstWhere(i -> false, 4).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceFirstWhere(i -> false, 4).size());
+    assertEquals(List.of(), List.<Integer>of().replaceFirstWhere(i -> false, 4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceFirstWhere(i -> false, 4).get(2));
+    assertTrue(List.<Integer>of().replaceFirstWhere(i -> true, 4).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceFirstWhere(i -> true, 4).size());
+    assertEquals(List.of(), List.<Integer>of().replaceFirstWhere(i -> true, 4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceFirstWhere(i -> true, 4).get(2));
+  }
+
+  @Test
+  public void replaceFirstWhereNot() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.replaceFirstWhereNot(i -> true, 4).isEmpty());
+    assertEquals(4, l.replaceFirstWhereNot(i -> true, 4).size());
+    assertEquals(l, l.replaceFirstWhereNot(i -> true, 4));
+    assertNull(l.replaceFirstWhereNot(i -> true, 4).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceFirstWhereNot(i -> true, 4).get(4));
+    assertFalse(l.replaceFirstWhereNot(i -> false, 4).isEmpty());
+    assertEquals(4, l.replaceFirstWhereNot(i -> false, 4).size());
+    assertEquals(List.of(4, 2, null, 4), l.replaceFirstWhereNot(i -> false, 4));
+    assertEquals(2, l.replaceFirstWhereNot(i -> false, 4).get(1));
+    assertNull(l.replaceFirstWhereNot(i -> false, 4).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceFirstWhereNot(i -> false, 4).get(5));
+    assertFalse(l.replaceFirstWhereNot(Objects::nonNull, 3).isEmpty());
+    assertEquals(4, l.replaceFirstWhereNot(Objects::nonNull, 3).size());
+    assertEquals(List.of(1, 2, 3, 4), l.replaceFirstWhereNot(Objects::nonNull, 3));
+    assertEquals(2, l.replaceFirstWhereNot(Objects::nonNull, 3).get(1));
+    assertEquals(3, l.replaceFirstWhereNot(Objects::nonNull, 3).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceFirstWhereNot(Objects::nonNull, 3).get(4));
+
+    assertFalse(l.replaceFirstWhereNot(i -> i != 1, 2).isEmpty());
+    assertEquals(4, l.replaceFirstWhereNot(i -> i != 1, 2).size());
+    assertEquals(List.of(2, 2, null, 4), l.replaceFirstWhereNot(i -> i != 1, 2));
+    assertEquals(2, l.replaceFirstWhereNot(i -> i != 1, 2).get(1));
+    assertNull(l.replaceFirstWhereNot(i -> i != 1, 2).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceFirstWhereNot(i -> i != 1, 2).get(5));
+    assertFalse(l.replaceFirstWhereNot(i -> i <= 2, 1).isEmpty());
+    assertEquals(4, l.replaceFirstWhereNot(i -> i <= 2, 1).size());
+    assertEquals(1, l.replaceFirstWhereNot(i -> i <= 2, 1).get(0));
+    assertEquals(2, l.replaceFirstWhereNot(i -> i <= 2, 1).get(1));
+    assertThrows(NullPointerException.class, () -> l.replaceFirstWhereNot(i -> i <= 2, 1).get(2));
+
+    assertTrue(List.<Integer>of().replaceFirstWhereNot(i -> true, 4).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceFirstWhereNot(i -> true, 4).size());
+    assertEquals(List.of(), List.<Integer>of().replaceFirstWhereNot(i -> true, 4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceFirstWhereNot(i -> true, 4).get(2));
+    assertTrue(List.<Integer>of().replaceFirstWhereNot(i -> false, 4).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceFirstWhereNot(i -> false, 4).size());
+    assertEquals(List.of(), List.<Integer>of().replaceFirstWhereNot(i -> false, 4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceFirstWhereNot(i -> false, 4).get(2));
+  }
+
+  @Test
+  public void replaceLast() {
+    var l = List.of(1, 2, null);
+    assertFalse(l.replaceLast(-1, 4).isEmpty());
+    assertEquals(3, l.replaceLast(-1, 4).size());
+    assertEquals(List.of(1, 2, null), l.replaceLast(-1, 4));
+    assertEquals(2, l.replaceLast(-1, 4).get(1));
+    assertFalse(l.replaceLast(0, 4).isEmpty());
+    assertEquals(3, l.replaceLast(0, 4).size());
+    assertEquals(List.of(1, 2, null), l.replaceLast(0, 4));
+    assertEquals(2, l.replaceLast(0, 4).get(1));
+    assertFalse(l.replaceLast(1, 4).isEmpty());
+    assertEquals(3, l.replaceLast(1, 4).size());
+    assertEquals(List.of(4, 2, null), l.replaceLast(1, 4));
+    assertEquals(2, l.replaceLast(1, 4).get(1));
+    assertFalse(l.replaceLast(2, 4).isEmpty());
+    assertEquals(3, l.replaceLast(2, 4).size());
+    assertEquals(List.of(1, 4, null), l.replaceLast(2, 4));
+    assertEquals(4, l.replaceLast(2, 4).get(1));
+    assertFalse(l.replaceLast(null, 4).isEmpty());
+    assertEquals(3, l.replaceLast(null, 4).size());
+    assertEquals(List.of(1, 2, 4), l.replaceLast(null, 4));
+    assertEquals(2, l.replaceLast(null, 4).get(1));
+
+    assertFalse(l.append(1).replaceLast(1, 4).isEmpty());
+    assertEquals(4, l.append(1).replaceLast(1, 4).size());
+    assertEquals(List.of(1, 2, null, 4), l.append(1).replaceLast(1, 4));
+    assertEquals(2, l.append(1).replaceLast(1, 4).get(1));
+
+    assertTrue(List.<Integer>of().replaceLast(0, 4).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceLast(0, 4).size());
+    assertEquals(List.of(), List.<Integer>of().replaceLast(0, 4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceLast(0, 4).get(0));
+  }
+
+  @Test
+  public void replaceLastWhere() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.replaceLastWhere(i -> false, 5).isEmpty());
+    assertEquals(4, l.replaceLastWhere(i -> false, 5).size());
+    assertEquals(l, l.replaceLastWhere(i -> false, 5));
+    assertNull(l.replaceLastWhere(i -> false, 5).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.replaceLastWhere(i -> false, 5).get(4));
+    assertFalse(l.replaceLastWhere(i -> true, 5).isEmpty());
+    assertEquals(4, l.replaceLastWhere(i -> true, 5).size());
+    assertEquals(List.of(1, 2, null, 5), l.replaceLastWhere(i -> true, 5));
+    assertEquals(2, l.replaceLastWhere(i -> true, 5).get(1));
+    assertNull(l.replaceLastWhere(i -> true, 5).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.replaceLastWhere(i -> true, 5).get(5));
+    assertFalse(l.replaceLastWhere(Objects::isNull, 3).isEmpty());
+    assertEquals(4, l.replaceLastWhere(Objects::isNull, 3).size());
+    assertEquals(List.of(1, 2, 3, 4), l.replaceLastWhere(Objects::isNull, 3));
+    assertEquals(2, l.replaceLastWhere(Objects::isNull, 3).get(1));
+    assertEquals(3, l.replaceLastWhere(Objects::isNull, 3).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceLastWhere(Objects::isNull, 3).get(4));
+
+    assertFalse(l.replaceLastWhere(i -> i == 4, 5).isEmpty());
+    assertEquals(4, l.replaceLastWhere(i -> i == 4, 5).size());
+    assertEquals(List.of(1, 2, null, 5), l.replaceLastWhere(i -> i == 4, 5));
+    assertEquals(2, l.replaceLastWhere(i -> i == 4, 5).get(1));
+    assertNull(l.replaceLastWhere(i -> i == 4, 5).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.replaceLastWhere(i -> i == 4, 5).get(5));
+    assertFalse(l.replaceLastWhere(i -> i < 2, 1).isEmpty());
+    assertEquals(4, l.replaceLastWhere(i -> i < 2, 1).size());
+    assertThrows(NullPointerException.class, () -> l.replaceLastWhere(i -> i < 2, 1).get(0));
+
+    assertTrue(List.<Integer>of().replaceLastWhere(i -> false, 5).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceLastWhere(i -> false, 5).size());
+    assertEquals(List.of(), List.<Integer>of().replaceLastWhere(i -> false, 5));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceLastWhere(i -> false, 5).get(2));
+    assertTrue(List.<Integer>of().replaceLastWhere(i -> true, 5).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceLastWhere(i -> true, 5).size());
+    assertEquals(List.of(), List.<Integer>of().replaceLastWhere(i -> true, 5));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceLastWhere(i -> true, 5).get(2));
+  }
+
+  @Test
+  public void replaceLastWhereNot() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.replaceLastWhereNot(i -> true, 5).isEmpty());
+    assertEquals(4, l.replaceLastWhereNot(i -> true, 5).size());
+    assertEquals(l, l.replaceLastWhereNot(i -> true, 5));
+    assertNull(l.replaceLastWhereNot(i -> true, 5).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.replaceLastWhereNot(i -> true, 5).get(4));
+    assertFalse(l.replaceLastWhereNot(i -> false, 5).isEmpty());
+    assertEquals(4, l.replaceLastWhereNot(i -> false, 5).size());
+    assertEquals(List.of(1, 2, null, 5), l.replaceLastWhereNot(i -> false, 5));
+    assertEquals(2, l.replaceLastWhereNot(i -> false, 5).get(1));
+    assertNull(l.replaceLastWhereNot(i -> false, 5).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceLastWhereNot(i -> false, 5).get(5));
+    assertFalse(l.replaceLastWhereNot(Objects::nonNull, 3).isEmpty());
+    assertEquals(4, l.replaceLastWhereNot(Objects::nonNull, 3).size());
+    assertEquals(List.of(1, 2, 3, 4), l.replaceLastWhereNot(Objects::nonNull, 3));
+    assertEquals(2, l.replaceLastWhereNot(Objects::nonNull, 3).get(1));
+    assertEquals(3, l.replaceLastWhereNot(Objects::nonNull, 3).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceLastWhereNot(Objects::nonNull, 3).get(4));
+
+    assertFalse(l.replaceLastWhereNot(i -> i != 4, 5).isEmpty());
+    assertEquals(4, l.replaceLastWhereNot(i -> i != 4, 5).size());
+    assertEquals(List.of(1, 2, null, 5), l.replaceLastWhereNot(i -> i != 4, 5));
+    assertEquals(2, l.replaceLastWhereNot(i -> i != 4, 5).get(1));
+    assertNull(l.replaceLastWhereNot(i -> i != 4, 5).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceLastWhereNot(i -> i != 4, 5).get(5));
+    assertFalse(l.replaceLastWhereNot(i -> i >= 2, 1).isEmpty());
+    assertEquals(4, l.replaceLastWhereNot(i -> i >= 2, 1).size());
+    assertThrows(NullPointerException.class, () -> l.replaceLastWhereNot(i -> i >= 2, 1).get(0));
+
+    assertTrue(List.<Integer>of().replaceLastWhereNot(i -> true, 5).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceLastWhereNot(i -> true, 5).size());
+    assertEquals(List.of(), List.<Integer>of().replaceLastWhereNot(i -> true, 5));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceLastWhereNot(i -> true, 5).get(2));
+    assertTrue(List.<Integer>of().replaceLastWhereNot(i -> false, 5).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceLastWhereNot(i -> false, 5).size());
+    assertEquals(List.of(), List.<Integer>of().replaceLastWhereNot(i -> false, 5));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceLastWhereNot(i -> false, 5).get(2));
+  }
+
+  @Test
+  public void replaceSlice() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.replaceSlice(1, 1, List.of(5)).isEmpty());
+    assertEquals(5, l.replaceSlice(1, 1, List.of(5)).size());
+    assertEquals(List.of(1, 5, 2, null, 4), l.replaceSlice(1, 1, List.of(5)));
+    assertEquals(5, l.replaceSlice(1, 1, List.of(5)).get(1));
+    assertFalse(l.replaceSlice(1, 0, List.of(5)).isEmpty());
+    assertEquals(5, l.replaceSlice(1, 0, List.of(5)).size());
+    assertEquals(List.of(1, 5, 2, null, 4), l.replaceSlice(1, 0, List.of(5)));
+    assertEquals(5, l.replaceSlice(1, 0, List.of(5)).get(1));
+    assertFalse(l.replaceSlice(1, -3, List.of(5)).isEmpty());
+    assertEquals(5, l.replaceSlice(1, -3, List.of(5)).size());
+    assertEquals(List.of(1, 5, 2, null, 4), l.replaceSlice(1, -3, List.of(5)));
+    assertEquals(5, l.replaceSlice(1, -3, List.of(5)).get(1));
+    assertFalse(l.replaceSlice(1, -4, List.of(5)).isEmpty());
+    assertEquals(5, l.replaceSlice(1, -4, List.of(5)).size());
+    assertEquals(List.of(1, 5, 2, null, 4), l.replaceSlice(1, -4, List.of(5)));
+    assertEquals(5, l.replaceSlice(1, -4, List.of(5)).get(1));
+    assertFalse(l.replaceSlice(1, -5, List.of(5)).isEmpty());
+    assertEquals(5, l.replaceSlice(1, -5, List.of(5)).size());
+    assertEquals(List.of(1, 5, 2, null, 4), l.replaceSlice(1, -5, List.of(5)));
+    assertEquals(5, l.replaceSlice(1, -5, List.of(5)).get(1));
+    assertFalse(l.replaceSlice(-1, 1, List.of(5)).isEmpty());
+    assertEquals(5, l.replaceSlice(-1, 1, List.of(5)).size());
+    assertEquals(List.of(1, 2, null, 5, 4), l.replaceSlice(-1, 1, List.of(5)));
+    assertEquals(2, l.replaceSlice(-1, 1, List.of(5)).get(1));
+    assertFalse(l.replaceSlice(-1, 3, List.of(5)).isEmpty());
+    assertEquals(5, l.replaceSlice(-1, 3, List.of(5)).size());
+    assertEquals(List.of(1, 2, null, 5, 4), l.replaceSlice(-1, 3, List.of(5)));
+    assertEquals(2, l.replaceSlice(-1, 3, List.of(5)).get(1));
+    assertFalse(l.replaceSlice(-1, -1, List.of(5)).isEmpty());
+    assertEquals(5, l.replaceSlice(-1, -1, List.of(5)).size());
+    assertEquals(List.of(1, 2, null, 5, 4), l.replaceSlice(-1, -1, List.of(5)));
+    assertEquals(2, l.replaceSlice(-1, -1, List.of(5)).get(1));
+    assertFalse(l.replaceSlice(-1, -4, List.of(5)).isEmpty());
+    assertEquals(5, l.replaceSlice(-1, -4, List.of(5)).size());
+    assertEquals(List.of(1, 2, null, 5, 4), l.replaceSlice(-1, -4, List.of(5)));
+    assertEquals(2, l.replaceSlice(-1, -4, List.of(5)).get(1));
+
+    assertFalse(l.replaceSlice(1, -1, List.of(5)).isEmpty());
+    assertEquals(3, l.replaceSlice(1, -1, List.of(5)).size());
+    assertEquals(List.of(1, 5, 4), l.replaceSlice(1, -1, List.of(5)));
+    assertEquals(5, l.replaceSlice(1, -1, List.of(5)).get(1));
+    assertFalse(l.replaceSlice(1, -2, List.of(5)).isEmpty());
+    assertEquals(4, l.replaceSlice(1, -2, List.of(5)).size());
+    assertEquals(List.of(1, 5, null, 4), l.replaceSlice(1, -2, List.of(5)));
+    assertNull(l.replaceSlice(1, -2, List.of(5)).get(2));
+    assertFalse(l.replaceSlice(1, 3, List.of(5)).isEmpty());
+    assertEquals(3, l.replaceSlice(1, 3, List.of(5)).size());
+    assertEquals(List.of(1, 5, 4), l.replaceSlice(1, 3, List.of(5)));
+    assertEquals(4, l.replaceSlice(1, 3, List.of(5)).get(2));
+    assertFalse(l.replaceSlice(1, 2, List.of(5)).isEmpty());
+    assertEquals(4, l.replaceSlice(1, 2, List.of(5)).size());
+    assertEquals(List.of(1, 5, null, 4), l.replaceSlice(1, 2, List.of(5)));
+    assertNull(l.replaceSlice(1, 2, List.of(5)).get(2));
+    assertFalse(l.replaceSlice(-1, 4, List.of(5)).isEmpty());
+    assertEquals(4, l.replaceSlice(-1, 4, List.of(5)).size());
+    assertEquals(List.of(1, 2, null, 5), l.replaceSlice(-1, 4, List.of(5)));
+    assertEquals(2, l.replaceSlice(-1, 4, List.of(5)).get(1));
+    assertFalse(l.replaceSlice(-2, -1, List.of(5)).isEmpty());
+    assertEquals(4, l.replaceSlice(-2, -1, List.of(5)).size());
+    assertEquals(List.of(1, 2, 5, 4), l.replaceSlice(-2, -1, List.of(5)));
+    assertEquals(2, l.replaceSlice(-2, -1, List.of(5)).get(1));
+
+    assertFalse(l.replaceSlice(0, Integer.MAX_VALUE, List.of(5)).isEmpty());
+    assertEquals(1, l.replaceSlice(0, Integer.MAX_VALUE, List.of(5)).size());
+    assertEquals(List.of(5), l.replaceSlice(0, Integer.MAX_VALUE, List.of(5)));
+    assertEquals(5, l.replaceSlice(0, Integer.MAX_VALUE, List.of(5)).get(0));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceSlice(0, Integer.MAX_VALUE, List.of(5)).get(2));
+
+    assertTrue(l.replaceSlice(0, Integer.MAX_VALUE, List.of()).isEmpty());
+    assertEquals(0, l.replaceSlice(0, Integer.MAX_VALUE, List.of()).size());
+    assertEquals(List.of(), l.replaceSlice(0, Integer.MAX_VALUE, List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.replaceSlice(0, Integer.MAX_VALUE, List.of()).get(1));
+
+    assertFalse(List.of().replaceSlice(0, 0, List.of(5)).isEmpty());
+    assertEquals(1, List.of().replaceSlice(0, 0, List.of(5)).size());
+    assertEquals(List.of(5), List.of().replaceSlice(0, 0, List.of(5)));
+    assertEquals(5, List.of().replaceSlice(0, 0, List.of(5)).get(0));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().replaceSlice(1, -1, List.of(5)).get(0));
+
+    assertTrue(List.of().replaceSlice(1, -1, List.of(5)).isEmpty());
+    assertEquals(0, List.of().replaceSlice(1, -1, List.of(5)).size());
+    assertEquals(List.of(), List.of().replaceSlice(1, -1, List.of(5)));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().replaceSlice(1, -1, List.of(5)).get(0));
+  }
+
+  @Test
+  public void replaceWhere() {
+    var l = List.of(1, 2, 3, 4);
+    assertFalse(l.replaceWhere(i -> false, 5).isEmpty());
+    assertEquals(4, l.replaceWhere(i -> false, 5).size());
+    assertEquals(l, l.replaceWhere(i -> false, 5));
+    assertEquals(3, l.replaceWhere(i -> false, 5).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.replaceWhere(i -> false, 5).get(4));
+    assertFalse(l.replaceWhere(i -> true, 5).isEmpty());
+    assertEquals(4, l.replaceWhere(i -> true, 5).size());
+    assertEquals(List.of(5, 5, 5, 5), l.replaceWhere(i -> true, 5));
+    assertEquals(5, l.replaceWhere(i -> true, 5).get(1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.replaceWhere(i -> true, 5).get(5));
+    assertFalse(l.replaceWhere(i -> i == 2, 3).isEmpty());
+    assertEquals(4, l.replaceWhere(i -> i == 2, 3).size());
+    assertEquals(List.of(1, 3, 3, 4), l.replaceWhere(i -> i == 2, 3));
+    assertEquals(3, l.replaceWhere(i -> i == 2, 3).get(1));
+    assertEquals(3, l.replaceWhere(i -> i == 2, 3).get(2));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.replaceWhere(i -> i == 2, 3).get(4));
+
+    assertFalse(l.append(null).replaceWhere(i -> i == 4, 5).isEmpty());
+    assertEquals(5, l.append(null).replaceWhere(i -> i == 4, 5).size());
+    assertEquals(2, l.append(null).replaceWhere(i -> i == 4, 5).get(1));
+    assertEquals(3, l.append(null).replaceWhere(i -> i == 4, 5).get(2));
+    assertEquals(5, l.append(null).replaceWhere(i -> i == 4, 5).get(3));
+    assertThrows(NullPointerException.class,
+        () -> l.append(null).replaceWhere(i -> i == 4, 5).get(4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.append(null).replaceWhere(i -> i == 4, 5).get(5));
+
+    assertTrue(List.<Integer>of().replaceWhere(i -> false, 5).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceWhere(i -> false, 5).size());
+    assertEquals(List.of(), List.<Integer>of().replaceWhere(i -> false, 5));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceWhere(i -> false, 5).get(2));
+    assertTrue(List.<Integer>of().replaceWhere(i -> true, 5).isEmpty());
+    assertEquals(0, List.<Integer>of().replaceWhere(i -> true, 5).size());
+    assertEquals(List.of(), List.<Integer>of().replaceWhere(i -> true, 5));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.<Integer>of().replaceWhere(i -> true, 5).get(2));
+  }
+
+  @Test
+  public void reverse() {
+    var l = List.of(1, 2, null, 4);
+    assertFalse(l.reverse().isEmpty());
+    assertEquals(4, l.reverse().size());
+    assertEquals(List.of(4, null, 2, 1), l.reverse());
+    assertNull(l.reverse().get(1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.reverse().get(4));
+    assertEquals(4, l.reverse().reverse().size());
+    assertEquals(l, l.reverse().reverse());
+    assertEquals(2, l.reverse().reverse().get(1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.reverse().reverse().get(4));
+
+    assertTrue(List.<Integer>of().reverse().isEmpty());
+    assertEquals(0, List.<Integer>of().reverse().size());
+    assertEquals(List.of(), List.<Integer>of().reverse());
+    assertThrows(IndexOutOfBoundsException.class, () -> List.<Integer>of().reverse().get(0));
+  }
+
+  @Test
+  public void test() throws Exception {
+    var l = List.of(1, 2, null, 4, 2, null, 1);
+    assertEquals(List.of(1, 4, 1), removeSlices(List.of(2, null)).apply(l));
+  }
+
+  private static Function<List<Integer>, List<Integer>> removeSlices(final List<Integer> slice) {
     return new Function<>() {
       @Override
-      public List<Integer> apply(List<Integer> input) {
+      public List<Integer> apply(final List<Integer> input) {
         return input.findIndexOfSlice(slice)
             .flatMap(i -> input.take(i).appendAll(apply(input.drop(i + slice.size()))))
             .orElse(input);

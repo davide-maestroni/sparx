@@ -77,7 +77,7 @@ import sparx.collection.internal.list.RemoveLastWhereListMaterializer;
 import sparx.collection.internal.list.RemoveSliceListMaterializer;
 import sparx.collection.internal.list.RemoveWhereListMaterializer;
 import sparx.collection.internal.list.ReplaceSliceListMaterializer;
-import sparx.collection.internal.list.ReversListMaterializer;
+import sparx.collection.internal.list.ReverseListMaterializer;
 import sparx.collection.internal.list.SingleFlatMapListMaterializer;
 import sparx.collection.internal.list.SingleFlatMapWhereListMaterializer;
 import sparx.collection.internal.list.SingleMapListMaterializer;
@@ -1495,7 +1495,7 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new ReversListMaterializer<E>(materializer));
+        return new List<E>(new ReverseListMaterializer<E>(materializer));
       }
 
       @Override
@@ -1503,6 +1503,7 @@ public class Sparx {
         if (end >= 0 && start >= end) {
           return List.of();
         }
+        // TODO: knownSize
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return this;

@@ -47,10 +47,12 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
     }
     final int start = state.materializedStart();
     if (start <= index) {
+      final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(index - start)) {
         return true;
       }
-      final long wrappedIndex = (long) index + state.materializedLength();
+      final long wrappedIndex =
+          (long) index + state.materializedLength() - elementsMaterializer.materializeSize();
       return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
     return wrapped.canMaterializeElement(index);
@@ -89,7 +91,8 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
       if (elementsMaterializer.canMaterializeElement(elementsIndex)) {
         return elementsMaterializer.materializeElement(elementsIndex);
       }
-      final long wrappedIndex = (long) index + state.materializedLength();
+      final long wrappedIndex =
+          (long) index + state.materializedLength() - elementsMaterializer.materializeSize();
       if (wrappedIndex >= Integer.MAX_VALUE) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
@@ -111,9 +114,12 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public int materializeSize() {
     final int start = state.materializedStart();
-    final int length = state.materializedLength();
-    final long size = Math.max(start, wrapped.materializeSize() - length);
-    return SizeOverflowException.safeCast(size + elementsMaterializer.materializeSize());
+    final int wrappedSize = wrapped.materializeSize();
+    if (start < wrappedSize) {
+      final long size = Math.max(start, wrappedSize - state.materializedLength());
+      return SizeOverflowException.safeCast(size + elementsMaterializer.materializeSize());
+    }
+    return wrappedSize;
   }
 
   private interface State {
