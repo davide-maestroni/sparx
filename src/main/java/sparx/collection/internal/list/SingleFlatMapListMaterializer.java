@@ -87,8 +87,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
       try {
         final ListMaterializer<F> elementsMaterializer = mapper.apply(
             wrapped.materializeElement(0));
-        state = elementsMaterializer;
-        return elementsMaterializer.canMaterializeElement(index);
+        return (state = elementsMaterializer).canMaterializeElement(index);
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
@@ -108,8 +107,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
       try {
         final ListMaterializer<F> elementsMaterializer = mapper.apply(
             wrapped.materializeElement(0));
-        state = elementsMaterializer;
-        return elementsMaterializer.materializeElement(index);
+        return (state = elementsMaterializer).materializeElement(index);
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
@@ -134,8 +132,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
       try {
         final ListMaterializer<F> elementsMaterializer = mapper.apply(
             wrapped.materializeElement(0));
-        state = elementsMaterializer;
-        return elementsMaterializer.materializeSize();
+        return (state = elementsMaterializer).materializeSize();
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);

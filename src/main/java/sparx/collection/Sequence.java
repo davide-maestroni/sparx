@@ -42,6 +42,8 @@ public interface Sequence<E> extends Iterable<E> {
   @NotNull
   Sequence<Integer> countNot(@NotNull Predicate<? super E> predicate);
 
+  // TODO: diff
+
   void doFor(@NotNull Consumer<? super E> consumer);
 
   void doWhile(@NotNull Predicate<? super E> condition, @NotNull Consumer<? super E> consumer);
@@ -173,7 +175,7 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<? extends Sequence<E>> group(int maxSize);
 
   @NotNull
-  Sequence<? extends Sequence<E>> group(int size, E filler);
+  Sequence<? extends Sequence<E>> group(int size, E padding);
 
   @NotNull
   Sequence<Boolean> includes(Object element);
@@ -183,6 +185,8 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull
   Sequence<Boolean> includesSlice(@NotNull Iterable<?> elements);
+
+  // TODO: intersect
 
   boolean isEmpty();
 
@@ -322,6 +326,8 @@ public interface Sequence<E> extends Iterable<E> {
   @NotNull
   Sequence<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
+  // TODO: resizeTo()
+
   int size();
 
   @NotNull
@@ -348,9 +354,10 @@ public interface Sequence<E> extends Iterable<E> {
   @NotNull
   Sequence<E> takeWhileNot(@NotNull Predicate<? super E> predicate);
 
-  // TODO: hasMemory, isSorted, etc.
+  // TODO: union
 
-  // TODO: diff? intersect? union? (removeAll? retainAll?)
+
+  // TODO: isMemoized, isSorted, etc.
   // TODO: sliding?? split??
 
   // TODO: toArray, groupBy, toString(StringBuilder/StringJoiner), collect

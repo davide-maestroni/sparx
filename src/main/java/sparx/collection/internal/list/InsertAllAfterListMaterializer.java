@@ -20,7 +20,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
-import sparx.util.IndexOverflowException;
+import sparx.util.SizeOverflowException;
 
 public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
 
@@ -50,6 +50,9 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
       return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
     if (numElements <= index) {
+      if (numElements >= wrapped.materializeSize()) {
+        return false;
+      }
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(index - numElements)) {
         return true;
@@ -57,27 +60,17 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
       final long wrappedIndex = (long) index + elementsMaterializer.materializeSize();
       return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
-    final ListMaterializer<E> wrapped = this.wrapped;
-    if (wrapped.canMaterializeElement(index)) {
-      return true;
-    }
-    final int wrappedSize = wrapped.materializeSize();
-    if (wrappedSize < numElements) {
-      final long wrappedIndex = (long) index + wrappedSize;
-      return wrappedIndex < Integer.MAX_VALUE && elementsMaterializer.canMaterializeElement(
-          (int) wrappedIndex);
-    }
-    return false;
+    return wrapped.canMaterializeElement(index);
   }
 
   @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
-      if (knownSize < numElements) {
+      if (numElements < knownSize) {
         final int elementsSize = elementsMaterializer.knownSize();
         if (elementsSize >= 0) {
-          return IndexOverflowException.safeCast((long) knownSize + elementsSize);
+          return SizeOverflowException.safeCast((long) knownSize + elementsSize);
         }
       } else {
         return knownSize;
@@ -101,6 +94,9 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
       return wrapped.materializeElement(index - elementsSize);
     }
     if (numElements <= index) {
+      if (numElements >= wrapped.materializeSize()) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
       final int elementsIndex = index - numElements;
       final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer.canMaterializeElement(elementsIndex)) {
@@ -112,10 +108,6 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.canMaterializeElement(index)) {
       return wrapped.materializeElement(index);
-    }
-    final int wrappedSize = wrapped.materializeSize();
-    if (wrappedSize < numElements) {
-      return elementsMaterializer.materializeElement(index - wrappedSize);
     }
     throw new IndexOutOfBoundsException(Integer.toString(index));
   }
@@ -139,7 +131,7 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
     if (wrappedSize < numElements) {
       return wrappedSize;
     }
-    return IndexOverflowException.safeCast(
+    return SizeOverflowException.safeCast(
         (long) wrappedSize + elementsMaterializer.materializeSize());
   }
 

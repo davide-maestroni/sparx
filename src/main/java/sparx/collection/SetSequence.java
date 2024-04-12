@@ -202,7 +202,7 @@ public interface SetSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  SetSequence<? extends SetSequence<E>> group(int size, E filler);
+  SetSequence<? extends SetSequence<E>> group(int size, E padding);
 
   @Override
   @NotNull

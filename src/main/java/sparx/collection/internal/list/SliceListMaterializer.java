@@ -186,10 +186,12 @@ public class SliceListMaterializer<E> implements ListMaterializer<E> {
   private class SliceIterator implements Iterator<E> {
 
     private long pos = state.materializedStart();
+    private final long end = pos + state.materializedLength();
 
     @Override
     public boolean hasNext() {
-      return wrapped.canMaterializeElement((int) pos);
+      final long pos = this.pos;
+      return pos < end && wrapped.canMaterializeElement((int) pos);
     }
 
     @Override

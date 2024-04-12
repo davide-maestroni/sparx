@@ -38,7 +38,8 @@ public class RemoveAfterListMaterializer<E> implements ListMaterializer<E> {
       return false;
     }
     if (numElements <= index) {
-      return index < Integer.MAX_VALUE && wrapped.canMaterializeElement(index + 1);
+      final long wrappedIndex = (long) index + 1;
+      return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
     return wrapped.canMaterializeElement(index);
   }
@@ -53,6 +54,7 @@ public class RemoveAfterListMaterializer<E> implements ListMaterializer<E> {
       if (knownSize > numElements) {
         return knownSize - 1;
       }
+      return knownSize;
     }
     return -1;
   }
@@ -99,7 +101,9 @@ public class RemoveAfterListMaterializer<E> implements ListMaterializer<E> {
     public boolean hasNext() {
       final int pos = this.pos;
       if (pos == numElements) {
-        return pos < Integer.MAX_VALUE && wrapped.canMaterializeElement(pos + 1);
+        final long wrappedIndex = (long) pos + 1;
+        return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement(
+            (int) wrappedIndex);
       }
       return wrapped.canMaterializeElement(pos);
     }

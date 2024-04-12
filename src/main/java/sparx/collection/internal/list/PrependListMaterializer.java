@@ -19,7 +19,7 @@ import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
-import sparx.util.IndexOverflowException;
+import sparx.util.SizeOverflowException;
 
 public class PrependListMaterializer<E> implements ListMaterializer<E> {
 
@@ -40,7 +40,7 @@ public class PrependListMaterializer<E> implements ListMaterializer<E> {
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
-      return IndexOverflowException.safeCast((long) knownSize + 1);
+      return SizeOverflowException.safeCast((long) knownSize + 1);
     }
     return -1;
   }
@@ -68,8 +68,7 @@ public class PrependListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    final long wrappedSize = wrapped.materializeSize();
-    return IndexOverflowException.safeCast(wrappedSize + 1);
+    return SizeOverflowException.safeCast((long) wrapped.materializeSize() + 1);
   }
 
   private class PrependIterator implements Iterator<E> {

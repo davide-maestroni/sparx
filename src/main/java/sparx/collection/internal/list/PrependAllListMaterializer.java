@@ -20,7 +20,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
-import sparx.util.IndexOverflowException;
+import sparx.util.SizeOverflowException;
 
 public class PrependAllListMaterializer<E> implements ListMaterializer<E> {
 
@@ -49,7 +49,7 @@ public class PrependAllListMaterializer<E> implements ListMaterializer<E> {
     if (knownSize >= 0) {
       final int elementsSize = wrapped.knownSize();
       if (elementsSize >= 0) {
-        return IndexOverflowException.safeCast((long) knownSize + elementsSize);
+        return SizeOverflowException.safeCast((long) knownSize + elementsSize);
       }
     }
     return -1;
@@ -79,8 +79,8 @@ public class PrependAllListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    final long wrappedSize = wrapped.materializeSize();
-    return IndexOverflowException.safeCast(wrappedSize + elementsMaterializer.materializeSize());
+    return SizeOverflowException.safeCast(
+        (long) wrapped.materializeSize() + elementsMaterializer.materializeSize());
   }
 
   private class PrependIterator implements Iterator<E> {

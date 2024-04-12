@@ -53,7 +53,6 @@ public class MapAfterListMaterializer<E> implements ListMaterializer<E> {
     if (index < 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    final int numElements = this.numElements;
     if (index != numElements) {
       return wrapped.materializeElement(index);
     }

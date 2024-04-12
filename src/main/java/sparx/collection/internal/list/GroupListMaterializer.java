@@ -39,9 +39,9 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
   }
 
   public GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
-      final E filler, @NotNull final Function<? super List<E>, ? extends L> mapper) {
-    state = new ImmaterialFillerState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxSize, "maxSize"), filler, Require.notNull(mapper, "mapper"));
+      final E padding, @NotNull final Function<? super List<E>, ? extends L> mapper) {
+    state = new ImmaterialPaddingState(Require.notNull(wrapped, "wrapped"),
+        Require.positive(maxSize, "maxSize"), padding, Require.notNull(mapper, "mapper"));
   }
 
   @Override
@@ -74,22 +74,22 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
     return state.materializeSize();
   }
 
-  private class ImmaterialFillerState implements ListMaterializer<L> {
+  private class ImmaterialPaddingState implements ListMaterializer<L> {
 
     private final ArrayList<L> elements = new ArrayList<L>();
-    private final E filler;
     private final Function<? super List<E>, ? extends L> mapper;
     private final int maxSize;
     private final AtomicInteger modCount = new AtomicInteger();
+    private final E padding;
     private final ListMaterializer<E> wrapped;
 
     private int elementsCount;
 
-    private ImmaterialFillerState(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
-        final E filler, @NotNull final Function<? super List<E>, ? extends L> mapper) {
+    private ImmaterialPaddingState(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
+        final E padding, @NotNull final Function<? super List<E>, ? extends L> mapper) {
       this.wrapped = wrapped;
       this.maxSize = maxSize;
-      this.filler = filler;
+      this.padding = padding;
       this.mapper = mapper;
     }
 
@@ -138,9 +138,9 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
         for (int i = (int) wrappedIndex; i <= endIndex && wrapped.canMaterializeElement(i); ++i) {
           chunk.add(wrapped.materializeElement(i));
         }
-        final E filler = this.filler;
+        final E padding = this.padding;
         while (chunk.size() < maxSize) {
-          chunk.add(filler);
+          chunk.add(padding);
         }
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();

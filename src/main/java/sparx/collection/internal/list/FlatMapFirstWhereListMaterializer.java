@@ -147,7 +147,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
         return wrappedSize;
       }
       final long size = (long) wrappedSize + materializer.materializeSize() - 1;
-      return IndexOverflowException.safeCast(size);
+      return SizeOverflowException.safeCast(size);
     }
   }
 

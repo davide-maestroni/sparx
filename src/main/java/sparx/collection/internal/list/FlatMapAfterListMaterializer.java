@@ -50,6 +50,9 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
     if (index < numElements) {
       return wrapped.canMaterializeElement(index);
     }
+    if (numElements >= wrapped.materializeSize()) {
+      return false;
+    }
     final int elementIndex = index - numElements;
     final ListMaterializer<E> materializer = state.materialized();
     final long wrappedIndex = (long) index - materializer.materializeSize() + 1;

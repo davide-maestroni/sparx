@@ -20,7 +20,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
-import sparx.util.IndexOverflowException;
+import sparx.util.SizeOverflowException;
 
 public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
 
@@ -70,7 +70,7 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
           if (size > knownSize) {
             return knownSize;
           }
-          return IndexOverflowException.safeCast(size + elementsSize);
+          return SizeOverflowException.safeCast(size + elementsSize);
         }
       }
     }
@@ -113,7 +113,7 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
     final int start = state.materializedStart();
     final int length = state.materializedLength();
     final long size = Math.max(start, wrapped.materializeSize() - length);
-    return IndexOverflowException.safeCast(size + elementsMaterializer.materializeSize());
+    return SizeOverflowException.safeCast(size + elementsMaterializer.materializeSize());
   }
 
   private interface State {
@@ -218,8 +218,12 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
     public boolean hasNext() {
       final long pos = this.pos;
       if (pos == state.materializedStart()) {
-        return iterator.hasNext() || wrapped.canMaterializeElement(
-            IndexOverflowException.safeCast(pos + state.materializedLength()));
+        if (iterator.hasNext()) {
+          return true;
+        }
+        final long wrappedIndex = pos + state.materializedLength();
+        return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement(
+            (int) wrappedIndex);
       }
       return wrapped.canMaterializeElement((int) pos);
     }

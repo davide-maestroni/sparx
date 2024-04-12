@@ -85,9 +85,7 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
         return knownSize;
       }
       if (knownSize == 0) {
-        final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-        state = elementsMaterializer;
-        return elementsMaterializer.knownSize();
+        return (state = elementsMaterializer).knownSize();
       }
       return knownSize;
     }

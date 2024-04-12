@@ -901,7 +901,7 @@ public class Sparx {
 
       @Override
       @SuppressWarnings("unchecked")
-      public @NotNull List<? extends List<E>> group(final int size, final E filler) {
+      public @NotNull List<? extends List<E>> group(final int size, final E padding) {
         Require.positive(size, "size");
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
@@ -910,7 +910,7 @@ public class Sparx {
         if (size == 1) {
           return group(1);
         }
-        return new List<List<E>>(new GroupListMaterializer<E, List<E>>(materializer, size, filler,
+        return new List<List<E>>(new GroupListMaterializer<E, List<E>>(materializer, size, padding,
             (Function<? super java.util.List<E>, ? extends List<E>>) FROM_JAVA_LIST));
       }
 

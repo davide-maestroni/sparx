@@ -20,7 +20,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
-import sparx.util.IndexOverflowException;
+import sparx.util.SizeOverflowException;
 
 public class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
 
@@ -41,13 +41,12 @@ public class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
       return false;
     }
     if (index == 0) {
-      return true;
+      return numElements == 0;
     }
     if (numElements <= index) {
       return wrapped.canMaterializeElement(index - 1);
     }
-    final ListMaterializer<E> wrapped = this.wrapped;
-    return wrapped.canMaterializeElement(index) || index <= wrapped.materializeSize();
+    return wrapped.canMaterializeElement(index);
   }
 
   @Override
@@ -55,7 +54,7 @@ public class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
       if (knownSize < numElements) {
-        return IndexOverflowException.safeCast((long) knownSize + 1);
+        return SizeOverflowException.safeCast((long) knownSize + 1);
       }
       return knownSize;
     }
@@ -78,13 +77,6 @@ public class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
     if (wrapped.canMaterializeElement(index)) {
       return wrapped.materializeElement(index);
     }
-    final int wrappedSize = wrapped.materializeSize();
-    if (wrappedSize < numElements) {
-      if (index > wrappedSize) {
-        throw new IndexOutOfBoundsException(Integer.toString(index));
-      }
-      return element;
-    }
     throw new IndexOutOfBoundsException(Integer.toString(index));
   }
 
@@ -104,7 +96,7 @@ public class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
     if (wrappedSize < numElements) {
       return wrappedSize;
     }
-    return IndexOverflowException.safeCast((long) wrappedSize + 1);
+    return SizeOverflowException.safeCast((long) wrappedSize + 1);
   }
 
   private class InsertIterator implements Iterator<E> {

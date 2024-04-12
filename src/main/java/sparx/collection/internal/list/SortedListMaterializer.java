@@ -16,7 +16,6 @@
 package sparx.collection.internal.list;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -39,7 +38,7 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return index >= 0 && index < state.materialized().size();
+    return state.canMaterializeElement(index);
   }
 
   @Override
@@ -54,7 +53,7 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean materializeEmpty() {
-    return state.materialized().isEmpty();
+    return !state.canMaterializeElement(0);
   }
 
   @Override
@@ -64,28 +63,19 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return state.materialized().size();
+    return state.materializeSize();
   }
 
   private interface State<E> {
+
+    boolean canMaterializeElement(int index);
 
     int knownSize();
 
     @NotNull
     List<E> materialized();
-  }
 
-  private static class EmptyState<E> implements State<E> {
-
-    @Override
-    public int knownSize() {
-      return 0;
-    }
-
-    @Override
-    public @NotNull List<E> materialized() {
-      return Collections.emptyList();
-    }
+    int materializeSize();
   }
 
   private static class ElementsState<E> implements State<E> {
@@ -98,6 +88,11 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
+    public boolean canMaterializeElement(final int index) {
+      return index >= 0 && index < elements.size();
+    }
+
+    @Override
     public int knownSize() {
       return elements.size();
     }
@@ -105,6 +100,11 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public @NotNull List<E> materialized() {
       return elements;
+    }
+
+    @Override
+    public int materializeSize() {
+      return elements.size();
     }
   }
 
@@ -118,6 +118,11 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
         @NotNull final Comparator<? super E> comparator) {
       this.wrapped = wrapped;
       this.comparator = comparator;
+    }
+
+    @Override
+    public boolean canMaterializeElement(final int index) {
+      return wrapped.canMaterializeElement(index);
     }
 
     @Override
@@ -145,6 +150,11 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
+    }
+
+    @Override
+    public int materializeSize() {
+      return wrapped.materializeSize();
     }
   }
 }

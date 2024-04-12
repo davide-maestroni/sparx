@@ -43,7 +43,8 @@ public class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
       return false;
     }
     if (state.materialized() <= index) {
-      return index < Integer.MAX_VALUE && wrapped.canMaterializeElement(index + 1);
+      final long wrappedIndex = (long) index + 1;
+      return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
     }
     return wrapped.canMaterializeElement(index);
   }
@@ -170,7 +171,9 @@ public class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
     public boolean hasNext() {
       final int pos = this.pos;
       if (pos == state.materialized()) {
-        return pos < Integer.MAX_VALUE && wrapped.canMaterializeElement(pos + 1);
+        final long wrappedIndex = (long) pos + 1;
+        return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement(
+            (int) wrappedIndex);
       }
       return wrapped.canMaterializeElement(pos);
     }

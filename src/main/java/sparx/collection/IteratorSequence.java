@@ -219,7 +219,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
   @Override
   @NotNull
-  IteratorSequence<? extends IteratorSequence<E>> group(int size, E filler);
+  IteratorSequence<? extends IteratorSequence<E>> group(int size, E padding);
 
   @Override
   @NotNull

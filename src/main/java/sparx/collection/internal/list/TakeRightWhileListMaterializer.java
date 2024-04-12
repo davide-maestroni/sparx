@@ -20,8 +20,8 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
-import sparx.util.Require;
 import sparx.util.IndexOverflowException;
+import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.Predicate;
 

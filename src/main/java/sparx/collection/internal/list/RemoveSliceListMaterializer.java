@@ -20,7 +20,6 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
-import sparx.util.IndexOverflowException;
 
 public class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
 
@@ -198,8 +197,9 @@ public class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
     public boolean hasNext() {
       final long pos = this.pos;
       if (pos == state.materializedStart()) {
-        return wrapped.canMaterializeElement(
-            IndexOverflowException.safeCast(pos + state.materializedLength()));
+        final long wrappedIndex = pos + state.materializedLength();
+        return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement(
+            (int) wrappedIndex);
       }
       return wrapped.canMaterializeElement((int) pos);
     }

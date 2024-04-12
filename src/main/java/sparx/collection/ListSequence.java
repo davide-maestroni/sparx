@@ -80,7 +80,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @NotNull
   ListSequence<Boolean> endsWith(@NotNull Iterable<?> elements);
 
-  // TODO: enumerate()
+  // TODO: enumerate() - move to Sequence???
 
   @Override
   @NotNull
@@ -210,7 +210,7 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
   @NotNull
-  ListSequence<? extends ListSequence<E>> group(int size, E filler);
+  ListSequence<? extends ListSequence<E>> group(int size, E padding);
 
   @Override
   @NotNull
@@ -291,8 +291,6 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
   @Override
   @NotNull
   ListSequence<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
-
-  // TODO: padTo(size, element), padLeftTo(size, element), padRightTo(size, element)
 
   @Override
   @NotNull

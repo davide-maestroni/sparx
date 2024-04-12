@@ -94,8 +94,7 @@ public class SingleFlatMapWhereListMaterializer<E> implements ListMaterializer<E
         final E element = wrapped.materializeElement(0);
         if (predicate.test(element)) {
           final ListMaterializer<E> elementsMaterializer = mapper.apply(element);
-          state = elementsMaterializer;
-          return elementsMaterializer.canMaterializeElement(index);
+          return (state = elementsMaterializer).canMaterializeElement(index);
         }
         state = wrapped;
         return true;
@@ -120,8 +119,7 @@ public class SingleFlatMapWhereListMaterializer<E> implements ListMaterializer<E
         final E element = wrapped.materializeElement(0);
         if (predicate.test(element)) {
           final ListMaterializer<E> elementsMaterializer = mapper.apply(element);
-          state = elementsMaterializer;
-          return elementsMaterializer.materializeElement(index);
+          return (state = elementsMaterializer).materializeElement(index);
         }
         state = wrapped;
         return element;
@@ -150,8 +148,7 @@ public class SingleFlatMapWhereListMaterializer<E> implements ListMaterializer<E
         final E element = wrapped.materializeElement(0);
         if (predicate.test(element)) {
           final ListMaterializer<E> elementsMaterializer = mapper.apply(element);
-          state = elementsMaterializer;
-          return elementsMaterializer.materializeSize();
+          return (state = elementsMaterializer).materializeSize();
         }
         state = wrapped;
         return 1;
