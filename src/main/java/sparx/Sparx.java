@@ -1313,9 +1313,30 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> removeSlice(final int start, final int end) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if ((end <= start && start >= 0 && end >= 0) || materializer.knownSize() == 0) {
+        if (end <= start && start >= 0 && end >= 0) {
           return this;
+        }
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize > 0) {
+          final int knownStart;
+          if (start < 0) {
+            knownStart = Math.max(0, knownSize + start);
+          } else {
+            knownStart = Math.min(knownSize, start);
+          }
+          final int knownEnd;
+          if (end < 0) {
+            knownEnd = Math.max(0, knownSize + end);
+          } else {
+            knownEnd = Math.min(knownSize, end);
+          }
+          if (knownStart >= knownEnd) {
+            return this;
+          }
         }
         return new List<E>(new RemoveSliceListMaterializer<E>(materializer, start, end));
       }
@@ -1471,8 +1492,25 @@ public class Sparx {
         }
         final ListMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
-        if (knownSize >= 0 && start >= knownSize) {
+        if (knownSize == 0) {
           return this;
+        }
+        if (knownSize > 0) {
+          final int knownStart;
+          if (start < 0) {
+            knownStart = Math.max(0, knownSize + start);
+          } else {
+            knownStart = Math.min(knownSize, start);
+          }
+          final int knownEnd;
+          if (end < 0) {
+            knownEnd = Math.max(0, knownSize + end);
+          } else {
+            knownEnd = Math.min(knownSize, end);
+          }
+          if (knownStart >= knownEnd) {
+            return insertAllAfter(knownStart, patch);
+          }
         }
         return new List<E>(new ReplaceSliceListMaterializer<E>(materializer, start, end,
             getElementsMaterializer(patch)));
@@ -1500,13 +1538,30 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> slice(final int start, final int end) {
-        if (end >= 0 && start >= end) {
+        if ((start == end) || (end >= 0 && start >= end)) {
           return List.of();
         }
-        // TODO: knownSize
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return this;
+        }
+        if (knownSize > 0) {
+          final int knownStart;
+          if (start < 0) {
+            knownStart = Math.max(0, knownSize + start);
+          } else {
+            knownStart = Math.min(knownSize, start);
+          }
+          final int knownEnd;
+          if (end < 0) {
+            knownEnd = Math.max(0, knownSize + end);
+          } else {
+            knownEnd = Math.min(knownSize, end);
+          }
+          if (knownStart >= knownEnd) {
+            return List.of();
+          }
         }
         return new List<E>(new SliceListMaterializer<E>(materializer, start, end));
       }

@@ -75,7 +75,8 @@ public class TakeRightWhileListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean materializeEmpty() {
-    return wrapped.materializeEmpty();
+    final ListMaterializer<E> wrapped = this.wrapped;
+    return wrapped.materializeEmpty() || state.materialized() == 0;
   }
 
   @Override
