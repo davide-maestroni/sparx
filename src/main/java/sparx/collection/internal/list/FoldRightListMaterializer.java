@@ -24,14 +24,14 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.BinaryFunction;
+import sparx.util.function.BiFunction;
 
 public class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
 
   private volatile State<F> state;
 
   public FoldRightListMaterializer(@NotNull final ListMaterializer<E> wrapped, final F identity,
-      @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      @NotNull final BiFunction<? super E, ? super F, ? extends F> operation) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), identity,
         Require.notNull(operation, "operation"));
   }
@@ -97,11 +97,11 @@ public class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
 
     private final F identity;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final BinaryFunction<? super E, ? super F, ? extends F> operation;
+    private final BiFunction<? super E, ? super F, ? extends F> operation;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped, final F identity,
-        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+        @NotNull final BiFunction<? super E, ? super F, ? extends F> operation) {
       this.wrapped = wrapped;
       this.identity = identity;
       this.operation = operation;
@@ -119,7 +119,7 @@ public class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
       }
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
-        final BinaryFunction<? super E, ? super F, ? extends F> operation = this.operation;
+        final BiFunction<? super E, ? super F, ? extends F> operation = this.operation;
         F current = identity;
         for (int i = wrapped.materializeSize() - 1; i >= 0; --i) {
           current = operation.apply(wrapped.materializeElement(i), current);

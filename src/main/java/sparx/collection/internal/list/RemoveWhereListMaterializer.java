@@ -23,14 +23,14 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedPredicate;
 
 public class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile ListMaterializer<E> state;
 
   public RemoveWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate) {
+      @NotNull final IndexedPredicate<? super E> predicate) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"));
   }
@@ -70,10 +70,10 @@ public class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
     private final ArrayList<E> elements = new ArrayList<E>();
     private final Iterator<E> iterator;
     private final AtomicInteger modCount = new AtomicInteger();
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate) {
+        @NotNull final IndexedPredicate<? super E> predicate) {
       iterator = wrapped.materializeIterator();
       this.predicate = predicate;
     }
@@ -84,7 +84,7 @@ public class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
       if (elements.size() <= index) {
         final AtomicInteger modCount = this.modCount;
         final int expectedCount = modCount.incrementAndGet();
-        final Predicate<? super E> predicate = this.predicate;
+        final IndexedPredicate<? super E> predicate = this.predicate;
         try {
           final Iterator<E> iterator = this.iterator;
           do {
@@ -92,7 +92,7 @@ public class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
               return false;
             }
             final E next = iterator.next();
-            if (!predicate.test(next)) {
+            if (!predicate.test(elements.size(), next)) {
               elements.add(next);
             }
           } while (elements.size() <= index);

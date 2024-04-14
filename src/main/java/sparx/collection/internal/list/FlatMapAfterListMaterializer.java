@@ -24,7 +24,7 @@ import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
+import sparx.util.function.IndexedFunction;
 
 public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
 
@@ -35,7 +35,7 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
 
   public FlatMapAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       final int numElements,
-      @NotNull final Function<? super E, ? extends ListMaterializer<E>> mapper) {
+      @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     this.numElements = Require.notNegative(numElements, "numElements");
     state = new ImmaterialState(Require.notNull(mapper, "mapper"));
@@ -133,10 +133,10 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState implements State<E> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Function<? super E, ? extends ListMaterializer<E>> mapper;
+    private final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper;
 
     private ImmaterialState(
-        @NotNull final Function<? super E, ? extends ListMaterializer<E>> mapper) {
+        @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper) {
       this.mapper = mapper;
     }
 
@@ -146,7 +146,8 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
         throw new ConcurrentModificationException();
       }
       try {
-        final ListMaterializer<E> materializer = mapper.apply(
+        final int numElements = FlatMapAfterListMaterializer.this.numElements;
+        final ListMaterializer<E> materializer = mapper.apply(numElements,
             wrapped.materializeElement(numElements));
         state = new MaterialState<E>(materializer);
         return materializer;

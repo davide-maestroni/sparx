@@ -25,8 +25,8 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
 
 public class MapWhereListMaterializer<E> implements ListMaterializer<E> {
 
@@ -36,8 +36,8 @@ public class MapWhereListMaterializer<E> implements ListMaterializer<E> {
   private volatile ListMaterializer<E> state;
 
   public MapWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate,
-      @NotNull final Function<? super E, ? extends E> mapper) {
+      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
     final int knownSize = wrapped.knownSize();
     if (knownSize < 0 || knownSize > SIZE_THRESHOLD) {
       state = new MapState(Require.notNull(wrapped, "wrapped"),
@@ -83,14 +83,15 @@ public class MapWhereListMaterializer<E> implements ListMaterializer<E> {
   private class ArrayState implements ListMaterializer<E> {
 
     private final Object[] elements;
-    private final Function<? super E, ? extends E> mapper;
+    private final IndexedFunction<? super E, ? extends E> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private ArrayState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate,
-        @NotNull final Function<? super E, ? extends E> mapper, @NotNull final Object[] elements) {
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper,
+        @NotNull final Object[] elements) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.mapper = mapper;
@@ -119,8 +120,8 @@ public class MapWhereListMaterializer<E> implements ListMaterializer<E> {
       final int expectedCount = modCount.incrementAndGet();
       try {
         E element = wrapped.materializeElement(index);
-        if (predicate.test(element)) {
-          element = mapper.apply(element);
+        if (predicate.test(index, element)) {
+          element = mapper.apply(index, element);
         }
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();
@@ -150,14 +151,14 @@ public class MapWhereListMaterializer<E> implements ListMaterializer<E> {
   private class MapState implements ListMaterializer<E> {
 
     private final HashMap<Integer, E> elements = new HashMap<Integer, E>();
-    private final Function<? super E, ? extends E> mapper;
+    private final IndexedFunction<? super E, ? extends E> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private MapState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate,
-        @NotNull final Function<? super E, ? extends E> mapper) {
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.mapper = mapper;
@@ -182,12 +183,12 @@ public class MapWhereListMaterializer<E> implements ListMaterializer<E> {
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
-        final Predicate<? super E> predicate = this.predicate;
-        final Function<? super E, ? extends E> mapper = this.mapper;
+        final IndexedPredicate<? super E> predicate = this.predicate;
+        final IndexedFunction<? super E, ? extends E> mapper = this.mapper;
         final ListMaterializer<E> wrapped = this.wrapped;
         E element = wrapped.materializeElement(index);
-        if (predicate.test(element)) {
-          element = mapper.apply(wrapped.materializeElement(index));
+        if (predicate.test(index, element)) {
+          element = mapper.apply(index, wrapped.materializeElement(index));
         }
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();

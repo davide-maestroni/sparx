@@ -17,13 +17,19 @@ package sparx.collection;
 
 import java.util.Comparator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.function.BinaryFunction;
+import sparx.util.function.BiFunction;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedConsumer;
+import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
 import sparx.util.function.Predicate;
 import sparx.util.function.Supplier;
 
 public interface Sequence<E> extends Iterable<E> {
+
+  @NotNull
+  Sequence<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<Boolean> all(@NotNull Predicate<? super E> predicate);
@@ -37,20 +43,39 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<Integer> count();
 
   @NotNull
+  Sequence<Integer> count(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<Integer> count(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<Integer> countNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<Integer> countNot(@NotNull Predicate<? super E> predicate);
 
-  // TODO: diff
+  @NotNull
+  Sequence<E> diff(@NotNull Iterable<?> elements);
 
   void doFor(@NotNull Consumer<? super E> consumer);
 
+  void doFor(@NotNull IndexedConsumer<? super E> consumer);
+
+  void doWhile(@NotNull IndexedPredicate<? super E> condition,
+      @NotNull IndexedConsumer<? super E> consumer);
+
   void doWhile(@NotNull Predicate<? super E> condition, @NotNull Consumer<? super E> consumer);
+
+  void doWhile(@NotNull IndexedPredicate<? super E> predicate);
 
   void doWhile(@NotNull Predicate<? super E> predicate);
 
+  void doWhileNot(@NotNull IndexedPredicate<? super E> condition,
+      @NotNull IndexedConsumer<? super E> consumer);
+
   void doWhileNot(@NotNull Predicate<? super E> condition, @NotNull Consumer<? super E> consumer);
+
+  void doWhileNot(@NotNull IndexedPredicate<? super E> predicate);
 
   void doWhileNot(@NotNull Predicate<? super E> predicate);
 
@@ -61,13 +86,25 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> dropRight(int maxElements);
 
   @NotNull
+  Sequence<E> dropRightWhile(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> dropRightWhile(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<E> dropRightWhileNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> dropRightWhileNot(@NotNull Predicate<? super E> predicate);
 
   @NotNull
+  Sequence<E> dropWhile(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> dropWhile(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<E> dropWhileNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> dropWhileNot(@NotNull Predicate<? super E> predicate);
@@ -76,22 +113,43 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<Boolean> endsWith(@NotNull Iterable<?> elements);
 
   @NotNull
+  Sequence<Boolean> exists(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<Boolean> exists(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<E> filter(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> filter(@NotNull Predicate<? super E> predicate);
 
   @NotNull
+  Sequence<E> filterNot(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> filterNot(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<E> findAny(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> findAny(@NotNull Predicate<? super E> predicate);
 
   @NotNull
+  Sequence<E> findAnyNot(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> findAnyNot(@NotNull Predicate<? super E> predicate);
 
   @NotNull
+  Sequence<E> findFirst(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> findFirst(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<E> findFirstNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
@@ -100,7 +158,13 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<Integer> findIndexOf(Object element);
 
   @NotNull
+  Sequence<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<Integer> findIndexWhereNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
@@ -109,19 +173,31 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
   @NotNull
+  Sequence<E> findLast(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> findLast(@NotNull Predicate<? super E> predicate);
 
   @NotNull
   Sequence<Integer> findLastIndexOf(Object element);
 
   @NotNull
+  Sequence<Integer> findLastIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<Integer> findLastIndexWhereNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
 
   @NotNull
   Sequence<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
+
+  @NotNull
+  Sequence<E> findLastNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> findLastNot(@NotNull Predicate<? super E> predicate);
@@ -132,28 +208,59 @@ public interface Sequence<E> extends Iterable<E> {
   <F> Sequence<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
   @NotNull
+  <F> Sequence<F> flatMap(@NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper);
+
+  @NotNull
   Sequence<E> flatMapAfter(int numElements,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
+  Sequence<E> flatMapAfter(int numElements,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
+  Sequence<E> flatMapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
   @NotNull
   Sequence<E> flatMapFirstWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @NotNull
+  Sequence<E> flatMapFirstWhereNot(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
   Sequence<E> flatMapFirstWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
+  Sequence<E> flatMapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
   @NotNull
   Sequence<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @NotNull
+  Sequence<E> flatMapLastWhereNot(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
   Sequence<E> flatMapLastWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @NotNull
+  Sequence<E> flatMapWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
   Sequence<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
+  Sequence<E> flatMapWhereNot(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
   @NotNull
   Sequence<E> flatMapWhereNot(@NotNull Predicate<? super E> predicate,
@@ -161,15 +268,15 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull
   <F> Sequence<F> fold(F identity,
-      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+      @NotNull BiFunction<? super F, ? super E, ? extends F> operation);
 
   @NotNull
   <F> Sequence<F> foldLeft(F identity,
-      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+      @NotNull BiFunction<? super F, ? super E, ? extends F> operation);
 
   @NotNull
   <F> Sequence<F> foldRight(F identity,
-      @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
+      @NotNull BiFunction<? super E, ? super F, ? extends F> operation);
 
   @NotNull
   Sequence<? extends Sequence<E>> group(int maxSize);
@@ -186,7 +293,8 @@ public interface Sequence<E> extends Iterable<E> {
   @NotNull
   Sequence<Boolean> includesSlice(@NotNull Iterable<?> elements);
 
-  // TODO: intersect
+  @NotNull
+  Sequence<E> intersect(@NotNull Iterable<?> elements);
 
   boolean isEmpty();
 
@@ -196,27 +304,57 @@ public interface Sequence<E> extends Iterable<E> {
   <F> Sequence<F> map(@NotNull Function<? super E, F> mapper);
 
   @NotNull
+  <F> Sequence<F> map(@NotNull IndexedFunction<? super E, F> mapper);
+
+  @NotNull
   Sequence<E> mapAfter(int numElements, @NotNull Function<? super E, ? extends E> mapper);
+
+  @NotNull
+  Sequence<E> mapAfter(int numElements, @NotNull IndexedFunction<? super E, ? extends E> mapper);
+
+  @NotNull
+  Sequence<E> mapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
   @NotNull
   Sequence<E> mapFirstWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @NotNull
+  Sequence<E> mapFirstWhereNot(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends E> mapper);
+
+  @NotNull
   Sequence<E> mapFirstWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
+
+  @NotNull
+  Sequence<E> mapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
   @NotNull
   Sequence<E> mapLastWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @NotNull
+  Sequence<E> mapLastWhereNot(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends E> mapper);
+
+  @NotNull
   Sequence<E> mapLastWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @NotNull
+  Sequence<E> mapWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends E> mapper);
+
+  @NotNull
   Sequence<E> mapWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
+
+  @NotNull
+  Sequence<E> mapWhereNot(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
   @NotNull
   Sequence<E> mapWhereNot(@NotNull Predicate<? super E> predicate,
@@ -229,9 +367,15 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> min(@NotNull Comparator<? super E> comparator);
 
   @NotNull
+  Sequence<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);
 
   boolean notEmpty();
+
+  @NotNull
+  Sequence<Boolean> notExists(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
@@ -243,7 +387,7 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
 
   @NotNull
-  Sequence<E> peek(@NotNull Consumer<? super E> consumer);
+  Sequence<E> peek(@NotNull Consumer<? super E> consumer); // TODO: move to iterator??
 
   @NotNull
   Sequence<E> plus(E element);
@@ -252,16 +396,13 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> plusAll(@NotNull Iterable<E> elements);
 
   @NotNull
-  Sequence<E> reduce(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+  Sequence<E> reduce(@NotNull BiFunction<? super E, ? super E, ? extends E> operation);
 
   @NotNull
-  Sequence<E> reduceLeft(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+  Sequence<E> reduceLeft(@NotNull BiFunction<? super E, ? super E, ? extends E> operation);
 
   @NotNull
-  Sequence<E> reduceRight(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+  Sequence<E> reduceRight(@NotNull BiFunction<? super E, ? super E, ? extends E> operation);
 
   @NotNull
   Sequence<E> removeAfter(int numElements);
@@ -273,7 +414,13 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> removeFirst(E element);
 
   @NotNull
+  Sequence<E> removeFirstWhere(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<E> removeFirstWhereNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
@@ -282,7 +429,13 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> removeLast(E element);
 
   @NotNull
+  Sequence<E> removeLastWhere(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<E> removeLastWhereNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
@@ -291,7 +444,13 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> removeSlice(int start, int end);
 
   @NotNull
+  Sequence<E> removeWhere(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> removeWhere(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<E> removeWhereNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
@@ -306,7 +465,13 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> replaceFirst(E element, E replacement);
 
   @NotNull
+  Sequence<E> replaceFirstWhere(@NotNull IndexedPredicate<? super E> predicate, E replacement);
+
+  @NotNull
   Sequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate, E replacement);
+
+  @NotNull
+  Sequence<E> replaceFirstWhereNot(@NotNull IndexedPredicate<? super E> predicate, E replacement);
 
   @NotNull
   Sequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
@@ -315,7 +480,13 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> replaceLast(E element, E replacement);
 
   @NotNull
+  Sequence<E> replaceLastWhere(@NotNull IndexedPredicate<? super E> predicate, E replacement);
+
+  @NotNull
   Sequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate, E replacement);
+
+  @NotNull
+  Sequence<E> replaceLastWhereNot(@NotNull IndexedPredicate<? super E> predicate, E replacement);
 
   @NotNull
   Sequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
@@ -324,9 +495,13 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> replaceSlice(int start, int end, @NotNull Iterable<? extends E> patch);
 
   @NotNull
+  Sequence<E> replaceWhere(@NotNull IndexedPredicate<? super E> predicate, E replacement);
+
+  @NotNull
   Sequence<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
-  // TODO: resizeTo()
+  @NotNull
+  Sequence<E> resizeTo(int numElements, E padding);
 
   int size();
 
@@ -343,19 +518,31 @@ public interface Sequence<E> extends Iterable<E> {
   Sequence<E> takeRight(int maxElements);
 
   @NotNull
+  Sequence<E> takeRightWhile(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> takeRightWhile(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<E> takeRightWhileNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> takeRightWhileNot(@NotNull Predicate<? super E> predicate);
 
   @NotNull
+  Sequence<E> takeWhile(@NotNull IndexedPredicate<? super E> predicate);
+
+  @NotNull
   Sequence<E> takeWhile(@NotNull Predicate<? super E> predicate);
+
+  @NotNull
+  Sequence<E> takeWhileNot(@NotNull IndexedPredicate<? super E> predicate);
 
   @NotNull
   Sequence<E> takeWhileNot(@NotNull Predicate<? super E> predicate);
 
-  // TODO: union
-
+  @NotNull
+  Sequence<E> union(@NotNull Iterable<? extends E> elements);
 
   // TODO: isMemoized, isSorted, etc.
   // TODO: sliding?? split??

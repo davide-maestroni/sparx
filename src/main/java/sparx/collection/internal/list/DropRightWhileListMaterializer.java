@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedPredicate;
 
 public class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
 
@@ -31,7 +31,7 @@ public class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
   private volatile State state;
 
   public DropRightWhileListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate) {
+      @NotNull final IndexedPredicate<? super E> predicate) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     state = new ImmaterialState(Require.notNull(predicate, "predicate"));
   }
@@ -109,9 +109,9 @@ public class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState implements State {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
 
-    private ImmaterialState(@NotNull final Predicate<? super E> predicate) {
+    private ImmaterialState(@NotNull final IndexedPredicate<? super E> predicate) {
       this.predicate = predicate;
     }
 
@@ -127,11 +127,11 @@ public class DropRightWhileListMaterializer<E> implements ListMaterializer<E> {
       }
       try {
         final ListMaterializer<E> wrapped = DropRightWhileListMaterializer.this.wrapped;
-        final Predicate<? super E> predicate = this.predicate;
+        final IndexedPredicate<? super E> predicate = this.predicate;
         final int size = wrapped.materializeSize();
         int i = size - 1;
         for (; i >= 0; --i) {
-          if (!predicate.test(wrapped.materializeElement(i))) {
+          if (!predicate.test(i, wrapped.materializeElement(i))) {
             break;
           }
         }

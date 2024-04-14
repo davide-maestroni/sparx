@@ -22,16 +22,16 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
 
 public class SingleFlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile ListMaterializer<E> state;
 
   public SingleFlatMapWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate,
-      @NotNull final Function<? super E, ? extends ListMaterializer<E>> mapper) {
+      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"));
   }
@@ -69,13 +69,13 @@ public class SingleFlatMapWhereListMaterializer<E> implements ListMaterializer<E
   private class ImmaterialState implements ListMaterializer<E> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Function<? super E, ? extends ListMaterializer<E>> mapper;
-    private final Predicate<? super E> predicate;
+    private final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper;
+    private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate,
-        @NotNull final Function<? super E, ? extends ListMaterializer<E>> mapper) {
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.mapper = mapper;
@@ -92,8 +92,8 @@ public class SingleFlatMapWhereListMaterializer<E> implements ListMaterializer<E
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
         final E element = wrapped.materializeElement(0);
-        if (predicate.test(element)) {
-          final ListMaterializer<E> elementsMaterializer = mapper.apply(element);
+        if (predicate.test(0, element)) {
+          final ListMaterializer<E> elementsMaterializer = mapper.apply(0, element);
           return (state = elementsMaterializer).canMaterializeElement(index);
         }
         state = wrapped;
@@ -117,8 +117,8 @@ public class SingleFlatMapWhereListMaterializer<E> implements ListMaterializer<E
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
         final E element = wrapped.materializeElement(0);
-        if (predicate.test(element)) {
-          final ListMaterializer<E> elementsMaterializer = mapper.apply(element);
+        if (predicate.test(0, element)) {
+          final ListMaterializer<E> elementsMaterializer = mapper.apply(0, element);
           return (state = elementsMaterializer).materializeElement(index);
         }
         state = wrapped;
@@ -146,8 +146,8 @@ public class SingleFlatMapWhereListMaterializer<E> implements ListMaterializer<E
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
         final E element = wrapped.materializeElement(0);
-        if (predicate.test(element)) {
-          final ListMaterializer<E> elementsMaterializer = mapper.apply(element);
+        if (predicate.test(0, element)) {
+          final ListMaterializer<E> elementsMaterializer = mapper.apply(0, element);
           return (state = elementsMaterializer).materializeSize();
         }
         state = wrapped;

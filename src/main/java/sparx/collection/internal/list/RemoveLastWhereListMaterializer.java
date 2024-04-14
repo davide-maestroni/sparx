@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedPredicate;
 
 public class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
 
@@ -32,7 +32,7 @@ public class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
   private volatile State state;
 
   public RemoveLastWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate) {
+      @NotNull final IndexedPredicate<? super E> predicate) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     state = new ImmaterialState(Require.notNull(predicate, "predicate"));
   }
@@ -127,9 +127,9 @@ public class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState implements State {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
 
-    private ImmaterialState(@NotNull final Predicate<? super E> predicate) {
+    private ImmaterialState(@NotNull final IndexedPredicate<? super E> predicate) {
       this.predicate = predicate;
     }
 
@@ -145,11 +145,11 @@ public class RemoveLastWhereListMaterializer<E> implements ListMaterializer<E> {
       }
       try {
         final ListMaterializer<E> wrapped = RemoveLastWhereListMaterializer.this.wrapped;
-        final Predicate<? super E> predicate = this.predicate;
+        final IndexedPredicate<? super E> predicate = this.predicate;
         final int size = wrapped.materializeSize();
         for (int i = size - 1; i >= 0; --i) {
           final E element = wrapped.materializeElement(i);
-          if (predicate.test(element)) {
+          if (predicate.test(i, element)) {
             state = new IndexState(i);
             return i;
           }

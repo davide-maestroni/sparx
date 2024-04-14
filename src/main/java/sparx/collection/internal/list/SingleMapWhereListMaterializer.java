@@ -22,16 +22,16 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
 
 public class SingleMapWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile ListMaterializer<E> state;
 
   public SingleMapWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate,
-      @NotNull final Function<? super E, ? extends E> mapper) {
+      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"));
   }
@@ -69,13 +69,13 @@ public class SingleMapWhereListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState implements ListMaterializer<E> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Function<? super E, ? extends E> mapper;
-    private final Predicate<? super E> predicate;
+    private final IndexedFunction<? super E, ? extends E> mapper;
+    private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate,
-        @NotNull final Function<? super E, ? extends E> mapper) {
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.mapper = mapper;
@@ -101,8 +101,8 @@ public class SingleMapWhereListMaterializer<E> implements ListMaterializer<E> {
       }
       try {
         E element = wrapped.materializeElement(0);
-        if (predicate.test(element)) {
-          element = mapper.apply(element);
+        if (predicate.test(0, element)) {
+          element = mapper.apply(0, element);
         }
         state = new ElementToListMaterializer<E>(element);
         return element;

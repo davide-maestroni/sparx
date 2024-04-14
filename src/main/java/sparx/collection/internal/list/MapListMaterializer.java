@@ -25,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
+import sparx.util.function.IndexedFunction;
 
 public class MapListMaterializer<E, F> implements ListMaterializer<F> {
 
@@ -35,7 +35,7 @@ public class MapListMaterializer<E, F> implements ListMaterializer<F> {
   private volatile ListMaterializer<F> state;
 
   public MapListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Function<? super E, F> mapper) {
+      @NotNull final IndexedFunction<? super E, F> mapper) {
     final int knownSize = wrapped.knownSize();
     if (knownSize < 0 || knownSize > SIZE_THRESHOLD) {
       state = new MapState(Require.notNull(wrapped, "wrapped"), Require.notNull(mapper, "mapper"));
@@ -80,12 +80,12 @@ public class MapListMaterializer<E, F> implements ListMaterializer<F> {
   private class ArrayState implements ListMaterializer<F> {
 
     private final Object[] elements;
-    private final Function<? super E, F> mapper;
+    private final IndexedFunction<? super E, F> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
     private final ListMaterializer<E> wrapped;
 
     private ArrayState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Function<? super E, F> mapper, @NotNull final Object[] elements) {
+        @NotNull final IndexedFunction<? super E, F> mapper, @NotNull final Object[] elements) {
       this.wrapped = wrapped;
       this.mapper = mapper;
       this.elements = elements;
@@ -112,7 +112,7 @@ public class MapListMaterializer<E, F> implements ListMaterializer<F> {
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
-        final F element = mapper.apply(wrapped.materializeElement(index));
+        final F element = mapper.apply(index, wrapped.materializeElement(index));
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();
         }
@@ -141,12 +141,12 @@ public class MapListMaterializer<E, F> implements ListMaterializer<F> {
   private class MapState implements ListMaterializer<F> {
 
     private final HashMap<Integer, F> elements = new HashMap<Integer, F>();
-    private final Function<? super E, F> mapper;
+    private final IndexedFunction<? super E, F> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
     private final ListMaterializer<E> wrapped;
 
     private MapState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Function<? super E, F> mapper) {
+        @NotNull final IndexedFunction<? super E, F> mapper) {
       this.wrapped = wrapped;
       this.mapper = mapper;
     }
@@ -170,9 +170,9 @@ public class MapListMaterializer<E, F> implements ListMaterializer<F> {
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
-        final Function<? super E, F> mapper = this.mapper;
+        final IndexedFunction<? super E, F> mapper = this.mapper;
         final ListMaterializer<E> wrapped = this.wrapped;
-        final F element = mapper.apply(wrapped.materializeElement(index));
+        final F element = mapper.apply(index, wrapped.materializeElement(index));
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();
         }

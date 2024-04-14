@@ -15,7 +15,7 @@
  */
 package sparx.util.function;
 
-public interface BinaryFunction<P1, P2, R> {
+public interface IndexedConsumer<P> {
 
-  R apply(P1 firstParam, P2 secondParam) throws Exception;
+  void accept(int index, P param) throws Exception;
 }

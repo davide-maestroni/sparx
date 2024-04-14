@@ -24,16 +24,16 @@ import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
 
 public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile ListMaterializer<E> state;
 
   public FlatMapFirstWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate,
-      @NotNull final Function<? super E, ? extends ListMaterializer<E>> mapper) {
+      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"));
   }
@@ -153,17 +153,17 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
 
   private class ImmaterialState implements ListMaterializer<E> {
 
-    private final Function<? super E, ? extends ListMaterializer<E>> mapper;
+    private final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private boolean found;
     private int pos;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate,
-        @NotNull final Function<? super E, ? extends ListMaterializer<E>> mapper) {
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.mapper = mapper;
@@ -243,7 +243,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
         final int expectedCount = modCount.incrementAndGet();
         final ListMaterializer<E> wrapped = this.wrapped;
         if (wrapped.canMaterializeElement(numElements)) {
-          final ListMaterializer<E> materializer = mapper.apply(
+          final ListMaterializer<E> materializer = mapper.apply(numElements,
               wrapped.materializeElement(numElements));
           if (expectedCount != modCount.get()) {
             throw new ConcurrentModificationException();
@@ -268,9 +268,9 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       try {
         int i = pos;
         final ListMaterializer<E> wrapped = this.wrapped;
-        final Predicate<? super E> predicate = this.predicate;
+        final IndexedPredicate<? super E> predicate = this.predicate;
         while (i <= index && wrapped.canMaterializeElement(i)) {
-          if (predicate.test(wrapped.materializeElement(i))) {
+          if (predicate.test(i, wrapped.materializeElement(i))) {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();
             }

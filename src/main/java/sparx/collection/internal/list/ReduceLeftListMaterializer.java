@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.BinaryFunction;
+import sparx.util.function.BiFunction;
 
 public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
 
@@ -31,7 +31,7 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
   private volatile ListMaterializer<E> state;
 
   public ReduceLeftListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      @NotNull final BiFunction<? super E, ? super E, ? extends E> operation) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(operation, "operation"));
   }
@@ -69,11 +69,11 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState implements ListMaterializer<E> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final BinaryFunction<? super E, ? super E, ? extends E> operation;
+    private final BiFunction<? super E, ? super E, ? extends E> operation;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        @NotNull final BiFunction<? super E, ? super E, ? extends E> operation) {
       this.wrapped = wrapped;
       this.operation = operation;
     }
@@ -117,7 +117,7 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
         throw new ConcurrentModificationException();
       }
       try {
-        final BinaryFunction<? super E, ? super E, ? extends E> operation = this.operation;
+        final BiFunction<? super E, ? super E, ? extends E> operation = this.operation;
         final Iterator<E> iterator = wrapped.materializeIterator();
         if (iterator.hasNext()) {
           E current = iterator.next();

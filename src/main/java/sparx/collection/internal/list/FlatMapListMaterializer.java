@@ -24,14 +24,14 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
+import sparx.util.function.IndexedFunction;
 
 public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
 
   private volatile ListMaterializer<F> state;
 
   public FlatMapListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
+      @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(mapper, "mapper"));
   }
@@ -69,7 +69,7 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
   private class ImmaterialState implements ListMaterializer<F> {
 
     private final ArrayList<F> elements = new ArrayList<F>();
-    private final Function<? super E, ? extends Iterable<F>> mapper;
+    private final IndexedFunction<? super E, ? extends Iterable<F>> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
     private final ListMaterializer<E> wrapped;
 
@@ -77,7 +77,7 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
     private int pos;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
+        @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
       this.mapper = mapper;
       this.wrapped = wrapped;
     }
@@ -121,7 +121,7 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
       if (currSize > index) {
         return currSize;
       }
-      final Function<? super E, ? extends Iterable<F>> mapper = this.mapper;
+      final IndexedFunction<? super E, ? extends Iterable<F>> mapper = this.mapper;
       final ListMaterializer<E> wrapped = this.wrapped;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
@@ -142,7 +142,7 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
           }
           if (wrapped.canMaterializeElement(i)) {
             final E element = wrapped.materializeElement(i);
-            elementIterator = mapper.apply(element).iterator();
+            elementIterator = mapper.apply(i, element).iterator();
             ++i;
           } else {
             if (expectedCount != modCount.get()) {

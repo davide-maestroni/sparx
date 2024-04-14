@@ -240,7 +240,7 @@ public class ListTests {
   @Test
   public void doFor() {
     var list = new ArrayList<>();
-    List.of(1, 2, 3).doFor(list::add);
+    List.of(1, 2, 3).doFor(e -> list.add(e));
     assertEquals(List.of(1, 2, 3), list);
   }
 

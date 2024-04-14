@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedPredicate;
 
 public class FindFirstListMaterializer<E> implements ListMaterializer<E> {
 
@@ -33,7 +33,7 @@ public class FindFirstListMaterializer<E> implements ListMaterializer<E> {
   private volatile State<E> state;
 
   public FindFirstListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate) {
+      @NotNull final IndexedPredicate<? super E> predicate) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"));
   }
@@ -111,11 +111,11 @@ public class FindFirstListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState implements State<E> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate) {
+        @NotNull final IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;
       this.predicate = predicate;
     }
@@ -133,11 +133,11 @@ public class FindFirstListMaterializer<E> implements ListMaterializer<E> {
       }
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
-        final Predicate<? super E> predicate = this.predicate;
+        final IndexedPredicate<? super E> predicate = this.predicate;
         int i = 0;
         while (wrapped.canMaterializeElement(i)) {
           final E element = wrapped.materializeElement(i);
-          if (predicate.test(element)) {
+          if (predicate.test(i, element)) {
             return (state = new ElementState<E>(element)).materialized();
           }
           ++i;

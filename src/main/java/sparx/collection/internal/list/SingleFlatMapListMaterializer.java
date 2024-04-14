@@ -22,14 +22,14 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
+import sparx.util.function.IndexedFunction;
 
 public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> {
 
   private volatile ListMaterializer<F> state;
 
   public SingleFlatMapListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Function<? super E, ? extends ListMaterializer<F>> mapper) {
+      @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<F>> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(mapper, "mapper"));
   }
@@ -67,11 +67,11 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
   private class ImmaterialState implements ListMaterializer<F> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Function<? super E, ? extends ListMaterializer<F>> mapper;
+    private final IndexedFunction<? super E, ? extends ListMaterializer<F>> mapper;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Function<? super E, ? extends ListMaterializer<F>> mapper) {
+        @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<F>> mapper) {
       this.wrapped = wrapped;
       this.mapper = mapper;
     }
@@ -85,7 +85,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
         throw new ConcurrentModificationException();
       }
       try {
-        final ListMaterializer<F> elementsMaterializer = mapper.apply(
+        final ListMaterializer<F> elementsMaterializer = mapper.apply(0,
             wrapped.materializeElement(0));
         return (state = elementsMaterializer).canMaterializeElement(index);
       } catch (final Exception e) {
@@ -105,7 +105,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
         throw new ConcurrentModificationException();
       }
       try {
-        final ListMaterializer<F> elementsMaterializer = mapper.apply(
+        final ListMaterializer<F> elementsMaterializer = mapper.apply(0,
             wrapped.materializeElement(0));
         return (state = elementsMaterializer).materializeElement(index);
       } catch (final Exception e) {
@@ -130,7 +130,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
         throw new ConcurrentModificationException();
       }
       try {
-        final ListMaterializer<F> elementsMaterializer = mapper.apply(
+        final ListMaterializer<F> elementsMaterializer = mapper.apply(0,
             wrapped.materializeElement(0));
         return (state = elementsMaterializer).materializeSize();
       } catch (final Exception e) {

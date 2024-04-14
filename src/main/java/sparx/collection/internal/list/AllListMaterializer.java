@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedPredicate;
 
 public class AllListMaterializer<E> implements ListMaterializer<Boolean> {
 
@@ -32,7 +32,7 @@ public class AllListMaterializer<E> implements ListMaterializer<Boolean> {
   private volatile State state;
 
   public AllListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate, final boolean defaultState) {
+      @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultState) {
     state = new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"),
         defaultState ? TRUE_STATE : FALSE_STATE);
   }
@@ -95,11 +95,11 @@ public class AllListMaterializer<E> implements ListMaterializer<Boolean> {
 
     private final State defaultState;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate, final State defaultState) {
+        @NotNull final IndexedPredicate<? super E> predicate, final State defaultState) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.defaultState = defaultState;
@@ -115,10 +115,10 @@ public class AllListMaterializer<E> implements ListMaterializer<Boolean> {
         if (wrapped.materializeEmpty()) {
           return (state = defaultState).materialized();
         }
-        final Predicate<? super E> predicate = this.predicate;
+        final IndexedPredicate<? super E> predicate = this.predicate;
         int i = 0;
         do {
-          if (!predicate.test(wrapped.materializeElement(i))) {
+          if (!predicate.test(i, wrapped.materializeElement(i))) {
             state = FALSE_STATE;
             return false;
           }

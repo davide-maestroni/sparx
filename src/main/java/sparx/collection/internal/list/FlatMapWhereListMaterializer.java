@@ -24,16 +24,16 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
 
 public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile ListMaterializer<E> state;
 
   public FlatMapWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate,
-      @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"));
   }
@@ -71,17 +71,17 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState implements ListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
-    private final Function<? super E, ? extends Iterable<? extends E>> mapper;
+    private final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private Iterator<? extends E> elementIterator = Collections.<E>emptySet().iterator();
     private int pos;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Predicate<? super E> predicate,
-        @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
       this.wrapped = wrapped;
       this.mapper = mapper;
       this.predicate = predicate;
@@ -127,8 +127,8 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
         return currSize;
       }
       final ListMaterializer<E> wrapped = this.wrapped;
-      final Predicate<? super E> predicate = this.predicate;
-      final Function<? super E, ? extends Iterable<? extends E>> mapper = this.mapper;
+      final IndexedPredicate<? super E> predicate = this.predicate;
+      final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper = this.mapper;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
@@ -148,8 +148,8 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
           }
           if (wrapped.canMaterializeElement(i)) {
             final E element = wrapped.materializeElement(i);
-            if (predicate.test(element)) {
-              elementIterator = mapper.apply(element).iterator();
+            if (predicate.test(i, element)) {
+              elementIterator = mapper.apply(i, element).iterator();
             } else {
               elements.add(element);
               if (++currSize > index) {

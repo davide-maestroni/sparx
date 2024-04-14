@@ -22,14 +22,14 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
+import sparx.util.function.IndexedFunction;
 
 public class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
 
   private volatile ListMaterializer<F> state;
 
   public SingleMapListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Function<? super E, ? extends F> mapper) {
+      @NotNull final IndexedFunction<? super E, ? extends F> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(mapper, "mapper"));
   }
@@ -67,11 +67,11 @@ public class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
   private class ImmaterialState implements ListMaterializer<F> {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Function<? super E, ? extends F> mapper;
+    private final IndexedFunction<? super E, ? extends F> mapper;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Function<? super E, ? extends F> mapper) {
+        @NotNull final IndexedFunction<? super E, ? extends F> mapper) {
       this.wrapped = wrapped;
       this.mapper = mapper;
     }
@@ -95,7 +95,7 @@ public class SingleMapListMaterializer<E, F> implements ListMaterializer<F> {
         throw new ConcurrentModificationException();
       }
       try {
-        final F element = mapper.apply(wrapped.materializeElement(0));
+        final F element = mapper.apply(0, wrapped.materializeElement(0));
         state = new ElementToListMaterializer<F>(element);
         return element;
       } catch (final Exception e) {

@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedPredicate;
 
 public class DropWhileListMaterializer<E> implements ListMaterializer<E> {
 
@@ -31,7 +31,7 @@ public class DropWhileListMaterializer<E> implements ListMaterializer<E> {
   private volatile State state;
 
   public DropWhileListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate) {
+      @NotNull final IndexedPredicate<? super E> predicate) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     state = new ImmaterialState(Require.notNull(predicate, "predicate"));
   }
@@ -115,9 +115,9 @@ public class DropWhileListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState implements State {
 
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
 
-    private ImmaterialState(@NotNull final Predicate<? super E> predicate) {
+    private ImmaterialState(@NotNull final IndexedPredicate<? super E> predicate) {
       this.predicate = predicate;
     }
 
@@ -133,14 +133,14 @@ public class DropWhileListMaterializer<E> implements ListMaterializer<E> {
       }
       try {
         final ListMaterializer<E> wrapped = DropWhileListMaterializer.this.wrapped;
-        final Predicate<? super E> predicate = this.predicate;
-        int elements = 0;
-        while (wrapped.canMaterializeElement(elements) && predicate.test(
-            wrapped.materializeElement(elements))) {
-          ++elements;
+        final IndexedPredicate<? super E> predicate = this.predicate;
+        int i = 0;
+        while (wrapped.canMaterializeElement(i) && predicate.test(i,
+            wrapped.materializeElement(i))) {
+          ++i;
         }
-        state = new ElementsState(elements);
-        return elements;
+        state = new ElementsState(i);
+        return i;
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);

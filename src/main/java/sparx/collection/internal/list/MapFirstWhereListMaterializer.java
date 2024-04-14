@@ -22,8 +22,8 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Function;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
 
 public class MapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
 
@@ -32,8 +32,8 @@ public class MapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
   private volatile State<E> state;
 
   public MapFirstWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate,
-      @NotNull final Function<? super E, ? extends E> mapper) {
+      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     state = new ImmaterialState(Require.notNull(predicate, "predicate"),
         Require.notNull(mapper, "mapper"));
@@ -105,14 +105,14 @@ public class MapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
 
   private class ImmaterialState implements State<E> {
 
-    private final Function<? super E, ? extends E> mapper;
+    private final IndexedFunction<? super E, ? extends E> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
 
     private int pos;
 
-    private ImmaterialState(@NotNull final Predicate<? super E> predicate,
-        @NotNull final Function<? super E, ? extends E> mapper) {
+    private ImmaterialState(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
       this.predicate = predicate;
       this.mapper = mapper;
     }
@@ -120,18 +120,18 @@ public class MapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public int materializeUntil(final int index) {
       final ListMaterializer<E> wrapped = MapFirstWhereListMaterializer.this.wrapped;
-      final Predicate<? super E> predicate = this.predicate;
+      final IndexedPredicate<? super E> predicate = this.predicate;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
         int i = pos;
         while (i <= index && wrapped.canMaterializeElement(i)) {
           final E element = wrapped.materializeElement(i);
-          if (predicate.test(element)) {
+          if (predicate.test(i, element)) {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();
             }
-            state = new ElementState<E>(i, mapper.apply(element));
+            state = new ElementState<E>(i, mapper.apply(i, element));
             return i;
           }
           ++i;

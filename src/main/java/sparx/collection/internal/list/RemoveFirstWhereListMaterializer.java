@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.Predicate;
+import sparx.util.function.IndexedPredicate;
 
 public class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
 
@@ -32,7 +32,7 @@ public class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> 
   private volatile State state;
 
   public RemoveFirstWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Predicate<? super E> predicate) {
+      @NotNull final IndexedPredicate<? super E> predicate) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
     state = new ImmaterialState(Require.notNull(predicate, "predicate"));
   }
@@ -128,11 +128,11 @@ public class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> 
 
     private final Iterator<E> iterator = wrapped.materializeIterator();
     private final AtomicInteger modCount = new AtomicInteger();
-    private final Predicate<? super E> predicate;
+    private final IndexedPredicate<? super E> predicate;
 
     private int pos;
 
-    private ImmaterialState(@NotNull final Predicate<? super E> predicate) {
+    private ImmaterialState(@NotNull final IndexedPredicate<? super E> predicate) {
       this.predicate = predicate;
     }
 
@@ -144,13 +144,13 @@ public class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> 
     @Override
     public int materializeUntil(final int index) {
       final Iterator<E> iterator = this.iterator;
-      final Predicate<? super E> predicate = this.predicate;
+      final IndexedPredicate<? super E> predicate = this.predicate;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
         int i = pos;
         while (i <= index && iterator.hasNext()) {
-          if (predicate.test(iterator.next())) {
+          if (predicate.test(i, iterator.next())) {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();
             }

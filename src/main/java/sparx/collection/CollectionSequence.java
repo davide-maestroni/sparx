@@ -18,7 +18,7 @@ package sparx.collection;
 import java.util.Collection;
 import java.util.Comparator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.function.BinaryFunction;
+import sparx.util.function.BiFunction;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
 import sparx.util.function.Predicate;
@@ -184,17 +184,17 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
   @Override
   @NotNull
   <F> CollectionSequence<F> fold(F identity,
-      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+      @NotNull BiFunction<? super F, ? super E, ? extends F> operation);
 
   @Override
   @NotNull
   <F> CollectionSequence<F> foldLeft(F identity,
-      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+      @NotNull BiFunction<? super F, ? super E, ? extends F> operation);
 
   @Override
   @NotNull
   <F> CollectionSequence<F> foldRight(F identity,
-      @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
+      @NotNull BiFunction<? super E, ? super F, ? extends F> operation);
 
   @Override
   @NotNull
@@ -293,17 +293,17 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
   @Override
   @NotNull
   CollectionSequence<E> reduce(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+      @NotNull BiFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
   CollectionSequence<E> reduceLeft(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+      @NotNull BiFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
   CollectionSequence<E> reduceRight(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+      @NotNull BiFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
