@@ -103,21 +103,15 @@ import sparx.util.function.Supplier;
 public class Sparx {
 
   private static final EmptyListMaterializer<Object> EMPTY_MATERIALIZER = new EmptyListMaterializer<Object>();
-  private static final Predicate<?> EQUALS_NULL = new Predicate<Object>() {
-    @Override
-    public boolean test(final Object param) {
-      return param == null;
-    }
-  };
-  private static final IndexedPredicate<?> INDEXED_EQUALS_NULL = new IndexedPredicate<Object>() {
+  private static final IndexedPredicate<?> EQUALS_NULL = new IndexedPredicate<Object>() {
     @Override
     public boolean test(final int index, final Object param) {
       return param == null;
     }
   };
-  private static final Predicate<?> NOT_EQUALS_NULL = new Predicate<Object>() {
+  private static final IndexedPredicate<?> NOT_EQUALS_NULL = new IndexedPredicate<Object>() {
     @Override
-    public boolean test(final Object param) {
+    public boolean test(final int index, final Object param) {
       return param != null;
     }
   };
@@ -126,22 +120,9 @@ public class Sparx {
   }
 
   @SuppressWarnings("unchecked")
-  private static @NotNull <E> Predicate<E> equalsElement(final Object element) {
+  private static @NotNull <E> IndexedPredicate<E> equalsElement(final Object element) {
     if (element == null) {
-      return (Predicate<E>) EQUALS_NULL;
-    }
-    return new Predicate<E>() {
-      @Override
-      public boolean test(final E param) {
-        return element.equals(param);
-      }
-    };
-  }
-
-  @SuppressWarnings("unchecked")
-  private static @NotNull <E> IndexedPredicate<E> indexedEqualsElement(final Object element) {
-    if (element == null) {
-      return (IndexedPredicate<E>) INDEXED_EQUALS_NULL;
+      return (IndexedPredicate<E>) EQUALS_NULL;
     }
     return new IndexedPredicate<E>() {
       @Override
@@ -162,24 +143,14 @@ public class Sparx {
     };
   }
 
-  private static @NotNull <P> Predicate<P> negated(@NotNull final Predicate<P> predicate) {
-    Require.notNull(predicate, "predicate");
-    return new Predicate<P>() {
-      @Override
-      public boolean test(final P param) throws Exception {
-        return !predicate.test(param);
-      }
-    };
-  }
-
   @SuppressWarnings("unchecked")
-  private static @NotNull <E> Predicate<E> notEqualsElement(final Object element) {
+  private static @NotNull <E> IndexedPredicate<E> notEqualsElement(final Object element) {
     if (element == null) {
-      return (Predicate<E>) NOT_EQUALS_NULL;
+      return (IndexedPredicate<E>) NOT_EQUALS_NULL;
     }
-    return new Predicate<E>() {
+    return new IndexedPredicate<E>() {
       @Override
-      public boolean test(final E param) {
+      public boolean test(final int index, final E param) {
         return !element.equals(param);
       }
     };
@@ -969,7 +940,7 @@ public class Sparx {
           return List.of();
         }
         return new List<Integer>(
-            new FindIndexListMaterializer<E>(materializer, indexedEqualsElement(element)));
+            new FindIndexListMaterializer<E>(materializer, equalsElement(element)));
       }
 
       @Override
@@ -1047,7 +1018,7 @@ public class Sparx {
           return List.of();
         }
         return new List<Integer>(
-            new FindLastIndexListMaterializer<E>(materializer, indexedEqualsElement(element)));
+            new FindLastIndexListMaterializer<E>(materializer, equalsElement(element)));
       }
 
       @Override
@@ -1459,7 +1430,7 @@ public class Sparx {
           return FALSE_LIST;
         }
         return new List<Boolean>(
-            new ExistsListMaterializer<E>(materializer, indexedEqualsElement(element), false));
+            new ExistsListMaterializer<E>(materializer, equalsElement(element), false));
       }
 
       @Override
@@ -1942,7 +1913,7 @@ public class Sparx {
           return this;
         }
         return new List<E>(
-            new RemoveWhereListMaterializer<E>(materializer, indexedEqualsElement(element)));
+            new RemoveWhereListMaterializer<E>(materializer, equalsElement(element)));
       }
 
       @Override
@@ -1952,7 +1923,7 @@ public class Sparx {
           return this;
         }
         return new List<E>(
-            new RemoveFirstWhereListMaterializer<E>(materializer, indexedEqualsElement(element)));
+            new RemoveFirstWhereListMaterializer<E>(materializer, equalsElement(element)));
       }
 
       @Override
@@ -2003,7 +1974,7 @@ public class Sparx {
           return this;
         }
         return new List<E>(
-            new RemoveLastWhereListMaterializer<E>(materializer, indexedEqualsElement(element)));
+            new RemoveLastWhereListMaterializer<E>(materializer, equalsElement(element)));
       }
 
       @Override
@@ -2139,9 +2110,8 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new MapWhereListMaterializer<E>(materializer, indexedEqualsElement(element),
-                replacementMapper(replacement)));
+        return new List<E>(new MapWhereListMaterializer<E>(materializer, equalsElement(element),
+            replacementMapper(replacement)));
       }
 
       @Override
@@ -2153,11 +2123,11 @@ public class Sparx {
         }
         if (knownSize == 1) {
           return new List<E>(
-              new SingleMapWhereListMaterializer<E>(materializer, indexedEqualsElement(element),
+              new SingleMapWhereListMaterializer<E>(materializer, equalsElement(element),
                   replacementMapper(replacement)));
         }
         return new List<E>(
-            new MapFirstWhereListMaterializer<E>(materializer, indexedEqualsElement(element),
+            new MapFirstWhereListMaterializer<E>(materializer, equalsElement(element),
                 replacementMapper(replacement)));
       }
 
@@ -2237,12 +2207,11 @@ public class Sparx {
         }
         if (knownSize == 1) {
           return new List<E>(
-              new SingleMapWhereListMaterializer<E>(materializer, indexedEqualsElement(element),
+              new SingleMapWhereListMaterializer<E>(materializer, equalsElement(element),
                   replacementMapper(replacement)));
         }
-        return new List<E>(
-            new MapLastWhereListMaterializer<E>(materializer, indexedEqualsElement(element),
-                replacementMapper(replacement)));
+        return new List<E>(new MapLastWhereListMaterializer<E>(materializer, equalsElement(element),
+            replacementMapper(replacement)));
       }
 
       @Override
