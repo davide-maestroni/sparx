@@ -22,6 +22,7 @@ import sparx.util.function.Action;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedConsumer;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 import sparx.util.function.Predicate;
@@ -41,7 +42,7 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   IteratorSequence<E> append(E element);
 
   @NotNull
-  IteratorSequence<E> appendAll(@NotNull Iterable<E> elements);
+  IteratorSequence<E> appendAll(@NotNull Iterable<? extends E> elements);
 
   @Override
   @NotNull
@@ -360,9 +361,11 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull
   IteratorSequence<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
 
-  @Override
   @NotNull
   IteratorSequence<E> peek(@NotNull Consumer<? super E> consumer);
+
+  @NotNull
+  IteratorSequence<E> peek(@NotNull IndexedConsumer<? super E> consumer);
 
   @Override
   @NotNull

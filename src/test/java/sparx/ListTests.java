@@ -1553,34 +1553,6 @@ public class ListTests {
   }
 
   @Test
-  public void peek() {
-    var l = List.of(1, 2, 3);
-    var array = new ArrayList<Integer>();
-    assertFalse(l.peek(array::add).isEmpty());
-    assertTrue(array.isEmpty());
-    assertEquals(3, l.peek(array::add).size());
-    assertTrue(array.isEmpty());
-    assertEquals(List.of(1, 2, 3), l.peek(array::add));
-    assertEquals(List.of(1, 2, 3), array);
-    array.clear();
-    assertEquals(2, l.peek(array::add).get(1));
-    assertEquals(List.of(2), array);
-    assertEquals(2, l.peek(array::add).get(1));
-    assertEquals(List.of(2, 2), array);
-    array.clear();
-    assertFalse(l.append(null).peek(x -> ++x).isEmpty());
-    assertEquals(4, l.append(null).peek(x -> ++x).size());
-    assertEquals(3, l.append(null).peek(x -> ++x).get(2));
-    assertEquals(1, l.append(null).peek(x -> ++x).get(0));
-    assertThrows(NullPointerException.class, () -> l.append(null).peek(x -> ++x).get(3));
-
-    assertTrue(List.<Integer>of().peek(array::add).isEmpty());
-    assertEquals(0, List.<Integer>of().peek(array::add).size());
-    assertEquals(List.of(), List.<Integer>of().peek(array::add));
-    assertTrue(array.isEmpty());
-  }
-
-  @Test
   public void plus() {
     var l = List.<Integer>of().plus(1).plus(2).plus(3);
     assertFalse(l.isEmpty());

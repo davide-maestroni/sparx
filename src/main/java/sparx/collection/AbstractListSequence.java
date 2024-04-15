@@ -50,6 +50,11 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   }
 
   @Override
+  public boolean contains(final Object o) {
+    return materializer.materializeContains(o);
+  }
+
+  @Override
   public E first() {
     return materializer.materializeElement(0);
   }

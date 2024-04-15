@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.AbstractListSequence;
 import sparx.collection.ListMaterializer;
@@ -65,7 +66,6 @@ import sparx.collection.internal.list.MapListMaterializer;
 import sparx.collection.internal.list.MapWhereListMaterializer;
 import sparx.collection.internal.list.MaxListMaterializer;
 import sparx.collection.internal.list.OrElseListMaterializer;
-import sparx.collection.internal.list.PeekListMaterializer;
 import sparx.collection.internal.list.PrependAllListMaterializer;
 import sparx.collection.internal.list.PrependListMaterializer;
 import sparx.collection.internal.list.ReduceLeftListMaterializer;
@@ -90,6 +90,7 @@ import sparx.collection.internal.list.TakeListMaterializer;
 import sparx.collection.internal.list.TakeRightListMaterializer;
 import sparx.collection.internal.list.TakeRightWhileListMaterializer;
 import sparx.collection.internal.list.TakeWhileListMaterializer;
+import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
@@ -901,7 +902,7 @@ public class Sparx {
       @Override
       public @NotNull List<E> flatMapAfter(final int numElements,
           @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
-        if (numElements < 0) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
           return this;
         }
         final ListMaterializer<E> materializer = this.materializer;
@@ -920,7 +921,7 @@ public class Sparx {
       @Override
       public @NotNull List<E> flatMapAfter(final int numElements,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-        if (numElements < 0) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
           return this;
         }
         final ListMaterializer<E> materializer = this.materializer;
@@ -1115,7 +1116,7 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> insertAfter(final int numElements, final E element) {
-        if (numElements < 0) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
           return this;
         }
         if (numElements == 0) {
@@ -1140,7 +1141,7 @@ public class Sparx {
       @Override
       public @NotNull List<E> insertAllAfter(final int numElements,
           @NotNull final Iterable<? extends E> elements) {
-        if (numElements < 0) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
           return this;
         }
         if (numElements == 0) {
@@ -1183,6 +1184,11 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull ListIterator<E> listIterator() {
+        return new ListIterator<E>(List.<E>of(), this);
+      }
+
+      @Override
       public @NotNull <F> List<F> map(@NotNull final Function<? super E, F> mapper) {
         final ListMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
@@ -1212,7 +1218,7 @@ public class Sparx {
       @Override
       public @NotNull List<E> mapAfter(final int numElements,
           @NotNull final Function<? super E, ? extends E> mapper) {
-        if (numElements < 0) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
           return this;
         }
         final ListMaterializer<E> materializer = this.materializer;
@@ -1231,7 +1237,7 @@ public class Sparx {
       @Override
       public @NotNull List<E> mapAfter(final int numElements,
           @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-        if (numElements < 0) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
           return this;
         }
         final ListMaterializer<E> materializer = this.materializer;
@@ -1415,15 +1421,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> peek(@NotNull final Consumer<? super E> consumer) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new PeekListMaterializer<E>(materializer, consumer));
-      }
-
-      @Override
       public @NotNull List<E> plus(final E element) {
         return append(element);
       }
@@ -1480,7 +1477,7 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> removeAfter(final int numElements) {
-        if (numElements < 0) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
           return this;
         }
         final ListMaterializer<E> materializer = this.materializer;
@@ -1615,7 +1612,7 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> replaceAfter(final int numElements, final E replacement) {
-        if (numElements < 0) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
           return this;
         }
         final ListMaterializer<E> materializer = this.materializer;
@@ -2087,6 +2084,973 @@ public class Sparx {
             }
           }
         }
+      }
+    }
+
+    public static class ListIterator<E> implements Sequence<E>, java.util.ListIterator<E> {
+
+      private static final Function<Integer, Integer> INDEX_IDENTITY = new Function<Integer, Integer>() {
+        @Override
+        public Integer apply(final Integer param) {
+          return param;
+        }
+      };
+      private static final Function<? extends List<?>, ? extends ListIterator<?>> LIST_TO_ITERATOR = new Function<List<?>, ListIterator<?>>() {
+        @Override
+        public ListIterator<?> apply(final List<?> param) {
+          return param.listIterator();
+        }
+      };
+
+      private final List<E> left;
+      private final List<E> right;
+
+      private int pos;
+
+      private ListIterator(@NotNull final List<E> left, @NotNull final List<E> right) {
+        this.left = left;
+        this.right = right;
+      }
+
+      private ListIterator(@NotNull final List<E> left, @NotNull final List<E> right,
+          final int pos) {
+        this(left, right);
+        this.pos = pos;
+      }
+
+      private static @NotNull <E> IndexedConsumer<E> offsetConsumer(final long offset,
+          @NotNull final IndexedConsumer<E> consumer) {
+        if (offset == 0) {
+          return consumer;
+        }
+        return new IndexedConsumer<E>() {
+          @Override
+          public void accept(int index, E param) throws Exception {
+            consumer.accept(IndexOverflowException.safeCast(offset + index), param);
+          }
+        };
+      }
+
+      private static @NotNull <E, F> IndexedFunction<E, F> offsetFunction(final long offset,
+          @NotNull final IndexedFunction<E, F> function) {
+        if (offset == 0) {
+          return function;
+        }
+        return new IndexedFunction<E, F>() {
+          @Override
+          public F apply(final int index, final E param) throws Exception {
+            return function.apply(IndexOverflowException.safeCast(offset + index), param);
+          }
+        };
+      }
+
+      private static @NotNull <E> IndexedPredicate<E> offsetPredicate(final long offset,
+          @NotNull final IndexedPredicate<E> predicate) {
+        if (offset == 0) {
+          return predicate;
+        }
+        return new IndexedPredicate<E>() {
+          @Override
+          public boolean test(final int index, final E param) throws Exception {
+            return predicate.test(IndexOverflowException.safeCast(offset + index), param);
+          }
+        };
+      }
+
+      private static @NotNull Function<Integer, Integer> offsetMapper(final long offset) {
+        if (offset == 0) {
+          return INDEX_IDENTITY;
+        }
+        return new Function<Integer, Integer>() {
+          @Override
+          public Integer apply(final Integer param) {
+            return IndexOverflowException.safeCast(offset + param);
+          }
+        };
+      }
+
+      @Override
+      public void add(final E e) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> all(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<Boolean>(List.<Boolean>of(),
+            currentRight().all(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> all(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().all(predicate));
+      }
+
+      @Override
+      public <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper) {
+        return null;
+      }
+
+      public @NotNull ListIterator<E> append(final E element) {
+        return new ListIterator<E>(left, right.append(element), pos);
+      }
+
+      public @NotNull ListIterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
+        return new ListIterator<E>(left, right.appendAll(elements), pos);
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public @NotNull <F> ListIterator<F> as() {
+        return (ListIterator<F>) this;
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> count() {
+        return new ListIterator<Integer>(List.<Integer>of(), currentRight().count());
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> count(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().count(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> count(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<Integer>(List.<Integer>of(), currentRight().count(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> diff(@NotNull final Iterable<?> elements) {
+        return new ListIterator<E>(currentLeft().diff(elements), currentRight().diff(elements));
+      }
+
+      @Override
+      public void doFor(@NotNull final Consumer<? super E> consumer) {
+        currentRight().doFor(consumer);
+      }
+
+      @Override
+      public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
+        currentRight().doFor(offsetConsumer(nextIndex(), consumer));
+      }
+
+      @Override
+      public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
+          @NotNull final IndexedConsumer<? super E> consumer) {
+        final int offset = nextIndex();
+        currentRight().doWhile(offsetPredicate(offset, condition),
+            offsetConsumer(offset, consumer));
+      }
+
+      @Override
+      public void doWhile(@NotNull final Predicate<? super E> condition,
+          @NotNull final Consumer<? super E> consumer) {
+        currentRight().doWhile(condition, consumer);
+      }
+
+      @Override
+      public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+        currentRight().doWhile(offsetPredicate(nextIndex(), predicate));
+      }
+
+      @Override
+      public void doWhile(@NotNull final Predicate<? super E> predicate) {
+        currentRight().doWhile(predicate);
+      }
+
+      @Override
+      public @NotNull ListIterator<E> drop(final int maxElements) {
+        return new ListIterator<E>(currentLeft(), currentRight().drop(maxElements));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> dropRight(final int maxElements) {
+        return new ListIterator<E>(currentLeft(), currentRight().dropRight(maxElements));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> dropRightWhile(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().dropRightWhile(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> dropRightWhile(
+          @NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(), currentRight().dropRightWhile(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> dropWhile(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().dropWhile(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(), currentRight().dropWhile(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().endsWith(elements));
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> exists(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<Boolean>(List.<Boolean>of(),
+            currentRight().exists(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().exists(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft().filter(predicate),
+            currentRight().filter(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> filter(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft().filter(predicate),
+            currentRight().filter(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> findAny(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(List.<E>of(),
+            currentRight().findAny(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> findAny(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(List.<E>of(), currentRight().findAny(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> findFirst(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(List.<E>of(),
+            currentRight().findFirst(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> findFirst(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(List.<E>of(), currentRight().findFirst(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> findIndexOf(final Object element) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().findIndexOf(element).map(offsetMapper(nextIndex())));
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> findIndexWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().findIndexWhere(offsetPredicate(nextIndex(), predicate))
+                .map(offsetMapper(nextIndex())));
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> findIndexWhere(
+          @NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().findIndexWhere(predicate).map(offsetMapper(nextIndex())));
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().findIndexOfSlice(elements).map(offsetMapper(nextIndex())));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> findLast(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(List.<E>of(),
+            currentRight().findLast(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> findLast(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(List.<E>of(), currentRight().findLast(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> findLastIndexOf(final Object element) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().findLastIndexOf(element).map(offsetMapper(nextIndex())));
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> findLastIndexWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().findLastIndexWhere(offsetPredicate(nextIndex(), predicate))
+                .map(offsetMapper(nextIndex())));
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> findLastIndexWhere(
+          @NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().findLastIndexWhere(predicate).map(offsetMapper(nextIndex())));
+      }
+
+      @Override
+      public @NotNull ListIterator<Integer> findLastIndexOfSlice(
+          @NotNull final Iterable<?> elements) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().findLastIndexOfSlice(elements).map(offsetMapper(nextIndex())));
+      }
+
+      @Override
+      public E first() {
+        return next();
+      }
+
+      @Override
+      public @NotNull <F> ListIterator<F> flatMap(
+          @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
+        return new ListIterator<F>(currentLeft().flatMap(mapper), currentRight().flatMap(mapper));
+      }
+
+      @Override
+      public @NotNull <F> ListIterator<F> flatMap(
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
+        return new ListIterator<F>(currentLeft().flatMap(mapper),
+            currentRight().flatMap(offsetFunction(nextIndex(), mapper)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> flatMapAfter(final int numElements,
+          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        return new ListIterator<E>(currentLeft(), currentRight().flatMapAfter(numElements, mapper));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> flatMapAfter(final int numElements,
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        return new ListIterator<E>(currentLeft(),
+            currentRight().flatMapAfter(numElements, offsetFunction(nextIndex(), mapper)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> flatMapFirstWhere(
+          @NotNull final IndexedPredicate<? super E> predicate,
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().flatMapFirstWhere(offsetPredicate(nextIndex(), predicate),
+                offsetFunction(nextIndex(), mapper)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> flatMapFirstWhere(
+          @NotNull final Predicate<? super E> predicate,
+          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().flatMapFirstWhere(predicate, mapper));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> flatMapLastWhere(
+          @NotNull final IndexedPredicate<? super E> predicate,
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().flatMapLastWhere(offsetPredicate(nextIndex(), predicate),
+                offsetFunction(nextIndex(), mapper)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> flatMapLastWhere(
+          @NotNull final Predicate<? super E> predicate,
+          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().flatMapLastWhere(predicate, mapper));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> flatMapWhere(
+          @NotNull final IndexedPredicate<? super E> predicate,
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+        return new ListIterator<E>(currentLeft().flatMapWhere(predicate, mapper),
+            currentRight().flatMapWhere(offsetPredicate(nextIndex(), predicate),
+                offsetFunction(nextIndex(), mapper)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> flatMapWhere(@NotNull final Predicate<? super E> predicate,
+          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        return new ListIterator<E>(currentLeft().flatMapWhere(predicate, mapper),
+            currentRight().flatMapWhere(predicate, mapper));
+      }
+
+      @Override
+      public @NotNull <F> ListIterator<F> fold(final F identity,
+          @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+        return new ListIterator<F>(List.<F>of(), currentRight().fold(identity, operation));
+      }
+
+      @Override
+      public @NotNull <F> ListIterator<F> foldLeft(final F identity,
+          @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+        return new ListIterator<F>(List.<F>of(), currentRight().foldLeft(identity, operation));
+      }
+
+      @Override
+      public @NotNull <F> ListIterator<F> foldRight(final F identity,
+          @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+        return new ListIterator<F>(List.<F>of(), currentRight().foldRight(identity, operation));
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public @NotNull ListIterator<? extends ListIterator<E>> group(final int maxSize) {
+        return new ListIterator<ListIterator<E>>(
+            currentLeft().group(maxSize).map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
+            currentRight().group(maxSize)
+                .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public @NotNull ListIterator<? extends ListIterator<E>> group(final int size,
+          final E padding) {
+        return new ListIterator<ListIterator<E>>(currentLeft().group(size, padding)
+            .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
+            currentRight().group(size, padding)
+                .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
+      }
+
+      @Override
+      public boolean hasNext() {
+        final int pos = this.pos;
+        if (pos >= 0) {
+          return right.materializer.canMaterializeElement(pos);
+        }
+        return true;
+      }
+
+      @Override
+      public boolean hasPrevious() {
+        final int pos = this.pos;
+        if (pos == 0) {
+          return !left.isEmpty();
+        }
+        if (pos < 0) {
+          return left.size() + pos >= 0;
+        }
+        return true;
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> includes(final Object element) {
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().includes(element));
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> includesAll(@NotNull final Iterable<?> elements) {
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().includesAll(elements));
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
+        return new ListIterator<Boolean>(List.<Boolean>of(),
+            currentRight().includesSlice(elements));
+      }
+
+      public @NotNull ListIterator<E> insert(final E element) {
+        final int pos = this.pos;
+        if (pos >= 0) {
+          return new ListIterator<E>(left, right.insertAfter(pos, element), pos);
+        }
+        return new ListIterator<E>(left.insertAfter(nextIndex(), element), right, pos);
+      }
+
+      public @NotNull ListIterator<E> insertAll(@NotNull final Iterable<E> elements) {
+        if (pos >= 0) {
+          return new ListIterator<E>(left, right.insertAllAfter(pos, elements), pos);
+        }
+        return new ListIterator<E>(left.insertAllAfter(nextIndex(), elements), right, pos);
+      }
+
+      public @NotNull ListIterator<E> insertAllAfter(final int numElements,
+          @NotNull final Iterable<? extends E> elements) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        return new ListIterator<E>(currentLeft(),
+            currentRight().insertAllAfter(numElements, elements));
+      }
+
+      public @NotNull ListIterator<E> insertAfter(final int numElements, final E element) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        return new ListIterator<E>(currentLeft(), currentRight().insertAfter(numElements, element));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> intersect(@NotNull final Iterable<?> elements) {
+        return new ListIterator<E>(currentLeft().intersect(elements),
+            currentRight().intersect(elements));
+      }
+
+      @NotNull
+      @Override
+      public Iterator<E> iterator() {
+        return this; // TODO: not memoized
+      }
+
+      @Override
+      public boolean isEmpty() {
+        return left.isEmpty() && right.isEmpty();
+      }
+
+      @Override
+      public E last() {
+        final List<E> right = this.right;
+        return right.isEmpty() ? left.last() : right.last();
+      }
+
+      @Override
+      public @NotNull <F> ListIterator<F> map(@NotNull final Function<? super E, F> mapper) {
+        return new ListIterator<F>(currentLeft().map(mapper), currentRight().map(mapper));
+      }
+
+      @Override
+      public @NotNull <F> ListIterator<F> map(@NotNull final IndexedFunction<? super E, F> mapper) {
+        return new ListIterator<F>(currentLeft().map(mapper),
+            currentRight().map(offsetFunction(nextIndex(), mapper)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> mapAfter(final int numElements,
+          @NotNull final Function<? super E, ? extends E> mapper) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        return new ListIterator<E>(currentLeft(), currentRight().mapAfter(numElements, mapper));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> mapAfter(final int numElements,
+          @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        return new ListIterator<E>(currentLeft(),
+            currentRight().mapAfter(numElements, offsetFunction(nextIndex(), mapper)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> mapFirstWhere(
+          @NotNull final IndexedPredicate<? super E> predicate,
+          @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().mapFirstWhere(offsetPredicate(nextIndex(), predicate),
+                offsetFunction(nextIndex(), mapper)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> mapFirstWhere(@NotNull final Predicate<? super E> predicate,
+          @NotNull final Function<? super E, ? extends E> mapper) {
+        return new ListIterator<E>(currentLeft(), currentRight().mapFirstWhere(predicate, mapper));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> mapLastWhere(
+          @NotNull final IndexedPredicate<? super E> predicate,
+          @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().mapLastWhere(offsetPredicate(nextIndex(), predicate),
+                offsetFunction(nextIndex(), mapper)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> mapLastWhere(@NotNull final Predicate<? super E> predicate,
+          @NotNull final Function<? super E, ? extends E> mapper) {
+        return new ListIterator<E>(currentLeft(), currentRight().mapLastWhere(predicate, mapper));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> mapWhere(@NotNull final IndexedPredicate<? super E> predicate,
+          @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+        final int pos = this.pos;
+        return new ListIterator<E>(left.mapWhere(predicate, mapper),
+            right.mapWhere(offsetPredicate(pos, predicate), offsetFunction(pos, mapper)), pos);
+      }
+
+      @Override
+      public @NotNull ListIterator<E> mapWhere(@NotNull final Predicate<? super E> predicate,
+          @NotNull final Function<? super E, ? extends E> mapper) {
+        return new ListIterator<E>(left.mapWhere(predicate, mapper),
+            right.mapWhere(predicate, mapper), pos);
+      }
+
+      @Override
+      public @NotNull ListIterator<E> max(@NotNull final Comparator<? super E> comparator) {
+        return new ListIterator<E>(List.<E>of(), currentRight().max(comparator));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> min(@NotNull final Comparator<? super E> comparator) {
+        return new ListIterator<E>(List.<E>of(), currentRight().min(comparator));
+      }
+
+      @Override
+      public E next() {
+        if (!hasPrevious()) {
+          throw new NoSuchElementException();
+        }
+        if (pos >= 0) {
+          return right.get(pos++);
+        }
+        final List<E> left = this.left;
+        return left.get(left.size() + pos++);
+      }
+
+      @Override
+      public int nextIndex() {
+        return IndexOverflowException.safeCast((long) left.size() + pos);
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> notAll(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<Boolean>(List.<Boolean>of(),
+            currentRight().notAll(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> notAll(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().notAll(predicate));
+      }
+
+      @Override
+      public boolean notEmpty() {
+        return !isEmpty();
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> notExists(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<Boolean>(List.<Boolean>of(),
+            currentRight().notExists(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> notExists(
+          @NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().notExists(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> orElse(@NotNull final Iterable<E> elements) {
+        return new ListIterator<E>(List.<E>of(), currentRight().orElse(elements));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> orElseGet(
+          @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+        return new ListIterator<E>(List.<E>of(), currentRight().orElseGet(supplier));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> plus(final E element) {
+        return new ListIterator<E>(left, right.plus(element), pos);
+      }
+
+      @Override
+      public @NotNull ListIterator<E> plusAll(@NotNull final Iterable<E> elements) {
+        return new ListIterator<E>(left, right.plusAll(elements), pos);
+      }
+
+      @Override
+      public @NotNull ListIterator<E> reduce(
+          @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        return new ListIterator<E>(List.<E>of(), currentRight().reduce(operation));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> reduceLeft(
+          @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        return new ListIterator<E>(List.<E>of(), currentRight().reduceLeft(operation));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> reduceRight(
+          @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        return new ListIterator<E>(List.<E>of(), currentRight().reduceRight(operation));
+      }
+
+      @Override
+      public E previous() {
+        if (!hasPrevious()) {
+          throw new NoSuchElementException();
+        }
+        if (pos > 0) {
+          return right.get(--pos);
+        }
+        final List<E> left = this.left;
+        return left.get(left.size() + --pos);
+      }
+
+      @Override
+      public int previousIndex() {
+        return nextIndex() - 1;
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeAfter(final int numElements) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        return new ListIterator<E>(currentLeft(), currentRight().removeAfter(numElements));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeEach(final E element) {
+        return new ListIterator<E>(currentLeft().removeEach(element),
+            currentRight().removeEach(element));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeFirst(final E element) {
+        return new ListIterator<E>(currentLeft(), currentRight().removeFirst(element));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeFirstWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().removeFirstWhere(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeFirstWhere(
+          @NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(), currentRight().removeFirstWhere(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeLast(final E element) {
+        return new ListIterator<E>(currentLeft(), currentRight().removeLast(element));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeLastWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().removeLastWhere(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeLastWhere(
+          @NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(), currentRight().removeLastWhere(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeSlice(final int start, final int end) {
+        return new ListIterator<E>(currentLeft(), currentRight().removeSlice(start, end));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().removeWhere(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> removeWhere(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(), currentRight().removeWhere(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceAfter(final int numElements, final E replacement) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        return new ListIterator<E>(currentLeft(),
+            currentRight().replaceAfter(numElements, replacement));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceEach(final E element, final E replacement) {
+        return new ListIterator<E>(currentLeft().replaceEach(element, replacement),
+            currentRight().replaceEach(element, replacement));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceFirst(final E element, final E replacement) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().replaceFirst(element, replacement));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceFirstWhere(
+          @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().replaceFirstWhere(offsetPredicate(nextIndex(), predicate), replacement));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceFirstWhere(
+          @NotNull final Predicate<? super E> predicate, final E replacement) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().replaceFirstWhere(predicate, replacement));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceLast(final E element, final E replacement) {
+        return new ListIterator<E>(currentLeft(), currentRight().replaceLast(element, replacement));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceLastWhere(
+          @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().replaceLastWhere(offsetPredicate(nextIndex(), predicate), replacement));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceLastWhere(
+          @NotNull final Predicate<? super E> predicate, final E replacement) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().replaceLastWhere(predicate, replacement));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceSlice(final int start, final int end,
+          @NotNull final Iterable<? extends E> patch) {
+        return new ListIterator<E>(currentLeft(), currentRight().replaceSlice(start, end, patch));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceWhere(
+          @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+        return new ListIterator<E>(currentLeft().replaceWhere(predicate, replacement),
+            currentRight().replaceWhere(offsetPredicate(nextIndex(), predicate), replacement));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> replaceWhere(@NotNull final Predicate<? super E> predicate,
+          final E replacement) {
+        return new ListIterator<E>(currentLeft().replaceWhere(predicate, replacement),
+            currentRight().replaceWhere(predicate, replacement));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> resizeTo(final int numElements, final E padding) {
+        return new ListIterator<E>(currentLeft(), currentRight().resizeTo(numElements, padding));
+      }
+
+      @Override
+      public void set(final E e) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int size() {
+        return left.size() + right.size();
+      }
+
+      @Override
+      public @NotNull ListIterator<E> slice(final int start, final int end) {
+        return new ListIterator<E>(List.<E>of(), currentRight().slice(start, end));
+      }
+
+      @Override
+      public @NotNull ListIterator<Boolean> startsWith(@NotNull final Iterable<?> elements) {
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().startsWith(elements));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> take(final int maxElements) {
+        return new ListIterator<E>(currentLeft(), currentRight().take(maxElements));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> takeRight(final int maxElements) {
+        return new ListIterator<E>(List.<E>of(), currentRight().takeRight(maxElements));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> takeRightWhile(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(List.<E>of(),
+            currentRight().takeRightWhile(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> takeRightWhile(
+          @NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(List.<E>of(), currentRight().takeRightWhile(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> takeWhile(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(),
+            currentRight().takeWhile(offsetPredicate(nextIndex(), predicate)));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> takeWhile(@NotNull final Predicate<? super E> predicate) {
+        return new ListIterator<E>(currentLeft(), currentRight().takeWhile(predicate));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> union(@NotNull final Iterable<? extends E> elements) {
+        return new ListIterator<E>(List.<E>of(), left.appendAll(right).union(elements),
+            nextIndex());
+      }
+
+      // TODO: sorted? reverse?
+
+      private @NotNull List<E> currentLeft() {
+        final int pos = this.pos;
+        if (pos == 0) {
+          return left;
+        } else if (pos > 0) {
+          return left.appendAll(right.take(pos));
+        }
+        return left.dropRight(-pos);
+      }
+
+      private @NotNull List<E> currentRight() {
+        final int pos = this.pos;
+        if (pos == 0) {
+          return right;
+        } else if (pos > 0) {
+          return right.drop(pos);
+        }
+        return left.takeRight(-pos).appendAll(right);
       }
     }
   }

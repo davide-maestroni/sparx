@@ -40,6 +40,11 @@ public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements S
   }
 
   @Override
+  public boolean contains(final Object o) {
+    return materializer.materializeContains(o);
+  }
+
+  @Override
   public E first() {
     return materializer.materializeElement(0);
   }

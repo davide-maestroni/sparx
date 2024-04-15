@@ -85,7 +85,7 @@ public interface Sequence<E> extends Iterable<E> {
   @NotNull
   Sequence<Boolean> endsWith(@NotNull Iterable<?> elements);
 
-  // TODO: enumerate() - move to Sequence???
+  // TODO: enumerate()
 
   @NotNull
   Sequence<Boolean> exists(@NotNull IndexedPredicate<? super E> predicate);
@@ -276,9 +276,6 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull
   Sequence<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
-
-  @NotNull
-  Sequence<E> peek(@NotNull Consumer<? super E> consumer); // TODO: move to iterator??
 
   @NotNull
   Sequence<E> plus(E element);

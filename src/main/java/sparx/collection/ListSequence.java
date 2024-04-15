@@ -336,10 +336,6 @@ public interface ListSequence<E> extends CollectionSequence<E>, List<E> {
 
   @Override
   @NotNull
-  ListSequence<E> peek(@NotNull Consumer<? super E> consumer);
-
-  @Override
-  @NotNull
   ListSequence<E> plus(E element);
 
   @Override
