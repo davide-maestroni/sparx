@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
@@ -58,6 +59,11 @@ public class MapListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return state.materializeContains(element);
+  }
+
+  @Override
   public F materializeElement(final int index) {
     return state.materializeElement(index);
   }
@@ -77,7 +83,8 @@ public class MapListMaterializer<E, F> implements ListMaterializer<F> {
     return state.materializeSize();
   }
 
-  private class ArrayState implements ListMaterializer<F> {
+  private class ArrayState extends AbstractCollectionMaterializer<F> implements
+      ListMaterializer<F> {
 
     private final Object[] elements;
     private final IndexedFunction<? super E, F> mapper;
@@ -138,7 +145,7 @@ public class MapListMaterializer<E, F> implements ListMaterializer<F> {
     }
   }
 
-  private class MapState implements ListMaterializer<F> {
+  private class MapState extends AbstractCollectionMaterializer<F> implements ListMaterializer<F> {
 
     private final HashMap<Integer, F> elements = new HashMap<Integer, F>();
     private final IndexedFunction<? super E, F> mapper;

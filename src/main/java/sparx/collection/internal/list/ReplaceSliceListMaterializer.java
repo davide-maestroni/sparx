@@ -80,6 +80,49 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    final ListMaterializer<E> wrapped = this.wrapped;
+    final int start = state.materializedStart();
+    int i = 0;
+    if (element == null) {
+      while (wrapped.canMaterializeElement(i)) {
+        if (start == i) {
+          if (elementsMaterializer.materializeContains(null)) {
+            return true;
+          }
+          final int length = state.materializedLength();
+          if (length > 0) {
+            i += length;
+            continue;
+          }
+        }
+        if (wrapped.materializeElement(i) == null) {
+          return true;
+        }
+        ++i;
+      }
+    } else {
+      while (wrapped.canMaterializeElement(i)) {
+        if (start == i) {
+          if (elementsMaterializer.materializeContains(element)) {
+            return true;
+          }
+          final int length = state.materializedLength();
+          if (length > 0) {
+            i += length;
+            continue;
+          }
+        }
+        if (element.equals(wrapped.materializeElement(i))) {
+          return true;
+        }
+        ++i;
+      }
+    }
+    return false;
+  }
+
+  @Override
   public E materializeElement(final int index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));

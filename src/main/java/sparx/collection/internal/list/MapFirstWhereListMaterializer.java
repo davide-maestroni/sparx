@@ -19,13 +19,15 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class MapFirstWhereListMaterializer<E> implements ListMaterializer<E> {
+public class MapFirstWhereListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+    ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
 

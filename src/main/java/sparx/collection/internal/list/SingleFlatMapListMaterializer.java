@@ -45,6 +45,11 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return state.materializeContains(element);
+  }
+
+  @Override
   public F materializeElement(final int index) {
     return state.materializeElement(index);
   }
@@ -97,6 +102,21 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
     @Override
     public int knownSize() {
       return -1;
+    }
+
+    @Override
+    public boolean materializeContains(final Object element) {
+      if (!isMaterialized.compareAndSet(false, true)) {
+        throw new ConcurrentModificationException();
+      }
+      try {
+        final ListMaterializer<F> elementsMaterializer = mapper.apply(0,
+            wrapped.materializeElement(0));
+        return (state = elementsMaterializer).materializeContains(element);
+      } catch (final Exception e) {
+        isMaterialized.set(false);
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override

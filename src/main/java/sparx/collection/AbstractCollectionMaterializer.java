@@ -13,47 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection.internal.list;
+package sparx.collection;
 
-import java.util.Collections;
 import java.util.Iterator;
-import org.jetbrains.annotations.NotNull;
-import sparx.collection.ListMaterializer;
 
-public class EmptyListMaterializer<E> implements ListMaterializer<E> {
-
-  @Override
-  public boolean canMaterializeElement(final int index) {
-    return false;
-  }
-
-  @Override
-  public int knownSize() {
-    return 0;
-  }
+public abstract class AbstractCollectionMaterializer<E> implements CollectionMaterializer<E> {
 
   @Override
   public boolean materializeContains(final Object element) {
+    final Iterator<E> iterator = materializeIterator();
+    if (element == null) {
+      while (iterator.hasNext()) {
+        if (iterator.next() == null) {
+          return true;
+        }
+      }
+    } else {
+      while (iterator.hasNext()) {
+        if (element.equals(iterator.next())) {
+          return true;
+        }
+      }
+    }
     return false;
-  }
-
-  @Override
-  public E materializeElement(final int index) {
-    throw new IndexOutOfBoundsException(Integer.toString(index));
   }
 
   @Override
   public boolean materializeEmpty() {
-    return true;
-  }
-
-  @Override
-  public @NotNull Iterator<E> materializeIterator() {
-    return Collections.<E>emptyList().iterator();
+    return !materializeIterator().hasNext();
   }
 
   @Override
   public int materializeSize() {
-    return 0;
+    int size = 0;
+    final Iterator<E> iterator = materializeIterator();
+    while (iterator.hasNext()) {
+      iterator.next();
+      ++size;
+    }
+    return size;
   }
 }

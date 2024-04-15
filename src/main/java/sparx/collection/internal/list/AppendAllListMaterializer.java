@@ -59,6 +59,12 @@ public class AppendAllListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return wrapped.materializeContains(element) || elementsMaterializer.materializeContains(
+        element);
+  }
+
+  @Override
   public E materializeElement(final int index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));

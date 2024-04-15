@@ -47,6 +47,11 @@ public class MaxListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return state.materializeContains(element);
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return state.materializeElement(index);
   }
@@ -93,6 +98,11 @@ public class MaxListMaterializer<E> implements ListMaterializer<E> {
         return 0;
       }
       return -1;
+    }
+
+    @Override
+    public boolean materializeContains(final Object element) {
+      return materialized().materializeContains(element);
     }
 
     @Override

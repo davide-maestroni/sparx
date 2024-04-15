@@ -18,9 +18,11 @@ package sparx.collection;
 import java.util.Collection;
 import java.util.Comparator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.function.BiFunction;
+import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
 import sparx.util.function.Predicate;
 import sparx.util.function.Supplier;
 
@@ -28,7 +30,14 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
+  CollectionSequence<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);
+
+  @Override
+  @NotNull
   CollectionSequence<Boolean> all(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper);
 
   @Override
   @NotNull
@@ -40,11 +49,15 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
+  CollectionSequence<Integer> count(@NotNull IndexedPredicate<? super E> predicate);
+
+  @Override
+  @NotNull
   CollectionSequence<Integer> count(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull
-  CollectionSequence<Integer> countNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> diff(@NotNull Iterable<?> elements);
 
   @Override
   @NotNull
@@ -56,11 +69,15 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
+  CollectionSequence<E> dropRightWhile(@NotNull IndexedPredicate<? super E> predicate);
+
+  @Override
+  @NotNull
   CollectionSequence<E> dropRightWhile(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull
-  CollectionSequence<E> dropRightWhileNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> dropWhile(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -68,11 +85,11 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> dropWhileNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<Boolean> endsWith(@NotNull Iterable<?> elements);
 
   @Override
   @NotNull
-  CollectionSequence<Boolean> endsWith(@NotNull Iterable<?> elements);
+  CollectionSequence<Boolean> exists(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -80,11 +97,15 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
+  CollectionSequence<E> filter(@NotNull IndexedPredicate<? super E> predicate);
+
+  @Override
+  @NotNull
   CollectionSequence<E> filter(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull
-  CollectionSequence<E> filterNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> findAny(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -92,7 +113,7 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> findAnyNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> findFirst(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -100,11 +121,11 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> findFirstNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<Integer> findIndexOf(Object element);
 
   @Override
   @NotNull
-  CollectionSequence<Integer> findIndexOf(Object element);
+  CollectionSequence<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -112,11 +133,11 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<Integer> findIndexWhereNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
   @Override
   @NotNull
-  CollectionSequence<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+  CollectionSequence<E> findLast(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -128,11 +149,11 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<Integer> findLastIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
-  CollectionSequence<Integer> findLastIndexWhereNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -140,11 +161,12 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> findLastNot(@NotNull Predicate<? super E> predicate);
+  <F> CollectionSequence<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
   @Override
   @NotNull
-  <F> CollectionSequence<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
+  <F> CollectionSequence<F> flatMap(
+      @NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper);
 
   @Override
   @NotNull
@@ -153,13 +175,23 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
+  CollectionSequence<E> flatMapAfter(int numElements,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull
+  CollectionSequence<E> flatMapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
+
+  @Override
+  @NotNull
   CollectionSequence<E> flatMapFirstWhere(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
   @NotNull
-  CollectionSequence<E> flatMapFirstWhereNot(@NotNull Predicate<? super E> predicate,
-      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+  CollectionSequence<E> flatMapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
   @NotNull
@@ -168,8 +200,8 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> flatMapLastWhereNot(@NotNull Predicate<? super E> predicate,
-      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
+  CollectionSequence<E> flatMapWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
   @Override
   @NotNull
@@ -178,31 +210,26 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> flatMapWhereNot(@NotNull Predicate<? super E> predicate,
-      @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
-
-  @Override
-  @NotNull
   <F> CollectionSequence<F> fold(F identity,
-      @NotNull BiFunction<? super F, ? super E, ? extends F> operation);
+      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
   @Override
   @NotNull
   <F> CollectionSequence<F> foldLeft(F identity,
-      @NotNull BiFunction<? super F, ? super E, ? extends F> operation);
+      @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
   @Override
   @NotNull
   <F> CollectionSequence<F> foldRight(F identity,
-      @NotNull BiFunction<? super E, ? super F, ? extends F> operation);
+      @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
   @Override
   @NotNull
-  CollectionSequence<? extends CollectionSequence<E>> group(int maxSize);
+  CollectionSequence<? extends Sequence<E>> group(int maxSize);
 
   @Override
   @NotNull
-  CollectionSequence<? extends CollectionSequence<E>> group(int size, E padding);
+  CollectionSequence<? extends Sequence<E>> group(int size, E padding);
 
   @Override
   @NotNull
@@ -218,11 +245,29 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
+  CollectionSequence<E> intersect(@NotNull Iterable<?> elements);
+
+  @Override
+  @NotNull
   <F> CollectionSequence<F> map(@NotNull Function<? super E, F> mapper);
 
   @Override
   @NotNull
+  <F> CollectionSequence<F> map(@NotNull IndexedFunction<? super E, F> mapper);
+
+  @Override
+  @NotNull
   CollectionSequence<E> mapAfter(int numElements, @NotNull Function<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull
+  CollectionSequence<E> mapAfter(int numElements,
+      @NotNull IndexedFunction<? super E, ? extends E> mapper);
+
+  @Override
+  @NotNull
+  CollectionSequence<E> mapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
   @Override
   @NotNull
@@ -231,8 +276,8 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> mapFirstWhereNot(@NotNull Predicate<? super E> predicate,
-      @NotNull Function<? super E, ? extends E> mapper);
+  CollectionSequence<E> mapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
   @Override
   @NotNull
@@ -241,17 +286,12 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> mapLastWhereNot(@NotNull Predicate<? super E> predicate,
-      @NotNull Function<? super E, ? extends E> mapper);
+  CollectionSequence<E> mapWhere(@NotNull IndexedPredicate<? super E> predicate,
+      @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
   @Override
   @NotNull
   CollectionSequence<E> mapWhere(@NotNull Predicate<? super E> predicate,
-      @NotNull Function<? super E, ? extends E> mapper);
-
-  @Override
-  @NotNull
-  CollectionSequence<E> mapWhereNot(@NotNull Predicate<? super E> predicate,
       @NotNull Function<? super E, ? extends E> mapper);
 
   @Override
@@ -264,7 +304,15 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
+  CollectionSequence<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+
+  @Override
+  @NotNull
   CollectionSequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);
+
+  @Override
+  @NotNull
+  CollectionSequence<Boolean> notExists(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -292,18 +340,17 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> reduce(
-      @NotNull BiFunction<? super E, ? super E, ? extends E> operation);
+  Sequence<E> reduce(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
   CollectionSequence<E> reduceLeft(
-      @NotNull BiFunction<? super E, ? super E, ? extends E> operation);
+      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
   CollectionSequence<E> reduceRight(
-      @NotNull BiFunction<? super E, ? super E, ? extends E> operation);
+      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
   @Override
   @NotNull
@@ -319,11 +366,11 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> removeFirstWhere(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
-  CollectionSequence<E> removeFirstWhereNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -331,11 +378,11 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> removeLastWhere(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
-  CollectionSequence<E> removeLastWhereNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -343,11 +390,11 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> removeWhere(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> removeWhere(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
-  CollectionSequence<E> removeWhereNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> removeWhere(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -363,12 +410,12 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate, E replacement);
+  CollectionSequence<E> replaceFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
+      E replacement);
 
   @Override
   @NotNull
-  CollectionSequence<E> replaceFirstWhereNot(@NotNull Predicate<? super E> predicate,
-      E replacement);
+  CollectionSequence<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
@@ -376,11 +423,12 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate, E replacement);
+  CollectionSequence<E> replaceLastWhere(@NotNull IndexedPredicate<? super E> predicate,
+      E replacement);
 
   @Override
   @NotNull
-  CollectionSequence<E> replaceLastWhereNot(@NotNull Predicate<? super E> predicate, E replacement);
+  CollectionSequence<E> replaceLastWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
   @Override
   @NotNull
@@ -388,7 +436,15 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
+  CollectionSequence<E> replaceWhere(@NotNull IndexedPredicate<? super E> predicate, E replacement);
+
+  @Override
+  @NotNull
   CollectionSequence<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
+
+  @Override
+  @NotNull
+  CollectionSequence<E> resizeTo(int numElements, E padding);
 
   @Override
   @NotNull
@@ -408,7 +464,7 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
-  CollectionSequence<E> takeRightWhileNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> takeRightWhile(@NotNull IndexedPredicate<? super E> predicate);
 
   @Override
   @NotNull
@@ -416,9 +472,13 @@ public interface CollectionSequence<E> extends Collection<E>, Sequence<E> {
 
   @Override
   @NotNull
+  CollectionSequence<E> takeWhile(@NotNull IndexedPredicate<? super E> predicate);
+
+  @Override
+  @NotNull
   CollectionSequence<E> takeWhile(@NotNull Predicate<? super E> predicate);
 
   @Override
   @NotNull
-  CollectionSequence<E> takeWhileNot(@NotNull Predicate<? super E> predicate);
+  CollectionSequence<E> union(@NotNull Iterable<? extends E> elements);
 }

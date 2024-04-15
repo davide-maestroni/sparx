@@ -46,6 +46,11 @@ public class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return Integer.valueOf(state.materialized()).equals(element);
+  }
+
+  @Override
   public Integer materializeElement(final int index) {
     if (index == 0) {
       final int i = state.materialized();

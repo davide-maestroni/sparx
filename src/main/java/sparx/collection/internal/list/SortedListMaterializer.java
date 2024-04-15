@@ -47,6 +47,11 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return state.materializeContains(element);
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return state.materialized().get(index);
   }
@@ -74,6 +79,8 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
 
     @NotNull
     List<E> materialized();
+
+    boolean materializeContains(Object element);
 
     int materializeSize();
   }
@@ -103,6 +110,12 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public boolean materializeContains(final Object element) {
+      return elements.contains(element);
+    }
+
+    @Override
     public int materializeSize() {
       return elements.size();
     }
@@ -128,6 +141,11 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public int knownSize() {
       return wrapped.knownSize();
+    }
+
+    @Override
+    public boolean materializeContains(final Object element) {
+      return wrapped.materializeContains(element);
     }
 
     @Override

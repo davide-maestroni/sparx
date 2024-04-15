@@ -42,6 +42,11 @@ public class CountListMaterializer<E> implements ListMaterializer<Integer> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return Integer.valueOf(state.materialized()).equals(element);
+  }
+
+  @Override
   public Integer materializeElement(final int index) {
     if (index != 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));

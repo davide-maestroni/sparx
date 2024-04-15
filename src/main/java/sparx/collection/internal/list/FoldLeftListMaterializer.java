@@ -24,14 +24,14 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.BiFunction;
+import sparx.util.function.BinaryFunction;
 
 public class FoldLeftListMaterializer<E, F> implements ListMaterializer<F> {
 
   private volatile State<F> state;
 
   public FoldLeftListMaterializer(@NotNull final ListMaterializer<E> wrapped, final F identity,
-      @NotNull final BiFunction<? super F, ? super E, ? extends F> operation) {
+      @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), identity,
         Require.notNull(operation, "operation"));
   }
@@ -44,6 +44,12 @@ public class FoldLeftListMaterializer<E, F> implements ListMaterializer<F> {
   @Override
   public int knownSize() {
     return state.knownSize();
+  }
+
+  @Override
+  @SuppressWarnings("SuspiciousMethodCalls")
+  public boolean materializeContains(final Object element) {
+    return state.materialized().contains(element);
   }
 
   @Override
@@ -97,11 +103,11 @@ public class FoldLeftListMaterializer<E, F> implements ListMaterializer<F> {
 
     private final F identity;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-    private final BiFunction<? super F, ? super E, ? extends F> operation;
+    private final BinaryFunction<? super F, ? super E, ? extends F> operation;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped, final F identity,
-        @NotNull final BiFunction<? super F, ? super E, ? extends F> operation) {
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
       this.wrapped = wrapped;
       this.identity = identity;
       this.operation = operation;
@@ -119,7 +125,7 @@ public class FoldLeftListMaterializer<E, F> implements ListMaterializer<F> {
       }
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
-        final BiFunction<? super F, ? super E, ? extends F> operation = this.operation;
+        final BinaryFunction<? super F, ? super E, ? extends F> operation = this.operation;
         F current = identity;
         int i = 0;
         while (wrapped.canMaterializeElement(i)) {

@@ -17,51 +17,66 @@ package sparx.collection.internal.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
-import sparx.util.UncheckedException;
-import sparx.util.function.Consumer;
 
-public class PeekListMaterializer<E> implements ListMaterializer<E> {
+public class ResizeListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+    ListMaterializer<E> {
 
-  private final Consumer<? super E> consumer;
+  private final int numElements;
+  private final E padding;
   private final ListMaterializer<E> wrapped;
 
-  public PeekListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final Consumer<? super E> consumer) {
+  public ResizeListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int numElements,
+      final E padding) {
     this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.consumer = Require.notNull(consumer, "consumer");
+    this.numElements = Require.positive(numElements, "numElements");
+    this.padding = padding;
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return wrapped.canMaterializeElement(index);
+    return index >= 0 && index < numElements;
   }
 
   @Override
   public int knownSize() {
-    return wrapped.knownSize();
+    return numElements;
   }
 
   @Override
   public boolean materializeContains(final Object element) {
-    return wrapped.materializeContains(element);
+    final int numElements = this.numElements;
+    final ListMaterializer<E> wrapped = this.wrapped;
+    final int wrappedSize = wrapped.materializeSize();
+    if (wrappedSize == numElements) {
+      return wrapped.materializeContains(element);
+    }
+    if (wrappedSize < numElements) {
+      if (element == padding || (element != null && element.equals(padding))) {
+        return true;
+      }
+      return wrapped.materializeContains(element);
+    }
+    return super.materializeContains(element);
   }
 
   @Override
   public E materializeElement(final int index) {
-    final E element = wrapped.materializeElement(index);
-    try {
-      consumer.accept(element);
-    } catch (final Exception e) {
-      throw UncheckedException.throwUnchecked(e);
+    if (index < 0 || index >= numElements) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    return element;
+    final ListMaterializer<E> wrapped = this.wrapped;
+    if (wrapped.canMaterializeElement(index)) {
+      return wrapped.materializeElement(index);
+    }
+    return padding;
   }
 
   @Override
   public boolean materializeEmpty() {
-    return wrapped.materializeEmpty();
+    return false;
   }
 
   @Override
@@ -71,6 +86,6 @@ public class PeekListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return wrapped.materializeSize();
+    return numElements;
   }
 }

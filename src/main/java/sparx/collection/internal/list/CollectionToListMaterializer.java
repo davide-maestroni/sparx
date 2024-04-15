@@ -32,9 +32,9 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
 
   public CollectionToListMaterializer(@NotNull final Collection<E> elements) {
     if (elements.size() > SIZE_THRESHOLD) {
-      this.state = new ImmaterialState(elements.iterator(), elements.size());
+      this.state = new ImmaterialState(Require.notNull(elements, "elements"));
     } else {
-      this.state = new WrapperState(elements);
+      this.state = new WrapperState(Require.notNull(elements, "elements"));
     }
   }
 
@@ -46,6 +46,11 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public int knownSize() {
     return state.knownSize();
+  }
+
+  @Override
+  public boolean materializeContains(final Object element) {
+    return state.materializeContains(element);
   }
 
   @Override
@@ -70,30 +75,36 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
 
   private class ImmaterialState implements ListMaterializer<E> {
 
-    private final ArrayList<E> elements = new ArrayList<E>();
+    private final Collection<E> elements;
+    private final ArrayList<E> elementsList = new ArrayList<E>();
     private final Iterator<E> iterator;
-    private final int size;
 
     private final AtomicInteger modCount = new AtomicInteger();
 
-    private ImmaterialState(@NotNull final Iterator<E> iterator, final int size) {
-      this.iterator = Require.notNull(iterator, "iterator");
-      this.size = size;
+    private ImmaterialState(@NotNull final Collection<E> elements) {
+      this.elements = elements;
+      iterator = elements.iterator();
     }
 
     @Override
     public boolean canMaterializeElement(final int index) {
-      return index >= 0 && index < size;
+      return index >= 0 && index < elements.size();
     }
 
     @Override
     public int knownSize() {
-      return size;
+      return elements.size();
+    }
+
+    @Override
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public boolean materializeContains(final Object element) {
+      return elements.contains(element);
     }
 
     @Override
     public E materializeElement(final int index) {
-      final ArrayList<E> elements = this.elements;
+      final ArrayList<E> elements = this.elementsList;
       if (elements.size() <= index) {
         final AtomicInteger modCount = this.modCount;
         final int expectedCount = modCount.incrementAndGet();
@@ -116,7 +127,7 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean materializeEmpty() {
-      return size == 0;
+      return elements.isEmpty();
     }
 
     @Override
@@ -126,7 +137,7 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public int materializeSize() {
-      return size;
+      return elements.size();
     }
   }
 
@@ -135,7 +146,7 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     private final Collection<E> elements;
 
     private WrapperState(@NotNull final Collection<E> elements) {
-      this.elements = Require.notNull(elements, "elements");
+      this.elements = elements;
     }
 
     @Override
@@ -146,6 +157,12 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public int knownSize() {
       return elements.size();
+    }
+
+    @Override
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public boolean materializeContains(final Object element) {
+      return elements.contains(element);
     }
 
     @Override

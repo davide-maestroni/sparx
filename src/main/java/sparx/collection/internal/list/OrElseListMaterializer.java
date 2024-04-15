@@ -41,6 +41,11 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return state.materializeContains(element);
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return state.materializeElement(index);
   }
@@ -88,6 +93,11 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
         return (state = elementsMaterializer).knownSize();
       }
       return knownSize;
+    }
+
+    @Override
+    public boolean materializeContains(final Object element) {
+      return materialized().materializeContains(element);
     }
 
     @Override

@@ -47,6 +47,11 @@ public class SingleMapWhereListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return state.materializeContains(element);
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return state.materializeElement(index);
   }
@@ -89,6 +94,24 @@ public class SingleMapWhereListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public int knownSize() {
       return 1;
+    }
+
+    @Override
+    public boolean materializeContains(final Object element) {
+      if (!isMaterialized.compareAndSet(false, true)) {
+        throw new ConcurrentModificationException();
+      }
+      try {
+        E first = wrapped.materializeElement(0);
+        if (predicate.test(0, first)) {
+          first = mapper.apply(0, first);
+        }
+        state = new ElementToListMaterializer<E>(first);
+        return element == first || (element != null && element.equals(first));
+      } catch (final Exception e) {
+        isMaterialized.set(false);
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override

@@ -18,10 +18,12 @@ package sparx.collection.internal.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-public class RemoveSliceListMaterializer<E> implements ListMaterializer<E> {
+public class RemoveSliceListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+    ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
 

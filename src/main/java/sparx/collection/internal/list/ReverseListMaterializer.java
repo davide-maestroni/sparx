@@ -42,6 +42,11 @@ public class ReverseListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return wrapped.materializeContains(element);
+  }
+
+  @Override
   public E materializeElement(final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
     final long wrappedIndex = (long) wrapped.materializeSize() - index - 1;

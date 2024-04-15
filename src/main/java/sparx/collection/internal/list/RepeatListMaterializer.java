@@ -18,23 +18,26 @@ package sparx.collection.internal.list;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.ListMaterializer;
+import sparx.util.Require;
 
-public class ElementToListMaterializer<E> implements ListMaterializer<E> {
+public class RepeatListMaterializer<E> implements ListMaterializer<E> {
 
   private final E element;
+  private final int times;
 
-  public ElementToListMaterializer(final E element) {
+  public RepeatListMaterializer(final int times, final E element) {
+    this.times = Require.positive(times, "times");
     this.element = element;
   }
 
   @Override
   public boolean canMaterializeElement(final int index) {
-    return index == 0;
+    return index >= 0 && index < times;
   }
 
   @Override
   public int knownSize() {
-    return 1;
+    return times;
   }
 
   @Override
@@ -44,7 +47,7 @@ public class ElementToListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public E materializeElement(final int index) {
-    if (index != 0) {
+    if (index < 0 || index >= times) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return element;

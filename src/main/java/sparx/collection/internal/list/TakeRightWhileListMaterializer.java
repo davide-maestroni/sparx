@@ -19,13 +19,15 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class TakeRightWhileListMaterializer<E> implements ListMaterializer<E> {
+public class TakeRightWhileListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+    ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
 

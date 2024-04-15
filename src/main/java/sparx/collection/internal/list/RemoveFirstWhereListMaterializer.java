@@ -20,12 +20,14 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class RemoveFirstWhereListMaterializer<E> implements ListMaterializer<E> {
+public class RemoveFirstWhereListMaterializer<E> extends
+    AbstractCollectionMaterializer<E> implements ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
 

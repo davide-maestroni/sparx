@@ -18,11 +18,13 @@ package sparx.collection.internal.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
-public class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
+public class InsertAfterListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+    ListMaterializer<E> {
 
   private final E element;
   private final int numElements;
@@ -53,12 +55,21 @@ public class InsertAfterListMaterializer<E> implements ListMaterializer<E> {
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
-      if (knownSize < numElements) {
+      if (knownSize >= numElements) {
         return SizeOverflowException.safeCast((long) knownSize + 1);
       }
       return knownSize;
     }
     return -1;
+  }
+
+  @Override
+  public boolean materializeContains(final Object element) {
+    final ListMaterializer<E> wrapped = this.wrapped;
+    if (wrapped.materializeSize() < numElements) {
+      return wrapped.materializeContains(element);
+    }
+    return super.materializeContains(element);
   }
 
   @Override

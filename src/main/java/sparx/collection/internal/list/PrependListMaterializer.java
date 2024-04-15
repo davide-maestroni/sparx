@@ -46,6 +46,14 @@ public class PrependListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    if (element == this.element || (element != null && element.equals(this.element))) {
+      return true;
+    }
+    return wrapped.materializeContains(element);
+  }
+
+  @Override
   public E materializeElement(final int index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));

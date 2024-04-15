@@ -40,6 +40,11 @@ public class ListToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return elements.contains(element);
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return elements.get(index);
   }

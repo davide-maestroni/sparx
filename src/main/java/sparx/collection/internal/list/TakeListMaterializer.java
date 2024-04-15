@@ -17,10 +17,12 @@ package sparx.collection.internal.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-public class TakeListMaterializer<E> implements ListMaterializer<E> {
+public class TakeListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+    ListMaterializer<E> {
 
   private final int maxElements;
   private final ListMaterializer<E> wrapped;

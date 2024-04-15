@@ -22,9 +22,12 @@ public interface CollectionMaterializer<E> {
 
   int knownSize();
 
+  boolean materializeContains(Object element);
+
   boolean materializeEmpty();
 
-  @NotNull Iterator<E> materializeIterator();
+  @NotNull
+  Iterator<E> materializeIterator();
 
   int materializeSize();
 }

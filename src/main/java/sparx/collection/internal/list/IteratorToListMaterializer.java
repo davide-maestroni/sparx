@@ -20,6 +20,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
@@ -42,6 +43,11 @@ public class IteratorToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return state.materializeContains(element);
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return state.materializeElement(index);
   }
@@ -61,7 +67,8 @@ public class IteratorToListMaterializer<E> implements ListMaterializer<E> {
     return state.materializeSize();
   }
 
-  private class ImmaterialState implements ListMaterializer<E> {
+  private class ImmaterialState extends AbstractCollectionMaterializer<E> implements
+      ListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
     private final Iterator<E> iterator;

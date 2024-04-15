@@ -18,10 +18,12 @@ package sparx.collection.internal.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
-public class RemoveAfterListMaterializer<E> implements ListMaterializer<E> {
+public class RemoveAfterListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+    ListMaterializer<E> {
 
   private final int numElements;
   private final ListMaterializer<E> wrapped;
@@ -57,6 +59,15 @@ public class RemoveAfterListMaterializer<E> implements ListMaterializer<E> {
       return knownSize;
     }
     return -1;
+  }
+
+  @Override
+  public boolean materializeContains(final Object element) {
+    final ListMaterializer<E> wrapped = this.wrapped;
+    if (wrapped.materializeSize() < numElements) {
+      return wrapped.materializeContains(element);
+    }
+    return super.materializeContains(element);
   }
 
   @Override

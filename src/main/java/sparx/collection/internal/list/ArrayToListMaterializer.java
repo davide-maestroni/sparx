@@ -39,6 +39,24 @@ public class ArrayToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    if (element == null) {
+      for (final E e : elements) {
+        if (e == null) {
+          return true;
+        }
+      }
+    } else {
+      for (final E e : elements) {
+        if (element.equals(e)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return elements[index];
   }

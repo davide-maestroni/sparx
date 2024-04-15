@@ -22,7 +22,8 @@ import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
-public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
+public class InsertAllAfterListMaterializer<E> implements
+    ListMaterializer<E> {
 
   private final ListMaterializer<E> elementsMaterializer;
   private final int numElements;
@@ -77,6 +78,39 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
       }
     }
     return -1;
+  }
+
+  @Override
+  public boolean materializeContains(final Object element) {
+    final int numElements = this.numElements;
+    final ListMaterializer<E> wrapped = this.wrapped;
+    int i = 0;
+    if (element == null) {
+      while (wrapped.canMaterializeElement(i)) {
+        if (wrapped.materializeElement(i) == null) {
+          return true;
+        }
+        if (i == numElements) {
+          if (elementsMaterializer.materializeContains(null)) {
+            return true;
+          }
+        }
+        ++i;
+      }
+    } else {
+      while (wrapped.canMaterializeElement(i)) {
+        if (element.equals(wrapped.materializeElement(i))) {
+          return true;
+        }
+        if (i == numElements) {
+          if (elementsMaterializer.materializeContains(element)) {
+            return true;
+          }
+        }
+        ++i;
+      }
+    }
+    return false;
   }
 
   @Override

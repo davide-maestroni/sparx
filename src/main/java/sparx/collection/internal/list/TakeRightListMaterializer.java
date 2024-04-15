@@ -17,11 +17,13 @@ package sparx.collection.internal.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 
-public class TakeRightListMaterializer<E> implements ListMaterializer<E> {
+public class TakeRightListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+    ListMaterializer<E> {
 
   private final int maxElements;
   private final ListMaterializer<E> wrapped;

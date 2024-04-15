@@ -19,12 +19,14 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.AbstractCollectionMaterializer;
 import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 
-public class MapAfterListMaterializer<E> implements ListMaterializer<E> {
+public class MapAfterListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+    ListMaterializer<E> {
 
   private final int numElements;
   private final ListMaterializer<E> wrapped;
@@ -46,6 +48,15 @@ public class MapAfterListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public int knownSize() {
     return wrapped.knownSize();
+  }
+
+  @Override
+  public boolean materializeContains(final Object element) {
+    final ListMaterializer<E> wrapped = this.wrapped;
+    if (wrapped.materializeSize() < numElements) {
+      return wrapped.materializeContains(element);
+    }
+    return super.materializeContains(element);
   }
 
   @Override

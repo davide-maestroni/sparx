@@ -49,6 +49,12 @@ public class FindLastListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  @SuppressWarnings("SuspiciousMethodCalls")
+  public boolean materializeContains(final Object element) {
+    return state.materialized().contains(element);
+  }
+
+  @Override
   public E materializeElement(final int index) {
     return state.materialized().get(index);
   }

@@ -70,6 +70,41 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    final int numElements = this.numElements;
+    final ListMaterializer<E> wrapped = this.wrapped;
+    int i = 0;
+    if (element == null) {
+      while (wrapped.canMaterializeElement(i)) {
+        if (i != numElements) {
+          if (wrapped.materializeElement(i) == null) {
+            return true;
+          }
+        } else {
+          if (state.materialized().materializeContains(null)) {
+            return true;
+          }
+        }
+        ++i;
+      }
+    } else {
+      while (wrapped.canMaterializeElement(i)) {
+        if (i != numElements) {
+          if (element.equals(wrapped.materializeElement(i))) {
+            return true;
+          }
+        } else {
+          if (state.materialized().materializeContains(element)) {
+            return true;
+          }
+        }
+        ++i;
+      }
+    }
+    return false;
+  }
+
+  @Override
   public E materializeElement(final int index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));

@@ -47,6 +47,11 @@ public class StartsWithListMaterializer<E> implements ListMaterializer<Boolean> 
   }
 
   @Override
+  public boolean materializeContains(final Object element) {
+    return Boolean.valueOf(state.materialized()).equals(element);
+  }
+
+  @Override
   public Boolean materializeElement(final int index) {
     if (index != 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));

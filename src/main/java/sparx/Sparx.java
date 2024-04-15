@@ -22,7 +22,6 @@ import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.AbstractListSequence;
 import sparx.collection.ListMaterializer;
-import sparx.collection.ListSequence;
 import sparx.collection.Sequence;
 import sparx.collection.internal.list.AllListMaterializer;
 import sparx.collection.internal.list.AppendAllListMaterializer;
@@ -76,7 +75,9 @@ import sparx.collection.internal.list.RemoveFirstWhereListMaterializer;
 import sparx.collection.internal.list.RemoveLastWhereListMaterializer;
 import sparx.collection.internal.list.RemoveSliceListMaterializer;
 import sparx.collection.internal.list.RemoveWhereListMaterializer;
+import sparx.collection.internal.list.RepeatListMaterializer;
 import sparx.collection.internal.list.ReplaceSliceListMaterializer;
+import sparx.collection.internal.list.ResizeListMaterializer;
 import sparx.collection.internal.list.ReverseListMaterializer;
 import sparx.collection.internal.list.SingleFlatMapListMaterializer;
 import sparx.collection.internal.list.SingleFlatMapWhereListMaterializer;
@@ -91,7 +92,7 @@ import sparx.collection.internal.list.TakeRightWhileListMaterializer;
 import sparx.collection.internal.list.TakeWhileListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.BiFunction;
+import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedConsumer;
@@ -117,6 +118,26 @@ public class Sparx {
   };
 
   private Sparx() {
+  }
+
+  private static @NotNull <E> IndexedPredicate<E> elementsContains(
+      @NotNull final ListMaterializer<E> elementsMaterializer) {
+    return new IndexedPredicate<E>() {
+      @Override
+      public boolean test(final int index, final E param) {
+        return elementsMaterializer.materializeContains(param);
+      }
+    };
+  }
+
+  private static @NotNull <E> IndexedPredicate<E> elementsNotContains(
+      @NotNull final ListMaterializer<E> elementsMaterializer) {
+    return new IndexedPredicate<E>() {
+      @Override
+      public boolean test(final int index, final E param) {
+        return !elementsMaterializer.materializeContains(param);
+      }
+    };
   }
 
   @SuppressWarnings("unchecked")
@@ -314,6 +335,13 @@ public class Sparx {
                 eighth, ninth, tenth));
       }
 
+      public static @NotNull <E> List<E> times(final int count, final E element) {
+        if (Require.notNegative(count, "count") == 0) {
+          return List.of();
+        }
+        return new List<E>(new RepeatListMaterializer<E>(count, element));
+      }
+
       public static @NotNull <E> List<E> wrap(@NotNull final Iterable<E> elements) {
         return new List<E>(getElementsMaterializer(elements));
       }
@@ -439,28 +467,17 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<Integer> countNot(@NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return ZERO_LIST;
-        }
-        return new List<Integer>(
-            new CountWhereListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<Integer> countNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return ZERO_LIST;
-        }
-        return new List<Integer>(
-            new CountWhereListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
-      }
-
-      @Override
       public @NotNull List<E> diff(@NotNull final Iterable<?> elements) {
-        return null;
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        final ListMaterializer<Object> elementsMaterializer = getElementsMaterializer(elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new RemoveWhereListMaterializer<E>(materializer,
+            elementsContains(elementsMaterializer)));
       }
 
       @Override
@@ -616,114 +633,6 @@ public class Sparx {
       }
 
       @Override
-      public void doWhileNot(@NotNull final IndexedPredicate<? super E> condition,
-          @NotNull final IndexedConsumer<? super E> consumer) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return;
-        }
-        try {
-          if (knownSize == 1) {
-            final E element = materializer.materializeElement(0);
-            if (!condition.test(0, element)) {
-              consumer.accept(0, element);
-            }
-          } else {
-            int i = 0;
-            while (materializer.canMaterializeElement(i)) {
-              final E next = materializer.materializeElement(i);
-              if (condition.test(i, next)) {
-                break;
-              }
-              consumer.accept(i, next);
-              ++i;
-            }
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doWhileNot(@NotNull final Predicate<? super E> condition,
-          @NotNull final Consumer<? super E> consumer) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return;
-        }
-        try {
-          if (knownSize == 1) {
-            final E element = materializer.materializeElement(0);
-            if (!condition.test(element)) {
-              consumer.accept(element);
-            }
-          } else {
-            int i = 0;
-            while (materializer.canMaterializeElement(i)) {
-              final E next = materializer.materializeElement(i);
-              if (condition.test(next)) {
-                break;
-              }
-              consumer.accept(next);
-              ++i;
-            }
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doWhileNot(@NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return;
-        }
-        try {
-          if (knownSize == 1) {
-            predicate.test(0, materializer.materializeElement(0));
-          } else {
-            int i = 0;
-            while (materializer.canMaterializeElement(i)) {
-              if (predicate.test(i, materializer.materializeElement(i))) {
-                break;
-              }
-              ++i;
-            }
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doWhileNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return;
-        }
-        try {
-          if (knownSize == 1) {
-            predicate.test(materializer.materializeElement(0));
-          } else {
-            int i = 0;
-            while (materializer.canMaterializeElement(i)) {
-              if (predicate.test(materializer.materializeElement(i))) {
-                break;
-              }
-              ++i;
-            }
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
       public @NotNull List<E> drop(final int maxElements) {
         final ListMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
@@ -769,26 +678,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> dropRightWhileNot(
-          @NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new DropRightWhileListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> dropRightWhileNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new DropRightWhileListMaterializer<E>(materializer,
-            toNegatedIndexedPredicate(predicate)));
-      }
-
-      @Override
       public @NotNull List<E> dropWhile(@NotNull final IndexedPredicate<? super E> predicate) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
@@ -805,25 +694,6 @@ public class Sparx {
         }
         return new List<E>(
             new DropWhileListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> dropWhileNot(@NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new DropWhileListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> dropWhileNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(
-            new DropWhileListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
       }
 
       @Override
@@ -857,22 +727,21 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
-        return removeWhereNot(predicate);
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new RemoveWhereListMaterializer<E>(materializer, negated(predicate)));
       }
 
       @Override
       public @NotNull List<E> filter(@NotNull final Predicate<? super E> predicate) {
-        return removeWhereNot(predicate);
-      }
-
-      @Override
-      public @NotNull List<E> filterNot(@NotNull final IndexedPredicate<? super E> predicate) {
-        return removeWhere(predicate);
-      }
-
-      @Override
-      public @NotNull List<E> filterNot(@NotNull final Predicate<? super E> predicate) {
-        return removeWhere(predicate);
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(
+            new RemoveWhereListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
       }
 
       @Override
@@ -883,16 +752,6 @@ public class Sparx {
       @Override
       public @NotNull List<E> findAny(@NotNull final Predicate<? super E> predicate) {
         return findFirst(predicate);
-      }
-
-      @Override
-      public @NotNull List<E> findAnyNot(@NotNull IndexedPredicate<? super E> predicate) {
-        return findFirstNot(predicate);
-      }
-
-      @Override
-      public @NotNull List<E> findAnyNot(@NotNull final Predicate<? super E> predicate) {
-        return findFirstNot(predicate);
       }
 
       @Override
@@ -912,25 +771,6 @@ public class Sparx {
         }
         return new List<E>(
             new FindFirstListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> findFirstNot(@NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new FindFirstListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> findFirstNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(
-            new FindFirstListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
       }
 
       @Override
@@ -961,28 +801,6 @@ public class Sparx {
         }
         return new List<Integer>(
             new FindIndexListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull List<Integer> findIndexWhereNot(
-          @NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return List.of();
-        }
-        return new List<Integer>(
-            new FindIndexListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<Integer> findIndexWhereNot(
-          @NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return List.of();
-        }
-        return new List<Integer>(
-            new FindIndexListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
       }
 
       @Override
@@ -1043,51 +861,10 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<Integer> findLastIndexWhereNot(
-          @NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return List.of();
-        }
-        return new List<Integer>(
-            new FindLastIndexListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<Integer> findLastIndexWhereNot(
-          @NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return List.of();
-        }
-        return new List<Integer>(new FindLastIndexListMaterializer<E>(materializer,
-            toNegatedIndexedPredicate(predicate)));
-      }
-
-      @Override
       public @NotNull List<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
         final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
         return new List<Integer>(
             new FindLastIndexOfSliceListMaterializer<E>(materializer, elementsMaterializer));
-      }
-
-      @Override
-      public @NotNull List<E> findLastNot(@NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new FindLastListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> findLastNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(
-            new FindLastListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
       }
 
       @Override
@@ -1195,44 +972,7 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> flatMapFirstWhereNot(
-          @NotNull final IndexedPredicate<? super E> predicate,
-          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return List.of();
-        }
-        if (knownSize == 1) {
-          return new List<E>(
-              new SingleFlatMapWhereListMaterializer<E>(materializer, negated(predicate),
-                  getElementToMaterializer(mapper)));
-        }
-        return new List<E>(
-            new FlatMapFirstWhereListMaterializer<E>(materializer, negated(predicate),
-                getElementToMaterializer(mapper)));
-      }
-
-      @Override
-      public @NotNull ListSequence<E> flatMapFirstWhereNot(
-          @NotNull final Predicate<? super E> predicate,
-          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return List.of();
-        }
-        if (knownSize == 1) {
-          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer,
-              toNegatedIndexedPredicate(predicate), getElementToMaterializer(mapper)));
-        }
-        return new List<E>(new FlatMapFirstWhereListMaterializer<E>(materializer,
-            toNegatedIndexedPredicate(predicate), getElementToMaterializer(mapper)));
-      }
-
-      @Override
-      public @NotNull ListSequence<E> flatMapLastWhere(
-          @NotNull final IndexedPredicate<? super E> predicate,
+      public @NotNull List<E> flatMapLastWhere(@NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
         final ListMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
@@ -1248,8 +988,7 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> flatMapLastWhere(
-          @NotNull final Predicate<? super E> predicate,
+      public @NotNull List<E> flatMapLastWhere(@NotNull final Predicate<? super E> predicate,
           @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
         final ListMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
@@ -1267,43 +1006,7 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> flatMapLastWhereNot(
-          @NotNull final IndexedPredicate<? super E> predicate,
-          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return List.of();
-        }
-        if (knownSize == 1) {
-          return new List<E>(
-              new SingleFlatMapWhereListMaterializer<E>(materializer, negated(predicate),
-                  getElementToMaterializer(mapper)));
-        }
-        return new List<E>(new FlatMapLastWhereListMaterializer<E>(materializer, negated(predicate),
-            getElementToMaterializer(mapper)));
-      }
-
-      @Override
-      public @NotNull ListSequence<E> flatMapLastWhereNot(
-          @NotNull final Predicate<? super E> predicate,
-          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return List.of();
-        }
-        if (knownSize == 1) {
-          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer,
-              toNegatedIndexedPredicate(predicate), getElementToMaterializer(mapper)));
-        }
-        return new List<E>(new FlatMapLastWhereListMaterializer<E>(materializer,
-            toNegatedIndexedPredicate(predicate), getElementToMaterializer(mapper)));
-      }
-
-      @Override
-      public @NotNull ListSequence<E> flatMapWhere(
-          @NotNull final IndexedPredicate<? super E> predicate,
+      public @NotNull List<E> flatMapWhere(@NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
         final ListMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
@@ -1318,7 +1021,7 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> flatMapWhere(@NotNull final Predicate<? super E> predicate,
+      public @NotNull List<E> flatMapWhere(@NotNull final Predicate<? super E> predicate,
           @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
         final ListMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
@@ -1336,49 +1039,14 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull ListSequence<E> flatMapWhereNot(
-          @NotNull final IndexedPredicate<? super E> predicate,
-          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return List.of();
-        }
-        if (knownSize == 1) {
-          return new List<E>(
-              new SingleFlatMapWhereListMaterializer<E>(materializer, negated(predicate),
-                  getElementToMaterializer(mapper)));
-        }
-        return new List<E>(
-            new FlatMapWhereListMaterializer<E>(materializer, negated(predicate), mapper));
-      }
-
-      @Override
-      public @NotNull ListSequence<E> flatMapWhereNot(@NotNull final Predicate<? super E> predicate,
-          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return List.of();
-        }
-        if (knownSize == 1) {
-          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer,
-              toNegatedIndexedPredicate(predicate), getElementToMaterializer(mapper)));
-        }
-        return new List<E>(
-            new FlatMapWhereListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
-      }
-
-      @Override
       public @NotNull <F> List<F> fold(final F identity,
-          @NotNull final BiFunction<? super F, ? super E, ? extends F> operation) {
+          @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
         return foldLeft(identity, operation);
       }
 
       @Override
       public @NotNull <F> List<F> foldLeft(final F identity,
-          @NotNull final BiFunction<? super F, ? super E, ? extends F> operation) {
+          @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return List.of(identity);
@@ -1388,7 +1056,7 @@ public class Sparx {
 
       @Override
       public @NotNull <F> List<F> foldRight(final F identity,
-          @NotNull final BiFunction<? super E, ? super F, ? extends F> operation) {
+          @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return List.of(identity);
@@ -1497,7 +1165,16 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> intersect(@NotNull final Iterable<?> elements) {
-        return null;
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        final ListMaterializer<Object> elementsMaterializer = getElementsMaterializer(elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return List.of();
+        }
+        return new List<E>(new RemoveWhereListMaterializer<E>(materializer,
+            elementsNotContains(elementsMaterializer)));
       }
 
       @Override
@@ -1602,39 +1279,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> mapFirstWhereNot(@NotNull final IndexedPredicate<? super E> predicate,
-          @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return this;
-        }
-        if (knownSize == 1) {
-          return new List<E>(
-              new SingleMapWhereListMaterializer<E>(materializer, negated(predicate), mapper));
-        }
-        return new List<E>(
-            new MapFirstWhereListMaterializer<E>(materializer, negated(predicate), mapper));
-      }
-
-      @Override
-      public @NotNull List<E> mapFirstWhereNot(@NotNull final Predicate<? super E> predicate,
-          @NotNull final Function<? super E, ? extends E> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return this;
-        }
-        if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
-              toNegatedIndexedPredicate(predicate), toIndexedFunction(mapper)));
-        }
-        return new List<E>(
-            new MapFirstWhereListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
-      }
-
-      @Override
       public @NotNull List<E> mapLastWhere(@NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
         final ListMaterializer<E> materializer = this.materializer;
@@ -1668,39 +1312,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> mapLastWhereNot(@NotNull final IndexedPredicate<? super E> predicate,
-          @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return this;
-        }
-        if (knownSize == 1) {
-          return new List<E>(
-              new SingleMapWhereListMaterializer<E>(materializer, negated(predicate), mapper));
-        }
-        return new List<E>(
-            new MapLastWhereListMaterializer<E>(materializer, negated(predicate), mapper));
-      }
-
-      @Override
-      public @NotNull List<E> mapLastWhereNot(@NotNull final Predicate<? super E> predicate,
-          @NotNull final Function<? super E, ? extends E> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return this;
-        }
-        if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
-              toNegatedIndexedPredicate(predicate), toIndexedFunction(mapper)));
-        }
-        return new List<E>(
-            new MapLastWhereListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
-      }
-
-      @Override
       public @NotNull List<E> mapWhere(@NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
         final ListMaterializer<E> materializer = this.materializer;
@@ -1719,29 +1330,6 @@ public class Sparx {
         }
         return new List<E>(
             new MapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
-      }
-
-      @Override
-      public @NotNull List<E> mapWhereNot(@NotNull final IndexedPredicate<? super E> predicate,
-          @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(
-            new MapWhereListMaterializer<E>(materializer, negated(predicate), mapper));
-      }
-
-      @Override
-      public @NotNull List<E> mapWhereNot(@NotNull final Predicate<? super E> predicate,
-          @NotNull final Function<? super E, ? extends E> mapper) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(
-            new MapWhereListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
                 toIndexedFunction(mapper)));
       }
 
@@ -1866,13 +1454,13 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> reduce(
-          @NotNull final BiFunction<? super E, ? super E, ? extends E> operation) {
+          @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
         return reduceLeft(operation);
       }
 
       @Override
       public @NotNull List<E> reduceLeft(
-          @NotNull final BiFunction<? super E, ? super E, ? extends E> operation) {
+          @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return this;
@@ -1882,7 +1470,7 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> reduceRight(
-          @NotNull final BiFunction<? super E, ? super E, ? extends E> operation) {
+          @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return this;
@@ -1947,27 +1535,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> removeFirstWhereNot(
-          @NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(
-            new RemoveFirstWhereListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> removeFirstWhereNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new RemoveFirstWhereListMaterializer<E>(materializer,
-            toNegatedIndexedPredicate(predicate)));
-      }
-
-      @Override
       public @NotNull List<E> removeLast(final E element) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
@@ -1995,27 +1562,6 @@ public class Sparx {
         }
         return new List<E>(
             new RemoveLastWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> removeLastWhereNot(
-          @NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(
-            new RemoveLastWhereListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> removeLastWhereNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new RemoveLastWhereListMaterializer<E>(materializer,
-            toNegatedIndexedPredicate(predicate)));
       }
 
       @Override
@@ -2065,25 +1611,6 @@ public class Sparx {
         }
         return new List<E>(
             new RemoveWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> removeWhereNot(@NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new RemoveWhereListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> removeWhereNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(
-            new RemoveWhereListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
       }
 
       @Override
@@ -2166,39 +1693,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> replaceFirstWhereNot(
-          @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return this;
-        }
-        if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, negated(predicate),
-              replacementMapper(replacement)));
-        }
-        return new List<E>(new MapFirstWhereListMaterializer<E>(materializer, negated(predicate),
-            replacementMapper(replacement)));
-      }
-
-      @Override
-      public @NotNull List<E> replaceFirstWhereNot(@NotNull final Predicate<? super E> predicate,
-          final E replacement) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return this;
-        }
-        if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
-              toNegatedIndexedPredicate(predicate), replacementMapper(replacement)));
-        }
-        return new List<E>(
-            new MapFirstWhereListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
-                replacementMapper(replacement)));
-      }
-
-      @Override
       public @NotNull List<E> replaceLast(final E element, final E replacement) {
         final ListMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
@@ -2245,39 +1739,6 @@ public class Sparx {
         }
         return new List<E>(
             new MapLastWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                replacementMapper(replacement)));
-      }
-
-      @Override
-      public @NotNull List<E> replaceLastWhereNot(
-          @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return this;
-        }
-        if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, negated(predicate),
-              replacementMapper(replacement)));
-        }
-        return new List<E>(new MapLastWhereListMaterializer<E>(materializer, negated(predicate),
-            replacementMapper(replacement)));
-      }
-
-      @Override
-      public @NotNull List<E> replaceLastWhereNot(@NotNull final Predicate<? super E> predicate,
-          final E replacement) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return this;
-        }
-        if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
-              toNegatedIndexedPredicate(predicate), replacementMapper(replacement)));
-        }
-        return new List<E>(
-            new MapLastWhereListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
                 replacementMapper(replacement)));
       }
 
@@ -2338,7 +1799,25 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> resizeTo(final int numElements, final E padding) {
-        return null;
+        if (Require.notNegative(numElements, "numElements") == 0) {
+          return List.of();
+        }
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize >= 0) {
+          if (knownSize == 0) {
+            return List.times(numElements, padding);
+          }
+          if (knownSize == numElements) {
+            return this;
+          }
+          if (knownSize < numElements) {
+            return new List<E>(new TakeListMaterializer<E>(materializer, numElements));
+          }
+          return new List<E>(new AppendAllListMaterializer<E>(materializer,
+              new RepeatListMaterializer<E>(knownSize - numElements, padding)));
+        }
+        return new List<E>(new ResizeListMaterializer<E>(materializer, numElements, padding));
       }
 
       @Override
@@ -2444,26 +1923,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> takeRightWhileNot(
-          @NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new TakeRightWhileListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> takeRightWhileNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new TakeRightWhileListMaterializer<E>(materializer,
-            toNegatedIndexedPredicate(predicate)));
-      }
-
-      @Override
       public @NotNull List<E> takeWhile(@NotNull final IndexedPredicate<? super E> predicate) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
@@ -2483,27 +1942,19 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> takeWhileNot(@NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(new TakeWhileListMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull List<E> takeWhileNot(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new List<E>(
-            new TakeWhileListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
-      }
-
-      @Override
+      @SuppressWarnings("unchecked")
       public @NotNull List<E> union(@NotNull final Iterable<? extends E> elements) {
-        return null;
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return (List<E>) List.from(elements);
+        }
+        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(new AppendAllListMaterializer<E>(materializer,
+            new RemoveWhereListMaterializer<E>(elementsMaterializer,
+                elementsContains(materializer))));
       }
 
       private static class SuppliedMeterializer<E> implements ListMaterializer<E> {
@@ -2523,6 +1974,11 @@ public class Sparx {
         @Override
         public int knownSize() {
           return state.knownSize();
+        }
+
+        @Override
+        public boolean materializeContains(final Object element) {
+          return state.materializeContains(element);
         }
 
         @Override
@@ -2569,6 +2025,18 @@ public class Sparx {
           @Override
           public int knownSize() {
             return -1;
+          }
+
+          @Override
+          public boolean materializeContains(final Object element) {
+            try {
+              final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
+                  supplier.get());
+              state = elementsMaterializer;
+              return elementsMaterializer.materializeContains(element);
+            } catch (final Exception e) {
+              throw UncheckedException.throwUnchecked(e);
+            }
           }
 
           @Override
