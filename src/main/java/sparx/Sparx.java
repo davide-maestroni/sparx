@@ -18,12 +18,24 @@ package sparx;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.AbstractListSequence;
-import sparx.collection.ListMaterializer;
+import sparx.collection.IteratorSequence;
 import sparx.collection.Sequence;
+import sparx.collection.internal.iterator.AllIteratorMaterializer;
+import sparx.collection.internal.iterator.AppendAllIteratorMaterializer;
+import sparx.collection.internal.iterator.AppendIteratorMaterializer;
+import sparx.collection.internal.iterator.CollectionToIteratorMaterializer;
+import sparx.collection.internal.iterator.CountIteratorMaterializer;
+import sparx.collection.internal.iterator.CountWhereIteratorMaterializer;
+import sparx.collection.internal.iterator.ElementToIteratorMaterializer;
+import sparx.collection.internal.iterator.EmptyIteratorMaterializer;
+import sparx.collection.internal.iterator.IteratorMaterializer;
+import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
+import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
+import sparx.collection.internal.iterator.ListToIteratorMaterializer;
+import sparx.collection.internal.iterator.RemoveWhereIteratorMaterializer;
 import sparx.collection.internal.list.AllListMaterializer;
 import sparx.collection.internal.list.AppendAllListMaterializer;
 import sparx.collection.internal.list.AppendListMaterializer;
@@ -58,6 +70,7 @@ import sparx.collection.internal.list.IncludesSliceListMaterializer;
 import sparx.collection.internal.list.InsertAfterListMaterializer;
 import sparx.collection.internal.list.InsertAllAfterListMaterializer;
 import sparx.collection.internal.list.IteratorToListMaterializer;
+import sparx.collection.internal.list.ListMaterializer;
 import sparx.collection.internal.list.ListToListMaterializer;
 import sparx.collection.internal.list.MapAfterListMaterializer;
 import sparx.collection.internal.list.MapFirstWhereListMaterializer;
@@ -92,6 +105,7 @@ import sparx.collection.internal.list.TakeRightWhileListMaterializer;
 import sparx.collection.internal.list.TakeWhileListMaterializer;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
@@ -104,7 +118,6 @@ import sparx.util.function.Supplier;
 
 public class Sparx {
 
-  private static final EmptyListMaterializer<Object> EMPTY_MATERIALIZER = new EmptyListMaterializer<Object>();
   private static final IndexedPredicate<?> EQUALS_NULL = new IndexedPredicate<Object>() {
     @Override
     public boolean test(final int index, final Object param) {
@@ -236,7 +249,7 @@ public class Sparx {
 
     public static class List<E> extends AbstractListSequence<E> {
 
-      private static final List<?> EMPTY_LIST = new List<Object>(EMPTY_MATERIALIZER);
+      private static final List<?> EMPTY_LIST = new List<Object>(EmptyListMaterializer.instance());
       private static final List<Boolean> FALSE_LIST = new List<Boolean>(
           new ElementToListMaterializer<Boolean>(false));
       private static final List<Boolean> TRUE_LIST = new List<Boolean>(
@@ -343,7 +356,7 @@ public class Sparx {
         return new List<E>(new RepeatListMaterializer<E>(count, element));
       }
 
-      public static @NotNull <E> List<E> wrap(@NotNull final Iterable<E> elements) {
+      public static @NotNull <E> List<E> wrap(@NotNull final Iterable<? extends E> elements) {
         return new List<E>(getElementsMaterializer(elements));
       }
 
@@ -356,14 +369,14 @@ public class Sparx {
         if (elements instanceof java.util.List) {
           final java.util.List<E> list = (java.util.List<E>) elements;
           if (list.isEmpty()) {
-            return (ListMaterializer<E>) EMPTY_MATERIALIZER;
+            return EmptyListMaterializer.instance();
           }
           return new ListToListMaterializer<E>(list);
         }
         if (elements instanceof Collection) {
           final Collection<E> collection = (Collection<E>) elements;
           if (collection.isEmpty()) {
-            return (ListMaterializer<E>) EMPTY_MATERIALIZER;
+            return EmptyListMaterializer.instance();
           }
           return new CollectionToListMaterializer<E>(collection);
         }
@@ -442,8 +455,12 @@ public class Sparx {
       @Override
       public @NotNull List<Integer> count() {
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return ZERO_LIST;
+        }
+        if (knownSize > 0) {
+          return List.of(knownSize);
         }
         return new List<Integer>(new CountListMaterializer<E>(materializer));
       }
@@ -1180,12 +1197,24 @@ public class Sparx {
 
       @Override
       public @NotNull Iterator<E> iterator() {
-        return materializer.materializeIterator();
+        return Iterator.wrap(this);
       }
 
       @Override
       public @NotNull ListIterator<E> listIterator() {
         return new ListIterator<E>(List.<E>of(), this);
+      }
+
+      @Override
+      public @NotNull ListIterator<E> listIterator(final int index) {
+        if (index < 0 || index == Integer.MAX_VALUE) {
+          throw new IndexOutOfBoundsException(Integer.toString(index));
+        }
+        final int knownSize = materializer.knownSize();
+        if (knownSize >= 0 && index >= knownSize) {
+          throw new IndexOutOfBoundsException(Integer.toString(index));
+        }
+        return new ListIterator<E>(List.<E>of(), this, index);
       }
 
       @Override
@@ -1989,7 +2018,7 @@ public class Sparx {
         }
 
         @Override
-        public @NotNull Iterator<E> materializeIterator() {
+        public @NotNull java.util.Iterator<E> materializeIterator() {
           return state.materializeIterator();
         }
 
@@ -2061,7 +2090,7 @@ public class Sparx {
           }
 
           @Override
-          public @NotNull Iterator<E> materializeIterator() {
+          public @NotNull java.util.Iterator<E> materializeIterator() {
             try {
               final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
                   supplier.get());
@@ -2087,8 +2116,170 @@ public class Sparx {
       }
     }
 
+    public static class Iterator<E> implements IteratorSequence<E> {
+
+      private static final Iterator<Boolean> FALSE_ITERATOR = new Iterator<Boolean>(
+          new ElementToIteratorMaterializer<Boolean>(false));
+      private static final Iterator<Boolean> TRUE_ITERATOR = new Iterator<Boolean>(
+          new ElementToIteratorMaterializer<Boolean>(true));
+      private static final Iterator<Integer> ZERO_ITERATOR = new Iterator<Integer>(
+          new ElementToIteratorMaterializer<Integer>(0));
+
+      private final IteratorMaterializer<E> materializer;
+
+      private Iterator(@NotNull final IteratorMaterializer<E> materializer) {
+        this.materializer = Require.notNull(materializer, "materializer");
+      }
+
+      public static @NotNull <E> Iterator<E> wrap(@NotNull final Iterable<? extends E> elements) {
+        return new Iterator<E>(getElementsMaterializer(elements));
+      }
+
+      @SuppressWarnings("unchecked")
+      private static @NotNull <E> IteratorMaterializer<E> getElementsMaterializer(
+          @NotNull final Iterable<? extends E> elements) {
+        if (elements instanceof Iterator) {
+          return ((Iterator<E>) elements).materializer;
+        }
+        if (elements instanceof List) {
+          return new ListMaterializerToIteratorMaterializer<E>(((List<E>) elements).materializer);
+        }
+        if (elements instanceof java.util.List) {
+          final java.util.List<E> list = (java.util.List<E>) elements;
+          if (list.isEmpty()) {
+            return EmptyIteratorMaterializer.instance();
+          }
+          return new ListToIteratorMaterializer<E>(list);
+        }
+        if (elements instanceof Collection) {
+          final Collection<E> collection = (Collection<E>) elements;
+          if (collection.isEmpty()) {
+            return EmptyIteratorMaterializer.instance();
+          }
+          return new CollectionToIteratorMaterializer<E>(collection);
+        }
+        return new IteratorToIteratorMaterializer<E>((Iterator<E>) elements.iterator());
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return TRUE_ITERATOR;
+        }
+        return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer, predicate, true));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> all(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return TRUE_ITERATOR;
+        }
+        return new Iterator<Boolean>(
+            new AllIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate), true));
+      }
+
+      @Override
+      public @NotNull Iterator<E> append(final E element) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new Iterator<E>(new ElementToIteratorMaterializer<E>(element));
+        }
+        return new Iterator<E>(new AppendIteratorMaterializer<E>(materializer, element));
+      }
+
+      @Override
+      public @NotNull Iterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new Iterator<E>(getElementsMaterializer(elements));
+        }
+        return new Iterator<E>(
+            new AppendAllIteratorMaterializer<E>(materializer, getElementsMaterializer(elements)));
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public @NotNull <F> Iterator<F> as() {
+        return (Iterator<F>) this;
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> count() {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize >= 0) {
+          materializer.skip(knownSize);
+          return new Iterator<Integer>(new ElementToIteratorMaterializer<Integer>(knownSize));
+        }
+        return new Iterator<Integer>(new CountIteratorMaterializer<E>(materializer));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> count(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return ZERO_ITERATOR;
+        }
+        return new Iterator<Integer>(
+            new CountWhereIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> count(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return ZERO_ITERATOR;
+        }
+        return new Iterator<Integer>(
+            new CountWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> diff(@NotNull final Iterable<?> elements) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+            elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
+            elementsContains(elementsMaterializer)));
+      }
+
+      @Override
+      public boolean hasNext() {
+        return materializer.materializeHasNext();
+      }
+
+      @NotNull
+      @Override
+      public Iterator<E> iterator() {
+        return this;
+      }
+
+      @Override
+      public E next() {
+        return materializer.materializeNext();
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    }
+
     public static class ListIterator<E> implements Sequence<E>, java.util.ListIterator<E> {
 
+      private static final ListIterator<?> EMPTY_ITERATOR = new ListIterator<Object>(List.of(),
+          List.of());
+      private static final ListIterator<Boolean> FALSE_ITERATOR = new ListIterator<Boolean>(
+          List.<Boolean>of(), List.of(true));
       private static final Function<Integer, Integer> INDEX_IDENTITY = new Function<Integer, Integer>() {
         @Override
         public Integer apply(final Integer param) {
@@ -2101,6 +2292,10 @@ public class Sparx {
           return param.listIterator();
         }
       };
+      private static final ListIterator<Boolean> TRUE_ITERATOR = new ListIterator<Boolean>(
+          List.<Boolean>of(), List.of(true));
+      private static final ListIterator<Integer> ZERO_ITERATOR = new ListIterator<Integer>(
+          List.<Integer>of(), List.of(0));
 
       private final List<E> left;
       private final List<E> right;
@@ -2116,6 +2311,81 @@ public class Sparx {
           final int pos) {
         this(left, right);
         this.pos = pos;
+      }
+
+      public static @NotNull <E> ListIterator<E> from(@NotNull final Iterable<E> elements) {
+        return new ListIterator<E>(List.<E>of(), List.from(elements));
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> ListIterator<E> of() {
+        return (ListIterator<E>) EMPTY_ITERATOR;
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E first) {
+        return new ListIterator<E>(List.<E>of(), List.of(first));
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E first, final E second) {
+        return new ListIterator<E>(List.<E>of(), List.of(first, second));
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E first, final E second, final E third) {
+        return new ListIterator<E>(List.<E>of(), List.of(first, second, third));
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E first, final E second, final E third,
+          final E fourth) {
+        return new ListIterator<E>(List.<E>of(), List.of(first, second, third, fourth));
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth) {
+        return new ListIterator<E>(List.<E>of(), List.of(first, second, third, fourth, fifth));
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth, final E sixth) {
+        return new ListIterator<E>(List.<E>of(),
+            List.of(first, second, third, fourth, fifth, sixth));
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth, final E sixth, final E seventh) {
+        return new ListIterator<E>(List.<E>of(),
+            List.of(first, second, third, fourth, fifth, sixth, seventh));
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth, final E sixth, final E seventh, final E eighth) {
+        return new ListIterator<E>(List.<E>of(),
+            List.of(first, second, third, fourth, fifth, sixth, seventh, eighth));
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth, final E sixth, final E seventh, final E eighth,
+          final E ninth) {
+        return new ListIterator<E>(List.<E>of(),
+            List.of(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth));
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth, final E sixth, final E seventh, final E eighth,
+          final E ninth, final E tenth) {
+        return new ListIterator<E>(List.<E>of(),
+            List.of(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth));
+      }
+
+      public static @NotNull <E> ListIterator<E> times(final int count, final E element) {
+        if (Require.notNegative(count, "count") == 0) {
+          return ListIterator.of();
+        }
+        return new ListIterator<E>(List.<E>of(), List.times(count, element));
+      }
+
+      public static @NotNull <E> ListIterator<E> wrap(
+          @NotNull final Iterable<? extends E> elements) {
+        return new ListIterator<E>(List.<E>of(), List.wrap(elements));
       }
 
       private static @NotNull <E> IndexedConsumer<E> offsetConsumer(final long offset,
@@ -2177,12 +2447,18 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<Boolean> all(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return TRUE_ITERATOR;
+        }
         return new ListIterator<Boolean>(List.<Boolean>of(),
             currentRight().all(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<Boolean> all(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return TRUE_ITERATOR;
+        }
         return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().all(predicate));
       }
 
@@ -2207,18 +2483,27 @@ public class Sparx {
 
       @Override
       public @NotNull ListIterator<Integer> count() {
+        if (atEnd()) {
+          return ZERO_ITERATOR;
+        }
         return new ListIterator<Integer>(List.<Integer>of(), currentRight().count());
       }
 
       @Override
       public @NotNull ListIterator<Integer> count(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return ZERO_ITERATOR;
+        }
         return new ListIterator<Integer>(List.<Integer>of(),
             currentRight().count(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<Integer> count(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return ZERO_ITERATOR;
+        }
         return new ListIterator<Integer>(List.<Integer>of(), currentRight().count(predicate));
       }
 
@@ -2229,51 +2514,78 @@ public class Sparx {
 
       @Override
       public void doFor(@NotNull final Consumer<? super E> consumer) {
-        currentRight().doFor(consumer);
+        if (!atEnd()) {
+          currentRight().doFor(consumer);
+        }
       }
 
       @Override
       public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
-        currentRight().doFor(offsetConsumer(nextIndex(), consumer));
+        if (!atEnd()) {
+          currentRight().doFor(offsetConsumer(nextIndex(), consumer));
+        }
       }
 
       @Override
       public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
           @NotNull final IndexedConsumer<? super E> consumer) {
-        final int offset = nextIndex();
-        currentRight().doWhile(offsetPredicate(offset, condition),
-            offsetConsumer(offset, consumer));
+        if (!atEnd()) {
+          final int offset = nextIndex();
+          currentRight().doWhile(offsetPredicate(offset, condition),
+              offsetConsumer(offset, consumer));
+        }
       }
 
       @Override
       public void doWhile(@NotNull final Predicate<? super E> condition,
           @NotNull final Consumer<? super E> consumer) {
-        currentRight().doWhile(condition, consumer);
+        if (!atEnd()) {
+          currentRight().doWhile(condition, consumer);
+        }
       }
 
       @Override
       public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
-        currentRight().doWhile(offsetPredicate(nextIndex(), predicate));
+        if (!atEnd()) {
+          currentRight().doWhile(offsetPredicate(nextIndex(), predicate));
+        }
       }
 
       @Override
       public void doWhile(@NotNull final Predicate<? super E> predicate) {
-        currentRight().doWhile(predicate);
+        if (!atEnd()) {
+          currentRight().doWhile(predicate);
+        }
       }
 
       @Override
       public @NotNull ListIterator<E> drop(final int maxElements) {
+        if (maxElements <= 0 || atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().drop(maxElements));
       }
 
       @Override
       public @NotNull ListIterator<E> dropRight(final int maxElements) {
+        if (maxElements <= 0 || atEnd()) {
+          return this;
+        }
+        final int pos = this.pos;
+        final List<E> right = this.right;
+        final int knownSize = right.materializer.knownSize();
+        if (knownSize >= 0 && knownSize - Math.max(0, pos) >= maxElements) {
+          new ListIterator<E>(left, right.dropRight(maxElements), pos);
+        }
         return new ListIterator<E>(currentLeft(), currentRight().dropRight(maxElements));
       }
 
       @Override
       public @NotNull ListIterator<E> dropRightWhile(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().dropRightWhile(offsetPredicate(nextIndex(), predicate)));
       }
@@ -2281,18 +2593,27 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> dropRightWhile(
           @NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().dropRightWhile(predicate));
       }
 
       @Override
       public @NotNull ListIterator<E> dropWhile(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().dropWhile(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().dropWhile(predicate));
       }
 
@@ -2304,23 +2625,35 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<Boolean> exists(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return FALSE_ITERATOR;
+        }
         return new ListIterator<Boolean>(List.<Boolean>of(),
             currentRight().exists(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return FALSE_ITERATOR;
+        }
         return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().exists(predicate));
       }
 
       @Override
       public @NotNull ListIterator<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft().filter(predicate),
             currentRight().filter(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<E> filter(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft().filter(predicate),
             currentRight().filter(predicate));
       }
@@ -2328,29 +2661,44 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> findAny(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(),
             currentRight().findAny(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<E> findAny(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().findAny(predicate));
       }
 
       @Override
       public @NotNull ListIterator<E> findFirst(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(),
             currentRight().findFirst(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<E> findFirst(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().findFirst(predicate));
       }
 
       @Override
       public @NotNull ListIterator<Integer> findIndexOf(final Object element) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<Integer>(List.<Integer>of(),
             currentRight().findIndexOf(element).map(offsetMapper(nextIndex())));
       }
@@ -2358,6 +2706,9 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<Integer> findIndexWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<Integer>(List.<Integer>of(),
             currentRight().findIndexWhere(offsetPredicate(nextIndex(), predicate))
                 .map(offsetMapper(nextIndex())));
@@ -2366,6 +2717,9 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<Integer> findIndexWhere(
           @NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<Integer>(List.<Integer>of(),
             currentRight().findIndexWhere(predicate).map(offsetMapper(nextIndex())));
       }
@@ -2379,17 +2733,26 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> findLast(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(),
             currentRight().findLast(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<E> findLast(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().findLast(predicate));
       }
 
       @Override
       public @NotNull ListIterator<Integer> findLastIndexOf(final Object element) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<Integer>(List.<Integer>of(),
             currentRight().findLastIndexOf(element).map(offsetMapper(nextIndex())));
       }
@@ -2397,6 +2760,9 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<Integer> findLastIndexWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<Integer>(List.<Integer>of(),
             currentRight().findLastIndexWhere(offsetPredicate(nextIndex(), predicate))
                 .map(offsetMapper(nextIndex())));
@@ -2405,6 +2771,9 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<Integer> findLastIndexWhere(
           @NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<Integer>(List.<Integer>of(),
             currentRight().findLastIndexWhere(predicate).map(offsetMapper(nextIndex())));
       }
@@ -2418,7 +2787,12 @@ public class Sparx {
 
       @Override
       public E first() {
-        return next();
+        final int pos = this.pos;
+        if (pos >= 0) {
+          return right.get(pos);
+        }
+        final List<E> left = this.left;
+        return left.get(left.size() + pos);
       }
 
       @Override
@@ -2437,8 +2811,13 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> flatMapAfter(final int numElements,
           @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
-        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
           return this;
+        }
+        final int pos = this.pos;
+        if (pos >= 0) {
+          return new ListIterator<E>(left,
+              right.flatMapAfter(SizeOverflowException.safeCast((long) numElements + pos), mapper));
         }
         return new ListIterator<E>(currentLeft(), currentRight().flatMapAfter(numElements, mapper));
       }
@@ -2446,8 +2825,14 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> flatMapAfter(final int numElements,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
           return this;
+        }
+        final int pos = this.pos;
+        if (pos >= 0) {
+          return new ListIterator<E>(left,
+              right.flatMapAfter(SizeOverflowException.safeCast((long) numElements + pos),
+                  offsetFunction(nextIndex(), mapper)));
         }
         return new ListIterator<E>(currentLeft(),
             currentRight().flatMapAfter(numElements, offsetFunction(nextIndex(), mapper)));
@@ -2457,6 +2842,9 @@ public class Sparx {
       public @NotNull ListIterator<E> flatMapFirstWhere(
           @NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().flatMapFirstWhere(offsetPredicate(nextIndex(), predicate),
                 offsetFunction(nextIndex(), mapper)));
@@ -2466,6 +2854,9 @@ public class Sparx {
       public @NotNull ListIterator<E> flatMapFirstWhere(
           @NotNull final Predicate<? super E> predicate,
           @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().flatMapFirstWhere(predicate, mapper));
       }
@@ -2474,6 +2865,9 @@ public class Sparx {
       public @NotNull ListIterator<E> flatMapLastWhere(
           @NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().flatMapLastWhere(offsetPredicate(nextIndex(), predicate),
                 offsetFunction(nextIndex(), mapper)));
@@ -2483,6 +2877,9 @@ public class Sparx {
       public @NotNull ListIterator<E> flatMapLastWhere(
           @NotNull final Predicate<? super E> predicate,
           @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().flatMapLastWhere(predicate, mapper));
       }
@@ -2491,6 +2888,9 @@ public class Sparx {
       public @NotNull ListIterator<E> flatMapWhere(
           @NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft().flatMapWhere(predicate, mapper),
             currentRight().flatMapWhere(offsetPredicate(nextIndex(), predicate),
                 offsetFunction(nextIndex(), mapper)));
@@ -2499,6 +2899,9 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> flatMapWhere(@NotNull final Predicate<? super E> predicate,
           @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft().flatMapWhere(predicate, mapper),
             currentRight().flatMapWhere(predicate, mapper));
       }
@@ -2506,18 +2909,27 @@ public class Sparx {
       @Override
       public @NotNull <F> ListIterator<F> fold(final F identity,
           @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+        if (atEnd()) {
+          return new ListIterator<F>(List.<F>of(), List.of(identity));
+        }
         return new ListIterator<F>(List.<F>of(), currentRight().fold(identity, operation));
       }
 
       @Override
       public @NotNull <F> ListIterator<F> foldLeft(final F identity,
           @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+        if (atEnd()) {
+          return new ListIterator<F>(List.<F>of(), List.of(identity));
+        }
         return new ListIterator<F>(List.<F>of(), currentRight().foldLeft(identity, operation));
       }
 
       @Override
       public @NotNull <F> ListIterator<F> foldRight(final F identity,
           @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+        if (atEnd()) {
+          return new ListIterator<F>(List.<F>of(), List.of(identity));
+        }
         return new ListIterator<F>(List.<F>of(), currentRight().foldRight(identity, operation));
       }
 
@@ -2563,6 +2975,9 @@ public class Sparx {
 
       @Override
       public @NotNull ListIterator<Boolean> includes(final Object element) {
+        if (atEnd()) {
+          return FALSE_ITERATOR;
+        }
         return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().includes(element));
       }
 
@@ -2586,6 +3001,7 @@ public class Sparx {
       }
 
       public @NotNull ListIterator<E> insertAll(@NotNull final Iterable<E> elements) {
+        final int pos = this.pos;
         if (pos >= 0) {
           return new ListIterator<E>(left, right.insertAllAfter(pos, elements), pos);
         }
@@ -2594,16 +3010,27 @@ public class Sparx {
 
       public @NotNull ListIterator<E> insertAllAfter(final int numElements,
           @NotNull final Iterable<? extends E> elements) {
-        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
           return this;
+        }
+        final int pos = this.pos;
+        if (pos >= 0) {
+          return new ListIterator<E>(left,
+              right.insertAllAfter(SizeOverflowException.safeCast((long) numElements + pos),
+                  elements));
         }
         return new ListIterator<E>(currentLeft(),
             currentRight().insertAllAfter(numElements, elements));
       }
 
       public @NotNull ListIterator<E> insertAfter(final int numElements, final E element) {
-        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
           return this;
+        }
+        final int pos = this.pos;
+        if (pos >= 0) {
+          return new ListIterator<E>(left,
+              right.insertAfter(SizeOverflowException.safeCast((long) numElements + pos), element));
         }
         return new ListIterator<E>(currentLeft(), currentRight().insertAfter(numElements, element));
       }
@@ -2617,7 +3044,10 @@ public class Sparx {
       @NotNull
       @Override
       public Iterator<E> iterator() {
-        return this; // TODO: not memoized
+        if (atEnd()) {
+          // return EMPTY_ITERATOR; TODO
+        }
+        return currentRight().iterator();
       }
 
       @Override
@@ -2645,7 +3075,7 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> mapAfter(final int numElements,
           @NotNull final Function<? super E, ? extends E> mapper) {
-        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
           return this;
         }
         return new ListIterator<E>(currentLeft(), currentRight().mapAfter(numElements, mapper));
@@ -2654,7 +3084,7 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> mapAfter(final int numElements,
           @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
           return this;
         }
         return new ListIterator<E>(currentLeft(),
@@ -2665,6 +3095,9 @@ public class Sparx {
       public @NotNull ListIterator<E> mapFirstWhere(
           @NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().mapFirstWhere(offsetPredicate(nextIndex(), predicate),
                 offsetFunction(nextIndex(), mapper)));
@@ -2673,6 +3106,9 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> mapFirstWhere(@NotNull final Predicate<? super E> predicate,
           @NotNull final Function<? super E, ? extends E> mapper) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().mapFirstWhere(predicate, mapper));
       }
 
@@ -2680,6 +3116,9 @@ public class Sparx {
       public @NotNull ListIterator<E> mapLastWhere(
           @NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().mapLastWhere(offsetPredicate(nextIndex(), predicate),
                 offsetFunction(nextIndex(), mapper)));
@@ -2688,15 +3127,20 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> mapLastWhere(@NotNull final Predicate<? super E> predicate,
           @NotNull final Function<? super E, ? extends E> mapper) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().mapLastWhere(predicate, mapper));
       }
 
       @Override
       public @NotNull ListIterator<E> mapWhere(@NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-        final int pos = this.pos;
+        final List<E> left = this.left;
+        final int offset = left.size();
         return new ListIterator<E>(left.mapWhere(predicate, mapper),
-            right.mapWhere(offsetPredicate(pos, predicate), offsetFunction(pos, mapper)), pos);
+            right.mapWhere(offsetPredicate(offset, predicate), offsetFunction(offset, mapper)),
+            pos);
       }
 
       @Override
@@ -2708,11 +3152,17 @@ public class Sparx {
 
       @Override
       public @NotNull ListIterator<E> max(@NotNull final Comparator<? super E> comparator) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().max(comparator));
       }
 
       @Override
       public @NotNull ListIterator<E> min(@NotNull final Comparator<? super E> comparator) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().min(comparator));
       }
 
@@ -2736,12 +3186,18 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<Boolean> notAll(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return FALSE_ITERATOR;
+        }
         return new ListIterator<Boolean>(List.<Boolean>of(),
             currentRight().notAll(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<Boolean> notAll(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return FALSE_ITERATOR;
+        }
         return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().notAll(predicate));
       }
 
@@ -2753,6 +3209,9 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<Boolean> notExists(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return TRUE_ITERATOR;
+        }
         return new ListIterator<Boolean>(List.<Boolean>of(),
             currentRight().notExists(offsetPredicate(nextIndex(), predicate)));
       }
@@ -2760,11 +3219,17 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<Boolean> notExists(
           @NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return TRUE_ITERATOR;
+        }
         return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().notExists(predicate));
       }
 
       @Override
       public @NotNull ListIterator<E> orElse(@NotNull final Iterable<E> elements) {
+        if (atEnd()) {
+          return new ListIterator<E>(List.<E>of(), List.wrap(elements));
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().orElse(elements));
       }
 
@@ -2787,18 +3252,27 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> reduce(
           @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().reduce(operation));
       }
 
       @Override
       public @NotNull ListIterator<E> reduceLeft(
           @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().reduceLeft(operation));
       }
 
       @Override
       public @NotNull ListIterator<E> reduceRight(
           @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().reduceRight(operation));
       }
 
@@ -2826,7 +3300,7 @@ public class Sparx {
 
       @Override
       public @NotNull ListIterator<E> removeAfter(final int numElements) {
-        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
           return this;
         }
         return new ListIterator<E>(currentLeft(), currentRight().removeAfter(numElements));
@@ -2834,18 +3308,27 @@ public class Sparx {
 
       @Override
       public @NotNull ListIterator<E> removeEach(final E element) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft().removeEach(element),
             currentRight().removeEach(element));
       }
 
       @Override
       public @NotNull ListIterator<E> removeFirst(final E element) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().removeFirst(element));
       }
 
       @Override
       public @NotNull ListIterator<E> removeFirstWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().removeFirstWhere(offsetPredicate(nextIndex(), predicate)));
       }
@@ -2853,17 +3336,26 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> removeFirstWhere(
           @NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().removeFirstWhere(predicate));
       }
 
       @Override
       public @NotNull ListIterator<E> removeLast(final E element) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().removeLast(element));
       }
 
       @Override
       public @NotNull ListIterator<E> removeLastWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().removeLastWhere(offsetPredicate(nextIndex(), predicate)));
       }
@@ -2871,29 +3363,41 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> removeLastWhere(
           @NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().removeLastWhere(predicate));
       }
 
       @Override
       public @NotNull ListIterator<E> removeSlice(final int start, final int end) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().removeSlice(start, end));
       }
 
       @Override
       public @NotNull ListIterator<E> removeWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().removeWhere(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<E> removeWhere(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().removeWhere(predicate));
       }
 
       @Override
       public @NotNull ListIterator<E> replaceAfter(final int numElements, final E replacement) {
-        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
           return this;
         }
         return new ListIterator<E>(currentLeft(),
@@ -2902,12 +3406,18 @@ public class Sparx {
 
       @Override
       public @NotNull ListIterator<E> replaceEach(final E element, final E replacement) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft().replaceEach(element, replacement),
             currentRight().replaceEach(element, replacement));
       }
 
       @Override
       public @NotNull ListIterator<E> replaceFirst(final E element, final E replacement) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().replaceFirst(element, replacement));
       }
@@ -2915,6 +3425,9 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> replaceFirstWhere(
           @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().replaceFirstWhere(offsetPredicate(nextIndex(), predicate), replacement));
       }
@@ -2922,18 +3435,27 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> replaceFirstWhere(
           @NotNull final Predicate<? super E> predicate, final E replacement) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().replaceFirstWhere(predicate, replacement));
       }
 
       @Override
       public @NotNull ListIterator<E> replaceLast(final E element, final E replacement) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().replaceLast(element, replacement));
       }
 
       @Override
       public @NotNull ListIterator<E> replaceLastWhere(
           @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().replaceLastWhere(offsetPredicate(nextIndex(), predicate), replacement));
       }
@@ -2941,6 +3463,9 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> replaceLastWhere(
           @NotNull final Predicate<? super E> predicate, final E replacement) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().replaceLastWhere(predicate, replacement));
       }
@@ -2948,12 +3473,18 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> replaceSlice(final int start, final int end,
           @NotNull final Iterable<? extends E> patch) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft(), currentRight().replaceSlice(start, end, patch));
       }
 
       @Override
       public @NotNull ListIterator<E> replaceWhere(
           @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft().replaceWhere(predicate, replacement),
             currentRight().replaceWhere(offsetPredicate(nextIndex(), predicate), replacement));
       }
@@ -2961,13 +3492,26 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> replaceWhere(@NotNull final Predicate<? super E> predicate,
           final E replacement) {
+        if (atEnd()) {
+          return this;
+        }
         return new ListIterator<E>(currentLeft().replaceWhere(predicate, replacement),
             currentRight().replaceWhere(predicate, replacement));
       }
 
       @Override
       public @NotNull ListIterator<E> resizeTo(final int numElements, final E padding) {
+        if (atEnd()) {
+          return new ListIterator<E>(left.appendAll(right), List.times(numElements, padding));
+        }
         return new ListIterator<E>(currentLeft(), currentRight().resizeTo(numElements, padding));
+      }
+
+      public @NotNull ListIterator<E> reverse() {
+        if (atEnd()) {
+          return new ListIterator<E>(left.appendAll(right).reverse(), List.<E>of());
+        }
+        return new ListIterator<E>(currentRight().reverse(), currentLeft().reverse());
       }
 
       @Override
@@ -2982,6 +3526,9 @@ public class Sparx {
 
       @Override
       public @NotNull ListIterator<E> slice(final int start, final int end) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().slice(start, end));
       }
 
@@ -2992,17 +3539,26 @@ public class Sparx {
 
       @Override
       public @NotNull ListIterator<E> take(final int maxElements) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(currentLeft(), currentRight().take(maxElements));
       }
 
       @Override
       public @NotNull ListIterator<E> takeRight(final int maxElements) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().takeRight(maxElements));
       }
 
       @Override
       public @NotNull ListIterator<E> takeRightWhile(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(),
             currentRight().takeRightWhile(offsetPredicate(nextIndex(), predicate)));
       }
@@ -3010,18 +3566,27 @@ public class Sparx {
       @Override
       public @NotNull ListIterator<E> takeRightWhile(
           @NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(List.<E>of(), currentRight().takeRightWhile(predicate));
       }
 
       @Override
       public @NotNull ListIterator<E> takeWhile(
           @NotNull final IndexedPredicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(currentLeft(),
             currentRight().takeWhile(offsetPredicate(nextIndex(), predicate)));
       }
 
       @Override
       public @NotNull ListIterator<E> takeWhile(@NotNull final Predicate<? super E> predicate) {
+        if (atEnd()) {
+          return ListIterator.of();
+        }
         return new ListIterator<E>(currentLeft(), currentRight().takeWhile(predicate));
       }
 
@@ -3031,7 +3596,9 @@ public class Sparx {
             nextIndex());
       }
 
-      // TODO: sorted? reverse?
+      private boolean atEnd() {
+        return pos >= 0 && pos == right.materializer.knownSize();
+      }
 
       private @NotNull List<E> currentLeft() {
         final int pos = this.pos;

@@ -18,7 +18,6 @@ package sparx.collection.internal.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 

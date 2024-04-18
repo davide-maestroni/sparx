@@ -17,7 +17,6 @@ package sparx.collection.internal.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
 public class ArrayToListMaterializer<E> implements ListMaterializer<E> {

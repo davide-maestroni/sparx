@@ -19,6 +19,7 @@ import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.internal.list.ListMaterializer;
 import sparx.util.Require;
 
 public abstract class AbstractListSequence<E> extends AbstractList<E> implements ListSequence<E> {

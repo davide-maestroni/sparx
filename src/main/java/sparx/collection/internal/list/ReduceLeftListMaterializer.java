@@ -19,14 +19,11 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 
 public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
-
-  private static final EmptyListMaterializer<?> EMPTY_STATE = new EmptyListMaterializer<Object>();
 
   private volatile ListMaterializer<E> state;
 
@@ -121,7 +118,6 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
       return materializeEmpty() ? 0 : 1;
     }
 
-    @SuppressWarnings("unchecked")
     private @NotNull ListMaterializer<E> materialized() {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
@@ -136,7 +132,7 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
           }
           return state = new ElementToListMaterializer<E>(current);
         }
-        return state = (ListMaterializer<E>) EMPTY_STATE;
+        return state = EmptyListMaterializer.instance();
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);

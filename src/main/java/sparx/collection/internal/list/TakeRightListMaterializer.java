@@ -17,8 +17,7 @@ package sparx.collection.internal.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.AbstractCollectionMaterializer;
-import sparx.collection.ListMaterializer;
+import sparx.collection.internal.AbstractCollectionMaterializer;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 

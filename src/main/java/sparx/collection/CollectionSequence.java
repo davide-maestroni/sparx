@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.function.BinaryFunction;
-import sparx.util.function.Consumer;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;

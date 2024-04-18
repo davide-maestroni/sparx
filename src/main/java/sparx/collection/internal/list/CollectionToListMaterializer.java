@@ -21,7 +21,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.ListMaterializer;
 import sparx.util.Require;
 
 public class CollectionToListMaterializer<E> implements ListMaterializer<E> {

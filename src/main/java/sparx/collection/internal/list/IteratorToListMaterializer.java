@@ -20,8 +20,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.AbstractCollectionMaterializer;
-import sparx.collection.ListMaterializer;
+import sparx.collection.internal.AbstractCollectionMaterializer;
 import sparx.util.Require;
 
 public class IteratorToListMaterializer<E> implements ListMaterializer<E> {

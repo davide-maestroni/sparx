@@ -19,6 +19,7 @@ import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.internal.list.ListMaterializer;
 import sparx.util.Require;
 
 public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements SetSequence<E> {

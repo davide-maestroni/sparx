@@ -18,9 +18,15 @@ package sparx.collection.internal.list;
 import java.util.Collections;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.ListMaterializer;
 
 public class EmptyListMaterializer<E> implements ListMaterializer<E> {
+
+  private static final EmptyListMaterializer<?> INSTANCE = new EmptyListMaterializer<Object>();
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> EmptyListMaterializer<E> instance() {
+    return (EmptyListMaterializer<E>) INSTANCE;
+  }
 
   @Override
   public boolean canMaterializeElement(final int index) {

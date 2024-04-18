@@ -13,21 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection;
+package sparx.collection.internal.iterator;
 
-import java.util.Iterator;
-import org.jetbrains.annotations.NotNull;
+public abstract class AbstractIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-public interface CollectionMaterializer<E> {
-
-  int knownSize();
-
-  boolean materializeContains(Object element);
-
-  boolean materializeEmpty();
-
-  @NotNull
-  Iterator<E> materializeIterator();
-
-  int materializeSize();
+  @Override
+  public int skip(final int count) {
+    int skipped = 0;
+    while (skipped < count && materializeHasNext()) {
+      materializeNext();
+      ++skipped;
+    }
+    return skipped;
+  }
 }

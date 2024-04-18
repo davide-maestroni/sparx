@@ -18,8 +18,7 @@ package sparx.collection.internal.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.AbstractCollectionMaterializer;
-import sparx.collection.ListMaterializer;
+import sparx.collection.internal.AbstractCollectionMaterializer;
 import sparx.util.Require;
 
 public class RemoveAfterListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
