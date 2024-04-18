@@ -31,6 +31,7 @@ import sparx.collection.internal.iterator.CountIteratorMaterializer;
 import sparx.collection.internal.iterator.CountWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.ElementToIteratorMaterializer;
 import sparx.collection.internal.iterator.EmptyIteratorMaterializer;
+import sparx.collection.internal.iterator.FinallyIteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
@@ -107,6 +108,7 @@ import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
+import sparx.util.function.Action;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
@@ -2253,6 +2255,20 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull Iterator<E> doFinally(@NotNull final Action action) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          try {
+            action.run();
+          } catch (final Exception e) {
+            throw UncheckedException.throwUnchecked(e);
+          }
+          return this;
+        }
+        return new Iterator<E>(new FinallyIteratorMaterializer<E>(materializer, action));
+      }
+
+      @Override
       public boolean hasNext() {
         return materializer.materializeHasNext();
       }
@@ -3168,7 +3184,7 @@ public class Sparx {
 
       @Override
       public E next() {
-        if (!hasPrevious()) {
+        if (!hasNext()) {
           throw new NoSuchElementException();
         }
         if (pos >= 0) {
