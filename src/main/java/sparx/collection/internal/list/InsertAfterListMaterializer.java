@@ -41,10 +41,11 @@ public class InsertAfterListMaterializer<E> extends AbstractCollectionMaterializ
     if (index < 0) {
       return false;
     }
-    if (index == 0) {
-      return numElements == 0;
+    final int numElements = this.numElements;
+    if (numElements == index) {
+      return true;
     }
-    if (numElements <= index) {
+    if (numElements < index) {
       return wrapped.canMaterializeElement(index - 1);
     }
     return wrapped.canMaterializeElement(index);

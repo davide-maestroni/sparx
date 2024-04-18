@@ -21,8 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
-public class InsertAllAfterListMaterializer<E> implements
-    ListMaterializer<E> {
+public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
 
   private final ListMaterializer<E> elementsMaterializer;
   private final int numElements;
@@ -57,8 +56,7 @@ public class InsertAllAfterListMaterializer<E> implements
       if (elementsMaterializer.canMaterializeElement(index - numElements)) {
         return true;
       }
-      final long wrappedIndex = (long) index + elementsMaterializer.materializeSize();
-      return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
+      return wrapped.canMaterializeElement(index - elementsMaterializer.materializeSize());
     }
     return wrapped.canMaterializeElement(index);
   }
