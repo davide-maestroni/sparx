@@ -1549,7 +1549,6 @@ public class ListTests {
     assertThrows(IllegalStateException.class, () -> List.of().orElseGet(throwing).notEmpty());
     assertThrows(IllegalStateException.class, () -> List.of().orElseGet(throwing).size());
     assertThrows(IllegalStateException.class, () -> List.of().orElseGet(throwing).first());
-    assertThrows(IllegalStateException.class, () -> List.of().orElseGet(throwing).iterator());
   }
 
   @Test

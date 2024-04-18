@@ -271,7 +271,7 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
                 if (expectedCount != modCount.get()) {
                   throw new ConcurrentModificationException();
                 }
-                pos = i;
+                pos = i + 1;
                 this.elementIterator = elementIterator;
                 return currSize;
               }
