@@ -73,8 +73,8 @@ public class RemoveWhereIteratorMaterializer<E> extends AbstractIteratorMaterial
   }
 
   @Override
-  public int skip(final int count) {
-    final int skipped = super.skip(count);
+  public int materializeSkip(final int count) {
+    final int skipped = super.materializeSkip(count);
     pos += skipped;
     return skipped;
   }

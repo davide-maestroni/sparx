@@ -29,6 +29,10 @@ import sparx.collection.internal.iterator.AppendIteratorMaterializer;
 import sparx.collection.internal.iterator.CollectionToIteratorMaterializer;
 import sparx.collection.internal.iterator.CountIteratorMaterializer;
 import sparx.collection.internal.iterator.CountWhereIteratorMaterializer;
+import sparx.collection.internal.iterator.DropIteratorMaterializer;
+import sparx.collection.internal.iterator.DropRightIteratorMaterializer;
+import sparx.collection.internal.iterator.DropRightWhileIteratorMaterializer;
+import sparx.collection.internal.iterator.DropWhileIteratorMaterializer;
 import sparx.collection.internal.iterator.ElementToIteratorMaterializer;
 import sparx.collection.internal.iterator.EmptyIteratorMaterializer;
 import sparx.collection.internal.iterator.FinallyIteratorMaterializer;
@@ -659,7 +663,7 @@ public class Sparx {
         if (maxElements <= 0 || knownSize == 0) {
           return this;
         }
-        if (knownSize > 0 && maxElements >= knownSize) {
+        if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
           return List.of();
         }
         return new List<E>(new DropListMaterializer<E>(materializer, maxElements));
@@ -672,7 +676,7 @@ public class Sparx {
         if (maxElements <= 0 || knownSize == 0) {
           return this;
         }
-        if (knownSize > 0 && maxElements >= knownSize) {
+        if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
           return List.of();
         }
         return new List<E>(new DropRightListMaterializer<E>(materializer, maxElements));
@@ -2210,10 +2214,8 @@ public class Sparx {
       @Override
       public @NotNull Iterator<Integer> count() {
         final IteratorMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize >= 0) {
-          materializer.skip(knownSize);
-          return new Iterator<Integer>(new ElementToIteratorMaterializer<Integer>(knownSize));
+        if (materializer.knownSize() == 0) {
+          return ZERO_ITERATOR;
         }
         return new Iterator<Integer>(new CountIteratorMaterializer<E>(materializer));
       }
@@ -2255,17 +2257,60 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull Iterator<E> doFinally(@NotNull final Action action) {
+      public @NotNull Iterator<E> drop(final int maxElements) {
         final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          try {
-            action.run();
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
+        if (maxElements <= 0 || materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new FinallyIteratorMaterializer<E>(materializer, action));
+        return new Iterator<E>(new DropIteratorMaterializer<E>(materializer, maxElements));
+      }
+
+      @Override
+      public @NotNull Iterator<E> dropRight(final int maxElements) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (maxElements <= 0 || materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new DropRightIteratorMaterializer<E>(materializer, maxElements));
+      }
+
+      @Override
+      public @NotNull Iterator<E> dropRightWhile(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new DropRightWhileIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> dropRightWhile(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new DropRightWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> dropWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new DropWhileIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new DropWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
       }
 
       @Override
@@ -2287,6 +2332,20 @@ public class Sparx {
       @Override
       public void remove() {
         throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public @NotNull Iterator<E> runFinally(@NotNull final Action action) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          try {
+            action.run();
+          } catch (final Exception e) {
+            throw UncheckedException.throwUnchecked(e);
+          }
+          return this;
+        }
+        return new Iterator<E>(new FinallyIteratorMaterializer<E>(materializer, action));
       }
     }
 

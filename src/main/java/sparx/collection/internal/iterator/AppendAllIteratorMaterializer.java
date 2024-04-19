@@ -56,10 +56,10 @@ public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E>
   }
 
   @Override
-  public int skip(final int count) {
-    final int skipped = wrapped.skip(count);
+  public int materializeSkip(final int count) {
+    final int skipped = wrapped.materializeSkip(count);
     if (skipped < count) {
-      return skipped + elementsMaterializer.skip(count - skipped);
+      return skipped + elementsMaterializer.materializeSkip(count - skipped);
     }
     return skipped;
   }

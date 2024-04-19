@@ -46,8 +46,8 @@ public class AllIteratorMaterializer<E> implements IteratorMaterializer<Boolean>
   }
 
   @Override
-  public int skip(final int count) {
-    return state.skip(count);
+  public int materializeSkip(final int count) {
+    return state.materializeSkip(count);
   }
 
   private class ImmaterialState implements IteratorMaterializer<Boolean> {
@@ -98,7 +98,7 @@ public class AllIteratorMaterializer<E> implements IteratorMaterializer<Boolean>
     }
 
     @Override
-    public int skip(final int count) {
+    public int materializeSkip(final int count) {
       if (count > 0) {
         state = EmptyIteratorMaterializer.instance();
         return 1;

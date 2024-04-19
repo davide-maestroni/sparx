@@ -47,7 +47,7 @@ public class ElementToIteratorMaterializer<E> implements IteratorMaterializer<E>
   }
 
   @Override
-  public int skip(final int count) {
+  public int materializeSkip(final int count) {
     if (count > 0 && !consumed) {
       consumed = true;
       return 1;

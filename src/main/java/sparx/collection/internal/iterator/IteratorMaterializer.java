@@ -23,5 +23,5 @@ public interface IteratorMaterializer<E> {
 
   E materializeNext();
 
-  int skip(int count);
+  int materializeSkip(int count);
 }

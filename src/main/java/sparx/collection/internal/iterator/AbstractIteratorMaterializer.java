@@ -18,7 +18,7 @@ package sparx.collection.internal.iterator;
 public abstract class AbstractIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   @Override
-  public int skip(final int count) {
+  public int materializeSkip(final int count) {
     int skipped = 0;
     while (skipped < count && materializeHasNext()) {
       materializeNext();

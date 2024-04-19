@@ -49,7 +49,7 @@ public class ListToIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
-  public int skip(final int count) {
+  public int materializeSkip(final int count) {
     final int skipped = Math.min(count, elements.size() - pos);
     pos += skipped;
     return skipped;

@@ -60,8 +60,8 @@ public class AppendIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
-  public int skip(final int count) {
-    final int skipped = wrapped.skip(count);
+  public int materializeSkip(final int count) {
+    final int skipped = wrapped.materializeSkip(count);
     if (skipped < count && !consumed) {
       consumed = true;
       return skipped + 1;

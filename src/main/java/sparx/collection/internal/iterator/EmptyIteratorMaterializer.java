@@ -43,7 +43,7 @@ public class EmptyIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
-  public int skip(final int count) {
+  public int materializeSkip(final int count) {
     return 0;
   }
 }

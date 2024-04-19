@@ -54,7 +54,7 @@ public class ListMaterializerToIteratorMaterializer<E> implements IteratorMateri
   }
 
   @Override
-  public int skip(final int count) {
+  public int materializeSkip(final int count) {
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.canMaterializeElement(IndexOverflowException.safeCast((long) count + pos))) {
       pos += count;

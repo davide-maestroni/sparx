@@ -64,9 +64,6 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull
   IteratorSequence<E> diff(@NotNull Iterable<?> elements);
 
-  @NotNull
-  IteratorSequence<E> doFinally(@NotNull Action action);
-
   @Override
   @NotNull
   IteratorSequence<E> drop(int maxElements);
@@ -482,6 +479,9 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @Override
   @NotNull
   IteratorSequence<E> resizeTo(int numElements, E padding);
+
+  @NotNull
+  IteratorSequence<E> runFinally(@NotNull Action action);
 
   @Override
   @NotNull

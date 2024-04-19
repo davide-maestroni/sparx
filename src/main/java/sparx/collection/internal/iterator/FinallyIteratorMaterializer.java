@@ -72,9 +72,9 @@ public class FinallyIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
-  public int skip(final int count) {
+  public int materializeSkip(final int count) {
     try {
-      return wrapped.skip(count);
+      return wrapped.materializeSkip(count);
     } catch (final Exception e) {
       materialize();
       throw UncheckedException.throwUnchecked(e);

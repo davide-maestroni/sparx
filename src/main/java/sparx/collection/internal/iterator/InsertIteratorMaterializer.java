@@ -17,14 +17,15 @@ package sparx.collection.internal.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
-import sparx.util.UncheckedException;
+import sparx.util.SizeOverflowException;
 
-public class CountIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
+public class InsertIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<Integer> state;
+  private volatile IteratorMaterializer<E> state;
 
-  public CountIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"));
+  public InsertIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      final E element) {
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), element);
   }
 
   @Override
@@ -38,7 +39,7 @@ public class CountIteratorMaterializer<E> implements IteratorMaterializer<Intege
   }
 
   @Override
-  public Integer materializeNext() {
+  public E materializeNext() {
     return state.materializeNext();
   }
 
@@ -47,17 +48,24 @@ public class CountIteratorMaterializer<E> implements IteratorMaterializer<Intege
     return state.materializeSkip(count);
   }
 
-  private class ImmaterialState implements IteratorMaterializer<Integer> {
+  private class ImmaterialState implements IteratorMaterializer<E> {
 
+    private final E element;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped) {
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
+        final E element) {
       this.wrapped = wrapped;
+      this.element = element;
     }
 
     @Override
     public int knownSize() {
-      return 1;
+      final int knownSize = wrapped.knownSize();
+      if (knownSize >= 0) {
+        return SizeOverflowException.safeCast((long) knownSize + 1);
+      }
+      return -1;
     }
 
     @Override
@@ -66,34 +74,17 @@ public class CountIteratorMaterializer<E> implements IteratorMaterializer<Intege
     }
 
     @Override
-    public Integer materializeNext() {
-      try {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        final int knownSize = wrapped.knownSize();
-        if (knownSize >= 0) {
-          wrapped.materializeSkip(knownSize);
-          state = new ElementToIteratorMaterializer<Integer>(knownSize);
-          return knownSize;
-        }
-        int i = 0;
-        while (wrapped.materializeHasNext()) {
-          wrapped.materializeNext();
-          ++i;
-        }
-        state = new ElementToIteratorMaterializer<Integer>(i);
-        return i;
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
+    public E materializeNext() {
+      state = wrapped;
+      return element;
     }
 
     @Override
     public int materializeSkip(final int count) {
-      if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
-        return 1;
+      if (count <= 0) {
+        return 0;
       }
-      return 0;
+      return (state = wrapped).materializeSkip(count - 1) + 1;
     }
   }
 }
