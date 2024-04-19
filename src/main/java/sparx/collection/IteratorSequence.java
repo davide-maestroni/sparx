@@ -263,10 +263,10 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   IteratorSequence<E> insertAll(@NotNull Iterable<E> elements);
 
   @NotNull
-  IteratorSequence<E> insertAllAfter(int index, @NotNull Iterable<? extends E> patch);
+  IteratorSequence<E> insertAllAfter(int numElements, @NotNull Iterable<? extends E> patch);
 
   @NotNull
-  IteratorSequence<E> insertAfter(int index, E element);
+  IteratorSequence<E> insertAfter(int numElements, E element);
 
   @Override
   @NotNull

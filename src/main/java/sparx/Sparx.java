@@ -39,6 +39,8 @@ import sparx.collection.internal.iterator.EndsWithIteratorMaterializer;
 import sparx.collection.internal.iterator.ExistsIteratorMaterializer;
 import sparx.collection.internal.iterator.FinallyIteratorMaterializer;
 import sparx.collection.internal.iterator.FindFirstIteratorMaterializer;
+import sparx.collection.internal.iterator.FindIndexIteratorMaterializer;
+import sparx.collection.internal.iterator.FindIndexOfSliceIteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
@@ -124,6 +126,9 @@ import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 import sparx.util.function.Predicate;
 import sparx.util.function.Supplier;
+
+// TODO: Stream <= Iterator && <= ListIterator
+// TODO: equals, clone, Serializable
 
 public class Sparx {
 
@@ -254,6 +259,500 @@ public class Sparx {
   public static class lazy {
 
     private lazy() {
+    }
+
+    public static class Iterator<E> implements IteratorSequence<E> {
+
+      private static final Iterator<?> EMPTY_ITERATOR = new Iterator<Object>(
+          EmptyIteratorMaterializer.instance());
+      private static final Iterator<Boolean> FALSE_ITERATOR = new Iterator<Boolean>(
+          new ElementToIteratorMaterializer<Boolean>(false));
+      private static final Iterator<Boolean> TRUE_ITERATOR = new Iterator<Boolean>(
+          new ElementToIteratorMaterializer<Boolean>(true));
+      private static final Iterator<Integer> ZERO_ITERATOR = new Iterator<Integer>(
+          new ElementToIteratorMaterializer<Integer>(0));
+
+      private final IteratorMaterializer<E> materializer;
+
+      private Iterator(@NotNull final IteratorMaterializer<E> materializer) {
+        this.materializer = Require.notNull(materializer, "materializer");
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> Iterator<E> of() {
+        return (Iterator<E>) EMPTY_ITERATOR;
+      }
+
+      public static @NotNull <E> Iterator<E> wrap(@NotNull final Iterable<? extends E> elements) {
+        return new Iterator<E>(getElementsMaterializer(elements));
+      }
+
+      @SuppressWarnings("unchecked")
+      private static @NotNull <E> IteratorMaterializer<E> getElementsMaterializer(
+          @NotNull final Iterable<? extends E> elements) {
+        if (elements instanceof Iterator) {
+          return ((Iterator<E>) elements).materializer;
+        }
+        if (elements instanceof List) {
+          return new ListMaterializerToIteratorMaterializer<E>(((List<E>) elements).materializer);
+        }
+        if (elements instanceof java.util.List) {
+          final java.util.List<E> list = (java.util.List<E>) elements;
+          if (list.isEmpty()) {
+            return EmptyIteratorMaterializer.instance();
+          }
+          return new ListToIteratorMaterializer<E>(list);
+        }
+        if (elements instanceof Collection) {
+          final Collection<E> collection = (Collection<E>) elements;
+          if (collection.isEmpty()) {
+            return EmptyIteratorMaterializer.instance();
+          }
+          return new CollectionToIteratorMaterializer<E>(collection);
+        }
+        return new IteratorToIteratorMaterializer<E>((Iterator<E>) elements.iterator());
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return TRUE_ITERATOR;
+        }
+        return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer, predicate, true));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> all(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return TRUE_ITERATOR;
+        }
+        return new Iterator<Boolean>(
+            new AllIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate), true));
+      }
+
+      @Override
+      public @NotNull Iterator<E> append(final E element) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new Iterator<E>(new ElementToIteratorMaterializer<E>(element));
+        }
+        return new Iterator<E>(new AppendIteratorMaterializer<E>(materializer, element));
+      }
+
+      @Override
+      public @NotNull Iterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new Iterator<E>(getElementsMaterializer(elements));
+        }
+        return new Iterator<E>(
+            new AppendAllIteratorMaterializer<E>(materializer, getElementsMaterializer(elements)));
+      }
+
+      @Override
+      public <T> T apply(@NotNull final Function<? super Sequence<E>, T> mapper) {
+        return null;
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public @NotNull <F> Iterator<F> as() {
+        return (Iterator<F>) this;
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> count() {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return ZERO_ITERATOR;
+        }
+        return new Iterator<Integer>(new CountIteratorMaterializer<E>(materializer));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> count(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return ZERO_ITERATOR;
+        }
+        return new Iterator<Integer>(
+            new CountWhereIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> count(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return ZERO_ITERATOR;
+        }
+        return new Iterator<Integer>(
+            new CountWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> diff(@NotNull final Iterable<?> elements) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+            elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
+            elementsContains(elementsMaterializer)));
+      }
+
+      @Override
+      public void doFor(@NotNull final Consumer<? super E> consumer) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          while (materializer.materializeHasNext()) {
+            consumer.accept(materializer.materializeNext());
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          int i = 0;
+          while (materializer.materializeHasNext()) {
+            consumer.accept(i++, materializer.materializeNext());
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doWhile(@NotNull IndexedPredicate<? super E> predicate) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          int i = 0;
+          while (materializer.materializeHasNext()) {
+            if (!predicate.test(i++, materializer.materializeNext())) {
+              break;
+            }
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
+          @NotNull final IndexedConsumer<? super E> consumer) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          int i = 0;
+          while (materializer.materializeHasNext()) {
+            final E next = materializer.materializeNext();
+            if (!condition.test(i, next)) {
+              break;
+            }
+            consumer.accept(i, next);
+            ++i;
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doWhile(@NotNull final Predicate<? super E> predicate) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          while (materializer.materializeHasNext()) {
+            if (!predicate.test(materializer.materializeNext())) {
+              break;
+            }
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doWhile(@NotNull final Predicate<? super E> condition,
+          @NotNull final Consumer<? super E> consumer) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          while (materializer.materializeHasNext()) {
+            final E next = materializer.materializeNext();
+            if (!condition.test(next)) {
+              break;
+            }
+            consumer.accept(next);
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public @NotNull Iterator<E> drop(final int maxElements) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (maxElements <= 0 || materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new DropIteratorMaterializer<E>(materializer, maxElements));
+      }
+
+      @Override
+      public @NotNull Iterator<E> dropRight(final int maxElements) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (maxElements <= 0 || materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new DropRightIteratorMaterializer<E>(materializer, maxElements));
+      }
+
+      @Override
+      public @NotNull Iterator<E> dropRightWhile(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new DropRightWhileIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> dropRightWhile(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new DropRightWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> dropWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new DropWhileIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new DropWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
+        return new Iterator<Boolean>(new EndsWithIteratorMaterializer<E>(materializer,
+            List.getElementsMaterializer(elements)));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> exists(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return FALSE_ITERATOR;
+        }
+        return new Iterator<Boolean>(
+            new ExistsIteratorMaterializer<E>(materializer, predicate, false));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return FALSE_ITERATOR;
+        }
+        return new Iterator<Boolean>(
+            new ExistsIteratorMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
+                false));
+      }
+
+      @Override
+      public @NotNull Iterator<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new RemoveWhereIteratorMaterializer<E>(materializer, negated(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> filter(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
+            toNegatedIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> findAny(@NotNull final IndexedPredicate<? super E> predicate) {
+        return findFirst(predicate);
+      }
+
+      @Override
+      public @NotNull Iterator<E> findAny(@NotNull final Predicate<? super E> predicate) {
+        return findFirst(predicate);
+      }
+
+      @Override
+      public @NotNull Iterator<E> findFirst(@NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new FindFirstIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> findFirst(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new FindFirstIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> findIndexOf(final Object element) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<Integer>(
+            new FindIndexIteratorMaterializer<E>(materializer, equalsElement(element)));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> findIndexWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<Integer>(new FindIndexIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> findIndexWhere(
+          @NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<Integer>(
+            new FindIndexIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
+        final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+            elements);
+        return new Iterator<Integer>(
+            new FindIndexOfSliceIteratorMaterializer<E>(materializer, elementsMaterializer));
+      }
+
+      @Override
+      public @NotNull Iterator<E> findLast(@NotNull final IndexedPredicate<? super E> predicate) {
+        return null;
+      }
+
+      @Override
+      public @NotNull Iterator<E> findLast(@NotNull final Predicate<? super E> predicate) {
+        return null;
+      }
+
+      @Override
+      public E first() {
+        return materializer.materializeNext();
+      }
+
+      @Override
+      public boolean hasNext() {
+        return materializer.materializeHasNext();
+      }
+
+      @Override
+      public boolean isEmpty() {
+        return !materializer.materializeHasNext();
+      }
+
+      @NotNull
+      @Override
+      public Iterator<E> iterator() {
+        return this;
+      }
+
+      @Override
+      public E last() {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (!materializer.materializeHasNext()) {
+          throw new IndexOutOfBoundsException();
+        }
+        E next = null;
+        while (materializer.materializeHasNext()) {
+          next = materializer.materializeNext();
+        }
+        return next;
+      }
+
+      @Override
+      public E next() {
+        return materializer.materializeNext();
+      }
+
+      @Override
+      public boolean notEmpty() {
+        return materializer.materializeHasNext();
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public @NotNull Iterator<E> runFinally(@NotNull final Action action) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          try {
+            action.run();
+          } catch (final Exception e) {
+            throw UncheckedException.throwUnchecked(e);
+          }
+          return this;
+        }
+        return new Iterator<E>(new FinallyIteratorMaterializer<E>(materializer, action));
+      }
+
+      @Override
+      public int size() {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        int size = 0;
+        while (materializer.materializeHasNext()) {
+          materializer.materializeNext();
+          ++size;
+        }
+        return size;
+      }
     }
 
     public static class List<E> extends AbstractListSequence<E> {
@@ -2125,444 +2624,6 @@ public class Sparx {
       }
     }
 
-    public static class Iterator<E> implements IteratorSequence<E> {
-
-      private static final Iterator<Boolean> FALSE_ITERATOR = new Iterator<Boolean>(
-          new ElementToIteratorMaterializer<Boolean>(false));
-      private static final Iterator<Boolean> TRUE_ITERATOR = new Iterator<Boolean>(
-          new ElementToIteratorMaterializer<Boolean>(true));
-      private static final Iterator<Integer> ZERO_ITERATOR = new Iterator<Integer>(
-          new ElementToIteratorMaterializer<Integer>(0));
-
-      private final IteratorMaterializer<E> materializer;
-
-      private Iterator(@NotNull final IteratorMaterializer<E> materializer) {
-        this.materializer = Require.notNull(materializer, "materializer");
-      }
-
-      public static @NotNull <E> Iterator<E> wrap(@NotNull final Iterable<? extends E> elements) {
-        return new Iterator<E>(getElementsMaterializer(elements));
-      }
-
-      @SuppressWarnings("unchecked")
-      private static @NotNull <E> IteratorMaterializer<E> getElementsMaterializer(
-          @NotNull final Iterable<? extends E> elements) {
-        if (elements instanceof Iterator) {
-          return ((Iterator<E>) elements).materializer;
-        }
-        if (elements instanceof List) {
-          return new ListMaterializerToIteratorMaterializer<E>(((List<E>) elements).materializer);
-        }
-        if (elements instanceof java.util.List) {
-          final java.util.List<E> list = (java.util.List<E>) elements;
-          if (list.isEmpty()) {
-            return EmptyIteratorMaterializer.instance();
-          }
-          return new ListToIteratorMaterializer<E>(list);
-        }
-        if (elements instanceof Collection) {
-          final Collection<E> collection = (Collection<E>) elements;
-          if (collection.isEmpty()) {
-            return EmptyIteratorMaterializer.instance();
-          }
-          return new CollectionToIteratorMaterializer<E>(collection);
-        }
-        return new IteratorToIteratorMaterializer<E>((Iterator<E>) elements.iterator());
-      }
-
-      @Override
-      public @NotNull Iterator<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return TRUE_ITERATOR;
-        }
-        return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer, predicate, true));
-      }
-
-      @Override
-      public @NotNull Iterator<Boolean> all(@NotNull final Predicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return TRUE_ITERATOR;
-        }
-        return new Iterator<Boolean>(
-            new AllIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate), true));
-      }
-
-      @Override
-      public @NotNull Iterator<E> append(final E element) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return new Iterator<E>(new ElementToIteratorMaterializer<E>(element));
-        }
-        return new Iterator<E>(new AppendIteratorMaterializer<E>(materializer, element));
-      }
-
-      @Override
-      public @NotNull Iterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return new Iterator<E>(getElementsMaterializer(elements));
-        }
-        return new Iterator<E>(
-            new AppendAllIteratorMaterializer<E>(materializer, getElementsMaterializer(elements)));
-      }
-
-      @Override
-      public <T> T apply(@NotNull final Function<? super Sequence<E>, T> mapper) {
-        return null;
-      }
-
-      @Override
-      @SuppressWarnings("unchecked")
-      public @NotNull <F> Iterator<F> as() {
-        return (Iterator<F>) this;
-      }
-
-      @Override
-      public @NotNull Iterator<Integer> count() {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return ZERO_ITERATOR;
-        }
-        return new Iterator<Integer>(new CountIteratorMaterializer<E>(materializer));
-      }
-
-      @Override
-      public @NotNull Iterator<Integer> count(
-          @NotNull final IndexedPredicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return ZERO_ITERATOR;
-        }
-        return new Iterator<Integer>(
-            new CountWhereIteratorMaterializer<E>(materializer, predicate));
-      }
-
-      @Override
-      public @NotNull Iterator<Integer> count(@NotNull final Predicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return ZERO_ITERATOR;
-        }
-        return new Iterator<Integer>(
-            new CountWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull Iterator<E> diff(@NotNull final Iterable<?> elements) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
-            elements);
-        if (elementsMaterializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
-            elementsContains(elementsMaterializer)));
-      }
-
-      @Override
-      public void doFor(@NotNull final Consumer<? super E> consumer) {
-        try {
-          final IteratorMaterializer<E> materializer = this.materializer;
-          while (materializer.materializeHasNext()) {
-            consumer.accept(materializer.materializeNext());
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
-        try {
-          final IteratorMaterializer<E> materializer = this.materializer;
-          int i = 0;
-          while (materializer.materializeHasNext()) {
-            consumer.accept(i++, materializer.materializeNext());
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doWhile(@NotNull IndexedPredicate<? super E> predicate) {
-        try {
-          final IteratorMaterializer<E> materializer = this.materializer;
-          int i = 0;
-          while (materializer.materializeHasNext()) {
-            if (!predicate.test(i++, materializer.materializeNext())) {
-              break;
-            }
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
-          @NotNull final IndexedConsumer<? super E> consumer) {
-        try {
-          final IteratorMaterializer<E> materializer = this.materializer;
-          int i = 0;
-          while (materializer.materializeHasNext()) {
-            final E next = materializer.materializeNext();
-            if (!condition.test(i, next)) {
-              break;
-            }
-            consumer.accept(i, next);
-            ++i;
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doWhile(@NotNull final Predicate<? super E> predicate) {
-        try {
-          final IteratorMaterializer<E> materializer = this.materializer;
-          while (materializer.materializeHasNext()) {
-            if (!predicate.test(materializer.materializeNext())) {
-              break;
-            }
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doWhile(@NotNull final Predicate<? super E> condition,
-          @NotNull final Consumer<? super E> consumer) {
-        try {
-          final IteratorMaterializer<E> materializer = this.materializer;
-          while (materializer.materializeHasNext()) {
-            final E next = materializer.materializeNext();
-            if (!condition.test(next)) {
-              break;
-            }
-            consumer.accept(next);
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public @NotNull Iterator<E> drop(final int maxElements) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (maxElements <= 0 || materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new DropIteratorMaterializer<E>(materializer, maxElements));
-      }
-
-      @Override
-      public @NotNull Iterator<E> dropRight(final int maxElements) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (maxElements <= 0 || materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new DropRightIteratorMaterializer<E>(materializer, maxElements));
-      }
-
-      @Override
-      public @NotNull Iterator<E> dropRightWhile(
-          @NotNull final IndexedPredicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new DropRightWhileIteratorMaterializer<E>(materializer, predicate));
-      }
-
-      @Override
-      public @NotNull Iterator<E> dropRightWhile(@NotNull final Predicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(
-            new DropRightWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull Iterator<E> dropWhile(@NotNull final IndexedPredicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new DropWhileIteratorMaterializer<E>(materializer, predicate));
-      }
-
-      @Override
-      public @NotNull Iterator<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(
-            new DropWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull Iterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
-        return new Iterator<Boolean>(new EndsWithIteratorMaterializer<E>(materializer,
-            List.getElementsMaterializer(elements)));
-      }
-
-      @Override
-      public @NotNull Iterator<Boolean> exists(
-          @NotNull final IndexedPredicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return FALSE_ITERATOR;
-        }
-        return new Iterator<Boolean>(
-            new ExistsIteratorMaterializer<E>(materializer, predicate, false));
-      }
-
-      @Override
-      public @NotNull Iterator<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return FALSE_ITERATOR;
-        }
-        return new Iterator<Boolean>(
-            new ExistsIteratorMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
-                false));
-      }
-
-      @Override
-      public @NotNull Iterator<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(
-            new RemoveWhereIteratorMaterializer<E>(materializer, negated(predicate)));
-      }
-
-      @Override
-      public @NotNull Iterator<E> filter(@NotNull final Predicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
-            toNegatedIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull Iterator<E> findAny(@NotNull final IndexedPredicate<? super E> predicate) {
-        return findFirst(predicate);
-      }
-
-      @Override
-      public @NotNull Iterator<E> findAny(@NotNull final Predicate<? super E> predicate) {
-        return findFirst(predicate);
-      }
-
-      @Override
-      public @NotNull Iterator<E> findFirst(@NotNull final IndexedPredicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new FindFirstIteratorMaterializer<E>(materializer, predicate));
-      }
-
-      @Override
-      public @NotNull Iterator<E> findFirst(@NotNull final Predicate<? super E> predicate) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(
-            new FindFirstIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public E first() {
-        return materializer.materializeNext();
-      }
-
-      @Override
-      public boolean hasNext() {
-        return materializer.materializeHasNext();
-      }
-
-      @Override
-      public boolean isEmpty() {
-        return !materializer.materializeHasNext();
-      }
-
-      @NotNull
-      @Override
-      public Iterator<E> iterator() {
-        return this;
-      }
-
-      @Override
-      public E last() {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (!materializer.materializeHasNext()) {
-          throw new IndexOutOfBoundsException();
-        }
-        E next = null;
-        while (materializer.materializeHasNext()) {
-          next = materializer.materializeNext();
-        }
-        return next;
-      }
-
-      @Override
-      public E next() {
-        return materializer.materializeNext();
-      }
-
-      @Override
-      public boolean notEmpty() {
-        return materializer.materializeHasNext();
-      }
-
-      @Override
-      public void remove() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public @NotNull Iterator<E> runFinally(@NotNull final Action action) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          try {
-            action.run();
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-          return this;
-        }
-        return new Iterator<E>(new FinallyIteratorMaterializer<E>(materializer, action));
-      }
-
-      @Override
-      public int size() {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        int size = 0;
-        while (materializer.materializeHasNext()) {
-          materializer.materializeNext();
-          ++size;
-        }
-        return size;
-      }
-    }
-
     public static class ListIterator<E> implements Sequence<E>, java.util.ListIterator<E> {
 
       private static final ListIterator<?> EMPTY_ITERATOR = new ListIterator<Object>(List.of(),
@@ -3334,7 +3395,7 @@ public class Sparx {
       @Override
       public Iterator<E> iterator() {
         if (atEnd()) {
-          // return EMPTY_ITERATOR; TODO
+          return Iterator.of();
         }
         return currentRight().iterator();
       }
@@ -3457,14 +3518,16 @@ public class Sparx {
 
       @Override
       public E next() {
-        if (!hasNext()) {
+        // TODO: !hasNext() + !canMaterializeElement(index) + throw new NoSuchElementException
+        try {
+          if (pos >= 0) {
+            return right.get(pos++);
+          }
+          final List<E> left = this.left;
+          return left.get(left.size() + pos++);
+        } catch (final IndexOutOfBoundsException ignored) {
           throw new NoSuchElementException();
         }
-        if (pos >= 0) {
-          return right.get(pos++);
-        }
-        final List<E> left = this.left;
-        return left.get(left.size() + pos++);
       }
 
       @Override
