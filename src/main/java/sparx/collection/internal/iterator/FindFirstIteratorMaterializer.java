@@ -21,11 +21,11 @@ import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class DropWhileIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class FindFirstIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
-  public DropWhileIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+  public FindFirstIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"));
@@ -56,9 +56,6 @@ public class DropWhileIteratorMaterializer<E> implements IteratorMaterializer<E>
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
-    private E next;
-    private boolean hasNext;
-
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;
@@ -74,12 +71,12 @@ public class DropWhileIteratorMaterializer<E> implements IteratorMaterializer<E>
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final IndexedPredicate<? super E> predicate = this.predicate;
+      int i = 0;
       try {
-        int i = 0;
         while (wrapped.materializeHasNext()) {
           final E next = wrapped.materializeNext();
-          if (!predicate.test(i, next)) {
-            state = new InsertIteratorMaterializer<E>(wrapped, next);
+          if (predicate.test(i, next)) {
+            state = new ElementToIteratorMaterializer<E>(next);
             return true;
           }
           ++i;
@@ -87,6 +84,7 @@ public class DropWhileIteratorMaterializer<E> implements IteratorMaterializer<E>
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
+      state = EmptyIteratorMaterializer.instance();
       return false;
     }
 

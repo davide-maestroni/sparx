@@ -55,14 +55,14 @@ public interface Sequence<E> extends Iterable<E> {
 
   void doFor(@NotNull IndexedConsumer<? super E> consumer);
 
+  void doWhile(@NotNull IndexedPredicate<? super E> predicate);
+
   void doWhile(@NotNull IndexedPredicate<? super E> condition,
       @NotNull IndexedConsumer<? super E> consumer);
 
-  void doWhile(@NotNull Predicate<? super E> condition, @NotNull Consumer<? super E> consumer);
-
-  void doWhile(@NotNull IndexedPredicate<? super E> predicate);
-
   void doWhile(@NotNull Predicate<? super E> predicate);
+
+  void doWhile(@NotNull Predicate<? super E> condition, @NotNull Consumer<? super E> consumer);
 
   @NotNull
   Sequence<E> drop(int maxElements);

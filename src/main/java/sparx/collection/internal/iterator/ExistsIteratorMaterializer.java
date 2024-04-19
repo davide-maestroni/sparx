@@ -15,20 +15,19 @@
  */
 package sparx.collection.internal.iterator;
 
-import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class DropWhileIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
 
-  private volatile IteratorMaterializer<E> state;
+  private volatile IteratorMaterializer<Boolean> state;
 
-  public DropWhileIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate) {
+  public ExistsIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultState) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"));
+        Require.notNull(predicate, "predicate"), defaultState);
   }
 
   @Override
@@ -42,7 +41,7 @@ public class DropWhileIteratorMaterializer<E> implements IteratorMaterializer<E>
   }
 
   @Override
-  public E materializeNext() {
+  public Boolean materializeNext() {
     return state.materializeNext();
   }
 
@@ -51,57 +50,58 @@ public class DropWhileIteratorMaterializer<E> implements IteratorMaterializer<E>
     return state.materializeSkip(count);
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class ImmaterialState implements IteratorMaterializer<Boolean> {
 
+    private final boolean defaultState;
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
-    private E next;
-    private boolean hasNext;
-
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate) {
+        @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultState) {
       this.wrapped = wrapped;
       this.predicate = predicate;
+      this.defaultState = defaultState;
     }
 
     @Override
     public int knownSize() {
-      return -1;
+      return 1;
     }
 
     @Override
     public boolean materializeHasNext() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      final IndexedPredicate<? super E> predicate = this.predicate;
-      try {
-        int i = 0;
-        while (wrapped.materializeHasNext()) {
-          final E next = wrapped.materializeNext();
-          if (!predicate.test(i, next)) {
-            state = new InsertIteratorMaterializer<E>(wrapped, next);
-            return true;
-          }
-          ++i;
-        }
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
-      return false;
+      return true;
     }
 
     @Override
-    public E materializeNext() {
-      if (!materializeHasNext()) {
-        throw new NoSuchElementException();
+    public Boolean materializeNext() {
+      try {
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        if (!wrapped.materializeHasNext()) {
+          state = EmptyIteratorMaterializer.instance();
+          return defaultState;
+        }
+        final IndexedPredicate<? super E> predicate = this.predicate;
+        int i = 0;
+        do {
+          if (predicate.test(i, wrapped.materializeNext())) {
+            state = EmptyIteratorMaterializer.instance();
+            return true;
+          }
+          ++i;
+        } while (wrapped.materializeHasNext());
+        state = EmptyIteratorMaterializer.instance();
+        return false;
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
       }
-      return state.materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
-      if (count > 0 && materializeHasNext()) {
-        return state.materializeSkip(count);
+      if (count > 0) {
+        state = EmptyIteratorMaterializer.instance();
+        return 1;
       }
       return 0;
     }

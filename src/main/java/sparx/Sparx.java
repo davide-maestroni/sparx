@@ -35,7 +35,10 @@ import sparx.collection.internal.iterator.DropRightWhileIteratorMaterializer;
 import sparx.collection.internal.iterator.DropWhileIteratorMaterializer;
 import sparx.collection.internal.iterator.ElementToIteratorMaterializer;
 import sparx.collection.internal.iterator.EmptyIteratorMaterializer;
+import sparx.collection.internal.iterator.EndsWithIteratorMaterializer;
+import sparx.collection.internal.iterator.ExistsIteratorMaterializer;
 import sparx.collection.internal.iterator.FinallyIteratorMaterializer;
+import sparx.collection.internal.iterator.FindFirstIteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
@@ -549,6 +552,30 @@ public class Sparx {
       }
 
       @Override
+      public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return;
+        }
+        try {
+          if (knownSize == 1) {
+            predicate.test(0, materializer.materializeElement(0));
+          } else {
+            int i = 0;
+            while (materializer.canMaterializeElement(i)) {
+              if (!predicate.test(i, materializer.materializeElement(i))) {
+                break;
+              }
+              ++i;
+            }
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
       public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
           @NotNull final IndexedConsumer<? super E> consumer) {
         final ListMaterializer<E> materializer = this.materializer;
@@ -579,6 +606,30 @@ public class Sparx {
       }
 
       @Override
+      public void doWhile(@NotNull final Predicate<? super E> predicate) {
+        final ListMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return;
+        }
+        try {
+          if (knownSize == 1) {
+            predicate.test(materializer.materializeElement(0));
+          } else {
+            int i = 0;
+            while (materializer.canMaterializeElement(i)) {
+              if (!predicate.test(materializer.materializeElement(i))) {
+                break;
+              }
+              ++i;
+            }
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
       public void doWhile(@NotNull final Predicate<? super E> condition,
           @NotNull final Consumer<? super E> consumer) {
         final ListMaterializer<E> materializer = this.materializer;
@@ -600,54 +651,6 @@ public class Sparx {
                 break;
               }
               consumer.accept(next);
-              ++i;
-            }
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return;
-        }
-        try {
-          if (knownSize == 1) {
-            predicate.test(0, materializer.materializeElement(0));
-          } else {
-            int i = 0;
-            while (materializer.canMaterializeElement(i)) {
-              if (!predicate.test(i, materializer.materializeElement(i))) {
-                break;
-              }
-              ++i;
-            }
-          }
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
-      }
-
-      @Override
-      public void doWhile(@NotNull final Predicate<? super E> predicate) {
-        final ListMaterializer<E> materializer = this.materializer;
-        final int knownSize = materializer.knownSize();
-        if (knownSize == 0) {
-          return;
-        }
-        try {
-          if (knownSize == 1) {
-            predicate.test(materializer.materializeElement(0));
-          } else {
-            int i = 0;
-            while (materializer.canMaterializeElement(i)) {
-              if (!predicate.test(materializer.materializeElement(i))) {
-                break;
-              }
               ++i;
             }
           }
@@ -2206,6 +2209,11 @@ public class Sparx {
       }
 
       @Override
+      public <T> T apply(@NotNull final Function<? super Sequence<E>, T> mapper) {
+        return null;
+      }
+
+      @Override
       @SuppressWarnings("unchecked")
       public @NotNull <F> Iterator<F> as() {
         return (Iterator<F>) this;
@@ -2254,6 +2262,96 @@ public class Sparx {
         }
         return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
             elementsContains(elementsMaterializer)));
+      }
+
+      @Override
+      public void doFor(@NotNull final Consumer<? super E> consumer) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          while (materializer.materializeHasNext()) {
+            consumer.accept(materializer.materializeNext());
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          int i = 0;
+          while (materializer.materializeHasNext()) {
+            consumer.accept(i++, materializer.materializeNext());
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doWhile(@NotNull IndexedPredicate<? super E> predicate) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          int i = 0;
+          while (materializer.materializeHasNext()) {
+            if (!predicate.test(i++, materializer.materializeNext())) {
+              break;
+            }
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
+          @NotNull final IndexedConsumer<? super E> consumer) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          int i = 0;
+          while (materializer.materializeHasNext()) {
+            final E next = materializer.materializeNext();
+            if (!condition.test(i, next)) {
+              break;
+            }
+            consumer.accept(i, next);
+            ++i;
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doWhile(@NotNull final Predicate<? super E> predicate) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          while (materializer.materializeHasNext()) {
+            if (!predicate.test(materializer.materializeNext())) {
+              break;
+            }
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void doWhile(@NotNull final Predicate<? super E> condition,
+          @NotNull final Consumer<? super E> consumer) {
+        try {
+          final IteratorMaterializer<E> materializer = this.materializer;
+          while (materializer.materializeHasNext()) {
+            final E next = materializer.materializeNext();
+            if (!condition.test(next)) {
+              break;
+            }
+            consumer.accept(next);
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
       }
 
       @Override
@@ -2314,8 +2412,95 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull Iterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
+        return new Iterator<Boolean>(new EndsWithIteratorMaterializer<E>(materializer,
+            List.getElementsMaterializer(elements)));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> exists(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return FALSE_ITERATOR;
+        }
+        return new Iterator<Boolean>(
+            new ExistsIteratorMaterializer<E>(materializer, predicate, false));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return FALSE_ITERATOR;
+        }
+        return new Iterator<Boolean>(
+            new ExistsIteratorMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
+                false));
+      }
+
+      @Override
+      public @NotNull Iterator<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new RemoveWhereIteratorMaterializer<E>(materializer, negated(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> filter(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
+            toNegatedIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> findAny(@NotNull final IndexedPredicate<? super E> predicate) {
+        return findFirst(predicate);
+      }
+
+      @Override
+      public @NotNull Iterator<E> findAny(@NotNull final Predicate<? super E> predicate) {
+        return findFirst(predicate);
+      }
+
+      @Override
+      public @NotNull Iterator<E> findFirst(@NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new FindFirstIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> findFirst(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new FindFirstIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public E first() {
+        return materializer.materializeNext();
+      }
+
+      @Override
       public boolean hasNext() {
         return materializer.materializeHasNext();
+      }
+
+      @Override
+      public boolean isEmpty() {
+        return !materializer.materializeHasNext();
       }
 
       @NotNull
@@ -2325,8 +2510,26 @@ public class Sparx {
       }
 
       @Override
+      public E last() {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (!materializer.materializeHasNext()) {
+          throw new IndexOutOfBoundsException();
+        }
+        E next = null;
+        while (materializer.materializeHasNext()) {
+          next = materializer.materializeNext();
+        }
+        return next;
+      }
+
+      @Override
       public E next() {
         return materializer.materializeNext();
+      }
+
+      @Override
+      public boolean notEmpty() {
+        return materializer.materializeHasNext();
       }
 
       @Override
@@ -2346,6 +2549,17 @@ public class Sparx {
           return this;
         }
         return new Iterator<E>(new FinallyIteratorMaterializer<E>(materializer, action));
+      }
+
+      @Override
+      public int size() {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        int size = 0;
+        while (materializer.materializeHasNext()) {
+          materializer.materializeNext();
+          ++size;
+        }
+        return size;
       }
     }
 
@@ -2602,6 +2816,13 @@ public class Sparx {
       }
 
       @Override
+      public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+        if (!atEnd()) {
+          currentRight().doWhile(offsetPredicate(nextIndex(), predicate));
+        }
+      }
+
+      @Override
       public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
           @NotNull final IndexedConsumer<? super E> consumer) {
         if (!atEnd()) {
@@ -2612,24 +2833,17 @@ public class Sparx {
       }
 
       @Override
+      public void doWhile(@NotNull final Predicate<? super E> predicate) {
+        if (!atEnd()) {
+          currentRight().doWhile(predicate);
+        }
+      }
+
+      @Override
       public void doWhile(@NotNull final Predicate<? super E> condition,
           @NotNull final Consumer<? super E> consumer) {
         if (!atEnd()) {
           currentRight().doWhile(condition, consumer);
-        }
-      }
-
-      @Override
-      public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
-        if (!atEnd()) {
-          currentRight().doWhile(offsetPredicate(nextIndex(), predicate));
-        }
-      }
-
-      @Override
-      public void doWhile(@NotNull final Predicate<? super E> predicate) {
-        if (!atEnd()) {
-          currentRight().doWhile(predicate);
         }
       }
 
@@ -3278,7 +3492,7 @@ public class Sparx {
 
       @Override
       public boolean notEmpty() {
-        return !isEmpty();
+        return !left.isEmpty() || !right.isEmpty();
       }
 
       @Override

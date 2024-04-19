@@ -83,7 +83,7 @@ public class DropRightWhileIteratorMaterializer<E> implements IteratorMaterializ
           int i = elements.size() - 1;
           while (!elements.isEmpty() && predicate.test(i, elements.getLast())) {
             elements.removeLast();
-            i--;
+            --i;
           }
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
