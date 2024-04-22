@@ -16,6 +16,7 @@
 package sparx.collection.internal.list;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
@@ -78,7 +79,11 @@ public class ReverseListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public E next() {
-      return wrapped.materializeElement(pos--);
+      try {
+        return wrapped.materializeElement(pos--);
+      } catch (final IndexOutOfBoundsException ignored) {
+        throw new NoSuchElementException();
+      }
     }
 
     @Override

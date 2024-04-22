@@ -120,13 +120,14 @@ public class RemoveAfterListMaterializer<E> extends AbstractCollectionMaterializ
 
     @Override
     public E next() {
-      if (!hasNext()) {
+      try {
+        if (pos == numElements) {
+          ++pos;
+        }
+        return wrapped.materializeElement(pos++);
+      } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();
       }
-      if (pos == numElements) {
-        ++pos;
-      }
-      return wrapped.materializeElement(pos++);
     }
 
     @Override

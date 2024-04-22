@@ -30,6 +30,8 @@ import sparx.util.function.Supplier;
 
 public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
+  // TODO: advance(int maxElements) / retreat??? forward/backward? == drop? only in ListIterator?
+
   @Override
   @NotNull
   IteratorSequence<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);

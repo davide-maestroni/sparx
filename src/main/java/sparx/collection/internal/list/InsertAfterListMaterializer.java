@@ -122,16 +122,17 @@ public class InsertAfterListMaterializer<E> extends AbstractCollectionMaterializ
 
     @Override
     public E next() {
-      if (!hasNext()) {
+      try {
+        final int numElements = InsertAfterListMaterializer.this.numElements;
+        final int i = this.pos;
+        if (i != numElements) {
+          return wrapped.materializeElement(pos++);
+        }
+        ++pos;
+        return element;
+      } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();
       }
-      final int numElements = InsertAfterListMaterializer.this.numElements;
-      final int i = this.pos;
-      if (i != numElements) {
-        return wrapped.materializeElement(pos++);
-      }
-      ++pos;
-      return element;
     }
 
     @Override

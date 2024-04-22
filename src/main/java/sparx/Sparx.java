@@ -41,6 +41,9 @@ import sparx.collection.internal.iterator.FinallyIteratorMaterializer;
 import sparx.collection.internal.iterator.FindFirstIteratorMaterializer;
 import sparx.collection.internal.iterator.FindIndexIteratorMaterializer;
 import sparx.collection.internal.iterator.FindIndexOfSliceIteratorMaterializer;
+import sparx.collection.internal.iterator.FindLastIndexIteratorMaterializer;
+import sparx.collection.internal.iterator.FindLastIndexOfSliceIteratorMaterializer;
+import sparx.collection.internal.iterator.FindLastIteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
@@ -672,12 +675,59 @@ public class Sparx {
 
       @Override
       public @NotNull Iterator<E> findLast(@NotNull final IndexedPredicate<? super E> predicate) {
-        return null;
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new FindLastIteratorMaterializer<E>(materializer, predicate));
       }
 
       @Override
       public @NotNull Iterator<E> findLast(@NotNull final Predicate<? super E> predicate) {
-        return null;
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new FindLastIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> findLastIndexOf(final Object element) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<Integer>(
+            new FindLastIndexIteratorMaterializer<E>(materializer, equalsElement(element)));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> findLastIndexWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<Integer>(
+            new FindLastIndexIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> findLastIndexWhere(
+          @NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<Integer>(
+            new FindLastIndexIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
+        return new Iterator<Integer>(new FindLastIndexOfSliceIteratorMaterializer<E>(materializer,
+            List.getElementsMaterializer(elements)));
       }
 
       @Override
@@ -3526,6 +3576,7 @@ public class Sparx {
           final List<E> left = this.left;
           return left.get(left.size() + pos++);
         } catch (final IndexOutOfBoundsException ignored) {
+          // FIXME: where the exception come from?
           throw new NoSuchElementException();
         }
       }
@@ -3630,14 +3681,16 @@ public class Sparx {
 
       @Override
       public E previous() {
-        if (!hasPrevious()) {
+        try {
+          if (pos > 0) {
+            return right.get(--pos);
+          }
+          final List<E> left = this.left;
+          return left.get(left.size() + --pos);
+        } catch (final IndexOutOfBoundsException ignored) {
+          // FIXME: where the exception come from?
           throw new NoSuchElementException();
         }
-        if (pos > 0) {
-          return right.get(--pos);
-        }
-        final List<E> left = this.left;
-        return left.get(left.size() + --pos);
       }
 
       @Override

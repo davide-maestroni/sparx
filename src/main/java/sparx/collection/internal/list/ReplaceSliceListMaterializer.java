@@ -278,17 +278,18 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public E next() {
-      if (!hasNext()) {
+      try {
+        if (pos == state.materializedStart()) {
+          final Iterator<E> iterator = this.iterator;
+          if (iterator.hasNext()) {
+            return iterator.next();
+          }
+          pos += state.materializedLength();
+        }
+        return wrapped.materializeElement((int) pos++);
+      } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();
       }
-      if (pos == state.materializedStart()) {
-        final Iterator<E> iterator = this.iterator;
-        if (iterator.hasNext()) {
-          return iterator.next();
-        }
-        pos += state.materializedLength();
-      }
-      return wrapped.materializeElement((int) pos++);
     }
 
     @Override

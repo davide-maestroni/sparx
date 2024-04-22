@@ -181,13 +181,14 @@ public class RemoveLastWhereListMaterializer<E> extends AbstractCollectionMateri
 
     @Override
     public E next() {
-      if (!hasNext()) {
+      try {
+        if (pos == state.materialized()) {
+          ++pos;
+        }
+        return wrapped.materializeElement(pos++);
+      } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();
       }
-      if (pos == state.materialized()) {
-        ++pos;
-      }
-      return wrapped.materializeElement(pos++);
     }
 
     @Override

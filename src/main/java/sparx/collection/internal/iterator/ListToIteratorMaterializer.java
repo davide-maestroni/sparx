@@ -42,10 +42,11 @@ public class ListToIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   @Override
   public E materializeNext() {
-    if (!materializeHasNext()) {
+    try {
+      return elements.get(pos++);
+    } catch (final IndexOutOfBoundsException ignored) {
       throw new NoSuchElementException();
     }
-    return elements.get(pos++);
   }
 
   @Override

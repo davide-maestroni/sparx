@@ -60,10 +60,10 @@ public class FinallyIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   @Override
   public E materializeNext() {
+    if (!materializeHasNext()) {
+      throw new NoSuchElementException();
+    }
     try {
-      if (!materializeHasNext()) {
-        throw new NoSuchElementException();
-      }
       return wrapped.materializeNext();
     } catch (final Exception e) {
       materialize();

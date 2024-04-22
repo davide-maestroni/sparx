@@ -207,13 +207,14 @@ public class RemoveSliceListMaterializer<E> extends AbstractCollectionMaterializ
 
     @Override
     public E next() {
-      if (!hasNext()) {
+      try {
+        if (pos == state.materializedStart()) {
+          pos += state.materializedLength();
+        }
+        return wrapped.materializeElement((int) pos++);
+      } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();
       }
-      if (pos == state.materializedStart()) {
-        pos += state.materializedLength();
-      }
-      return wrapped.materializeElement((int) pos++);
     }
 
     @Override

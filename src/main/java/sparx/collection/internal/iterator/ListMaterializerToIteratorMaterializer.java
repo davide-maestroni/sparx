@@ -47,10 +47,11 @@ public class ListMaterializerToIteratorMaterializer<E> implements IteratorMateri
 
   @Override
   public E materializeNext() {
-    if (!materializeHasNext()) {
+    try {
+      return wrapped.materializeElement(pos++);
+    } catch (final IndexOutOfBoundsException ignored) {
       throw new NoSuchElementException();
     }
-    return wrapped.materializeElement(pos++);
   }
 
   @Override

@@ -37,10 +37,11 @@ public class ListMaterializerIterator<E> implements Iterator<E> {
 
   @Override
   public E next() {
-    if (!hasNext()) {
+    try {
+      return materializer.materializeElement(nextIndex++);
+    } catch (final IndexOutOfBoundsException ignored) {
       throw new NoSuchElementException();
     }
-    return materializer.materializeElement(nextIndex++);
   }
 
   @Override

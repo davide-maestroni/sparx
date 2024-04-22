@@ -181,16 +181,17 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public E next() {
-      if (!hasNext()) {
+      try {
+        if (pos == numElements) {
+          final Iterator<E> elementsIterator = this.elementsIterator;
+          if (elementsIterator.hasNext()) {
+            return elementsIterator.next();
+          }
+        }
+        return wrapped.materializeElement(pos++);
+      } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();
       }
-      if (pos == numElements) {
-        final Iterator<E> elementsIterator = this.elementsIterator;
-        if (elementsIterator.hasNext()) {
-          return elementsIterator.next();
-        }
-      }
-      return wrapped.materializeElement(pos++);
     }
 
     @Override

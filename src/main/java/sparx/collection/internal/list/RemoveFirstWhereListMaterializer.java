@@ -190,13 +190,14 @@ public class RemoveFirstWhereListMaterializer<E> extends
 
     @Override
     public E next() {
-      if (!hasNext()) {
+      try {
+        if (pos == state.materializeUntil(pos)) {
+          ++pos;
+        }
+        return wrapped.materializeElement(pos++);
+      } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();
       }
-      if (pos == state.materializeUntil(pos)) {
-        ++pos;
-      }
-      return wrapped.materializeElement(pos++);
     }
 
     @Override

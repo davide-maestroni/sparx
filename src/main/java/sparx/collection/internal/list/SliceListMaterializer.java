@@ -197,10 +197,11 @@ public class SliceListMaterializer<E> extends AbstractCollectionMaterializer<E> 
 
     @Override
     public E next() {
-      if (!hasNext()) {
+      try {
+        return wrapped.materializeElement((int) pos++);
+      } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();
       }
-      return wrapped.materializeElement((int) pos++);
     }
 
     @Override
