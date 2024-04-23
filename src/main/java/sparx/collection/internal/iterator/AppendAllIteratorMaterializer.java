@@ -15,52 +15,91 @@
  */
 package sparx.collection.internal.iterator;
 
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 
 public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-  private final IteratorMaterializer<E> elementsMaterializer;
-  private final IteratorMaterializer<E> wrapped;
+  private IteratorMaterializer<E> state;
 
   public AppendAllIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IteratorMaterializer<E> elementsMaterializer) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.elementsMaterializer = Require.notNull(elementsMaterializer, "elementsMaterializer");
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+        Require.notNull(elementsMaterializer, "elementsMaterializer"));
   }
 
   @Override
   public int knownSize() {
-    final int knownSize = wrapped.knownSize();
-    if (knownSize >= 0) {
-      final int elementsSize = elementsMaterializer.knownSize();
-      if (elementsSize >= 0) {
-        return knownSize + elementsSize;
-      }
-    }
-    return -1;
+    return state.knownSize();
   }
 
   @Override
   public boolean materializeHasNext() {
-    return wrapped.materializeHasNext() || elementsMaterializer.materializeHasNext();
+    return state.materializeHasNext();
   }
 
   @Override
   public E materializeNext() {
-    final IteratorMaterializer<E> wrapped = this.wrapped;
-    if (wrapped.materializeHasNext()) {
-      return wrapped.materializeNext();
-    }
-    return elementsMaterializer.materializeNext();
+    return state.materializeNext();
   }
 
   @Override
   public int materializeSkip(final int count) {
-    final int skipped = wrapped.materializeSkip(count);
-    if (skipped < count) {
-      return skipped + elementsMaterializer.materializeSkip(count - skipped);
+    return state.materializeSkip(count);
+  }
+
+  private class ImmaterialState implements IteratorMaterializer<E> {
+
+    private final IteratorMaterializer<E> elementsMaterializer;
+    private final IteratorMaterializer<E> wrapped;
+
+    private int pos;
+
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
+        @NotNull final IteratorMaterializer<E> elementsMaterializer) {
+      this.wrapped = wrapped;
+      this.elementsMaterializer = elementsMaterializer;
     }
-    return skipped;
+
+    @Override
+    public int knownSize() {
+      final int knownSize = wrapped.knownSize();
+      if (knownSize >= 0) {
+        final int elementsSize = elementsMaterializer.knownSize();
+        if (elementsSize >= 0) {
+          return knownSize + elementsSize;
+        }
+      }
+      return -1;
+    }
+
+    @Override
+    public boolean materializeHasNext() {
+      if (wrapped.materializeHasNext()) {
+        return true;
+      }
+      return (state = elementsMaterializer).materializeHasNext();
+    }
+
+    @Override
+    public E materializeNext() {
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
+      return state.materializeNext();
+    }
+
+    @Override
+    public int materializeSkip(final int count) {
+      if (count <= 0) {
+        return 0;
+      }
+      final int skipped = wrapped.materializeSkip(count);
+      if (skipped < count) {
+        return skipped + (state = elementsMaterializer).materializeSkip(count - skipped);
+      }
+      return skipped;
+    }
   }
 }

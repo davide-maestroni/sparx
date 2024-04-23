@@ -16,6 +16,7 @@
 package sparx;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
@@ -26,6 +27,7 @@ import sparx.collection.Sequence;
 import sparx.collection.internal.iterator.AllIteratorMaterializer;
 import sparx.collection.internal.iterator.AppendAllIteratorMaterializer;
 import sparx.collection.internal.iterator.AppendIteratorMaterializer;
+import sparx.collection.internal.iterator.ArrayToIteratorMaterializer;
 import sparx.collection.internal.iterator.CollectionToIteratorMaterializer;
 import sparx.collection.internal.iterator.CountIteratorMaterializer;
 import sparx.collection.internal.iterator.CountWhereIteratorMaterializer;
@@ -44,18 +46,23 @@ import sparx.collection.internal.iterator.FindIndexOfSliceIteratorMaterializer;
 import sparx.collection.internal.iterator.FindLastIndexIteratorMaterializer;
 import sparx.collection.internal.iterator.FindLastIndexOfSliceIteratorMaterializer;
 import sparx.collection.internal.iterator.FindLastIteratorMaterializer;
+import sparx.collection.internal.iterator.FlatMapAfterIteratorMaterializer;
+import sparx.collection.internal.iterator.FlatMapIteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListToIteratorMaterializer;
 import sparx.collection.internal.iterator.RemoveWhereIteratorMaterializer;
+import sparx.collection.internal.iterator.RepeatIteratorMaterializer;
 import sparx.collection.internal.list.AllListMaterializer;
 import sparx.collection.internal.list.AppendAllListMaterializer;
 import sparx.collection.internal.list.AppendListMaterializer;
 import sparx.collection.internal.list.ArrayToListMaterializer;
+import sparx.collection.internal.list.CharSequenceToListMaterializer;
 import sparx.collection.internal.list.CollectionToListMaterializer;
 import sparx.collection.internal.list.CountListMaterializer;
 import sparx.collection.internal.list.CountWhereListMaterializer;
+import sparx.collection.internal.list.DoubleArrayToListMaterializer;
 import sparx.collection.internal.list.DropListMaterializer;
 import sparx.collection.internal.list.DropRightListMaterializer;
 import sparx.collection.internal.list.DropRightWhileListMaterializer;
@@ -75,6 +82,7 @@ import sparx.collection.internal.list.FlatMapFirstWhereListMaterializer;
 import sparx.collection.internal.list.FlatMapLastWhereListMaterializer;
 import sparx.collection.internal.list.FlatMapListMaterializer;
 import sparx.collection.internal.list.FlatMapWhereListMaterializer;
+import sparx.collection.internal.list.FloatArrayToListMaterializer;
 import sparx.collection.internal.list.FoldLeftListMaterializer;
 import sparx.collection.internal.list.FoldRightListMaterializer;
 import sparx.collection.internal.list.GroupListMaterializer;
@@ -82,9 +90,11 @@ import sparx.collection.internal.list.IncludesAllListMaterializer;
 import sparx.collection.internal.list.IncludesSliceListMaterializer;
 import sparx.collection.internal.list.InsertAfterListMaterializer;
 import sparx.collection.internal.list.InsertAllAfterListMaterializer;
+import sparx.collection.internal.list.IntArrayToListMaterializer;
 import sparx.collection.internal.list.IteratorToListMaterializer;
 import sparx.collection.internal.list.ListMaterializer;
 import sparx.collection.internal.list.ListToListMaterializer;
+import sparx.collection.internal.list.LongArrayToListMaterializer;
 import sparx.collection.internal.list.MapAfterListMaterializer;
 import sparx.collection.internal.list.MapFirstWhereListMaterializer;
 import sparx.collection.internal.list.MapLastWhereListMaterializer;
@@ -268,12 +278,6 @@ public class Sparx {
 
       private static final Iterator<?> EMPTY_ITERATOR = new Iterator<Object>(
           EmptyIteratorMaterializer.instance());
-      private static final Iterator<Boolean> FALSE_ITERATOR = new Iterator<Boolean>(
-          new ElementToIteratorMaterializer<Boolean>(false));
-      private static final Iterator<Boolean> TRUE_ITERATOR = new Iterator<Boolean>(
-          new ElementToIteratorMaterializer<Boolean>(true));
-      private static final Iterator<Integer> ZERO_ITERATOR = new Iterator<Integer>(
-          new ElementToIteratorMaterializer<Integer>(0));
 
       private final IteratorMaterializer<E> materializer;
 
@@ -284,6 +288,89 @@ public class Sparx {
       @SuppressWarnings("unchecked")
       public static @NotNull <E> Iterator<E> of() {
         return (Iterator<E>) EMPTY_ITERATOR;
+      }
+
+      public static @NotNull <E> Iterator<E> of(final E first) {
+        return new Iterator<E>(new ElementToIteratorMaterializer<E>(first));
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> Iterator<E> of(final E first, final E second) {
+        return new Iterator<E>(new ArrayToIteratorMaterializer<E>(first, second));
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> Iterator<E> of(final E first, final E second, final E third) {
+        return new Iterator<E>(new ArrayToIteratorMaterializer<E>(first, second, third));
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> Iterator<E> of(final E first, final E second, final E third,
+          final E fourth) {
+        return new Iterator<E>(new ArrayToIteratorMaterializer<E>(first, second, third, fourth));
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> Iterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth) {
+        return new Iterator<E>(
+            new ArrayToIteratorMaterializer<E>(first, second, third, fourth, fifth));
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> Iterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth, final E sixth) {
+        return new Iterator<E>(
+            new ArrayToIteratorMaterializer<E>(first, second, third, fourth, fifth, sixth));
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> Iterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth, final E sixth, final E seventh) {
+        return new Iterator<E>(
+            new ArrayToIteratorMaterializer<E>(first, second, third, fourth, fifth, sixth,
+                seventh));
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> Iterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth, final E sixth, final E seventh, final E eighth) {
+        return new Iterator<E>(
+            new ArrayToIteratorMaterializer<E>(first, second, third, fourth, fifth, sixth, seventh,
+                eighth));
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> Iterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth, final E sixth, final E seventh, final E eighth,
+          final E ninth) {
+        return new Iterator<E>(
+            new ArrayToIteratorMaterializer<E>(first, second, third, fourth, fifth, sixth, seventh,
+                eighth, ninth));
+      }
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> Iterator<E> of(final E first, final E second, final E third,
+          final E fourth, final E fifth, final E sixth, final E seventh, final E eighth,
+          final E ninth, final E tenth) {
+        return new Iterator<E>(
+            new ArrayToIteratorMaterializer<E>(first, second, third, fourth, fifth, sixth, seventh,
+                eighth, ninth, tenth));
+      }
+
+      public static @NotNull <E> Iterator<E> of(final E... elements) {
+        if (elements == null) {
+          return Iterator.of();
+        }
+        return new Iterator<E>(
+            new ArrayToIteratorMaterializer<E>(Arrays.copyOf(elements, elements.length)));
+      }
+
+      public static @NotNull <E> Iterator<E> times(final int count, final E element) {
+        if (Require.notNegative(count, "count") == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<E>(new RepeatIteratorMaterializer<E>(count, element));
       }
 
       public static @NotNull <E> Iterator<E> wrap(@NotNull final Iterable<? extends E> elements) {
@@ -316,11 +403,31 @@ public class Sparx {
         return new IteratorToIteratorMaterializer<E>((Iterator<E>) elements.iterator());
       }
 
+      private static @NotNull <E, F> IndexedFunction<E, IteratorMaterializer<F>> getElementToMaterializer(
+          @NotNull final Function<? super E, ? extends Iterable<? extends F>> mapper) {
+        return new IndexedFunction<E, IteratorMaterializer<F>>() {
+          @Override
+          public IteratorMaterializer<F> apply(final int index, final E element) throws Exception {
+            return getElementsMaterializer(mapper.apply(element));
+          }
+        };
+      }
+
+      private static @NotNull <E, F> IndexedFunction<E, IteratorMaterializer<F>> getElementToMaterializer(
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends F>> mapper) {
+        return new IndexedFunction<E, IteratorMaterializer<F>>() {
+          @Override
+          public IteratorMaterializer<F> apply(final int index, final E element) throws Exception {
+            return getElementsMaterializer(mapper.apply(index, element));
+          }
+        };
+      }
+
       @Override
       public @NotNull Iterator<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return TRUE_ITERATOR;
+          return Iterator.of(true);
         }
         return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer, predicate, true));
       }
@@ -329,7 +436,7 @@ public class Sparx {
       public @NotNull Iterator<Boolean> all(@NotNull final Predicate<? super E> predicate) {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return TRUE_ITERATOR;
+          return Iterator.of(true);
         }
         return new Iterator<Boolean>(
             new AllIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate), true));
@@ -369,7 +476,7 @@ public class Sparx {
       public @NotNull Iterator<Integer> count() {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return ZERO_ITERATOR;
+          return Iterator.of(0);
         }
         return new Iterator<Integer>(new CountIteratorMaterializer<E>(materializer));
       }
@@ -379,7 +486,7 @@ public class Sparx {
           @NotNull final IndexedPredicate<? super E> predicate) {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return ZERO_ITERATOR;
+          return Iterator.of(0);
         }
         return new Iterator<Integer>(
             new CountWhereIteratorMaterializer<E>(materializer, predicate));
@@ -389,7 +496,7 @@ public class Sparx {
       public @NotNull Iterator<Integer> count(@NotNull final Predicate<? super E> predicate) {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return ZERO_ITERATOR;
+          return Iterator.of(0);
         }
         return new Iterator<Integer>(
             new CountWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
@@ -568,7 +675,7 @@ public class Sparx {
           @NotNull final IndexedPredicate<? super E> predicate) {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return FALSE_ITERATOR;
+          return Iterator.of(false);
         }
         return new Iterator<Boolean>(
             new ExistsIteratorMaterializer<E>(materializer, predicate, false));
@@ -578,7 +685,7 @@ public class Sparx {
       public @NotNull Iterator<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return FALSE_ITERATOR;
+          return Iterator.of(false);
         }
         return new Iterator<Boolean>(
             new ExistsIteratorMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
@@ -731,8 +838,60 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull <F> Iterator<F> flatMap(
+          @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<F>(
+            new FlatMapIteratorMaterializer<E, F>(materializer, getElementToMaterializer(mapper)));
+      }
+
+      @Override
       public E first() {
         return materializer.materializeNext();
+      }
+
+      @Override
+      public @NotNull <F> Iterator<F> flatMap(
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<F>(
+            new FlatMapIteratorMaterializer<E, F>(materializer, getElementToMaterializer(mapper)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> flatMapAfter(final int numElements,
+          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
+          return this;
+        }
+        return new Iterator<E>(
+            new FlatMapAfterIteratorMaterializer<E>(materializer, getElementsMaterializer(mapper)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> flatMapAfter(final int numElements,
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
+          return this;
+        }
+        return new Iterator<E>(
+            new FlatMapAfterIteratorMaterializer<E>(materializer, getElementsMaterializer(mapper)));
       }
 
       @Override
@@ -802,6 +961,10 @@ public class Sparx {
           ++size;
         }
         return size;
+      }
+
+      public @NotNull List<E> toList() {
+        return List.wrap(this);
       }
     }
 
@@ -905,6 +1068,50 @@ public class Sparx {
         return new List<E>(
             new ArrayToListMaterializer<E>(first, second, third, fourth, fifth, sixth, seventh,
                 eighth, ninth, tenth));
+      }
+
+      public static @NotNull <E> List<E> of(final E... elements) {
+        if (elements == null) {
+          return List.of();
+        }
+        return new List<E>(
+            new ArrayToListMaterializer<E>(Arrays.copyOf(elements, elements.length)));
+      }
+
+      public static @NotNull List<Character> ofChars(@NotNull final CharSequence chars) {
+        return new List<Character>(new CharSequenceToListMaterializer(chars));
+      }
+
+      public static @NotNull List<Double> ofDoubles(final double... elements) {
+        if (elements == null) {
+          return List.of();
+        }
+        return new List<Double>(
+            new DoubleArrayToListMaterializer(Arrays.copyOf(elements, elements.length)));
+      }
+
+      public static @NotNull List<Float> ofFloats(final float... elements) {
+        if (elements == null) {
+          return List.of();
+        }
+        return new List<Float>(
+            new FloatArrayToListMaterializer(Arrays.copyOf(elements, elements.length)));
+      }
+
+      public static @NotNull List<Integer> ofInts(final int... elements) {
+        if (elements == null) {
+          return List.of();
+        }
+        return new List<Integer>(
+            new IntArrayToListMaterializer(Arrays.copyOf(elements, elements.length)));
+      }
+
+      public static @NotNull List<Long> ofLongs(final long... elements) {
+        if (elements == null) {
+          return List.of();
+        }
+        return new List<Long>(
+            new LongArrayToListMaterializer(Arrays.copyOf(elements, elements.length)));
       }
 
       public static @NotNull <E> List<E> times(final int count, final E element) {
@@ -2774,6 +2981,10 @@ public class Sparx {
           final E ninth, final E tenth) {
         return new ListIterator<E>(List.<E>of(),
             List.of(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth));
+      }
+
+      public static @NotNull <E> ListIterator<E> of(final E... elements) {
+        return new ListIterator<E>(List.<E>of(), List.of(elements));
       }
 
       public static @NotNull <E> ListIterator<E> times(final int count, final E element) {
