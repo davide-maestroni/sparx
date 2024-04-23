@@ -22,7 +22,7 @@ import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class FlatMapLastWhereIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class FlatMapLastWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
@@ -48,12 +48,7 @@ public class FlatMapLastWhereIteratorMaterializer<E> implements IteratorMaterial
     return state.materializeNext();
   }
 
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
-  }
-
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class ImmaterialState implements IteratorMaterializer<E> {
 
     private final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper;
     private final IndexedPredicate<? super E> predicate;
@@ -102,11 +97,17 @@ public class FlatMapLastWhereIteratorMaterializer<E> implements IteratorMaterial
                   new DequeueToIteratorMaterializer<E>(elements), i, mapper));
             }
           }
+          return (state = new DequeueToIteratorMaterializer<E>(elements));
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
       }
       return (state = wrapped);
+    }
+
+    @Override
+    public int materializeSkip(final int count) {
+      throw new UnsupportedOperationException();
     }
   }
 }

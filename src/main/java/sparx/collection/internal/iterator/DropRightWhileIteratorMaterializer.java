@@ -22,7 +22,7 @@ import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class DropRightWhileIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class DropRightWhileIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
@@ -47,12 +47,7 @@ public class DropRightWhileIteratorMaterializer<E> implements IteratorMaterializ
     return state.materializeNext();
   }
 
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
-  }
-
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class ImmaterialState implements IteratorMaterializer<E> {
 
     private final DequeueList<E> elements = new DequeueList<E>();
     private final IndexedPredicate<? super E> predicate;
@@ -102,6 +97,11 @@ public class DropRightWhileIteratorMaterializer<E> implements IteratorMaterializ
         throw new NoSuchElementException();
       }
       return elements.removeFirst();
+    }
+
+    @Override
+    public int materializeSkip(final int count) {
+      throw new UnsupportedOperationException();
     }
   }
 }

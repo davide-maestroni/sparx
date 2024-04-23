@@ -15,13 +15,14 @@
  */
 package sparx.collection.internal.iterator;
 
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class FlatMapFirstWhereIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class FlatMapFirstWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
@@ -47,17 +48,14 @@ public class FlatMapFirstWhereIteratorMaterializer<E> implements IteratorMateria
     return state.materializeNext();
   }
 
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
-  }
-
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class ImmaterialState implements IteratorMaterializer<E> {
 
     private final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper;
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
+    private boolean hasNext;
+    private E next;
     private int pos;
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
@@ -75,31 +73,49 @@ public class FlatMapFirstWhereIteratorMaterializer<E> implements IteratorMateria
 
     @Override
     public boolean materializeHasNext() {
-      return materializer().materializeHasNext();
-    }
-
-    @Override
-    public E materializeNext() {
-      final E next = materializer().materializeNext();
-      ++pos;
-      return next;
-    }
-
-    private @NotNull IteratorMaterializer<E> materializer() {
+      if (hasNext) {
+        return true;
+      }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
         final E next = wrapped.materializeNext();
         try {
           final int pos = this.pos;
           if (predicate.test(pos, next)) {
+            hasNext = false;
+            this.next = null;
             final IteratorMaterializer<E> materializer = mapper.apply(pos, next);
-            return (state = new AppendAllIteratorMaterializer<E>(materializer, wrapped));
+            return (state = new AppendAllIteratorMaterializer<E>(materializer,
+                wrapped)).materializeHasNext();
           }
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
+        hasNext = true;
+        this.next = next;
+        return true;
       }
-      return wrapped;
+      return false;
+    }
+
+    @Override
+    public E materializeNext() {
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
+      if (hasNext) {
+        ++pos;
+        hasNext = false;
+        final E next = this.next;
+        this.next = null;
+        return next;
+      }
+      return state.materializeNext();
+    }
+
+    @Override
+    public int materializeSkip(final int count) {
+      throw new UnsupportedOperationException();
     }
   }
 }

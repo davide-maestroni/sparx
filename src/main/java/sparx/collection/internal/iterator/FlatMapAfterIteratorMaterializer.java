@@ -28,7 +28,7 @@ public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer
       final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(numElements, "numElements"), Require.notNull(mapper, "mapper"));
+        Require.notNegative(numElements, "numElements"), Require.notNull(mapper, "mapper"));
   }
 
   @Override
@@ -93,7 +93,7 @@ public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer
           this.pos += skipped;
           return skipped;
         }
-        int skipped = wrapped.materializeSkip(count + pos - numElements);
+        int skipped = wrapped.materializeSkip(numElements - pos);
         this.pos += skipped;
         return skipped + materializer().materializeSkip(count - skipped);
       }

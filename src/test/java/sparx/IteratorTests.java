@@ -566,4 +566,305 @@ public class IteratorTests {
     assertTrue(Iterator.of().findLastIndexWhere(Objects::isNull).isEmpty());
     assertEquals(0, Iterator.of().findLastIndexWhere(Objects::isNull).size());
   }
+
+  @Test
+  public void flatMap() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2);
+    assertFalse(itr.get().flatMap(i -> List.of(i, i)).isEmpty());
+    assertEquals(4, itr.get().flatMap(i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2, 2), itr.get().flatMap(i -> List.of(i, i)).toList());
+    assertEquals(2, itr.get().flatMap(i -> List.of(i, i)).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMap(i -> List.of(i, i)).drop(4).first());
+    assertTrue(itr.get().flatMap(i -> List.of()).isEmpty());
+    assertEquals(0, itr.get().flatMap(i -> List.of()).size());
+    assertEquals(List.of(), itr.get().flatMap(i -> List.of()).toList());
+    assertThrows(NoSuchElementException.class, () -> itr.get().flatMap(i -> List.of()).first());
+    assertFalse(itr.get().flatMap(i -> List.of(null)).isEmpty());
+    assertEquals(2, itr.get().flatMap(i -> List.of(null)).size());
+    assertEquals(List.of(null, null), itr.get().flatMap(i -> List.of(null)).toList());
+    assertNull(itr.get().flatMap(i -> List.of(null)).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMap(i -> List.of(null)).drop(2).first());
+  }
+
+  @Test
+  public void flatMapAfter() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2);
+    assertFalse(itr.get().flatMapAfter(-1, i -> List.of(i, i)).isEmpty());
+    assertEquals(2, itr.get().flatMapAfter(-1, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2), itr.get().flatMapAfter(-1, i -> List.of(i, i)).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapAfter(2, i -> List.of(i, i)).drop(2).first());
+    assertFalse(itr.get().flatMapAfter(0, i -> List.of(i, i)).isEmpty());
+    assertEquals(3, itr.get().flatMapAfter(0, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2), itr.get().flatMapAfter(0, i -> List.of(i, i)).toList());
+    assertEquals(2, itr.get().flatMapAfter(0, i -> List.of(i, i)).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapAfter(0, i -> List.of(i, i)).drop(3).first());
+    assertFalse(itr.get().flatMapAfter(1, i -> List.of(i, i)).isEmpty());
+    assertEquals(3, itr.get().flatMapAfter(1, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2, 2), itr.get().flatMapAfter(1, i -> List.of(i, i)).toList());
+    assertEquals(2, itr.get().flatMapAfter(1, i -> List.of(i, i)).drop(2).first());
+    assertFalse(itr.get().flatMapAfter(2, i -> List.of(i, i)).isEmpty());
+    assertEquals(2, itr.get().flatMapAfter(2, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2), itr.get().flatMapAfter(2, i -> List.of(i, i)).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapAfter(2, i -> List.of(i, i)).drop(2).first());
+
+    assertFalse(itr.get().flatMapAfter(0, i -> List.of()).isEmpty());
+    assertEquals(1, itr.get().flatMapAfter(0, i -> List.of()).size());
+    assertEquals(List.of(2), itr.get().flatMapAfter(0, i -> List.of()).toList());
+    assertEquals(2, itr.get().flatMapAfter(0, i -> List.of()).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapAfter(0, i -> List.of()).drop(1).first());
+    assertFalse(itr.get().flatMapAfter(1, i -> List.of()).isEmpty());
+    assertEquals(1, itr.get().flatMapAfter(1, i -> List.of()).size());
+    assertEquals(List.of(1), itr.get().flatMapAfter(1, i -> List.of()).toList());
+    assertEquals(1, itr.get().flatMapAfter(1, i -> List.of()).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapAfter(1, i -> List.of()).drop(1).first());
+    assertFalse(itr.get().flatMapAfter(2, i -> List.of()).isEmpty());
+    assertEquals(2, itr.get().flatMapAfter(2, i -> List.of()).size());
+    assertEquals(List.of(1, 2), itr.get().flatMapAfter(2, i -> List.of()).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapAfter(2, i -> List.of()).drop(2).first());
+
+    assertTrue(Iterator.of().flatMapAfter(0, i -> List.of(i, i)).isEmpty());
+    assertEquals(0, Iterator.of().flatMapAfter(0, i -> List.of(i, i)).size());
+    assertEquals(List.of(), Iterator.of().flatMapAfter(0, i -> List.of(i, i)).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> Iterator.of().flatMapAfter(0, i -> List.of(i, i)).first());
+  }
+
+  @Test
+  public void flatMapFirstWhere() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
+    assertFalse(itr.get().flatMapFirstWhere(i -> false, i -> List.of(i, i)).isEmpty());
+    assertEquals(4, itr.get().flatMapFirstWhere(i -> false, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2, null, 4),
+        itr.get().flatMapFirstWhere(i -> false, i -> List.of(i, i)).toList());
+    assertNull(itr.get().flatMapFirstWhere(i -> false, i -> List.of(i, i)).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapFirstWhere(i -> false, i -> List.of(i, i)).drop(4).first());
+    assertFalse(itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).isEmpty());
+    assertEquals(5, itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2, null, 4),
+        itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).toList());
+    assertEquals(1, itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).drop(1).first());
+    assertNull(itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).drop(3).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).drop(5).first());
+    assertFalse(itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).isEmpty());
+    assertEquals(4, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).size());
+    assertEquals(List.of(1, 2, 3, 4),
+        itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).toList());
+    assertEquals(2, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).drop(1).first());
+    assertEquals(3, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).drop(4).first());
+
+    assertFalse(itr.get().flatMapFirstWhere(i -> false, i -> List.of()).isEmpty());
+    assertEquals(4, itr.get().flatMapFirstWhere(i -> false, i -> List.of()).size());
+    assertEquals(List.of(1, 2, null, 4),
+        itr.get().flatMapFirstWhere(i -> false, i -> List.of()).toList());
+    assertNull(itr.get().flatMapFirstWhere(i -> false, i -> List.of()).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapFirstWhere(i -> false, i -> List.of()).drop(4).first());
+    assertFalse(itr.get().flatMapFirstWhere(i -> true, i -> List.of()).isEmpty());
+    assertEquals(3, itr.get().flatMapFirstWhere(i -> true, i -> List.of()).size());
+    assertEquals(List.of(2, null, 4),
+        itr.get().flatMapFirstWhere(i -> true, i -> List.of()).toList());
+    assertEquals(4, itr.get().flatMapFirstWhere(i -> true, i -> List.of()).drop(2).first());
+    assertNull(itr.get().flatMapFirstWhere(i -> true, i -> List.of()).drop(1).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapFirstWhere(i -> true, i -> List.of()).drop(3).first());
+    assertFalse(itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).isEmpty());
+    assertEquals(3, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).size());
+    assertEquals(List.of(1, 2, 4),
+        itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).toList());
+    assertEquals(2, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).drop(1).first());
+    assertEquals(4, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).drop(3).first());
+
+    assertFalse(itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).isEmpty());
+    assertEquals(5, itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2, null, 4),
+        itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).toList());
+    assertEquals(1, itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).drop(1).first());
+    assertNull(itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).drop(3).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).drop(5).first());
+    assertFalse(itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).size());
+    assertEquals(1, itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).first());
+    assertEquals(2, itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).drop(1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).drop(2).first());
+
+    assertTrue(Iterator.of().flatMapFirstWhere(i -> false, i -> List.of()).isEmpty());
+    assertEquals(0, Iterator.of().flatMapFirstWhere(i -> false, i -> List.of()).size());
+    assertEquals(List.of(), Iterator.of().flatMapFirstWhere(i -> false, i -> List.of()).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> Iterator.of().flatMapFirstWhere(i -> false, i -> List.of()).drop(2).first());
+    assertTrue(Iterator.of().flatMapFirstWhere(i -> true, i -> List.of()).isEmpty());
+    assertEquals(0, Iterator.of().flatMapFirstWhere(i -> true, i -> List.of()).size());
+    assertEquals(List.of(), Iterator.of().flatMapFirstWhere(i -> true, i -> List.of()).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> Iterator.of().flatMapFirstWhere(i -> true, i -> List.of()).drop(2).first());
+  }
+
+  @Test
+  public void flatMapLastWhere() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
+    assertFalse(itr.get().flatMapLastWhere(i -> false, i -> List.of(i, i)).isEmpty());
+    assertEquals(4, itr.get().flatMapLastWhere(i -> false, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2, null, 4),
+        itr.get().flatMapLastWhere(i -> false, i -> List.of(i, i)).toList());
+    assertNull(itr.get().flatMapLastWhere(i -> false, i -> List.of(i, i)).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapLastWhere(i -> false, i -> List.of(i, i)).drop(4).first());
+    assertFalse(itr.get().flatMapLastWhere(i -> true, i -> List.of(i, i)).isEmpty());
+    assertEquals(5, itr.get().flatMapLastWhere(i -> true, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2, null, 4, 4),
+        itr.get().flatMapLastWhere(i -> true, i -> List.of(i, i)).toList());
+    assertEquals(2, itr.get().flatMapLastWhere(i -> true, i -> List.of(i, i)).drop(1).first());
+    assertNull(itr.get().flatMapLastWhere(i -> true, i -> List.of(i, i)).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapLastWhere(i -> true, i -> List.of(i, i)).drop(5).first());
+    assertFalse(itr.get().flatMapLastWhere(Objects::isNull, i -> List.of(3)).isEmpty());
+    assertEquals(4, itr.get().flatMapLastWhere(Objects::isNull, i -> List.of(3)).size());
+    assertEquals(List.of(1, 2, 3, 4),
+        itr.get().flatMapLastWhere(Objects::isNull, i -> List.of(3)).toList());
+    assertEquals(2, itr.get().flatMapLastWhere(Objects::isNull, i -> List.of(3)).drop(1).first());
+    assertEquals(3, itr.get().flatMapLastWhere(Objects::isNull, i -> List.of(3)).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapLastWhere(Objects::isNull, i -> List.of(3)).drop(4).first());
+
+    assertFalse(itr.get().flatMapLastWhere(i -> false, i -> List.of()).isEmpty());
+    assertEquals(4, itr.get().flatMapLastWhere(i -> false, i -> List.of()).size());
+    assertEquals(List.of(1, 2, null, 4),
+        itr.get().flatMapLastWhere(i -> false, i -> List.of()).toList());
+    assertNull(itr.get().flatMapLastWhere(i -> false, i -> List.of()).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapLastWhere(i -> false, i -> List.of()).drop(4).first());
+    assertFalse(itr.get().flatMapLastWhere(i -> true, i -> List.of()).isEmpty());
+    assertEquals(3, itr.get().flatMapLastWhere(i -> true, i -> List.of()).size());
+    assertEquals(List.of(1, 2, null),
+        itr.get().flatMapLastWhere(i -> true, i -> List.of()).toList());
+    assertEquals(2, itr.get().flatMapLastWhere(i -> true, i -> List.of()).drop(1).first());
+    assertNull(itr.get().flatMapLastWhere(i -> true, i -> List.of()).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapLastWhere(i -> true, i -> List.of()).drop(3).first());
+    assertFalse(itr.get().flatMapLastWhere(Objects::isNull, i -> List.of()).isEmpty());
+    assertEquals(3, itr.get().flatMapLastWhere(Objects::isNull, i -> List.of()).size());
+    assertEquals(List.of(1, 2, 4),
+        itr.get().flatMapLastWhere(Objects::isNull, i -> List.of()).toList());
+    assertEquals(2, itr.get().flatMapLastWhere(Objects::isNull, i -> List.of()).drop(1).first());
+    assertEquals(4, itr.get().flatMapLastWhere(Objects::isNull, i -> List.of()).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapLastWhere(Objects::isNull, i -> List.of()).drop(3).first());
+
+    assertFalse(itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).isEmpty());
+    assertEquals(5, itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2, null, 4, 4),
+        itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).toList());
+    assertEquals(2, itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).drop(1).first());
+    assertNull(itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).drop(5).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).size());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).drop(3).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).drop(2).first());
+
+    assertTrue(Iterator.of().flatMapLastWhere(i -> false, i -> List.of()).isEmpty());
+    assertEquals(0, Iterator.of().flatMapLastWhere(i -> false, i -> List.of()).size());
+    assertEquals(List.of(), Iterator.of().flatMapLastWhere(i -> false, i -> List.of()).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> Iterator.of().flatMapLastWhere(i -> false, i -> List.of()).drop(2).first());
+    assertTrue(Iterator.of().flatMapLastWhere(i -> true, i -> List.of()).isEmpty());
+    assertEquals(0, Iterator.of().flatMapLastWhere(i -> true, i -> List.of()).size());
+    assertEquals(List.of(), Iterator.of().flatMapLastWhere(i -> true, i -> List.of()).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> Iterator.of().flatMapLastWhere(i -> true, i -> List.of()).drop(2).first());
+  }
+
+  @Test
+  public void flatMapWhere() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, null, null, 4);
+    assertFalse(itr.get().flatMapWhere(i -> false, i -> List.of(i, i)).isEmpty());
+    assertEquals(4, itr.get().flatMapWhere(i -> false, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, null, null, 4),
+        itr.get().flatMapWhere(i -> false, i -> List.of(i, i)).toList());
+    assertNull(itr.get().flatMapWhere(i -> false, i -> List.of(i, i)).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapWhere(i -> false, i -> List.of(i, i)).drop(4).first());
+    assertFalse(itr.get().flatMapWhere(i -> true, i -> List.of(i, i)).isEmpty());
+    assertEquals(8, itr.get().flatMapWhere(i -> true, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, null, null, null, null, 4, 4),
+        itr.get().flatMapWhere(i -> true, i -> List.of(i, i)).toList());
+    assertEquals(1, itr.get().flatMapWhere(i -> true, i -> List.of(i, i)).drop(1).first());
+    assertNull(itr.get().flatMapWhere(i -> true, i -> List.of(i, i)).drop(4).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapWhere(i -> true, i -> List.of(i, i)).drop(8).first());
+    assertFalse(itr.get().flatMapWhere(Objects::isNull, i -> List.of(3)).isEmpty());
+    assertEquals(4, itr.get().flatMapWhere(Objects::isNull, i -> List.of(3)).size());
+    assertEquals(List.of(1, 3, 3, 4),
+        itr.get().flatMapWhere(Objects::isNull, i -> List.of(3)).toList());
+    assertEquals(3, itr.get().flatMapWhere(Objects::isNull, i -> List.of(3)).drop(1).first());
+    assertEquals(3, itr.get().flatMapWhere(Objects::isNull, i -> List.of(3)).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapWhere(Objects::isNull, i -> List.of(3)).drop(4).first());
+
+    assertFalse(itr.get().flatMapWhere(i -> false, i -> List.of()).isEmpty());
+    assertEquals(4, itr.get().flatMapWhere(i -> false, i -> List.of()).size());
+    assertEquals(List.of(1, null, null, 4),
+        itr.get().flatMapWhere(i -> false, i -> List.of()).toList());
+    assertNull(itr.get().flatMapWhere(i -> false, i -> List.of()).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapWhere(i -> false, i -> List.of()).drop(4).first());
+    assertTrue(itr.get().flatMapWhere(i -> true, i -> List.of()).isEmpty());
+    assertEquals(0, itr.get().flatMapWhere(i -> true, i -> List.of()).size());
+    assertEquals(List.of(), itr.get().flatMapWhere(i -> true, i -> List.of()).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapWhere(i -> true, i -> List.of()).drop(0).first());
+    assertFalse(itr.get().flatMapWhere(Objects::isNull, i -> List.of()).isEmpty());
+    assertEquals(2, itr.get().flatMapWhere(Objects::isNull, i -> List.of()).size());
+    assertEquals(List.of(1, 4), itr.get().flatMapWhere(Objects::isNull, i -> List.of()).toList());
+    assertEquals(4, itr.get().flatMapWhere(Objects::isNull, i -> List.of()).drop(1).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().flatMapWhere(Objects::isNull, i -> List.of()).drop(2).first());
+
+    assertFalse(itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).isEmpty());
+    assertEquals(1, itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).drop(0).first());
+    assertEquals(1, itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).drop(1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).size());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).drop(2).first());
+    assertFalse(itr.get().flatMapWhere(i -> i > 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapWhere(i -> i > 2, i -> List.of(i, i)).size());
+    assertEquals(1, itr.get().flatMapWhere(i -> i > 2, i -> List.of(i, i)).drop(0).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapWhere(i -> i > 2, i -> List.of(i, i)).drop(1).first());
+
+    assertTrue(Iterator.of().flatMapWhere(i -> false, i -> List.of()).isEmpty());
+    assertEquals(0, Iterator.of().flatMapWhere(i -> false, i -> List.of()).size());
+    assertEquals(List.of(), Iterator.of().flatMapWhere(i -> false, i -> List.of()).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> Iterator.of().flatMapWhere(i -> false, i -> List.of()).drop(2).first());
+    assertTrue(Iterator.of().flatMapWhere(i -> true, i -> List.of()).isEmpty());
+    assertEquals(0, Iterator.of().flatMapWhere(i -> true, i -> List.of()).size());
+    assertEquals(List.of(), Iterator.of().flatMapWhere(i -> true, i -> List.of()).toList());
+    assertThrows(NoSuchElementException.class,
+        () -> Iterator.of().flatMapWhere(i -> true, i -> List.of()).drop(2).first());
+  }
 }

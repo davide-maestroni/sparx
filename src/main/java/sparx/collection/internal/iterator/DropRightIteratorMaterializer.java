@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 import sparx.util.Require;
 
-public class DropRightIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class DropRightIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
@@ -45,19 +45,13 @@ public class DropRightIteratorMaterializer<E> implements IteratorMaterializer<E>
     return state.materializeNext();
   }
 
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
-  }
-
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class ImmaterialState implements IteratorMaterializer<E> {
 
     private final DequeueList<E> elements = new DequeueList<E>();
     private final int maxElements;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        final int maxElements) {
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int maxElements) {
       this.wrapped = wrapped;
       this.maxElements = maxElements;
     }
@@ -96,6 +90,11 @@ public class DropRightIteratorMaterializer<E> implements IteratorMaterializer<E>
       final DequeueList<E> elements = this.elements;
       elements.add(wrapped.materializeNext());
       return elements.removeFirst();
+    }
+
+    @Override
+    public int materializeSkip(final int count) {
+      throw new UnsupportedOperationException();
     }
   }
 }
