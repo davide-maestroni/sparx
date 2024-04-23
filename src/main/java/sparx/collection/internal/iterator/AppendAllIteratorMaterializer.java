@@ -15,7 +15,6 @@
  */
 package sparx.collection.internal.iterator;
 
-import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 
@@ -84,10 +83,11 @@ public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E>
 
     @Override
     public E materializeNext() {
-      if (!materializeHasNext()) {
-        throw new NoSuchElementException();
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (wrapped.materializeHasNext()) {
+        return wrapped.materializeNext();
       }
-      return state.materializeNext();
+      return (state = elementsMaterializer).materializeNext();
     }
 
     @Override

@@ -190,8 +190,16 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
       @NotNull Function<? super T, ? extends Iterable<? extends E>> mapper);
 
   @NotNull
+  <T extends Throwable> IteratorSequence<E> flatMapExceptionally(@NotNull Class<T> exceptionType,
+      @NotNull IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
   IteratorSequence<E> flatMapExceptionally(
       @NotNull Function<? super Throwable, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
+  IteratorSequence<E> flatMapExceptionally(
+      @NotNull IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper);
 
   @Override
   @NotNull

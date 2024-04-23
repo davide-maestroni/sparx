@@ -358,7 +358,7 @@ public class Sparx {
                 eighth, ninth, tenth));
       }
 
-      public static @NotNull <E> Iterator<E> of(final E... elements) {
+      public static @NotNull <E> Iterator<E> ofArray(final E... elements) {
         if (elements == null) {
           return Iterator.of();
         }
@@ -875,8 +875,8 @@ public class Sparx {
         if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
           return this;
         }
-        return new Iterator<E>(
-            new FlatMapAfterIteratorMaterializer<E>(materializer, getElementsMaterializer(mapper)));
+        return new Iterator<E>(new FlatMapAfterIteratorMaterializer<E>(materializer, numElements,
+            getElementToMaterializer(mapper)));
       }
 
       @Override
@@ -890,8 +890,8 @@ public class Sparx {
         if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
           return this;
         }
-        return new Iterator<E>(
-            new FlatMapAfterIteratorMaterializer<E>(materializer, getElementsMaterializer(mapper)));
+        return new Iterator<E>(new FlatMapAfterIteratorMaterializer<E>(materializer, numElements,
+            getElementToMaterializer(mapper)));
       }
 
       @Override
@@ -1070,7 +1070,7 @@ public class Sparx {
                 eighth, ninth, tenth));
       }
 
-      public static @NotNull <E> List<E> of(final E... elements) {
+      public static @NotNull <E> List<E> ofArray(final E... elements) {
         if (elements == null) {
           return List.of();
         }
@@ -2983,8 +2983,8 @@ public class Sparx {
             List.of(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth, tenth));
       }
 
-      public static @NotNull <E> ListIterator<E> of(final E... elements) {
-        return new ListIterator<E>(List.<E>of(), List.of(elements));
+      public static @NotNull <E> ListIterator<E> ofArray(final E... elements) {
+        return new ListIterator<E>(List.<E>of(), List.ofArray(elements));
       }
 
       public static @NotNull <E> ListIterator<E> times(final int count, final E element) {
