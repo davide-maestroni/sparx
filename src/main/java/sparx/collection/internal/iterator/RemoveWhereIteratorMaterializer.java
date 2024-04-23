@@ -51,7 +51,7 @@ public class RemoveWhereIteratorMaterializer<E> extends AbstractIteratorMaterial
       final IndexedPredicate<? super E> predicate = this.predicate;
       while (wrapped.materializeHasNext()) {
         final E element = wrapped.materializeNext();
-        if (predicate.test(pos++, element)) {
+        if (!predicate.test(pos++, element)) {
           next = element;
           hasNext = true;
           return true;

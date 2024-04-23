@@ -15,10 +15,11 @@
  */
 package sparx.collection.internal.iterator;
 
-import java.util.ArrayList;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.list.ListMaterializer;
+import sparx.util.DequeueList;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 
 public class EndsWithIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
@@ -78,9 +79,13 @@ public class EndsWithIteratorMaterializer<E> implements IteratorMaterializer<Boo
         final IteratorMaterializer<E> wrapped = this.wrapped;
         final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
         final int elementsSize = elementsMaterializer.materializeSize();
-        final ArrayList<E> wrappedElements = new ArrayList<E>(elementsSize);
-        while (wrappedElements.size() < elementsSize && wrapped.materializeHasNext()) {
+        final DequeueList<E> wrappedElements = new DequeueList<E>(
+            SizeOverflowException.safeCast((long) elementsSize + 1));
+        while (wrapped.materializeHasNext()) {
           wrappedElements.add(wrapped.materializeNext());
+          if (wrappedElements.size() > elementsSize) {
+            wrappedElements.removeFirst();
+          }
         }
         final int wrappedSize = wrappedElements.size();
         if (wrappedSize < elementsSize) {

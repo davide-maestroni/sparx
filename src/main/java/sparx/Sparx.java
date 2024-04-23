@@ -747,8 +747,7 @@ public class Sparx {
           return Iterator.of(false);
         }
         return new Iterator<Boolean>(
-            new ExistsIteratorMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
-                false));
+            new ExistsIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate), false));
       }
 
       @Override

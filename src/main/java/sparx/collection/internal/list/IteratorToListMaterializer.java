@@ -139,7 +139,7 @@ public class IteratorToListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public @NotNull Iterator<E> materializeIterator() {
-      return iterator;
+      return new ListMaterializerIterator<E>(this);
     }
 
     @Override

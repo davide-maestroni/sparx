@@ -89,6 +89,29 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> implements IteratorMate
             found = true;
             last = index;
             elementsIterator = elementsMaterializer.materializeIterator();
+            boolean matches = false;
+            while (!queue.isEmpty() && !matches) {
+              ++index;
+              queue.pop();
+              matches = true;
+              elementsIterator = elementsMaterializer.materializeIterator();
+              for (final E e : queue) {
+                if (!wrapped.materializeHasNext()) {
+                  last = index - queue.size();
+                  elementsIterator = elementsMaterializer.materializeIterator();
+                  break;
+                }
+                final Object right = elementsIterator.next();
+                if (e != right && (e == null || !e.equals(right))) {
+                  matches = false;
+                  break;
+                }
+              }
+            }
+            if (!matches) {
+              elementsIterator = elementsMaterializer.materializeIterator();
+            }
+            ++index;
             continue;
           }
           final E left = wrapped.materializeNext();
