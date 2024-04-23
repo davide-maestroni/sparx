@@ -52,6 +52,9 @@ import sparx.collection.internal.iterator.FlatMapFirstWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.FlatMapIteratorMaterializer;
 import sparx.collection.internal.iterator.FlatMapLastWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.FlatMapWhereIteratorMaterializer;
+import sparx.collection.internal.iterator.FoldLeftIteratorMaterializer;
+import sparx.collection.internal.iterator.FoldRightIteratorMaterializer;
+import sparx.collection.internal.iterator.GroupIteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
@@ -282,6 +285,12 @@ public class Sparx {
 
       private static final Iterator<?> EMPTY_ITERATOR = new Iterator<Object>(
           EmptyIteratorMaterializer.instance());
+      private static final Function<? extends java.util.List<?>, ? extends Iterator<?>> FROM_JAVA_LIST = new Function<java.util.List<Object>, Iterator<Object>>() {
+        @Override
+        public Iterator<Object> apply(final java.util.List<Object> param) {
+          return new Iterator<Object>(new ListToIteratorMaterializer<Object>(param));
+        }
+      };
 
       private final IteratorMaterializer<E> materializer;
 
@@ -1058,6 +1067,58 @@ public class Sparx {
         return new Iterator<E>(
             new FlatMapWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
                 getElementToMaterializer(mapper)));
+      }
+
+      @Override
+      public @NotNull <F> Iterator<F> fold(final F identity,
+          @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+        return foldLeft(identity, operation);
+      }
+
+      @Override
+      public @NotNull <F> Iterator<F> foldLeft(final F identity,
+          @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of(identity);
+        }
+        return new Iterator<F>(
+            new FoldLeftIteratorMaterializer<E, F>(materializer, identity, operation));
+      }
+
+      @Override
+      public @NotNull <F> Iterator<F> foldRight(final F identity,
+          @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of(identity);
+        }
+        return new Iterator<F>(
+            new FoldRightIteratorMaterializer<E, F>(materializer, identity, operation));
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public @NotNull Iterator<? extends Iterator<E>> group(final int maxSize) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<Iterator<E>>(
+            new GroupIteratorMaterializer<E, Iterator<E>>(materializer, maxSize,
+                (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public @NotNull Iterator<? extends Iterator<E>> group(final int size, final E padding) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<Iterator<E>>(
+            new GroupIteratorMaterializer<E, Iterator<E>>(materializer, size, padding,
+                (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
       }
 
       @Override

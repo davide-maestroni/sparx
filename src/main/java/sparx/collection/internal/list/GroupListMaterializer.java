@@ -38,10 +38,10 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
         Require.positive(maxSize, "maxSize"), Require.notNull(mapper, "mapper"));
   }
 
-  public GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
+  public GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int size,
       final E padding, @NotNull final Function<? super List<E>, ? extends L> mapper) {
     state = new ImmaterialPaddingState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxSize, "maxSize"), padding, Require.notNull(mapper, "mapper"));
+        Require.positive(size, "size"), padding, Require.notNull(mapper, "mapper"));
   }
 
   @Override
@@ -84,17 +84,17 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
 
     private final ArrayList<L> elements = new ArrayList<L>();
     private final Function<? super List<E>, ? extends L> mapper;
-    private final int maxSize;
     private final AtomicInteger modCount = new AtomicInteger();
     private final E padding;
+    private final int size;
     private final ListMaterializer<E> wrapped;
 
     private int elementsCount;
 
-    private ImmaterialPaddingState(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
+    private ImmaterialPaddingState(@NotNull final ListMaterializer<E> wrapped, final int size,
         final E padding, @NotNull final Function<? super List<E>, ? extends L> mapper) {
       this.wrapped = wrapped;
-      this.maxSize = maxSize;
+      this.size = size;
       this.padding = padding;
       this.mapper = mapper;
     }
@@ -102,18 +102,18 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
     @Override
     public boolean canMaterializeElement(final int index) {
       return index >= 0 && wrapped.canMaterializeElement(
-          IndexOverflowException.safeCast((long) index * maxSize));
+          IndexOverflowException.safeCast((long) index * size));
     }
 
     @Override
     public int knownSize() {
       final int knownSize = wrapped.knownSize();
       if (knownSize > 0) {
-        final long maxSize = this.maxSize;
-        if (knownSize < maxSize) {
-          return knownSize;
+        final long size = this.size;
+        if (knownSize < size) {
+          return 1;
         }
-        return SizeOverflowException.safeCast((knownSize + (maxSize >> 1)) / maxSize);
+        return SizeOverflowException.safeCast((knownSize + (size >> 1)) / size);
       }
       return -1;
     }
@@ -123,9 +123,9 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
       if (index < 0) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
-      final long maxSize = this.maxSize;
+      final long size = this.size;
       final ListMaterializer<E> wrapped = this.wrapped;
-      final long wrappedIndex = index * maxSize;
+      final long wrappedIndex = index * size;
       if (wrappedIndex >= Integer.MAX_VALUE || !wrapped.canMaterializeElement((int) wrappedIndex)) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
@@ -139,13 +139,13 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
-        final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + maxSize - 1);
+        final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + size - 1);
         final ArrayList<E> chunk = new ArrayList<E>();
         for (int i = (int) wrappedIndex; i <= endIndex && wrapped.canMaterializeElement(i); ++i) {
           chunk.add(wrapped.materializeElement(i));
         }
         final E padding = this.padding;
-        while (chunk.size() < maxSize) {
+        while (chunk.size() < size) {
           chunk.add(padding);
         }
         if (expectedCount != modCount.get()) {
@@ -159,7 +159,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();
         }
-        if (++elementsCount == (wrapped.knownSize() + maxSize - 1) / maxSize) {
+        if (++elementsCount == (wrapped.knownSize() + size - 1) / size) {
           state = new ListToListMaterializer<L>(elements);
         }
         return element;
@@ -180,8 +180,8 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
 
     @Override
     public int materializeSize() {
-      final long maxSize = this.maxSize;
-      return SizeOverflowException.safeCast((wrapped.materializeSize() + (maxSize >> 1)) / maxSize);
+      final long size = this.size;
+      return SizeOverflowException.safeCast((wrapped.materializeSize() + (size >> 1)) / size);
     }
   }
 
@@ -218,6 +218,9 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
       final int knownSize = wrapped.knownSize();
       if (knownSize > 0) {
         final long maxSize = this.maxSize;
+        if (knownSize < maxSize) {
+          return 1;
+        }
         return SizeOverflowException.safeCast((knownSize + (maxSize >> 1)) / maxSize);
       }
       return -1;
