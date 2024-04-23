@@ -17,7 +17,6 @@ package sparx.collection.internal.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
-import sparx.util.UncheckedException;
 
 public class CountIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
 
@@ -67,24 +66,9 @@ public class CountIteratorMaterializer<E> implements IteratorMaterializer<Intege
 
     @Override
     public Integer materializeNext() {
-      try {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        final int knownSize = wrapped.knownSize();
-        if (knownSize >= 0) {
-          wrapped.materializeSkip(knownSize);
-          state = new ElementToIteratorMaterializer<Integer>(knownSize);
-          return knownSize;
-        }
-        int i = 0;
-        while (wrapped.materializeHasNext()) {
-          wrapped.materializeNext();
-          ++i;
-        }
-        state = new ElementToIteratorMaterializer<Integer>(i);
-        return i;
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
+      final int size = wrapped.materializeSkip(Integer.MAX_VALUE);
+      state = EmptyIteratorMaterializer.instance();
+      return size;
     }
 
     @Override

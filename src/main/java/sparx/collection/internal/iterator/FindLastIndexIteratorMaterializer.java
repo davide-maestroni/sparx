@@ -75,13 +75,13 @@ public class FindLastIndexIteratorMaterializer<E> implements IteratorMaterialize
         boolean found = false;
         int last = 0;
         int i = 0;
-        do {
+        while (wrapped.materializeHasNext()) {
           if (predicate.test(i, wrapped.materializeNext())) {
             last = i;
             found = true;
           }
           ++i;
-        } while (wrapped.materializeHasNext());
+        }
         if (found) {
           state = new ElementToIteratorMaterializer<Integer>(last);
           return true;

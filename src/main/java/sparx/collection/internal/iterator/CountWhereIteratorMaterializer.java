@@ -79,14 +79,13 @@ public class CountWhereIteratorMaterializer<E> implements IteratorMaterializer<I
         int i = 0;
         int count = 0;
         while (wrapped.materializeHasNext()) {
-          wrapped.materializeNext();
           if (predicate.test(i, wrapped.materializeNext())) {
             ++count;
           }
           ++i;
         }
-        state = new ElementToIteratorMaterializer<Integer>(count);
-        return i;
+        state = EmptyIteratorMaterializer.instance();
+        return count;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }

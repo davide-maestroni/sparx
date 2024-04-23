@@ -56,9 +56,6 @@ public class DropWhileIteratorMaterializer<E> implements IteratorMaterializer<E>
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
-    private E next;
-    private boolean hasNext;
-
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;

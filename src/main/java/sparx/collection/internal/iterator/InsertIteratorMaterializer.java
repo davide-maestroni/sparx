@@ -53,8 +53,7 @@ public class InsertIteratorMaterializer<E> implements IteratorMaterializer<E> {
     private final E element;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        final E element) {
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final E element) {
       this.wrapped = wrapped;
       this.element = element;
     }
@@ -81,10 +80,10 @@ public class InsertIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
     @Override
     public int materializeSkip(final int count) {
-      if (count <= 0) {
-        return 0;
+      if (count > 0) {
+        return (state = wrapped).materializeSkip(count - 1) + 1;
       }
-      return (state = wrapped).materializeSkip(count - 1) + 1;
+      return 0;
     }
   }
 }

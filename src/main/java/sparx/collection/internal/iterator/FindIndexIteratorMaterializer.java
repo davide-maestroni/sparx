@@ -73,13 +73,13 @@ public class FindIndexIteratorMaterializer<E> implements IteratorMaterializer<In
         final IteratorMaterializer<E> wrapped = this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
         int i = 0;
-        do {
+        while (wrapped.materializeHasNext()) {
           if (predicate.test(i, wrapped.materializeNext())) {
             state = new ElementToIteratorMaterializer<Integer>(i);
             return true;
           }
           ++i;
-        } while (wrapped.materializeHasNext());
+        }
         state = EmptyIteratorMaterializer.instance();
         return false;
       } catch (final Exception e) {

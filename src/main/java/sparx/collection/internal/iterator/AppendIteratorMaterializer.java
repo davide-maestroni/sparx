@@ -18,6 +18,7 @@ package sparx.collection.internal.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 
 public class AppendIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
@@ -36,7 +37,7 @@ public class AppendIteratorMaterializer<E> implements IteratorMaterializer<E> {
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
-      return knownSize + (consumed ? 0 : 1);
+      return SizeOverflowException.safeCast((long) knownSize + (consumed ? 0 : 1));
     }
     return -1;
   }

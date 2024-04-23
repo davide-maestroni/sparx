@@ -17,6 +17,7 @@ package sparx.collection.internal.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 
 public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
@@ -67,7 +68,7 @@ public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E>
       if (knownSize >= 0) {
         final int elementsSize = elementsMaterializer.knownSize();
         if (elementsSize >= 0) {
-          return knownSize + elementsSize;
+          return SizeOverflowException.safeCast((long) knownSize + elementsSize);
         }
       }
       return -1;
@@ -92,14 +93,14 @@ public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E>
 
     @Override
     public int materializeSkip(final int count) {
-      if (count <= 0) {
-        return 0;
+      if (count > 0) {
+        final int skipped = wrapped.materializeSkip(count);
+        if (skipped < count) {
+          return skipped + (state = elementsMaterializer).materializeSkip(count - skipped);
+        }
+        return skipped;
       }
-      final int skipped = wrapped.materializeSkip(count);
-      if (skipped < count) {
-        return skipped + (state = elementsMaterializer).materializeSkip(count - skipped);
-      }
-      return skipped;
+      return 0;
     }
   }
 }

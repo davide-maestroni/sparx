@@ -71,13 +71,13 @@ public class FlatMapIteratorMaterializer<E, F> implements IteratorMaterializer<F
 
   @Override
   public int materializeSkip(final int count) {
-    if (count <= 0) {
-      return 0;
+    if (count > 0) {
+      int skipped = 0;
+      while (skipped < count && materializeHasNext()) {
+        skipped += materializer.materializeSkip(count - skipped);
+      }
+      return skipped;
     }
-    int skipped = 0;
-    while (skipped < count && materializeHasNext()) {
-      skipped += materializer.materializeSkip(count - skipped);
-    }
-    return skipped;
+    return 0;
   }
 }

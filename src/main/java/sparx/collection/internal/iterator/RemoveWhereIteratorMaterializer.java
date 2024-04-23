@@ -26,8 +26,8 @@ public class RemoveWhereIteratorMaterializer<E> extends AbstractIteratorMaterial
   private final IndexedPredicate<? super E> predicate;
   private final IteratorMaterializer<E> wrapped;
 
-  private E next;
   private boolean hasNext;
+  private E next;
   private int pos;
 
   public RemoveWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
@@ -69,6 +69,8 @@ public class RemoveWhereIteratorMaterializer<E> extends AbstractIteratorMaterial
       throw new NoSuchElementException();
     }
     hasNext = false;
+    final E next = this.next;
+    this.next = null;
     return next;
   }
 

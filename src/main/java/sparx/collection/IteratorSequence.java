@@ -304,7 +304,14 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
       @NotNull Function<? super T, E> mapper);
 
   @NotNull
+  <T extends Throwable> IteratorSequence<E> mapExceptionally(@NotNull Class<T> exceptionType,
+      @NotNull IndexedFunction<? super T, E> mapper);
+
+  @NotNull
   IteratorSequence<E> mapExceptionally(@NotNull Function<? super Throwable, E> mapper);
+
+  @NotNull
+  IteratorSequence<E> mapExceptionally(@NotNull IndexedFunction<? super Throwable, E> mapper);
 
   @Override
   @NotNull
