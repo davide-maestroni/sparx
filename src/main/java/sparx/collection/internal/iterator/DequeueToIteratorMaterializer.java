@@ -21,7 +21,7 @@ import sparx.util.Require;
 
 public class DequeueToIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
-  private final DequeueList<E elements;
+  private final DequeueList<E> elements;
 
   public DequeueToIteratorMaterializer(@NotNull final DequeueList<E> elements) {
     this.elements = Require.notNull(elements, "elements");
