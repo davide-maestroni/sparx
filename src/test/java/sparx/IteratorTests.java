@@ -867,4 +867,245 @@ public class IteratorTests {
     assertThrows(NoSuchElementException.class,
         () -> Iterator.of().flatMapWhere(i -> true, i -> List.of()).drop(2).first());
   }
+
+  @Test
+  public void foldLeft() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, 5);
+    assertFalse(itr.get().foldLeft(1, Integer::sum).isEmpty());
+    assertEquals(1, itr.get().foldLeft(1, Integer::sum).size());
+    assertEquals(List.of(16), itr.get().foldLeft(1, Integer::sum).toList());
+    assertEquals(16, itr.get().foldLeft(1, Integer::sum).first());
+
+    assertEquals(java.util.List.of(1, 2),
+        Iterator.of(1, 2).foldLeft(List.of(), List::append).first());
+
+    assertFalse(Iterator.<Integer>of().foldLeft(1, Integer::sum).isEmpty());
+    assertEquals(1, Iterator.<Integer>of().foldLeft(1, Integer::sum).size());
+    assertEquals(List.of(1), Iterator.<Integer>of().foldLeft(1, Integer::sum).toList());
+    assertEquals(1, Iterator.<Integer>of().foldLeft(1, Integer::sum).first());
+    assertEquals(List.of(), Iterator.of().foldLeft(List.of(), List::append).first());
+  }
+
+  @Test
+  public void foldRight() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, 5);
+    assertFalse(itr.get().foldRight(1, Integer::sum).isEmpty());
+    assertEquals(1, itr.get().foldRight(1, Integer::sum).size());
+    assertEquals(List.of(16), itr.get().foldRight(1, Integer::sum).toList());
+    assertEquals(16, itr.get().foldRight(1, Integer::sum).first());
+
+    assertEquals(List.of(2, 1),
+        Iterator.of(1, 2).foldRight(List.of(), (i, li) -> li.append(i)).first());
+
+    assertFalse(Iterator.<Integer>of().foldRight(1, Integer::sum).isEmpty());
+    assertEquals(1, Iterator.<Integer>of().foldRight(1, Integer::sum).size());
+    assertEquals(List.of(1), Iterator.<Integer>of().foldRight(1, Integer::sum).toList());
+    assertEquals(1, Iterator.<Integer>of().foldRight(1, Integer::sum).first());
+    assertEquals(List.of(), Iterator.of().foldRight(List.of(), (i, li) -> li.append(i)).first());
+  }
+
+  @Test
+  public void group() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, 5);
+    assertThrows(IllegalArgumentException.class, () -> itr.get().group(0));
+    assertFalse(itr.get().group(1).isEmpty());
+    assertEquals(5, itr.get().group(1).size());
+    assertEquals(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)),
+        itr.get().group(1).toList().map(Iterator::toList));
+    assertEquals(List.of(3), itr.get().group(1).drop(2).first().toList());
+    assertThrows(NoSuchElementException.class, () -> itr.get().group(1).drop(5).first());
+    assertFalse(itr.get().group(2).isEmpty());
+    assertEquals(3, itr.get().group(2).size());
+    assertEquals(List.of(List.of(1, 2), List.of(3, 4), List.of(5)),
+        itr.get().group(2).toList().map(Iterator::toList));
+    assertEquals(List.of(3, 4), itr.get().group(2).drop(1).first().toList());
+    assertThrows(NoSuchElementException.class, () -> itr.get().group(2).drop(3).first());
+    assertFalse(itr.get().group(3).isEmpty());
+    assertEquals(2, itr.get().group(3).size());
+    assertEquals(List.of(List.of(1, 2, 3), List.of(4, 5)),
+        itr.get().group(3).toList().map(Iterator::toList));
+    assertEquals(List.of(4, 5), itr.get().group(3).drop(1).first().toList());
+    assertThrows(NoSuchElementException.class, () -> itr.get().group(3).drop(2).first());
+    assertFalse(itr.get().group(10).isEmpty());
+    assertEquals(1, itr.get().group(10).size());
+    assertEquals(List.of(List.of(1, 2, 3, 4, 5)),
+        itr.get().group(10).toList().map(Iterator::toList));
+    assertEquals(List.of(1, 2, 3, 4, 5), itr.get().group(10).first().toList());
+    assertThrows(NoSuchElementException.class, () -> itr.get().group(10).drop(1).first());
+  }
+
+  @Test
+  public void groupWithPadding() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, 5);
+    assertThrows(IllegalArgumentException.class, () -> itr.get().group(0, null));
+    assertFalse(itr.get().group(1, null).isEmpty());
+    assertEquals(5, itr.get().group(1, null).size());
+    assertEquals(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)),
+        itr.get().group(1, null).toList().map(Iterator::toList));
+    assertEquals(List.of(3), itr.get().group(1, null).drop(2).first().toList());
+    assertThrows(NoSuchElementException.class, () -> itr.get().group(1, null).drop(5).first());
+    assertFalse(itr.get().group(2, null).isEmpty());
+    assertEquals(3, itr.get().group(2, null).size());
+    assertEquals(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)),
+        itr.get().group(2, null).toList().map(Iterator::toList));
+    assertEquals(List.of(3, 4), itr.get().group(2, null).drop(1).first().toList());
+    assertThrows(NoSuchElementException.class, () -> itr.get().group(2, null).drop(3).first());
+    assertFalse(itr.get().group(3, -1).isEmpty());
+    assertEquals(2, itr.get().group(3, -1).size());
+    assertEquals(List.of(List.of(1, 2, 3), List.of(4, 5, -1)),
+        itr.get().group(3, -1).toList().map(Iterator::toList));
+    assertEquals(List.of(4, 5, -1), itr.get().group(3, -1).drop(1).first().toList());
+    assertThrows(NoSuchElementException.class, () -> itr.get().group(3, -1).drop(2).first());
+    assertFalse(itr.get().group(10, -1).isEmpty());
+    assertEquals(1, itr.get().group(10, -1).size());
+    assertEquals(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)),
+        itr.get().group(10, -1).toList().map(Iterator::toList));
+    assertEquals(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1),
+        itr.get().group(10, -1).first().toList());
+    assertThrows(NoSuchElementException.class, () -> itr.get().group(10, -1).drop(1).first());
+  }
+
+  @Test
+  public void includes() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, null, 5);
+    assertFalse(itr.get().includes(null).isEmpty());
+    assertEquals(1, itr.get().includes(null).size());
+    assertTrue(itr.get().includes(null).first());
+    assertEquals(List.of(true), itr.get().includes(null).toList());
+    assertFalse(itr.get().includes(0).isEmpty());
+    assertEquals(1, itr.get().includes(0).size());
+    assertFalse(itr.get().includes(0).first());
+    assertEquals(List.of(false), itr.get().includes(0).toList());
+    assertFalse(Iterator.of().includes(0).isEmpty());
+    assertEquals(1, Iterator.of().includes(0).size());
+    assertFalse(Iterator.of().includes(0).first());
+    assertEquals(List.of(false), Iterator.of().includes(null).toList());
+  }
+
+  @Test
+  public void includesAll() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, null, 5);
+    assertFalse(itr.get().includesAll(List.of(null, 1)).isEmpty());
+    assertEquals(1, itr.get().includesAll(List.of(null, 1)).size());
+    assertTrue(itr.get().includesAll(List.of(null, 1)).first());
+    assertEquals(List.of(true), itr.get().includesAll(List.of(null, 1)).toList());
+    assertFalse(itr.get().includesAll(List.of(0, 1)).isEmpty());
+    assertEquals(1, itr.get().includesAll(List.of(0, 1)).size());
+    assertFalse(itr.get().includesAll(List.of(0, 1)).first());
+    assertEquals(List.of(false), itr.get().includesAll(List.of(0, 1)).toList());
+    assertFalse(itr.get().includesAll(List.of()).isEmpty());
+    assertEquals(1, itr.get().includesAll(List.of()).size());
+    assertTrue(itr.get().includesAll(List.of()).first());
+    assertEquals(List.of(true), itr.get().includesAll(List.of()).toList());
+    assertFalse(Iterator.of().includesAll(List.of(null, 1)).isEmpty());
+    assertEquals(1, Iterator.of().includesAll(List.of(null, 1)).size());
+    assertFalse(Iterator.of().includesAll(List.of(null, 1)).first());
+    assertEquals(List.of(false), Iterator.of().includesAll(List.of(null, 1)).toList());
+    assertFalse(Iterator.of().includesAll(List.of()).isEmpty());
+    assertEquals(1, Iterator.of().includesAll(List.of()).size());
+    assertTrue(Iterator.of().includesAll(List.of()).first());
+    assertEquals(List.of(true), Iterator.of().includesAll(List.of()).toList());
+  }
+
+  @Test
+  public void includesSlice() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, null, 5);
+    assertFalse(itr.get().includesSlice(List.of(3, null)).isEmpty());
+    assertEquals(1, itr.get().includesSlice(List.of(3, null)).size());
+    assertTrue(itr.get().includesSlice(List.of(3, null)).first());
+    assertEquals(List.of(true), itr.get().includesSlice(List.of(3, null)).toList());
+    assertFalse(itr.get().includesSlice(List.of(null, 3)).isEmpty());
+    assertEquals(1, itr.get().includesSlice(List.of(null, 3)).size());
+    assertFalse(itr.get().includesSlice(List.of(null, 3)).first());
+    assertEquals(List.of(false), itr.get().includesSlice(List.of(null, 3)).toList());
+    assertFalse(itr.get().includesSlice(List.of()).isEmpty());
+    assertEquals(1, itr.get().includesSlice(List.of()).size());
+    assertTrue(itr.get().includesSlice(List.of()).first());
+    assertEquals(List.of(true), itr.get().includesSlice(List.of()).toList());
+    assertFalse(Iterator.of().includesSlice(List.of(null, 1)).isEmpty());
+    assertEquals(1, Iterator.of().includesSlice(List.of(null, 1)).size());
+    assertFalse(Iterator.of().includesSlice(List.of(null, 1)).first());
+    assertEquals(List.of(false), Iterator.of().includesSlice(List.of(null, 1)).toList());
+    assertFalse(Iterator.of().includesSlice(List.of()).isEmpty());
+    assertEquals(1, Iterator.of().includesSlice(List.of()).size());
+    assertTrue(Iterator.of().includesSlice(List.of()).first());
+    assertEquals(List.of(true), Iterator.of().includesSlice(List.of()).toList());
+  }
+
+  @Test
+  public void insertAfter() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3);
+    assertFalse(itr.get().insertAfter(5, null).isEmpty());
+    assertEquals(3, itr.get().insertAfter(5, null).size());
+    assertEquals(List.of(1, 2, 3), itr.get().insertAfter(5, null).toList());
+    assertFalse(itr.get().insertAfter(3, null).isEmpty());
+    assertEquals(4, itr.get().insertAfter(3, null).size());
+    assertEquals(List.of(1, 2, 3, null), itr.get().insertAfter(3, null).toList());
+    assertFalse(itr.get().insertAfter(2, null).isEmpty());
+    assertEquals(4, itr.get().insertAfter(2, null).size());
+    assertEquals(List.of(1, 2, null, 3), itr.get().insertAfter(2, null).toList());
+    assertFalse(itr.get().insertAfter(1, null).isEmpty());
+    assertEquals(4, itr.get().insertAfter(1, null).size());
+    assertEquals(List.of(1, null, 2, 3), itr.get().insertAfter(1, null).toList());
+    assertFalse(itr.get().insertAfter(0, null).isEmpty());
+    assertEquals(4, itr.get().insertAfter(0, null).size());
+    assertEquals(List.of(null, 1, 2, 3), itr.get().insertAfter(0, null).toList());
+    assertFalse(itr.get().insertAfter(-7, null).isEmpty());
+    assertEquals(3, itr.get().insertAfter(-7, null).size());
+    assertEquals(List.of(1, 2, 3), itr.get().insertAfter(-7, null).toList());
+
+    assertTrue(Iterator.of().insertAfter(5, null).isEmpty());
+    assertEquals(0, Iterator.of().insertAfter(5, null).size());
+    assertEquals(List.of(), Iterator.of().insertAfter(5, null).toList());
+    assertFalse(Iterator.of().insertAfter(0, null).isEmpty());
+    assertEquals(1, Iterator.of().insertAfter(0, null).size());
+    assertEquals(List.of(null), Iterator.of().insertAfter(0, null).toList());
+
+    Iterable<Object> iterable = () -> List.of().iterator();
+    assertTrue(Iterator.wrap(iterable).insertAfter(5, null).isEmpty());
+    assertEquals(0, Iterator.wrap(iterable).insertAfter(5, null).size());
+    assertEquals(List.of(), Iterator.wrap(iterable).insertAfter(5, null).toList());
+    assertFalse(Iterator.wrap(iterable).insertAfter(0, null).isEmpty());
+    assertEquals(1, Iterator.wrap(iterable).insertAfter(0, null).size());
+    assertEquals(List.of(null), Iterator.wrap(iterable).insertAfter(0, null).toList());
+  }
+
+  @Test
+  public void insertAllAfter() {
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3);
+    assertFalse(itr.get().insertAllAfter(5, List.of(null, 5)).isEmpty());
+    assertEquals(3, itr.get().insertAllAfter(5, List.of(null, 5)).size());
+    assertEquals(List.of(1, 2, 3), itr.get().insertAllAfter(5, List.of(null, 5)).toList());
+    assertFalse(itr.get().insertAllAfter(3, List.of(null, 5)).isEmpty());
+    assertEquals(5, itr.get().insertAllAfter(3, List.of(null, 5)).size());
+    assertEquals(List.of(1, 2, 3, null, 5), itr.get().insertAllAfter(3, List.of(null, 5)).toList());
+    assertFalse(itr.get().insertAllAfter(2, List.of(null, 5)).isEmpty());
+    assertEquals(5, itr.get().insertAllAfter(2, List.of(null, 5)).size());
+    assertEquals(List.of(1, 2, null, 5, 3), itr.get().insertAllAfter(2, List.of(null, 5)).toList());
+    assertFalse(itr.get().insertAllAfter(1, List.of(null, 5)).isEmpty());
+    assertEquals(5, itr.get().insertAllAfter(1, List.of(null, 5)).size());
+    assertEquals(List.of(1, null, 5, 2, 3), itr.get().insertAllAfter(1, List.of(null, 5)).toList());
+    assertFalse(itr.get().insertAllAfter(0, List.of(null, 5)).isEmpty());
+    assertEquals(5, itr.get().insertAllAfter(0, List.of(null, 5)).size());
+    assertEquals(List.of(null, 5, 1, 2, 3), itr.get().insertAllAfter(0, List.of(null, 5)).toList());
+    assertFalse(itr.get().insertAllAfter(-7, List.of(null, 5)).isEmpty());
+    assertEquals(3, itr.get().insertAllAfter(-7, List.of(null, 5)).size());
+    assertEquals(List.of(1, 2, 3), itr.get().insertAllAfter(-7, List.of(null, 5)).toList());
+
+    assertTrue(Iterator.of().insertAllAfter(5, List.of(null, 5)).isEmpty());
+    assertEquals(0, Iterator.of().insertAllAfter(5, List.of(null, 5)).size());
+    assertEquals(List.of(), Iterator.of().insertAllAfter(5, List.of(null, 5)).toList());
+    assertFalse(Iterator.of().insertAllAfter(0, List.of(null, 5)).isEmpty());
+    assertEquals(2, Iterator.of().insertAllAfter(0, List.of(null, 5)).size());
+    assertEquals(List.of(null, 5), Iterator.of().insertAllAfter(0, List.of(null, 5)).toList());
+
+    Iterable<Object> iterable = () -> List.of().iterator();
+    assertTrue(Iterator.wrap(iterable).insertAllAfter(5, List.of(null, 5)).isEmpty());
+    assertEquals(0, Iterator.wrap(iterable).insertAllAfter(5, List.of(null, 5)).size());
+    assertEquals(List.of(), Iterator.wrap(iterable).insertAllAfter(5, List.of(null, 5)).toList());
+    assertFalse(Iterator.wrap(iterable).insertAllAfter(0, List.of(null, 5)).isEmpty());
+    assertEquals(2, Iterator.wrap(iterable).insertAllAfter(0, List.of(null, 5)).size());
+    assertEquals(List.of(null, 5),
+        Iterator.wrap(iterable).insertAllAfter(0, List.of(null, 5)).toList());
+  }
 }

@@ -32,7 +32,8 @@ public class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean>
 
   public IncludesAllListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Iterable<?> elements) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), elements.iterator());
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+        Require.notNull(elements, "elements"));
   }
 
   @Override
@@ -96,14 +97,14 @@ public class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean>
 
   private class ImmaterialState implements State {
 
-    private final Iterator<?> elementsIterator;
+    private final Iterable<?> elements;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final Iterator<?> elementsIterator) {
+        @NotNull final Iterable<?> elements) {
       this.wrapped = wrapped;
-      this.elementsIterator = elementsIterator;
+      this.elements = elements;
     }
 
     @Override
@@ -113,9 +114,8 @@ public class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean>
       }
       try {
         final HashSet<Object> elements = new HashSet<Object>();
-        final Iterator<?> elementsIterator = this.elementsIterator;
-        while (elementsIterator.hasNext()) {
-          elements.add(elementsIterator.next());
+        for (final Object element : this.elements) {
+          elements.add(element);
         }
         if (elements.isEmpty()) {
           state = TRUE_STATE;

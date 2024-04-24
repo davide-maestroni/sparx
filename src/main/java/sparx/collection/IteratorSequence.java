@@ -270,13 +270,13 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   IteratorSequence<E> insert(E element);
 
   @NotNull
-  IteratorSequence<E> insertAll(@NotNull Iterable<E> elements);
-
-  @NotNull
-  IteratorSequence<E> insertAllAfter(int numElements, @NotNull Iterable<? extends E> patch);
-
-  @NotNull
   IteratorSequence<E> insertAfter(int numElements, E element);
+
+  @NotNull
+  IteratorSequence<E> insertAll(@NotNull Iterable<? extends E> elements);
+
+  @NotNull
+  IteratorSequence<E> insertAllAfter(int numElements, @NotNull Iterable<? extends E> elements);
 
   @Override
   @NotNull

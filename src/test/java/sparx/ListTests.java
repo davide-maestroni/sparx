@@ -1002,7 +1002,7 @@ public class ListTests {
   }
 
   @Test
-  public void groupFiller() {
+  public void groupWithPadding() {
     var l = List.of(1, 2, 3, 4, 5);
     assertThrows(IllegalArgumentException.class, () -> l.group(0, null));
     assertFalse(l.group(1, null).isEmpty());

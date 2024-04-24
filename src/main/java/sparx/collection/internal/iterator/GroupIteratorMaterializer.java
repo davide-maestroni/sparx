@@ -98,7 +98,7 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
     @Override
     public I materializeNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.materializeHasNext()) {
+      if (!wrapped.materializeHasNext()) {
         throw new NoSuchElementException();
       }
       try {
@@ -165,7 +165,7 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
     @Override
     public I materializeNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.materializeHasNext()) {
+      if (!wrapped.materializeHasNext()) {
         throw new NoSuchElementException();
       }
       try {

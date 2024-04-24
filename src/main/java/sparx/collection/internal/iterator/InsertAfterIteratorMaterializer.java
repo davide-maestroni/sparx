@@ -17,18 +17,16 @@ package sparx.collection.internal.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
-import sparx.util.UncheckedException;
-import sparx.util.function.IndexedFunction;
+import sparx.util.SizeOverflowException;
 
-public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class InsertAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
-  public FlatMapAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int numElements,
-      @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
+  public InsertAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      final int numElements, final E element) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNegative(numElements, "numElements"), Require.notNull(mapper, "mapper"));
+        Require.notNegative(numElements, "numElements"), element);
   }
 
   @Override
@@ -53,32 +51,43 @@ public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper;
+    private final E element;
     private final int numElements;
     private final IteratorMaterializer<E> wrapped;
 
     private int pos;
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int numElements,
-        @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
+        final E element) {
       this.wrapped = wrapped;
       this.numElements = numElements;
-      this.mapper = mapper;
+      this.element = element;
     }
 
     @Override
     public int knownSize() {
+      final int knownSize = wrapped.knownSize();
+      if (knownSize >= 0) {
+        if (knownSize >= numElements - pos) {
+          return SizeOverflowException.safeCast((long) knownSize + 1);
+        }
+        return knownSize;
+      }
       return -1;
     }
 
     @Override
     public boolean materializeHasNext() {
-      return materializer().materializeHasNext();
+      return pos == numElements || wrapped.materializeHasNext();
     }
 
     @Override
     public E materializeNext() {
-      final E next = materializer().materializeNext();
+      if (pos == numElements) {
+        state = wrapped;
+        return element;
+      }
+      final E next = wrapped.materializeNext();
       ++pos;
       return next;
     }
@@ -88,34 +97,14 @@ public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer
       if (count > 0) {
         final int numElements = this.numElements;
         final int pos = this.pos;
-        final int remaining = numElements - pos;
-        if (count <= remaining) {
+        if (count <= numElements - pos) {
           final int skipped = wrapped.materializeSkip(count);
           this.pos += skipped;
           return skipped;
         }
-        int skipped = wrapped.materializeSkip(remaining);
-        this.pos += skipped;
-        return skipped + materializer().materializeSkip(count - skipped);
+        return (state = wrapped).materializeSkip(count - 1) + 1;
       }
       return 0;
-    }
-
-    private @NotNull IteratorMaterializer<E> materializer() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      final int pos = this.pos;
-      if (pos == numElements) {
-        if (wrapped.materializeHasNext()) {
-          try {
-            final IteratorMaterializer<E> materializer = mapper.apply(pos,
-                wrapped.materializeNext());
-            return (state = new AppendAllIteratorMaterializer<E>(materializer, wrapped));
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-      }
-      return wrapped;
     }
   }
 }
