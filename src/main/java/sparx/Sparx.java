@@ -55,6 +55,12 @@ import sparx.collection.internal.iterator.FlatMapWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.FoldLeftIteratorMaterializer;
 import sparx.collection.internal.iterator.FoldRightIteratorMaterializer;
 import sparx.collection.internal.iterator.GroupIteratorMaterializer;
+import sparx.collection.internal.iterator.IncludesAllIteratorMaterializer;
+import sparx.collection.internal.iterator.IncludesSliceIteratorMaterializer;
+import sparx.collection.internal.iterator.InsertAfterIteratorMaterializer;
+import sparx.collection.internal.iterator.InsertAllAfterIteratorMaterializer;
+import sparx.collection.internal.iterator.InsertAllIteratorMaterializer;
+import sparx.collection.internal.iterator.InsertIteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
@@ -1123,6 +1129,90 @@ public class Sparx {
       @Override
       public boolean hasNext() {
         return materializer.materializeHasNext();
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> includes(final Object element) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of(false);
+        }
+        return new Iterator<Boolean>(
+            new ExistsIteratorMaterializer<E>(materializer, equalsElement(element), false));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> includesAll(@NotNull final Iterable<?> elements) {
+        return new Iterator<Boolean>(
+            new IncludesAllIteratorMaterializer<E>(materializer, elements));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
+        return new Iterator<Boolean>(new IncludesSliceIteratorMaterializer<E>(materializer,
+            List.getElementsMaterializer(elements)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> insert(final E element) {
+        return new Iterator<E>(new InsertIteratorMaterializer<E>(materializer, element));
+      }
+
+      @Override
+      public @NotNull Iterator<E> insertAfter(final int numElements, final E element) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        if (numElements == 0) {
+          return insert(element);
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize > 0) {
+          if (knownSize < numElements) {
+            return this;
+          }
+          if (knownSize == numElements) {
+            return append(element);
+          }
+        }
+        return new Iterator<E>(
+            new InsertAfterIteratorMaterializer<E>(materializer, numElements, element));
+      }
+
+      @Override
+      public @NotNull Iterator<E> insertAll(@NotNull final Iterable<? extends E> elements) {
+        return new Iterator<E>(
+            new InsertAllIteratorMaterializer<E>(materializer, getElementsMaterializer(elements)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> insertAllAfter(final int numElements,
+          @NotNull final Iterable<? extends E> elements) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        if (numElements == 0) {
+          return insertAll(elements);
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize > 0) {
+          if (knownSize < numElements) {
+            return this;
+          }
+          if (knownSize == numElements) {
+            return appendAll(elements);
+          }
+        }
+        return new Iterator<E>(new InsertAllAfterIteratorMaterializer<E>(materializer, numElements,
+            getElementsMaterializer(elements)));
       }
 
       @Override
@@ -4003,9 +4093,100 @@ public class Sparx {
         return new ListIterator<E>(List.<E>of(), currentRight().min(comparator));
       }
 
+      public @NotNull ListIterator<E> moveOf(final int maxElements) {
+        if (maxElements == 0) {
+          return this;
+        }
+        final long pos = this.pos;
+        final long newPos = pos + maxElements;
+        if (newPos >= Integer.MAX_VALUE || newPos <= Integer.MIN_VALUE) {
+          throw new IndexOverflowException(newPos);
+        }
+        if ((newPos >= 0 && newPos < pos) || (newPos <= 0 && newPos > pos)) {
+          return new ListIterator<E>(left, right, (int) newPos);
+        }
+        if (newPos >= 0) {
+          final int knownSize = right.materializer.knownSize();
+          if (newPos <= knownSize) {
+            return new ListIterator<E>(left, right, (int) newPos);
+          }
+        } else {
+          final int knownSize = left.materializer.knownSize();
+          if (-newPos <= knownSize) {
+            return new ListIterator<E>(left, right, (int) newPos);
+          }
+        }
+        final List<E> newLeft;
+        if (newPos == 0) {
+          newLeft = left;
+        } else if (newPos > 0) {
+          newLeft = left.appendAll(right.take((int) newPos));
+        } else {
+          final int knownSize = left.materializer.knownSize();
+          if (knownSize >= 0) {
+            newLeft = left.take((int) (knownSize + newPos));
+          } else {
+            newLeft = left.dropRight((int) -newPos);
+          }
+        }
+        final List<E> newRight;
+        if (newPos == 0) {
+          newRight = right;
+        } else if (newPos > 0) {
+          newRight = right.drop((int) newPos);
+        } else {
+          final int knownSize = left.materializer.knownSize();
+          if (knownSize >= 0) {
+            newRight = left.drop((int) (knownSize + newPos)).appendAll(right);
+          } else {
+            newRight = left.takeRight((int) -newPos).appendAll(right);
+          }
+        }
+        return new ListIterator<E>(newLeft, newRight);
+      }
+
+      public @NotNull ListIterator<E> moveTo(final int index) {
+        Require.notNegative(index, "index");
+        int knownSize = left.materializer.knownSize();
+        if (knownSize >= 0) {
+          final int newPos = index - knownSize;
+          if (newPos < 0) {
+            return new ListIterator<E>(left, right, newPos);
+          }
+          knownSize = right.materializer.knownSize();
+          if (knownSize >= 0 && newPos <= knownSize) {
+            return new ListIterator<E>(left, right, newPos);
+          }
+        }
+        return new ListIterator<E>(left.count().flatMap(new Function<Integer, List<E>>() {
+          @Override
+          public List<E> apply(final Integer size) {
+            final int newPos = index - size;
+            if (newPos == 0) {
+              return left;
+            } else if (newPos > 0) {
+              return left.appendAll(right.take(newPos));
+            } else {
+              return left.take(size + newPos);
+            }
+          }
+        }), left.count().flatMap(new Function<Integer, List<E>>() {
+          @Override
+          public List<E> apply(final Integer size) {
+            final int newPos = index - size;
+            if (newPos == 0) {
+              return right;
+            } else if (newPos > 0) {
+              return right.drop(newPos);
+            } else {
+              return left.drop(size + newPos).appendAll(right);
+            }
+          }
+        }));
+      }
+
       @Override
       public E next() {
-        // TODO: !hasNext() + !canMaterializeElement(index) + throw new NoSuchElementException
         try {
           if (pos >= 0) {
             return right.get(pos++);
