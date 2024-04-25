@@ -69,9 +69,8 @@ public class FlatMapExceptionallyIteratorMaterializer<E> extends AbstractIterato
       return materializer.materializeNext();
     }
     try {
-      final E next = wrapped.materializeNext();
       ++pos;
-      return next;
+      return wrapped.materializeNext();
     } catch (final Throwable t) {
       try {
         final IteratorMaterializer<E> elementsMaterializer = mapper.apply(pos, t);

@@ -17,17 +17,17 @@ package sparx.collection.internal.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
-import sparx.util.SizeOverflowException;
+import sparx.util.UncheckedException;
+import sparx.util.function.IndexedFunction;
 
-public class InsertAllAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class MapAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
-  public InsertAllAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int numElements, @NotNull final IteratorMaterializer<E> elementsMaterializer) {
+  public MapAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      final int numElements, @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNegative(numElements, "numElements"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+        Require.notNegative(numElements, "numElements"), Require.notNull(mapper, "mapper"));
   }
 
   @Override
@@ -52,50 +52,40 @@ public class InsertAllAfterIteratorMaterializer<E> implements IteratorMaterializ
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final IteratorMaterializer<E> elementsMaterializer;
+    private final IndexedFunction<? super E, ? extends E> mapper;
     private final int numElements;
     private final IteratorMaterializer<E> wrapped;
 
     private int pos;
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int numElements,
-        @NotNull final IteratorMaterializer<E> elementsMaterializer) {
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
       this.wrapped = wrapped;
       this.numElements = numElements;
-      this.elementsMaterializer = elementsMaterializer;
+      this.mapper = mapper;
     }
 
     @Override
     public int knownSize() {
-      final int knownSize = wrapped.knownSize();
-      if (knownSize >= 0) {
-        if (knownSize >= numElements - pos) {
-          final int elementsSize = elementsMaterializer.knownSize();
-          if (elementsSize >= 0) {
-            return SizeOverflowException.safeCast((long) knownSize + elementsSize);
-          }
-        }
-        return knownSize;
-      }
-      return -1;
+      return wrapped.knownSize();
     }
 
     @Override
     public boolean materializeHasNext() {
-      return (pos == numElements && elementsMaterializer.materializeHasNext())
-          || wrapped.materializeHasNext();
+      return wrapped.materializeHasNext();
     }
 
     @Override
     public E materializeNext() {
+      final int pos = this.pos;
       if (pos == numElements) {
-        final IteratorMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-        if (elementsMaterializer.materializeHasNext()) {
-          return elementsMaterializer.materializeNext();
+        try {
+          return mapper.apply(pos, (state = wrapped).materializeNext());
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
         }
-        return (state = wrapped).materializeNext();
       }
-      ++pos;
+      ++this.pos;
       return wrapped.materializeNext();
     }
 
@@ -104,17 +94,12 @@ public class InsertAllAfterIteratorMaterializer<E> implements IteratorMaterializ
       if (count > 0) {
         final int numElements = this.numElements;
         final int pos = this.pos;
-        final int remaining = numElements - pos;
-        if (count <= remaining) {
+        if (count <= numElements - pos) {
           final int skipped = wrapped.materializeSkip(count);
           this.pos += skipped;
           return skipped;
         }
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        int skipped = wrapped.materializeSkip(remaining);
-        this.pos += skipped;
-        skipped += elementsMaterializer.materializeSkip(count - skipped);
-        return skipped + wrapped.materializeSkip(count - skipped);
+        return (state = wrapped).materializeSkip(count);
       }
       return 0;
     }

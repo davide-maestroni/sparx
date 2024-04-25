@@ -87,9 +87,8 @@ public class InsertAfterIteratorMaterializer<E> implements IteratorMaterializer<
         state = wrapped;
         return element;
       }
-      final E next = wrapped.materializeNext();
       ++pos;
-      return next;
+      return wrapped.materializeNext();
     }
 
     @Override

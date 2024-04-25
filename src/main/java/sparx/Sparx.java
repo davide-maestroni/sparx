@@ -65,6 +65,8 @@ import sparx.collection.internal.iterator.IteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListToIteratorMaterializer;
+import sparx.collection.internal.iterator.MapAfterIteratorMaterializer;
+import sparx.collection.internal.iterator.MapIteratorMaterializer;
 import sparx.collection.internal.iterator.RemoveWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.RepeatIteratorMaterializer;
 import sparx.collection.internal.list.AllListMaterializer;
@@ -1213,6 +1215,70 @@ public class Sparx {
         }
         return new Iterator<E>(new InsertAllAfterIteratorMaterializer<E>(materializer, numElements,
             getElementsMaterializer(elements)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> intersect(@NotNull final Iterable<?> elements) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+            elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
+            elementsNotContains(elementsMaterializer)));
+      }
+
+      @Override
+      public @NotNull <F> Iterator<F> map(@NotNull final Function<? super E, F> mapper) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<F>(
+            new MapIteratorMaterializer<E, F>(materializer, toIndexedFunction(mapper)));
+      }
+
+      @Override
+      public @NotNull <F> Iterator<F> map(@NotNull final IndexedFunction<? super E, F> mapper) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<F>(new MapIteratorMaterializer<E, F>(materializer, mapper));
+      }
+
+      @Override
+      public @NotNull Iterator<E> mapAfter(final int numElements,
+          @NotNull final Function<? super E, ? extends E> mapper) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
+          return this;
+        }
+        return new Iterator<E>(new MapAfterIteratorMaterializer<E>(materializer, numElements,
+            toIndexedFunction(mapper)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> mapAfter(final int numElements,
+          @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
+          return this;
+        }
+        return new Iterator<E>(
+            new MapAfterIteratorMaterializer<E>(materializer, numElements, mapper));
       }
 
       @Override
