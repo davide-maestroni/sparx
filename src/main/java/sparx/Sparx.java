@@ -73,6 +73,7 @@ import sparx.collection.internal.iterator.MapLastWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.MapWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.MaxIteratorMaterializer;
 import sparx.collection.internal.iterator.OrElseIteratorMaterializer;
+import sparx.collection.internal.iterator.PeekIteratorMaterializer;
 import sparx.collection.internal.iterator.RemoveWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.RepeatIteratorMaterializer;
 import sparx.collection.internal.list.AllListMaterializer;
@@ -254,6 +255,16 @@ public class Sparx {
       @Override
       public int compare(final T o1, final T o2) {
         return comparator.compare(o2, o1);
+      }
+    };
+  }
+
+  private static @NotNull <E> IndexedConsumer<E> toIndexedConsumer(
+      @NotNull final Consumer<E> consumer) {
+    return new IndexedConsumer<E>() {
+      @Override
+      public void accept(final int index, final E param) throws Exception {
+        consumer.accept(param);
       }
     };
   }
@@ -1557,7 +1568,8 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return null;
+        return new Iterator<E>(
+            new PeekIteratorMaterializer<E>(materializer, toIndexedConsumer(consumer)));
       }
 
       @Override
@@ -1566,7 +1578,7 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return null;
+        return new Iterator<E>(new PeekIteratorMaterializer<E>(materializer, consumer));
       }
 
       @Override
