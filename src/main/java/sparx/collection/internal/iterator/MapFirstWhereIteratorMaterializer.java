@@ -22,13 +22,13 @@ import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class FlatMapFirstWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class MapFirstWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
-  public FlatMapFirstWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+  public MapFirstWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate,
-      @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
+      @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"));
   }
@@ -50,7 +50,7 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends AbstractIteratorMa
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper;
+    private final IndexedFunction<? super E, ? extends E> mapper;
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
@@ -60,7 +60,7 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends AbstractIteratorMa
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.mapper = mapper;
@@ -84,9 +84,8 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends AbstractIteratorMa
           if (predicate.test(pos, next)) {
             hasNext = false;
             this.next = null;
-            final IteratorMaterializer<E> materializer = mapper.apply(pos, next);
-            return (state = new InsertAllIteratorMaterializer<E>(wrapped,
-                materializer)).materializeHasNext();
+            return (state = new InsertIteratorMaterializer<E>(wrapped,
+                mapper.apply(pos, next))).materializeHasNext();
           }
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
