@@ -71,6 +71,8 @@ import sparx.collection.internal.iterator.MapFirstWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.MapIteratorMaterializer;
 import sparx.collection.internal.iterator.MapLastWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.MapWhereIteratorMaterializer;
+import sparx.collection.internal.iterator.MaxIteratorMaterializer;
+import sparx.collection.internal.iterator.OrElseIteratorMaterializer;
 import sparx.collection.internal.iterator.RemoveWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.RepeatIteratorMaterializer;
 import sparx.collection.internal.list.AllListMaterializer;
@@ -535,7 +537,7 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return Iterator.of(true);
         }
-        return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer, predicate, true));
+        return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer, predicate));
       }
 
       @Override
@@ -545,7 +547,7 @@ public class Sparx {
           return Iterator.of(true);
         }
         return new Iterator<Boolean>(
-            new AllIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate), true));
+            new AllIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
       }
 
       @Override
@@ -783,8 +785,7 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return Iterator.of(false);
         }
-        return new Iterator<Boolean>(
-            new ExistsIteratorMaterializer<E>(materializer, predicate, false));
+        return new Iterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer, predicate));
       }
 
       @Override
@@ -794,7 +795,7 @@ public class Sparx {
           return Iterator.of(false);
         }
         return new Iterator<Boolean>(
-            new ExistsIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate), false));
+            new ExistsIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
       }
 
       @Override
@@ -1179,7 +1180,7 @@ public class Sparx {
           return Iterator.of(false);
         }
         return new Iterator<Boolean>(
-            new ExistsIteratorMaterializer<E>(materializer, equalsElement(element), false));
+            new ExistsIteratorMaterializer<E>(materializer, equalsElement(element)));
       }
 
       @Override
@@ -1459,13 +1460,123 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull Iterator<E> max(@NotNull final Comparator<? super E> comparator) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<E>(new MaxIteratorMaterializer<E>(materializer, comparator));
+      }
+
+      @Override
+      public @NotNull Iterator<E> min(@NotNull final Comparator<? super E> comparator) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<E>(new MaxIteratorMaterializer<E>(materializer, reversed(comparator)));
+      }
+
+      @Override
       public E next() {
         return materializer.materializeNext();
       }
 
       @Override
+      public @NotNull Iterator<Boolean> notAll(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of(false);
+        }
+        return new Iterator<Boolean>(
+            new ExistsIteratorMaterializer<E>(materializer, negated(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> notAll(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of(false);
+        }
+        return new Iterator<Boolean>(
+            new ExistsIteratorMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
+      }
+
+      @Override
       public boolean notEmpty() {
         return materializer.materializeHasNext();
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> notExists(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of(true);
+        }
+        return new Iterator<Boolean>(
+            new AllIteratorMaterializer<E>(materializer, negated(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> notExists(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of(true);
+        }
+        return new Iterator<Boolean>(
+            new AllIteratorMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> orElse(@NotNull final Iterable<E> elements) {
+        final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new Iterator<E>(elementsMaterializer);
+        }
+        return new Iterator<E>(
+            new OrElseIteratorMaterializer<E>(materializer, elementsMaterializer));
+      }
+
+      @Override
+      public @NotNull Iterator<E> orElseGet(
+          @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new Iterator<E>(new SuppliedMeterializer<E>(supplier));
+        }
+        return new Iterator<E>(
+            new OrElseIteratorMaterializer<E>(materializer, new SuppliedMeterializer<E>(supplier)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> peek(@NotNull final Consumer<? super E> consumer) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return null;
+      }
+
+      @Override
+      public @NotNull Iterator<E> peek(@NotNull final IndexedConsumer<? super E> consumer) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return null;
+      }
+
+      @Override
+      public @NotNull Iterator<E> plus(final E element) {
+        return append(element);
+      }
+
+      @Override
+      public @NotNull Iterator<E> plusAll(@NotNull final Iterable<E> elements) {
+        return appendAll(elements);
       }
 
       @Override
@@ -1500,6 +1611,84 @@ public class Sparx {
 
       public @NotNull List<E> toList() {
         return List.wrap(this);
+      }
+
+      private static class SuppliedMeterializer<E> implements IteratorMaterializer<E> {
+
+        private volatile IteratorMaterializer<E> state;
+
+        private SuppliedMeterializer(
+            @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+          state = new ImmaterialState(Require.notNull(supplier, "supplier"));
+        }
+
+        @Override
+        public int knownSize() {
+          return state.knownSize();
+        }
+
+        @Override
+        public boolean materializeHasNext() {
+          return state.materializeHasNext();
+        }
+
+        @Override
+        public E materializeNext() {
+          return state.materializeNext();
+        }
+
+        @Override
+        public int materializeSkip(final int count) {
+          return state.materializeSkip(count);
+        }
+
+        private class ImmaterialState implements IteratorMaterializer<E> {
+
+          private final Supplier<? extends Iterable<? extends E>> supplier;
+
+          private ImmaterialState(
+              @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+            this.supplier = supplier;
+          }
+
+          @Override
+          public int knownSize() {
+            return -1;
+          }
+
+          @Override
+          public boolean materializeHasNext() {
+            try {
+              final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
+                  supplier.get());
+              return (state = elementsMaterializer).materializeHasNext();
+            } catch (final Exception e) {
+              throw UncheckedException.throwUnchecked(e);
+            }
+          }
+
+          @Override
+          public E materializeNext() {
+            try {
+              final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
+                  supplier.get());
+              return (state = elementsMaterializer).materializeNext();
+            } catch (final Exception e) {
+              throw UncheckedException.throwUnchecked(e);
+            }
+          }
+
+          @Override
+          public int materializeSkip(final int count) {
+            try {
+              final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
+                  supplier.get());
+              return (state = elementsMaterializer).materializeSkip(count);
+            } catch (final Exception e) {
+              throw UncheckedException.throwUnchecked(e);
+            }
+          }
+        }
       }
     }
 
@@ -1709,7 +1898,7 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return TRUE_LIST;
         }
-        return new List<Boolean>(new AllListMaterializer<E>(materializer, predicate, true));
+        return new List<Boolean>(new AllListMaterializer<E>(materializer, predicate));
       }
 
       @Override
@@ -1719,7 +1908,7 @@ public class Sparx {
           return TRUE_LIST;
         }
         return new List<Boolean>(
-            new AllListMaterializer<E>(materializer, toIndexedPredicate(predicate), true));
+            new AllListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
       }
 
       @Override
@@ -2030,7 +2219,7 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return FALSE_LIST;
         }
-        return new List<Boolean>(new ExistsListMaterializer<E>(materializer, predicate, false));
+        return new List<Boolean>(new ExistsListMaterializer<E>(materializer, predicate));
       }
 
       @Override
@@ -2040,7 +2229,7 @@ public class Sparx {
           return FALSE_LIST;
         }
         return new List<Boolean>(
-            new ExistsListMaterializer<E>(materializer, toIndexedPredicate(predicate), false));
+            new ExistsListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
       }
 
       @Override
@@ -2416,7 +2605,7 @@ public class Sparx {
           return FALSE_LIST;
         }
         return new List<Boolean>(
-            new ExistsListMaterializer<E>(materializer, equalsElement(element), false));
+            new ExistsListMaterializer<E>(materializer, equalsElement(element)));
       }
 
       @Override
@@ -2692,8 +2881,7 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return FALSE_LIST;
         }
-        return new List<Boolean>(
-            new ExistsListMaterializer<E>(materializer, negated(predicate), false));
+        return new List<Boolean>(new ExistsListMaterializer<E>(materializer, negated(predicate)));
       }
 
       @Override
@@ -2703,8 +2891,7 @@ public class Sparx {
           return FALSE_LIST;
         }
         return new List<Boolean>(
-            new ExistsListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate),
-                false));
+            new ExistsListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
       }
 
       @Override
@@ -2714,8 +2901,7 @@ public class Sparx {
         if (materializer.knownSize() == 0) {
           return TRUE_LIST;
         }
-        return new List<Boolean>(
-            new AllListMaterializer<E>(materializer, negated(predicate), true));
+        return new List<Boolean>(new AllListMaterializer<E>(materializer, negated(predicate)));
       }
 
       @Override
@@ -2725,7 +2911,7 @@ public class Sparx {
           return TRUE_LIST;
         }
         return new List<Boolean>(
-            new AllListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate), true));
+            new AllListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
       }
 
       @Override
@@ -3341,8 +3527,7 @@ public class Sparx {
             try {
               final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
                   supplier.get());
-              state = elementsMaterializer;
-              return elementsMaterializer.canMaterializeElement(index);
+              return (state = elementsMaterializer).canMaterializeElement(index);
             } catch (final Exception e) {
               throw UncheckedException.throwUnchecked(e);
             }
@@ -3358,8 +3543,7 @@ public class Sparx {
             try {
               final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
                   supplier.get());
-              state = elementsMaterializer;
-              return elementsMaterializer.materializeContains(element);
+              return (state = elementsMaterializer).materializeContains(element);
             } catch (final Exception e) {
               throw UncheckedException.throwUnchecked(e);
             }
@@ -3370,8 +3554,7 @@ public class Sparx {
             try {
               final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
                   supplier.get());
-              state = elementsMaterializer;
-              return elementsMaterializer.materializeElement(index);
+              return (state = elementsMaterializer).materializeElement(index);
             } catch (final Exception e) {
               throw UncheckedException.throwUnchecked(e);
             }
@@ -3382,8 +3565,7 @@ public class Sparx {
             try {
               final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
                   supplier.get());
-              state = elementsMaterializer;
-              return elementsMaterializer.materializeEmpty();
+              return (state = elementsMaterializer).materializeEmpty();
             } catch (final Exception e) {
               throw UncheckedException.throwUnchecked(e);
             }
@@ -3394,8 +3576,7 @@ public class Sparx {
             try {
               final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
                   supplier.get());
-              state = elementsMaterializer;
-              return elementsMaterializer.materializeIterator();
+              return (state = elementsMaterializer).materializeIterator();
             } catch (final Exception e) {
               throw UncheckedException.throwUnchecked(e);
             }
@@ -3406,8 +3587,7 @@ public class Sparx {
             try {
               final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
                   supplier.get());
-              state = elementsMaterializer;
-              return elementsMaterializer.materializeSize();
+              return (state = elementsMaterializer).materializeSize();
             } catch (final Exception e) {
               throw UncheckedException.throwUnchecked(e);
             }

@@ -31,9 +31,9 @@ public class ExistsListMaterializer<E> implements ListMaterializer<Boolean> {
   private volatile State state;
 
   public ExistsListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultState) {
+      @NotNull final IndexedPredicate<? super E> predicate) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"), defaultState ? TRUE_STATE : FALSE_STATE);
+        Require.notNull(predicate, "predicate"));
   }
 
   @Override
@@ -97,16 +97,14 @@ public class ExistsListMaterializer<E> implements ListMaterializer<Boolean> {
 
   private class ImmaterialState implements State {
 
-    private final State defaultState;
     private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
     private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate, final State defaultState) {
+        @NotNull final IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;
       this.predicate = predicate;
-      this.defaultState = defaultState;
     }
 
     @Override
@@ -117,7 +115,7 @@ public class ExistsListMaterializer<E> implements ListMaterializer<Boolean> {
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
         if (wrapped.materializeEmpty()) {
-          return (state = defaultState).materialized();
+          return (state = FALSE_STATE).materialized();
         }
         final IndexedPredicate<? super E> predicate = this.predicate;
         int i = 0;

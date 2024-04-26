@@ -15,19 +15,20 @@
  */
 package sparx.collection.internal.iterator;
 
+import java.util.Comparator;
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.IndexedPredicate;
 
-public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
+public class MaxIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<Boolean> state;
+  private volatile IteratorMaterializer<E> state;
 
-  public ExistsIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate) {
+  public MaxIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      @NotNull final Comparator<? super E> comparator) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"));
+        Require.notNull(comparator, "comparator"));
   }
 
   @Override
@@ -41,7 +42,7 @@ public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boole
   }
 
   @Override
-  public Boolean materializeNext() {
+  public E materializeNext() {
     return state.materializeNext();
   }
 
@@ -50,56 +51,65 @@ public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boole
     return state.materializeSkip(count);
   }
 
-  private class ImmaterialState implements IteratorMaterializer<Boolean> {
+  private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final IndexedPredicate<? super E> predicate;
+    private final Comparator<? super E> comparator;
     private final IteratorMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate) {
+        @NotNull final Comparator<? super E> comparator) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
+      this.comparator = comparator;
     }
 
     @Override
     public int knownSize() {
-      return 1;
+      final int knownSize = wrapped.knownSize();
+      if (knownSize > 0) {
+        return 1;
+      }
+      if (knownSize == 0) {
+        return 0;
+      }
+      return -1;
     }
 
     @Override
     public boolean materializeHasNext() {
-      return true;
-    }
-
-    @Override
-    public Boolean materializeNext() {
       try {
         final IteratorMaterializer<E> wrapped = this.wrapped;
         if (!wrapped.materializeHasNext()) {
           state = EmptyIteratorMaterializer.instance();
           return false;
         }
-        final IndexedPredicate<? super E> predicate = this.predicate;
-        int i = 0;
-        do {
-          if (predicate.test(i, wrapped.materializeNext())) {
-            state = EmptyIteratorMaterializer.instance();
-            return true;
+        final Comparator<? super E> comparator = this.comparator;
+        E max = wrapped.materializeNext();
+        while (wrapped.materializeHasNext()) {
+          final E next = wrapped.materializeNext();
+          if (comparator.compare(next, max) > 0) {
+            max = next;
           }
-          ++i;
-        } while (wrapped.materializeHasNext());
-        state = EmptyIteratorMaterializer.instance();
-        return false;
+        }
+        state = new ElementToIteratorMaterializer<E>(max);
+        return true;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
     }
 
     @Override
+    public E materializeNext() {
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
+      return state.materializeNext();
+    }
+
+    @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
         state = EmptyIteratorMaterializer.instance();
-        return 1;
+        return wrapped.materializeHasNext() ? 1 : 0;
       }
       return 0;
     }
