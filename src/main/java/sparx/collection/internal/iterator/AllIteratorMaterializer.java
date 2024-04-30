@@ -73,12 +73,12 @@ public class AllIteratorMaterializer<E> implements IteratorMaterializer<Boolean>
 
     @Override
     public Boolean materializeNext() {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (!wrapped.materializeHasNext()) {
+        state = EmptyIteratorMaterializer.instance();
+        return true;
+      }
       try {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        if (!wrapped.materializeHasNext()) {
-          state = EmptyIteratorMaterializer.instance();
-          return true;
-        }
         final IndexedPredicate<? super E> predicate = this.predicate;
         int i = 0;
         do {
@@ -88,11 +88,11 @@ public class AllIteratorMaterializer<E> implements IteratorMaterializer<Boolean>
           }
           ++i;
         } while (wrapped.materializeHasNext());
-        state = EmptyIteratorMaterializer.instance();
-        return true;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
+      state = EmptyIteratorMaterializer.instance();
+      return true;
     }
 
     @Override

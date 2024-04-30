@@ -80,11 +80,11 @@ public class FindIndexIteratorMaterializer<E> implements IteratorMaterializer<In
           }
           ++i;
         }
-        state = EmptyIteratorMaterializer.instance();
-        return false;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
+      state = EmptyIteratorMaterializer.instance();
+      return false;
     }
 
     @Override

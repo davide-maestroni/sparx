@@ -20,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.list.ListMaterializer;
 import sparx.util.DequeueList;
 import sparx.util.Require;
-import sparx.util.UncheckedException;
 
 public class IncludesSliceIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
 
@@ -75,52 +74,48 @@ public class IncludesSliceIteratorMaterializer<E> implements IteratorMaterialize
 
     @Override
     public Boolean materializeNext() {
-      try {
-        final DequeueList<E> queue = new DequeueList<E>();
-        final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
-        Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
+      final DequeueList<E> queue = new DequeueList<E>();
+      final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
+      Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
+      if (!elementsIterator.hasNext()) {
+        state = EmptyIteratorMaterializer.instance();
+        return true;
+      }
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      while (wrapped.materializeHasNext()) {
         if (!elementsIterator.hasNext()) {
           state = EmptyIteratorMaterializer.instance();
           return true;
         }
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        while (wrapped.materializeHasNext()) {
-          if (!elementsIterator.hasNext()) {
-            state = EmptyIteratorMaterializer.instance();
-            return true;
-          }
-          final E left = wrapped.materializeNext();
-          Object right = elementsIterator.next();
-          if (left != right && (left == null || !left.equals(right))) {
-            boolean matches = false;
-            while (!queue.isEmpty() && !matches) {
-              queue.pop();
-              matches = true;
-              elementsIterator = elementsMaterializer.materializeIterator();
-              for (final E e : queue) {
-                if (!wrapped.materializeHasNext()) {
-                  state = EmptyIteratorMaterializer.instance();
-                  return true;
-                }
-                right = elementsIterator.next();
-                if (e != right && (e == null || !e.equals(right))) {
-                  matches = false;
-                  break;
-                }
+        final E left = wrapped.materializeNext();
+        Object right = elementsIterator.next();
+        if (left != right && (left == null || !left.equals(right))) {
+          boolean matches = false;
+          while (!queue.isEmpty() && !matches) {
+            queue.pop();
+            matches = true;
+            elementsIterator = elementsMaterializer.materializeIterator();
+            for (final E e : queue) {
+              if (!wrapped.materializeHasNext()) {
+                state = EmptyIteratorMaterializer.instance();
+                return true;
+              }
+              right = elementsIterator.next();
+              if (e != right && (e == null || !e.equals(right))) {
+                matches = false;
+                break;
               }
             }
-            if (!matches) {
-              elementsIterator = elementsMaterializer.materializeIterator();
-            }
-          } else {
-            queue.add(left);
           }
+          if (!matches) {
+            elementsIterator = elementsMaterializer.materializeIterator();
+          }
+        } else {
+          queue.add(left);
         }
-        state = EmptyIteratorMaterializer.instance();
-        return false;
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
       }
+      state = EmptyIteratorMaterializer.instance();
+      return false;
     }
 
     @Override

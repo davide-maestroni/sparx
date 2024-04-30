@@ -17,15 +17,17 @@ package sparx.collection.internal.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
+import sparx.util.UncheckedException;
+import sparx.util.function.IndexedFunction;
 
-public class OrElseIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class SwitchExceptionallyIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
-  public OrElseIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      @NotNull final IteratorMaterializer<E> elementsMaterializer) {
+  public SwitchExceptionallyIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      @NotNull final IndexedFunction<? super Throwable, ? extends IteratorMaterializer<E>> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+        Require.notNull(mapper, "mapper"));
   }
 
   @Override
@@ -43,57 +45,55 @@ public class OrElseIteratorMaterializer<E> implements IteratorMaterializer<E> {
     return state.materializeNext();
   }
 
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
-  }
-
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final IteratorMaterializer<E> elementsMaterializer;
+    private final IndexedFunction<? super Throwable, ? extends IteratorMaterializer<E>> mapper;
     private final IteratorMaterializer<E> wrapped;
 
+    private int pos;
+
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        @NotNull final IteratorMaterializer<E> elementsMaterializer) {
+        @NotNull final IndexedFunction<? super Throwable, ? extends IteratorMaterializer<E>> mapper) {
       this.wrapped = wrapped;
-      this.elementsMaterializer = elementsMaterializer;
+      this.mapper = mapper;
     }
 
     @Override
     public int knownSize() {
-      final int knownSize = wrapped.knownSize();
-      if (knownSize == 0) {
-        return elementsMaterializer.knownSize();
-      }
-      return knownSize;
+      return -1;
     }
 
     @Override
     public boolean materializeHasNext() {
-      return wrapped.materializeHasNext() || elementsMaterializer.materializeHasNext();
+      try {
+        return wrapped.materializeHasNext();
+      } catch (final Throwable t) {
+        try {
+          return (state = mapper.apply(pos, t)).materializeHasNext();
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
     }
 
     @Override
     public E materializeNext() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.materializeHasNext()) {
-        return (state = wrapped).materializeNext();
+      try {
+        final E next = wrapped.materializeNext();
+        ++pos;
+        return next;
+      } catch (final Throwable t) {
+        try {
+          return (state = mapper.apply(pos++, t)).materializeNext();
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
       }
-      return (state = elementsMaterializer).materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
-      if (count > 0) {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        final int skipped = wrapped.materializeSkip(count);
-        if (skipped > 0) {
-          state = wrapped;
-          return skipped;
-        }
-        return (state = elementsMaterializer).materializeSkip(count);
-      }
-      return 0;
+      throw new UnsupportedOperationException();
     }
   }
 }

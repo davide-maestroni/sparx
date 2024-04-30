@@ -69,12 +69,12 @@ public class FindLastIteratorMaterializer<E> implements IteratorMaterializer<E> 
 
     @Override
     public boolean materializeHasNext() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      final IndexedPredicate<? super E> predicate = this.predicate;
-      boolean found = false;
-      E last = null;
-      int i = 0;
       try {
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        final IndexedPredicate<? super E> predicate = this.predicate;
+        boolean found = false;
+        E last = null;
+        int i = 0;
         while (wrapped.materializeHasNext()) {
           final E next = wrapped.materializeNext();
           if (predicate.test(i, next)) {
@@ -83,12 +83,12 @@ public class FindLastIteratorMaterializer<E> implements IteratorMaterializer<E> 
           }
           ++i;
         }
+        if (found) {
+          state = new ElementToIteratorMaterializer<E>(last);
+          return true;
+        }
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
-      }
-      if (found) {
-        state = new ElementToIteratorMaterializer<E>(last);
-        return true;
       }
       state = EmptyIteratorMaterializer.instance();
       return false;

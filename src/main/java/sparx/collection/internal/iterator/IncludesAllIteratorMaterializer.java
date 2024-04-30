@@ -18,7 +18,6 @@ package sparx.collection.internal.iterator;
 import java.util.HashSet;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
-import sparx.util.UncheckedException;
 
 public class IncludesAllIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
 
@@ -73,28 +72,24 @@ public class IncludesAllIteratorMaterializer<E> implements IteratorMaterializer<
 
     @Override
     public Boolean materializeNext() {
-      try {
-        final HashSet<Object> elements = new HashSet<Object>();
-        for (final Object element : this.elements) {
-          elements.add(element);
-        }
+      final HashSet<Object> elements = new HashSet<Object>();
+      for (final Object element : this.elements) {
+        elements.add(element);
+      }
+      if (elements.isEmpty()) {
+        state = EmptyIteratorMaterializer.instance();
+        return true;
+      }
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      while (wrapped.materializeHasNext()) {
+        elements.remove(wrapped.materializeNext());
         if (elements.isEmpty()) {
           state = EmptyIteratorMaterializer.instance();
           return true;
         }
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        while (wrapped.materializeHasNext()) {
-          elements.remove(wrapped.materializeNext());
-          if (elements.isEmpty()) {
-            state = EmptyIteratorMaterializer.instance();
-            return true;
-          }
-        }
-        state = EmptyIteratorMaterializer.instance();
-        return false;
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
       }
+      state = EmptyIteratorMaterializer.instance();
+      return false;
     }
 
     @Override

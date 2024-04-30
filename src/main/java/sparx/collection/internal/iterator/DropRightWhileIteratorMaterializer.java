@@ -73,8 +73,8 @@ public class DropRightWhileIteratorMaterializer<E> extends AbstractIteratorMater
         while (wrapped.materializeHasNext()) {
           elements.add(wrapped.materializeNext());
         }
-        final IndexedPredicate<? super E> predicate = this.predicate;
         try {
+          final IndexedPredicate<? super E> predicate = this.predicate;
           int i = elements.size() - 1;
           while (!elements.isEmpty() && predicate.test(i, elements.getLast())) {
             elements.removeLast();

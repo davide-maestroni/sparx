@@ -21,7 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.list.ListMaterializer;
 import sparx.util.DequeueList;
 import sparx.util.Require;
-import sparx.util.UncheckedException;
 
 public class FindLastIndexOfSliceIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
 
@@ -71,90 +70,86 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> implements IteratorMate
 
     @Override
     public boolean materializeHasNext() {
-      try {
-        final DequeueList<E> queue = new DequeueList<E>();
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
-        Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
-        if (!elementsIterator.hasNext()) {
-          state = new ElementToIteratorMaterializer<Integer>(
-              wrapped.materializeSkip(Integer.MAX_VALUE));
-          return true;
-        }
-        boolean found = false;
-        int last = 0;
-        int index = 0;
-        while (wrapped.materializeHasNext()) {
-          if (!elementsIterator.hasNext()) {
-            found = true;
-            last = index;
-            elementsIterator = elementsMaterializer.materializeIterator();
-            boolean matches = false;
-            while (!queue.isEmpty() && !matches) {
-              ++index;
-              queue.pop();
-              matches = true;
-              elementsIterator = elementsMaterializer.materializeIterator();
-              for (final E e : queue) {
-                if (!wrapped.materializeHasNext()) {
-                  last = index - queue.size();
-                  elementsIterator = elementsMaterializer.materializeIterator();
-                  break;
-                }
-                final Object right = elementsIterator.next();
-                if (e != right && (e == null || !e.equals(right))) {
-                  matches = false;
-                  break;
-                }
-              }
-            }
-            if (!matches) {
-              elementsIterator = elementsMaterializer.materializeIterator();
-            }
-            ++index;
-            continue;
-          }
-          final E left = wrapped.materializeNext();
-          Object right = elementsIterator.next();
-          if (left != right && (left == null || !left.equals(right))) {
-            boolean matches = false;
-            while (!queue.isEmpty() && !matches) {
-              ++index;
-              queue.pop();
-              matches = true;
-              elementsIterator = elementsMaterializer.materializeIterator();
-              for (final E e : queue) {
-                if (!wrapped.materializeHasNext()) {
-                  final int result = index - queue.size();
-                  found = true;
-                  last = result;
-                  elementsIterator = elementsMaterializer.materializeIterator();
-                  break;
-                }
-                right = elementsIterator.next();
-                if (e != right && (e == null || !e.equals(right))) {
-                  matches = false;
-                  break;
-                }
-              }
-            }
-            if (!matches) {
-              elementsIterator = elementsMaterializer.materializeIterator();
-            }
-            ++index;
-          } else {
-            queue.add(left);
-          }
-        }
-        if (found) {
-          state = new ElementToIteratorMaterializer<Integer>(last);
-          return true;
-        }
-        state = EmptyIteratorMaterializer.instance();
-        return false;
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+      final DequeueList<E> queue = new DequeueList<E>();
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
+      Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
+      if (!elementsIterator.hasNext()) {
+        state = new ElementToIteratorMaterializer<Integer>(
+            wrapped.materializeSkip(Integer.MAX_VALUE));
+        return true;
       }
+      boolean found = false;
+      int last = 0;
+      int index = 0;
+      while (wrapped.materializeHasNext()) {
+        if (!elementsIterator.hasNext()) {
+          found = true;
+          last = index;
+          elementsIterator = elementsMaterializer.materializeIterator();
+          boolean matches = false;
+          while (!queue.isEmpty() && !matches) {
+            ++index;
+            queue.pop();
+            matches = true;
+            elementsIterator = elementsMaterializer.materializeIterator();
+            for (final E e : queue) {
+              if (!wrapped.materializeHasNext()) {
+                last = index - queue.size();
+                elementsIterator = elementsMaterializer.materializeIterator();
+                break;
+              }
+              final Object right = elementsIterator.next();
+              if (e != right && (e == null || !e.equals(right))) {
+                matches = false;
+                break;
+              }
+            }
+          }
+          if (!matches) {
+            elementsIterator = elementsMaterializer.materializeIterator();
+          }
+          ++index;
+          continue;
+        }
+        final E left = wrapped.materializeNext();
+        Object right = elementsIterator.next();
+        if (left != right && (left == null || !left.equals(right))) {
+          boolean matches = false;
+          while (!queue.isEmpty() && !matches) {
+            ++index;
+            queue.pop();
+            matches = true;
+            elementsIterator = elementsMaterializer.materializeIterator();
+            for (final E e : queue) {
+              if (!wrapped.materializeHasNext()) {
+                final int result = index - queue.size();
+                found = true;
+                last = result;
+                elementsIterator = elementsMaterializer.materializeIterator();
+                break;
+              }
+              right = elementsIterator.next();
+              if (e != right && (e == null || !e.equals(right))) {
+                matches = false;
+                break;
+              }
+            }
+          }
+          if (!matches) {
+            elementsIterator = elementsMaterializer.materializeIterator();
+          }
+          ++index;
+        } else {
+          queue.add(left);
+        }
+      }
+      if (found) {
+        state = new ElementToIteratorMaterializer<Integer>(last);
+        return true;
+      }
+      state = EmptyIteratorMaterializer.instance();
+      return false;
     }
 
     @Override

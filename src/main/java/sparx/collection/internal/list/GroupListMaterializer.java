@@ -138,19 +138,19 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
       }
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
+      final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + size - 1);
+      final ArrayList<E> chunk = new ArrayList<E>();
+      for (int i = (int) wrappedIndex; i <= endIndex && wrapped.canMaterializeElement(i); ++i) {
+        chunk.add(wrapped.materializeElement(i));
+      }
+      final E padding = this.padding;
+      while (chunk.size() < size) {
+        chunk.add(padding);
+      }
+      if (expectedCount != modCount.get()) {
+        throw new ConcurrentModificationException();
+      }
       try {
-        final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + size - 1);
-        final ArrayList<E> chunk = new ArrayList<E>();
-        for (int i = (int) wrappedIndex; i <= endIndex && wrapped.canMaterializeElement(i); ++i) {
-          chunk.add(wrapped.materializeElement(i));
-        }
-        final E padding = this.padding;
-        while (chunk.size() < size) {
-          chunk.add(padding);
-        }
-        if (expectedCount != modCount.get()) {
-          throw new ConcurrentModificationException();
-        }
         final L element = mapper.apply(chunk);
         while (elements.size() <= index) {
           elements.add(null);
@@ -246,15 +246,15 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
       }
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
+      final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + maxSize - 1);
+      final ArrayList<E> chunk = new ArrayList<E>();
+      for (int i = (int) wrappedIndex; i <= endIndex && wrapped.canMaterializeElement(i); ++i) {
+        chunk.add(wrapped.materializeElement(i));
+      }
+      if (expectedCount != modCount.get()) {
+        throw new ConcurrentModificationException();
+      }
       try {
-        final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + maxSize - 1);
-        final ArrayList<E> chunk = new ArrayList<E>();
-        for (int i = (int) wrappedIndex; i <= endIndex && wrapped.canMaterializeElement(i); ++i) {
-          chunk.add(wrapped.materializeElement(i));
-        }
-        if (expectedCount != modCount.get()) {
-          throw new ConcurrentModificationException();
-        }
         final L element = mapper.apply(chunk);
         while (elements.size() <= index) {
           elements.add(null);

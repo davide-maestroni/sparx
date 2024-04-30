@@ -69,9 +69,9 @@ public class DropWhileIteratorMaterializer<E> implements IteratorMaterializer<E>
 
     @Override
     public boolean materializeHasNext() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      final IndexedPredicate<? super E> predicate = this.predicate;
       try {
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        final IndexedPredicate<? super E> predicate = this.predicate;
         int i = 0;
         while (wrapped.materializeHasNext()) {
           final E next = wrapped.materializeNext();

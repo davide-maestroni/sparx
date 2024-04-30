@@ -47,7 +47,6 @@ import sparx.collection.internal.iterator.FindLastIndexIteratorMaterializer;
 import sparx.collection.internal.iterator.FindLastIndexOfSliceIteratorMaterializer;
 import sparx.collection.internal.iterator.FindLastIteratorMaterializer;
 import sparx.collection.internal.iterator.FlatMapAfterIteratorMaterializer;
-import sparx.collection.internal.iterator.FlatMapExceptionallyIteratorMaterializer;
 import sparx.collection.internal.iterator.FlatMapFirstWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.FlatMapIteratorMaterializer;
 import sparx.collection.internal.iterator.FlatMapLastWhereIteratorMaterializer;
@@ -66,7 +65,6 @@ import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListToIteratorMaterializer;
 import sparx.collection.internal.iterator.MapAfterIteratorMaterializer;
-import sparx.collection.internal.iterator.MapExceptionallyIteratorMaterializer;
 import sparx.collection.internal.iterator.MapFirstWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.MapIteratorMaterializer;
 import sparx.collection.internal.iterator.MapLastWhereIteratorMaterializer;
@@ -76,6 +74,7 @@ import sparx.collection.internal.iterator.OrElseIteratorMaterializer;
 import sparx.collection.internal.iterator.PeekIteratorMaterializer;
 import sparx.collection.internal.iterator.RemoveWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.RepeatIteratorMaterializer;
+import sparx.collection.internal.iterator.SwitchExceptionallyIteratorMaterializer;
 import sparx.collection.internal.list.AllListMaterializer;
 import sparx.collection.internal.list.AppendAllListMaterializer;
 import sparx.collection.internal.list.AppendListMaterializer;
@@ -438,7 +437,7 @@ public class Sparx {
           }
           return new CollectionToIteratorMaterializer<E>(collection);
         }
-        return new IteratorToIteratorMaterializer<E>((Iterator<E>) elements.iterator());
+        return new IteratorToIteratorMaterializer<E>((java.util.Iterator<E>) elements.iterator());
       }
 
       private static @NotNull <E, F> IndexedFunction<E, IteratorMaterializer<F>> getElementToMaterializer(
@@ -1012,52 +1011,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull <T extends Throwable> Iterator<E> flatMapExceptionally(
-          @NotNull final Class<T> exceptionType,
-          @NotNull final Function<? super T, ? extends Iterable<? extends E>> mapper) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new FlatMapExceptionallyIteratorMaterializer<E>(materializer,
-            getExceptionToMaterializer(exceptionType, mapper)));
-      }
-
-      @Override
-      public @NotNull <T extends Throwable> Iterator<E> flatMapExceptionally(
-          @NotNull final Class<T> exceptionType,
-          @NotNull final IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new FlatMapExceptionallyIteratorMaterializer<E>(materializer,
-            getExceptionToMaterializer(exceptionType, mapper)));
-      }
-
-      @Override
-      public @NotNull Iterator<E> flatMapExceptionally(
-          @NotNull final Function<? super Throwable, ? extends Iterable<? extends E>> mapper) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new FlatMapExceptionallyIteratorMaterializer<E>(materializer,
-            getElementToMaterializer(mapper)));
-      }
-
-      @Override
-      public @NotNull Iterator<E> flatMapExceptionally(
-          @NotNull final IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new FlatMapExceptionallyIteratorMaterializer<E>(materializer,
-            getElementToMaterializer(mapper)));
-      }
-
-      @Override
       public @NotNull Iterator<E> flatMapFirstWhere(
           @NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
@@ -1357,50 +1310,6 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull <T extends Throwable> Iterator<E> mapExceptionally(
-          @NotNull final Class<T> exceptionType, @NotNull final Function<? super T, E> mapper) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new MapExceptionallyIteratorMaterializer<E>(materializer,
-            getExceptionToElement(exceptionType, mapper)));
-      }
-
-      @Override
-      public @NotNull <T extends Throwable> Iterator<E> mapExceptionally(
-          @NotNull final Class<T> exceptionType,
-          @NotNull final IndexedFunction<? super T, E> mapper) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new MapExceptionallyIteratorMaterializer<E>(materializer,
-            getExceptionToElement(exceptionType, mapper)));
-      }
-
-      @Override
-      public @NotNull Iterator<E> mapExceptionally(
-          @NotNull final Function<? super Throwable, E> mapper) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(
-            new MapExceptionallyIteratorMaterializer<E>(materializer, toIndexedFunction(mapper)));
-      }
-
-      @Override
-      public @NotNull Iterator<E> mapExceptionally(
-          @NotNull final IndexedFunction<? super Throwable, E> mapper) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return this;
-        }
-        return new Iterator<E>(new MapExceptionallyIteratorMaterializer<E>(materializer, mapper));
-      }
-
-      @Override
       public @NotNull Iterator<E> mapFirstWhere(
           @NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
@@ -1597,6 +1506,52 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull <T extends Throwable> Iterator<E> switchExceptionally(
+          @NotNull final Class<T> exceptionType,
+          @NotNull final Function<? super T, ? extends Iterable<? extends E>> mapper) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
+            getExceptionToMaterializer(exceptionType, mapper)));
+      }
+
+      @Override
+      public @NotNull <T extends Throwable> Iterator<E> switchExceptionally(
+          @NotNull final Class<T> exceptionType,
+          @NotNull final IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
+            getExceptionToMaterializer(exceptionType, mapper)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> switchExceptionally(
+          @NotNull final Function<? super Throwable, ? extends Iterable<? extends E>> mapper) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
+            getElementToMaterializer(mapper)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> switchExceptionally(
+          @NotNull final IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
+            getElementToMaterializer(mapper)));
+      }
+
+      @Override
       public @NotNull Iterator<E> runFinally(@NotNull final Action action) {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
@@ -1709,6 +1664,8 @@ public class Sparx {
       private static final List<?> EMPTY_LIST = new List<Object>(EmptyListMaterializer.instance());
       private static final List<Boolean> FALSE_LIST = new List<Boolean>(
           new ElementToListMaterializer<Boolean>(false));
+      private static final List<?> NULL_LIST = new List<Object>(
+          new ElementToListMaterializer<Object>(null));
       private static final List<Boolean> TRUE_LIST = new List<Boolean>(
           new ElementToListMaterializer<Boolean>(true));
       private static final List<Integer> ZERO_LIST = new List<Integer>(
@@ -1741,6 +1698,18 @@ public class Sparx {
       }
 
       public static @NotNull <E> List<E> of(final E first) {
+        if (first == null) {
+          return NULL_LIST.as();
+        }
+        if (Boolean.TRUE.equals(first)) {
+          return TRUE_LIST.as();
+        }
+        if (Boolean.FALSE.equals(first)) {
+          return FALSE_LIST.as();
+        }
+        if (Integer.valueOf(0).equals(first)) {
+          return ZERO_LIST.as();
+        }
         return new List<E>(new ElementToListMaterializer<E>(first));
       }
 

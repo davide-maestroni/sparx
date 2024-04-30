@@ -45,9 +45,9 @@ public class FlatMapIteratorMaterializer<E, F> implements IteratorMaterializer<F
     if (this.materializer.materializeHasNext()) {
       return true;
     }
-    final IteratorMaterializer<E> wrapped = this.wrapped;
-    final IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper = this.mapper;
     try {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      final IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper = this.mapper;
       while (wrapped.materializeHasNext()) {
         final IteratorMaterializer<F> materializer = mapper.apply(pos++, wrapped.materializeNext());
         if (materializer.materializeHasNext()) {

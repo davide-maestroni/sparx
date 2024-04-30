@@ -20,7 +20,6 @@ import sparx.collection.internal.list.ListMaterializer;
 import sparx.util.DequeueList;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
-import sparx.util.UncheckedException;
 
 public class EndsWithIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
 
@@ -75,36 +74,32 @@ public class EndsWithIteratorMaterializer<E> implements IteratorMaterializer<Boo
 
     @Override
     public Boolean materializeNext() {
-      try {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
-        final int elementsSize = elementsMaterializer.materializeSize();
-        final DequeueList<E> wrappedElements = new DequeueList<E>(
-            SizeOverflowException.safeCast((long) elementsSize + 1));
-        while (wrapped.materializeHasNext()) {
-          wrappedElements.add(wrapped.materializeNext());
-          if (wrappedElements.size() > elementsSize) {
-            wrappedElements.removeFirst();
-          }
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
+      final int elementsSize = elementsMaterializer.materializeSize();
+      final DequeueList<E> wrappedElements = new DequeueList<E>(
+          SizeOverflowException.safeCast((long) elementsSize + 1));
+      while (wrapped.materializeHasNext()) {
+        wrappedElements.add(wrapped.materializeNext());
+        if (wrappedElements.size() > elementsSize) {
+          wrappedElements.removeFirst();
         }
-        final int wrappedSize = wrappedElements.size();
-        if (wrappedSize < elementsSize) {
+      }
+      final int wrappedSize = wrappedElements.size();
+      if (wrappedSize < elementsSize) {
+        state = EmptyIteratorMaterializer.instance();
+        return false;
+      }
+      for (int i = wrappedSize - 1, j = elementsSize - 1; i >= 0 && j >= 0; --i, --j) {
+        final E left = wrappedElements.get(i);
+        final Object right = elementsMaterializer.materializeElement(j);
+        if (left != right && (left == null || !left.equals(right))) {
           state = EmptyIteratorMaterializer.instance();
           return false;
         }
-        for (int i = wrappedSize - 1, j = elementsSize - 1; i >= 0 && j >= 0; --i, --j) {
-          final E left = wrappedElements.get(i);
-          final Object right = elementsMaterializer.materializeElement(j);
-          if (left != right && (left == null || !left.equals(right))) {
-            state = EmptyIteratorMaterializer.instance();
-            return false;
-          }
-        }
-        state = EmptyIteratorMaterializer.instance();
-        return true;
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
       }
+      state = EmptyIteratorMaterializer.instance();
+      return true;
     }
 
     @Override

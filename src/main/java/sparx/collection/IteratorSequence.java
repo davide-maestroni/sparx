@@ -185,22 +185,6 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   IteratorSequence<E> flatMapAfter(int numElements,
       @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
-  @NotNull
-  <T extends Throwable> IteratorSequence<E> flatMapExceptionally(@NotNull Class<T> exceptionType,
-      @NotNull Function<? super T, ? extends Iterable<? extends E>> mapper);
-
-  @NotNull
-  <T extends Throwable> IteratorSequence<E> flatMapExceptionally(@NotNull Class<T> exceptionType,
-      @NotNull IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper);
-
-  @NotNull
-  IteratorSequence<E> flatMapExceptionally(
-      @NotNull Function<? super Throwable, ? extends Iterable<? extends E>> mapper);
-
-  @NotNull
-  IteratorSequence<E> flatMapExceptionally(
-      @NotNull IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper);
-
   @Override
   @NotNull
   IteratorSequence<E> flatMapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
@@ -298,20 +282,6 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull
   IteratorSequence<E> mapAfter(int numElements,
       @NotNull IndexedFunction<? super E, ? extends E> mapper);
-
-  @NotNull
-  <T extends Throwable> IteratorSequence<E> mapExceptionally(@NotNull Class<T> exceptionType,
-      @NotNull Function<? super T, E> mapper);
-
-  @NotNull
-  <T extends Throwable> IteratorSequence<E> mapExceptionally(@NotNull Class<T> exceptionType,
-      @NotNull IndexedFunction<? super T, E> mapper);
-
-  @NotNull
-  IteratorSequence<E> mapExceptionally(@NotNull Function<? super Throwable, E> mapper);
-
-  @NotNull
-  IteratorSequence<E> mapExceptionally(@NotNull IndexedFunction<? super Throwable, E> mapper);
 
   @Override
   @NotNull
@@ -507,6 +477,22 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @Override
   @NotNull
   IteratorSequence<Boolean> startsWith(@NotNull Iterable<?> elements);
+
+  @NotNull
+  <T extends Throwable> IteratorSequence<E> switchExceptionally(@NotNull Class<T> exceptionType,
+      @NotNull Function<? super T, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
+  <T extends Throwable> IteratorSequence<E> switchExceptionally(@NotNull Class<T> exceptionType,
+      @NotNull IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
+  IteratorSequence<E> switchExceptionally(
+      @NotNull Function<? super Throwable, ? extends Iterable<? extends E>> mapper);
+
+  @NotNull
+  IteratorSequence<E> switchExceptionally(
+      @NotNull IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper);
 
   @Override
   @NotNull

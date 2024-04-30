@@ -1466,4 +1466,145 @@ public class IteratorTests {
   }
 
   // TODO: test exception in next() does actually advance position
+  @Test
+  public void next() {
+    Iterable<Integer> throwing = () -> new java.util.Iterator<>() {
+      private boolean hasNext = true;
+
+      @Override
+      public boolean hasNext() {
+        return hasNext;
+      }
+
+      @Override
+      public Integer next() {
+        hasNext = false;
+        throw new IllegalStateException();
+      }
+    };
+
+    {
+      var itr = Iterator.of(1, null, 3).all(i -> i > 0);
+      assertFalse(itr.switchExceptionally(t -> List.of(false)).first());
+      assertTrue(itr.hasNext());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).all(i -> i > 0);
+      assertEquals(List.of(false), itr.switchExceptionally(t -> List.of(false)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).appendAll(throwing);
+      assertEquals(List.of(1, null, 3, 4), itr.switchExceptionally(t -> List.of(4)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).appendAll(throwing).count();
+      assertEquals(List.of(3), itr.switchExceptionally(t -> List.of(3)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).count(i -> i > 1);
+      assertEquals(List.of(3), itr.switchExceptionally(t -> List.of(3)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).appendAll(throwing).drop(1);
+      assertEquals(List.of(null, 3, 4), itr.switchExceptionally(t -> List.of(4)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).insertAll(throwing).dropRight(1);
+      assertEquals(List.of(4), itr.switchExceptionally(t -> List.of(4)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).dropRightWhile(i -> i > 0);
+      assertEquals(List.of(0), itr.switchExceptionally(t -> List.of(0)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).dropWhile(i -> i > 0);
+      assertEquals(List.of(0), itr.switchExceptionally(t -> List.of(0)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).dropWhile(i -> i < 2);
+      assertEquals(List.of(0), itr.switchExceptionally(t -> List.of(0)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).insertAll(throwing).endsWith(List.of(null, 3));
+      assertEquals(List.of(false), itr.switchExceptionally(t -> List.of(false)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).exists(i -> i > 2);
+      assertEquals(List.of(false), itr.switchExceptionally(t -> List.of(false)).toList());
+    }
+
+    {
+      var flag = new boolean[1];
+      var itr = Iterator.of(1, null, 3).appendAll(throwing).runFinally(() -> flag[0] = true);
+      assertEquals(List.of(1, null, 3, 4), itr.switchExceptionally(t -> List.of(4)).toList());
+      assertTrue(flag[0]);
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).findFirst(i -> i > 2);
+      assertEquals(List.of(-1), itr.switchExceptionally(t -> List.of(-1)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).findIndexWhere(i -> i > 2);
+      assertEquals(List.of(-1), itr.switchExceptionally(t -> List.of(-1)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).insertAll(throwing).findIndexOfSlice(List.of(null, 3));
+      assertEquals(List.of(-1), itr.switchExceptionally(t -> List.of(-1)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).findLastIndexWhere(i -> i > 2);
+      assertEquals(List.of(-1), itr.switchExceptionally(t -> List.of(-1)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).appendAll(throwing).findLastIndexOfSlice(List.of(null, 3));
+      assertEquals(List.of(-1), itr.switchExceptionally(t -> List.of(-1)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).findLast(i -> i < 2);
+      assertEquals(List.of(-1), itr.switchExceptionally(t -> List.of(-1)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).flatMapAfter(1, i -> List.of(i + 2));
+      assertEquals(List.of(1, 2), itr.switchExceptionally(t -> List.of(2)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).flatMap(i -> List.of(i + 2));
+      assertEquals(List.of(3, 2), itr.switchExceptionally(t -> List.of(2)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).map(i -> i + 1)
+          .switchExceptionally(t -> List.of(Integer.parseInt(t.getMessage())));
+      assertEquals(List.of(2, 3), itr.switchExceptionally(t -> List.of(3)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).flatMapFirstWhere(i -> i > 2, i -> List.of(i + 2));
+      assertEquals(List.of(1, 2), itr.switchExceptionally(t -> List.of(2)).toList());
+    }
+
+    {
+      var itr = Iterator.of(1, null, 3).flatMapLastWhere(i -> i < 2, i -> List.of(i + 2));
+      assertEquals(List.of(2), itr.switchExceptionally(t -> List.of(2)).toList());
+    }
+  }
 }

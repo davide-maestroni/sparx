@@ -77,13 +77,13 @@ public class FoldRightIteratorMaterializer<E, F> implements IteratorMaterializer
 
     @Override
     public F materializeNext() {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      final int knownSize = wrapped.knownSize();
+      final ArrayList<E> elements = new ArrayList<E>(knownSize >= 0 ? knownSize : 16);
+      while (wrapped.materializeHasNext()) {
+        elements.add(wrapped.materializeNext());
+      }
       try {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        final int knownSize = wrapped.knownSize();
-        final ArrayList<E> elements = new ArrayList<E>(knownSize >= 0 ? knownSize : 16);
-        while (wrapped.materializeHasNext()) {
-          elements.add(wrapped.materializeNext());
-        }
         final BinaryFunction<? super E, ? super F, ? extends F> operation = this.operation;
         F current = identity;
         for (int i = elements.size() - 1; i >= 0; --i) {

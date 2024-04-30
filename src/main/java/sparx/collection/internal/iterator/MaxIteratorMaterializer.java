@@ -19,7 +19,6 @@ import java.util.Comparator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
-import sparx.util.UncheckedException;
 
 public class MaxIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
@@ -76,25 +75,21 @@ public class MaxIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
     @Override
     public boolean materializeHasNext() {
-      try {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        if (!wrapped.materializeHasNext()) {
-          state = EmptyIteratorMaterializer.instance();
-          return false;
-        }
-        final Comparator<? super E> comparator = this.comparator;
-        E max = wrapped.materializeNext();
-        while (wrapped.materializeHasNext()) {
-          final E next = wrapped.materializeNext();
-          if (comparator.compare(next, max) > 0) {
-            max = next;
-          }
-        }
-        state = new ElementToIteratorMaterializer<E>(max);
-        return true;
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (!wrapped.materializeHasNext()) {
+        state = EmptyIteratorMaterializer.instance();
+        return false;
       }
+      final Comparator<? super E> comparator = this.comparator;
+      E max = wrapped.materializeNext();
+      while (wrapped.materializeHasNext()) {
+        final E next = wrapped.materializeNext();
+        if (comparator.compare(next, max) > 0) {
+          max = next;
+        }
+      }
+      state = new ElementToIteratorMaterializer<E>(max);
+      return true;
     }
 
     @Override

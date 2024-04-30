@@ -57,10 +57,10 @@ public class RemoveWhereIteratorMaterializer<E> extends AbstractIteratorMaterial
           return true;
         }
       }
-      return false;
     } catch (final Exception e) {
       throw UncheckedException.throwUnchecked(e);
     }
+    return false;
   }
 
   @Override

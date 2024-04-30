@@ -101,19 +101,19 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
       if (!wrapped.materializeHasNext()) {
         throw new NoSuchElementException();
       }
+      final int size = this.size;
+      final ArrayList<E> chunk = new ArrayList<E>(size);
+      do {
+        chunk.add(wrapped.materializeNext());
+      } while (chunk.size() < size && wrapped.materializeHasNext());
+      final E padding = this.padding;
+      while (chunk.size() < size) {
+        chunk.add(padding);
+      }
+      if (!wrapped.materializeHasNext()) {
+        state = EmptyIteratorMaterializer.instance();
+      }
       try {
-        final int size = this.size;
-        final ArrayList<E> chunk = new ArrayList<E>(size);
-        do {
-          chunk.add(wrapped.materializeNext());
-        } while (chunk.size() < size && wrapped.materializeHasNext());
-        final E padding = this.padding;
-        while (chunk.size() < size) {
-          chunk.add(padding);
-        }
-        if (!wrapped.materializeHasNext()) {
-          state = EmptyIteratorMaterializer.instance();
-        }
         return mapper.apply(chunk);
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
@@ -168,15 +168,15 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
       if (!wrapped.materializeHasNext()) {
         throw new NoSuchElementException();
       }
+      final int maxSize = this.maxSize;
+      final ArrayList<E> elements = new ArrayList<E>(maxSize);
+      do {
+        elements.add(wrapped.materializeNext());
+      } while (elements.size() < maxSize && wrapped.materializeHasNext());
+      if (!wrapped.materializeHasNext()) {
+        state = EmptyIteratorMaterializer.instance();
+      }
       try {
-        final int maxSize = this.maxSize;
-        final ArrayList<E> elements = new ArrayList<E>(maxSize);
-        do {
-          elements.add(wrapped.materializeNext());
-        } while (elements.size() < maxSize && wrapped.materializeHasNext());
-        if (!wrapped.materializeHasNext()) {
-          state = EmptyIteratorMaterializer.instance();
-        }
         return mapper.apply(elements);
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
