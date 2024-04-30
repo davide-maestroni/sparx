@@ -72,6 +72,8 @@ import sparx.collection.internal.iterator.MapWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.MaxIteratorMaterializer;
 import sparx.collection.internal.iterator.OrElseIteratorMaterializer;
 import sparx.collection.internal.iterator.PeekIteratorMaterializer;
+import sparx.collection.internal.iterator.ReduceLeftIteratorMaterializer;
+import sparx.collection.internal.iterator.ReduceRightIteratorMaterializer;
 import sparx.collection.internal.iterator.RemoveWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.RepeatIteratorMaterializer;
 import sparx.collection.internal.iterator.SwitchExceptionallyIteratorMaterializer;
@@ -1498,6 +1500,32 @@ public class Sparx {
       @Override
       public @NotNull Iterator<E> plusAll(@NotNull final Iterable<E> elements) {
         return appendAll(elements);
+      }
+
+      @Override
+      public @NotNull Iterator<E> reduce(
+          @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        return reduceLeft(operation);
+      }
+
+      @Override
+      public @NotNull Iterator<E> reduceLeft(
+          @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<E>(new ReduceLeftIteratorMaterializer<E>(materializer, operation));
+      }
+
+      @Override
+      public @NotNull Iterator<E> reduceRight(
+          @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<E>(new ReduceRightIteratorMaterializer<E>(materializer, operation));
       }
 
       @Override
@@ -3595,6 +3623,8 @@ public class Sparx {
           return param.listIterator();
         }
       };
+      private static final ListIterator<?> NULL_ITERATOR = new ListIterator<Object>(List.of(),
+          List.of(null));
       private static final ListIterator<Boolean> TRUE_ITERATOR = new ListIterator<Boolean>(
           List.<Boolean>of(), List.of(true));
       private static final ListIterator<Integer> ZERO_ITERATOR = new ListIterator<Integer>(
@@ -3626,6 +3656,18 @@ public class Sparx {
       }
 
       public static @NotNull <E> ListIterator<E> of(final E first) {
+        if (first == null) {
+          return NULL_ITERATOR.as();
+        }
+        if (Boolean.TRUE.equals(first)) {
+          return TRUE_ITERATOR.as();
+        }
+        if (Boolean.FALSE.equals(first)) {
+          return FALSE_ITERATOR.as();
+        }
+        if (Integer.valueOf(0).equals(first)) {
+          return ZERO_ITERATOR.as();
+        }
         return new ListIterator<E>(List.<E>of(), List.of(first));
       }
 
