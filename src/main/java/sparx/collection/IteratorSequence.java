@@ -30,8 +30,6 @@ import sparx.util.function.Supplier;
 
 public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
 
-  // TODO: advance(int maxElements) / retreat??? forward/backward? == drop? only in ListIterator?
-
   @Override
   @NotNull
   IteratorSequence<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);
@@ -351,6 +349,8 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull
   IteratorSequence<E> peek(@NotNull IndexedConsumer<? super E> consumer);
 
+  // TODO: peekExceptionally
+
   @Override
   @NotNull
   IteratorSequence<E> plus(E element);
@@ -473,6 +473,8 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @Override
   @NotNull
   IteratorSequence<E> slice(int start, int end);
+
+  // TODO: slidingWindow?
 
   @Override
   @NotNull

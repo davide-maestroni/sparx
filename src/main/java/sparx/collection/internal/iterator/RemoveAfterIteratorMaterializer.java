@@ -20,60 +20,100 @@ import sparx.util.Require;
 
 public class RemoveAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-  private final int numElements;
-  private final IteratorMaterializer<E> wrapped;
-
-  private int pos;
+  private volatile IteratorMaterializer<E> state;
 
   public RemoveAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int numElements) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.numElements = Require.notNegative(numElements, "numElements");
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+        Require.notNegative(numElements, "numElements"));
   }
 
   @Override
   public int knownSize() {
-    final int knownSize = wrapped.knownSize();
-    if (knownSize >= 0) {
-      if (knownSize == 0) {
-        return 0;
-      }
-      if (knownSize > numElements) {
-        return knownSize - 1;
-      }
-      return knownSize;
-    }
-    return -1;
+    return state.knownSize();
   }
 
   @Override
   public boolean materializeHasNext() {
-    if (numElements == pos) {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.materializeHasNext()) {
-        wrapped.materializeSkip(1);
-        ++pos;
-        return wrapped.materializeHasNext();
-      }
-      return false;
-    }
-    return wrapped.materializeHasNext();
+    return state.materializeHasNext();
   }
 
   @Override
   public E materializeNext() {
-    if (numElements == pos) {
-      wrapped.materializeSkip(1);
-      ++pos;
-    }
-    ++pos;
-    return wrapped.materializeNext();
+    return state.materializeNext();
   }
 
   @Override
   public int materializeSkip(final int count) {
-    final int skipped = wrapped.materializeSkip(count);
-    pos += skipped;
-    return skipped;
+    return state.materializeSkip(count);
+  }
+
+  private class ImmaterialState implements IteratorMaterializer<E> {
+
+    private final int numElements;
+    private final IteratorMaterializer<E> wrapped;
+
+    private int pos;
+
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int numElements) {
+      this.wrapped = wrapped;
+      this.numElements = numElements;
+    }
+
+    @Override
+    public int knownSize() {
+      final int knownSize = wrapped.knownSize();
+      if (knownSize >= 0) {
+        if (knownSize >= numElements - pos) {
+          return knownSize - 1;
+        }
+        return knownSize;
+      }
+      return -1;
+    }
+
+    @Override
+    public boolean materializeHasNext() {
+      if (numElements == pos) {
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        if (wrapped.materializeHasNext()) {
+          wrapped.materializeSkip(1);
+          return (state = wrapped).materializeHasNext();
+        }
+        return false;
+      }
+      return wrapped.materializeHasNext();
+    }
+
+    @Override
+    public E materializeNext() {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (numElements == pos) {
+        (state = wrapped).materializeSkip(1);
+      }
+      ++pos;
+      return wrapped.materializeNext();
+    }
+
+    @Override
+    public int materializeSkip(final int count) {
+      if (count > 0) {
+        final int remaining = numElements - pos;
+        if (count <= remaining) {
+          final int skipped = wrapped.materializeSkip(count);
+          this.pos += skipped;
+          return skipped;
+        }
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        int skipped = wrapped.materializeSkip(remaining);
+        pos += skipped;
+        if (skipped == remaining) {
+          wrapped.materializeSkip(1);
+          return skipped + (state = wrapped).materializeSkip(count - remaining);
+        }
+        return skipped;
+      }
+      return 0;
+    }
   }
 }

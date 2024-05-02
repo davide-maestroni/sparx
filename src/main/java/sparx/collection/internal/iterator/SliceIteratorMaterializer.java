@@ -20,12 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 import sparx.util.Require;
 
-public class RemoveSliceIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class SliceIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
-  public RemoveSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int start, final int end) {
+  public SliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped, final int start,
+      final int end) {
     if (start >= 0 && end >= 0) {
       state = new MaterialState(Require.notNull(wrapped, "wrapped"), start,
           Math.max(0, end - start));
@@ -47,6 +47,11 @@ public class RemoveSliceIteratorMaterializer<E> extends AbstractIteratorMaterial
   @Override
   public E materializeNext() {
     return state.materializeNext();
+  }
+
+  @Override
+  public int materializeSkip(final int count) {
+    return state.materializeSkip(count);
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -107,7 +112,11 @@ public class RemoveSliceIteratorMaterializer<E> extends AbstractIteratorMaterial
 
     @Override
     public int materializeSkip(final int count) {
-      throw new UnsupportedOperationException();
+      if (count > 0) {
+        materializeHasNext();
+        return state.materializeSkip(count);
+      }
+      return 0;
     }
   }
 
@@ -116,8 +125,6 @@ public class RemoveSliceIteratorMaterializer<E> extends AbstractIteratorMaterial
     private final int length;
     private final int start;
     private final IteratorMaterializer<E> wrapped;
-
-    private int pos;
 
     private MaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int start,
         final int length) {
@@ -133,7 +140,7 @@ public class RemoveSliceIteratorMaterializer<E> extends AbstractIteratorMaterial
         if (knownSize == 0) {
           return 0;
         }
-        return Math.max(start - pos, knownSize - length);
+        return Math.max(length, knownSize - start);
       }
       return -1;
     }
@@ -141,14 +148,8 @@ public class RemoveSliceIteratorMaterializer<E> extends AbstractIteratorMaterial
     @Override
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      if (pos == start) {
-        (state = wrapped).materializeSkip(length);
-      }
-      if (wrapped.materializeHasNext()) {
-        return true;
-      }
-      state = EmptyIteratorMaterializer.instance();
-      return false;
+      wrapped.materializeSkip(start);
+      return (state = new TakeIteratorMaterializer<E>(wrapped, length)).materializeHasNext();
     }
 
     @Override
@@ -156,13 +157,28 @@ public class RemoveSliceIteratorMaterializer<E> extends AbstractIteratorMaterial
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      ++pos;
-      return wrapped.materializeNext();
+      return state.materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
-      throw new UnsupportedOperationException();
+      if (count > 0) {
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        wrapped.materializeSkip(start);
+        final int length = this.length;
+        if (count < length) {
+          final int skipped = wrapped.materializeSkip(count);
+          if (skipped == count) {
+            state = new TakeIteratorMaterializer<E>(wrapped, length - count);
+          } else {
+            state = EmptyIteratorMaterializer.instance();
+          }
+          return skipped;
+        }
+        state = EmptyIteratorMaterializer.instance();
+        return wrapped.materializeSkip(length);
+      }
+      return 0;
     }
   }
 }

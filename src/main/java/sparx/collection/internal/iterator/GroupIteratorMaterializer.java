@@ -124,7 +124,8 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
     public int materializeSkip(final int count) {
       if (count > 0) {
         final long size = this.size;
-        final int skipped = wrapped.materializeSkip(SizeOverflowException.safeCast(size * count));
+        final int skipped = wrapped.materializeSkip(
+            (int) Math.min(Integer.MAX_VALUE, size * count));
         return (int) ((skipped + (size >> 1)) / size);
       }
       return 0;
@@ -188,7 +189,7 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
       if (count > 0) {
         final long maxSize = this.maxSize;
         final int skipped = wrapped.materializeSkip(
-            SizeOverflowException.safeCast(maxSize * count));
+            (int) Math.min(Integer.MAX_VALUE, maxSize * count));
         return (int) ((skipped + (maxSize >> 1)) / maxSize);
       }
       return 0;

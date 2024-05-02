@@ -94,14 +94,19 @@ public class InsertAfterIteratorMaterializer<E> implements IteratorMaterializer<
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        final int numElements = this.numElements;
-        final int pos = this.pos;
-        if (count <= numElements - pos) {
+        final int remaining = numElements - pos;
+        if (count <= remaining) {
           final int skipped = wrapped.materializeSkip(count);
           this.pos += skipped;
           return skipped;
         }
-        return (state = wrapped).materializeSkip(count - 1) + 1;
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        int skipped = wrapped.materializeSkip(remaining);
+        pos += skipped;
+        if (skipped == remaining) {
+          return skipped + (state = wrapped).materializeSkip(count - remaining - 1) + 1;
+        }
+        return skipped;
       }
       return 0;
     }

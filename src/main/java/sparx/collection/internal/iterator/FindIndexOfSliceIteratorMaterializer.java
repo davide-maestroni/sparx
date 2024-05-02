@@ -129,8 +129,7 @@ public class FindIndexOfSliceIteratorMaterializer<E> implements IteratorMaterial
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
-        return 1;
+        return materializeHasNext() ? 1 : 0;
       }
       return 0;
     }

@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.AbstractListSequence;
-import sparx.collection.IteratorSequence;
 import sparx.collection.Sequence;
 import sparx.collection.internal.iterator.AllIteratorMaterializer;
 import sparx.collection.internal.iterator.AppendAllIteratorMaterializer;
@@ -81,7 +80,10 @@ import sparx.collection.internal.iterator.RemoveSliceIteratorMaterializer;
 import sparx.collection.internal.iterator.RemoveWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.RepeatIteratorMaterializer;
 import sparx.collection.internal.iterator.ReplaceSliceIteratorMaterializer;
+import sparx.collection.internal.iterator.ResizeIteratorMaterializer;
+import sparx.collection.internal.iterator.SliceIteratorMaterializer;
 import sparx.collection.internal.iterator.SwitchExceptionallyIteratorMaterializer;
+import sparx.collection.internal.iterator.TakeIteratorMaterializer;
 import sparx.collection.internal.list.AllListMaterializer;
 import sparx.collection.internal.list.AppendAllListMaterializer;
 import sparx.collection.internal.list.AppendListMaterializer;
@@ -312,7 +314,7 @@ public class Sparx {
     private lazy() {
     }
 
-    public static class Iterator<E> implements IteratorSequence<E> {
+    public static class Iterator<E> extends DummyIteratorSequence<E> {
 
       private static final Iterator<?> EMPTY_ITERATOR = new Iterator<Object>(
           EmptyIteratorMaterializer.instance());
@@ -1472,10 +1474,10 @@ public class Sparx {
           @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return new Iterator<E>(new SuppliedMeterializer<E>(supplier));
+          return new Iterator<E>(new SuppliedMaterializer<E>(supplier));
         }
         return new Iterator<E>(
-            new OrElseIteratorMaterializer<E>(materializer, new SuppliedMeterializer<E>(supplier)));
+            new OrElseIteratorMaterializer<E>(materializer, new SuppliedMaterializer<E>(supplier)));
       }
 
       @Override
@@ -1823,6 +1825,79 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull Iterator<E> resizeTo(final int numElements, final E padding) {
+        if (Require.notNegative(numElements, "numElements") == 0) {
+          return Iterator.of();
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize >= 0) {
+          if (knownSize == 0) {
+            return Iterator.times(numElements, padding);
+          }
+          if (knownSize == numElements) {
+            return this;
+          }
+          if (knownSize < numElements) {
+            return new Iterator<E>(new TakeIteratorMaterializer<E>(materializer, numElements));
+          }
+          return new Iterator<E>(new AppendAllIteratorMaterializer<E>(materializer,
+              new RepeatIteratorMaterializer<E>(knownSize - numElements, padding)));
+        }
+        return new Iterator<E>(
+            new ResizeIteratorMaterializer<E>(materializer, numElements, padding));
+      }
+
+      @Override
+      public @NotNull Iterator<E> runFinally(@NotNull final Action action) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          try {
+            action.run();
+          } catch (final Exception e) {
+            throw UncheckedException.throwUnchecked(e);
+          }
+          return this;
+        }
+        return new Iterator<E>(new FinallyIteratorMaterializer<E>(materializer, action));
+      }
+
+      @Override
+      public @NotNull Iterator<E> slice(final int start, final int end) {
+        if ((start == end) || (end >= 0 && start >= end)) {
+          return Iterator.of();
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize > 0) {
+          final int knownStart;
+          if (start < 0) {
+            knownStart = Math.max(0, knownSize + start);
+          } else {
+            knownStart = Math.min(knownSize, start);
+          }
+          final int knownEnd;
+          if (end < 0) {
+            knownEnd = Math.max(0, knownSize + end);
+          } else {
+            knownEnd = Math.min(knownSize, end);
+          }
+          if (knownStart >= knownEnd) {
+            return Iterator.of();
+          }
+        }
+        return new Iterator<E>(new SliceIteratorMaterializer<E>(materializer, start, end));
+      }
+
+      @Override
+      public @NotNull Iterator<Boolean> startsWith(@NotNull final Iterable<?> elements) {
+        return null;
+      }
+
+      @Override
       public @NotNull <T extends Throwable> Iterator<E> switchExceptionally(
           @NotNull final Class<T> exceptionType,
           @NotNull final Function<? super T, ? extends Iterable<? extends E>> mapper) {
@@ -1869,39 +1944,31 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull Iterator<E> runFinally(@NotNull final Action action) {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          try {
-            action.run();
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-          return this;
-        }
-        return new Iterator<E>(new FinallyIteratorMaterializer<E>(materializer, action));
+      public int size() {
+        return materializer.materializeSkip(Integer.MAX_VALUE);
       }
 
       @Override
-      public int size() {
-        final IteratorMaterializer<E> materializer = this.materializer;
-        int size = 0;
-        while (materializer.materializeHasNext()) {
-          materializer.materializeSkip(1);
-          ++size;
+      public @NotNull Iterator<E> take(final int maxElements) {
+        if (maxElements <= 0) {
+          return Iterator.of();
         }
-        return size;
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new TakeIteratorMaterializer<E>(materializer, maxElements));
       }
 
       public @NotNull List<E> toList() {
         return List.wrap(this);
       }
 
-      private static class SuppliedMeterializer<E> implements IteratorMaterializer<E> {
+      private static class SuppliedMaterializer<E> implements IteratorMaterializer<E> {
 
         private volatile IteratorMaterializer<E> state;
 
-        private SuppliedMeterializer(
+        private SuppliedMaterializer(
             @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
           state = new ImmaterialState(Require.notNull(supplier, "supplier"));
         }

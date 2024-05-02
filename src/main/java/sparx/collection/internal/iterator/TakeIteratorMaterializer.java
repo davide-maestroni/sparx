@@ -18,17 +18,15 @@ package sparx.collection.internal.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
-import sparx.util.UncheckedException;
-import sparx.util.function.IndexedPredicate;
 
-public class FindLastIndexIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
+public class TakeIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<Integer> state;
+  private volatile IteratorMaterializer<E> state;
 
-  public FindLastIndexIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate) {
+  public TakeIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      final int maxElements) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"));
+        Require.positive(maxElements, "maxElements"));
   }
 
   @Override
@@ -42,7 +40,7 @@ public class FindLastIndexIteratorMaterializer<E> implements IteratorMaterialize
   }
 
   @Override
-  public Integer materializeNext() {
+  public E materializeNext() {
     return state.materializeNext();
   }
 
@@ -51,60 +49,47 @@ public class FindLastIndexIteratorMaterializer<E> implements IteratorMaterialize
     return state.materializeSkip(count);
   }
 
-  private class ImmaterialState implements IteratorMaterializer<Integer> {
+  private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final IndexedPredicate<? super E> predicate;
+    private final int maxElements;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate) {
+    private int pos;
+
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int maxElements) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
+      this.maxElements = maxElements;
     }
 
     @Override
     public int knownSize() {
+      final int knownSize = wrapped.knownSize();
+      if (knownSize >= 0) {
+        return Math.max(0, knownSize - maxElements);
+      }
       return -1;
     }
 
     @Override
     public boolean materializeHasNext() {
-      try {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        final IndexedPredicate<? super E> predicate = this.predicate;
-        boolean found = false;
-        int last = 0;
-        int i = 0;
-        while (wrapped.materializeHasNext()) {
-          if (predicate.test(i, wrapped.materializeNext())) {
-            last = i;
-            found = true;
-          }
-          ++i;
-        }
-        if (found) {
-          state = new ElementToIteratorMaterializer<Integer>(last);
-          return true;
-        }
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
-      state = EmptyIteratorMaterializer.instance();
-      return false;
+      return (pos < maxElements) && wrapped.materializeHasNext();
     }
 
     @Override
-    public Integer materializeNext() {
+    public E materializeNext() {
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      ++pos;
+      return wrapped.materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        return materializeHasNext() ? 1 : 0;
+        final int skipped = wrapped.materializeSkip(Math.min(count, maxElements - pos));
+        pos += skipped;
+        return skipped;
       }
       return 0;
     }

@@ -30,7 +30,7 @@ public class ArrayToIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   @Override
   public int knownSize() {
-    return elements.length;
+    return elements.length - pos;
   }
 
   @Override

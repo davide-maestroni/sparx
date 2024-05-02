@@ -18,7 +18,6 @@ package sparx.collection.internal.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.list.ListMaterializer;
-import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 
 public class ListMaterializerToIteratorMaterializer<E> implements IteratorMaterializer<E> {
@@ -57,7 +56,8 @@ public class ListMaterializerToIteratorMaterializer<E> implements IteratorMateri
   @Override
   public int materializeSkip(final int count) {
     final ListMaterializer<E> wrapped = this.wrapped;
-    if (wrapped.canMaterializeElement(IndexOverflowException.safeCast((long) count + pos))) {
+    final long wrappedIndex = (long) count + pos;
+    if (wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex)) {
       pos += count;
       return count;
     }
