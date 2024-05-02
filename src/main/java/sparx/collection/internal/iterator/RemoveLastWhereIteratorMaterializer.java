@@ -19,18 +19,16 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class FlatMapLastWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class RemoveLastWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
-  public FlatMapLastWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
-      @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
+  public RemoveLastWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"));
+        Require.notNull(predicate, "predicate"));
   }
 
   @Override
@@ -50,18 +48,15 @@ public class FlatMapLastWhereIteratorMaterializer<E> extends AbstractIteratorMat
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper;
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
     private int pos;
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
+        @NotNull final IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;
       this.predicate = predicate;
-      this.mapper = mapper;
     }
 
     @Override
@@ -93,8 +88,8 @@ public class FlatMapLastWhereIteratorMaterializer<E> extends AbstractIteratorMat
           final IndexedPredicate<? super E> predicate = this.predicate;
           for (int i = elements.size() - 1; i >= 0; --i) {
             if (predicate.test(pos + i, elements.get(i))) {
-              return (state = new FlatMapAfterIteratorMaterializer<E>(
-                  new DequeueToIteratorMaterializer<E>(elements), i, mapper));
+              return (state = new RemoveAfterIteratorMaterializer<E>(
+                  new DequeueToIteratorMaterializer<E>(elements), i));
             }
           }
           return (state = new DequeueToIteratorMaterializer<E>(elements));

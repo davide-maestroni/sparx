@@ -15,22 +15,20 @@
  */
 package sparx.collection.internal.iterator;
 
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.DequeueList;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
-import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class FlatMapLastWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class RemoveFirstWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
-  public FlatMapLastWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
-      @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
+  public RemoveFirstWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"));
+        Require.notNull(predicate, "predicate"));
   }
 
   @Override
@@ -50,18 +48,17 @@ public class FlatMapLastWhereIteratorMaterializer<E> extends AbstractIteratorMat
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper;
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
+    private boolean hasNext;
+    private E next;
     private int pos;
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
+        @NotNull final IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;
       this.predicate = predicate;
-      this.mapper = mapper;
     }
 
     @Override
@@ -71,38 +68,41 @@ public class FlatMapLastWhereIteratorMaterializer<E> extends AbstractIteratorMat
 
     @Override
     public boolean materializeHasNext() {
-      return materializer().materializeHasNext();
+      if (hasNext) {
+        return true;
+      }
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (wrapped.materializeHasNext()) {
+        final IndexedPredicate<? super E> predicate = this.predicate;
+        E next = wrapped.materializeNext();
+        try {
+          if (!predicate.test(pos++, next)) {
+            this.next = next;
+            return hasNext = true;
+          }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+        if ((state = wrapped).materializeHasNext()) {
+          return true;
+        }
+      }
+      state = EmptyIteratorMaterializer.instance();
+      return false;
     }
 
     @Override
     public E materializeNext() {
-      final E next = materializer().materializeNext();
-      ++pos;
-      return next;
-    }
-
-    private @NotNull IteratorMaterializer<E> materializer() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.materializeHasNext()) {
-        final DequeueList<E> elements = new DequeueList<E>();
-        do {
-          elements.add(wrapped.materializeNext());
-        } while (wrapped.materializeHasNext());
-        try {
-          final int pos = this.pos;
-          final IndexedPredicate<? super E> predicate = this.predicate;
-          for (int i = elements.size() - 1; i >= 0; --i) {
-            if (predicate.test(pos + i, elements.get(i))) {
-              return (state = new FlatMapAfterIteratorMaterializer<E>(
-                  new DequeueToIteratorMaterializer<E>(elements), i, mapper));
-            }
-          }
-          return (state = new DequeueToIteratorMaterializer<E>(elements));
-        } catch (final Exception e) {
-          throw UncheckedException.throwUnchecked(e);
-        }
+      if (hasNext) {
+        hasNext = false;
+        final E next = this.next;
+        this.next = null;
+        return next;
       }
-      return (state = wrapped);
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
+      return state.materializeNext();
     }
 
     @Override

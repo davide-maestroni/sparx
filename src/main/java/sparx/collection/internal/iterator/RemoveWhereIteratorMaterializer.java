@@ -38,7 +38,7 @@ public class RemoveWhereIteratorMaterializer<E> extends AbstractIteratorMaterial
 
   @Override
   public int knownSize() {
-    return wrapped.knownSize() == 0 ? 0 : -1;
+    return -1;
   }
 
   @Override

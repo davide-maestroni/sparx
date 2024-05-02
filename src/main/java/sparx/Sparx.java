@@ -74,8 +74,13 @@ import sparx.collection.internal.iterator.OrElseIteratorMaterializer;
 import sparx.collection.internal.iterator.PeekIteratorMaterializer;
 import sparx.collection.internal.iterator.ReduceLeftIteratorMaterializer;
 import sparx.collection.internal.iterator.ReduceRightIteratorMaterializer;
+import sparx.collection.internal.iterator.RemoveAfterIteratorMaterializer;
+import sparx.collection.internal.iterator.RemoveFirstWhereIteratorMaterializer;
+import sparx.collection.internal.iterator.RemoveLastWhereIteratorMaterializer;
+import sparx.collection.internal.iterator.RemoveSliceIteratorMaterializer;
 import sparx.collection.internal.iterator.RemoveWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.RepeatIteratorMaterializer;
+import sparx.collection.internal.iterator.ReplaceSliceIteratorMaterializer;
 import sparx.collection.internal.iterator.SwitchExceptionallyIteratorMaterializer;
 import sparx.collection.internal.list.AllListMaterializer;
 import sparx.collection.internal.list.AppendAllListMaterializer;
@@ -1534,6 +1539,290 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull Iterator<E> removeAfter(final int numElements) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (numElements == 0 && knownSize == 1) {
+          return Iterator.of();
+        }
+        return new Iterator<E>(new RemoveAfterIteratorMaterializer<E>(materializer, numElements));
+      }
+
+      @Override
+      public @NotNull Iterator<E> removeEach(final E element) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new RemoveWhereIteratorMaterializer<E>(materializer, equalsElement(element)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> removeFirst(final E element) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new RemoveFirstWhereIteratorMaterializer<E>(materializer, equalsElement(element)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> removeFirstWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new RemoveFirstWhereIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> removeFirstWhere(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new RemoveFirstWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> removeLast(final E element) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new RemoveLastWhereIteratorMaterializer<E>(materializer, equalsElement(element)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> removeLastWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new RemoveLastWhereIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> removeLastWhere(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new RemoveLastWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> removeSlice(final int start, final int end) {
+        if (end <= start && start >= 0 && end >= 0) {
+          return this;
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize > 0) {
+          final int knownStart;
+          if (start < 0) {
+            knownStart = Math.max(0, knownSize + start);
+          } else {
+            knownStart = Math.min(knownSize, start);
+          }
+          final int knownEnd;
+          if (end < 0) {
+            knownEnd = Math.max(0, knownSize + end);
+          } else {
+            knownEnd = Math.min(knownSize, end);
+          }
+          if (knownStart >= knownEnd) {
+            return this;
+          }
+        }
+        return new Iterator<E>(new RemoveSliceIteratorMaterializer<E>(materializer, start, end));
+      }
+
+      @Override
+      public @NotNull Iterator<E> removeWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> removeWhere(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new RemoveWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceAfter(final int numElements, final E replacement) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new MapAfterIteratorMaterializer<E>(materializer, numElements,
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceEach(final E element, final E replacement) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new MapWhereIteratorMaterializer<E>(materializer, equalsElement(element),
+                replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceFirst(final E element, final E replacement) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new MapFirstWhereIteratorMaterializer<E>(materializer, equalsElement(element),
+                replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceFirstWhere(
+          @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new MapFirstWhereIteratorMaterializer<E>(materializer, predicate,
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceFirstWhere(@NotNull final Predicate<? super E> predicate,
+          final E replacement) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new MapFirstWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceLast(final E element, final E replacement) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new MapLastWhereIteratorMaterializer<E>(materializer, equalsElement(element),
+                replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceLastWhere(
+          @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new MapLastWhereIteratorMaterializer<E>(materializer, predicate,
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceLastWhere(@NotNull final Predicate<? super E> predicate,
+          final E replacement) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new MapLastWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceSlice(final int start, final int end,
+          @NotNull final Iterable<? extends E> patch) {
+        if (start >= 0 && start == end) {
+          return insertAllAfter(start, patch);
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
+          return this;
+        }
+        if (knownSize > 0) {
+          final int knownStart;
+          if (start < 0) {
+            knownStart = Math.max(0, knownSize + start);
+          } else {
+            knownStart = Math.min(knownSize, start);
+          }
+          final int knownEnd;
+          if (end < 0) {
+            knownEnd = Math.max(0, knownSize + end);
+          } else {
+            knownEnd = Math.min(knownSize, end);
+          }
+          if (knownStart >= knownEnd) {
+            return insertAllAfter(knownStart, patch);
+          }
+        }
+        return new Iterator<E>(new ReplaceSliceIteratorMaterializer<E>(materializer, start, end,
+            getElementsMaterializer(patch)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceWhere(@NotNull final IndexedPredicate<? super E> predicate,
+          final E replacement) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new MapWhereIteratorMaterializer<E>(materializer, predicate,
+            replacementMapper(replacement)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> replaceWhere(@NotNull final Predicate<? super E> predicate,
+          final E replacement) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new MapWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                replacementMapper(replacement)));
+      }
+
+      @Override
       public @NotNull <T extends Throwable> Iterator<E> switchExceptionally(
           @NotNull final Class<T> exceptionType,
           @NotNull final Function<? super T, ? extends Iterable<? extends E>> mapper) {
@@ -1598,7 +1887,7 @@ public class Sparx {
         final IteratorMaterializer<E> materializer = this.materializer;
         int size = 0;
         while (materializer.materializeHasNext()) {
-          materializer.materializeNext();
+          materializer.materializeSkip(1);
           ++size;
         }
         return size;
@@ -2938,10 +3227,10 @@ public class Sparx {
           @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return new List<E>(new SuppliedMeterializer<E>(supplier));
+          return new List<E>(new SuppliedMaterializer<E>(supplier));
         }
         return new List<E>(
-            new OrElseListMaterializer<E>(materializer, new SuppliedMeterializer<E>(supplier)));
+            new OrElseListMaterializer<E>(materializer, new SuppliedMaterializer<E>(supplier)));
       }
 
       @Override
@@ -3478,11 +3767,11 @@ public class Sparx {
                 elementsContains(materializer))));
       }
 
-      private static class SuppliedMeterializer<E> implements ListMaterializer<E> {
+      private static class SuppliedMaterializer<E> implements ListMaterializer<E> {
 
         private volatile ListMaterializer<E> state;
 
-        private SuppliedMeterializer(
+        private SuppliedMaterializer(
             @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
           state = new ImmaterialState(Require.notNull(supplier, "supplier"));
         }

@@ -85,9 +85,9 @@ public class MapLastWhereIteratorMaterializer<E> extends AbstractIteratorMateria
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
         final DequeueList<E> elements = new DequeueList<E>();
-        while (wrapped.materializeHasNext()) {
+        do {
           elements.add(wrapped.materializeNext());
-        }
+        } while (wrapped.materializeHasNext());
         try {
           final int pos = this.pos;
           final IndexedPredicate<? super E> predicate = this.predicate;
