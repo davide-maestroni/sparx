@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.AbstractListSequence;
+import sparx.collection.IteratorSequence;
 import sparx.collection.Sequence;
 import sparx.collection.internal.iterator.AllIteratorMaterializer;
 import sparx.collection.internal.iterator.AppendAllIteratorMaterializer;
@@ -82,8 +83,13 @@ import sparx.collection.internal.iterator.RepeatIteratorMaterializer;
 import sparx.collection.internal.iterator.ReplaceSliceIteratorMaterializer;
 import sparx.collection.internal.iterator.ResizeIteratorMaterializer;
 import sparx.collection.internal.iterator.SliceIteratorMaterializer;
+import sparx.collection.internal.iterator.StartsWithIteratorMaterializer;
 import sparx.collection.internal.iterator.SwitchExceptionallyIteratorMaterializer;
 import sparx.collection.internal.iterator.TakeIteratorMaterializer;
+import sparx.collection.internal.iterator.TakeRightIteratorMaterializer;
+import sparx.collection.internal.iterator.TakeRightWhileIteratorMaterializer;
+import sparx.collection.internal.iterator.TakeWhileIteratorMaterializer;
+import sparx.collection.internal.iterator.UnionIteratorMaterializer;
 import sparx.collection.internal.list.AllListMaterializer;
 import sparx.collection.internal.list.AppendAllListMaterializer;
 import sparx.collection.internal.list.AppendListMaterializer;
@@ -314,7 +320,7 @@ public class Sparx {
     private lazy() {
     }
 
-    public static class Iterator<E> extends DummyIteratorSequence<E> {
+    public static class Iterator<E> implements IteratorSequence<E> {
 
       private static final Iterator<?> EMPTY_ITERATOR = new Iterator<Object>(
           EmptyIteratorMaterializer.instance());
@@ -1894,7 +1900,17 @@ public class Sparx {
 
       @Override
       public @NotNull Iterator<Boolean> startsWith(@NotNull final Iterable<?> elements) {
-        return null;
+        final IteratorMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return Iterator.of(true);
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of(false);
+        }
+        return new Iterator<Boolean>(
+            new StartsWithIteratorMaterializer<E>(materializer, elementsMaterializer));
+
       }
 
       @Override
@@ -1960,8 +1976,73 @@ public class Sparx {
         return new Iterator<E>(new TakeIteratorMaterializer<E>(materializer, maxElements));
       }
 
+      @Override
+      public @NotNull Iterator<E> takeRight(final int maxElements) {
+        if (maxElements <= 0) {
+          return Iterator.of();
+        }
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new TakeRightIteratorMaterializer<E>(materializer, maxElements));
+      }
+
+      @Override
+      public @NotNull Iterator<E> takeRightWhile(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new TakeRightWhileIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> takeRightWhile(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new TakeRightWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> takeWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new TakeWhileIteratorMaterializer<E>(materializer, predicate));
+      }
+
+      @Override
+      public @NotNull Iterator<E> takeWhile(@NotNull final Predicate<? super E> predicate) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new TakeWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+      }
+
       public @NotNull List<E> toList() {
         return List.wrap(this);
+      }
+
+      @Override
+      public @NotNull Iterator<E> union(@NotNull final Iterable<? extends E> elements) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.wrap(elements);
+        }
+        final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new UnionIteratorMaterializer<E>(materializer, elementsMaterializer));
       }
 
       private static class SuppliedMaterializer<E> implements IteratorMaterializer<E> {
@@ -3741,6 +3822,10 @@ public class Sparx {
         final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
         if (elementsMaterializer.knownSize() == 0) {
           return TRUE_LIST;
+        }
+        final ListMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return FALSE_LIST;
         }
         return new List<Boolean>(
             new StartsWithListMaterializer<E>(materializer, elementsMaterializer));

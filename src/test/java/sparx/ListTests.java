@@ -2656,39 +2656,6 @@ public class ListTests {
   }
 
   @Test
-  public void takeWhile() {
-    var l = List.<Integer>of().takeWhile(e -> e > 0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-
-    l = List.of(1, null, 3).takeWhile(Objects::isNull);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-    l = List.of(1, null, 3).takeWhile(Objects::nonNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertEquals(List.of(1), l);
-    l = List.of(1, null, 3).takeWhile(e -> e < 1);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-
-    l = List.of(1, 2, 3).takeWhile(e -> e > 0);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, 2, 3), l);
-
-    assertThrows(NullPointerException.class,
-        () -> List.of(1, null, 3).takeWhile(e -> e > 0).size());
-  }
-
-  @Test
   public void takeRightWhile() {
     var l = List.<Integer>of().takeRightWhile(e -> e > 0);
     assertTrue(l.isEmpty());
@@ -2719,6 +2686,39 @@ public class ListTests {
 
     assertThrows(NullPointerException.class,
         () -> List.of(1, null, 3).takeRightWhile(e -> e > 0).size());
+  }
+
+  @Test
+  public void takeWhile() {
+    var l = List.<Integer>of().takeWhile(e -> e > 0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+
+    l = List.of(1, null, 3).takeWhile(Objects::isNull);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+    l = List.of(1, null, 3).takeWhile(Objects::nonNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertEquals(List.of(1), l);
+    l = List.of(1, null, 3).takeWhile(e -> e < 1);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+
+    l = List.of(1, 2, 3).takeWhile(e -> e > 0);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, 2, 3), l);
+
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).takeWhile(e -> e > 0).size());
   }
 
   @Test
