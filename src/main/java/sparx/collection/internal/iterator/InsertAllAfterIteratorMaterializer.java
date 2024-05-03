@@ -95,8 +95,9 @@ public class InsertAllAfterIteratorMaterializer<E> implements IteratorMaterializ
         }
         return (state = wrapped).materializeNext();
       }
+      final E next = wrapped.materializeNext();
       ++pos;
-      return wrapped.materializeNext();
+      return next;
     }
 
     @Override

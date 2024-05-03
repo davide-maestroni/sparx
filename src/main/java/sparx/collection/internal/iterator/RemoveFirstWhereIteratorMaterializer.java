@@ -74,9 +74,11 @@ public class RemoveFirstWhereIteratorMaterializer<E> extends AbstractIteratorMat
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
         final IndexedPredicate<? super E> predicate = this.predicate;
+        final int pos = this.pos;
+        ++this.pos;
         E next = wrapped.materializeNext();
         try {
-          if (!predicate.test(pos++, next)) {
+          if (!predicate.test(pos, next)) {
             this.next = next;
             return hasNext = true;
           }

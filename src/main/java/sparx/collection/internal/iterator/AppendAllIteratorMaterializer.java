@@ -21,7 +21,7 @@ import sparx.util.SizeOverflowException;
 
 public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-  private IteratorMaterializer<E> state;
+  private volatile IteratorMaterializer<E> state;
 
   public AppendAllIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IteratorMaterializer<E> elementsMaterializer) {
@@ -53,8 +53,6 @@ public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E>
 
     private final IteratorMaterializer<E> elementsMaterializer;
     private final IteratorMaterializer<E> wrapped;
-
-    private int pos;
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
         @NotNull final IteratorMaterializer<E> elementsMaterializer) {

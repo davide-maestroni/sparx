@@ -96,7 +96,10 @@ public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer
         }
         int skipped = wrapped.materializeSkip(remaining);
         this.pos += skipped;
-        return skipped + materializer().materializeSkip(count - skipped);
+        if (skipped == remaining) {
+          return skipped + materializer().materializeSkip(count - skipped);
+        }
+        return skipped;
       }
       return 0;
     }
@@ -111,6 +114,7 @@ public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer
                 wrapped.materializeNext());
             return (state = new AppendAllIteratorMaterializer<E>(materializer, wrapped));
           } catch (final Exception e) {
+            state = wrapped;
             throw UncheckedException.throwUnchecked(e);
           }
         }

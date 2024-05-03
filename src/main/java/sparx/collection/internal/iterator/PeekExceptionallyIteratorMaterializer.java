@@ -60,7 +60,7 @@ public class PeekExceptionallyIteratorMaterializer<E> extends AbstractIteratorMa
       return next;
     } catch (final Throwable t) {
       try {
-        consumer.accept(pos, t);
+        consumer.accept(pos++, t);
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }

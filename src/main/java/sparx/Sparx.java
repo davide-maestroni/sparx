@@ -64,6 +64,7 @@ import sparx.collection.internal.iterator.IteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListToIteratorMaterializer;
+import sparx.collection.internal.iterator.LoopToIteratorMaterializer;
 import sparx.collection.internal.iterator.MapAfterIteratorMaterializer;
 import sparx.collection.internal.iterator.MapFirstWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.MapIteratorMaterializer;
@@ -418,6 +419,20 @@ public class Sparx {
         }
         return new Iterator<E>(
             new ArrayToIteratorMaterializer<E>(Arrays.copyOf(elements, elements.length)));
+      }
+
+      public static @NotNull <E> Iterator<E> ofLoop(final E initialValue,
+          @NotNull final IndexedPredicate<? super E> predicate,
+          @NotNull final IndexedFunction<? super E, ? extends E> update) {
+        return new Iterator<E>(new LoopToIteratorMaterializer<E>(initialValue, predicate, update));
+      }
+
+      public static @NotNull <E> Iterator<E> ofLoop(final E initialValue,
+          @NotNull final Predicate<? super E> predicate,
+          @NotNull final Function<? super E, ? extends E> update) {
+        return new Iterator<E>(
+            new LoopToIteratorMaterializer<E>(initialValue, toIndexedPredicate(predicate),
+                toIndexedFunction(update)));
       }
 
       public static @NotNull <E> Iterator<E> times(final int count, final E element) {

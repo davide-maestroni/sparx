@@ -77,8 +77,8 @@ public class RemoveAfterIteratorMaterializer<E> implements IteratorMaterializer<
       if (numElements == pos) {
         final IteratorMaterializer<E> wrapped = this.wrapped;
         if (wrapped.materializeHasNext()) {
-          wrapped.materializeSkip(1);
-          return (state = wrapped).materializeHasNext();
+          (state = wrapped).materializeSkip(1);
+          return wrapped.materializeHasNext();
         }
         return false;
       }
@@ -88,10 +88,9 @@ public class RemoveAfterIteratorMaterializer<E> implements IteratorMaterializer<
     @Override
     public E materializeNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      if (numElements == pos) {
+      if (wrapped.materializeHasNext() && numElements == pos++) {
         (state = wrapped).materializeSkip(1);
       }
-      ++pos;
       return wrapped.materializeNext();
     }
 

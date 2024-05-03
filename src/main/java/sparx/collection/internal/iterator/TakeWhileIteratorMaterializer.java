@@ -73,6 +73,8 @@ public class TakeWhileIteratorMaterializer<E> extends AbstractIteratorMaterializ
       }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
+        final int pos = this.pos;
+        ++this.pos;
         final E next = wrapped.materializeNext();
         try {
           if (predicate.test(pos, next)) {

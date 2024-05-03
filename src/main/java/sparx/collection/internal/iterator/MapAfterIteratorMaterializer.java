@@ -85,8 +85,9 @@ public class MapAfterIteratorMaterializer<E> implements IteratorMaterializer<E> 
           throw UncheckedException.throwUnchecked(e);
         }
       }
+      final E next = wrapped.materializeNext();
       ++this.pos;
-      return wrapped.materializeNext();
+      return next;
     }
 
     @Override

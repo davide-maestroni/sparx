@@ -15,55 +15,53 @@
  */
 package sparx.collection.internal.iterator;
 
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class MapWhereIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class LoopToIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
-  private final IndexedFunction<? super E, ? extends E> mapper;
   private final IndexedPredicate<? super E> predicate;
-  private final IteratorMaterializer<E> wrapped;
+  private final IndexedFunction<? super E, ? extends E> update;
 
+  private E current;
   private int pos;
 
-  public MapWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+  public LoopToIteratorMaterializer(final E initialValue,
       @NotNull final IndexedPredicate<? super E> predicate,
-      @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
+      @NotNull final IndexedFunction<? super E, ? extends E> update) {
     this.predicate = Require.notNull(predicate, "predicate");
-    this.mapper = Require.notNull(mapper, "mapper");
+    this.update = Require.notNull(update, "update");
+    current = initialValue;
   }
 
   @Override
   public int knownSize() {
-    return wrapped.knownSize();
+    return -1;
   }
 
   @Override
   public boolean materializeHasNext() {
-    return wrapped.materializeHasNext();
+    try {
+      return predicate.test(pos, current);
+    } catch (final Exception e) {
+      throw UncheckedException.toUnchecked(e);
+    }
   }
 
   @Override
   public E materializeNext() {
     try {
-      final int pos = this.pos;
-      ++this.pos;
-      final E next = wrapped.materializeNext();
-      if (predicate.test(pos, next)) {
-        return mapper.apply(pos, next);
+      final E current = this.current;
+      if (!predicate.test(pos, current)) {
+        throw new NoSuchElementException();
       }
-      return next;
+      return this.current = update.apply(pos++, current);
     } catch (final Exception e) {
-      throw UncheckedException.throwUnchecked(e);
+      throw UncheckedException.toUnchecked(e);
     }
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return wrapped.materializeSkip(count);
   }
 }

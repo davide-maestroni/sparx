@@ -15,58 +15,82 @@
  */
 package sparx.collection.internal.iterator;
 
-import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
 public class AppendIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-  private final E element;
-  private final IteratorMaterializer<E> wrapped;
-
-  private boolean consumed;
+  private volatile IteratorMaterializer<E> state;
 
   public AppendIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final E element) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.element = element;
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), element);
   }
 
   @Override
   public int knownSize() {
-    final int knownSize = wrapped.knownSize();
-    if (knownSize >= 0) {
-      return SizeOverflowException.safeCast((long) knownSize + (consumed ? 0 : 1));
-    }
-    return -1;
+    return state.knownSize();
   }
 
   @Override
   public boolean materializeHasNext() {
-    return wrapped.materializeHasNext() || !consumed;
+    return state.materializeHasNext();
   }
 
   @Override
   public E materializeNext() {
-    final IteratorMaterializer<E> wrapped = this.wrapped;
-    if (wrapped.materializeHasNext()) {
-      return wrapped.materializeNext();
-    }
-    if (consumed) {
-      throw new NoSuchElementException();
-    }
-    consumed = true;
-    return element;
+    return state.materializeNext();
   }
 
   @Override
   public int materializeSkip(final int count) {
-    final int skipped = wrapped.materializeSkip(count);
-    if (skipped < count && !consumed) {
-      consumed = true;
-      return skipped + 1;
+    return state.materializeSkip(count);
+  }
+
+  private class ImmaterialState implements IteratorMaterializer<E> {
+
+    private final E element;
+    private final IteratorMaterializer<E> wrapped;
+
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
+        final E element) {
+      this.wrapped = Require.notNull(wrapped, "wrapped");
+      this.element = element;
     }
-    return skipped;
+
+    @Override
+    public int knownSize() {
+      final int knownSize = wrapped.knownSize();
+      if (knownSize >= 0) {
+        return SizeOverflowException.safeCast((long) knownSize + 1);
+      }
+      return -1;
+    }
+
+    @Override
+    public boolean materializeHasNext() {
+      return true;
+    }
+
+    @Override
+    public E materializeNext() {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (wrapped.materializeHasNext()) {
+        return wrapped.materializeNext();
+      }
+      state = EmptyIteratorMaterializer.instance();
+      return element;
+    }
+
+    @Override
+    public int materializeSkip(final int count) {
+      final int skipped = wrapped.materializeSkip(count);
+      if (skipped < count) {
+        state = EmptyIteratorMaterializer.instance();
+        return skipped + 1;
+      }
+      return skipped;
+    }
   }
 }

@@ -78,8 +78,8 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends AbstractIteratorMa
       }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        final E next = wrapped.materializeNext();
         try {
+          final E next = wrapped.materializeNext();
           final int pos = this.pos;
           if (predicate.test(pos, next)) {
             hasNext = false;
@@ -88,12 +88,13 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends AbstractIteratorMa
             return (state = new InsertAllIteratorMaterializer<E>(wrapped,
                 materializer)).materializeHasNext();
           }
+          hasNext = true;
+          this.next = next;
+          return true;
         } catch (final Exception e) {
+          ++this.pos;
           throw UncheckedException.throwUnchecked(e);
         }
-        hasNext = true;
-        this.next = next;
-        return true;
       }
       return false;
     }

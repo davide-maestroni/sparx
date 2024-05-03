@@ -81,6 +81,7 @@ public class ResizeIteratorMaterializer<E> implements IteratorMaterializer<E> {
       }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
+        ++pos;
         return wrapped.materializeNext();
       }
       return (state = new RepeatIteratorMaterializer<E>(numElements - pos,
