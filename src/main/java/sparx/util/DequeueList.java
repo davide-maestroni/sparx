@@ -27,7 +27,7 @@ import java.util.RandomAccess;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomAccess,
+public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<E>, RandomAccess,
     Serializable {
 
   private static final int DEFAULT_SIZE = 1 << 3;
@@ -129,6 +129,12 @@ public class DequeueList<E> extends AbstractList<E> implements Deque<E>, RandomA
     this.last = 0;
     size = 0;
     ++modCount;
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public DequeueList<E> clone() throws CloneNotSupportedException {
+    return (DequeueList<E>) super.clone();
   }
 
   /**

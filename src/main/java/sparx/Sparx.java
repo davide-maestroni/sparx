@@ -71,6 +71,7 @@ import sparx.collection.internal.iterator.MapLastWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.MapWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.MaxIteratorMaterializer;
 import sparx.collection.internal.iterator.OrElseIteratorMaterializer;
+import sparx.collection.internal.iterator.PeekExceptionallyIteratorMaterializer;
 import sparx.collection.internal.iterator.PeekIteratorMaterializer;
 import sparx.collection.internal.iterator.ReduceLeftIteratorMaterializer;
 import sparx.collection.internal.iterator.ReduceRightIteratorMaterializer;
@@ -83,6 +84,7 @@ import sparx.collection.internal.iterator.RepeatIteratorMaterializer;
 import sparx.collection.internal.iterator.ReplaceSliceIteratorMaterializer;
 import sparx.collection.internal.iterator.ResizeIteratorMaterializer;
 import sparx.collection.internal.iterator.SliceIteratorMaterializer;
+import sparx.collection.internal.iterator.SlidingWindowIteratorMaterializer;
 import sparx.collection.internal.iterator.StartsWithIteratorMaterializer;
 import sparx.collection.internal.iterator.SwitchExceptionallyIteratorMaterializer;
 import sparx.collection.internal.iterator.TakeIteratorMaterializer;
@@ -1506,6 +1508,28 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull Iterator<E> peekExceptionally(
+          @NotNull final Consumer<? super Throwable> consumer) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(new PeekExceptionallyIteratorMaterializer<E>(materializer,
+            toIndexedConsumer(consumer)));
+      }
+
+      @Override
+      public @NotNull Iterator<E> peekExceptionally(
+          @NotNull final IndexedConsumer<? super Throwable> consumer) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new Iterator<E>(
+            new PeekExceptionallyIteratorMaterializer<E>(materializer, consumer));
+      }
+
+      @Override
       public @NotNull Iterator<E> plus(final E element) {
         return append(element);
       }
@@ -1896,6 +1920,32 @@ public class Sparx {
           }
         }
         return new Iterator<E>(new SliceIteratorMaterializer<E>(materializer, start, end));
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public @NotNull Iterator<? extends Iterator<E>> slidingWindow(final int maxSize,
+          final int step) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<Iterator<E>>(
+            new SlidingWindowIteratorMaterializer<E, Iterator<E>>(materializer, maxSize, step,
+                (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public @NotNull Iterator<? extends Iterator<E>> slidingWindow(final int size, final int step,
+          final E padding) {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return Iterator.of();
+        }
+        return new Iterator<Iterator<E>>(
+            new SlidingWindowIteratorMaterializer<E, Iterator<E>>(materializer, size, step, padding,
+                (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
       }
 
       @Override

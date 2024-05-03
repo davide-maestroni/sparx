@@ -349,7 +349,11 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull
   IteratorSequence<E> peek(@NotNull IndexedConsumer<? super E> consumer);
 
-  // TODO: peekExceptionally
+  @NotNull
+  IteratorSequence<E> peekExceptionally(@NotNull Consumer<? super Throwable> consumer);
+
+  @NotNull
+  IteratorSequence<E> peekExceptionally(@NotNull IndexedConsumer<? super Throwable> consumer);
 
   @Override
   @NotNull
@@ -474,7 +478,11 @@ public interface IteratorSequence<E> extends Sequence<E>, Iterator<E> {
   @NotNull
   IteratorSequence<E> slice(int start, int end);
 
-  // TODO: slidingWindow?
+  @NotNull
+  IteratorSequence<? extends IteratorSequence<E>> slidingWindow(int maxSize, int step);
+
+  @NotNull
+  IteratorSequence<? extends IteratorSequence<E>> slidingWindow(int size, int step, E padding);
 
   @Override
   @NotNull
