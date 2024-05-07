@@ -108,15 +108,15 @@ public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final int pos = this.pos;
       if (pos == numElements) {
-        if (wrapped.materializeHasNext()) {
-          try {
+        try {
+          if (wrapped.materializeHasNext()) {
             final IteratorMaterializer<E> materializer = mapper.apply(pos,
                 wrapped.materializeNext());
             return (state = new AppendAllIteratorMaterializer<E>(materializer, wrapped));
-          } catch (final Exception e) {
-            state = wrapped;
-            throw UncheckedException.throwUnchecked(e);
           }
+        } catch (final Exception e) {
+          state = wrapped;
+          throw UncheckedException.throwUnchecked(e);
         }
       }
       return wrapped;

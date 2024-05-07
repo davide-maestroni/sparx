@@ -30,6 +30,11 @@ public class ListToIteratorMaterializer<E> implements IteratorMaterializer<E> {
     this.elements = Require.notNull(elements, "elements");
   }
 
+  @NotNull
+  public List<E> elements() {
+    return elements;
+  }
+
   @Override
   public int knownSize() {
     return elements.size() - pos;

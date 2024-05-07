@@ -55,16 +55,17 @@ public class FlatMapWhereIteratorMaterializer<E> implements IteratorMaterializer
     final IndexedPredicate<? super E> predicate = this.predicate;
     final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper = this.mapper;
     while (wrapped.materializeHasNext()) {
+      final int pos = this.pos;
+      ++this.pos;
       final E next = wrapped.materializeNext();
       try {
         if (predicate.test(pos, next)) {
-          final IteratorMaterializer<E> materializer = mapper.apply(pos++, next);
+          final IteratorMaterializer<E> materializer = mapper.apply(pos, next);
           if (materializer.materializeHasNext()) {
             this.materializer = materializer;
             return true;
           }
         } else {
-          ++pos;
           hasNext = true;
           this.next = next;
           return true;

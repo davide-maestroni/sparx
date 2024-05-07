@@ -18,6 +18,7 @@ package sparx.util;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.AbstractList;
+import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.Iterator;
@@ -134,7 +135,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   @Override
   @SuppressWarnings("unchecked")
   public DequeueList<E> clone() throws CloneNotSupportedException {
-    return (DequeueList<E>) super.clone();
+    final DequeueList<E> clone = (DequeueList<E>) super.clone();
+    clone.data = Arrays.copyOf(data, data.length);
+    return clone;
   }
 
   /**

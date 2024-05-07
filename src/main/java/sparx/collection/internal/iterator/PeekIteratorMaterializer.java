@@ -15,6 +15,7 @@
  */
 package sparx.collection.internal.iterator;
 
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
@@ -45,13 +46,19 @@ public class PeekIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   @Override
   public E materializeNext() {
+    final IteratorMaterializer<E> wrapped = this.wrapped;
+    if (!wrapped.materializeHasNext()) {
+      throw new NoSuchElementException();
+    }
+    final int pos = this.pos;
+    ++this.pos;
+    final E next = wrapped.materializeNext();
     try {
-      final E next = wrapped.materializeNext();
-      consumer.accept(pos++, next);
-      return next;
+      consumer.accept(pos, next);
     } catch (final Exception e) {
       throw UncheckedException.throwUnchecked(e);
     }
+    return next;
   }
 
   @Override

@@ -492,44 +492,6 @@ public class Sparx {
         };
       }
 
-      private static @NotNull <E, T extends Throwable> IndexedFunction<Throwable, E> getExceptionToElement(
-          @NotNull final Class<T> exceptionType,
-          @NotNull final Function<? super T, ? extends E> mapper) {
-        Require.notNull(exceptionType, "exceptionType");
-        return new IndexedFunction<Throwable, E>() {
-          @Override
-          @SuppressWarnings("unchecked")
-          public E apply(final int index, final Throwable exception) throws Exception {
-            if (exceptionType.isInstance(exception)) {
-              return mapper.apply((T) exception);
-            }
-            if (exception instanceof Exception) {
-              throw (Exception) exception;
-            }
-            throw UncheckedException.throwUnchecked(exception);
-          }
-        };
-      }
-
-      private static @NotNull <E, T extends Throwable> IndexedFunction<Throwable, E> getExceptionToElement(
-          @NotNull final Class<T> exceptionType,
-          @NotNull final IndexedFunction<? super T, ? extends E> mapper) {
-        Require.notNull(exceptionType, "exceptionType");
-        return new IndexedFunction<Throwable, E>() {
-          @Override
-          @SuppressWarnings("unchecked")
-          public E apply(final int index, final Throwable exception) throws Exception {
-            if (exceptionType.isInstance(exception)) {
-              return mapper.apply(index, (T) exception);
-            }
-            if (exception instanceof Exception) {
-              throw (Exception) exception;
-            }
-            throw UncheckedException.throwUnchecked(exception);
-          }
-        };
-      }
-
       private static @NotNull <E, T extends Throwable> IndexedFunction<Throwable, IteratorMaterializer<E>> getExceptionToMaterializer(
           @NotNull final Class<T> exceptionType,
           @NotNull final Function<? super T, ? extends Iterable<? extends E>> mapper) {
@@ -986,6 +948,11 @@ public class Sparx {
       }
 
       @Override
+      public E first() {
+        return materializer.materializeNext();
+      }
+
+      @Override
       public @NotNull <F> Iterator<F> flatMap(
           @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
         final IteratorMaterializer<E> materializer = this.materializer;
@@ -994,11 +961,6 @@ public class Sparx {
         }
         return new Iterator<F>(
             new FlatMapIteratorMaterializer<E, F>(materializer, getElementToMaterializer(mapper)));
-      }
-
-      @Override
-      public E first() {
-        return materializer.materializeNext();
       }
 
       @Override
@@ -2093,6 +2055,9 @@ public class Sparx {
       }
 
       public @NotNull List<E> toList() {
+        if (materializer instanceof ListToIteratorMaterializer) {
+          return List.wrap(((ListToIteratorMaterializer<E>) materializer).elements());
+        }
         return List.wrap(this);
       }
 

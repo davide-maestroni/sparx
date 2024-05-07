@@ -15,6 +15,7 @@
  */
 package sparx.collection.internal.iterator;
 
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
@@ -78,8 +79,11 @@ public class SwitchExceptionallyIteratorMaterializer<E> extends AbstractIterator
 
     @Override
     public E materializeNext() {
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
       try {
-        final E next = wrapped.materializeNext();
+        final E next = (state == this ? wrapped : state).materializeNext();
         ++pos;
         return next;
       } catch (final Throwable t) {

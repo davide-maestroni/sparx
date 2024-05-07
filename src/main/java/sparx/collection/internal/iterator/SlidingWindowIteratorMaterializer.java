@@ -75,6 +75,8 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
     private final E padding;
     private final IteratorMaterializer<E> wrapped;
 
+    private boolean hasNext;
+
     private ImmaterialPaddingState(@NotNull final IteratorMaterializer<E> wrapped, final int size,
         final int step, final E padding,
         @NotNull final Function<? super List<E>, ? extends I> mapper) {
@@ -101,35 +103,26 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
 
     @Override
     public boolean materializeHasNext() {
-      return wrapped.materializeHasNext();
+      if (hasNext) {
+        return true;
+      }
+      return hasNext = advance();
     }
 
     @Override
     public I materializeNext() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      final DequeueList<E> elements = this.elements;
-      final E padding = this.padding;
-      if (elements.isEmpty()) {
-        if (!wrapped.materializeHasNext()) {
-          throw new NoSuchElementException();
-        }
-        for (int i = 0; i < size; ++i) {
-          if (wrapped.materializeHasNext()) {
-            elements.add(wrapped.materializeNext());
-          } else {
-            elements.add(padding);
-          }
-        }
-      } else {
-        for (int i = 0; i < step; ++i) {
-          if (wrapped.materializeHasNext()) {
-            elements.add(wrapped.materializeNext());
-          }
-          elements.removeFirst();
-        }
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
       }
+      hasNext = false;
+      final int size = this.size;
+      final E padding = this.padding;
       try {
-        return mapper.apply(elements.clone());
+        final DequeueList<E> clone = elements.clone();
+        while (clone.size() < size) {
+          clone.add(padding);
+        }
+        return mapper.apply(clone);
       } catch (final Exception e) {
         throw UncheckedException.toUnchecked(e);
       }
@@ -140,26 +133,24 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
       if (count > 0) {
         final IteratorMaterializer<E> wrapped = this.wrapped;
         final DequeueList<E> elements = this.elements;
-        final E padding = this.padding;
         int skipped = 0;
-        while (skipped < count && wrapped.materializeHasNext()) {
+        while (skipped < count) {
           if (elements.isEmpty()) {
             if (!wrapped.materializeHasNext()) {
               return skipped;
             }
             for (int i = 0; i < size; ++i) {
-              if (wrapped.materializeHasNext()) {
-                elements.add(wrapped.materializeNext());
-              } else {
-                elements.add(padding);
+              if (!wrapped.materializeHasNext()) {
+                break;
               }
+              elements.add(wrapped.materializeNext());
             }
           } else {
             for (int i = 0; i < step; ++i) {
               if (wrapped.materializeHasNext()) {
                 elements.add(wrapped.materializeNext());
               }
-              if (elements.isEmpty()) {
+              if (elements.size() <= 1) {
                 return skipped;
               }
               elements.removeFirst();
@@ -171,6 +162,33 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
       }
       return 0;
     }
+
+    private boolean advance() {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      final DequeueList<E> elements = this.elements;
+      if (elements.isEmpty()) {
+        if (!wrapped.materializeHasNext()) {
+          return false;
+        }
+        for (int i = 0; i < size; ++i) {
+          elements.add(wrapped.materializeNext());
+          if (!wrapped.materializeHasNext()) {
+            break;
+          }
+        }
+      } else {
+        for (int i = 0; i < step; ++i) {
+          if (wrapped.materializeHasNext()) {
+            elements.add(wrapped.materializeNext());
+          }
+          if (elements.size() <= 1) {
+            return false;
+          }
+          elements.removeFirst();
+        }
+      }
+      return true;
+    }
   }
 
   private class ImmaterialState implements IteratorMaterializer<I> {
@@ -181,9 +199,10 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
     private final int step;
     private final IteratorMaterializer<E> wrapped;
 
+    private boolean hasNext;
+
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int maxSize,
-        final int step,
-        @NotNull final Function<? super List<E>, ? extends I> mapper) {
+        final int step, @NotNull final Function<? super List<E>, ? extends I> mapper) {
       this.wrapped = wrapped;
       this.maxSize = maxSize;
       this.step = step;
@@ -206,31 +225,18 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
 
     @Override
     public boolean materializeHasNext() {
-      return wrapped.materializeHasNext();
+      if (hasNext) {
+        return true;
+      }
+      return hasNext = advance();
     }
 
     @Override
     public I materializeNext() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      final DequeueList<E> elements = this.elements;
-      if (elements.isEmpty()) {
-        if (!wrapped.materializeHasNext()) {
-          throw new NoSuchElementException();
-        }
-        for (int i = 0; i < maxSize; ++i) {
-          elements.add(wrapped.materializeNext());
-          if (!wrapped.materializeHasNext()) {
-            break;
-          }
-        }
-      } else {
-        for (int i = 0; i < step; ++i) {
-          if (wrapped.materializeHasNext()) {
-            elements.add(wrapped.materializeNext());
-          }
-          elements.removeFirst();
-        }
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
       }
+      hasNext = false;
       try {
         return mapper.apply(elements.clone());
       } catch (final Exception e) {
@@ -244,7 +250,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
         final IteratorMaterializer<E> wrapped = this.wrapped;
         final DequeueList<E> elements = this.elements;
         int skipped = 0;
-        while (skipped < count && wrapped.materializeHasNext()) {
+        while (skipped < count) {
           if (elements.isEmpty()) {
             if (!wrapped.materializeHasNext()) {
               return skipped;
@@ -260,7 +266,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
               if (wrapped.materializeHasNext()) {
                 elements.add(wrapped.materializeNext());
               }
-              if (elements.isEmpty()) {
+              if (elements.size() <= 1) {
                 return skipped;
               }
               elements.removeFirst();
@@ -271,6 +277,33 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
         return skipped;
       }
       return 0;
+    }
+
+    private boolean advance() {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      final DequeueList<E> elements = this.elements;
+      if (elements.isEmpty()) {
+        if (!wrapped.materializeHasNext()) {
+          return false;
+        }
+        for (int i = 0; i < maxSize; ++i) {
+          elements.add(wrapped.materializeNext());
+          if (!wrapped.materializeHasNext()) {
+            break;
+          }
+        }
+      } else {
+        for (int i = 0; i < step; ++i) {
+          if (wrapped.materializeHasNext()) {
+            elements.add(wrapped.materializeNext());
+          }
+          if (elements.size() <= 1) {
+            return false;
+          }
+          elements.removeFirst();
+        }
+      }
+      return true;
     }
   }
 }

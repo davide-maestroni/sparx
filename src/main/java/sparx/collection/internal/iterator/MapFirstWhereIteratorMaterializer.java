@@ -78,22 +78,22 @@ public class MapFirstWhereIteratorMaterializer<E> extends AbstractIteratorMateri
       }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
+        final int pos = this.pos;
+        ++this.pos;
+        final E next = wrapped.materializeNext();
         try {
-          final E next = wrapped.materializeNext();
-          final int pos = this.pos;
           if (predicate.test(pos, next)) {
             hasNext = false;
             this.next = null;
             return (state = new InsertIteratorMaterializer<E>(wrapped,
                 mapper.apply(pos, next))).materializeHasNext();
           }
-          hasNext = true;
-          this.next = next;
-          return true;
         } catch (final Exception e) {
-          ++this.pos;
           throw UncheckedException.throwUnchecked(e);
         }
+        hasNext = true;
+        this.next = next;
+        return true;
       }
       return false;
     }

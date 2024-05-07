@@ -67,6 +67,8 @@ public interface Sequence<E> extends Iterable<E> {
   @NotNull
   Sequence<E> drop(int maxElements);
 
+  // TODO: dropLeft
+
   @NotNull
   Sequence<E> dropRight(int maxElements);
 
@@ -84,8 +86,6 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull
   Sequence<Boolean> endsWith(@NotNull Iterable<?> elements);
-
-  // TODO: enumerate()
 
   @NotNull
   Sequence<Boolean> exists(@NotNull IndexedPredicate<? super E> predicate);
@@ -143,6 +143,8 @@ public interface Sequence<E> extends Iterable<E> {
 
   E first();
 
+  // TODO: flatMapLeft?
+
   @NotNull
   <F> Sequence<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
@@ -193,6 +195,8 @@ public interface Sequence<E> extends Iterable<E> {
   <F> Sequence<F> foldRight(F identity,
       @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
+  // TODO: groupLeft?
+
   @NotNull
   Sequence<? extends Sequence<E>> group(int maxSize);
 
@@ -214,6 +218,8 @@ public interface Sequence<E> extends Iterable<E> {
   boolean isEmpty();
 
   E last();
+
+  // TODO: mapLeft?
 
   @NotNull
   <F> Sequence<F> map(@NotNull Function<? super E, F> mapper);
@@ -371,6 +377,8 @@ public interface Sequence<E> extends Iterable<E> {
 
   @NotNull
   Sequence<E> take(int maxElements);
+
+  // TODO: takeLeft?
 
   @NotNull
   Sequence<E> takeRight(int maxElements);

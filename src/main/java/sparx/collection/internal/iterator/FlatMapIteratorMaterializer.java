@@ -42,7 +42,7 @@ public class FlatMapIteratorMaterializer<E, F> implements IteratorMaterializer<F
 
   @Override
   public boolean materializeHasNext() {
-    if (this.materializer.materializeHasNext()) {
+    if (materializer.materializeHasNext()) {
       return true;
     }
     try {
