@@ -15,7 +15,7 @@
  */
 package sparx.util;
 
-public class IndexOverflowException extends IllegalStateException {
+public class IndexOverflowException extends IntOverflowException {
 
   public static int safeCast(final long index) {
     if (index >= Integer.MAX_VALUE) {
@@ -24,7 +24,7 @@ public class IndexOverflowException extends IllegalStateException {
     return (int) index;
   }
 
-  public IndexOverflowException(final long size) {
-    super(Long.toString(size));
+  public IndexOverflowException(final long index) {
+    super(index);
   }
 }

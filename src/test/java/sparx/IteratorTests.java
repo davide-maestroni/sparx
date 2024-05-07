@@ -150,6 +150,20 @@ public class IteratorTests {
   }
 
   @Test
+  public void diff() {
+    assertEquals(List.of(2, 4), Iterator.of(1, 2, null, 4).diff(List.of(1, null)).toList());
+    assertEquals(List.of(2, null), Iterator.of(1, 2, null, 4).diff(Iterator.of(1, 4)).toList());
+    assertEquals(List.of(2, null), Iterator.of(1, 2, null, 4).diff(List.of(1, 3, 4)).toList());
+    assertEquals(List.of(2, null, 4),
+        Iterator.of(1, 2, null, 4).diff(Iterator.of(3, 1, 3)).toList());
+    assertEquals(List.of(1, 2, 4), Iterator.of(1, 2, null, 4).diff(List.of(null, null)).toList());
+    assertEquals(List.of(), Iterator.of(1, null).diff(Iterator.of(1, 2, null, 4)).toList());
+
+    assertEquals(List.of(1, 2, null, 4), Iterator.of(1, 2, null, 4).diff(Iterator.of()).toList());
+    assertEquals(List.of(), Iterator.of().diff(Iterator.of(1, 2, null, 4)).toList());
+  }
+
+  @Test
   public void doFor() {
     var list = new ArrayList<>();
     Iterator.of(1, 2, 3).doFor(e -> list.add(e));
@@ -1107,6 +1121,22 @@ public class IteratorTests {
     assertEquals(2, Iterator.wrap(iterable).insertAllAfter(0, List.of(null, 5)).size());
     assertEquals(List.of(null, 5),
         Iterator.wrap(iterable).insertAllAfter(0, List.of(null, 5)).toList());
+  }
+
+  @Test
+  public void intersect() {
+    assertEquals(List.of(1, null), Iterator.of(1, 2, null, 4).intersect(List.of(1, null)).toList());
+    assertEquals(List.of(1, 4), Iterator.of(1, 2, null, 4).intersect(Iterator.of(1, 4)).toList());
+    assertEquals(List.of(1, 4), Iterator.of(1, 2, null, 4).intersect(List.of(1, 3, 4)).toList());
+    assertEquals(List.of(1), Iterator.of(1, 2, null, 4).intersect(Iterator.of(3, 1, 3)).toList());
+    assertEquals(List.of(null), Iterator.of(1, 2, null, 4).intersect(List.of(null, null)).toList());
+    assertEquals(List.of(1, null),
+        Iterator.of(1, null).intersect(Iterator.of(1, 2, null, 4)).toList());
+    assertEquals(List.of(1, 2), Iterator.of(1, 2, null, 4).intersect(List.of(2, 1)).toList());
+    assertEquals(List.of(), Iterator.of(1, null).intersect(Iterator.of(2, 4)).toList());
+
+    assertEquals(List.of(), Iterator.of(1, 2, null, 4).intersect(Iterator.of()).toList());
+    assertEquals(List.of(), Iterator.of().intersect(Iterator.of(1, 2, null, 4)).toList());
   }
 
   @Test
@@ -2242,6 +2272,18 @@ public class IteratorTests {
   }
 
   @Test
+  public void resizeTo() {
+    assertThrows(IllegalArgumentException.class, () -> Iterator.of(1, 2, null, 4).resizeTo(-1, 5));
+    assertEquals(List.of(), Iterator.of(1, 2, null, 4).resizeTo(0, 5).toList());
+    assertEquals(List.of(1), Iterator.of(1, 2, null, 4).resizeTo(1, 5).toList());
+    assertEquals(List.of(1, 2), Iterator.of(1, 2, null, 4).resizeTo(2, 5).toList());
+    assertEquals(List.of(1, 2, null), Iterator.of(1, 2, null, 4).resizeTo(3, 5).toList());
+    assertEquals(List.of(1, 2, null, 4), Iterator.of(1, 2, null, 4).resizeTo(4, 5).toList());
+    assertEquals(List.of(1, 2, null, 4, 5), Iterator.of(1, 2, null, 4).resizeTo(5, 5).toList());
+    assertEquals(List.of(1, 2, null, 4, 5, 5), Iterator.of(1, 2, null, 4).resizeTo(6, 5).toList());
+  }
+
+  @Test
   public void slice() {
     Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
     assertTrue(itr.get().slice(1, 1).isEmpty());
@@ -2534,6 +2576,27 @@ public class IteratorTests {
 
     assertThrows(NullPointerException.class,
         () -> List.of(1, null, 3).takeWhile(e -> e > 0).size());
+  }
+
+  @Test
+  public void union() {
+    assertEquals(List.of(1, 2, null, 4),
+        Iterator.of(1, 2, null, 4).union(Iterator.of(1, null)).toList());
+    assertEquals(List.of(1, 2, null, 4), Iterator.of(1, 2, null, 4).union(List.of(1, 4)).toList());
+    assertEquals(List.of(1, 2, null, 4, 3),
+        Iterator.of(1, 2, null, 4).union(Iterator.of(1, 3, 4)).toList());
+    assertEquals(List.of(1, 2, null, 4, 3, 3),
+        Iterator.of(1, 2, null, 4).union(List.of(3, 1, 3)).toList());
+    assertEquals(List.of(1, 2, null, 4),
+        Iterator.of(1, 2, null, 4).union(Iterator.of(null, null)).toList());
+    assertEquals(List.of(1, null, 2, 4),
+        Iterator.of(1, null).union(List.of(1, 2, null, 4)).toList());
+    assertEquals(List.of(1, 2, null, 4),
+        Iterator.of(1, 2, null, 4).union(Iterator.of(2, 1)).toList());
+    assertEquals(List.of(1, null, 2, 4), Iterator.of(1, null).union(List.of(2, 4)).toList());
+
+    assertEquals(List.of(1, 2, null, 4), Iterator.of(1, 2, null, 4).union(Iterator.of()).toList());
+    assertEquals(List.of(1, 2, null, 4), Iterator.of().union(Iterator.of(1, 2, null, 4)).toList());
   }
 
   // TODO: test exception in next() does actually advance position

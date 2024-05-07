@@ -205,6 +205,19 @@ public class ListTests {
   }
 
   @Test
+  public void diff() {
+    assertEquals(List.of(2, 4), List.of(1, 2, null, 4).diff(List.of(1, null)));
+    assertEquals(List.of(2, null), List.of(1, 2, null, 4).diff(List.of(1, 4)));
+    assertEquals(List.of(2, null), List.of(1, 2, null, 4).diff(List.of(1, 3, 4)));
+    assertEquals(List.of(2, null, 4), List.of(1, 2, null, 4).diff(List.of(3, 1, 3)));
+    assertEquals(List.of(1, 2, 4), List.of(1, 2, null, 4).diff(List.of(null, null)));
+    assertEquals(List.of(), List.of(1, null).diff(List.of(1, 2, null, 4)));
+
+    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).diff(List.of()));
+    assertEquals(List.of(), List.of().diff(List.of(1, 2, null, 4)));
+  }
+
+  @Test
   public void doFor() {
     var list = new ArrayList<>();
     List.of(1, 2, 3).doFor(e -> list.add(e));
@@ -1169,6 +1182,21 @@ public class ListTests {
     assertFalse(List.wrap(iterable).insertAllAfter(0, List.of(null, 5)).isEmpty());
     assertEquals(2, List.wrap(iterable).insertAllAfter(0, List.of(null, 5)).size());
     assertEquals(List.of(null, 5), List.wrap(iterable).insertAllAfter(0, List.of(null, 5)));
+  }
+
+  @Test
+  public void intersect() {
+    assertEquals(List.of(1, null), List.of(1, 2, null, 4).intersect(List.of(1, null)));
+    assertEquals(List.of(1, 4), List.of(1, 2, null, 4).intersect(List.of(1, 4)));
+    assertEquals(List.of(1, 4), List.of(1, 2, null, 4).intersect(List.of(1, 3, 4)));
+    assertEquals(List.of(1), List.of(1, 2, null, 4).intersect(List.of(3, 1, 3)));
+    assertEquals(List.of(null), List.of(1, 2, null, 4).intersect(List.of(null, null)));
+    assertEquals(List.of(1, null), List.of(1, null).intersect(List.of(1, 2, null, 4)));
+    assertEquals(List.of(1, 2), List.of(1, 2, null, 4).intersect(List.of(2, 1)));
+    assertEquals(List.of(), List.of(1, null).intersect(List.of(2, 4)));
+
+    assertEquals(List.of(), List.of(1, 2, null, 4).intersect(List.of()));
+    assertEquals(List.of(), List.of().intersect(List.of(1, 2, null, 4)));
   }
 
   @Test
@@ -2410,6 +2438,18 @@ public class ListTests {
   }
 
   @Test
+  public void resizeTo() {
+    assertThrows(IllegalArgumentException.class, () -> List.of(1, 2, null, 4).resizeTo(-1, 5));
+    assertEquals(List.of(), List.of(1, 2, null, 4).resizeTo(0, 5));
+    assertEquals(List.of(1), List.of(1, 2, null, 4).resizeTo(1, 5));
+    assertEquals(List.of(1, 2), List.of(1, 2, null, 4).resizeTo(2, 5));
+    assertEquals(List.of(1, 2, null), List.of(1, 2, null, 4).resizeTo(3, 5));
+    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).resizeTo(4, 5));
+    assertEquals(List.of(1, 2, null, 4, 5), List.of(1, 2, null, 4).resizeTo(5, 5));
+    assertEquals(List.of(1, 2, null, 4, 5, 5), List.of(1, 2, null, 4).resizeTo(6, 5));
+  }
+
+  @Test
   public void slice() {
     var l = List.of(1, 2, null, 4);
     assertTrue(l.slice(1, 1).isEmpty());
@@ -2719,6 +2759,21 @@ public class ListTests {
 
     assertThrows(NullPointerException.class,
         () -> List.of(1, null, 3).takeWhile(e -> e > 0).size());
+  }
+
+  @Test
+  public void union() {
+    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).union(List.of(1, null)));
+    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).union(List.of(1, 4)));
+    assertEquals(List.of(1, 2, null, 4, 3), List.of(1, 2, null, 4).union(List.of(1, 3, 4)));
+    assertEquals(List.of(1, 2, null, 4, 3, 3), List.of(1, 2, null, 4).union(List.of(3, 1, 3)));
+    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).union(List.of(null, null)));
+    assertEquals(List.of(1, null, 2, 4), List.of(1, null).union(List.of(1, 2, null, 4)));
+    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).union(List.of(2, 1)));
+    assertEquals(List.of(1, null, 2, 4), List.of(1, null).union(List.of(2, 4)));
+
+    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).union(List.of()));
+    assertEquals(List.of(1, 2, null, 4), List.of().union(List.of(1, 2, null, 4)));
   }
 
   @Test

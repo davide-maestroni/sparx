@@ -1883,11 +1883,11 @@ public class Sparx {
           if (knownSize == numElements) {
             return this;
           }
-          if (knownSize < numElements) {
+          if (knownSize > numElements) {
             return new Iterator<E>(new TakeIteratorMaterializer<E>(materializer, numElements));
           }
           return new Iterator<E>(new AppendAllIteratorMaterializer<E>(materializer,
-              new RepeatIteratorMaterializer<E>(knownSize - numElements, padding)));
+              new RepeatIteratorMaterializer<E>(numElements - knownSize, padding)));
         }
         return new Iterator<E>(
             new ResizeIteratorMaterializer<E>(materializer, numElements, padding));
@@ -3834,11 +3834,11 @@ public class Sparx {
           if (knownSize == numElements) {
             return this;
           }
-          if (knownSize < numElements) {
+          if (knownSize > numElements) {
             return new List<E>(new TakeListMaterializer<E>(materializer, numElements));
           }
           return new List<E>(new AppendAllListMaterializer<E>(materializer,
-              new RepeatListMaterializer<E>(knownSize - numElements, padding)));
+              new RepeatListMaterializer<E>(numElements - knownSize, padding)));
         }
         return new List<E>(new ResizeListMaterializer<E>(materializer, numElements, padding));
       }
