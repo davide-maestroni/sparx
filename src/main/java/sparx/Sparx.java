@@ -28,9 +28,11 @@ import sparx.collection.internal.iterator.AllIteratorMaterializer;
 import sparx.collection.internal.iterator.AppendAllIteratorMaterializer;
 import sparx.collection.internal.iterator.AppendIteratorMaterializer;
 import sparx.collection.internal.iterator.ArrayToIteratorMaterializer;
+import sparx.collection.internal.iterator.CharSequenceToIteratorMaterializer;
 import sparx.collection.internal.iterator.CollectionToIteratorMaterializer;
 import sparx.collection.internal.iterator.CountIteratorMaterializer;
 import sparx.collection.internal.iterator.CountWhereIteratorMaterializer;
+import sparx.collection.internal.iterator.DoubleArrayToIteratorMaterializer;
 import sparx.collection.internal.iterator.DropIteratorMaterializer;
 import sparx.collection.internal.iterator.DropRightIteratorMaterializer;
 import sparx.collection.internal.iterator.DropRightWhileIteratorMaterializer;
@@ -51,6 +53,7 @@ import sparx.collection.internal.iterator.FlatMapFirstWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.FlatMapIteratorMaterializer;
 import sparx.collection.internal.iterator.FlatMapLastWhereIteratorMaterializer;
 import sparx.collection.internal.iterator.FlatMapWhereIteratorMaterializer;
+import sparx.collection.internal.iterator.FloatArrayToIteratorMaterializer;
 import sparx.collection.internal.iterator.FoldLeftIteratorMaterializer;
 import sparx.collection.internal.iterator.FoldRightIteratorMaterializer;
 import sparx.collection.internal.iterator.GroupIteratorMaterializer;
@@ -60,10 +63,12 @@ import sparx.collection.internal.iterator.InsertAfterIteratorMaterializer;
 import sparx.collection.internal.iterator.InsertAllAfterIteratorMaterializer;
 import sparx.collection.internal.iterator.InsertAllIteratorMaterializer;
 import sparx.collection.internal.iterator.InsertIteratorMaterializer;
+import sparx.collection.internal.iterator.IntArrayToIteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorMaterializer;
 import sparx.collection.internal.iterator.IteratorToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListMaterializerToIteratorMaterializer;
 import sparx.collection.internal.iterator.ListToIteratorMaterializer;
+import sparx.collection.internal.iterator.LongArrayToIteratorMaterializer;
 import sparx.collection.internal.iterator.LoopToIteratorMaterializer;
 import sparx.collection.internal.iterator.MapAfterIteratorMaterializer;
 import sparx.collection.internal.iterator.MapFirstWhereIteratorMaterializer;
@@ -419,6 +424,42 @@ public class Sparx {
         }
         return new Iterator<E>(
             new ArrayToIteratorMaterializer<E>(Arrays.copyOf(elements, elements.length)));
+      }
+
+      public static @NotNull Iterator<Character> ofChars(@NotNull final CharSequence chars) {
+        return new Iterator<Character>(new CharSequenceToIteratorMaterializer(chars));
+      }
+
+      public static @NotNull Iterator<Double> ofDoubles(final double... elements) {
+        if (elements == null) {
+          return Iterator.of();
+        }
+        return new Iterator<Double>(
+            new DoubleArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
+      }
+
+      public static @NotNull Iterator<Float> ofFloats(final float... elements) {
+        if (elements == null) {
+          return Iterator.of();
+        }
+        return new Iterator<Float>(
+            new FloatArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
+      }
+
+      public static @NotNull Iterator<Integer> ofInts(final int... elements) {
+        if (elements == null) {
+          return Iterator.of();
+        }
+        return new Iterator<Integer>(
+            new IntArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
+      }
+
+      public static @NotNull Iterator<Long> ofLongs(final long... elements) {
+        if (elements == null) {
+          return Iterator.of();
+        }
+        return new Iterator<Long>(
+            new LongArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
       }
 
       public static @NotNull <E> Iterator<E> ofLoop(final E initialValue,
@@ -4194,6 +4235,38 @@ public class Sparx {
 
       public static @NotNull <E> ListIterator<E> ofArray(final E... elements) {
         return new ListIterator<E>(List.<E>of(), List.ofArray(elements));
+      }
+
+      public static @NotNull ListIterator<Character> ofChars(@NotNull final CharSequence chars) {
+        return new ListIterator<Character>(List.<Character>of(), List.ofChars(chars));
+      }
+
+      public static @NotNull ListIterator<Double> ofDoubles(final double... elements) {
+        if (elements == null) {
+          return ListIterator.of();
+        }
+        return new ListIterator<Double>(List.<Double>of(), List.ofDoubles(elements));
+      }
+
+      public static @NotNull ListIterator<Float> ofFloats(final float... elements) {
+        if (elements == null) {
+          return ListIterator.of();
+        }
+        return new ListIterator<Float>(List.<Float>of(), List.ofFloats(elements));
+      }
+
+      public static @NotNull ListIterator<Integer> ofInts(final int... elements) {
+        if (elements == null) {
+          return ListIterator.of();
+        }
+        return new ListIterator<Integer>(List.<Integer>of(), List.ofInts(elements));
+      }
+
+      public static @NotNull ListIterator<Long> ofLongs(final long... elements) {
+        if (elements == null) {
+          return ListIterator.of();
+        }
+        return new ListIterator<Long>(List.<Long>of(), List.ofLongs(elements));
       }
 
       public static @NotNull <E> ListIterator<E> times(final int count, final E element) {
