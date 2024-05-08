@@ -1,0 +1,143 @@
+/*
+ * Copyright 2024 Davide Maestroni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package sparx.collection.internal.lazy.list;
+
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.jetbrains.annotations.NotNull;
+import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
+import sparx.util.Require;
+import sparx.util.UncheckedException;
+import sparx.util.function.IndexedPredicate;
+
+public class TakeWhileListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+    ListMaterializer<E> {
+
+  private final ListMaterializer<E> wrapped;
+
+  private volatile State state;
+
+  public TakeWhileListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate) {
+    this.wrapped = Require.notNull(wrapped, "wrapped");
+    state = new ImmaterialState(Require.notNull(predicate, "predicate"));
+  }
+
+  @Override
+  public boolean canMaterializeElement(final int index) {
+    return index >= 0 && index < state.materialized();
+  }
+
+  @Override
+  public int knownSize() {
+    final int knownSize = wrapped.knownSize();
+    if (knownSize == 0) {
+      return 0;
+    } else if (knownSize > 0) {
+      final int stateSize = state.knownSize();
+      if (stateSize >= 0) {
+        return Math.min(knownSize, stateSize);
+      }
+    }
+    return -1;
+  }
+
+  @Override
+  public E materializeElement(final int index) {
+    if (index < 0 || index >= state.materialized()) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
+    return wrapped.materializeElement(index);
+  }
+
+  @Override
+  public boolean materializeEmpty() {
+    return wrapped.materializeEmpty() || state.materialized() == 0;
+  }
+
+  @Override
+  public @NotNull Iterator<E> materializeIterator() {
+    return new ListMaterializerIterator<E>(this);
+  }
+
+  @Override
+  public int materializeSize() {
+    return Math.min(wrapped.materializeSize(), state.materialized());
+  }
+
+  private interface State {
+
+    int knownSize();
+
+    int materialized();
+  }
+
+  private static class ElementsState implements State {
+
+    private final int elements;
+
+    private ElementsState(final int elements) {
+      this.elements = elements;
+    }
+
+    @Override
+    public int knownSize() {
+      return elements;
+    }
+
+    @Override
+    public int materialized() {
+      return elements;
+    }
+  }
+
+  private class ImmaterialState implements State {
+
+    private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
+    private final IndexedPredicate<? super E> predicate;
+
+    private ImmaterialState(@NotNull final IndexedPredicate<? super E> predicate) {
+      this.predicate = predicate;
+    }
+
+    @Override
+    public int knownSize() {
+      return -1;
+    }
+
+    @Override
+    public int materialized() {
+      if (!isMaterialized.compareAndSet(false, true)) {
+        throw new ConcurrentModificationException();
+      }
+      try {
+        final ListMaterializer<E> wrapped = TakeWhileListMaterializer.this.wrapped;
+        final IndexedPredicate<? super E> predicate = this.predicate;
+        int i = 0;
+        while (wrapped.canMaterializeElement(i) && predicate.test(i,
+            wrapped.materializeElement(i))) {
+          ++i;
+        }
+        state = new ElementsState(i);
+        return i;
+      } catch (final Exception e) {
+        isMaterialized.set(false);
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+  }
+}
