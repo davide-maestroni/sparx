@@ -15,28 +15,9 @@
  */
 package sparx.concurrent;
 
-import org.jetbrains.annotations.NotNull;
+interface Alert<P> {
 
-public interface ExecutionContext {
+  void disable();
 
-  @NotNull
-  ExecutionContext fork();
-
-  boolean interruptTask(@NotNull String taskID);
-
-  int minThroughput();
-
-  int pendingTasks();
-
-  void scheduleAfter(@NotNull Task task);
-
-  void scheduleBefore(@NotNull Task task);
-
-  interface Task extends Runnable {
-
-    @NotNull
-    String taskID();
-
-    int weight();
-  }
+  void notify(int state, P payload);
 }

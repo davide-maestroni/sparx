@@ -18,12 +18,24 @@ package sparx.concurrent;
 import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 public class ExecutorContext implements ExecutionContext {
 
+  private static final Alert<?> DISABLED = new Alert<Object>() {
+    @Override
+    public void disable() {
+    }
+
+    @Override
+    public void notify(final int state, final Object payload) {
+    }
+  };
+  private static final Logger LOGGER = Logger.getLogger(ExecutorContext.class.getName());
   private static final Executor SYNCHRONOUS_EXECUTOR = new Executor() {
     @Override
     public void execute(@NotNull final Runnable command) {
@@ -36,12 +48,19 @@ public class ExecutorContext implements ExecutionContext {
   private static final int PAUSING = 2;
   private static final int PAUSED = 3;
 
+  @SuppressWarnings("unchecked")
+  private static volatile Alert<Thread> backpressureAlert = (Alert<Thread>) DISABLED;
+  @SuppressWarnings("unchecked")
+  private static volatile Alert<Integer> queueAlert = (Alert<Integer>) DISABLED;
+  @SuppressWarnings("unchecked")
+  private static volatile Alert<Thread> workerAlert = (Alert<Thread>) DISABLED;
+
   private final ArrayDeque<Task> afterQueue = new ArrayDeque<Task>();
   private final ArrayDeque<Task> beforeQueue = new ArrayDeque<Task>();
   private final Executor executor;
   private final Object lock = new Object();
   private final int minThroughput;
-  private final Runnable worker;
+  private final Worker worker;
 
   private Task runningTask;
   private Thread runningThread;
@@ -65,6 +84,31 @@ public class ExecutorContext implements ExecutionContext {
     this.executor = executor;
     this.minThroughput = Integer.MAX_VALUE;
     this.worker = new TimeoutWorker(minTime, unit);
+  }
+
+  public static void alertBackpressureDelay(final long interval,
+      @NotNull final TimeUnit intervalUnit, final long timeout,
+      @NotNull final TimeUnit timeoutUnit) {
+    backpressureAlert.disable();
+    if (interval > 0 && timeout > 0) {
+      backpressureAlert = new BackpressureAlert(LOGGER, interval, intervalUnit, timeout,
+          timeoutUnit);
+    }
+  }
+
+  public static void alertPendingTasks(final int maxQueueSize) {
+    queueAlert.disable();
+    if (maxQueueSize >= 0) {
+      queueAlert = new QueueAlert(LOGGER, maxQueueSize);
+    }
+  }
+
+  public static void alertProcessingTime(final long interval, @NotNull final TimeUnit intervalUnit,
+      final long timeout, @NotNull final TimeUnit timeoutUnit) {
+    workerAlert.disable();
+    if (interval > 0 && timeout > 0) {
+      workerAlert = new WorkerAlert(LOGGER, interval, intervalUnit, timeout, timeoutUnit);
+    }
   }
 
   public static @NotNull ExecutorContext of(@NotNull final Executor executor) {
@@ -112,6 +156,11 @@ public class ExecutorContext implements ExecutionContext {
   }
 
   @Override
+  public @NotNull ExecutionContext fork() {
+    return worker.fork();
+  }
+
+  @Override
   public boolean interruptTask(@NotNull final String taskID) {
     synchronized (lock) {
       final Task runningTask = this.runningTask;
@@ -120,7 +169,7 @@ public class ExecutorContext implements ExecutionContext {
           runningThread.interrupt();
           return true;
         } catch (final SecurityException e) {
-          // TODO: Java logging??
+          LOGGER.log(Level.SEVERE, "Cannot interrupt running thread " + runningThread, e);
         }
       }
     }
@@ -169,7 +218,9 @@ public class ExecutorContext implements ExecutionContext {
     final boolean needsExecution;
     synchronized (lock) {
       task = applyBackpressure(task, lock, runningThread);
+      final ArrayDeque<Task> afterQueue = this.afterQueue;
       afterQueue.offer(task);
+      queueAlert.notify(afterQueue.size(), beforeQueue.size());
       if (needsExecution = status == IDLE) {
         status = RUNNING;
       }
@@ -184,7 +235,9 @@ public class ExecutorContext implements ExecutionContext {
   public void scheduleBefore(@NotNull final Task task) {
     final boolean needsExecution;
     synchronized (lock) {
+      final ArrayDeque<Task> beforeQueue = this.beforeQueue;
       beforeQueue.offer(task);
+      queueAlert.notify(afterQueue.size(), beforeQueue.size());
       if (needsExecution = status == IDLE) {
         status = RUNNING;
       }
@@ -200,6 +253,12 @@ public class ExecutorContext implements ExecutionContext {
   }
 
   protected void releaseBackpressure(@NotNull final Object lock) {
+  }
+
+  private interface Worker extends Runnable {
+
+    @NotNull
+    ExecutorContext fork();
   }
 
   private static class SchedulerWithBackpressure extends ExecutorContext {
@@ -232,11 +291,15 @@ public class ExecutorContext implements ExecutionContext {
         if (!currentThread.equals(runningThread)) {
           final long delayMillis = backpressureStrategy.getDelayMillis(pendingCount, waitingCount,
               throughput);
+          final Alert<Thread> backpressureAlert = ExecutorContext.backpressureAlert;
+          backpressureAlert.notify(BackpressureAlert.WAIT_START, currentThread);
           waitingTasks.offer(task);
           try {
             lock.wait(delayMillis);
           } catch (final InterruptedException e) {
             throw UncheckedException.toUnchecked(e);
+          } finally {
+            backpressureAlert.notify(BackpressureAlert.WAIT_STOP, currentThread);
           }
         }
         return waitingTasks.pop();
@@ -254,13 +317,20 @@ public class ExecutorContext implements ExecutionContext {
     }
   }
 
-  private class InfiniteWorker implements Runnable {
+  private class InfiniteWorker implements Worker {
+
+    @Override
+    public @NotNull ExecutorContext fork() {
+      return new ExecutorContext(executor, minThroughput);
+    }
 
     @Override
     public void run() {
+      final Alert<Thread> workerAlert = ExecutorContext.workerAlert;
       final ArrayDeque<Task> beforeQueue = ExecutorContext.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = ExecutorContext.this.afterQueue;
       final Thread currentThread = Thread.currentThread();
+      workerAlert.notify(WorkerAlert.WAIT_START, currentThread);
       while (true) {
         Task task;
         synchronized (lock) {
@@ -268,6 +338,7 @@ public class ExecutorContext implements ExecutionContext {
           runningThread = null;
           if (status == PAUSING) {
             status = PAUSED;
+            workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
             return;
           }
 
@@ -277,6 +348,7 @@ public class ExecutorContext implements ExecutionContext {
             if (task == null) {
               // move to IDLE
               status = IDLE;
+              workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
               return;
             }
           }
@@ -292,6 +364,7 @@ public class ExecutorContext implements ExecutionContext {
           synchronized (lock) {
             runningTask = null;
             runningThread = null;
+            workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
             if (status == PAUSING) {
               status = PAUSED;
             } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
@@ -301,17 +374,23 @@ public class ExecutorContext implements ExecutionContext {
           if (hasNext) {
             executor.execute(this);
           }
-          // TODO: Java logging??
+          LOGGER.log(Level.SEVERE, "Uncaught exception", t);
           throw UncheckedException.throwUnchecked(t);
         }
       }
     }
   }
 
-  private class SingleWorker implements Runnable {
+  private class SingleWorker implements Worker {
+
+    @Override
+    public @NotNull ExecutorContext fork() {
+      return new ExecutorContext(executor, minThroughput);
+    }
 
     @Override
     public void run() {
+      final Alert<Thread> workerAlert = ExecutorContext.workerAlert;
       final Executor executor = ExecutorContext.this.executor;
       final ArrayDeque<Task> beforeQueue = ExecutorContext.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = ExecutorContext.this.afterQueue;
@@ -320,6 +399,7 @@ public class ExecutorContext implements ExecutionContext {
       synchronized (lock) {
         if (status == PAUSING) {
           status = PAUSED;
+          workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
           return;
         }
 
@@ -329,6 +409,7 @@ public class ExecutorContext implements ExecutionContext {
           if (task == null) {
             // move to IDLE
             status = IDLE;
+            workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
             return;
           }
         }
@@ -340,13 +421,14 @@ public class ExecutorContext implements ExecutionContext {
       try {
         task.run();
       } catch (final Throwable t) {
-        // TODO: Java logging??
+        LOGGER.log(Level.SEVERE, "Uncaught exception", t);
         throw UncheckedException.throwUnchecked(t);
       } finally {
         boolean hasNext = false;
         synchronized (lock) {
           runningTask = null;
           runningThread = null;
+          workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
           if (status == PAUSING) {
             status = PAUSED;
           } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
@@ -360,10 +442,16 @@ public class ExecutorContext implements ExecutionContext {
     }
   }
 
-  private class ThroughputWorker implements Runnable {
+  private class ThroughputWorker implements Worker {
+
+    @Override
+    public @NotNull ExecutorContext fork() {
+      return new ExecutorContext(executor, minThroughput);
+    }
 
     @Override
     public void run() {
+      final Alert<Thread> workerAlert = ExecutorContext.workerAlert;
       final ArrayDeque<Task> beforeQueue = ExecutorContext.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = ExecutorContext.this.afterQueue;
       final Thread currentThread = Thread.currentThread();
@@ -375,6 +463,7 @@ public class ExecutorContext implements ExecutionContext {
           runningThread = null;
           if (status == PAUSING) {
             status = PAUSED;
+            workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
             return;
           }
 
@@ -384,6 +473,7 @@ public class ExecutorContext implements ExecutionContext {
             if (task == null) {
               // move to IDLE
               status = IDLE;
+              workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
               return;
             }
           }
@@ -400,6 +490,7 @@ public class ExecutorContext implements ExecutionContext {
           synchronized (lock) {
             runningTask = null;
             runningThread = null;
+            workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
             if (status == PAUSING) {
               status = PAUSED;
             } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
@@ -409,13 +500,14 @@ public class ExecutorContext implements ExecutionContext {
           if (hasNext) {
             executor.execute(this);
           }
-          // TODO: Java logging??
+          LOGGER.log(Level.SEVERE, "Uncaught exception", t);
           throw UncheckedException.throwUnchecked(t);
         }
       }
 
       boolean hasNext = false;
       synchronized (lock) {
+        workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
         if (status == PAUSING) {
           status = PAUSED;
           return;
@@ -430,7 +522,7 @@ public class ExecutorContext implements ExecutionContext {
     }
   }
 
-  private class TimeoutWorker implements Runnable {
+  private class TimeoutWorker implements Worker {
 
     private final long minTimeMillis;
 
@@ -439,10 +531,17 @@ public class ExecutorContext implements ExecutionContext {
     }
 
     @Override
+    public @NotNull ExecutorContext fork() {
+      return new ExecutorContext(executor, minTimeMillis, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
     public void run() {
+      final Alert<Thread> workerAlert = ExecutorContext.workerAlert;
       final ArrayDeque<Task> beforeQueue = ExecutorContext.this.beforeQueue;
       final ArrayDeque<Task> afterQueue = ExecutorContext.this.afterQueue;
       final Thread currentThread = Thread.currentThread();
+      workerAlert.notify(WorkerAlert.WAIT_START, currentThread);
       long minTimeMillis = this.minTimeMillis;
       while (minTimeMillis > 0) {
         Task task;
@@ -451,6 +550,7 @@ public class ExecutorContext implements ExecutionContext {
           runningThread = null;
           if (status == PAUSING) {
             status = PAUSED;
+            workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
             return;
           }
 
@@ -460,6 +560,7 @@ public class ExecutorContext implements ExecutionContext {
             if (task == null) {
               // move to IDLE
               status = IDLE;
+              workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
               return;
             }
           }
@@ -477,6 +578,7 @@ public class ExecutorContext implements ExecutionContext {
           synchronized (lock) {
             runningTask = null;
             runningThread = null;
+            workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
             if (status == PAUSING) {
               status = PAUSED;
             } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
@@ -486,13 +588,14 @@ public class ExecutorContext implements ExecutionContext {
           if (hasNext) {
             executor.execute(this);
           }
-          // TODO: Java logging??
+          LOGGER.log(Level.SEVERE, "Uncaught exception", t);
           throw UncheckedException.throwUnchecked(t);
         }
       }
 
       boolean hasNext = false;
       synchronized (lock) {
+        workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
         if (status == PAUSING) {
           status = PAUSED;
           return;

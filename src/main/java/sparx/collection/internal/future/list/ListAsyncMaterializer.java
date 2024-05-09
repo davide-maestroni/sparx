@@ -13,30 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.collection.internal.future.list;
 
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.internal.future.CollectionAsyncMaterializer;
+import sparx.collection.internal.future.IndexedAsyncConsumer;
 
-public interface ExecutionContext {
+public interface ListAsyncMaterializer<E> extends CollectionAsyncMaterializer<E> {
 
-  @NotNull
-  ExecutionContext fork();
-
-  boolean interruptTask(@NotNull String taskID);
-
-  int minThroughput();
-
-  int pendingTasks();
-
-  void scheduleAfter(@NotNull Task task);
-
-  void scheduleBefore(@NotNull Task task);
-
-  interface Task extends Runnable {
-
-    @NotNull
-    String taskID();
-
-    int weight();
-  }
+  void materializeElement(int index, @NotNull IndexedAsyncConsumer<E> consumer);
 }

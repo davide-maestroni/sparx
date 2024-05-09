@@ -13,30 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.collection.internal.future;
 
 import org.jetbrains.annotations.NotNull;
 
-public interface ExecutionContext {
+public interface AsyncConsumer<P> {
 
-  @NotNull
-  ExecutionContext fork();
+  void accept(P param) throws Exception;
 
-  boolean interruptTask(@NotNull String taskID);
-
-  int minThroughput();
-
-  int pendingTasks();
-
-  void scheduleAfter(@NotNull Task task);
-
-  void scheduleBefore(@NotNull Task task);
-
-  interface Task extends Runnable {
-
-    @NotNull
-    String taskID();
-
-    int weight();
-  }
+  void error(@NotNull Throwable error) throws Exception;
 }
