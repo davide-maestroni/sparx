@@ -15,6 +15,7 @@
  */
 package sparx.collection.internal.future.list;
 
+import java.util.concurrent.CancellationException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
@@ -25,13 +26,41 @@ import sparx.util.Require;
 public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private final ExecutionContext executionContext;
-  private final ListAsyncMaterializer<E> materializer;
   private final String taskID = toString();
+
+  private ListAsyncMaterializer<E> materializer;
 
   public ContextListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> materializer,
       @NotNull final ExecutionContext executionContext) {
     this.materializer = Require.notNull(materializer, "materializer");
     this.executionContext = Require.notNull(executionContext, "executionContext");
+  }
+
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    boolean interrupted = false;
+    if (mayInterruptIfRunning) {
+      interrupted = executionContext.interruptTask(taskID);
+    }
+    executionContext.scheduleBefore(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        materializer.cancel(mayInterruptIfRunning);
+        materializer = new FailedListAsyncMaterializer<E>(materializer.knownSize(), -1,
+            new CancellationException());
+      }
+    });
+    return interrupted;
   }
 
   @Override

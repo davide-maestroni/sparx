@@ -33,6 +33,11 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    return false;
+  }
+
+  @Override
   public int knownSize() {
     return size;
   }

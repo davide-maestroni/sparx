@@ -16,6 +16,7 @@
 package sparx.collection.internal.future.list;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
@@ -27,6 +28,11 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   public ListToListAsyncMaterializer(@NotNull final List<E> elements) {
     this.state = new RunningState(Require.notNull(elements, "elements"));
+  }
+
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    return state.cancel(mayInterruptIfRunning);
   }
 
   @Override
@@ -71,6 +77,12 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
     private RunningState(@NotNull final List<E> elements) {
       this.elements = elements;
+    }
+
+    @Override
+    public boolean cancel(final boolean mayInterruptIfRunning) {
+      state = new FailedListAsyncMaterializer<E>(safeSize(), -1, new CancellationException());
+      return false;
     }
 
     @Override

@@ -67,4 +67,49 @@ public class FutureListTests {
       executor.shutdownNow();
     }
   }
+
+  @Test
+  public void append() {
+    var executor = Executors.newSingleThreadExecutor();
+    var context = ExecutorContext.of(executor);
+    try {
+      var l = List.<Integer>of().toFuture(context).append(1).append(2).append(3);
+      assertFalse(l.isEmpty());
+      assertTrue(l.notEmpty());
+      assertEquals(3, l.size());
+      assertEquals(List.of(1, 2, 3), l);
+
+      l = List.<Integer>of().toFuture(context).append(1).append(null).append(3);
+      assertFalse(l.isEmpty());
+      assertTrue(l.notEmpty());
+      assertEquals(3, l.size());
+      assertEquals(List.of(1, null, 3), l);
+
+      l = List.of(1).toFuture(context).append(2).append(3);
+      assertFalse(l.isEmpty());
+      assertTrue(l.notEmpty());
+      assertEquals(3, l.size());
+      assertEquals(List.of(1, 2, 3), l);
+
+      l = List.of(1).toFuture(context).append(null).append(3);
+      assertFalse(l.isEmpty());
+      assertTrue(l.notEmpty());
+      assertEquals(3, l.size());
+      assertEquals(List.of(1, null, 3), l);
+
+      l = List.of(1, 2).toFuture(context).append(3);
+      assertFalse(l.isEmpty());
+      assertTrue(l.notEmpty());
+      assertEquals(3, l.size());
+      assertEquals(List.of(1, 2, 3), l);
+
+      l = List.of(1, null).toFuture(context).append(3);
+      assertFalse(l.isEmpty());
+      assertTrue(l.notEmpty());
+      assertEquals(3, l.size());
+      assertEquals(List.of(1, null, 3), l);
+    } finally {
+      executor.shutdownNow();
+    }
+  }
 }

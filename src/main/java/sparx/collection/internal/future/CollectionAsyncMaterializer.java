@@ -19,6 +19,8 @@ import org.jetbrains.annotations.NotNull;
 
 public interface CollectionAsyncMaterializer<E> {
 
+  boolean cancel(boolean mayInterruptIfRunning);
+
   int knownSize();
 
   void materializeContains(Object element, @NotNull AsyncConsumer<Boolean> consumer);

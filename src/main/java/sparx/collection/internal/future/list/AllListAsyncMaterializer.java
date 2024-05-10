@@ -28,11 +28,20 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   private static final ElementToListAsyncMaterializer<Boolean> TRUE_STATE = new ElementToListAsyncMaterializer<Boolean>(
       true);
 
+  private final IndexedPredicate<? super E> predicate;
+  private final ListAsyncMaterializer<E> wrapped;
+
   private ListAsyncMaterializer<Boolean> state;
 
   public AllListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    state = new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"));
+    this.wrapped = Require.notNull(wrapped, "wrapped");
+    this.predicate = Require.notNull(predicate, "predicate");
+  }
+
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    return wrapped.cancel(mayInterruptIfRunning);
   }
 
   @Override
@@ -43,158 +52,111 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeContains(element, consumer);
+    materialized(new StateConsumer() {
+      @Override
+      public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        state.materializeContains(element, consumer);
+      }
+    });
   }
 
   @Override
   public void materializeElement(final int index,
       @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-    state.materializeElement(index, consumer);
+    materialized(new StateConsumer() {
+      @Override
+      public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        state.materializeElement(index, consumer);
+      }
+    });
   }
 
   @Override
   public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeEmpty(consumer);
+    materialized(new StateConsumer() {
+      @Override
+      public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        state.materializeEmpty(consumer);
+      }
+    });
   }
 
   @Override
   public void materializeOrdered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-    state.materializeOrdered(consumer);
+    materialized(new StateConsumer() {
+      @Override
+      public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        state.materializeOrdered(consumer);
+      }
+    });
   }
 
   @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    state.materializeSize(consumer);
+    materialized(new StateConsumer() {
+      @Override
+      public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        state.materializeSize(consumer);
+      }
+    });
   }
 
   @Override
   public void materializeUnordered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-    state.materializeUnordered(consumer);
+    materialized(new StateConsumer() {
+      @Override
+      public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        state.materializeUnordered(consumer);
+      }
+    });
+  }
+
+  private void materialized(@NotNull final StateConsumer consumer) {
+    final ListAsyncMaterializer<E> wrapped = this.wrapped;
+    wrapped.materializeEmpty(new AsyncConsumer<Boolean>() {
+      @Override
+      public void accept(final Boolean empty) {
+        if (state != null) {
+          consumer.accept(state);
+        } else if (empty) {
+          consumer.accept(state = TRUE_STATE);
+        } else {
+          wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E param) {
+              try {
+                if (!predicate.test(index, param)) {
+                  consumer.accept(state = FALSE_STATE);
+                } else {
+                  wrapped.materializeElement(index + 1, this);
+                }
+              } catch (final Exception e) {
+                consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, index, e));
+              }
+            }
+
+            @Override
+            public void complete(final int size) {
+              consumer.accept(state = TRUE_STATE);
+            }
+
+            @Override
+            public void error(final int index, @NotNull final Exception error) {
+              consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, index, error));
+            }
+          });
+        }
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, 0, error));
+      }
+    });
   }
 
   private interface StateConsumer {
 
     void accept(@NotNull ListAsyncMaterializer<Boolean> state);
-  }
-
-  private class ImmaterialState implements ListAsyncMaterializer<Boolean> {
-
-    private final IndexedPredicate<? super E> predicate;
-    private final ListAsyncMaterializer<E> wrapped;
-
-    private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate) {
-      this.wrapped = wrapped;
-      this.predicate = predicate;
-    }
-
-    @Override
-    public int knownSize() {
-      return 1;
-    }
-
-    @Override
-    public void materializeContains(final Object element,
-        @NotNull final AsyncConsumer<Boolean> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
-          state.materializeContains(element, consumer);
-        }
-      });
-    }
-
-    @Override
-    public void materializeElement(final int index,
-        @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
-          state.materializeElement(index, consumer);
-        }
-      });
-    }
-
-    @Override
-    public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
-          state.materializeEmpty(consumer);
-        }
-      });
-    }
-
-    @Override
-    public void materializeOrdered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
-          state.materializeOrdered(consumer);
-        }
-      });
-    }
-
-    @Override
-    public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
-          state.materializeSize(consumer);
-        }
-      });
-    }
-
-    @Override
-    public void materializeUnordered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
-          state.materializeUnordered(consumer);
-        }
-      });
-    }
-
-    public void materialized(@NotNull final StateConsumer consumer) {
-      final ListAsyncMaterializer<E> wrapped = this.wrapped;
-      wrapped.materializeEmpty(new AsyncConsumer<Boolean>() {
-        @Override
-        public void accept(final Boolean empty) {
-          if (empty) {
-            consumer.accept(state = TRUE_STATE);
-          } else {
-            wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
-              @Override
-              public void accept(final int size, final int index, final E param) {
-                try {
-                  if (!predicate.test(index, param)) {
-                    consumer.accept(state = FALSE_STATE);
-                  } else {
-                    wrapped.materializeElement(index + 1, this);
-                  }
-                } catch (final Exception e) {
-                  consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, index, e));
-                }
-              }
-
-              @Override
-              public void complete(final int index) {
-                consumer.accept(state = TRUE_STATE);
-              }
-
-              @Override
-              public void error(final int index, @NotNull final Exception error) {
-                consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, index, error));
-              }
-            });
-          }
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) {
-          consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, 0, error));
-        }
-      });
-    }
   }
 }

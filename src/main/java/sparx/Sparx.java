@@ -33,8 +33,8 @@ import sparx.collection.Sequence;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.collection.internal.future.list.AllListAsyncMaterializer;
+import sparx.collection.internal.future.list.AppendListAsyncMaterializer;
 import sparx.collection.internal.future.list.ContextListAsyncMaterializer;
-import sparx.collection.internal.future.list.ElementToListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
 import sparx.collection.internal.lazy.iterator.AllIteratorMaterializer;
@@ -344,11 +344,6 @@ public class Sparx {
 
     public static class List<E> extends AbstractListSequence<E> implements Future<lazy.List<E>> {
 
-      private static final List<Boolean> FALSE_LIST = new List<Boolean>(
-          new ElementToListAsyncMaterializer<Boolean>(false));
-      private static final List<Boolean> TRUE_LIST = new List<Boolean>(
-          new ElementToListAsyncMaterializer<Boolean>(true));
-
       private final ListAsyncMaterializer<E> materializer;
 
       private List(@NotNull final ListAsyncMaterializer<E> materializer) {
@@ -357,30 +352,18 @@ public class Sparx {
 
       @Override
       public @NotNull List<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
-        final ListAsyncMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return TRUE_LIST;
-        }
         return new List<Boolean>(new AllListAsyncMaterializer<E>(materializer, predicate));
       }
 
       @Override
       public @NotNull List<Boolean> all(@NotNull final Predicate<? super E> predicate) {
-        final ListAsyncMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return TRUE_LIST;
-        }
         return new List<Boolean>(
             new AllListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate)));
       }
 
       @Override
       public @NotNull List<E> append(final E element) {
-        final ListAsyncMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return new List<E>(new ElementToListAsyncMaterializer<E>(element));
-        }
-        return null;
+        return new List<E>(new AppendListAsyncMaterializer<E>(materializer, element));
       }
 
       @Override
@@ -595,7 +578,7 @@ public class Sparx {
 
       @Override
       public E first() {
-        final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>();
+        final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(0);
         materializer.materializeElement(0, consumer);
         return consumer.get();
       }
@@ -685,7 +668,7 @@ public class Sparx {
 
       @Override
       public E get(final int index) {
-        final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>();
+        final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(index);
         materializer.materializeElement(index, consumer);
         return consumer.get();
       }
@@ -736,7 +719,7 @@ public class Sparx {
             }
 
             @Override
-            public void complete(final int index) {
+            public void complete(final int size) {
               consumer.accept(-1);
             }
 
@@ -757,7 +740,7 @@ public class Sparx {
             }
 
             @Override
-            public void complete(final int index) {
+            public void complete(final int size) {
               consumer.accept(-1);
             }
 
@@ -805,7 +788,7 @@ public class Sparx {
 
       @Override
       public E last() {
-        final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>();
+        final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(-1);
         materializer.materializeSize(new AsyncConsumer<Integer>() {
           @Override
           public void accept(final Integer size) {
@@ -1188,11 +1171,14 @@ public class Sparx {
     private static class BlockingElementConsumer<P> extends Semaphore implements
         IndexedAsyncConsumer<P> {
 
+      private final int index;
+
       private Exception error;
       private P param;
 
-      private BlockingElementConsumer() {
+      private BlockingElementConsumer(final int index) {
         super(0);
+        this.index = index;
       }
 
       @Override
@@ -1202,7 +1188,7 @@ public class Sparx {
       }
 
       @Override
-      public void complete(final int index) {
+      public void complete(final int size) {
         this.error = new IndexOutOfBoundsException(Integer.toString(index));
         release();
       }
@@ -4953,11 +4939,8 @@ public class Sparx {
 
       public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext executionContext) {
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() != 0) {
-          int i = 0;
-          while (materializer.canMaterializeElement(i)) {
-            materializer.materializeElement(i++);
-          }
+        if (materializer.materializeElements() == 0) {
+          // TODO: empty materializer
         }
         return new future.List<E>(
             new ContextListAsyncMaterializer<E>(new ListToListAsyncMaterializer<E>(this),

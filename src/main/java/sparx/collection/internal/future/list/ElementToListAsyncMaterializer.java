@@ -28,6 +28,11 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   }
 
   @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    return false;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
