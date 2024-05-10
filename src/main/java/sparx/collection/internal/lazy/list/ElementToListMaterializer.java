@@ -50,6 +50,11 @@ public class ElementToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return 1;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return false;
   }

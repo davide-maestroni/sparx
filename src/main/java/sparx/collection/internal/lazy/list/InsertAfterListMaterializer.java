@@ -18,11 +18,10 @@ package sparx.collection.internal.lazy.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
-public class InsertAfterListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class InsertAfterListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final E element;
@@ -89,6 +88,15 @@ public class InsertAfterListMaterializer<E> extends AbstractCollectionMaterializ
       return wrapped.materializeElement(index);
     }
     throw new IndexOutOfBoundsException(Integer.toString(index));
+  }
+
+  @Override
+  public int materializeElements() {
+    final int size = wrapped.materializeElements();
+    if (size < numElements) {
+      return size;
+    }
+    return SizeOverflowException.safeCast((long) size + 1);
   }
 
   @Override

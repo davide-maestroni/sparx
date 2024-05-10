@@ -60,6 +60,12 @@ public class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolea
   }
 
   @Override
+  public int materializeElements() {
+    state.materialized();
+    return 1;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return false;
   }

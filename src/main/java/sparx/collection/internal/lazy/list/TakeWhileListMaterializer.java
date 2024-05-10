@@ -19,12 +19,11 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class TakeWhileListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class TakeWhileListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
@@ -62,6 +61,11 @@ public class TakeWhileListMaterializer<E> extends AbstractCollectionMaterializer
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return wrapped.materializeElement(index);
+  }
+
+  @Override
+  public int materializeElements() {
+    return Math.min(wrapped.materializeElements(), state.materialized());
   }
 
   @Override

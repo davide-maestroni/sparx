@@ -18,10 +18,9 @@ package sparx.collection.internal.lazy.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 
-public class SliceListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class SliceListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
@@ -74,6 +73,12 @@ public class SliceListMaterializer<E> extends AbstractCollectionMaterializer<E> 
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return wrapped.materializeElement((int) wrappedIndex);
+  }
+
+  @Override
+  public int materializeElements() {
+    wrapped.materializeElements();
+    return materializeSize();
   }
 
   @Override

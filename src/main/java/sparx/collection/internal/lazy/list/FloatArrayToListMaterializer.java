@@ -56,6 +56,11 @@ public class FloatArrayToListMaterializer implements ListMaterializer<Float> {
   }
 
   @Override
+  public int materializeElements() {
+    return elements.length;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return elements.length == 0;
   }

@@ -32,7 +32,7 @@ import sparx.Sparx.lazy.List;
 import sparx.util.function.Function;
 import sparx.util.function.Supplier;
 
-public class ListTests {
+public class LazyListTests {
 
   @Test
   public void all() {

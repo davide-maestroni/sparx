@@ -39,6 +39,17 @@ public abstract class AbstractCollectionMaterializer<E> implements CollectionMat
   }
 
   @Override
+  public int materializeElements() {
+    int size = 0;
+    final Iterator<E> iterator = materializeIterator();
+    while (iterator.hasNext()) {
+      iterator.next();
+      ++size;
+    }
+    return size;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return !materializeIterator().hasNext();
   }

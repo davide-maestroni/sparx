@@ -144,6 +144,16 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    final ListMaterializer<E> wrapped = this.wrapped;
+    final long size = wrapped.materializeElements();
+    if (numElements >= size) {
+      return SizeOverflowException.safeCast(size + elementsMaterializer.materializeElements());
+    }
+    return (int) size;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     if (wrapped.materializeEmpty()) {
       return numElements != 0 || elementsMaterializer.materializeEmpty();

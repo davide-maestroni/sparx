@@ -144,6 +144,17 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    final int start = state.materializedStart();
+    final int size = wrapped.materializeElements();
+    if (start < size) {
+      final long remaining = Math.max(start, size - state.materializedLength());
+      return SizeOverflowException.safeCast(remaining + elementsMaterializer.materializeSize());
+    }
+    return size;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return wrapped.materializeEmpty() || materializeSize() == 0;
   }

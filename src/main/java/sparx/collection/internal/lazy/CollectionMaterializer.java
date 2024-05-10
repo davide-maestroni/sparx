@@ -24,6 +24,8 @@ public interface CollectionMaterializer<E> {
 
   boolean materializeContains(Object element);
 
+  int materializeElements();
+
   boolean materializeEmpty();
 
   @NotNull

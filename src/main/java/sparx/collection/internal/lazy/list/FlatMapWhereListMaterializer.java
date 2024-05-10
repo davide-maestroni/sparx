@@ -59,6 +59,11 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return state.materializeElements();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materializeEmpty();
   }
@@ -73,8 +78,7 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
     return state.materializeSize();
   }
 
-  private class ImmaterialState implements
-      ListMaterializer<E> {
+  private class ImmaterialState implements ListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
     private final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper;
@@ -218,6 +222,11 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       return elements.get(index);
+    }
+
+    @Override
+    public int materializeElements() {
+      return materializeUntil(Integer.MAX_VALUE);
     }
 
     @Override

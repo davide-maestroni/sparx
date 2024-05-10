@@ -19,13 +19,15 @@ import org.jetbrains.annotations.NotNull;
 
 public interface CollectionAsyncMaterializer<E> {
 
+  int knownSize();
+
   void materializeContains(Object element, @NotNull AsyncConsumer<Boolean> consumer);
 
   void materializeEmpty(@NotNull AsyncConsumer<Boolean> consumer);
 
   void materializeOrdered(@NotNull IndexedAsyncConsumer<E> consumer);
 
-  void materializeUnordered(@NotNull IndexedAsyncConsumer<E> consumer);
-
   void materializeSize(@NotNull AsyncConsumer<Integer> consumer);
+
+  void materializeUnordered(@NotNull IndexedAsyncConsumer<E> consumer);
 }

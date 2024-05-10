@@ -15,39 +15,20 @@
  */
 package sparx.collection.internal.lazy.list;
 
-import java.util.Iterator;
-import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
-
-public class ArrayToListMaterializer<E> implements ListMaterializer<E> {
-
-  private final E[] elements;
-
-  public ArrayToListMaterializer(@NotNull final E... elements) {
-    this.elements = Require.notNull(elements, "elements");
-  }
-
-  @Override
-  public boolean canMaterializeElement(final int index) {
-    return index >= 0 && index < elements.length;
-  }
-
-  @Override
-  public int knownSize() {
-    return elements.length;
-  }
+public abstract class AbstractListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean materializeContains(final Object element) {
+    int i = 0;
     if (element == null) {
-      for (final E e : elements) {
-        if (e == null) {
+      while (canMaterializeElement(i)) {
+        if (materializeElement(i++) == null) {
           return true;
         }
       }
     } else {
-      for (final E e : elements) {
-        if (element.equals(e)) {
+      while (canMaterializeElement(i)) {
+        if (element.equals(materializeElement(i++))) {
           return true;
         }
       }
@@ -56,27 +37,25 @@ public class ArrayToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
-    return elements[index];
-  }
-
-  @Override
   public int materializeElements() {
-    return elements.length;
+    int i = 0;
+    while (canMaterializeElement(i)) {
+      materializeElement(i++);
+    }
+    return i;
   }
 
   @Override
   public boolean materializeEmpty() {
-    return elements.length == 0;
-  }
-
-  @Override
-  public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return !canMaterializeElement(0);
   }
 
   @Override
   public int materializeSize() {
-    return elements.length;
+    int size = 0;
+    while (canMaterializeElement(size)) {
+      ++size;
+    }
+    return size;
   }
 }

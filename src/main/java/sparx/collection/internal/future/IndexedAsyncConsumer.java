@@ -21,7 +21,7 @@ public interface IndexedAsyncConsumer<P> {
 
   void accept(int size, int index, P param) throws Exception;
 
-  void complete(int size) throws Exception;
+  void complete(int index) throws Exception;
 
-  void error(int index, @NotNull Throwable error) throws Exception;
+  void error(int index, @NotNull Exception error) throws Exception;
 }

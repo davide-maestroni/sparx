@@ -54,6 +54,11 @@ public class ReverseListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return wrapped.materializeElements();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return wrapped.materializeEmpty();
   }

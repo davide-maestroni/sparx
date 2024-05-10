@@ -49,6 +49,11 @@ public class ListToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return elements.size();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return elements.isEmpty();
   }

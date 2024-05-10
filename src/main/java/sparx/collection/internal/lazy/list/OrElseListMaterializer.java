@@ -50,6 +50,11 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return state.materializeElements();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materializeEmpty();
   }
@@ -102,6 +107,11 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public E materializeElement(final int index) {
       return materialized().materializeElement(index);
+    }
+
+    @Override
+    public int materializeElements() {
+      return materialized().materializeElements();
     }
 
     @Override

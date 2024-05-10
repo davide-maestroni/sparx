@@ -21,5 +21,5 @@ public interface AsyncConsumer<P> {
 
   void accept(P param) throws Exception;
 
-  void error(@NotNull Throwable error) throws Exception;
+  void error(@NotNull Exception error) throws Exception;
 }

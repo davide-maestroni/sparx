@@ -59,6 +59,11 @@ public class FindLastListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return state.materialized().size();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materialized().isEmpty();
   }

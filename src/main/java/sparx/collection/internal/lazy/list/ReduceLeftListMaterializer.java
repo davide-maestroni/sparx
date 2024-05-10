@@ -54,6 +54,11 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return state.materializeElements();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materializeEmpty();
   }
@@ -101,6 +106,11 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       return materialized().materializeElement(index);
+    }
+
+    @Override
+    public int materializeElements() {
+      return materialized().materializeElements();
     }
 
     @Override

@@ -64,6 +64,11 @@ public class PrependListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return SizeOverflowException.safeCast((long) wrapped.materializeElements() + 1);
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return false;
   }

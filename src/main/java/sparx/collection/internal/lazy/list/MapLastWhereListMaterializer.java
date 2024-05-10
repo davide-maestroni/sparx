@@ -19,13 +19,12 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class MapLastWhereListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class MapLastWhereListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
@@ -59,6 +58,12 @@ public class MapLastWhereListMaterializer<E> extends AbstractCollectionMateriali
       return state.materialized();
     }
     return wrapped.materializeElement(index);
+  }
+
+  @Override
+  public int materializeElements() {
+    state.materializeUntil(0);
+    return wrapped.materializeElements();
   }
 
   @Override

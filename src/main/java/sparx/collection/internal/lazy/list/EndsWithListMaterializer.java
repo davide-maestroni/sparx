@@ -59,6 +59,12 @@ public class EndsWithListMaterializer<E> implements ListMaterializer<Boolean> {
   }
 
   @Override
+  public int materializeElements() {
+    state.materialized();
+    return 1;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return false;
   }

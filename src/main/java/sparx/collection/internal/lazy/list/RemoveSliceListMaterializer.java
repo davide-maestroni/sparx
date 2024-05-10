@@ -18,10 +18,9 @@ package sparx.collection.internal.lazy.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 
-public class RemoveSliceListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
@@ -80,6 +79,12 @@ public class RemoveSliceListMaterializer<E> extends AbstractCollectionMaterializ
       return wrapped.materializeElement((int) wrappedIndex);
     }
     return wrapped.materializeElement(index);
+  }
+
+  @Override
+  public int materializeElements() {
+    wrapped.materializeElements();
+    return materializeSize();
   }
 
   @Override

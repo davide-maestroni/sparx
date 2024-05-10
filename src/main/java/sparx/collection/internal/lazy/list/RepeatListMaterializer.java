@@ -53,6 +53,11 @@ public class RepeatListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return times;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return false;
   }
@@ -64,6 +69,6 @@ public class RepeatListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public int materializeSize() {
-    return 1;
+    return times;
   }
 }

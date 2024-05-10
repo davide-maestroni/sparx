@@ -58,6 +58,11 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
   }
 
   @Override
+  public int materializeElements() {
+    return state.materializeElements();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materializeEmpty();
   }
@@ -165,6 +170,15 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       }
       return wrapped.materializeElement(
           IndexOverflowException.safeCast((long) index - materializer.materializeSize() + 1));
+    }
+
+    @Override
+    public int materializeElements() {
+      final long size = wrapped.materializeElements();
+      if (numElements < size) {
+        return SizeOverflowException.safeCast(size + materializer.materializeElements() - 1);
+      }
+      return (int) size;
     }
 
     @Override
@@ -287,6 +301,17 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       }
       return wrapped.materializeElement(
           IndexOverflowException.safeCast((long) index - materializer.materializeSize() + 1));
+    }
+
+    @Override
+    public int materializeElements() {
+      final ListMaterializer<E> wrapped = this.wrapped;
+      final long size = wrapped.materializeElements();
+      final ListMaterializer<E> materializer = materialized();
+      if (materializer != wrapped) {
+        return SizeOverflowException.safeCast(size + materializer.materializeElements() - 1);
+      }
+      return (int) size;
     }
 
     @Override

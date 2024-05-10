@@ -17,10 +17,9 @@ package sparx.collection.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 
-public class DropRightListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class DropRightListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final int maxElements;
@@ -53,6 +52,11 @@ public class DropRightListMaterializer<E> extends AbstractCollectionMaterializer
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return wrapped.materializeElement(index);
+  }
+
+  @Override
+  public int materializeElements() {
+    return Math.max(0, wrapped.materializeElements() - maxElements);
   }
 
   @Override

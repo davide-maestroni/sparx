@@ -56,6 +56,11 @@ public class DoubleArrayToListMaterializer implements ListMaterializer<Double> {
   }
 
   @Override
+  public int materializeElements() {
+    return elements.length;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return elements.length == 0;
   }

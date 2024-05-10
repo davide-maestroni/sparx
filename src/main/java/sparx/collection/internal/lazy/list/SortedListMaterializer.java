@@ -56,6 +56,11 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return state.materialized().size();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return !state.canMaterializeElement(0);
   }

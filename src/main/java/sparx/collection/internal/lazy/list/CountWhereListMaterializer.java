@@ -57,6 +57,12 @@ public class CountWhereListMaterializer<E> implements ListMaterializer<Integer> 
   }
 
   @Override
+  public int materializeElements() {
+    state.materialized();
+    return 1;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return false;
   }

@@ -49,6 +49,11 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return 0;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return true;
   }

@@ -36,7 +36,7 @@ import sparx.Sparx.lazy.Iterator;
 import sparx.Sparx.lazy.List;
 import sparx.util.IntOverflowException;
 
-public class IteratorTests {
+public class LazyIteratorTests {
 
   @Test
   public void all() {

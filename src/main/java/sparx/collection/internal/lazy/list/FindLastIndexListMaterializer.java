@@ -62,6 +62,11 @@ public class FindLastIndexListMaterializer<E> implements ListMaterializer<Intege
   }
 
   @Override
+  public int materializeElements() {
+    return state.materialized() >= 0 ? 1 : 0;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materialized() < 0;
   }

@@ -56,6 +56,11 @@ public class SingleMapWhereListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return state.materializeElements();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materializeEmpty();
   }
@@ -132,6 +137,12 @@ public class SingleMapWhereListMaterializer<E> implements ListMaterializer<E> {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
+    }
+
+    @Override
+    public int materializeElements() {
+      materializeElement(0);
+      return 1;
     }
 
     @Override

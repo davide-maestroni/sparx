@@ -19,12 +19,11 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class DropWhileListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class DropWhileListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
@@ -70,6 +69,11 @@ public class DropWhileListMaterializer<E> extends AbstractCollectionMaterializer
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return wrapped.materializeElement((int) wrappedIndex);
+  }
+
+  @Override
+  public int materializeElements() {
+    return wrapped.materializeElements() - state.materialized();
   }
 
   @Override

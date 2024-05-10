@@ -20,12 +20,11 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class RemoveLastWhereListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class RemoveLastWhereListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
@@ -78,6 +77,15 @@ public class RemoveLastWhereListMaterializer<E> extends AbstractCollectionMateri
       return wrapped.materializeElement((int) wrappedIndex);
     }
     return wrapped.materializeElement(index);
+  }
+
+  @Override
+  public int materializeElements() {
+    final int size = wrapped.materializeElements();
+    if (size > state.materialized()) {
+      return size - 1;
+    }
+    return size;
   }
 
   @Override

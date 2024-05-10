@@ -17,10 +17,9 @@ package sparx.collection.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 
-public class ResizeListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class ResizeListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final int numElements;
@@ -71,6 +70,12 @@ public class ResizeListMaterializer<E> extends AbstractCollectionMaterializer<E>
       return wrapped.materializeElement(index);
     }
     return padding;
+  }
+
+  @Override
+  public int materializeElements() {
+    wrapped.materializeElements();
+    return numElements;
   }
 
   @Override

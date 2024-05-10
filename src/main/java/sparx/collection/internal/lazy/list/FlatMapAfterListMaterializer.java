@@ -122,6 +122,15 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    final long size = wrapped.materializeElements();
+    if (numElements < size) {
+      return SizeOverflowException.safeCast(size + state.materialized().materializeElements() - 1);
+    }
+    return (int) size;
+  }
+
+  @Override
   public boolean materializeEmpty() {
     final ListMaterializer<E> wrapped = this.wrapped;
     return wrapped.materializeEmpty() || (wrapped.materializeSize() == 1 && numElements == 0

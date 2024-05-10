@@ -22,13 +22,12 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class MapWhereListMaterializer<E> implements ListMaterializer<E> {
+public class MapWhereListMaterializer<E> extends AbstractListMaterializer<E> {
 
   private static final Object EMPTY = new Object();
   private static final int SIZE_THRESHOLD = 64; // TODO: need to benchmark this
@@ -85,8 +84,7 @@ public class MapWhereListMaterializer<E> implements ListMaterializer<E> {
     return state.materializeSize();
   }
 
-  private class ArrayState extends AbstractCollectionMaterializer<E> implements
-      ListMaterializer<E> {
+  private class ArrayState extends AbstractListMaterializer<E> implements ListMaterializer<E> {
 
     private final Object[] elements;
     private final IndexedFunction<? super E, ? extends E> mapper;
@@ -154,7 +152,7 @@ public class MapWhereListMaterializer<E> implements ListMaterializer<E> {
     }
   }
 
-  private class MapState extends AbstractCollectionMaterializer<E> implements ListMaterializer<E> {
+  private class MapState extends AbstractListMaterializer<E> implements ListMaterializer<E> {
 
     private final HashMap<Integer, E> elements = new HashMap<Integer, E>();
     private final IndexedFunction<? super E, ? extends E> mapper;

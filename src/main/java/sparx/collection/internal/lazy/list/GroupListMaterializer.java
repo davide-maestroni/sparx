@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
@@ -65,6 +64,11 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
   }
 
   @Override
+  public int materializeElements() {
+    return state.materializeElements();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materializeEmpty();
   }
@@ -79,7 +83,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
     return state.materializeSize();
   }
 
-  private class ImmaterialPaddingState extends AbstractCollectionMaterializer<L> implements
+  private class ImmaterialPaddingState extends AbstractListMaterializer<L> implements
       ListMaterializer<L> {
 
     private final ArrayList<L> elements = new ArrayList<L>();
@@ -185,8 +189,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
     }
   }
 
-  private class ImmaterialState extends AbstractCollectionMaterializer<L> implements
-      ListMaterializer<L> {
+  private class ImmaterialState extends AbstractListMaterializer<L> implements ListMaterializer<L> {
 
     private final ArrayList<L> elements = new ArrayList<L>();
     private final Function<? super List<E>, ? extends L> mapper;

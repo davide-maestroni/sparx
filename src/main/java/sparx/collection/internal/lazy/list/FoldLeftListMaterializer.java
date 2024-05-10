@@ -57,6 +57,11 @@ public class FoldLeftListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
+  public int materializeElements() {
+    return state.materialized().size();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materialized().isEmpty();
   }

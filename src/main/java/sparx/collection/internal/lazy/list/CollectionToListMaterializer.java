@@ -58,6 +58,11 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public int materializeElements() {
+    return state.materializeElements();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materializeEmpty();
   }
@@ -125,6 +130,13 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
+    public int materializeElements() {
+      final int size = elements.size();
+      materializeElement(size - 1);
+      return size;
+    }
+
+    @Override
     public boolean materializeEmpty() {
       return elements.isEmpty();
     }
@@ -171,6 +183,11 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
         iterator.next();
       }
       return iterator.next();
+    }
+
+    @Override
+    public int materializeElements() {
+      return elements.size();
     }
 
     @Override

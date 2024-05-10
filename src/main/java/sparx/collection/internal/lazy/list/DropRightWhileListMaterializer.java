@@ -19,12 +19,11 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class DropRightWhileListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class DropRightWhileListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
@@ -74,6 +73,11 @@ public class DropRightWhileListMaterializer<E> extends AbstractCollectionMateria
   @Override
   public @NotNull Iterator<E> materializeIterator() {
     return new ListMaterializerIterator<E>(this);
+  }
+
+  @Override
+  public int materializeElements() {
+    return wrapped.materializeElements() - state.materialized();
   }
 
   @Override

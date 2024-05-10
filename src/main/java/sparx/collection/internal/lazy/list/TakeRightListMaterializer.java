@@ -17,11 +17,10 @@ package sparx.collection.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 
-public class TakeRightListMaterializer<E> extends AbstractCollectionMaterializer<E> implements
+public class TakeRightListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
 
   private final int maxElements;
@@ -62,6 +61,11 @@ public class TakeRightListMaterializer<E> extends AbstractCollectionMaterializer
     final ListMaterializer<E> wrapped = this.wrapped;
     final long wrappedIndex = (long) index + Math.max(0, wrapped.materializeSize() - maxElements);
     return wrapped.materializeElement(IndexOverflowException.safeCast(wrappedIndex));
+  }
+
+  @Override
+  public int materializeElements() {
+    return Math.min(wrapped.materializeElements(), maxElements);
   }
 
   @Override

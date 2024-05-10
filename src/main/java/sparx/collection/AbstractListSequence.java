@@ -17,18 +17,9 @@ package sparx.collection;
 
 import java.util.AbstractList;
 import java.util.Collection;
-import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.list.ListMaterializer;
-import sparx.util.Require;
 
 public abstract class AbstractListSequence<E> extends AbstractList<E> implements ListSequence<E> {
-
-  private final ListMaterializer<E> materializer;
-
-  public AbstractListSequence(@NotNull final ListMaterializer<E> materializer) {
-    this.materializer = Require.notNull(materializer, "materializer");
-  }
 
   @Override
   public boolean add(final E e) {
@@ -48,58 +39,6 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   @Override
   public void clear() {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean contains(final Object o) {
-    return materializer.materializeContains(o);
-  }
-
-  @Override
-  public E first() {
-    return materializer.materializeElement(0);
-  }
-
-  @Override
-  public E get(final int index) {
-    return materializer.materializeElement(index);
-  }
-
-  @Override
-  public int indexOf(final Object o) {
-    final Iterator<E> iterator = materializer.materializeIterator();
-    int index = 0;
-    if (o == null) {
-      while (iterator.hasNext()) {
-        if (iterator.next() == null) {
-          return index;
-        }
-        ++index;
-      }
-    } else {
-      while (iterator.hasNext()) {
-        if (o.equals(iterator.next())) {
-          return index;
-        }
-        ++index;
-      }
-    }
-    return -1;
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return materializer.materializeEmpty();
-  }
-
-  @Override
-  public @NotNull Iterator<E> iterator() {
-    return materializer.materializeIterator();
-  }
-
-  @Override
-  public E last() {
-    return materializer.materializeElement(size() - 1);
   }
 
   @Override
@@ -125,10 +64,5 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   @Override
   public boolean retainAll(@NotNull final Collection<?> c) {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int size() {
-    return materializer.materializeSize();
   }
 }

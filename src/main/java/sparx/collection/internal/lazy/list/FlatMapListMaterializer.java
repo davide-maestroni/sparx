@@ -21,7 +21,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.lazy.AbstractCollectionMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
@@ -57,6 +56,11 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
+  public int materializeElements() {
+    return state.materializeElements();
+  }
+
+  @Override
   public boolean materializeEmpty() {
     return state.materializeEmpty();
   }
@@ -71,8 +75,7 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
     return state.materializeSize();
   }
 
-  private class ImmaterialState extends AbstractCollectionMaterializer<F> implements
-      ListMaterializer<F> {
+  private class ImmaterialState extends AbstractListMaterializer<F> implements ListMaterializer<F> {
 
     private final ArrayList<F> elements = new ArrayList<F>();
     private final IndexedFunction<? super E, ? extends Iterable<F>> mapper;
@@ -104,6 +107,11 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       return elements.get(index);
+    }
+
+    @Override
+    public int materializeElements() {
+      return materializeUntil(Integer.MAX_VALUE);
     }
 
     @Override
