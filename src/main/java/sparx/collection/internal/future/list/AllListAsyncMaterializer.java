@@ -61,6 +61,25 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   }
 
   @Override
+  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
+    wrapped.materializeDone(new AsyncConsumer<Boolean>() {
+      @Override
+      public void accept(final Boolean done) throws Exception {
+        if (done) {
+          consumer.accept(state != null);
+        } else {
+          consumer.accept(false);
+        }
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) throws Exception {
+        consumer.error(error);
+      }
+    });
+  }
+
+  @Override
   public void materializeElement(final int index,
       @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
     materialized(new StateConsumer() {

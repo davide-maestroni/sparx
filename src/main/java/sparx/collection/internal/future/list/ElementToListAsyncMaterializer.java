@@ -48,6 +48,15 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   }
 
   @Override
+  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
+    try {
+      consumer.accept(true);
+    } catch (final Exception e) {
+      // TODO
+    }
+  }
+
+  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     if (index < 0) {
       try {

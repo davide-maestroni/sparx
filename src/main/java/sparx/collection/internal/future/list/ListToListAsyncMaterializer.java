@@ -47,6 +47,11 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
+    state.materializeDone(consumer);
+  }
+
+  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     state.materializeElement(index, consumer);
   }
@@ -108,6 +113,15 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       }
       try {
         consumer.accept(contains);
+      } catch (final Exception e) {
+        // TODO
+      }
+    }
+
+    @Override
+    public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
+      try {
+        consumer.accept(true);
       } catch (final Exception e) {
         // TODO
       }

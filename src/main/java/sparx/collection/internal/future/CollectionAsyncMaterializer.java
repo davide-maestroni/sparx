@@ -25,6 +25,8 @@ public interface CollectionAsyncMaterializer<E> {
 
   void materializeContains(Object element, @NotNull AsyncConsumer<Boolean> consumer);
 
+  void materializeDone(@NotNull AsyncConsumer<Boolean> consumer);
+
   void materializeEmpty(@NotNull AsyncConsumer<Boolean> consumer);
 
   void materializeOrdered(@NotNull IndexedAsyncConsumer<E> consumer);

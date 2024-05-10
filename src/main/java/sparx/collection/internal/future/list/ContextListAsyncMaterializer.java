@@ -110,6 +110,26 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
   }
 
   @Override
+  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
+    executionContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        materializer.materializeDone(consumer);
+      }
+    });
+  }
+
+  @Override
   public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
     executionContext.scheduleAfter(new Task() {
       @Override

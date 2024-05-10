@@ -53,6 +53,15 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
+    try {
+      consumer.accept(true);
+    } catch (final Exception e) {
+      // TODO
+    }
+  }
+
+  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     try {
       consumer.error(this.index, error);

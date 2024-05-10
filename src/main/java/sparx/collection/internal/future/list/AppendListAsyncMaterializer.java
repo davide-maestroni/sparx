@@ -60,6 +60,25 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
+    wrapped.materializeDone(new AsyncConsumer<Boolean>() {
+      @Override
+      public void accept(final Boolean done) throws Exception {
+        if (done) {
+          consumer.accept(state != null);
+        } else {
+          consumer.accept(false);
+        }
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) throws Exception {
+        consumer.error(error);
+      }
+    });
+  }
+
+  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     materialized(new StateConsumer<E>() {
       @Override
@@ -159,6 +178,15 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         }
       } else {
         wrapped.materializeContains(element, consumer);
+      }
+    }
+
+    @Override
+    public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
+      try {
+        consumer.error(new UnsupportedOperationException());
+      } catch (final Exception e) {
+        // TODO
       }
     }
 
