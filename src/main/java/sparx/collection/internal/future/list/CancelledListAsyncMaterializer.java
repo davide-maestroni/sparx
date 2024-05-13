@@ -13,32 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.concurrent;
+package sparx.collection.internal.future.list;
 
-import org.jetbrains.annotations.NotNull;
+import java.util.concurrent.CancellationException;
 
-public interface ExecutionContext {
+public class CancelledListAsyncMaterializer<E> extends FailedListAsyncMaterializer<E> {
 
-  @NotNull
-  ExecutionContext fork();
+  public CancelledListAsyncMaterializer(final int size) {
+    super(size, -1, new CancellationException());
+  }
 
-  boolean interruptTask(@NotNull String taskID);
-
-  boolean isCurrent();
-
-  int minThroughput();
-
-  int pendingTasks();
-
-  void scheduleAfter(@NotNull Task task);
-
-  void scheduleBefore(@NotNull Task task);
-
-  interface Task extends Runnable {
-
-    @NotNull
-    String taskID();
-
-    int weight();
+  @Override
+  public boolean isCancelled() {
+    return true;
   }
 }

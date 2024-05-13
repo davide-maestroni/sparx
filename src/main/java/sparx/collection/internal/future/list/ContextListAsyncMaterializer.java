@@ -15,7 +15,9 @@
  */
 package sparx.collection.internal.future.list;
 
+import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
@@ -25,24 +27,69 @@ import sparx.util.Require;
 
 public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
+  private static final int STATUS_CANCELLED = 2;
+  private static final int STATUS_DONE = 1;
+  private static final int STATUS_RUNNING = 0;
+
   private final ExecutionContext executionContext;
   private final String taskID = toString();
+  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
-  private ListAsyncMaterializer<E> materializer;
+  private ListAsyncMaterializer<E> wrapped;
 
-  public ContextListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> materializer,
+  public ContextListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ExecutionContext executionContext) {
-    this.materializer = Require.notNull(materializer, "materializer");
+    this.wrapped = Require.notNull(wrapped, "wrapped");
     this.executionContext = Require.notNull(executionContext, "executionContext");
   }
 
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
-    boolean interrupted = false;
-    if (mayInterruptIfRunning) {
-      interrupted = executionContext.interruptTask(taskID);
+    if (status.compareAndSet(STATUS_RUNNING, STATUS_CANCELLED)) {
+      boolean interrupted = false;
+      if (mayInterruptIfRunning) {
+        interrupted = executionContext.interruptTask(taskID);
+      }
+      executionContext.scheduleBefore(new Task() {
+        @Override
+        public @NotNull String taskID() {
+          return taskID;
+        }
+
+        @Override
+        public int weight() {
+          return 1;
+        }
+
+        @Override
+        public void run() {
+          wrapped.cancel(mayInterruptIfRunning);
+          wrapped = new CancelledListAsyncMaterializer<E>(wrapped.knownSize());
+        }
+      });
+      return interrupted;
     }
-    executionContext.scheduleBefore(new Task() {
+    return false;
+  }
+
+  @Override
+  public int knownSize() {
+    return wrapped.knownSize();
+  }
+
+  @Override
+  public boolean isCancelled() {
+    return status.get() == STATUS_CANCELLED;
+  }
+
+  @Override
+  public boolean isDone() {
+    return status.get() != STATUS_RUNNING;
+  }
+
+  @Override
+  public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
+    executionContext.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
         return taskID;
@@ -50,22 +97,22 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
 
       @Override
       public int weight() {
-        return 1;
+        return Math.max(1, wrapped.knownSize());
       }
 
       @Override
       public void run() {
-        materializer.cancel(mayInterruptIfRunning);
-        materializer = new FailedListAsyncMaterializer<E>(materializer.knownSize(), -1,
-            new CancellationException());
+        if (isCancelled()) {
+          try {
+            consumer.error(new CancellationException());
+          } catch (final Exception e) {
+            // TODO
+          }
+        } else {
+          wrapped.materialize(consumer);
+        }
       }
     });
-    return interrupted;
-  }
-
-  @Override
-  public int knownSize() {
-    return materializer.knownSize();
   }
 
   @Override
@@ -84,7 +131,7 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
 
       @Override
       public void run() {
-        materializer.materializeContains(element, consumer);
+        wrapped.materializeContains(element, consumer);
       }
     });
   }
@@ -104,27 +151,7 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
 
       @Override
       public void run() {
-        materializer.materializeElement(index, consumer);
-      }
-    });
-  }
-
-  @Override
-  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
-    executionContext.scheduleAfter(new Task() {
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
-      }
-
-      @Override
-      public void run() {
-        materializer.materializeDone(consumer);
+        wrapped.materializeElement(index, consumer);
       }
     });
   }
@@ -144,7 +171,7 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
 
       @Override
       public void run() {
-        materializer.materializeEmpty(consumer);
+        wrapped.materializeEmpty(consumer);
       }
     });
   }
@@ -159,12 +186,12 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
 
       @Override
       public int weight() {
-        return Math.max(1, materializer.knownSize());
+        return Math.max(1, wrapped.knownSize());
       }
 
       @Override
       public void run() {
-        materializer.materializeOrdered(consumer);
+        wrapped.materializeOrdered(consumer);
       }
     });
   }
@@ -184,7 +211,7 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
 
       @Override
       public void run() {
-        materializer.materializeSize(consumer);
+        wrapped.materializeSize(consumer);
       }
     });
   }
@@ -199,12 +226,12 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
 
       @Override
       public int weight() {
-        return Math.max(1, materializer.knownSize());
+        return Math.max(1, wrapped.knownSize());
       }
 
       @Override
       public void run() {
-        materializer.materializeUnordered(consumer);
+        wrapped.materializeUnordered(consumer);
       }
     });
   }

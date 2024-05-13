@@ -15,6 +15,8 @@
  */
 package sparx.collection.internal.future.list;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
@@ -28,6 +30,7 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   private static final ElementToListAsyncMaterializer<Boolean> TRUE_STATE = new ElementToListAsyncMaterializer<Boolean>(
       true);
 
+  private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
   private final IndexedPredicate<? super E> predicate;
   private final ListAsyncMaterializer<E> wrapped;
 
@@ -50,31 +53,32 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   }
 
   @Override
+  public boolean isCancelled() {
+    return wrapped.isCancelled();
+  }
+
+  @Override
+  public boolean isDone() {
+    return wrapped.isCancelled() || isMaterialized.get();
+  }
+
+  @Override
+  public void materialize(@NotNull final AsyncConsumer<List<Boolean>> consumer) {
+    materialized(new StateConsumer() {
+      @Override
+      public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        state.materialize(consumer);
+      }
+    });
+  }
+
+  @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     materialized(new StateConsumer() {
       @Override
       public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
         state.materializeContains(element, consumer);
-      }
-    });
-  }
-
-  @Override
-  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
-    wrapped.materializeDone(new AsyncConsumer<Boolean>() {
-      @Override
-      public void accept(final Boolean done) throws Exception {
-        if (done) {
-          consumer.accept(state != null);
-        } else {
-          consumer.accept(false);
-        }
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) throws Exception {
-        consumer.error(error);
       }
     });
   }
@@ -138,6 +142,7 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
         if (state != null) {
           consumer.accept(state);
         } else if (empty) {
+          isMaterialized.set(true);
           consumer.accept(state = TRUE_STATE);
         } else {
           wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
@@ -145,22 +150,26 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
             public void accept(final int size, final int index, final E param) {
               try {
                 if (!predicate.test(index, param)) {
+                  isMaterialized.set(true);
                   consumer.accept(state = FALSE_STATE);
                 } else {
                   wrapped.materializeElement(index + 1, this);
                 }
               } catch (final Exception e) {
+                isMaterialized.set(true);
                 consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, index, e));
               }
             }
 
             @Override
             public void complete(final int size) {
+              isMaterialized.set(true);
               consumer.accept(state = TRUE_STATE);
             }
 
             @Override
             public void error(final int index, @NotNull final Exception error) {
+              isMaterialized.set(true);
               consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, index, error));
             }
           });
@@ -169,6 +178,7 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
 
       @Override
       public void error(@NotNull final Exception error) {
+        isMaterialized.set(true);
         consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, 0, error));
       }
     });

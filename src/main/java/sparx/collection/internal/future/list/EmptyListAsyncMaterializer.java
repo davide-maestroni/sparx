@@ -15,22 +15,19 @@
  */
 package sparx.collection.internal.future.list;
 
+import java.util.Collections;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 
-public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
-  private final Exception error;
-  private final int index;
-  private final int size;
+  private static final EmptyListAsyncMaterializer<?> INSTANCE = new EmptyListAsyncMaterializer<Object>();
 
-  public FailedListAsyncMaterializer(final int size, final int index,
-      @NotNull final Exception error) {
-    this.size = size;
-    this.index = index;
-    this.error = error;
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> EmptyListAsyncMaterializer<E> instance() {
+    return (EmptyListAsyncMaterializer<E>) INSTANCE;
   }
 
   @Override
@@ -40,7 +37,7 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   @Override
   public int knownSize() {
-    return size;
+    return 0;
   }
 
   @Override
@@ -56,17 +53,18 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
     try {
-      consumer.error(error);
+      consumer.accept(Collections.<E>emptyList());
     } catch (final Exception e) {
       // TODO
     }
+
   }
 
   @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     try {
-      consumer.error(error);
+      consumer.accept(false);
     } catch (final Exception e) {
       // TODO
     }
@@ -75,7 +73,11 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     try {
-      consumer.error(this.index, error);
+      if (index < 0) {
+        consumer.error(index, new IndexOutOfBoundsException(Integer.toString(index)));
+      } else {
+        consumer.complete(0);
+      }
     } catch (final Exception e) {
       // TODO
     }
@@ -84,7 +86,7 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
     try {
-      consumer.error(error);
+      consumer.accept(true);
     } catch (final Exception e) {
       // TODO
     }
@@ -93,16 +95,7 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
     try {
-      consumer.error(index, error);
-    } catch (final Exception e) {
-      // TODO
-    }
-  }
-
-  @Override
-  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    try {
-      consumer.error(index, error);
+      consumer.complete(0);
     } catch (final Exception e) {
       // TODO
     }
@@ -111,7 +104,16 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     try {
-      consumer.error(error);
+      consumer.accept(0);
+    } catch (final Exception e) {
+      // TODO
+    }
+  }
+
+  @Override
+  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    try {
+      consumer.complete(0);
     } catch (final Exception e) {
       // TODO
     }

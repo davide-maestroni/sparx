@@ -177,6 +177,11 @@ public class ExecutorContext implements ExecutionContext {
   }
 
   @Override
+  public boolean isCurrent() {
+    return Thread.currentThread().equals(runningThread);
+  }
+
+  @Override
   public int minThroughput() {
     return minThroughput;
   }

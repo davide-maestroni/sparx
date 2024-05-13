@@ -15,6 +15,9 @@
  */
 package sparx.collection.internal.future.list;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
@@ -24,6 +27,7 @@ import sparx.util.SizeOverflowException;
 public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private final E element;
+  private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
   private final ListAsyncMaterializer<E> wrapped;
 
   private ListAsyncMaterializer<E> state;
@@ -49,31 +53,32 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public boolean isCancelled() {
+    return wrapped.isCancelled();
+  }
+
+  @Override
+  public boolean isDone() {
+    return wrapped.isCancelled() || isMaterialized.get();
+  }
+
+  @Override
+  public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
+    materialized(new StateConsumer<E>() {
+      @Override
+      public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+        state.materialize(consumer);
+      }
+    });
+  }
+
+  @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     materialized(new StateConsumer<E>() {
       @Override
       public void accept(@NotNull final ListAsyncMaterializer<E> state) {
         state.materializeContains(element, consumer);
-      }
-    });
-  }
-
-  @Override
-  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
-    wrapped.materializeDone(new AsyncConsumer<Boolean>() {
-      @Override
-      public void accept(final Boolean done) throws Exception {
-        if (done) {
-          consumer.accept(state != null);
-        } else {
-          consumer.accept(false);
-        }
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) throws Exception {
-        consumer.error(error);
       }
     });
   }
@@ -136,6 +141,7 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         if (state != null) {
           consumer.accept(state);
         } else if (empty) {
+          isMaterialized.set(true);
           consumer.accept(state = new ElementToListAsyncMaterializer<E>(element));
         } else {
           consumer.accept(state = new AppendState());
@@ -144,6 +150,7 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public void error(@NotNull final Exception error) {
+        isMaterialized.set(true);
         consumer.accept(state = new FailedListAsyncMaterializer<E>(knownSize(), 0, error));
       }
     });
@@ -156,6 +163,8 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   private class AppendState implements ListAsyncMaterializer<E> {
 
+    private List<E> elements;
+
     @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
       return false;
@@ -164,6 +173,47 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
     @Override
     public int knownSize() {
       return -1;
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return wrapped.isCancelled();
+    }
+
+    @Override
+    public boolean isDone() {
+      return wrapped.isCancelled() || isMaterialized.get();
+    }
+
+    @Override
+    public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
+      if (isMaterialized.get()) {
+        try {
+          consumer.accept(elements);
+        } catch (final Exception e) {
+          // TODO
+        }
+      } else {
+        final ArrayList<E> elements = new ArrayList<E>();
+        wrapped.materializeOrdered(new IndexedAsyncConsumer<E>() {
+          @Override
+          public void accept(final int size, final int index, final E param) {
+            elements.add(param);
+          }
+
+          @Override
+          public void complete(final int size) throws Exception {
+            elements.add(element);
+            isMaterialized.set(true);
+            consumer.accept(AppendState.this.elements = elements);
+          }
+
+          @Override
+          public void error(final int index, @NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override
@@ -182,29 +232,20 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
-      try {
-        consumer.error(new UnsupportedOperationException());
-      } catch (final Exception e) {
-        // TODO
-      }
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       wrapped.materializeElement(index, new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E param) throws Exception {
-          consumer.accept(SizeOverflowException.safeCast((long) size + 1), index, param);
+          consumer.accept(safeSize(size), index, param);
         }
 
         @Override
         public void complete(final int size) throws Exception {
           if (size == index) {
-            consumer.accept(SizeOverflowException.safeCast((long) size + 1), size, element);
+            consumer.accept(safeSize(size), size, element);
           } else if (size >= 0) {
-            consumer.complete(SizeOverflowException.safeCast((long) size + 1));
+            consumer.complete(safeSize(size));
           } else {
             consumer.complete(size);
           }
@@ -231,14 +272,14 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       wrapped.materializeOrdered(new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E param) throws Exception {
-          consumer.accept(SizeOverflowException.safeCast((long) size + 1), index, param);
+          consumer.accept(safeSize(size), index, param);
         }
 
         @Override
         public void complete(final int size) throws Exception {
-          final int appendSize = SizeOverflowException.safeCast((long) size + 1);
-          consumer.accept(appendSize, size, element);
-          consumer.complete(appendSize);
+          final int knownSize = safeSize(size);
+          consumer.accept(knownSize, size, element);
+          consumer.complete(knownSize);
         }
 
         @Override
@@ -253,7 +294,7 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       wrapped.materializeSize(new AsyncConsumer<Integer>() {
         @Override
         public void accept(final Integer size) throws Exception {
-          consumer.accept(SizeOverflowException.safeCast((long) size + 1));
+          consumer.accept(safeSize(size));
         }
 
         @Override
@@ -268,14 +309,14 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       wrapped.materializeUnordered(new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E param) throws Exception {
-          consumer.accept(SizeOverflowException.safeCast((long) size + 1), index, param);
+          consumer.accept(safeSize(size), index, param);
         }
 
         @Override
         public void complete(final int size) throws Exception {
-          final int appendSize = SizeOverflowException.safeCast((long) size + 1);
-          consumer.accept(appendSize, size, element);
-          consumer.complete(appendSize);
+          final int knownSize = safeSize(size);
+          consumer.accept(knownSize, size, element);
+          consumer.complete(knownSize);
         }
 
         @Override
@@ -283,6 +324,13 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
           consumer.error(index, error);
         }
       });
+    }
+
+    private int safeSize(final int wrappedSize) {
+      if (wrappedSize >= 0) {
+        return SizeOverflowException.safeCast((long) wrappedSize + 1);
+      }
+      return wrappedSize;
     }
   }
 }

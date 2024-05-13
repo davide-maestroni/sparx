@@ -23,9 +23,11 @@ public interface CollectionAsyncMaterializer<E> {
 
   int knownSize();
 
-  void materializeContains(Object element, @NotNull AsyncConsumer<Boolean> consumer);
+  boolean isCancelled();
 
-  void materializeDone(@NotNull AsyncConsumer<Boolean> consumer);
+  boolean isDone();
+
+  void materializeContains(Object element, @NotNull AsyncConsumer<Boolean> consumer);
 
   void materializeEmpty(@NotNull AsyncConsumer<Boolean> consumer);
 

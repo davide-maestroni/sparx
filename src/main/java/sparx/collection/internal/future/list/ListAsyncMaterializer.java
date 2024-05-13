@@ -15,11 +15,15 @@
  */
 package sparx.collection.internal.future.list;
 
+import java.util.List;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.CollectionAsyncMaterializer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 
 public interface ListAsyncMaterializer<E> extends CollectionAsyncMaterializer<E> {
+
+  void materialize(@NotNull AsyncConsumer<List<E>> consumer);
 
   void materializeElement(int index, @NotNull IndexedAsyncConsumer<E> consumer);
 }

@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
@@ -35,6 +36,7 @@ import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.collection.internal.future.list.AllListAsyncMaterializer;
 import sparx.collection.internal.future.list.AppendListAsyncMaterializer;
 import sparx.collection.internal.future.list.ContextListAsyncMaterializer;
+import sparx.collection.internal.future.list.EmptyListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
 import sparx.collection.internal.lazy.iterator.AllIteratorMaterializer;
@@ -350,6 +352,31 @@ public class Sparx {
         this.materializer = materializer;
       }
 
+      @SuppressWarnings("unchecked")
+      private static @NotNull <E> ListAsyncMaterializer<E> getElementsMaterializer(
+          @NotNull final Iterable<? extends E> elements) {
+        if (elements instanceof future.List) {
+          return ((future.List<E>) elements).materializer;
+        }
+        if (elements instanceof lazy.List) {
+          ((lazy.List<E>) elements).materializer.materializeElements();
+          return new ListToListAsyncMaterializer<E>((lazy.List<E>) elements);
+        }
+        if (elements instanceof java.util.List) {
+          final java.util.List<E> list = (java.util.List<E>) elements;
+          if (list.isEmpty()) {
+            return EmptyListAsyncMaterializer.instance();
+          }
+          return new ListToListAsyncMaterializer<E>(list);
+        }
+        // TODO: future.Iterator
+        final ArrayList<E> list = new ArrayList<E>();
+        for (final E element : elements) {
+          list.add(element);
+        }
+        return new ListToListAsyncMaterializer<E>(list);
+      }
+
       @Override
       public @NotNull List<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
         return new List<Boolean>(new AllListAsyncMaterializer<E>(materializer, predicate));
@@ -387,15 +414,19 @@ public class Sparx {
       }
 
       @Override
-      public boolean cancel(boolean mayInterruptIfRunning) {
-        return false;
+      public boolean cancel(final boolean mayInterruptIfRunning) {
+        return materializer.cancel(mayInterruptIfRunning);
       }
 
       @Override
       public boolean contains(final Object o) {
         final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
         materializer.materializeContains(o, consumer);
-        return consumer.get();
+        try {
+          return consumer.get();
+        } catch (final InterruptedException e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
@@ -580,7 +611,11 @@ public class Sparx {
       public E first() {
         final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(0);
         materializer.materializeElement(0, consumer);
-        return consumer.get();
+        try {
+          return consumer.get();
+        } catch (final InterruptedException e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
@@ -663,20 +698,46 @@ public class Sparx {
 
       @Override
       public lazy.List<E> get() throws InterruptedException, ExecutionException {
-        return null;
+        final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
+        materializer.materialize(consumer);
+        try {
+          return lazy.List.wrap(consumer.get());
+        } catch (final InterruptedException e) {
+          throw e;
+        } catch (final Exception e) {
+          if (materializer.isCancelled() && e instanceof CancellationException) {
+            throw (CancellationException) e;
+          }
+          throw new ExecutionException(e);
+        }
       }
 
       @Override
       public E get(final int index) {
         final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(index);
         materializer.materializeElement(index, consumer);
-        return consumer.get();
+        try {
+          return consumer.get();
+        } catch (final InterruptedException e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
-      public lazy.List<E> get(long timeout, @NotNull TimeUnit unit)
+      public lazy.List<E> get(final long timeout, @NotNull final TimeUnit unit)
           throws InterruptedException, ExecutionException, TimeoutException {
-        return null;
+        final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
+        materializer.materialize(consumer);
+        try {
+          return lazy.List.wrap(consumer.get(timeout, unit));
+        } catch (final InterruptedException e) {
+          throw e;
+        } catch (final Exception e) {
+          if (materializer.isCancelled() && e instanceof CancellationException) {
+            throw (CancellationException) e;
+          }
+          throw new ExecutionException(e);
+        }
       }
 
       @Override
@@ -750,7 +811,11 @@ public class Sparx {
             }
           });
         }
-        return consumer.get();
+        try {
+          return consumer.get();
+        } catch (final InterruptedException e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
@@ -771,19 +836,23 @@ public class Sparx {
 
       @Override
       public boolean isCancelled() {
-        return false;
+        return materializer.isCancelled();
       }
 
       @Override
       public boolean isDone() {
-        return false;
+        return materializer.isDone();
       }
 
       @Override
       public boolean isEmpty() {
         final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
         materializer.materializeEmpty(consumer);
-        return consumer.get();
+        try {
+          return consumer.get();
+        } catch (final InterruptedException e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
@@ -804,7 +873,11 @@ public class Sparx {
             consumer.error(-1, error);
           }
         });
-        return consumer.get();
+        try {
+          return consumer.get();
+        } catch (final InterruptedException e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
@@ -1080,7 +1153,11 @@ public class Sparx {
       public int size() {
         final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>();
         materializer.materializeSize(consumer);
-        return consumer.get();
+        try {
+          return consumer.get();
+        } catch (final InterruptedException e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
@@ -1155,11 +1232,18 @@ public class Sparx {
         release();
       }
 
-      private P get() {
-        try {
-          acquire();
-        } catch (final InterruptedException e) {
-          throw UncheckedException.toUnchecked(e);
+      private P get() throws InterruptedException {
+        acquire();
+        if (error != null) {
+          throw UncheckedException.throwUnchecked(error);
+        }
+        return param;
+      }
+
+      private P get(final long timeout, @NotNull final TimeUnit unit)
+          throws InterruptedException, TimeoutException {
+        if (!tryAcquire(1, timeout, unit)) {
+          throw new TimeoutException();
         }
         if (error != null) {
           throw UncheckedException.throwUnchecked(error);
@@ -1199,12 +1283,8 @@ public class Sparx {
         release();
       }
 
-      private P get() {
-        try {
-          acquire();
-        } catch (final InterruptedException e) {
-          throw UncheckedException.toUnchecked(e);
-        }
+      private P get() throws InterruptedException {
+        acquire();
         if (error != null) {
           throw UncheckedException.throwUnchecked(error);
         }

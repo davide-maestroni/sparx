@@ -15,16 +15,18 @@
  */
 package sparx.collection.internal.future.list;
 
+import java.util.Collections;
+import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 
 public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
-  private final E element;
+  private final List<E> elements;
 
   public ElementToListAsyncMaterializer(final E element) {
-    this.element = element;
+    elements = Collections.singletonList(element);
   }
 
   @Override
@@ -38,19 +40,30 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   }
 
   @Override
-  public void materializeContains(final Object element,
-      @NotNull final AsyncConsumer<Boolean> consumer) {
+  public boolean isCancelled() {
+    return false;
+  }
+
+  @Override
+  public boolean isDone() {
+    return true;
+  }
+
+  @Override
+  public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
     try {
-      consumer.accept(element == this.element || (element != null && element.equals(this.element)));
+      consumer.accept(elements);
     } catch (final Exception e) {
       // TODO
     }
   }
 
   @Override
-  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
+  @SuppressWarnings("SuspiciousMethodCalls")
+  public void materializeContains(final Object element,
+      @NotNull final AsyncConsumer<Boolean> consumer) {
     try {
-      consumer.accept(true);
+      consumer.accept(elements.contains(element));
     } catch (final Exception e) {
       // TODO
     }
@@ -58,24 +71,16 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
 
   @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
-    if (index < 0) {
-      try {
+    try {
+      if (index < 0) {
         consumer.error(index, new IndexOutOfBoundsException(Integer.toString(index)));
-      } catch (final Exception e) {
-        // TODO
-      }
-    } else if (index != 0) {
-      try {
+      } else if (index != 0) {
         consumer.complete(1);
-      } catch (final Exception e) {
-        // TODO
+      } else {
+        consumer.accept(1, 0, elements.get(0));
       }
-    } else {
-      try {
-        consumer.accept(1, 0, element);
-      } catch (final Exception e) {
-        // TODO
-      }
+    } catch (final Exception e) {
+      // TODO
     }
   }
 
@@ -91,12 +96,7 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   @Override
   public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
     try {
-      consumer.accept(1, 0, element);
-    } catch (final Exception e) {
-      // TODO
-      return;
-    }
-    try {
+      consumer.accept(1, 0, elements.get(0));
       consumer.complete(1);
     } catch (final Exception e) {
       // TODO

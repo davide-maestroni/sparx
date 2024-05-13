@@ -16,7 +16,6 @@
 package sparx.collection.internal.future.list;
 
 import java.util.List;
-import java.util.concurrent.CancellationException;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
@@ -24,230 +23,175 @@ import sparx.util.Require;
 
 public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
-  private ListAsyncMaterializer<E> state;
+  private final List<E> elements;
 
   public ListToListAsyncMaterializer(@NotNull final List<E> elements) {
-    this.state = new RunningState(Require.notNull(elements, "elements"));
+    this.elements = Require.notNull(elements, "elements");
   }
 
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
-    return state.cancel(mayInterruptIfRunning);
+    return false;
   }
 
   @Override
   public int knownSize() {
-    return state.knownSize();
+    try {
+      return elements.size();
+    } catch (final Exception e) {
+      // TODO
+    }
+    return -1;
   }
 
   @Override
+  public boolean isCancelled() {
+    return false;
+  }
+
+  @Override
+  public boolean isDone() {
+    return true;
+  }
+
+  @Override
+  public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
+    try {
+      consumer.accept(elements);
+    } catch (final Exception e) {
+      // TODO
+    }
+  }
+
+  @Override
+  @SuppressWarnings("SuspiciousMethodCalls")
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeContains(element, consumer);
-  }
-
-  @Override
-  public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeDone(consumer);
+    boolean contains;
+    try {
+      contains = elements.contains(element);
+    } catch (final Exception e) {
+      try {
+        consumer.error(e);
+      } catch (final Exception ex) {
+        // TODO
+      }
+      return;
+    }
+    try {
+      consumer.accept(contains);
+    } catch (final Exception e) {
+      // TODO
+    }
   }
 
   @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeElement(index, consumer);
+    final List<E> elements = this.elements;
+    if (index < 0) {
+      try {
+        consumer.error(index, new IndexOutOfBoundsException(Integer.toString(index)));
+      } catch (final Exception e) {
+        // TODO
+      }
+    } else {
+      try {
+        final int size = elements.size();
+        if (index >= size) {
+          try {
+            consumer.complete(size);
+          } catch (final Exception e) {
+            // TODO
+          }
+        } else {
+          final E element = elements.get(index);
+          try {
+            consumer.accept(size, index, element);
+          } catch (final Exception e) {
+            // TODO
+          }
+        }
+      } catch (final Exception e) {
+        try {
+          consumer.error(index, e);
+        } catch (final Exception ex) {
+          // TODO
+        }
+      }
+    }
   }
 
   @Override
   public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeEmpty(consumer);
+    boolean empty;
+    try {
+      empty = elements.isEmpty();
+    } catch (final Exception e) {
+      try {
+        consumer.error(e);
+      } catch (final Exception ex) {
+        // TODO
+      }
+      return;
+    }
+    try {
+      consumer.accept(empty);
+    } catch (final Exception e) {
+      // TODO
+    }
   }
 
   @Override
   public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeOrdered(consumer);
+    int i = 0;
+    try {
+      final List<E> elements = this.elements;
+      final int size = elements.size();
+      while (i < size) {
+        try {
+          consumer.accept(size, i, elements.get(i));
+        } catch (final Exception e) {
+          // TODO
+          return;
+        }
+        ++i;
+      }
+      try {
+        consumer.complete(size);
+      } catch (final Exception e) {
+        // TODO
+      }
+    } catch (final Exception e) {
+      try {
+        consumer.error(i, e);
+      } catch (final Exception ex) {
+        // TODO
+      }
+    }
   }
 
   @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    state.materializeSize(consumer);
+    int size;
+    try {
+      size = elements.size();
+    } catch (final Exception e) {
+      try {
+        consumer.error(e);
+      } catch (final Exception ex) {
+        // TODO
+      }
+      return;
+    }
+    try {
+      consumer.accept(size);
+    } catch (final Exception e) {
+      // TODO
+    }
   }
 
   @Override
   public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeUnordered(consumer);
-  }
-
-  private class RunningState implements ListAsyncMaterializer<E> {
-
-    private final List<E> elements;
-
-    private RunningState(@NotNull final List<E> elements) {
-      this.elements = elements;
-    }
-
-    @Override
-    public boolean cancel(final boolean mayInterruptIfRunning) {
-      state = new FailedListAsyncMaterializer<E>(safeSize(), -1, new CancellationException());
-      return false;
-    }
-
-    @Override
-    public int knownSize() {
-      return elements.size();
-    }
-
-    @Override
-    @SuppressWarnings("SuspiciousMethodCalls")
-    public void materializeContains(final Object element,
-        @NotNull final AsyncConsumer<Boolean> consumer) {
-      boolean contains;
-      try {
-        contains = elements.contains(element);
-      } catch (final Exception e) {
-        state = new FailedListAsyncMaterializer<E>(safeSize(), -1, e);
-        try {
-          consumer.error(e);
-        } catch (final Exception ex) {
-          // TODO
-        }
-        return;
-      }
-      try {
-        consumer.accept(contains);
-      } catch (final Exception e) {
-        // TODO
-      }
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<Boolean> consumer) {
-      try {
-        consumer.accept(true);
-      } catch (final Exception e) {
-        // TODO
-      }
-    }
-
-    @Override
-    public void materializeElement(final int index,
-        @NotNull final IndexedAsyncConsumer<E> consumer) {
-      final List<E> elements = this.elements;
-      if (index < 0) {
-        try {
-          consumer.error(index, new IndexOutOfBoundsException(Integer.toString(index)));
-        } catch (final Exception e) {
-          // TODO
-        }
-      } else {
-        try {
-          final int size = elements.size();
-          if (index >= size) {
-            try {
-              consumer.complete(size);
-            } catch (final Exception e) {
-              // TODO
-            }
-          } else {
-            final E element = elements.get(index);
-            try {
-              consumer.accept(size, index, element);
-            } catch (final Exception e) {
-              // TODO
-            }
-          }
-        } catch (final Exception e) {
-          state = new FailedListAsyncMaterializer<E>(safeSize(), index, e);
-          try {
-            consumer.error(index, e);
-          } catch (final Exception ex) {
-            // TODO
-          }
-        }
-      }
-    }
-
-    @Override
-    public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      boolean empty;
-      try {
-        empty = elements.isEmpty();
-      } catch (final Exception e) {
-        state = new FailedListAsyncMaterializer<E>(safeSize(), -1, e);
-        try {
-          consumer.error(e);
-        } catch (final Exception ex) {
-          // TODO
-        }
-        return;
-      }
-      try {
-        consumer.accept(empty);
-      } catch (final Exception e) {
-        // TODO
-      }
-    }
-
-    @Override
-    public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      int i = 0;
-      try {
-        final List<E> elements = this.elements;
-        final int size = elements.size();
-        while (i < size) {
-          try {
-            consumer.accept(size, i, elements.get(i));
-          } catch (final Exception e) {
-            // TODO
-            return;
-          }
-          ++i;
-        }
-        try {
-          consumer.complete(size);
-        } catch (final Exception e) {
-          // TODO
-        }
-      } catch (final Exception e) {
-        state = new FailedListAsyncMaterializer<E>(safeSize(), i, e);
-        try {
-          consumer.error(i, e);
-        } catch (final Exception ex) {
-          // TODO
-        }
-      }
-    }
-
-    @Override
-    public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      int size;
-      try {
-        size = elements.size();
-      } catch (final Exception e) {
-        state = new FailedListAsyncMaterializer<E>(safeSize(), -1, e);
-        try {
-          consumer.error(e);
-        } catch (final Exception ex) {
-          // TODO
-        }
-        return;
-      }
-      try {
-        consumer.accept(size);
-      } catch (final Exception e) {
-        // TODO
-      }
-    }
-
-    @Override
-    public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materializeOrdered(consumer);
-    }
-
-    private int safeSize() {
-      try {
-        return elements.size();
-      } catch (final Exception ignored) {
-        return -1;
-      }
-    }
+    materializeOrdered(consumer);
   }
 }
