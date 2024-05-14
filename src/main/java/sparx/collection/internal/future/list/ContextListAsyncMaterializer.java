@@ -18,6 +18,8 @@ package sparx.collection.internal.future.list;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
@@ -26,6 +28,9 @@ import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 
 public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+
+  private static final Logger LOGGER = Logger.getLogger(
+      ContextListAsyncMaterializer.class.getName());
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -46,9 +51,8 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
     if (status.compareAndSet(STATUS_RUNNING, STATUS_CANCELLED)) {
-      boolean interrupted = false;
       if (mayInterruptIfRunning) {
-        interrupted = executionContext.interruptTask(taskID);
+        executionContext.interruptTask(taskID);
       }
       executionContext.scheduleBefore(new Task() {
         @Override
@@ -67,7 +71,7 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
           wrapped = new CancelledListAsyncMaterializer<E>(wrapped.knownSize());
         }
       });
-      return interrupted;
+      return true;
     }
     return false;
   }
@@ -97,7 +101,7 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
 
       @Override
       public int weight() {
-        return Math.max(1, wrapped.knownSize());
+        return wrapped.knownSize();
       }
 
       @Override
@@ -106,10 +110,22 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
           try {
             consumer.error(new CancellationException());
           } catch (final Exception e) {
-            // TODO
+            LOGGER.log(Level.SEVERE, "Ignored exception", e);
           }
         } else {
-          wrapped.materialize(consumer);
+          wrapped.materialize(new AsyncConsumer<List<E>>() {
+            @Override
+            public void accept(final List<E> param) throws Exception {
+              if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+                consumer.accept(param);
+              }
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
         }
       }
     });
@@ -186,7 +202,7 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
 
       @Override
       public int weight() {
-        return Math.max(1, wrapped.knownSize());
+        return wrapped.knownSize();
       }
 
       @Override
@@ -226,7 +242,7 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
 
       @Override
       public int weight() {
-        return Math.max(1, wrapped.knownSize());
+        return wrapped.knownSize();
       }
 
       @Override

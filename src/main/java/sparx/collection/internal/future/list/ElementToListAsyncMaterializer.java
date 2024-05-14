@@ -17,11 +17,16 @@ package sparx.collection.internal.future.list;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 
 public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+
+  private static final Logger LOGGER = Logger.getLogger(
+      ElementToListAsyncMaterializer.class.getName());
 
   private final List<E> elements;
 
@@ -54,7 +59,7 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
     try {
       consumer.accept(elements);
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 
@@ -65,7 +70,7 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
     try {
       consumer.accept(elements.contains(element));
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 
@@ -80,7 +85,7 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
         consumer.accept(1, 0, elements.get(0));
       }
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 
@@ -89,7 +94,7 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
     try {
       consumer.accept(false);
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 
@@ -99,7 +104,7 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
       consumer.accept(1, 0, elements.get(0));
       consumer.complete(1);
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 
@@ -108,7 +113,7 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
     try {
       consumer.accept(1);
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 

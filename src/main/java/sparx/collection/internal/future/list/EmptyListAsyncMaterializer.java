@@ -17,6 +17,8 @@ package sparx.collection.internal.future.list;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
@@ -24,6 +26,7 @@ import sparx.collection.internal.future.IndexedAsyncConsumer;
 public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private static final EmptyListAsyncMaterializer<?> INSTANCE = new EmptyListAsyncMaterializer<Object>();
+  private static final Logger LOGGER = Logger.getLogger(EmptyListAsyncMaterializer.class.getName());
 
   @SuppressWarnings("unchecked")
   public static @NotNull <E> EmptyListAsyncMaterializer<E> instance() {
@@ -55,9 +58,8 @@ public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     try {
       consumer.accept(Collections.<E>emptyList());
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
-
   }
 
   @Override
@@ -66,7 +68,7 @@ public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     try {
       consumer.accept(false);
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 
@@ -79,7 +81,7 @@ public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
         consumer.complete(0);
       }
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 
@@ -88,7 +90,7 @@ public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     try {
       consumer.accept(true);
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 
@@ -97,7 +99,7 @@ public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     try {
       consumer.complete(0);
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 
@@ -106,7 +108,7 @@ public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     try {
       consumer.accept(0);
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 
@@ -115,7 +117,7 @@ public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     try {
       consumer.complete(0);
     } catch (final Exception e) {
-      // TODO
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
   }
 }

@@ -34,8 +34,11 @@ import sparx.collection.Sequence;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.collection.internal.future.list.AllListAsyncMaterializer;
+import sparx.collection.internal.future.list.AppendAllListAsyncMaterializer;
 import sparx.collection.internal.future.list.AppendListAsyncMaterializer;
 import sparx.collection.internal.future.list.ContextListAsyncMaterializer;
+import sparx.collection.internal.future.list.CountListAsyncMaterializer;
+import sparx.collection.internal.future.list.CountWhereListAsyncMaterializer;
 import sparx.collection.internal.future.list.EmptyListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
@@ -395,12 +398,8 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> appendAll(@NotNull final Iterable<? extends E> elements) {
-        // TODO: elements instanceof List => AppendAllListAsyncMaterializer
-        final ListAsyncMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          // return new List<E>(getElementsMaterializer(elements));
-        }
-        return null;
+        return new List<E>(
+            new AppendAllListAsyncMaterializer<E>(materializer, getElementsMaterializer(elements)));
       }
 
       @Override
@@ -409,8 +408,9 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull <F> ListSequence<F> as() {
-        return null;
+      @SuppressWarnings("unchecked")
+      public @NotNull <F> List<F> as() {
+        return (List<F>) this;
       }
 
       @Override
@@ -431,17 +431,18 @@ public class Sparx {
 
       @Override
       public @NotNull List<Integer> count() {
-        return null;
+        return new List<Integer>(new CountListAsyncMaterializer<E>(materializer));
       }
 
       @Override
-      public @NotNull List<Integer> count(@NotNull IndexedPredicate<? super E> predicate) {
-        return null;
+      public @NotNull List<Integer> count(@NotNull final IndexedPredicate<? super E> predicate) {
+        return new List<Integer>(new CountWhereListAsyncMaterializer<E>(materializer, predicate));
       }
 
       @Override
-      public @NotNull List<Integer> count(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<Integer> count(@NotNull final Predicate<? super E> predicate) {
+        return new List<Integer>(
+            new CountWhereListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate)));
       }
 
       @Override

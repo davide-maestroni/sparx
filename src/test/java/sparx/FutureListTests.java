@@ -20,8 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
@@ -116,5 +119,103 @@ public class FutureListTests {
     assertTrue(l.notEmpty());
     assertEquals(3, l.size());
     assertEquals(List.of(1, null, 3), l);
+  }
+
+  @Test
+  public void appendAll() {
+    var l = List.<Integer>of().toFuture(context).appendAll(Arrays.asList(1, 2, 3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, 2, 3), l);
+
+    l = List.<Integer>of().toFuture(context).appendAll(List.of(1, null, 3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+
+    l = List.of(1).toFuture(context).appendAll(new LinkedHashSet<>(List.of(2, 3)));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, 2, 3), l);
+
+    l = List.of(1).toFuture(context).appendAll(List.of(null, 3).toFuture(context));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+
+    l = List.of(1, 2).toFuture(context).appendAll(Set.of(3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, 2, 3), l);
+
+    l = List.of(1, null).toFuture(context).appendAll(Set.of(3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+  }
+
+  @Test
+  public void count() {
+    assertFalse(List.of().toFuture(context).count().isEmpty());
+    assertTrue(List.of().toFuture(context).count().notEmpty());
+    assertEquals(1, List.of().toFuture(context).count().size());
+    assertEquals(0, List.of().toFuture(context).count().first());
+    assertEquals(3, List.of(1, 2, 3).toFuture(context).count().first());
+    {
+      var itr = List.of(1, 2, 3).count().iterator();
+      assertTrue(itr.hasNext());
+      assertEquals(3, itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    assertEquals(3, List.of(1, null, 3).toFuture(context).count().first());
+    {
+      var itr = List.of(1, null, 3).count().iterator();
+      assertTrue(itr.hasNext());
+      assertEquals(3, itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+  }
+
+  @Test
+  public void countWhere() {
+    assertFalse(List.of().toFuture(context).count(Objects::nonNull).isEmpty());
+    assertTrue(List.of().toFuture(context).count(Objects::nonNull).notEmpty());
+    assertEquals(1, List.of().toFuture(context).count(Objects::nonNull).size());
+    assertEquals(0, List.of().toFuture(context).count(Objects::nonNull).first());
+    assertEquals(2, List.of(1, 2, 3).toFuture(context).count(i -> i < 3).first());
+    {
+      var itr = List.of(1, 2, 3).count(i -> i < 3).iterator();
+      assertTrue(itr.hasNext());
+      assertEquals(2, itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    assertEquals(3, List.of(1, 2, 3).toFuture(context).count(i -> i > 0).first());
+    {
+      var itr = List.of(1, 2, 3).count(i -> i > 0).iterator();
+      assertTrue(itr.hasNext());
+      assertEquals(3, itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    var l = List.of(1, null, 3).toFuture(context).count(i -> i > 0);
+    assertThrows(NullPointerException.class, l::first);
+    {
+//      var itr = l.iterator();
+//      assertTrue(itr.hasNext());
+//      assertThrows(NullPointerException.class, itr::next);
+    }
   }
 }
