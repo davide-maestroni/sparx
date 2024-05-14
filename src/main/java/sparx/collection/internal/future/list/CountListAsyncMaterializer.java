@@ -15,6 +15,7 @@
  */
 package sparx.collection.internal.future.list;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +29,7 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
       0);
 
   private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
+  private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
   private final ListAsyncMaterializer<E> wrapped;
 
   private ListAsyncMaterializer<Integer> state;
@@ -128,6 +130,14 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
     });
   }
 
+  private void consumeState(@NotNull final ListAsyncMaterializer<Integer> state) {
+    final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
+    for (final StateConsumer stateConsumer : stateConsumers) {
+      stateConsumer.accept(state);
+    }
+    stateConsumers.clear();
+  }
+
   private void materialized(@NotNull final StateConsumer consumer) {
     final ListAsyncMaterializer<E> wrapped = this.wrapped;
     wrapped.materializeEmpty(new AsyncConsumer<Boolean>() {
@@ -139,19 +149,23 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
           isMaterialized.set(true);
           consumer.accept(state = ZERO_STATE);
         } else {
-          wrapped.materializeSize(new AsyncConsumer<Integer>() {
-            @Override
-            public void accept(final Integer param) {
-              isMaterialized.set(true);
-              consumer.accept(state = new ElementToListAsyncMaterializer<Integer>(param));
-            }
+          final ArrayList<StateConsumer> stateConsumers = CountListAsyncMaterializer.this.stateConsumers;
+          stateConsumers.add(consumer);
+          if (stateConsumers.size() == 1) {
+            wrapped.materializeSize(new AsyncConsumer<Integer>() {
+              @Override
+              public void accept(final Integer param) {
+                isMaterialized.set(true);
+                consumeState(state = new ElementToListAsyncMaterializer<Integer>(param));
+              }
 
-            @Override
-            public void error(@NotNull final Exception error) {
-              isMaterialized.set(true);
-              consumer.accept(state = new FailedListAsyncMaterializer<Integer>(1, 0, error));
-            }
-          });
+              @Override
+              public void error(@NotNull final Exception error) {
+                isMaterialized.set(true);
+                consumeState(state = new FailedListAsyncMaterializer<Integer>(1, 0, error));
+              }
+            });
+          }
         }
       }
 

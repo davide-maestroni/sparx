@@ -15,6 +15,7 @@
  */
 package sparx.collection.internal.future.list;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -32,6 +33,7 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
 
   private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
   private final IndexedPredicate<? super E> predicate;
+  private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
   private final ListAsyncMaterializer<E> wrapped;
 
   private ListAsyncMaterializer<Boolean> state;
@@ -134,6 +136,14 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
     });
   }
 
+  private void consumeState(@NotNull final ListAsyncMaterializer<Boolean> state) {
+    final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
+    for (final StateConsumer stateConsumer : stateConsumers) {
+      stateConsumer.accept(state);
+    }
+    stateConsumers.clear();
+  }
+
   private void materialized(@NotNull final StateConsumer consumer) {
     final ListAsyncMaterializer<E> wrapped = this.wrapped;
     wrapped.materializeEmpty(new AsyncConsumer<Boolean>() {
@@ -145,34 +155,38 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
           isMaterialized.set(true);
           consumer.accept(state = TRUE_STATE);
         } else {
-          wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
-            @Override
-            public void accept(final int size, final int index, final E param) {
-              try {
-                if (!predicate.test(index, param)) {
+          final ArrayList<StateConsumer> stateConsumers = AllListAsyncMaterializer.this.stateConsumers;
+          stateConsumers.add(consumer);
+          if (stateConsumers.size() == 1) {
+            wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
+              @Override
+              public void accept(final int size, final int index, final E param) {
+                try {
+                  if (!predicate.test(index, param)) {
+                    isMaterialized.set(true);
+                    consumeState(state = FALSE_STATE);
+                  } else {
+                    wrapped.materializeElement(index + 1, this);
+                  }
+                } catch (final Exception e) {
                   isMaterialized.set(true);
-                  consumer.accept(state = FALSE_STATE);
-                } else {
-                  wrapped.materializeElement(index + 1, this);
+                  consumeState(state = new FailedListAsyncMaterializer<Boolean>(1, index, e));
                 }
-              } catch (final Exception e) {
-                isMaterialized.set(true);
-                consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, index, e));
               }
-            }
 
-            @Override
-            public void complete(final int size) {
-              isMaterialized.set(true);
-              consumer.accept(state = TRUE_STATE);
-            }
+              @Override
+              public void complete(final int size) {
+                isMaterialized.set(true);
+                consumeState(state = TRUE_STATE);
+              }
 
-            @Override
-            public void error(final int index, @NotNull final Exception error) {
-              isMaterialized.set(true);
-              consumer.accept(state = new FailedListAsyncMaterializer<Boolean>(1, index, error));
-            }
-          });
+              @Override
+              public void error(final int index, @NotNull final Exception error) {
+                isMaterialized.set(true);
+                consumeState(state = new FailedListAsyncMaterializer<Boolean>(1, index, error));
+              }
+            });
+          }
         }
       }
 

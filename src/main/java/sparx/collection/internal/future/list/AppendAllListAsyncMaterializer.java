@@ -32,6 +32,8 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
   private static final Logger LOGGER = Logger.getLogger(
       AppendAllListAsyncMaterializer.class.getName());
 
+  private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
+      2);
   private final ListAsyncMaterializer<E> elementsMaterializer;
   private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
   private final ListAsyncMaterializer<E> wrapped;
@@ -200,39 +202,43 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
           LOGGER.log(Level.SEVERE, "Ignored exception", e);
         }
       } else {
-        final ArrayList<E> elements = new ArrayList<E>();
-        wrapped.materializeOrdered(new IndexedAsyncConsumer<E>() {
-          @Override
-          public void accept(final int size, final int index, final E param) {
-            elements.add(param);
-          }
+        final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = AppendAllListAsyncMaterializer.this.elementsConsumers;
+        elementsConsumers.add(consumer);
+        if (elementsConsumers.size() == 1) {
+          final ArrayList<E> elements = new ArrayList<E>();
+          wrapped.materializeOrdered(new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E param) {
+              elements.add(param);
+            }
 
-          @Override
-          public void complete(final int size) throws Exception {
-            elementsMaterializer.materializeOrdered(new IndexedAsyncConsumer<E>() {
-              @Override
-              public void accept(final int size, final int index, final E param) {
-                elements.add(param);
-              }
+            @Override
+            public void complete(final int size) {
+              elementsMaterializer.materializeOrdered(new IndexedAsyncConsumer<E>() {
+                @Override
+                public void accept(final int size, final int index, final E param) {
+                  elements.add(param);
+                }
 
-              @Override
-              public void complete(final int size) throws Exception {
-                isMaterialized.set(true);
-                consumer.accept(AppendState.this.elements = elements);
-              }
+                @Override
+                public void complete(final int size) {
+                  isMaterialized.set(true);
+                  consumeElements(AppendState.this.elements = elements);
+                }
 
-              @Override
-              public void error(final int index, @NotNull final Exception error) throws Exception {
-                consumer.error(error);
-              }
-            });
-          }
+                @Override
+                public void error(final int index, @NotNull final Exception error) {
+                  consumeError(error);
+                }
+              });
+            }
 
-          @Override
-          public void error(final int index, @NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
+            @Override
+            public void error(final int index, @NotNull final Exception error) {
+              consumeError(error);
+            }
+          });
+        }
       }
     }
 
@@ -270,7 +276,7 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
           if (size < 0) {
             wrapped.materializeSize(new AsyncConsumer<Integer>() {
               @Override
-              public void accept(final Integer param) throws Exception {
+              public void accept(final Integer param) {
                 complete(param);
               }
 
@@ -462,6 +468,30 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
           consumer.error(index, error);
         }
       });
+    }
+
+    private void consumeElements(@NotNull final List<E> elements) {
+      final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = AppendAllListAsyncMaterializer.this.elementsConsumers;
+      for (final AsyncConsumer<List<E>> elementsConsumer : elementsConsumers) {
+        try {
+          elementsConsumer.accept(elements);
+        } catch (final Exception e) {
+          LOGGER.log(Level.SEVERE, "Ignored exception", e);
+        }
+      }
+      elementsConsumers.clear();
+    }
+
+    private void consumeError(@NotNull final Exception error) {
+      final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = AppendAllListAsyncMaterializer.this.elementsConsumers;
+      for (final AsyncConsumer<List<E>> elementsConsumer : elementsConsumers) {
+        try {
+          elementsConsumer.error(error);
+        } catch (final Exception e) {
+          LOGGER.log(Level.SEVERE, "Ignored exception", e);
+        }
+      }
+      elementsConsumers.clear();
     }
 
     private int safeIndex(final int wrappedSize, final int elementsSize) {

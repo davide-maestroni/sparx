@@ -36,6 +36,9 @@ import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.collection.internal.future.list.AllListAsyncMaterializer;
 import sparx.collection.internal.future.list.AppendAllListAsyncMaterializer;
 import sparx.collection.internal.future.list.AppendListAsyncMaterializer;
+import sparx.collection.internal.future.list.AsyncForFuture;
+import sparx.collection.internal.future.list.AsyncRunFuture;
+import sparx.collection.internal.future.list.AsyncWhileFuture;
 import sparx.collection.internal.future.list.ContextListAsyncMaterializer;
 import sparx.collection.internal.future.list.CountListAsyncMaterializer;
 import sparx.collection.internal.future.list.CountWhereListAsyncMaterializer;
@@ -413,6 +416,37 @@ public class Sparx {
         return (List<F>) this;
       }
 
+      public @NotNull Future<?> asyncFor(@NotNull final Consumer<? super E> consumer) {
+        return new AsyncForFuture<E>(materializer, toIndexedConsumer(consumer));
+      }
+
+      public @NotNull Future<?> asyncFor(@NotNull final IndexedConsumer<? super E> consumer) {
+        return new AsyncForFuture<E>(materializer, consumer);
+      }
+
+      public @NotNull Future<?> asyncRun() {
+        return new AsyncRunFuture<E>(materializer);
+      }
+
+      public @NotNull Future<?> asyncWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+        return new AsyncWhileFuture<E>(materializer, predicate);
+      }
+
+      public @NotNull Future<?> asyncWhile(@NotNull final IndexedPredicate<? super E> condition,
+          @NotNull final IndexedConsumer<? super E> consumer) {
+        return new AsyncWhileFuture<E>(materializer, condition, consumer);
+      }
+
+      public @NotNull Future<?> asyncWhile(@NotNull final Predicate<? super E> predicate) {
+        return new AsyncWhileFuture<E>(materializer, toIndexedPredicate(predicate));
+      }
+
+      public @NotNull Future<?> asyncWhile(@NotNull final Predicate<? super E> condition,
+          @NotNull final Consumer<? super E> consumer) {
+        return new AsyncWhileFuture<E>(materializer, toIndexedPredicate(condition),
+            toIndexedConsumer(consumer));
+      }
+
       @Override
       public boolean cancel(final boolean mayInterruptIfRunning) {
         return materializer.cancel(mayInterruptIfRunning);
@@ -446,40 +480,64 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> diff(@NotNull Iterable<?> elements) {
+      public @NotNull List<E> diff(@NotNull final Iterable<?> elements) {
         return null;
       }
 
       @Override
-      public void doFor(@NotNull Consumer<? super E> consumer) {
-
+      public void doFor(@NotNull final Consumer<? super E> consumer) {
+        try {
+          asyncFor(consumer).get();
+        } catch (final Exception e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
-      public void doFor(@NotNull IndexedConsumer<? super E> consumer) {
-
+      public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
+        try {
+          asyncFor(consumer).get();
+        } catch (final Exception e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
-      public void doWhile(@NotNull IndexedPredicate<? super E> predicate) {
-
+      public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+        try {
+          asyncWhile(predicate).get();
+        } catch (final Exception e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
-      public void doWhile(@NotNull IndexedPredicate<? super E> condition,
-          @NotNull IndexedConsumer<? super E> consumer) {
-
+      public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
+          @NotNull final IndexedConsumer<? super E> consumer) {
+        try {
+          asyncWhile(condition, consumer).get();
+        } catch (final Exception e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
-      public void doWhile(@NotNull Predicate<? super E> predicate) {
-
+      public void doWhile(@NotNull final Predicate<? super E> predicate) {
+        try {
+          asyncWhile(predicate).get();
+        } catch (final Exception e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
       public void doWhile(@NotNull Predicate<? super E> condition,
           @NotNull Consumer<? super E> consumer) {
-
+        try {
+          asyncWhile(condition, consumer).get();
+        } catch (final Exception e) {
+          throw UncheckedException.toUnchecked(e);
+        }
       }
 
       @Override
