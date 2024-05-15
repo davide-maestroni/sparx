@@ -59,15 +59,6 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
-    try {
-      consumer.error(error);
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Ignored exception", e);
-    }
-  }
-
-  @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     try {
@@ -81,6 +72,15 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     try {
       consumer.error(this.index, error);
+    } catch (final Exception e) {
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
+    }
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+    try {
+      consumer.error(error);
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }

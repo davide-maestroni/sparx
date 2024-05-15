@@ -23,7 +23,7 @@ import sparx.collection.internal.future.IndexedAsyncConsumer;
 
 public interface ListAsyncMaterializer<E> extends CollectionAsyncMaterializer<E> {
 
-  void materialize(@NotNull AsyncConsumer<List<E>> consumer);
-
   void materializeElement(int index, @NotNull IndexedAsyncConsumer<E> consumer);
+
+  void materializeElements(@NotNull AsyncConsumer<List<E>> consumer);
 }

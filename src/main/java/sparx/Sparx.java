@@ -481,6 +481,8 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> diff(@NotNull final Iterable<?> elements) {
+        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(
+            elements);
         return null;
       }
 
@@ -758,7 +760,7 @@ public class Sparx {
       @Override
       public lazy.List<E> get() throws InterruptedException, ExecutionException {
         final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
-        materializer.materialize(consumer);
+        materializer.materializeElements(consumer);
         try {
           return lazy.List.wrap(consumer.get());
         } catch (final InterruptedException e) {
@@ -786,7 +788,7 @@ public class Sparx {
       public lazy.List<E> get(final long timeout, @NotNull final TimeUnit unit)
           throws InterruptedException, ExecutionException, TimeoutException {
         final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
-        materializer.materialize(consumer);
+        materializer.materializeElements(consumer);
         try {
           return lazy.List.wrap(consumer.get(timeout, unit));
         } catch (final InterruptedException e) {

@@ -54,15 +54,6 @@ public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   }
 
   @Override
-  public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
-    try {
-      consumer.accept(Collections.<E>emptyList());
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Ignored exception", e);
-    }
-  }
-
-  @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     try {
@@ -80,6 +71,15 @@ public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       } else {
         consumer.complete(0);
       }
+    } catch (final Exception e) {
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
+    }
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+    try {
+      consumer.accept(Collections.<E>emptyList());
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }

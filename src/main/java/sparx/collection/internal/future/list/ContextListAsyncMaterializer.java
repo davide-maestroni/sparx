@@ -92,46 +92,6 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
   }
 
   @Override
-  public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
-    executionContext.scheduleAfter(new Task() {
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return wrapped.knownSize();
-      }
-
-      @Override
-      public void run() {
-        if (isCancelled()) {
-          try {
-            consumer.error(new CancellationException());
-          } catch (final Exception e) {
-            LOGGER.log(Level.SEVERE, "Ignored exception", e);
-          }
-        } else {
-          wrapped.materialize(new AsyncConsumer<List<E>>() {
-            @Override
-            public void accept(final List<E> param) throws Exception {
-              if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-                consumer.accept(param);
-              }
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
-        }
-      }
-    });
-  }
-
-  @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     executionContext.scheduleAfter(new Task() {
@@ -168,6 +128,46 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
       @Override
       public void run() {
         wrapped.materializeElement(index, consumer);
+      }
+    });
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+    executionContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.knownSize();
+      }
+
+      @Override
+      public void run() {
+        if (isCancelled()) {
+          try {
+            consumer.error(new CancellationException());
+          } catch (final Exception e) {
+            LOGGER.log(Level.SEVERE, "Ignored exception", e);
+          }
+        } else {
+          wrapped.materializeElements(new AsyncConsumer<List<E>>() {
+            @Override
+            public void accept(final List<E> param) throws Exception {
+              if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+                consumer.accept(param);
+              }
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
+        }
       }
     });
   }

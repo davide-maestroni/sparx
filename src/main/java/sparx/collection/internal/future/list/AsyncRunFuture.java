@@ -33,7 +33,7 @@ public class AsyncRunFuture<E> implements Future<Void> {
 
   public AsyncRunFuture(@NotNull final ListAsyncMaterializer<E> materializer) {
     this.materializer = materializer;
-    materializer.materialize(new AsyncConsumer<List<E>>() {
+    materializer.materializeElements(new AsyncConsumer<List<E>>() {
       @Override
       public void accept(final List<E> param) {
         synchronized (isDone) {

@@ -59,16 +59,6 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
   }
 
   @Override
-  public void materialize(@NotNull final AsyncConsumer<List<Integer>> consumer) {
-    materialized(new StateConsumer() {
-      @Override
-      public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
-        state.materialize(consumer);
-      }
-    });
-  }
-
-  @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     materialized(new StateConsumer() {
@@ -86,6 +76,16 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
       @Override
       public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
         state.materializeElement(index, consumer);
+      }
+    });
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<List<Integer>> consumer) {
+    materialized(new StateConsumer() {
+      @Override
+      public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
+        state.materializeElements(consumer);
       }
     });
   }

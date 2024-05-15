@@ -70,16 +70,6 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
-    materialized(new StateConsumer<E>() {
-      @Override
-      public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-        state.materialize(consumer);
-      }
-    });
-  }
-
-  @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     materialized(new StateConsumer<E>() {
@@ -96,6 +86,16 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       @Override
       public void accept(@NotNull final ListAsyncMaterializer<E> state) {
         state.materializeElement(index, consumer);
+      }
+    });
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+    materialized(new StateConsumer<E>() {
+      @Override
+      public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+        state.materializeElements(consumer);
       }
     });
   }
@@ -170,7 +170,7 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   private class AppendState implements ListAsyncMaterializer<E> {
 
-    private List<E> elements;
+    private final ElementsCache<E> elementsCache = new ElementsCache<E>(knownSize());
 
     @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
@@ -179,7 +179,7 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
     @Override
     public int knownSize() {
-      return -1;
+      return safeSize(wrapped.knownSize());
     }
 
     @Override
@@ -190,41 +190,6 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
     @Override
     public boolean isDone() {
       return wrapped.isCancelled() || isMaterialized.get();
-    }
-
-    @Override
-    public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
-      if (isMaterialized.get()) {
-        try {
-          consumer.accept(elements);
-        } catch (final Exception e) {
-          LOGGER.log(Level.SEVERE, "Ignored exception", e);
-        }
-      } else {
-        final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = AppendListAsyncMaterializer.this.elementsConsumers;
-        elementsConsumers.add(consumer);
-        if (elementsConsumers.size() == 1) {
-          final ArrayList<E> elements = new ArrayList<E>();
-          wrapped.materializeOrdered(new IndexedAsyncConsumer<E>() {
-            @Override
-            public void accept(final int size, final int index, final E param) {
-              elements.add(param);
-            }
-
-            @Override
-            public void complete(final int size) {
-              elements.add(element);
-              isMaterialized.set(true);
-              consumeElements(AppendState.this.elements = elements);
-            }
-
-            @Override
-            public void error(final int index, @NotNull final Exception error) throws Exception {
-              consumeError(error);
-            }
-          });
-        }
-      }
     }
 
     @Override
@@ -245,26 +210,76 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
     @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
-      wrapped.materializeElement(index, new IndexedAsyncConsumer<E>() {
-        @Override
-        public void accept(final int size, final int index, final E param) throws Exception {
-          consumer.accept(safeSize(size), index, param);
+      final ElementsCache<E> elementsCache = this.elementsCache;
+      if (elementsCache.hasElement(index)) {
+        try {
+          consumer.accept(elementsCache.getSize(), index, elementsCache.getElement(index));
+        } catch (final Exception e) {
+          LOGGER.log(Level.SEVERE, "Ignored exception", e);
         }
-
-        @Override
-        public void complete(final int size) throws Exception {
-          if (size == index) {
-            consumer.accept(safeSize(size), size, element);
-          } else {
-            consumer.complete(safeSize(size));
+      } else {
+        wrapped.materializeElement(index, new IndexedAsyncConsumer<E>() {
+          @Override
+          public void accept(final int size, final int index, final E param) throws Exception {
+            final int materialSize = safeSize(size);
+            if (elementsCache.add(materialSize, index, param) != null) {
+              isMaterialized.set(true);
+            }
+            consumer.accept(materialSize, index, param);
           }
-        }
 
-        @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
-          consumer.error(index, error);
+          @Override
+          public void complete(final int size) throws Exception {
+            if (size == index) {
+              final int materialSize = safeSize(size);
+              if (elementsCache.add(materialSize, size, element) != null) {
+                isMaterialized.set(true);
+              }
+              consumer.accept(materialSize, size, element);
+            } else {
+              consumer.complete(safeSize(size));
+            }
+          }
+
+          @Override
+          public void error(final int index, @NotNull final Exception error) throws Exception {
+            consumer.error(index, error);
+          }
+        });
+      }
+    }
+
+    @Override
+    public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+      if (isMaterialized.get()) {
+        try {
+          consumer.accept(elementsCache.get(0));
+        } catch (final Exception e) {
+          LOGGER.log(Level.SEVERE, "Ignored exception", e);
         }
-      });
+      } else {
+        final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = AppendListAsyncMaterializer.this.elementsConsumers;
+        elementsConsumers.add(consumer);
+        if (elementsConsumers.size() == 1) {
+          wrapped.materializeOrdered(new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E param) {
+              elementsCache.add(safeSize(size), index, param);
+            }
+
+            @Override
+            public void complete(final int size) {
+              isMaterialized.set(true);
+              consumeElements(elementsCache.add(safeSize(size), size, element));
+            }
+
+            @Override
+            public void error(final int index, @NotNull final Exception error) throws Exception {
+              consumeError(error);
+            }
+          });
+        }
+      }
     }
 
     @Override
@@ -281,14 +296,21 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       wrapped.materializeOrdered(new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E param) throws Exception {
-          consumer.accept(safeSize(size), index, param);
+          final int materialSize = safeSize(size);
+          if (elementsCache.add(materialSize, index, param) != null) {
+            isMaterialized.set(true);
+          }
+          consumer.accept(materialSize, index, param);
         }
 
         @Override
         public void complete(final int size) throws Exception {
-          final int knownSize = safeSize(size);
-          consumer.accept(knownSize, size, element);
-          consumer.complete(knownSize);
+          final int materialSize = safeSize(size);
+          if (elementsCache.add(materialSize, size, element) != null) {
+            isMaterialized.set(true);
+          }
+          consumer.accept(materialSize, size, element);
+          consumer.complete(materialSize);
         }
 
         @Override
@@ -318,14 +340,21 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       wrapped.materializeUnordered(new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E param) throws Exception {
-          consumer.accept(safeSize(size), index, param);
+          final int materialSize = safeSize(size);
+          if (elementsCache.add(materialSize, index, param) != null) {
+            isMaterialized.set(true);
+          }
+          consumer.accept(materialSize, index, param);
         }
 
         @Override
         public void complete(final int size) throws Exception {
-          final int knownSize = safeSize(size);
-          consumer.accept(knownSize, size, element);
-          consumer.complete(knownSize);
+          final int materialSize = safeSize(size);
+          if (elementsCache.add(materialSize, size, element) != null) {
+            isMaterialized.set(true);
+          }
+          consumer.accept(materialSize, size, element);
+          consumer.complete(materialSize);
         }
 
         @Override

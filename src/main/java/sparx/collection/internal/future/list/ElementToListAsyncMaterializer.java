@@ -55,15 +55,6 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   }
 
   @Override
-  public void materialize(@NotNull final AsyncConsumer<List<E>> consumer) {
-    try {
-      consumer.accept(elements);
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Ignored exception", e);
-    }
-  }
-
-  @Override
   @SuppressWarnings("SuspiciousMethodCalls")
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
@@ -84,6 +75,15 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
       } else {
         consumer.accept(1, 0, elements.get(0));
       }
+    } catch (final Exception e) {
+      LOGGER.log(Level.SEVERE, "Ignored exception", e);
+    }
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+    try {
+      consumer.accept(elements);
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
