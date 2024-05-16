@@ -44,6 +44,13 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
     this.element = element;
   }
 
+  private static int safeSize(final int wrappedSize) {
+    if (wrappedSize >= 0) {
+      return SizeOverflowException.safeCast((long) wrappedSize + 1);
+    }
+    return -1;
+  }
+
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
     return wrapped.cancel(mayInterruptIfRunning);
@@ -51,11 +58,7 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   @Override
   public int knownSize() {
-    final int wrappedSize = wrapped.knownSize();
-    if (wrappedSize >= 0) {
-      return SizeOverflowException.safeCast((long) wrappedSize + 1);
-    }
-    return wrappedSize;
+    return safeSize(wrapped.knownSize());
   }
 
   @Override
@@ -376,13 +379,6 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
-    }
-
-    private int safeSize(final int wrappedSize) {
-      if (wrappedSize >= 0) {
-        return SizeOverflowException.safeCast((long) wrappedSize + 1);
-      }
-      return wrappedSize;
     }
   }
 }

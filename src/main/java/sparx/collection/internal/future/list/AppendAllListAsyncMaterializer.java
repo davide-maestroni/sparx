@@ -45,6 +45,20 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
     this.elementsMaterializer = Require.notNull(elementsMaterializer, "elementsMaterializer");
   }
 
+  private static int safeIndex(final int wrappedSize, final int elementsIndex) {
+    if (wrappedSize >= 0) {
+      return IndexOverflowException.safeCast((long) wrappedSize + elementsIndex);
+    }
+    return -1;
+  }
+
+  private static int safeSize(final int wrappedSize, final int elementsSize) {
+    if (wrappedSize >= 0 && elementsSize > 0) {
+      return SizeOverflowException.safeCast((long) wrappedSize + elementsSize);
+    }
+    return -1;
+  }
+
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
     return wrapped.cancel(mayInterruptIfRunning);
@@ -52,11 +66,7 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
 
   @Override
   public int knownSize() {
-    final int wrappedSize = wrapped.knownSize();
-    if (wrappedSize >= 0) {
-      return SizeOverflowException.safeCast((long) wrappedSize + 1);
-    }
-    return wrappedSize;
+    return safeSize(wrapped.knownSize(), elementsMaterializer.knownSize());
   }
 
   @Override
@@ -530,20 +540,6 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
         safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
-    }
-
-    private int safeIndex(final int wrappedSize, final int elementsIndex) {
-      if (wrappedSize >= 0) {
-        return IndexOverflowException.safeCast((long) wrappedSize + elementsIndex);
-      }
-      return -1;
-    }
-
-    private int safeSize(final int wrappedSize, final int elementsSize) {
-      if (wrappedSize >= 0 && elementsSize > 0) {
-        return SizeOverflowException.safeCast((long) wrappedSize + elementsSize);
-      }
-      return -1;
     }
   }
 }

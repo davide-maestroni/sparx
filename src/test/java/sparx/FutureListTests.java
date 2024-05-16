@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
@@ -232,5 +233,73 @@ public class FutureListTests {
 
     assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).toFuture(context).diff(List.of()));
     assertEquals(List.of(), List.of().toFuture(context).diff(List.of(1, 2, null, 4)));
+  }
+
+  @Test
+  public void doFor() {
+    var list = new ArrayList<>();
+    List.of(1, 2, 3).toFuture(context).doFor(e -> list.add(e));
+    assertEquals(List.of(1, 2, 3), list);
+  }
+
+  @Test
+  public void doWhile() {
+    var list = new ArrayList<>();
+    List.of(1, 2, 3).toFuture(context).doWhile(e -> e < 3, list::add);
+    assertEquals(List.of(1, 2), list);
+    list.clear();
+    List.of(1, 2, 3).toFuture(context).doWhile(e -> {
+      list.add(e);
+      return e < 2;
+    });
+    assertEquals(List.of(1, 2), list);
+  }
+
+  @Test
+  public void drop() {
+    var l = List.<Integer>of().toFuture(context).drop(1);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    l = List.<Integer>of().toFuture(context).drop(0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    l = List.<Integer>of().toFuture(context).drop(-1);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+
+    l = List.of(1, null, 3).toFuture(context).drop(1);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(2, l.size());
+    assertEquals(List.of(null, 3), l);
+    l = List.of(1, null, 3).toFuture(context).drop(2);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertEquals(List.of(3), l);
+    l = List.of(1, null, 3).toFuture(context).drop(3);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+    l = List.of(1, null, 3).toFuture(context).drop(4);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+    l = List.of(1, null, 3).toFuture(context).drop(0);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+    l = List.of(1, null, 3).toFuture(context).drop(-1);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
   }
 }

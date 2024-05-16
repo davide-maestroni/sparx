@@ -43,6 +43,7 @@ import sparx.collection.internal.future.list.ContextListAsyncMaterializer;
 import sparx.collection.internal.future.list.CountListAsyncMaterializer;
 import sparx.collection.internal.future.list.CountWhereListAsyncMaterializer;
 import sparx.collection.internal.future.list.DiffListAsyncMaterializer;
+import sparx.collection.internal.future.list.DropListAsyncMaterializer;
 import sparx.collection.internal.future.list.EmptyListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
@@ -555,8 +556,11 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<E> drop(int maxElements) {
-        return null;
+      public @NotNull List<E> drop(final int maxElements) {
+        if (maxElements <= 0) {
+          return this;
+        }
+        return new List<E>(new DropListAsyncMaterializer<E>(materializer, maxElements));
       }
 
       @Override
