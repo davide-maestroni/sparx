@@ -18,7 +18,6 @@ package sparx.collection.internal.future.list;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
@@ -27,7 +26,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 
-public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       ContextListAsyncMaterializer.class.getName());
@@ -148,11 +147,7 @@ public class ContextListAsyncMaterializer<E> implements ListAsyncMaterializer<E>
       @Override
       public void run() {
         if (isCancelled()) {
-          try {
-            consumer.error(new CancellationException());
-          } catch (final Exception e) {
-            LOGGER.log(Level.SEVERE, "Ignored exception", e);
-          }
+          safeConsumeError(consumer, new CancellationException(), LOGGER);
         } else {
           wrapped.materializeElements(new AsyncConsumer<List<E>>() {
             @Override

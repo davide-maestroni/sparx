@@ -40,19 +40,11 @@ public class AsyncWhileFuture<E> implements Future<Void> {
     this.materializer = materializer;
     materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
       @Override
-      public void accept(final int size, final int index, final E param) {
-        try {
-          if (predicate.test(index, param)) {
-            materializer.materializeElement(index + 1, this);
-          } else {
-            synchronized (isDone) {
-              isDone.set(true);
-              isDone.notifyAll();
-            }
-          }
-        } catch (final Exception e) {
+      public void accept(final int size, final int index, final E param) throws Exception {
+        if (predicate.test(index, param)) {
+          materializer.materializeElement(index + 1, this);
+        } else {
           synchronized (isDone) {
-            error = e;
             isDone.set(true);
             isDone.notifyAll();
           }
@@ -86,20 +78,12 @@ public class AsyncWhileFuture<E> implements Future<Void> {
     this.materializer = materializer;
     materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
       @Override
-      public void accept(final int size, final int index, final E param) {
-        try {
-          if (condition.test(index, param)) {
-            consumer.accept(index, param);
-            materializer.materializeElement(index + 1, this);
-          } else {
-            synchronized (isDone) {
-              isDone.set(true);
-              isDone.notifyAll();
-            }
-          }
-        } catch (final Exception e) {
+      public void accept(final int size, final int index, final E param) throws Exception {
+        if (condition.test(index, param)) {
+          consumer.accept(index, param);
+          materializer.materializeElement(index + 1, this);
+        } else {
           synchronized (isDone) {
-            error = e;
             isDone.set(true);
             isDone.notifyAll();
           }

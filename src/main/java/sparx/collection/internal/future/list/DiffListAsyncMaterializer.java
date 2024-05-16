@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
@@ -148,7 +147,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
           isMaterialized.set(true);
           consumer.accept(state = wrapped);
         } else {
-          consumer.accept(state = new DiffState());
+          consumer.accept(state = new ImmaterialState());
         }
       }
 
@@ -165,7 +164,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     void accept(@NotNull ListAsyncMaterializer<E> state);
   }
 
-  private class DiffState implements ListAsyncMaterializer<E> {
+  private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
 
     private final ElementsCache<E> elementsCache = new ElementsCache<E>(knownSize());
 
@@ -226,11 +225,8 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       final ElementsCache<E> elementsCache = this.elementsCache;
       if (elementsCache.hasElement(index)) {
-        try {
-          consumer.accept(elementsCache.knownSize(), index, elementsCache.getElement(index));
-        } catch (final Exception e) {
-          LOGGER.log(Level.SEVERE, "Ignored exception", e);
-        }
+        safeConsume(consumer, elementsCache.knownSize(), index, elementsCache.getElement(index),
+            LOGGER);
       } else {
         final int originalIndex = index;
         materializeUntil(index, new IndexedAsyncConsumer<E>() {
@@ -327,11 +323,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = DiffListAsyncMaterializer.this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
         for (final IndexedAsyncConsumer<E> consumer : consumers) {
-          try {
-            consumer.complete(size);
-          } catch (final Exception e) {
-            LOGGER.log(Level.SEVERE, "Ignored exception", e);
-          }
+          safeConsumeComplete(consumer, size, LOGGER);
         }
       }
       elementsConsumers.clear();
@@ -339,29 +331,28 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
     private void consumeElement(final int index, final E element) {
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = DiffListAsyncMaterializer.this.elementsConsumers;
-      final Iterator<Entry<Integer, ArrayList<IndexedAsyncConsumer<E>>>> iterator = elementsConsumers.entrySet()
+      final Iterator<Entry<Integer, ArrayList<IndexedAsyncConsumer<E>>>> entries = elementsConsumers.entrySet()
           .iterator();
-      while (iterator.hasNext()) {
-        final Entry<Integer, ArrayList<IndexedAsyncConsumer<E>>> entry = iterator.next();
+      while (entries.hasNext()) {
+        final Entry<Integer, ArrayList<IndexedAsyncConsumer<E>>> entry = entries.next();
         final int key = entry.getKey();
-        if (key <= index) {
+        if (key < index) {
+          final Iterator<IndexedAsyncConsumer<E>> consumers = entry.getValue().iterator();
+          while (consumers.hasNext()) {
+            if (!safeConsume(consumers.next(), -1, index, element, LOGGER)) {
+              consumers.remove();
+            }
+          }
+          if (entry.getValue().isEmpty()) {
+            entries.remove();
+          }
+        } else if (key == index) {
           for (final IndexedAsyncConsumer<E> consumer : entry.getValue()) {
-            try {
-              consumer.accept(-1, index, element);
-            } catch (final Exception e) {
-              LOGGER.log(Level.SEVERE, "Ignored exception", e);
+            if (safeConsume(consumer, -1, index, element, LOGGER)) {
+              safeConsumeComplete(consumer, index + 1, LOGGER);
             }
           }
-          if (key == index) {
-            for (final IndexedAsyncConsumer<E> consumer : entry.getValue()) {
-              try {
-                consumer.complete(index + 1);
-              } catch (final Exception e) {
-                LOGGER.log(Level.SEVERE, "Ignored exception", e);
-              }
-            }
-            iterator.remove();
-          }
+          entries.remove();
         }
       }
     }
@@ -370,11 +361,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = DiffListAsyncMaterializer.this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
         for (final IndexedAsyncConsumer<E> consumer : consumers) {
-          try {
-            consumer.error(index, error);
-          } catch (final Exception e) {
-            LOGGER.log(Level.SEVERE, "Ignored exception", e);
-          }
+          safeConsumeError(consumer, index, error, LOGGER);
         }
       }
       elementsConsumers.clear();
@@ -386,24 +373,16 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       if (elementsCache.hasElement(index)) {
         final int size = index + 1;
         for (int i = 0; i < size; ++i) {
-          try {
-            consumer.accept(-1, i, elementsCache.getElement(i));
-          } catch (final Exception e) {
-            LOGGER.log(Level.SEVERE, "Ignored exception", e);
+          if (!safeConsume(consumer, -1, i, elementsCache.getElement(i), LOGGER)) {
+            return;
           }
         }
-        try {
-          consumer.complete(size);
-        } catch (final Exception e) {
-          LOGGER.log(Level.SEVERE, "Ignored exception", e);
-        }
+        safeConsumeComplete(consumer, size, LOGGER);
       } else {
         final int size = elementsCache.numElements();
         for (int i = 0; i < size; ++i) {
-          try {
-            consumer.accept(-1, i, elementsCache.getElement(i));
-          } catch (final Exception e) {
-            LOGGER.log(Level.SEVERE, "Ignored exception", e);
+          if (!safeConsume(consumer, -1, i, elementsCache.getElement(i), LOGGER)) {
+            return;
           }
         }
         final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = DiffListAsyncMaterializer.this.elementsConsumers;
@@ -452,7 +431,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
             @Override
             public void complete(final int size) {
               isMaterialized.set(true);
-              final ElementsCache<E> elementsCache = DiffState.this.elementsCache;
+              final ElementsCache<E> elementsCache = ImmaterialState.this.elementsCache;
               state = new ListToListAsyncMaterializer<E>(elementsCache.getElements());
               consumeComplete(elementsCache.numElements());
             }

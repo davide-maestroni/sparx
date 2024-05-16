@@ -17,13 +17,12 @@ package sparx.collection.internal.future.list;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 
-public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+public class ElementToListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       ElementToListAsyncMaterializer.class.getName());
@@ -58,63 +57,41 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   @SuppressWarnings("SuspiciousMethodCalls")
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
-    try {
-      consumer.accept(elements.contains(element));
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Ignored exception", e);
-    }
+    safeConsume(consumer, elements.contains(element), LOGGER);
   }
 
   @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
-    try {
-      if (index < 0) {
-        consumer.error(index, new IndexOutOfBoundsException(Integer.toString(index)));
-      } else if (index != 0) {
-        consumer.complete(1);
-      } else {
-        consumer.accept(1, 0, elements.get(0));
-      }
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Ignored exception", e);
+    if (index < 0) {
+      safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
+          LOGGER);
+    } else if (index != 0) {
+      safeConsumeComplete(consumer, 1, LOGGER);
+    } else {
+      safeConsume(consumer, 1, 0, elements.get(0), LOGGER);
     }
   }
 
   @Override
   public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-    try {
-      consumer.accept(elements);
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Ignored exception", e);
-    }
+    safeConsume(consumer, elements, LOGGER);
   }
 
   @Override
   public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    try {
-      consumer.accept(false);
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Ignored exception", e);
-    }
+    safeConsume(consumer, false, LOGGER);
   }
 
   @Override
   public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    try {
-      consumer.accept(1, 0, elements.get(0));
-      consumer.complete(1);
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Ignored exception", e);
+    if (safeConsume(consumer, 1, 0, elements.get(0), LOGGER)) {
+      safeConsumeComplete(consumer, 1, LOGGER);
     }
   }
 
   @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    try {
-      consumer.accept(1);
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Ignored exception", e);
-    }
+    safeConsume(consumer, 1, LOGGER);
   }
 
   @Override

@@ -18,7 +18,6 @@ package sparx.collection.internal.future.list;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
@@ -152,7 +151,7 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
           isMaterialized.set(true);
           consumer.accept(state = elementsMaterializer);
         } else {
-          consumer.accept(state = new AppendState());
+          consumer.accept(state = new ImmaterialState());
         }
       }
 
@@ -169,7 +168,7 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
     void accept(@NotNull ListAsyncMaterializer<E> state);
   }
 
-  private class AppendState implements ListAsyncMaterializer<E> {
+  private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
 
     private final ElementsCache<E> elementsCache = new ElementsCache<E>(knownSize());
 
@@ -218,11 +217,8 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       final ElementsCache<E> elementsCache = this.elementsCache;
       if (elementsCache.hasElement(index)) {
-        try {
-          consumer.accept(elementsCache.knownSize(), index, elementsCache.getElement(index));
-        } catch (final Exception e) {
-          LOGGER.log(Level.SEVERE, "Ignored exception", e);
-        }
+        safeConsume(consumer, elementsCache.knownSize(), index, elementsCache.getElement(index),
+            LOGGER);
       } else {
         wrapped.materializeElement(index, new IndexedAsyncConsumer<E>() {
           @Override
@@ -292,11 +288,7 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
     @Override
     public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
       if (isMaterialized.get()) {
-        try {
-          consumer.accept(elementsCache.getElements());
-        } catch (final Exception e) {
-          LOGGER.log(Level.SEVERE, "Ignored exception", e);
-        }
+        safeConsume(consumer, elementsCache.getElements(), LOGGER);
       } else {
         final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = AppendAllListAsyncMaterializer.this.elementsConsumers;
         elementsConsumers.add(consumer);
@@ -527,11 +519,7 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
     private void consumeElements(@NotNull final List<E> elements) {
       final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = AppendAllListAsyncMaterializer.this.elementsConsumers;
       for (final AsyncConsumer<List<E>> elementsConsumer : elementsConsumers) {
-        try {
-          elementsConsumer.accept(elements);
-        } catch (final Exception e) {
-          LOGGER.log(Level.SEVERE, "Ignored exception", e);
-        }
+        safeConsume(elementsConsumer, elements, LOGGER);
       }
       elementsConsumers.clear();
     }
@@ -539,11 +527,7 @@ public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<
     private void consumeError(@NotNull final Exception error) {
       final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = AppendAllListAsyncMaterializer.this.elementsConsumers;
       for (final AsyncConsumer<List<E>> elementsConsumer : elementsConsumers) {
-        try {
-          elementsConsumer.error(error);
-        } catch (final Exception e) {
-          LOGGER.log(Level.SEVERE, "Ignored exception", e);
-        }
+        safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
     }

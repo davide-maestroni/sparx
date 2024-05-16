@@ -39,16 +39,8 @@ public class AsyncForFuture<E> implements Future<Void> {
     this.materializer = materializer;
     materializer.materializeOrdered(new IndexedAsyncConsumer<E>() {
       @Override
-      public void accept(final int size, final int index, final E param) {
-        try {
-          consumer.accept(index, param);
-        } catch (final Exception e) {
-          synchronized (isDone) {
-            error = e;
-            isDone.set(true);
-            isDone.notifyAll();
-          }
-        }
+      public void accept(final int size, final int index, final E param) throws Exception {
+        consumer.accept(index, param);
       }
 
       @Override
