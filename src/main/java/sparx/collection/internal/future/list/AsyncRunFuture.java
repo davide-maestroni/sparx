@@ -16,6 +16,7 @@
 package sparx.collection.internal.future.list;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -74,8 +75,11 @@ public class AsyncRunFuture<E> implements Future<Void> {
       while (!isDone.get()) {
         isDone.wait();
       }
+      final Exception error = this.error;
       if (error instanceof InterruptedException) {
         throw (InterruptedException) error;
+      } else if (error instanceof CancellationException) {
+        throw (CancellationException) error;
       } else if (error != null) {
         throw new ExecutionException(error);
       }
@@ -96,8 +100,11 @@ public class AsyncRunFuture<E> implements Future<Void> {
       if (!isDone.get()) {
         throw new TimeoutException("timeout after " + unit.toMillis(timeout) + " ms");
       }
+      final Exception error = this.error;
       if (error instanceof InterruptedException) {
         throw (InterruptedException) error;
+      } else if (error instanceof CancellationException) {
+        throw (CancellationException) error;
       } else if (error != null) {
         throw new ExecutionException(error);
       }

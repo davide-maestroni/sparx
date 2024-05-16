@@ -218,4 +218,19 @@ public class FutureListTests {
 //      assertThrows(NullPointerException.class, itr::next);
     }
   }
+
+  @Test
+  public void diff() {
+    assertEquals(List.of(2, 4), List.of(1, 2, null, 4).toFuture(context).diff(List.of(1, null)));
+    assertEquals(List.of(2, null), List.of(1, 2, null, 4).toFuture(context).diff(List.of(1, 4)));
+    assertEquals(List.of(2, null), List.of(1, 2, null, 4).toFuture(context).diff(List.of(1, 3, 4)));
+    assertEquals(List.of(2, null, 4),
+        List.of(1, 2, null, 4).toFuture(context).diff(List.of(3, 1, 3)));
+    assertEquals(List.of(1, 2, 4),
+        List.of(1, 2, null, 4).toFuture(context).diff(List.of(null, null)));
+    assertEquals(List.of(), List.of(1, null).toFuture(context).diff(List.of(1, 2, null, 4)));
+
+    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).toFuture(context).diff(List.of()));
+    assertEquals(List.of(), List.of().toFuture(context).diff(List.of(1, 2, null, 4)));
+  }
 }

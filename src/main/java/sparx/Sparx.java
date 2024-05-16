@@ -42,6 +42,7 @@ import sparx.collection.internal.future.list.AsyncWhileFuture;
 import sparx.collection.internal.future.list.ContextListAsyncMaterializer;
 import sparx.collection.internal.future.list.CountListAsyncMaterializer;
 import sparx.collection.internal.future.list.CountWhereListAsyncMaterializer;
+import sparx.collection.internal.future.list.DiffListAsyncMaterializer;
 import sparx.collection.internal.future.list.EmptyListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
@@ -481,15 +482,16 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> diff(@NotNull final Iterable<?> elements) {
-        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(
-            elements);
-        return null;
+        return new List<E>(
+            new DiffListAsyncMaterializer<E>(materializer, getElementsMaterializer(elements)));
       }
 
       @Override
       public void doFor(@NotNull final Consumer<? super E> consumer) {
         try {
           asyncFor(consumer).get();
+        } catch (final ExecutionException e) {
+          throw UncheckedException.toUnchecked(e.getCause());
         } catch (final Exception e) {
           throw UncheckedException.toUnchecked(e);
         }
@@ -499,6 +501,8 @@ public class Sparx {
       public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
         try {
           asyncFor(consumer).get();
+        } catch (final ExecutionException e) {
+          throw UncheckedException.toUnchecked(e.getCause());
         } catch (final Exception e) {
           throw UncheckedException.toUnchecked(e);
         }
@@ -508,6 +512,8 @@ public class Sparx {
       public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
         try {
           asyncWhile(predicate).get();
+        } catch (final ExecutionException e) {
+          throw UncheckedException.toUnchecked(e.getCause());
         } catch (final Exception e) {
           throw UncheckedException.toUnchecked(e);
         }
@@ -518,6 +524,8 @@ public class Sparx {
           @NotNull final IndexedConsumer<? super E> consumer) {
         try {
           asyncWhile(condition, consumer).get();
+        } catch (final ExecutionException e) {
+          throw UncheckedException.toUnchecked(e.getCause());
         } catch (final Exception e) {
           throw UncheckedException.toUnchecked(e);
         }
@@ -527,16 +535,20 @@ public class Sparx {
       public void doWhile(@NotNull final Predicate<? super E> predicate) {
         try {
           asyncWhile(predicate).get();
+        } catch (final ExecutionException e) {
+          throw UncheckedException.toUnchecked(e.getCause());
         } catch (final Exception e) {
           throw UncheckedException.toUnchecked(e);
         }
       }
 
       @Override
-      public void doWhile(@NotNull Predicate<? super E> condition,
-          @NotNull Consumer<? super E> consumer) {
+      public void doWhile(@NotNull final Predicate<? super E> condition,
+          @NotNull final Consumer<? super E> consumer) {
         try {
           asyncWhile(condition, consumer).get();
+        } catch (final ExecutionException e) {
+          throw UncheckedException.toUnchecked(e.getCause());
         } catch (final Exception e) {
           throw UncheckedException.toUnchecked(e);
         }
@@ -680,13 +692,13 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull <F> ListSequence<F> flatMap(
+      public @NotNull <F> List<F> flatMap(
           @NotNull Function<? super E, ? extends Iterable<F>> mapper) {
         return null;
       }
 
       @Override
-      public @NotNull <F> ListSequence<F> flatMap(
+      public @NotNull <F> List<F> flatMap(
           @NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
         return null;
       }
@@ -740,19 +752,19 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull <F> ListSequence<F> fold(F identity,
+      public @NotNull <F> List<F> fold(F identity,
           @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
         return null;
       }
 
       @Override
-      public @NotNull <F> ListSequence<F> foldLeft(F identity,
+      public @NotNull <F> List<F> foldLeft(F identity,
           @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
         return null;
       }
 
       @Override
-      public @NotNull <F> ListSequence<F> foldRight(F identity,
+      public @NotNull <F> List<F> foldRight(F identity,
           @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation) {
         return null;
       }
@@ -948,12 +960,12 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull <F> ListSequence<F> map(@NotNull Function<? super E, F> mapper) {
+      public @NotNull <F> List<F> map(@NotNull Function<? super E, F> mapper) {
         return null;
       }
 
       @Override
-      public @NotNull <F> ListSequence<F> map(@NotNull IndexedFunction<? super E, F> mapper) {
+      public @NotNull <F> List<F> map(@NotNull IndexedFunction<? super E, F> mapper) {
         return null;
       }
 

@@ -35,37 +35,43 @@ class ElementsCache<E> {
     }
   }
 
-  public List<E> add(final int knownSize, final int index, final E element) {
-    return state.add(knownSize, index, element);
-  }
-
-  public List<E> get(final int knownSize) {
-    return state.get(knownSize);
+  public List<E> addElement(final int knownSize, final int index, final E element) {
+    return state.addElement(knownSize, index, element);
   }
 
   public E getElement(final int index) {
     return state.getElement(index);
   }
 
+  public List<E> getElements() {
+    return state.getElements();
+  }
+
   public boolean hasElement(final int index) {
     return state.hasElement(index);
   }
 
-  public int getSize() {
-    return state.getSize();
+  public int knownSize() {
+    return state.knownSize();
+  }
+
+  public int numElements() {
+    return state.numElements();
   }
 
   private interface CacheState<E> {
 
-    List<E> add(int knownSize, int index, E element);
-
-    List<E> get(int knownSize);
+    List<E> addElement(int knownSize, int index, E element);
 
     E getElement(int index);
 
+    List<E> getElements();
+
     boolean hasElement(int index);
 
-    int getSize();
+    int knownSize();
+
+    int numElements();
   }
 
   private class ArrayState implements CacheState<E> {
@@ -84,8 +90,8 @@ class ElementsCache<E> {
     }
 
     @Override
-    public List<E> add(final int knownSize, final int index, final E element) {
-      if (elements.get(index) == EMPTY) {
+    public List<E> addElement(final int knownSize, final int index, final E element) {
+      if (array[index] == EMPTY) {
         ++added;
       }
       array[index] = element;
@@ -93,24 +99,30 @@ class ElementsCache<E> {
     }
 
     @Override
-    public List<E> get(final int knownSize) {
-      return (knownSize >= 0 && added >= knownSize) ? elements : null;
-    }
-
-    @Override
+    @SuppressWarnings("unchecked")
     public E getElement(final int index) {
-      final E element = elements.get(index);
-      return element != EMPTY ? element : null;
+      final Object element = array[index];
+      return element != EMPTY ? (E) element : null;
     }
 
     @Override
     public boolean hasElement(final int index) {
-      return index < array.length && index >= 0 && elements.get(index) != EMPTY;
+      return index < array.length && index >= 0 && array[index] != EMPTY;
     }
 
     @Override
-    public int getSize() {
+    public List<E> getElements() {
+      return elements;
+    }
+
+    @Override
+    public int knownSize() {
       return array.length;
+    }
+
+    @Override
+    public int numElements() {
+      return added;
     }
   }
 
@@ -119,30 +131,17 @@ class ElementsCache<E> {
     private final HashMap<Integer, E> elements = new HashMap<Integer, E>();
 
     @Override
-    public List<E> add(final int knownSize, final int index, final E element) {
+    public List<E> addElement(final int knownSize, final int index, final E element) {
       final HashMap<Integer, E> elements = this.elements;
       if ((knownSize >= 0 && knownSize < (elements.size() << 4)) || elements.size() > (
           Integer.MAX_VALUE >> 4)) {
         final ArrayState arrayState = new ArrayState(knownSize);
         for (final Entry<Integer, E> entry : elements.entrySet()) {
-          arrayState.add(knownSize, entry.getKey(), entry.getValue());
+          arrayState.addElement(knownSize, entry.getKey(), entry.getValue());
         }
-        return (state = arrayState).add(knownSize, index, element);
+        return (state = arrayState).addElement(knownSize, index, element);
       }
       elements.put(index, element);
-      return null;
-    }
-
-    @Override
-    public List<E> get(final int knownSize) {
-      if ((knownSize >= 0 && knownSize < (elements.size() << 4)) || elements.size() > (
-          Integer.MAX_VALUE >> 4)) {
-        final ArrayState arrayState = new ArrayState(knownSize);
-        for (final Entry<Integer, E> entry : elements.entrySet()) {
-          arrayState.add(knownSize, entry.getKey(), entry.getValue());
-        }
-        return (state = arrayState).get(knownSize);
-      }
       return null;
     }
 
@@ -150,13 +149,28 @@ class ElementsCache<E> {
       return elements.get(index);
     }
 
+    @Override
+    public List<E> getElements() {
+      final int size = elements.size();
+      final ArrayState arrayState = new ArrayState(size);
+      for (final Entry<Integer, E> entry : elements.entrySet()) {
+        arrayState.addElement(size, entry.getKey(), entry.getValue());
+      }
+      return (state = arrayState).getElements();
+    }
+
     public boolean hasElement(final int index) {
       return elements.containsKey(index);
     }
 
     @Override
-    public int getSize() {
+    public int knownSize() {
       return -1;
+    }
+
+    @Override
+    public int numElements() {
+      return elements.size();
     }
   }
 }
