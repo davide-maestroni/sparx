@@ -48,8 +48,8 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
-  public int knownSize() {
-    return 1;
+  public boolean knownEmpty() {
+    return false;
   }
 
   @Override

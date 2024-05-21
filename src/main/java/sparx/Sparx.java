@@ -39,14 +39,11 @@ import sparx.collection.internal.future.list.AppendListAsyncMaterializer;
 import sparx.collection.internal.future.list.AsyncForFuture;
 import sparx.collection.internal.future.list.AsyncRunFuture;
 import sparx.collection.internal.future.list.AsyncWhileFuture;
-import sparx.collection.internal.future.list.ContextListAsyncMaterializer;
-import sparx.collection.internal.future.list.CountListAsyncMaterializer;
-import sparx.collection.internal.future.list.CountWhereListAsyncMaterializer;
-import sparx.collection.internal.future.list.DiffListAsyncMaterializer;
-import sparx.collection.internal.future.list.DropListAsyncMaterializer;
+import sparx.collection.internal.future.list.ElementToListAsyncMaterializer;
 import sparx.collection.internal.future.list.EmptyListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
+import sparx.collection.internal.future.list.ScheduledListAsyncMaterializer;
 import sparx.collection.internal.lazy.iterator.AllIteratorMaterializer;
 import sparx.collection.internal.lazy.iterator.AppendAllIteratorMaterializer;
 import sparx.collection.internal.lazy.iterator.AppendIteratorMaterializer;
@@ -354,10 +351,42 @@ public class Sparx {
 
     public static class List<E> extends AbstractListSequence<E> implements Future<lazy.List<E>> {
 
+      private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> APPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {
+        @Override
+        public java.util.List<?> apply(final java.util.List<?> firstParam,
+            final java.util.List<?> secondParam) {
+          return lazy.List.wrap(firstParam).appendAll(secondParam);
+        }
+      };
+      private static final BinaryFunction<? extends java.util.List<?>, ?, ? extends java.util.List<?>> APPEND_FUNCTION = new BinaryFunction<java.util.List<?>, Object, java.util.List<?>>() {
+        @Override
+        public java.util.List<?> apply(final java.util.List<?> firstParam,
+            final Object secondParam) {
+          return lazy.List.wrap(firstParam).append(secondParam);
+        }
+      };
+      private static final ElementToListAsyncMaterializer<Boolean> FALSE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
+          false);
+      private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
+          true);
+
+      private final ExecutionContext context;
       private final ListAsyncMaterializer<E> materializer;
 
-      private List(@NotNull final ListAsyncMaterializer<E> materializer) {
+      private List(@NotNull final ExecutionContext context,
+          @NotNull final ListAsyncMaterializer<E> materializer) {
+        this.context = context;
         this.materializer = materializer;
+      }
+
+      @SuppressWarnings("unchecked")
+      private static @NotNull <E> BinaryFunction<java.util.List<E>, java.util.List<E>, java.util.List<E>> appendAllFunction() {
+        return (BinaryFunction<java.util.List<E>, java.util.List<E>, java.util.List<E>>) APPEND_ALL_FUNCTION;
+      }
+
+      @SuppressWarnings("unchecked")
+      private static @NotNull <E> BinaryFunction<java.util.List<E>, E, java.util.List<E>> appendFunction() {
+        return (BinaryFunction<java.util.List<E>, E, java.util.List<E>>) APPEND_FUNCTION;
       }
 
       @SuppressWarnings("unchecked")
@@ -387,24 +416,51 @@ public class Sparx {
 
       @Override
       public @NotNull List<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
-        return new List<Boolean>(new AllListAsyncMaterializer<E>(materializer, predicate));
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownEmpty()) {
+          return new List<Boolean>(context,
+              new ScheduledListAsyncMaterializer<Boolean>(context, TRUE_MATERIALIZER, 1));
+        }
+        return new List<Boolean>(context,
+            new AllListAsyncMaterializer<E>(context, materializer, predicate));
       }
 
       @Override
       public @NotNull List<Boolean> all(@NotNull final Predicate<? super E> predicate) {
-        return new List<Boolean>(
-            new AllListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownEmpty()) {
+          return new List<Boolean>(context,
+              new ScheduledListAsyncMaterializer<Boolean>(context, TRUE_MATERIALIZER, 1));
+        }
+        return new List<Boolean>(context,
+            new AllListAsyncMaterializer<E>(context, materializer, toIndexedPredicate(predicate)));
       }
 
       @Override
       public @NotNull List<E> append(final E element) {
-        return new List<E>(new AppendListAsyncMaterializer<E>(materializer, element));
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownEmpty()) {
+          return new List<E>(context, new ScheduledListAsyncMaterializer<E>(context,
+              new ElementToListAsyncMaterializer<E>(element), 1));
+        }
+        return new List<E>(context,
+            new AppendListAsyncMaterializer<E>(context, materializer, element,
+                List.<E>appendFunction()));
       }
 
       @Override
       public @NotNull List<E> appendAll(@NotNull final Iterable<? extends E> elements) {
-        return new List<E>(
-            new AppendAllListAsyncMaterializer<E>(materializer, getElementsMaterializer(elements)));
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        if (elementsMaterializer.knownEmpty()) {
+          return this;
+        } else if (materializer.knownEmpty()) {
+          return new List<E>(context,
+              new ScheduledListAsyncMaterializer<E>(context, elementsMaterializer, -1));
+        }
+        return new List<E>(context,
+            new AppendAllListAsyncMaterializer<E>(context, materializer, elementsMaterializer,
+                List.<E>appendAllFunction()));
       }
 
       @Override
@@ -467,24 +523,22 @@ public class Sparx {
 
       @Override
       public @NotNull List<Integer> count() {
-        return new List<Integer>(new CountListAsyncMaterializer<E>(materializer));
+        return null;
       }
 
       @Override
       public @NotNull List<Integer> count(@NotNull final IndexedPredicate<? super E> predicate) {
-        return new List<Integer>(new CountWhereListAsyncMaterializer<E>(materializer, predicate));
+        return null;
       }
 
       @Override
       public @NotNull List<Integer> count(@NotNull final Predicate<? super E> predicate) {
-        return new List<Integer>(
-            new CountWhereListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return null;
       }
 
       @Override
       public @NotNull List<E> diff(@NotNull final Iterable<?> elements) {
-        return new List<E>(
-            new DiffListAsyncMaterializer<E>(materializer, getElementsMaterializer(elements)));
+        return null;
       }
 
       @Override
@@ -560,7 +614,7 @@ public class Sparx {
         if (maxElements <= 0) {
           return this;
         }
-        return new List<E>(new DropListAsyncMaterializer<E>(materializer, maxElements));
+        return null;
       }
 
       @Override
@@ -5094,14 +5148,10 @@ public class Sparx {
             new TakeWhileListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
       }
 
-      public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext executionContext) {
-        final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.materializeElements() == 0) {
-          // TODO: empty materializer
-        }
-        return new future.List<E>(
-            new ContextListAsyncMaterializer<E>(new ListToListAsyncMaterializer<E>(this),
-                executionContext));
+      public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext context) {
+        return new future.List<E>(context,
+            new ScheduledListAsyncMaterializer<E>(context, new ListToListAsyncMaterializer<E>(this),
+                materializer.materializeElements()));
       }
 
       @Override

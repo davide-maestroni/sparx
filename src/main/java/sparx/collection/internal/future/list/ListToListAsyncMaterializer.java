@@ -40,13 +40,13 @@ public class ListToListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
-  public int knownSize() {
+  public boolean knownEmpty() {
     try {
-      return elements.size();
+      return elements.isEmpty();
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Ignored exception", e);
     }
-    return -1;
+    return false;
   }
 
   @Override

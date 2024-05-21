@@ -43,8 +43,8 @@ public class FailedListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
-  public int knownSize() {
-    return size;
+  public boolean knownEmpty() {
+    return size == 0;
   }
 
   @Override

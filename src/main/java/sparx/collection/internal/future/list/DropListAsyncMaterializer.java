@@ -51,8 +51,8 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   }
 
   @Override
-  public int knownSize() {
-    return safeSize(wrapped.knownSize());
+  public boolean knownEmpty() {
+    return false;
   }
 
   @Override
@@ -154,7 +154,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       @Override
       public void error(@NotNull final Exception error) {
         isMaterialized.set(true);
-        consumer.accept(state = new FailedListAsyncMaterializer<E>(knownSize(), 0, error));
+        consumer.accept(state = new FailedListAsyncMaterializer<E>(-1, -1, error));
       }
     });
   }
@@ -173,7 +173,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
 
-    private final ElementsCache<E> elementsCache = new ElementsCache<E>(knownSize());
+    private final ElementsCache<E> elementsCache = new ElementsCache<E>(-1);
 
     private int nextIndex = maxElements;
 
@@ -183,8 +183,8 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     }
 
     @Override
-    public int knownSize() {
-      return -1;
+    public boolean knownEmpty() {
+      return false;
     }
 
     @Override
@@ -373,6 +373,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       elementsConsumers.clear();
     }
 
+    // TODO: not needed => use materializeElement instead
     private void materializeUntil(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       final ElementsCache<E> elementsCache = this.elementsCache;

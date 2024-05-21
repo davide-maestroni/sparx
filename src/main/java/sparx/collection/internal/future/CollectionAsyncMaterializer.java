@@ -21,7 +21,7 @@ public interface CollectionAsyncMaterializer<E> {
 
   boolean cancel(boolean mayInterruptIfRunning);
 
-  int knownSize();
+  boolean knownEmpty();
 
   boolean isCancelled();
 

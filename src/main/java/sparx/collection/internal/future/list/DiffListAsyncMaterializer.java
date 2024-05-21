@@ -51,8 +51,8 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   }
 
   @Override
-  public int knownSize() {
-    return -1;
+  public boolean knownEmpty() {
+    return false;
   }
 
   @Override
@@ -154,7 +154,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       @Override
       public void error(@NotNull final Exception error) {
         isMaterialized.set(true);
-        consumer.accept(state = new FailedListAsyncMaterializer<E>(knownSize(), 0, error));
+        consumer.accept(state = new FailedListAsyncMaterializer<E>(-1, -1, error));
       }
     });
   }
@@ -166,7 +166,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
 
-    private final ElementsCache<E> elementsCache = new ElementsCache<E>(knownSize());
+    private final ElementsCache<E> elementsCache = new ElementsCache<E>(-1);
 
     private int nextIndex;
 
@@ -176,8 +176,8 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     }
 
     @Override
-    public int knownSize() {
-      return -1;
+    public boolean knownEmpty() {
+      return false;
     }
 
     @Override

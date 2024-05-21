@@ -39,8 +39,8 @@ public class ElementToListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   }
 
   @Override
-  public int knownSize() {
-    return 1;
+  public boolean knownEmpty() {
+    return false;
   }
 
   @Override

@@ -26,34 +26,43 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 
-public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+public class ScheduledListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      ContextListAsyncMaterializer.class.getName());
+      ScheduledListAsyncMaterializer.class.getName());
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
   private static final int STATUS_RUNNING = 0;
 
-  private final ExecutionContext executionContext;
+  private final ExecutionContext context;
+  private final boolean knownEmpty;
+  private final int knownSize;
   private final String taskID = toString();
   private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
   private ListAsyncMaterializer<E> wrapped;
 
-  public ContextListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final ExecutionContext executionContext) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.executionContext = Require.notNull(executionContext, "executionContext");
+  public ScheduledListAsyncMaterializer(@NotNull final ExecutionContext context,
+      @NotNull final ListAsyncMaterializer<E> wrapped, final int knownSize) {
+    knownEmpty = wrapped.knownEmpty();
+    this.wrapped = wrapped;
+    this.knownSize = knownSize;
+    this.context = Require.notNull(context, "context");
+    if (wrapped.isCancelled()) {
+      status.set(STATUS_CANCELLED);
+    } else if (wrapped.isDone()) {
+      status.set(STATUS_DONE);
+    }
   }
 
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
     if (status.compareAndSet(STATUS_RUNNING, STATUS_CANCELLED)) {
       if (mayInterruptIfRunning) {
-        executionContext.interruptTask(taskID);
+        context.interruptTask(taskID);
       }
-      executionContext.scheduleBefore(new Task() {
+      context.scheduleBefore(new Task() {
         @Override
         public @NotNull String taskID() {
           return taskID;
@@ -67,7 +76,7 @@ public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
         @Override
         public void run() {
           wrapped.cancel(mayInterruptIfRunning);
-          wrapped = new CancelledListAsyncMaterializer<E>(wrapped.knownSize());
+          wrapped = new CancelledListAsyncMaterializer<E>(knownSize);
         }
       });
       return true;
@@ -76,8 +85,8 @@ public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
   }
 
   @Override
-  public int knownSize() {
-    return wrapped.knownSize();
+  public boolean knownEmpty() {
+    return knownEmpty;
   }
 
   @Override
@@ -93,7 +102,7 @@ public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
   @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
-    executionContext.scheduleAfter(new Task() {
+    context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
         return taskID;
@@ -113,7 +122,7 @@ public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
 
   @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
-    executionContext.scheduleAfter(new Task() {
+    context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
         return taskID;
@@ -133,7 +142,7 @@ public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
 
   @Override
   public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-    executionContext.scheduleAfter(new Task() {
+    context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
         return taskID;
@@ -141,7 +150,7 @@ public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
 
       @Override
       public int weight() {
-        return wrapped.knownSize();
+        return knownSize;
       }
 
       @Override
@@ -169,7 +178,7 @@ public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
 
   @Override
   public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    executionContext.scheduleAfter(new Task() {
+    context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
         return taskID;
@@ -189,27 +198,72 @@ public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
 
   @Override
   public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    executionContext.scheduleAfter(new Task() {
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
+    final int throughput = context.minThroughput();
+    if (knownSize > throughput) {
+      context.scheduleAfter(new Task() {
+        private int offset;
 
-      @Override
-      public int weight() {
-        return wrapped.knownSize();
-      }
+        @Override
+        public @NotNull String taskID() {
+          return taskID;
+        }
 
-      @Override
-      public void run() {
-        wrapped.materializeOrdered(consumer);
-      }
-    });
+        @Override
+        public int weight() {
+          return knownSize;
+        }
+
+        @Override
+        public void run() {
+          final Task task = this;
+          wrapped.materializeElement(offset, new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E param) {
+              if (safeConsume(consumer, size, index, param, LOGGER)) {
+                if (index - offset < throughput) {
+                  wrapped.materializeElement(index + 1, this);
+                } else {
+                  offset = index;
+                  context.scheduleAfter(task);
+                }
+              }
+            }
+
+            @Override
+            public void complete(final int size) {
+              safeConsumeComplete(consumer, size, LOGGER);
+            }
+
+            @Override
+            public void error(final int index, @NotNull final Exception error) {
+              safeConsumeError(consumer, index, error, LOGGER);
+            }
+          });
+        }
+      });
+    } else {
+      context.scheduleAfter(new Task() {
+        @Override
+        public @NotNull String taskID() {
+          return taskID;
+        }
+
+        @Override
+        public int weight() {
+          return knownSize;
+        }
+
+        @Override
+        public void run() {
+          wrapped.materializeOrdered(consumer);
+        }
+      });
+    }
   }
 
   @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    executionContext.scheduleAfter(new Task() {
+    context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
         return taskID;
@@ -229,21 +283,66 @@ public class ContextListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
 
   @Override
   public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    executionContext.scheduleAfter(new Task() {
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
+    final int throughput = context.minThroughput();
+    if (knownSize > throughput) {
+      context.scheduleAfter(new Task() {
+        private int offset;
 
-      @Override
-      public int weight() {
-        return wrapped.knownSize();
-      }
+        @Override
+        public @NotNull String taskID() {
+          return taskID;
+        }
 
-      @Override
-      public void run() {
-        wrapped.materializeUnordered(consumer);
-      }
-    });
+        @Override
+        public int weight() {
+          return knownSize;
+        }
+
+        @Override
+        public void run() {
+          final Task task = this;
+          wrapped.materializeElement(offset, new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E param) {
+              if (safeConsume(consumer, size, index, param, LOGGER)) {
+                if (index - offset < throughput) {
+                  wrapped.materializeElement(index + 1, this);
+                } else {
+                  offset = index;
+                  context.scheduleAfter(task);
+                }
+              }
+            }
+
+            @Override
+            public void complete(final int size) {
+              safeConsumeComplete(consumer, size, LOGGER);
+            }
+
+            @Override
+            public void error(final int index, @NotNull final Exception error) {
+              safeConsumeError(consumer, index, error, LOGGER);
+            }
+          });
+        }
+      });
+    } else {
+      context.scheduleAfter(new Task() {
+        @Override
+        public @NotNull String taskID() {
+          return taskID;
+        }
+
+        @Override
+        public int weight() {
+          return knownSize;
+        }
+
+        @Override
+        public void run() {
+          wrapped.materializeUnordered(consumer);
+        }
+      });
+    }
   }
 }

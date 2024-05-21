@@ -38,8 +38,8 @@ public class EmptyListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
   }
 
   @Override
-  public int knownSize() {
-    return 0;
+  public boolean knownEmpty() {
+    return true;
   }
 
   @Override
