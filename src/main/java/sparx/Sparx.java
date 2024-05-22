@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.AbstractListSequence;
 import sparx.collection.IteratorSequence;
@@ -191,6 +192,7 @@ import sparx.collection.internal.lazy.list.TakeRightListMaterializer;
 import sparx.collection.internal.lazy.list.TakeRightWhileListMaterializer;
 import sparx.collection.internal.lazy.list.TakeWhileListMaterializer;
 import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
@@ -371,12 +373,15 @@ public class Sparx {
           true);
 
       private final ExecutionContext context;
+      private final AtomicBoolean isCancelled = new AtomicBoolean(false);
       private final ListAsyncMaterializer<E> materializer;
+      private final String taskID;
 
       private List(@NotNull final ExecutionContext context,
           @NotNull final ListAsyncMaterializer<E> materializer) {
         this.context = context;
         this.materializer = materializer;
+        taskID = Integer.toHexString(System.identityHashCode(this));
       }
 
       @SuppressWarnings("unchecked")
@@ -421,8 +426,7 @@ public class Sparx {
           return new List<Boolean>(context,
               new ScheduledListAsyncMaterializer<Boolean>(context, TRUE_MATERIALIZER, 1));
         }
-        return new List<Boolean>(context,
-            new AllListAsyncMaterializer<E>(context, materializer, predicate));
+        return new List<Boolean>(context, new AllListAsyncMaterializer<E>(materializer, predicate));
       }
 
       @Override
@@ -433,7 +437,7 @@ public class Sparx {
               new ScheduledListAsyncMaterializer<Boolean>(context, TRUE_MATERIALIZER, 1));
         }
         return new List<Boolean>(context,
-            new AllListAsyncMaterializer<E>(context, materializer, toIndexedPredicate(predicate)));
+            new AllListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate)));
       }
 
       @Override
@@ -475,45 +479,83 @@ public class Sparx {
       }
 
       public @NotNull Future<?> asyncFor(@NotNull final Consumer<? super E> consumer) {
-        return new AsyncForFuture<E>(materializer, toIndexedConsumer(consumer));
+        return new AsyncForFuture<E>(context, taskID, materializer, toIndexedConsumer(consumer));
       }
 
       public @NotNull Future<?> asyncFor(@NotNull final IndexedConsumer<? super E> consumer) {
-        return new AsyncForFuture<E>(materializer, consumer);
+        return new AsyncForFuture<E>(context, taskID, materializer, consumer);
       }
 
       public @NotNull Future<?> asyncRun() {
-        return new AsyncRunFuture<E>(materializer);
+        return new AsyncRunFuture<E>(context, taskID, materializer);
       }
 
       public @NotNull Future<?> asyncWhile(@NotNull final IndexedPredicate<? super E> predicate) {
-        return new AsyncWhileFuture<E>(materializer, predicate);
+        return new AsyncWhileFuture<E>(context, taskID, materializer, predicate);
       }
 
       public @NotNull Future<?> asyncWhile(@NotNull final IndexedPredicate<? super E> condition,
           @NotNull final IndexedConsumer<? super E> consumer) {
-        return new AsyncWhileFuture<E>(materializer, condition, consumer);
+        return new AsyncWhileFuture<E>(context, taskID, materializer, condition, consumer);
       }
 
       public @NotNull Future<?> asyncWhile(@NotNull final Predicate<? super E> predicate) {
-        return new AsyncWhileFuture<E>(materializer, toIndexedPredicate(predicate));
+        return new AsyncWhileFuture<E>(context, taskID, materializer,
+            toIndexedPredicate(predicate));
       }
 
       public @NotNull Future<?> asyncWhile(@NotNull final Predicate<? super E> condition,
           @NotNull final Consumer<? super E> consumer) {
-        return new AsyncWhileFuture<E>(materializer, toIndexedPredicate(condition),
+        return new AsyncWhileFuture<E>(context, taskID, materializer, toIndexedPredicate(condition),
             toIndexedConsumer(consumer));
       }
 
       @Override
       public boolean cancel(final boolean mayInterruptIfRunning) {
-        return materializer.cancel(mayInterruptIfRunning);
+        if (!materializer.isDone() && isCancelled.compareAndSet(false, true)) {
+          if (mayInterruptIfRunning) {
+            context.interruptTask(taskID);
+          }
+          context.scheduleBefore(new Task() {
+            @Override
+            public @NotNull String taskID() {
+              return taskID;
+            }
+
+            @Override
+            public int weight() {
+              return 1;
+            }
+
+            @Override
+            public void run() {
+              materializer.materializeCancel(mayInterruptIfRunning);
+            }
+          });
+          return true;
+        }
+        return false;
       }
 
       @Override
       public boolean contains(final Object o) {
         final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
-        materializer.materializeContains(o, consumer);
+        context.scheduleAfter(new Task() {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return 1;
+          }
+
+          @Override
+          public void run() {
+            materializer.materializeContains(o, consumer);
+          }
+        });
         try {
           return consumer.get();
         } catch (final InterruptedException e) {
@@ -741,7 +783,22 @@ public class Sparx {
       @Override
       public E first() {
         final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(0);
-        materializer.materializeElement(0, consumer);
+        context.scheduleAfter(new Task() {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return 1;
+          }
+
+          @Override
+          public void run() {
+            materializer.materializeElement(0, consumer);
+          }
+        });
         try {
           return consumer.get();
         } catch (final InterruptedException e) {
@@ -830,7 +887,22 @@ public class Sparx {
       @Override
       public lazy.List<E> get() throws InterruptedException, ExecutionException {
         final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
-        materializer.materializeElements(consumer);
+        context.scheduleAfter(new Task() {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return 1; // TODO: size
+          }
+
+          @Override
+          public void run() {
+            materializer.materializeElements(consumer);
+          }
+        });
         try {
           return lazy.List.wrap(consumer.get());
         } catch (final InterruptedException e) {
@@ -846,7 +918,22 @@ public class Sparx {
       @Override
       public E get(final int index) {
         final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(index);
-        materializer.materializeElement(index, consumer);
+        context.scheduleAfter(new Task() {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return 1;
+          }
+
+          @Override
+          public void run() {
+            materializer.materializeElement(index, consumer);
+          }
+        });
         try {
           return consumer.get();
         } catch (final InterruptedException e) {
@@ -858,7 +945,22 @@ public class Sparx {
       public lazy.List<E> get(final long timeout, @NotNull final TimeUnit unit)
           throws InterruptedException, ExecutionException, TimeoutException {
         final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
-        materializer.materializeElements(consumer);
+        context.scheduleAfter(new Task() {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return 1; // TODO: size
+          }
+
+          @Override
+          public void run() {
+            materializer.materializeElements(consumer);
+          }
+        });
         try {
           return lazy.List.wrap(consumer.get(timeout, unit));
         } catch (final InterruptedException e) {
@@ -900,45 +1002,75 @@ public class Sparx {
       public int indexOf(final Object o) {
         final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>();
         if (o == null) {
-          materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
+          context.scheduleAfter(new Task() {
             @Override
-            public void accept(final int size, final int index, final E param) {
-              if (param == null) {
-                consumer.accept(index);
-              } else {
-                materializer.materializeElement(index + 1, this);
-              }
+            public @NotNull String taskID() {
+              return taskID;
             }
 
             @Override
-            public void complete(final int size) {
-              consumer.accept(-1);
+            public int weight() {
+              return 1; // TODO: size
             }
 
             @Override
-            public void error(final int index, @NotNull final Exception error) {
-              consumer.error(error);
+            public void run() {
+              materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
+                @Override
+                public void accept(final int size, final int index, final E param) {
+                  if (param == null) {
+                    consumer.accept(index);
+                  } else {
+                    materializer.materializeElement(index + 1, this);
+                  }
+                }
+
+                @Override
+                public void complete(final int size) {
+                  consumer.accept(-1);
+                }
+
+                @Override
+                public void error(final int index, @NotNull final Exception error) {
+                  consumer.error(error);
+                }
+              });
             }
           });
         } else {
-          materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
+          context.scheduleAfter(new Task() {
             @Override
-            public void accept(final int size, final int index, final E param) {
-              if (o.equals(param)) {
-                consumer.accept(index);
-              } else {
-                materializer.materializeElement(index + 1, this);
-              }
+            public @NotNull String taskID() {
+              return taskID;
             }
 
             @Override
-            public void complete(final int size) {
-              consumer.accept(-1);
+            public int weight() {
+              return 1; // TODO: size
             }
 
             @Override
-            public void error(final int index, @NotNull final Exception error) {
-              consumer.error(error);
+            public void run() {
+              materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
+                @Override
+                public void accept(final int size, final int index, final E param) {
+                  if (o.equals(param)) {
+                    consumer.accept(index);
+                  } else {
+                    materializer.materializeElement(index + 1, this);
+                  }
+                }
+
+                @Override
+                public void complete(final int size) {
+                  consumer.accept(-1);
+                }
+
+                @Override
+                public void error(final int index, @NotNull final Exception error) {
+                  consumer.error(error);
+                }
+              });
             }
           });
         }
@@ -967,7 +1099,7 @@ public class Sparx {
 
       @Override
       public boolean isCancelled() {
-        return materializer.isCancelled();
+        return materializer.isCancelled() || isCancelled.get();
       }
 
       @Override
@@ -978,7 +1110,22 @@ public class Sparx {
       @Override
       public boolean isEmpty() {
         final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
-        materializer.materializeEmpty(consumer);
+        context.scheduleAfter(new Task() {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return 1;
+          }
+
+          @Override
+          public void run() {
+            materializer.materializeEmpty(consumer);
+          }
+        });
         try {
           return consumer.get();
         } catch (final InterruptedException e) {
@@ -989,19 +1136,34 @@ public class Sparx {
       @Override
       public E last() {
         final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(-1);
-        materializer.materializeSize(new AsyncConsumer<Integer>() {
+        context.scheduleAfter(new Task() {
           @Override
-          public void accept(final Integer size) {
-            if (size > 0) {
-              materializer.materializeElement(size - 1, consumer);
-            } else {
-              consumer.error(-1, new IndexOutOfBoundsException(Integer.toString(-1)));
-            }
+          public @NotNull String taskID() {
+            return taskID;
           }
 
           @Override
-          public void error(@NotNull final Exception error) {
-            consumer.error(-1, error);
+          public int weight() {
+            return 1;
+          }
+
+          @Override
+          public void run() {
+            materializer.materializeSize(new AsyncConsumer<Integer>() {
+              @Override
+              public void accept(final Integer size) {
+                if (size > 0) {
+                  materializer.materializeElement(size - 1, consumer);
+                } else {
+                  consumer.error(-1, new IndexOutOfBoundsException(Integer.toString(-1)));
+                }
+              }
+
+              @Override
+              public void error(@NotNull final Exception error) {
+                consumer.error(-1, error);
+              }
+            });
           }
         });
         try {
@@ -1283,7 +1445,22 @@ public class Sparx {
       @Override
       public int size() {
         final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>();
-        materializer.materializeSize(consumer);
+        context.scheduleAfter(new Task() {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return 1;
+          }
+
+          @Override
+          public void run() {
+            materializer.materializeSize(consumer);
+          }
+        });
         try {
           return consumer.get();
         } catch (final InterruptedException e) {
@@ -5149,9 +5326,8 @@ public class Sparx {
       }
 
       public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext context) {
-        return new future.List<E>(context,
-            new ScheduledListAsyncMaterializer<E>(context, new ListToListAsyncMaterializer<E>(this),
-                materializer.materializeElements()));
+        return new future.List<E>(Require.notNull(context, "context"),
+            new ListToListAsyncMaterializer<E>(this));
       }
 
       @Override

@@ -43,8 +43,8 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    return wrapped.cancel(mayInterruptIfRunning);
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
+//    return wrapped.materializeCancel(mayInterruptIfRunning);
   }
 
   @Override

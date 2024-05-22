@@ -34,11 +34,6 @@ public class ElementToListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   }
 
   @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    return false;
-  }
-
-  @Override
   public boolean knownEmpty() {
     return false;
   }
@@ -51,6 +46,10 @@ public class ElementToListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   @Override
   public boolean isDone() {
     return true;
+  }
+
+  @Override
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
   }
 
   @Override

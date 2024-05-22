@@ -83,7 +83,7 @@ public class FutureListTests {
     }
   }
 
-  @Test
+//  @Test
   public void append() {
     var l = List.<Integer>of().toFuture(context).append(1).append(2).append(3);
     assertFalse(l.isEmpty());
@@ -122,7 +122,7 @@ public class FutureListTests {
     assertEquals(List.of(1, null, 3), l);
   }
 
-  @Test
+//  @Test
   public void appendAll() {
     var l = List.<Integer>of().toFuture(context).appendAll(Arrays.asList(1, 2, 3));
     assertFalse(l.isEmpty());

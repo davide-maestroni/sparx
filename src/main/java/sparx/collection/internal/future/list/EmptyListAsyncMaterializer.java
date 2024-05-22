@@ -33,11 +33,6 @@ public class EmptyListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
   }
 
   @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    return false;
-  }
-
-  @Override
   public boolean knownEmpty() {
     return true;
   }
@@ -45,6 +40,10 @@ public class EmptyListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
   @Override
   public boolean isCancelled() {
     return false;
+  }
+
+  @Override
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
   }
 
   @Override

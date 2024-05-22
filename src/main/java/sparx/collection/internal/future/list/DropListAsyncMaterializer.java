@@ -46,8 +46,8 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   }
 
   @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    return wrapped.cancel(mayInterruptIfRunning);
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
+//    return wrapped.materializeCancel(mayInterruptIfRunning);
   }
 
   @Override
@@ -178,8 +178,8 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     private int nextIndex = maxElements;
 
     @Override
-    public boolean cancel(final boolean mayInterruptIfRunning) {
-      return false;
+    public void materializeCancel(final boolean mayInterruptIfRunning) {
+//      return false;
     }
 
     @Override

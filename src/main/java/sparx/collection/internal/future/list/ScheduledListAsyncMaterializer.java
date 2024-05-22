@@ -57,31 +57,31 @@ public class ScheduledListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   }
 
   @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    if (status.compareAndSet(STATUS_RUNNING, STATUS_CANCELLED)) {
-      if (mayInterruptIfRunning) {
-        context.interruptTask(taskID);
-      }
-      context.scheduleBefore(new Task() {
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
-
-        @Override
-        public int weight() {
-          return 1;
-        }
-
-        @Override
-        public void run() {
-          wrapped.cancel(mayInterruptIfRunning);
-          wrapped = new CancelledListAsyncMaterializer<E>(knownSize);
-        }
-      });
-      return true;
-    }
-    return false;
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
+//    if (status.compareAndSet(STATUS_RUNNING, STATUS_CANCELLED)) {
+//      if (mayInterruptIfRunning) {
+//        context.interruptTask(taskID);
+//      }
+//      context.scheduleBefore(new Task() {
+//        @Override
+//        public @NotNull String taskID() {
+//          return taskID;
+//        }
+//
+//        @Override
+//        public int weight() {
+//          return 1;
+//        }
+//
+//        @Override
+//        public void run() {
+//          wrapped.materializeCancel(mayInterruptIfRunning);
+//          wrapped = new CancelledListAsyncMaterializer<E>(knownSize);
+//        }
+//      });
+//      return true;
+//    }
+//    return false;
   }
 
   @Override

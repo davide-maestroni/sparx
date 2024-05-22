@@ -63,10 +63,10 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   }
 
   @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    synchronized (stateLock) {
-      return state.cancel(mayInterruptIfRunning);
-    }
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
+//    synchronized (stateLock) {
+//      return state.materializeCancel(mayInterruptIfRunning);
+//    }
   }
 
   @Override
@@ -144,15 +144,15 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
-    public boolean cancel(final boolean mayInterruptIfRunning) {
-      if (wrapped.cancel(mayInterruptIfRunning) || elementsMaterializer.cancel(
-          mayInterruptIfRunning)) {
-        final int size = safeSize(wrappedSize, elementsSize);
-        state = new ScheduledListAsyncMaterializer<E>(context,
-            new CancelledListAsyncMaterializer<E>(size), size);
-        return true;
-      }
-      return false;
+    public void materializeCancel(final boolean mayInterruptIfRunning) {
+//      if (wrapped.materializeCancel(mayInterruptIfRunning) || elementsMaterializer.materializeCancel(
+//          mayInterruptIfRunning)) {
+//        final int size = safeSize(wrappedSize, elementsSize);
+//        state = new ScheduledListAsyncMaterializer<E>(context,
+//            new CancelledListAsyncMaterializer<E>(size), size);
+//        return true;
+//      }
+//      return false;
     }
 
     @Override

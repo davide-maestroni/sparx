@@ -21,34 +21,51 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
+import sparx.concurrent.ExecutionContext;
+import sparx.util.Require;
 
 public class AsyncRunFuture<E> implements Future<Void> {
 
-  private final AtomicBoolean isDone = new AtomicBoolean(false);
-  private final ListAsyncMaterializer<E> materializer;
+  private static final int STATUS_CANCELLED = 2;
+  private static final int STATUS_DONE = 1;
+  private static final int STATUS_RUNNING = 0;
+
+  private final ExecutionContext context;
+  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
+  private final String taskID;
 
   private Exception error;
 
-  public AsyncRunFuture(@NotNull final ListAsyncMaterializer<E> materializer) {
-    this.materializer = materializer;
+  public AsyncRunFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
+      @NotNull final ListAsyncMaterializer<E> materializer) {
+    this.context = Require.notNull(context, "context");
+    this.taskID = Require.notNull(taskID, "taskID");
     materializer.materializeElements(new AsyncConsumer<List<E>>() {
       @Override
       public void accept(final List<E> param) {
-        synchronized (isDone) {
-          isDone.set(true);
-          isDone.notifyAll();
+        synchronized (status) {
+          if (isCancelled()) {
+            status.notifyAll();
+            throw new CancellationException();
+          }
+          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+          status.notifyAll();
         }
       }
 
       @Override
       public void error(@NotNull final Exception error) {
-        synchronized (isDone) {
+        synchronized (status) {
+          if (isCancelled()) {
+            status.notifyAll();
+            throw new CancellationException();
+          }
           AsyncRunFuture.this.error = error;
-          isDone.set(true);
-          isDone.notifyAll();
+          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+          status.notifyAll();
         }
       }
     });
@@ -56,24 +73,30 @@ public class AsyncRunFuture<E> implements Future<Void> {
 
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
-    return materializer.cancel(mayInterruptIfRunning);
+    if (status.compareAndSet(STATUS_RUNNING, STATUS_CANCELLED)) {
+      if (mayInterruptIfRunning) {
+        context.interruptTask(taskID);
+      }
+      return true;
+    }
+    return false;
   }
 
   @Override
   public boolean isCancelled() {
-    return materializer.isCancelled();
+    return status.get() == STATUS_CANCELLED;
   }
 
   @Override
   public boolean isDone() {
-    return isDone.get();
+    return status.get() != STATUS_RUNNING;
   }
 
   @Override
   public Void get() throws InterruptedException, ExecutionException {
-    synchronized (isDone) {
-      while (!isDone.get()) {
-        isDone.wait();
+    synchronized (status) {
+      while (!isDone()) {
+        status.wait();
       }
       final Exception error = this.error;
       if (error instanceof InterruptedException) {
@@ -91,13 +114,13 @@ public class AsyncRunFuture<E> implements Future<Void> {
   public Void get(final long timeout, @NotNull final TimeUnit unit)
       throws InterruptedException, ExecutionException, TimeoutException {
     final long startTimeMillis = System.currentTimeMillis();
-    synchronized (isDone) {
+    synchronized (status) {
       long timeoutMillis = unit.toMillis(timeout);
-      while (!isDone.get() && timeoutMillis > 0) {
-        isDone.wait(timeoutMillis);
+      while (!isDone() && timeoutMillis > 0) {
+        status.wait(timeoutMillis);
         timeoutMillis -= System.currentTimeMillis() - startTimeMillis;
       }
-      if (!isDone.get()) {
+      if (!isDone()) {
         throw new TimeoutException("timeout after " + unit.toMillis(timeout) + " ms");
       }
       final Exception error = this.error;

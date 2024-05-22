@@ -19,13 +19,13 @@ import org.jetbrains.annotations.NotNull;
 
 public interface CollectionAsyncMaterializer<E> {
 
-  boolean cancel(boolean mayInterruptIfRunning);
-
   boolean knownEmpty();
 
   boolean isCancelled();
 
   boolean isDone();
+
+  void materializeCancel(boolean mayInterruptIfRunning);
 
   void materializeContains(Object element, @NotNull AsyncConsumer<Boolean> consumer);
 

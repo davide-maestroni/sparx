@@ -20,43 +20,58 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
+import sparx.concurrent.ExecutionContext;
 import sparx.util.Require;
 import sparx.util.function.IndexedConsumer;
 
 public class AsyncForFuture<E> implements Future<Void> {
 
-  private final AtomicBoolean isDone = new AtomicBoolean(false);
-  private final ListAsyncMaterializer<E> materializer;
+  private static final int STATUS_CANCELLED = 2;
+  private static final int STATUS_DONE = 1;
+  private static final int STATUS_RUNNING = 0;
+
+  private final ExecutionContext context;
+  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
+  private final String taskID;
 
   private Exception error;
 
-  public AsyncForFuture(@NotNull final ListAsyncMaterializer<E> materializer,
+  public AsyncForFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
+      @NotNull final ListAsyncMaterializer<E> materializer,
       @NotNull final IndexedConsumer<? super E> consumer) {
+    this.context = Require.notNull(context, "context");
+    this.taskID = Require.notNull(taskID, "taskID");
     Require.notNull(consumer, "consumer");
-    this.materializer = materializer;
     materializer.materializeOrdered(new IndexedAsyncConsumer<E>() {
       @Override
       public void accept(final int size, final int index, final E param) throws Exception {
+        if (isCancelled()) {
+          throw new CancellationException();
+        }
         consumer.accept(index, param);
       }
 
       @Override
       public void complete(final int size) {
-        synchronized (isDone) {
-          isDone.set(true);
-          isDone.notifyAll();
+        synchronized (status) {
+          if (isCancelled()) {
+            status.notifyAll();
+            throw new CancellationException();
+          }
+          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+          status.notifyAll();
         }
       }
 
       @Override
       public void error(final int index, @NotNull final Exception error) {
-        synchronized (isDone) {
+        synchronized (status) {
           AsyncForFuture.this.error = error;
-          isDone.set(true);
-          isDone.notifyAll();
+          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+          status.notifyAll();
         }
       }
     });
@@ -64,30 +79,37 @@ public class AsyncForFuture<E> implements Future<Void> {
 
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
-    return materializer.cancel(mayInterruptIfRunning);
+    if (status.compareAndSet(STATUS_RUNNING, STATUS_CANCELLED)) {
+      if (mayInterruptIfRunning) {
+        context.interruptTask(taskID);
+      }
+      return true;
+    }
+    return false;
   }
 
   @Override
   public boolean isCancelled() {
-    return materializer.isCancelled();
+    return status.get() == STATUS_CANCELLED;
   }
 
   @Override
   public boolean isDone() {
-    return isDone.get();
+    return status.get() != STATUS_RUNNING;
   }
 
   @Override
   public Void get() throws InterruptedException, ExecutionException {
-    synchronized (isDone) {
-      while (!isDone.get()) {
-        isDone.wait();
+    synchronized (status) {
+      while (!isDone()) {
+        status.wait();
+      }
+      if (isCancelled()) {
+        throw new CancellationException();
       }
       final Exception error = this.error;
       if (error instanceof InterruptedException) {
         throw (InterruptedException) error;
-      } else if (error instanceof CancellationException) {
-        throw (CancellationException) error;
       } else if (error != null) {
         throw new ExecutionException(error);
       }
@@ -99,20 +121,22 @@ public class AsyncForFuture<E> implements Future<Void> {
   public Void get(final long timeout, @NotNull final TimeUnit unit)
       throws InterruptedException, ExecutionException, TimeoutException {
     final long startTimeMillis = System.currentTimeMillis();
-    synchronized (isDone) {
+    synchronized (status) {
       long timeoutMillis = unit.toMillis(timeout);
-      while (!isDone.get() && timeoutMillis > 0) {
-        isDone.wait(timeoutMillis);
+      while (!isDone() && timeoutMillis > 0) {
+        status.wait(timeoutMillis);
         timeoutMillis -= System.currentTimeMillis() - startTimeMillis;
       }
-      if (!isDone.get()) {
+      final int statusCode = status.get();
+      if (statusCode == STATUS_RUNNING) {
         throw new TimeoutException("timeout after " + unit.toMillis(timeout) + " ms");
+      }
+      if (statusCode == STATUS_CANCELLED) {
+        throw new CancellationException();
       }
       final Exception error = this.error;
       if (error instanceof InterruptedException) {
         throw (InterruptedException) error;
-      } else if (error instanceof CancellationException) {
-        throw (CancellationException) error;
       } else if (error != null) {
         throw new ExecutionException(error);
       }
