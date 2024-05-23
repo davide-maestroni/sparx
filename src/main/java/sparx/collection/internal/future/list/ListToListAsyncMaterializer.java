@@ -16,7 +16,6 @@
 package sparx.collection.internal.future.list;
 
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
@@ -36,12 +35,7 @@ public class ListToListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
   @Override
   public boolean knownEmpty() {
-    try {
-      return elements.isEmpty();
-    } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Ignored exception", e);
-    }
-    return false;
+    return elements.isEmpty();
   }
 
   @Override
@@ -62,14 +56,7 @@ public class ListToListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   @SuppressWarnings("SuspiciousMethodCalls")
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
-    boolean contains;
-    try {
-      contains = elements.contains(element);
-    } catch (final Exception e) {
-      safeConsumeError(consumer, e, LOGGER);
-      return;
-    }
-    safeConsume(consumer, contains, LOGGER);
+    safeConsume(consumer, elements.contains(element), LOGGER);
   }
 
   @Override
@@ -79,15 +66,11 @@ public class ListToListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
           LOGGER);
     } else {
-      try {
-        final int size = elements.size();
-        if (index >= size) {
-          safeConsumeComplete(consumer, size, LOGGER);
-        } else {
-          safeConsume(consumer, size, index, elements.get(index), LOGGER);
-        }
-      } catch (final Exception e) {
-        safeConsumeError(consumer, index, e, LOGGER);
+      final int size = elements.size();
+      if (index >= size) {
+        safeConsumeComplete(consumer, size, LOGGER);
+      } else {
+        safeConsume(consumer, size, index, elements.get(index), LOGGER);
       }
     }
   }
@@ -99,44 +82,26 @@ public class ListToListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
   @Override
   public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    boolean empty;
-    try {
-      empty = elements.isEmpty();
-    } catch (final Exception e) {
-      safeConsumeError(consumer, e, LOGGER);
-      return;
-    }
-    safeConsume(consumer, empty, LOGGER);
+    safeConsume(consumer, elements.isEmpty(), LOGGER);
   }
 
   @Override
   public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    final List<E> elements = this.elements;
+    final int size = elements.size();
     int i = 0;
-    try {
-      final List<E> elements = this.elements;
-      final int size = elements.size();
-      while (i < size) {
-        if (!safeConsume(consumer, size, i, elements.get(i), LOGGER)) {
-          return;
-        }
-        ++i;
+    while (i < size) {
+      if (!safeConsume(consumer, size, i, elements.get(i), LOGGER)) {
+        return;
       }
-      safeConsumeComplete(consumer, size, LOGGER);
-    } catch (final Exception e) {
-      safeConsumeError(consumer, i, e, LOGGER);
+      ++i;
     }
+    safeConsumeComplete(consumer, size, LOGGER);
   }
 
   @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    int size;
-    try {
-      size = elements.size();
-    } catch (final Exception e) {
-      safeConsumeError(consumer, e, LOGGER);
-      return;
-    }
-    safeConsume(consumer, size, LOGGER);
+    safeConsume(consumer, elements.size(), LOGGER);
   }
 
   @Override

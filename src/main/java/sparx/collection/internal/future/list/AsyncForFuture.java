@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 import sparx.util.function.IndexedConsumer;
 
@@ -42,37 +43,52 @@ public class AsyncForFuture<E> implements Future<Void> {
   public AsyncForFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final ListAsyncMaterializer<E> materializer,
       @NotNull final IndexedConsumer<? super E> consumer) {
-    this.context = Require.notNull(context, "context");
+    this.context = context;
     this.taskID = Require.notNull(taskID, "taskID");
     Require.notNull(consumer, "consumer");
-    materializer.materializeOrdered(new IndexedAsyncConsumer<E>() {
+    context.scheduleAfter(new Task() {
       @Override
-      public void accept(final int size, final int index, final E param) throws Exception {
-        if (isCancelled()) {
-          throw new CancellationException();
-        }
-        consumer.accept(index, param);
+      public @NotNull String taskID() {
+        return taskID;
       }
 
       @Override
-      public void complete(final int size) {
-        synchronized (status) {
-          if (isCancelled()) {
-            status.notifyAll();
-            throw new CancellationException();
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        materializer.materializeOrdered(new IndexedAsyncConsumer<E>() {
+          @Override
+          public void accept(final int size, final int index, final E param) throws Exception {
+            if (isCancelled()) {
+              throw new CancellationException();
+            }
+            consumer.accept(index, param);
           }
-          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-          status.notifyAll();
-        }
-      }
 
-      @Override
-      public void error(final int index, @NotNull final Exception error) {
-        synchronized (status) {
-          AsyncForFuture.this.error = error;
-          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-          status.notifyAll();
-        }
+          @Override
+          public void complete(final int size) {
+            synchronized (status) {
+              if (isCancelled()) {
+                status.notifyAll();
+                throw new CancellationException();
+              }
+              status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+              status.notifyAll();
+            }
+          }
+
+          @Override
+          public void error(final int index, @NotNull final Exception error) {
+            synchronized (status) {
+              AsyncForFuture.this.error = error;
+              status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+              status.notifyAll();
+            }
+          }
+        });
       }
     });
   }

@@ -24,30 +24,25 @@ import sparx.util.Require;
 
 public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
 
-  private static final Logger LOGGER = Logger.getLogger(ContextAsyncConsumer.class.getName());
-
   private final ExecutionContext context;
   private final Logger logger;
+  private final String taskID;
   private final AsyncConsumer<P> wrapped;
 
-  public ContextAsyncConsumer(@NotNull final ExecutionContext context,
-      @NotNull final AsyncConsumer<P> wrapped) {
-    this(context, wrapped, LOGGER);
-  }
-
-  public ContextAsyncConsumer(@NotNull final ExecutionContext context,
+  public ContextAsyncConsumer(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final AsyncConsumer<P> wrapped, @NotNull final Logger logger) {
     this.context = Require.notNull(context, "context");
+    this.taskID = Require.notNull(taskID, "taskID");
     this.wrapped = Require.notNull(wrapped, "wrapped");
     this.logger = Require.notNull(logger, "logger");
   }
 
   @Override
-  public void accept(final P param) throws Exception {
+  public void accept(final P param) {
     context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
-        return "";
+        return taskID;
       }
 
       @Override
@@ -59,11 +54,14 @@ public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
       public void run() {
         try {
           wrapped.accept(param);
-        } catch (final Exception e) {
+        } catch (final Exception error) {
           try {
-            wrapped.error(e);
-          } catch (final Exception ex) {
-            logger.log(Level.SEVERE, "Ignored exception", ex);
+            wrapped.error(error);
+          } catch (final Exception e) {
+            if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
+            }
+            logger.log(Level.SEVERE, "Ignored exception", e);
           }
         }
       }
@@ -71,11 +69,11 @@ public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
   }
 
   @Override
-  public void error(@NotNull final Exception error) throws Exception {
+  public void error(@NotNull final Exception error) {
     context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
-        return "";
+        return taskID;
       }
 
       @Override
@@ -88,6 +86,9 @@ public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
         try {
           wrapped.error(error);
         } catch (final Exception e) {
+          if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
           logger.log(Level.SEVERE, "Ignored exception", e);
         }
       }

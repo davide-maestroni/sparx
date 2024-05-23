@@ -76,7 +76,7 @@ public class UncheckedException extends RuntimeException {
 
     private UncheckedInterruptedException(final InterruptedException cause) {
       super(cause);
-      Thread.currentThread().interrupt();  //set the flag back to true
+      Thread.currentThread().interrupt();  // set the flag back to true
     }
   }
 

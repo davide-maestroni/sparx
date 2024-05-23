@@ -15,7 +15,6 @@
  */
 package sparx.collection.internal.future.list;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -29,8 +28,8 @@ public class ElementToListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
   private final List<E> elements;
 
-  public ElementToListAsyncMaterializer(final E element) {
-    elements = Collections.singletonList(element);
+  public ElementToListAsyncMaterializer(@NotNull final List<E> element) {
+    this.elements = element;
   }
 
   @Override

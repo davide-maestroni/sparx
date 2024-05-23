@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 
 public class AsyncRunFuture<E> implements Future<Void> {
@@ -41,32 +42,47 @@ public class AsyncRunFuture<E> implements Future<Void> {
 
   public AsyncRunFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final ListAsyncMaterializer<E> materializer) {
-    this.context = Require.notNull(context, "context");
+    this.context = context;
     this.taskID = Require.notNull(taskID, "taskID");
-    materializer.materializeElements(new AsyncConsumer<List<E>>() {
+    context.scheduleAfter(new Task() {
       @Override
-      public void accept(final List<E> param) {
-        synchronized (status) {
-          if (isCancelled()) {
-            status.notifyAll();
-            throw new CancellationException();
-          }
-          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-          status.notifyAll();
-        }
+      public @NotNull String taskID() {
+        return taskID;
       }
 
       @Override
-      public void error(@NotNull final Exception error) {
-        synchronized (status) {
-          if (isCancelled()) {
-            status.notifyAll();
-            throw new CancellationException();
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        materializer.materializeElements(new AsyncConsumer<List<E>>() {
+          @Override
+          public void accept(final List<E> param) {
+            synchronized (status) {
+              if (isCancelled()) {
+                status.notifyAll();
+                throw new CancellationException();
+              }
+              status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+              status.notifyAll();
+            }
           }
-          AsyncRunFuture.this.error = error;
-          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-          status.notifyAll();
-        }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            synchronized (status) {
+              if (isCancelled()) {
+                status.notifyAll();
+                throw new CancellationException();
+              }
+              AsyncRunFuture.this.error = error;
+              status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+              status.notifyAll();
+            }
+          }
+        });
       }
     });
   }

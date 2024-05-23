@@ -1,0 +1,272 @@
+/*
+ * Copyright 2024 Davide Maestroni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package sparx.collection.internal.future.list;
+
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.jetbrains.annotations.NotNull;
+import sparx.collection.internal.future.AsyncConsumer;
+import sparx.collection.internal.future.ContextAsyncConsumer;
+import sparx.collection.internal.future.ContextIndexedAsyncConsumer;
+import sparx.collection.internal.future.IndexedAsyncConsumer;
+import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
+import sparx.util.Require;
+
+public class SwitchListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+
+  private static final Logger LOGGER = Logger.getLogger(
+      SwitchListAsyncMaterializer.class.getName());
+
+  private final ExecutionContext fromContext;
+  private final String fromTaskID;
+  private final ExecutionContext toContext;
+  private final String toTaskID;
+  private final ListAsyncMaterializer<E> wrapped;
+
+  public SwitchListAsyncMaterializer(@NotNull final ExecutionContext fromContext,
+      @NotNull final String fromTaskID, @NotNull final ExecutionContext toContext,
+      @NotNull final String toTaskID, @NotNull final ListAsyncMaterializer<E> wrapped) {
+    this.fromContext = Require.notNull(fromContext, "fromContext");
+    this.fromTaskID = Require.notNull(fromTaskID, "fromTaskID");
+    this.toContext = Require.notNull(toContext, "toContext");
+    this.toTaskID = Require.notNull(toTaskID, "toTaskID");
+    this.wrapped = Require.notNull(wrapped, "wrapped");
+  }
+
+  @Override
+  public boolean knownEmpty() {
+    return wrapped.knownEmpty();
+  }
+
+  @Override
+  public boolean isCancelled() {
+    return wrapped.isCancelled();
+  }
+
+  @Override
+  public boolean isDone() {
+    return wrapped.isDone();
+  }
+
+  @Override
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeCancel(mayInterruptIfRunning);
+        } catch (final Exception e) {
+          LOGGER.log(Level.SEVERE, "Ignored exception", e);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void materializeContains(final Object element,
+      @NotNull final AsyncConsumer<Boolean> consumer) {
+    final ContextAsyncConsumer<Boolean> switchConsumer = new ContextAsyncConsumer<Boolean>(
+        toContext, toTaskID, consumer, LOGGER);
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeContains(element, switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
+    final ContextIndexedAsyncConsumer<E> switchConsumer = new ContextIndexedAsyncConsumer<E>(
+        toContext, toTaskID, consumer, LOGGER);
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeElement(index, switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, index, e, LOGGER);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+    final ContextAsyncConsumer<List<E>> switchConsumer = new ContextAsyncConsumer<List<E>>(
+        toContext, toTaskID, consumer, LOGGER);
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeElements(switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
+    final ContextAsyncConsumer<Boolean> switchConsumer = new ContextAsyncConsumer<Boolean>(
+        toContext, toTaskID, consumer, LOGGER);
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeEmpty(switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    final ContextIndexedAsyncConsumer<E> switchConsumer = new ContextIndexedAsyncConsumer<E>(
+        toContext, toTaskID, consumer, LOGGER);
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeOrdered(switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, -1, e, LOGGER);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
+    final ContextAsyncConsumer<Integer> switchConsumer = new ContextAsyncConsumer<Integer>(
+        toContext, toTaskID, consumer, LOGGER);
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeSize(switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    final ContextIndexedAsyncConsumer<E> switchConsumer = new ContextIndexedAsyncConsumer<E>(
+        toContext, toTaskID, consumer, LOGGER);
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeUnordered(switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, -1, e, LOGGER);
+        }
+      }
+    });
+  }
+}

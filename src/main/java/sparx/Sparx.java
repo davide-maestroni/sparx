@@ -27,6 +27,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.AbstractListSequence;
 import sparx.collection.IteratorSequence;
@@ -40,11 +42,13 @@ import sparx.collection.internal.future.list.AppendListAsyncMaterializer;
 import sparx.collection.internal.future.list.AsyncForFuture;
 import sparx.collection.internal.future.list.AsyncRunFuture;
 import sparx.collection.internal.future.list.AsyncWhileFuture;
+import sparx.collection.internal.future.list.CountListAsyncMaterializer;
+import sparx.collection.internal.future.list.CountWhereListAsyncMaterializer;
 import sparx.collection.internal.future.list.ElementToListAsyncMaterializer;
 import sparx.collection.internal.future.list.EmptyListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
-import sparx.collection.internal.future.list.ScheduledListAsyncMaterializer;
+import sparx.collection.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.collection.internal.lazy.iterator.AllIteratorMaterializer;
 import sparx.collection.internal.lazy.iterator.AppendAllIteratorMaterializer;
 import sparx.collection.internal.lazy.iterator.AppendIteratorMaterializer;
@@ -367,20 +371,32 @@ public class Sparx {
           return lazy.List.wrap(firstParam).append(secondParam);
         }
       };
+      private static final Function<? extends java.util.List<?>, ? extends java.util.List<?>> DECORATE_FUNCTION = new Function<java.util.List<?>, java.util.List<?>>() {
+        @Override
+        public java.util.List<?> apply(java.util.List<?> param) {
+          return lazy.List.wrap(param);
+        }
+      };
       private static final ElementToListAsyncMaterializer<Boolean> FALSE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
-          false);
+          lazy.List.of(false));
       private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
-          true);
+          lazy.List.of(true));
+      private static final ElementToListAsyncMaterializer<Integer> ZERO_MATERIALIZER = new ElementToListAsyncMaterializer<Integer>(
+          lazy.List.of(0));
+
+      private static final Logger LOGGER = Logger.getLogger(List.class.getName());
 
       private final ExecutionContext context;
-      private final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      private final AtomicBoolean isCancelled;
       private final ListAsyncMaterializer<E> materializer;
       private final String taskID;
 
       private List(@NotNull final ExecutionContext context,
+          @NotNull final AtomicBoolean isCancelled,
           @NotNull final ListAsyncMaterializer<E> materializer) {
         this.context = context;
         this.materializer = materializer;
+        this.isCancelled = isCancelled;
         taskID = Integer.toHexString(System.identityHashCode(this));
       }
 
@@ -395,14 +411,25 @@ public class Sparx {
       }
 
       @SuppressWarnings("unchecked")
+      private static @NotNull <E> Function<java.util.List<E>, java.util.List<E>> decorateFunction() {
+        return (Function<java.util.List<E>, java.util.List<E>>) DECORATE_FUNCTION;
+      }
+
+      @SuppressWarnings("unchecked")
       private static @NotNull <E> ListAsyncMaterializer<E> getElementsMaterializer(
-          @NotNull final Iterable<? extends E> elements) {
+          @NotNull final List<?> toList, @NotNull final Iterable<? extends E> elements) {
         if (elements instanceof future.List) {
-          return ((future.List<E>) elements).materializer;
+          final List<E> list = (List<E>) elements;
+          if (toList.context == list.context && toList.taskID.equals(list.taskID)) {
+            return list.materializer;
+          }
+          return new SwitchListAsyncMaterializer<E>(list.context, list.taskID, toList.context,
+              toList.taskID, list.materializer);
         }
         if (elements instanceof lazy.List) {
-          ((lazy.List<E>) elements).materializer.materializeElements();
-          return new ListToListAsyncMaterializer<E>((lazy.List<E>) elements);
+          final lazy.List<E> list = (lazy.List<E>) elements;
+          list.materializer.materializeElements();
+          return new ListToListAsyncMaterializer<E>(list);
         }
         if (elements instanceof java.util.List) {
           final java.util.List<E> list = (java.util.List<E>) elements;
@@ -422,48 +449,54 @@ public class Sparx {
       @Override
       public @NotNull List<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownEmpty()) {
-          return new List<Boolean>(context,
-              new ScheduledListAsyncMaterializer<Boolean>(context, TRUE_MATERIALIZER, 1));
+          return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
         }
-        return new List<Boolean>(context, new AllListAsyncMaterializer<E>(materializer, predicate));
+        return new List<Boolean>(context, isCancelled,
+            new AllListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+                List.<Boolean>decorateFunction()));
       }
 
       @Override
       public @NotNull List<Boolean> all(@NotNull final Predicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownEmpty()) {
-          return new List<Boolean>(context,
-              new ScheduledListAsyncMaterializer<Boolean>(context, TRUE_MATERIALIZER, 1));
+          return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
         }
-        return new List<Boolean>(context,
-            new AllListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<Boolean>(context, isCancelled,
+            new AllListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                isCancelled, List.<Boolean>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> append(final E element) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownEmpty()) {
-          return new List<E>(context, new ScheduledListAsyncMaterializer<E>(context,
-              new ElementToListAsyncMaterializer<E>(element), 1));
+          return new List<E>(context, isCancelled,
+              new ElementToListAsyncMaterializer<E>(lazy.List.of(element)));
         }
-        return new List<E>(context,
-            new AppendListAsyncMaterializer<E>(context, materializer, element,
+        return new List<E>(context, isCancelled,
+            new AppendListAsyncMaterializer<E>(materializer, element, isCancelled,
                 List.<E>appendFunction()));
       }
 
       @Override
       public @NotNull List<E> appendAll(@NotNull final Iterable<? extends E> elements) {
+        final ExecutionContext context = this.context;
         final ListAsyncMaterializer<E> materializer = this.materializer;
-        final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(this,
+            elements);
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (elementsMaterializer.knownEmpty()) {
           return this;
         } else if (materializer.knownEmpty()) {
-          return new List<E>(context,
-              new ScheduledListAsyncMaterializer<E>(context, elementsMaterializer, -1));
+          return new List<E>(context, isCancelled, elementsMaterializer);
         }
-        return new List<E>(context,
-            new AppendAllListAsyncMaterializer<E>(context, materializer, elementsMaterializer,
+        return new List<E>(context, isCancelled,
+            new AppendAllListAsyncMaterializer<E>(materializer, elementsMaterializer, isCancelled,
                 List.<E>appendAllFunction()));
       }
 
@@ -529,7 +562,11 @@ public class Sparx {
 
             @Override
             public void run() {
-              materializer.materializeCancel(mayInterruptIfRunning);
+              try {
+                materializer.materializeCancel(mayInterruptIfRunning);
+              } catch (final Exception e) {
+                LOGGER.log(Level.SEVERE, "Ignored exception", e);
+              }
             }
           });
           return true;
@@ -548,12 +585,16 @@ public class Sparx {
 
           @Override
           public int weight() {
-            return 1;
+            return 1; // TODO: size?
           }
 
           @Override
           public void run() {
-            materializer.materializeContains(o, consumer);
+            try {
+              materializer.materializeContains(o, consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
           }
         });
         try {
@@ -565,17 +606,41 @@ public class Sparx {
 
       @Override
       public @NotNull List<Integer> count() {
-        return null;
+        final ExecutionContext context = this.context;
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownEmpty()) {
+          return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
+        }
+        return new List<Integer>(context, isCancelled,
+            new CountListAsyncMaterializer<E>(materializer, isCancelled,
+                List.<Integer>decorateFunction()));
       }
 
       @Override
       public @NotNull List<Integer> count(@NotNull final IndexedPredicate<? super E> predicate) {
-        return null;
+        final ExecutionContext context = this.context;
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownEmpty()) {
+          return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
+        }
+        return new List<Integer>(context, isCancelled,
+            new CountWhereListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+                List.<Integer>decorateFunction()));
       }
 
       @Override
       public @NotNull List<Integer> count(@NotNull final Predicate<? super E> predicate) {
-        return null;
+        final ExecutionContext context = this.context;
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownEmpty()) {
+          return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
+        }
+        return new List<Integer>(context, isCancelled,
+            new CountWhereListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                isCancelled, List.<Integer>decorateFunction()));
       }
 
       @Override
@@ -796,7 +861,11 @@ public class Sparx {
 
           @Override
           public void run() {
-            materializer.materializeElement(0, consumer);
+            try {
+              materializer.materializeElement(0, consumer);
+            } catch (final Exception e) {
+              consumer.error(0, e);
+            }
           }
         });
         try {
@@ -900,15 +969,19 @@ public class Sparx {
 
           @Override
           public void run() {
-            materializer.materializeElements(consumer);
+            try {
+              materializer.materializeElements(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
           }
         });
         try {
-          return lazy.List.wrap(consumer.get());
+          return (lazy.List<E>) consumer.get();
         } catch (final InterruptedException e) {
           throw e;
         } catch (final Exception e) {
-          if (materializer.isCancelled() && e instanceof CancellationException) {
+          if (isCancelled() && e instanceof CancellationException) {
             throw (CancellationException) e;
           }
           throw new ExecutionException(e);
@@ -931,7 +1004,11 @@ public class Sparx {
 
           @Override
           public void run() {
-            materializer.materializeElement(index, consumer);
+            try {
+              materializer.materializeElement(index, consumer);
+            } catch (final Exception e) {
+              consumer.error(index, e);
+            }
           }
         });
         try {
@@ -958,7 +1035,11 @@ public class Sparx {
 
           @Override
           public void run() {
-            materializer.materializeElements(consumer);
+            try {
+              materializer.materializeElements(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
           }
         });
         try {
@@ -966,7 +1047,7 @@ public class Sparx {
         } catch (final InterruptedException e) {
           throw e;
         } catch (final Exception e) {
-          if (materializer.isCancelled() && e instanceof CancellationException) {
+          if (isCancelled() && e instanceof CancellationException) {
             throw (CancellationException) e;
           }
           throw new ExecutionException(e);
@@ -1015,26 +1096,30 @@ public class Sparx {
 
             @Override
             public void run() {
-              materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
-                @Override
-                public void accept(final int size, final int index, final E param) {
-                  if (param == null) {
-                    consumer.accept(index);
-                  } else {
-                    materializer.materializeElement(index + 1, this);
+              try {
+                materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
+                  @Override
+                  public void accept(final int size, final int index, final E param) {
+                    if (param == null) {
+                      consumer.accept(index);
+                    } else {
+                      materializer.materializeElement(index + 1, this);
+                    }
                   }
-                }
 
-                @Override
-                public void complete(final int size) {
-                  consumer.accept(-1);
-                }
+                  @Override
+                  public void complete(final int size) {
+                    consumer.accept(-1);
+                  }
 
-                @Override
-                public void error(final int index, @NotNull final Exception error) {
-                  consumer.error(error);
-                }
-              });
+                  @Override
+                  public void error(final int index, @NotNull final Exception error) {
+                    consumer.error(error);
+                  }
+                });
+              } catch (final Exception e) {
+                consumer.error(e);
+              }
             }
           });
         } else {
@@ -1051,26 +1136,30 @@ public class Sparx {
 
             @Override
             public void run() {
-              materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
-                @Override
-                public void accept(final int size, final int index, final E param) {
-                  if (o.equals(param)) {
-                    consumer.accept(index);
-                  } else {
-                    materializer.materializeElement(index + 1, this);
+              try {
+                materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
+                  @Override
+                  public void accept(final int size, final int index, final E param) {
+                    if (o.equals(param)) {
+                      consumer.accept(index);
+                    } else {
+                      materializer.materializeElement(index + 1, this);
+                    }
                   }
-                }
 
-                @Override
-                public void complete(final int size) {
-                  consumer.accept(-1);
-                }
+                  @Override
+                  public void complete(final int size) {
+                    consumer.accept(-1);
+                  }
 
-                @Override
-                public void error(final int index, @NotNull final Exception error) {
-                  consumer.error(error);
-                }
-              });
+                  @Override
+                  public void error(final int index, @NotNull final Exception error) {
+                    consumer.error(error);
+                  }
+                });
+              } catch (final Exception e) {
+                consumer.error(e);
+              }
             }
           });
         }
@@ -1123,7 +1212,11 @@ public class Sparx {
 
           @Override
           public void run() {
-            materializer.materializeEmpty(consumer);
+            try {
+              materializer.materializeEmpty(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
           }
         });
         try {
@@ -1149,21 +1242,21 @@ public class Sparx {
 
           @Override
           public void run() {
-            materializer.materializeSize(new AsyncConsumer<Integer>() {
-              @Override
-              public void accept(final Integer size) {
-                if (size > 0) {
+            try {
+              materializer.materializeSize(new AsyncConsumer<Integer>() {
+                @Override
+                public void accept(final Integer size) {
                   materializer.materializeElement(size - 1, consumer);
-                } else {
-                  consumer.error(-1, new IndexOutOfBoundsException(Integer.toString(-1)));
                 }
-              }
 
-              @Override
-              public void error(@NotNull final Exception error) {
-                consumer.error(-1, error);
-              }
-            });
+                @Override
+                public void error(@NotNull final Exception error) {
+                  consumer.error(-1, error);
+                }
+              });
+            } catch (final Exception e) {
+              consumer.error(-1, e);
+            }
           }
         });
         try {
@@ -1458,7 +1551,11 @@ public class Sparx {
 
           @Override
           public void run() {
-            materializer.materializeSize(consumer);
+            try {
+              materializer.materializeSize(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
           }
         });
         try {
@@ -5326,7 +5423,7 @@ public class Sparx {
       }
 
       public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext context) {
-        return new future.List<E>(Require.notNull(context, "context"),
+        return new future.List<E>(Require.notNull(context, "context"), new AtomicBoolean(false),
             new ListToListAsyncMaterializer<E>(this));
       }
 

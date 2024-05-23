@@ -372,8 +372,8 @@ public class ExecutorContext implements ExecutionContext {
             workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
             if (status == PAUSING) {
               status = PAUSED;
-            } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
-              hasNext = true;
+            } else {
+              hasNext = !beforeQueue.isEmpty() || !afterQueue.isEmpty();
             }
           }
           if (hasNext) {
@@ -436,8 +436,8 @@ public class ExecutorContext implements ExecutionContext {
           workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
           if (status == PAUSING) {
             status = PAUSED;
-          } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
-            hasNext = true;
+          } else {
+            hasNext = !beforeQueue.isEmpty() || !afterQueue.isEmpty();
           }
         }
         if (hasNext) {
@@ -498,8 +498,8 @@ public class ExecutorContext implements ExecutionContext {
             workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
             if (status == PAUSING) {
               status = PAUSED;
-            } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
-              hasNext = true;
+            } else {
+              hasNext = !beforeQueue.isEmpty() || !afterQueue.isEmpty();
             }
           }
           if (hasNext) {
@@ -510,16 +510,14 @@ public class ExecutorContext implements ExecutionContext {
         }
       }
 
-      boolean hasNext = false;
+      boolean hasNext;
       synchronized (lock) {
         workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
         if (status == PAUSING) {
           status = PAUSED;
           return;
         }
-        if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
-          hasNext = true;
-        }
+        hasNext = !beforeQueue.isEmpty() || !afterQueue.isEmpty();
       }
       if (hasNext) {
         executor.execute(this);
@@ -586,8 +584,8 @@ public class ExecutorContext implements ExecutionContext {
             workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
             if (status == PAUSING) {
               status = PAUSED;
-            } else if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
-              hasNext = true;
+            } else {
+              hasNext = !beforeQueue.isEmpty() || !afterQueue.isEmpty();
             }
           }
           if (hasNext) {
@@ -598,16 +596,14 @@ public class ExecutorContext implements ExecutionContext {
         }
       }
 
-      boolean hasNext = false;
+      boolean hasNext;
       synchronized (lock) {
         workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
         if (status == PAUSING) {
           status = PAUSED;
           return;
         }
-        if (!beforeQueue.isEmpty() || !afterQueue.isEmpty()) {
-          hasNext = true;
-        }
+        hasNext = !beforeQueue.isEmpty() || !afterQueue.isEmpty();
       }
       if (hasNext) {
         executor.execute(this);

@@ -24,21 +24,16 @@ import sparx.util.Require;
 
 public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
 
-  private static final Logger LOGGER = Logger.getLogger(
-      ContextIndexedAsyncConsumer.class.getName());
-
   private final ExecutionContext context;
   private final Logger logger;
+  private final String taskID;
   private final IndexedAsyncConsumer<P> wrapped;
 
   public ContextIndexedAsyncConsumer(@NotNull final ExecutionContext context,
-      @NotNull final IndexedAsyncConsumer<P> wrapped) {
-    this(context, wrapped, LOGGER);
-  }
-
-  public ContextIndexedAsyncConsumer(@NotNull final ExecutionContext context,
-      @NotNull final IndexedAsyncConsumer<P> wrapped, @NotNull final Logger logger) {
+      @NotNull final String taskID, @NotNull final IndexedAsyncConsumer<P> wrapped,
+      @NotNull final Logger logger) {
     this.context = Require.notNull(context, "context");
+    this.taskID = Require.notNull(taskID, "taskID");
     this.wrapped = Require.notNull(wrapped, "wrapped");
     this.logger = Require.notNull(logger, "logger");
   }
@@ -48,7 +43,7 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
     context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
-        return "";
+        return taskID;
       }
 
       @Override
@@ -60,11 +55,17 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
       public void run() {
         try {
           wrapped.accept(size, index, param);
-        } catch (final Exception e) {
+        } catch (final Exception error) {
+          if (error instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
           try {
-            wrapped.error(index, e);
-          } catch (final Exception ex) {
-            logger.log(Level.SEVERE, "Ignored exception", ex);
+            wrapped.error(index, error);
+          } catch (final Exception e) {
+            if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
+            }
+            logger.log(Level.SEVERE, "Ignored exception", e);
           }
         }
       }
@@ -76,7 +77,7 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
     context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
-        return "";
+        return taskID;
       }
 
       @Override
@@ -88,11 +89,17 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
       public void run() {
         try {
           wrapped.complete(size);
-        } catch (final Exception e) {
+        } catch (final Exception error) {
+          if (error instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
           try {
-            wrapped.error(size, e);
-          } catch (final Exception ex) {
-            logger.log(Level.SEVERE, "Ignored exception", ex);
+            wrapped.error(size, error);
+          } catch (final Exception e) {
+            if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
+            }
+            logger.log(Level.SEVERE, "Ignored exception", e);
           }
         }
       }
@@ -104,7 +111,7 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
     context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
-        return "";
+        return taskID;
       }
 
       @Override
@@ -117,6 +124,9 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
         try {
           wrapped.error(index, error);
         } catch (final Exception e) {
+          if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
           logger.log(Level.SEVERE, "Ignored exception", e);
         }
       }

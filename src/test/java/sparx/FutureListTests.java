@@ -26,6 +26,7 @@ import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
@@ -33,15 +34,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sparx.Sparx.lazy.List;
 import sparx.concurrent.ExecutorContext;
+import sparx.util.UncheckedException.UncheckedInterruptedException;
 
 public class FutureListTests {
+
+  private static final boolean TEST_ASYNC_CANCEL = true;
 
   private ExecutorContext context;
   private ExecutorService executor;
 
   @BeforeEach
   public void setUp() {
-    executor = Executors.newSingleThreadExecutor();
+    executor = Executors.newCachedThreadPool();
     context = ExecutorContext.of(executor);
   }
 
@@ -58,7 +62,7 @@ public class FutureListTests {
     assertTrue(List.of().toFuture(context).all(Objects::nonNull).first());
     assertFalse(List.of(1, 2, 3).toFuture(context).all(i -> i < 3).first());
     {
-      var itr = List.of(1, 2, 3).all(i -> i < 3).iterator();
+      var itr = List.of(1, 2, 3).toFuture(context).all(i -> i < 3).iterator();
       assertTrue(itr.hasNext());
       assertFalse(itr.next());
       assertThrows(UnsupportedOperationException.class, itr::remove);
@@ -67,7 +71,7 @@ public class FutureListTests {
     }
     assertTrue(List.of(1, 2, 3).toFuture(context).all(i -> i > 0).first());
     {
-      var itr = List.of(1, 2, 3).all(i -> i > 0).iterator();
+      var itr = List.of(1, 2, 3).toFuture(context).all(i -> i > 0).iterator();
       assertTrue(itr.hasNext());
       assertTrue(itr.next());
       assertThrows(UnsupportedOperationException.class, itr::remove);
@@ -77,13 +81,29 @@ public class FutureListTests {
     var l = List.of(1, null, 3).toFuture(context).all(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
-//        var itr = l.iterator();
-//        assertTrue(itr.hasNext());
-//        assertThrows(NullPointerException.class, itr::next);
+      var itr = l.iterator();
+      assertThrows(NullPointerException.class, itr::hasNext);
+      assertThrows(NullPointerException.class, itr::next);
+    }
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
     }
   }
 
-//  @Test
+  @Test
   public void append() {
     var l = List.<Integer>of().toFuture(context).append(1).append(2).append(3);
     assertFalse(l.isEmpty());
@@ -120,9 +140,25 @@ public class FutureListTests {
     assertTrue(l.notEmpty());
     assertEquals(3, l.size());
     assertEquals(List.of(1, null, 3), l);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      }).append(true);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
   }
 
-//  @Test
+  @Test
   public void appendAll() {
     var l = List.<Integer>of().toFuture(context).appendAll(Arrays.asList(1, 2, 3));
     assertFalse(l.isEmpty());
@@ -159,9 +195,25 @@ public class FutureListTests {
     assertTrue(l.notEmpty());
     assertEquals(3, l.size());
     assertEquals(List.of(1, null, 3), l);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      }).appendAll(List.of(true, false));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
   }
 
-//  @Test
+  @Test
   public void count() {
     assertFalse(List.of().toFuture(context).count().isEmpty());
     assertTrue(List.of().toFuture(context).count().notEmpty());
@@ -185,9 +237,13 @@ public class FutureListTests {
       assertFalse(itr.hasNext());
       assertThrows(NoSuchElementException.class, itr::next);
     }
+
+    if (TEST_ASYNC_CANCEL) {
+      // TODO
+    }
   }
 
-//  @Test
+  @Test
   public void countWhere() {
     assertFalse(List.of().toFuture(context).count(Objects::nonNull).isEmpty());
     assertTrue(List.of().toFuture(context).count(Objects::nonNull).notEmpty());
@@ -214,13 +270,29 @@ public class FutureListTests {
     var l = List.of(1, null, 3).toFuture(context).count(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
-//      var itr = l.iterator();
-//      assertTrue(itr.hasNext());
-//      assertThrows(NullPointerException.class, itr::next);
+      var itr = l.iterator();
+      assertThrows(NullPointerException.class, itr::hasNext);
+      assertThrows(NullPointerException.class, itr::next);
+    }
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).count(i -> {
+        Thread.sleep(60000);
+        return true;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
     }
   }
 
-//  @Test
+  //  @Test
   public void diff() {
     assertEquals(List.of(2, 4), List.of(1, 2, null, 4).toFuture(context).diff(List.of(1, null)));
     assertEquals(List.of(2, null), List.of(1, 2, null, 4).toFuture(context).diff(List.of(1, 4)));
@@ -255,7 +327,7 @@ public class FutureListTests {
     assertEquals(List.of(1, 2), list);
   }
 
-//  @Test
+  //  @Test
   public void drop() {
     var l = List.<Integer>of().toFuture(context).drop(1);
     assertTrue(l.isEmpty());

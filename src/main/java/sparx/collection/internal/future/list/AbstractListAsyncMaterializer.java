@@ -28,9 +28,15 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     try {
       consumer.accept(size, index, value);
     } catch (final Exception error) {
+      if (error instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       try {
         consumer.error(index, error);
       } catch (final Exception e) {
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
         logger.log(Level.SEVERE, "Ignored exception", e);
       }
       return false;
@@ -38,19 +44,23 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     return true;
   }
 
-  <T> boolean safeConsume(@NotNull final AsyncConsumer<T> consumer, final T value,
+  <T> void safeConsume(@NotNull final AsyncConsumer<T> consumer, final T value,
       @NotNull final Logger logger) {
     try {
       consumer.accept(value);
     } catch (final Exception error) {
+      if (error instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       try {
         consumer.error(error);
       } catch (final Exception e) {
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
         logger.log(Level.SEVERE, "Ignored exception", e);
       }
-      return false;
     }
-    return true;
   }
 
   void safeConsumeComplete(@NotNull final IndexedAsyncConsumer<?> consumer, final int size,
@@ -58,6 +68,9 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     try {
       consumer.complete(size);
     } catch (final Exception e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       logger.log(Level.SEVERE, "Ignored exception", e);
     }
   }
@@ -67,6 +80,9 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     try {
       consumer.error(error);
     } catch (final Exception e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       logger.log(Level.SEVERE, "Ignored exception", e);
     }
   }
@@ -76,6 +92,9 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     try {
       consumer.error(index, error);
     } catch (final Exception e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       logger.log(Level.SEVERE, "Ignored exception", e);
     }
   }
