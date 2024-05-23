@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection.internal.future.list;
+package sparx.collection.internal.future.sequential.list;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,10 +26,12 @@ import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.util.Require;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedPredicate;
 
-public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Integer> {
+public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer<Integer> {
 
-  private static final Logger LOGGER = Logger.getLogger(CountListAsyncMaterializer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(
+      CountWhereListAsyncMaterializer.class.getName());
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -39,11 +41,12 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
 
   private ListAsyncMaterializer<Integer> state;
 
-  public CountListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+  public CountWhereListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(predicate, "predicate"), Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
   }
 
@@ -113,13 +116,16 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
 
     private final Function<List<Integer>, List<Integer>> decorateFunction;
     private final AtomicBoolean isCancelled;
+    private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
+        @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final AtomicBoolean isCancelled,
         @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
       this.wrapped = wrapped;
+      this.predicate = predicate;
       this.isCancelled = isCancelled;
       this.decorateFunction = decorateFunction;
     }
@@ -212,6 +218,43 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
         final ListAsyncMaterializer<E> wrapped = this.wrapped;
+        wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
+          private int count;
+
+          @Override
+          public void accept(final int size, final int index, final E element) {
+            try {
+              if (predicate.test(index, element)) {
+                ++count;
+              }
+              wrapped.materializeElement(index + 1, this);
+            } catch (final Exception e) {
+              if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+              }
+              if (isCancelled.get()) {
+                setState(new CancelledListAsyncMaterializer<Integer>(1), STATUS_CANCELLED);
+              } else {
+                setState(new FailedListAsyncMaterializer<Integer>(1, -1, e), STATUS_DONE);
+              }
+            }
+          }
+
+          @Override
+          public void complete(final int size) throws Exception {
+            setState(count);
+          }
+
+          @Override
+          public void error(final int index, @NotNull final Exception error) {
+            if (isCancelled.get()) {
+              setState(new CancelledListAsyncMaterializer<Integer>(1), STATUS_CANCELLED);
+            } else {
+              setState(new FailedListAsyncMaterializer<Integer>(1, -1, error), STATUS_DONE);
+            }
+          }
+        });
+
         wrapped.materializeSize(new AsyncConsumer<Integer>() {
           @Override
           public void accept(final Integer size) throws Exception {
@@ -219,7 +262,7 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
           }
 
           @Override
-          public void error(@NotNull final Exception error) {
+          public void error(@NotNull final Exception error) throws Exception {
             if (isCancelled.get()) {
               setState(new CancelledListAsyncMaterializer<Integer>(1), STATUS_CANCELLED);
             } else {
@@ -240,9 +283,9 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
       final ListAsyncMaterializer<Integer> state;
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = CountListAsyncMaterializer.this.state = newState;
+        state = CountWhereListAsyncMaterializer.this.state = newState;
       } else {
-        state = CountListAsyncMaterializer.this.state;
+        state = CountWhereListAsyncMaterializer.this.state;
       }
       for (final StateConsumer stateConsumer : stateConsumers) {
         stateConsumer.accept(state);

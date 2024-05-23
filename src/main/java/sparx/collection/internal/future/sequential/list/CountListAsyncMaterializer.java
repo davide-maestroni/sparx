@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection.internal.future.list;
+package sparx.collection.internal.future.sequential.list;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,11 +26,10 @@ import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.util.Require;
 import sparx.util.function.Function;
-import sparx.util.function.IndexedPredicate;
 
-public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolean> {
+public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Integer> {
 
-  private static final Logger LOGGER = Logger.getLogger(AllListAsyncMaterializer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(CountListAsyncMaterializer.class.getName());
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -38,14 +37,13 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
 
   private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
-  private ListAsyncMaterializer<Boolean> state;
+  private ListAsyncMaterializer<Integer> state;
 
-  public AllListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
+  public CountListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final AtomicBoolean isCancelled,
-      @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
+      @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"), Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
   }
 
@@ -77,12 +75,12 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
 
   @Override
   public void materializeElement(final int index,
-      @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
+      @NotNull final IndexedAsyncConsumer<Integer> consumer) {
     state.materializeElement(index, consumer);
   }
 
   @Override
-  public void materializeElements(@NotNull final AsyncConsumer<List<Boolean>> consumer) {
+  public void materializeElements(@NotNull final AsyncConsumer<List<Integer>> consumer) {
     state.materializeElements(consumer);
   }
 
@@ -92,7 +90,7 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   }
 
   @Override
-  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
+  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
     state.materializeOrdered(consumer);
   }
 
@@ -102,29 +100,26 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   }
 
   @Override
-  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
+  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
     state.materializeUnordered(consumer);
   }
 
   private interface StateConsumer {
 
-    void accept(@NotNull ListAsyncMaterializer<Boolean> state);
+    void accept(@NotNull ListAsyncMaterializer<Integer> state);
   }
 
-  private class ImmaterialState extends AbstractListAsyncMaterializer<Boolean> {
+  private class ImmaterialState extends AbstractListAsyncMaterializer<Integer> {
 
-    private final Function<List<Boolean>, List<Boolean>> decorateFunction;
+    private final Function<List<Integer>, List<Integer>> decorateFunction;
     private final AtomicBoolean isCancelled;
-    private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final AtomicBoolean isCancelled,
-        @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
+        @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
       this.isCancelled = isCancelled;
       this.decorateFunction = decorateFunction;
     }
@@ -147,7 +142,7 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
     @Override
     public void materializeCancel(final boolean mayInterruptIfRunning) {
       wrapped.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<Boolean>(1), STATUS_CANCELLED);
+      setState(new CancelledListAsyncMaterializer<Integer>(1), STATUS_CANCELLED);
     }
 
     @Override
@@ -155,7 +150,7 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
         @NotNull final AsyncConsumer<Boolean> consumer) {
       materialized(new StateConsumer() {
         @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
           state.materializeContains(element, consumer);
         }
       });
@@ -163,20 +158,20 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
 
     @Override
     public void materializeElement(final int index,
-        @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
+        @NotNull final IndexedAsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer() {
         @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
           state.materializeElement(index, consumer);
         }
       });
     }
 
     @Override
-    public void materializeElements(@NotNull final AsyncConsumer<List<Boolean>> consumer) {
+    public void materializeElements(@NotNull final AsyncConsumer<List<Integer>> consumer) {
       materialized(new StateConsumer() {
         @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
           state.materializeElements(consumer);
         }
       });
@@ -188,10 +183,10 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
     }
 
     @Override
-    public void materializeOrdered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
+    public void materializeOrdered(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer() {
         @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
           state.materializeOrdered(consumer);
         }
       });
@@ -203,10 +198,10 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
     }
 
     @Override
-    public void materializeUnordered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
+    public void materializeUnordered(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer() {
         @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
           state.materializeOrdered(consumer);
         }
       });
@@ -217,76 +212,37 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
         final ListAsyncMaterializer<E> wrapped = this.wrapped;
-        wrapped.materializeEmpty(new AsyncConsumer<Boolean>() {
+        wrapped.materializeSize(new AsyncConsumer<Integer>() {
           @Override
-          public void accept(final Boolean empty) throws Exception {
-            if (empty) {
-              setState(true);
-            } else {
-              wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
-                @Override
-                public void accept(final int size, final int index, final E element) {
-                  try {
-                    if (!predicate.test(index, element)) {
-                      setState(false);
-                    } else {
-                      wrapped.materializeElement(index + 1, this);
-                    }
-                  } catch (final Exception e) {
-                    if (e instanceof InterruptedException) {
-                      Thread.currentThread().interrupt();
-                    }
-                    if (isCancelled.get()) {
-                      setState(new CancelledListAsyncMaterializer<Boolean>(1), STATUS_CANCELLED);
-                    } else {
-                      setState(new FailedListAsyncMaterializer<Boolean>(1, index, e), STATUS_DONE);
-                    }
-                  }
-                }
-
-                @Override
-                public void complete(final int size) throws Exception {
-                  setState(true);
-                }
-
-                @Override
-                public void error(final int index, @NotNull final Exception error) {
-                  if (isCancelled.get()) {
-                    setState(new CancelledListAsyncMaterializer<Boolean>(1), STATUS_CANCELLED);
-                  } else {
-                    setState(new FailedListAsyncMaterializer<Boolean>(1, index, error),
-                        STATUS_DONE);
-                  }
-                }
-              });
-            }
+          public void accept(final Integer size) throws Exception {
+            setState(size);
           }
 
           @Override
           public void error(@NotNull final Exception error) {
             if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<Boolean>(1), STATUS_CANCELLED);
+              setState(new CancelledListAsyncMaterializer<Integer>(1), STATUS_CANCELLED);
             } else {
-              setState(new FailedListAsyncMaterializer<Boolean>(1, 0, error), STATUS_DONE);
+              setState(new FailedListAsyncMaterializer<Integer>(1, -1, error), STATUS_DONE);
             }
           }
         });
       }
     }
 
-    private void setState(final boolean allMatches) throws Exception {
-      setState(new ListToListAsyncMaterializer<Boolean>(
-          decorateFunction.apply(Collections.singletonList(allMatches))), STATUS_DONE);
+    private void setState(final int size) throws Exception {
+      setState(new ListToListAsyncMaterializer<Integer>(
+          decorateFunction.apply(Collections.singletonList(size))), STATUS_DONE);
     }
 
-    private void setState(@NotNull final ListAsyncMaterializer<Boolean> newState,
+    private void setState(@NotNull final ListAsyncMaterializer<Integer> newState,
         final int statusCode) {
-      final ListAsyncMaterializer<Boolean> state;
+      final ListAsyncMaterializer<Integer> state;
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = AllListAsyncMaterializer.this.state = newState;
+        state = CountListAsyncMaterializer.this.state = newState;
       } else {
-        state = AllListAsyncMaterializer.this.state;
+        state = CountListAsyncMaterializer.this.state;
       }
       for (final StateConsumer stateConsumer : stateConsumers) {
         stateConsumer.accept(state);

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection.internal.future.list;
+package sparx.collection.internal.future.sequential.list;
 
 import java.util.Arrays;
 import java.util.HashMap;

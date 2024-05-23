@@ -13,28 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection.internal.future.list;
+package sparx.collection.internal.future.sequential.list;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 
-public class EmptyListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+public class FailedListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
-  private static final EmptyListAsyncMaterializer<?> INSTANCE = new EmptyListAsyncMaterializer<Object>();
-  private static final Logger LOGGER = Logger.getLogger(EmptyListAsyncMaterializer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(
+      FailedListAsyncMaterializer.class.getName());
 
-  @SuppressWarnings("unchecked")
-  public static @NotNull <E> EmptyListAsyncMaterializer<E> instance() {
-    return (EmptyListAsyncMaterializer<E>) INSTANCE;
+  private final Exception error;
+  private final int index;
+  private final int size;
+
+  public FailedListAsyncMaterializer(final int size, final int index,
+      @NotNull final Exception error) {
+    this.size = size;
+    this.index = index;
+    this.error = error;
   }
 
   @Override
   public boolean knownEmpty() {
-    return true;
+    return size == 0;
   }
 
   @Override
@@ -43,52 +48,48 @@ public class EmptyListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
   }
 
   @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
-  }
-
-  @Override
   public boolean isDone() {
     return true;
   }
 
   @Override
-  public void materializeContains(final Object element,
-      @NotNull final AsyncConsumer<Boolean> consumer) {
-    safeConsume(consumer, false, LOGGER);
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
   }
 
   @Override
-  public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
-    if (index < 0) {
-      safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-          LOGGER);
-    } else {
-      safeConsumeComplete(consumer, 0, LOGGER);
-    }
+  public void materializeContains(final Object element,
+      @NotNull final AsyncConsumer<Boolean> consumer) {
+    safeConsumeError(consumer, error, LOGGER);
+  }
+
+  @Override
+  public void materializeElement(final int ignored,
+      @NotNull final IndexedAsyncConsumer<E> consumer) {
+    safeConsumeError(consumer, index, error, LOGGER);
   }
 
   @Override
   public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-    safeConsume(consumer, Collections.<E>emptyList(), LOGGER);
+    safeConsumeError(consumer, error, LOGGER);
   }
 
   @Override
   public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    safeConsume(consumer, true, LOGGER);
+    safeConsumeError(consumer, error, LOGGER);
   }
 
   @Override
   public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    safeConsumeComplete(consumer, 0, LOGGER);
-  }
-
-  @Override
-  public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    safeConsume(consumer, 0, LOGGER);
+    safeConsumeError(consumer, index, error, LOGGER);
   }
 
   @Override
   public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    materializeOrdered(consumer);
+    safeConsumeError(consumer, index, error, LOGGER);
+  }
+
+  @Override
+  public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
+    safeConsumeError(consumer, error, LOGGER);
   }
 }
