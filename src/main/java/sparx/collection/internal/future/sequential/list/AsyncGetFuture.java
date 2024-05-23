@@ -28,7 +28,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 
-public class AsyncRunFuture<E> implements Future<Void> {
+public class AsyncGetFuture<E> implements Future<Void> {
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -40,7 +40,7 @@ public class AsyncRunFuture<E> implements Future<Void> {
 
   private Exception error;
 
-  public AsyncRunFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
+  public AsyncGetFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final ListAsyncMaterializer<E> materializer) {
     this.context = context;
     this.taskID = Require.notNull(taskID, "taskID");
@@ -77,7 +77,7 @@ public class AsyncRunFuture<E> implements Future<Void> {
                 status.notifyAll();
                 throw new CancellationException();
               }
-              AsyncRunFuture.this.error = error;
+              AsyncGetFuture.this.error = error;
               status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
               status.notifyAll();
             }
