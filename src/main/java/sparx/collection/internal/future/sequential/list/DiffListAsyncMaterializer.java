@@ -118,6 +118,8 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     private final AtomicBoolean isCancelled;
     private final ListAsyncMaterializer<E> wrapped;
 
+    private int nextIndex;
+
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
         @NotNull final AtomicBoolean isCancelled,
@@ -363,9 +365,10 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
         }
         indexConsumers.add(consumer);
         if (needsRun) {
-          wrapped.materializeElement(elements.size(), new IndexedAsyncConsumer<E>() {
+          wrapped.materializeElement(nextIndex, new IndexedAsyncConsumer<E>() {
             @Override
             public void accept(final int size, final int index, final E element) {
+              nextIndex = index + 1;
               final IndexedAsyncConsumer<E> elementConsumer = this;
               elementsMaterializer.materializeContains(element, new AsyncConsumer<Boolean>() {
                 @Override
@@ -376,7 +379,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
                     consumeElement(wrappedIndex, element);
                   }
                   if (!elementsConsumers.isEmpty()) {
-                    wrapped.materializeElement(index + 1, elementConsumer);
+                    wrapped.materializeElement(nextIndex, elementConsumer);
                   }
                 }
 
