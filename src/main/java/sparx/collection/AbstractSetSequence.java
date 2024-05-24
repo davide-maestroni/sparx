@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.lazy.list.ListMaterializer;
 import sparx.util.Require;
 
-public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements SetSequence<E> {
+public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements Sequence<E> {
 
   private final ListMaterializer<E> materializer;
 

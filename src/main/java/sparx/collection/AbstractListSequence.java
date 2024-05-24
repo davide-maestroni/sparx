@@ -19,7 +19,7 @@ import java.util.AbstractList;
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 
-public abstract class AbstractListSequence<E> extends AbstractList<E> implements ListSequence<E> {
+public abstract class AbstractListSequence<E> extends AbstractList<E> implements Sequence<E> {
 
   @Override
   public boolean add(final E e) {

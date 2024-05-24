@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -31,8 +33,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.AbstractListSequence;
-import sparx.collection.IteratorSequence;
-import sparx.collection.ListSequence;
 import sparx.collection.Sequence;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
@@ -216,7 +216,7 @@ import sparx.util.function.Supplier;
 // TODO: Stream <= Iterator && <= ListIterator
 // TODO: equals, clone, Serializable
 
-public class Sparx {
+public class Sparx extends SparxItf {
 
   private static final IndexedPredicate<?> EQUALS_NULL = new IndexedPredicate<Object>() {
     @Override
@@ -357,7 +357,8 @@ public class Sparx {
     private future() {
     }
 
-    public static class List<E> extends AbstractListSequence<E> implements Future<lazy.List<E>> {
+    public static class List<E> extends AbstractListSequence<E> implements Future<lazy.List<E>>,
+        itf.List<E> {
 
       private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> APPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {
         @Override
@@ -1057,12 +1058,12 @@ public class Sparx {
       }
 
       @Override
-      public @NotNull List<? extends ListSequence<E>> group(int maxSize) {
+      public @NotNull List<? extends List<E>> group(int maxSize) {
         return null;
       }
 
       @Override
-      public @NotNull List<? extends ListSequence<E>> group(int size, E padding) {
+      public @NotNull List<? extends List<E>> group(int size, E padding) {
         return null;
       }
 
@@ -1229,6 +1230,12 @@ public class Sparx {
       }
 
       @Override
+      public @NotNull lazy.Iterator<E> iterator() {
+        // TODO...
+        return lazy.Iterator.wrap(this);
+      }
+
+      @Override
       public E last() {
         final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(-1);
         context.scheduleAfter(new Task() {
@@ -1272,6 +1279,18 @@ public class Sparx {
       public int lastIndexOf(final Object o) {
         // TODO: ????
         return -1;
+      }
+
+      @Override
+      public @NotNull lazy.ListIterator<E> listIterator() {
+        // TODO...
+        return lazy.ListIterator.wrap(this);
+      }
+
+      @Override
+      public @NotNull lazy.ListIterator<E> listIterator(final int index) {
+        // TODO...
+        return lazy.ListIterator.wrap(this);
       }
 
       @Override
@@ -1739,7 +1758,7 @@ public class Sparx {
     private lazy() {
     }
 
-    public static class Iterator<E> implements IteratorSequence<E> {
+    public static class Iterator<E> implements itf.Iterator<E> {
 
       private static final Iterator<?> EMPTY_ITERATOR = new Iterator<Object>(
           EmptyIteratorMaterializer.instance());
@@ -3606,7 +3625,7 @@ public class Sparx {
       }
     }
 
-    public static class List<E> extends AbstractListSequence<E> {
+    public static class List<E> extends AbstractListSequence<E> implements itf.List<E> {
 
       private static final List<?> EMPTY_LIST = new List<Object>(EmptyListMaterializer.instance());
       private static final List<Boolean> FALSE_LIST = new List<Boolean>(
@@ -5627,7 +5646,7 @@ public class Sparx {
       }
     }
 
-    public static class ListIterator<E> implements Sequence<E>, java.util.ListIterator<E> {
+    public static class ListIterator<E> implements itf.ListIterator<E> {
 
       private static final ListIterator<?> EMPTY_ITERATOR = new ListIterator<Object>(List.of(),
           List.of());
@@ -5870,10 +5889,12 @@ public class Sparx {
         return null;
       }
 
+      @Override
       public @NotNull ListIterator<E> append(final E element) {
         return new ListIterator<E>(left, right.append(element), pos);
       }
 
+      @Override
       public @NotNull ListIterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
         return new ListIterator<E>(left, right.appendAll(elements), pos);
       }
@@ -6395,6 +6416,7 @@ public class Sparx {
             currentRight().includesSlice(elements));
       }
 
+      @Override
       public @NotNull ListIterator<E> insert(final E element) {
         final int pos = this.pos;
         if (pos >= 0) {
@@ -6403,7 +6425,21 @@ public class Sparx {
         return new ListIterator<E>(left.insertAfter(nextIndex(), element), right, pos);
       }
 
-      public @NotNull ListIterator<E> insertAll(@NotNull final Iterable<E> elements) {
+      @Override
+      public @NotNull ListIterator<E> insertAfter(final int numElements, final E element) {
+        if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
+          return this;
+        }
+        final int pos = this.pos;
+        if (pos >= 0) {
+          return new ListIterator<E>(left,
+              right.insertAfter(SizeOverflowException.safeCast((long) numElements + pos), element));
+        }
+        return new ListIterator<E>(currentLeft(), currentRight().insertAfter(numElements, element));
+      }
+
+      @Override
+      public @NotNull ListIterator<E> insertAll(@NotNull final Iterable<? extends E> elements) {
         final int pos = this.pos;
         if (pos >= 0) {
           return new ListIterator<E>(left, right.insertAllAfter(pos, elements), pos);
@@ -6411,6 +6447,7 @@ public class Sparx {
         return new ListIterator<E>(left.insertAllAfter(nextIndex(), elements), right, pos);
       }
 
+      @Override
       public @NotNull ListIterator<E> insertAllAfter(final int numElements,
           @NotNull final Iterable<? extends E> elements) {
         if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
@@ -6426,27 +6463,14 @@ public class Sparx {
             currentRight().insertAllAfter(numElements, elements));
       }
 
-      public @NotNull ListIterator<E> insertAfter(final int numElements, final E element) {
-        if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
-          return this;
-        }
-        final int pos = this.pos;
-        if (pos >= 0) {
-          return new ListIterator<E>(left,
-              right.insertAfter(SizeOverflowException.safeCast((long) numElements + pos), element));
-        }
-        return new ListIterator<E>(currentLeft(), currentRight().insertAfter(numElements, element));
-      }
-
       @Override
       public @NotNull ListIterator<E> intersect(@NotNull final Iterable<?> elements) {
         return new ListIterator<E>(currentLeft().intersect(elements),
             currentRight().intersect(elements));
       }
 
-      @NotNull
       @Override
-      public Iterator<E> iterator() {
+      public @NotNull Iterator<E> iterator() {
         if (atEnd()) {
           return Iterator.of();
         }
@@ -6569,6 +6593,7 @@ public class Sparx {
         return new ListIterator<E>(List.<E>of(), currentRight().min(comparator));
       }
 
+      @Override
       public @NotNull ListIterator<E> moveBy(final int maxElements) {
         if (maxElements == 0) {
           return this;
@@ -6621,6 +6646,7 @@ public class Sparx {
         return new ListIterator<E>(newLeft, newRight);
       }
 
+      @Override
       public @NotNull ListIterator<E> moveTo(final int index) {
         Require.notNegative(index, "index");
         int knownSize = left.materializer.knownSize();
@@ -7006,6 +7032,7 @@ public class Sparx {
         return new ListIterator<E>(currentLeft(), currentRight().resizeTo(numElements, padding));
       }
 
+      @Override
       public @NotNull ListIterator<E> reverse() {
         if (atEnd()) {
           return new ListIterator<E>(left.appendAll(right).reverse(), List.<E>of());
