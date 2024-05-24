@@ -44,6 +44,7 @@ import sparx.collection.internal.future.sequential.list.AsyncGetFuture;
 import sparx.collection.internal.future.sequential.list.AsyncWhileFuture;
 import sparx.collection.internal.future.sequential.list.CountListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.CountWhereListAsyncMaterializer;
+import sparx.collection.internal.future.sequential.list.DropListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ElementToListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.EmptyListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListAsyncMaterializer;
@@ -377,6 +378,12 @@ public class Sparx {
           return lazy.List.wrap(param);
         }
       };
+      private static final BinaryFunction<? extends java.util.List<?>, Integer, ? extends java.util.List<?>> DROP_FUNCTION = new BinaryFunction<java.util.List<?>, Integer, java.util.List<?>>() {
+        @Override
+        public java.util.List<?> apply(java.util.List<?> firstParam, Integer secondParam) {
+          return lazy.List.wrap(firstParam).drop(secondParam);
+        }
+      };
       private static final ElementToListAsyncMaterializer<Boolean> FALSE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
           lazy.List.of(false));
       private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
@@ -413,6 +420,11 @@ public class Sparx {
       @SuppressWarnings("unchecked")
       private static @NotNull <E> Function<java.util.List<E>, java.util.List<E>> decorateFunction() {
         return (Function<java.util.List<E>, java.util.List<E>>) DECORATE_FUNCTION;
+      }
+
+      @SuppressWarnings("unchecked")
+      private static @NotNull <E> BinaryFunction<java.util.List<E>, Integer, java.util.List<E>> dropFunction() {
+        return (BinaryFunction<java.util.List<E>, Integer, java.util.List<E>>) DROP_FUNCTION;
       }
 
       @SuppressWarnings("unchecked")
@@ -686,10 +698,14 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> drop(final int maxElements) {
-        if (maxElements <= 0) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (maxElements <= 0 || materializer.knownEmpty()) {
           return this;
         }
-        return null;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        return new List<E>(context, isCancelled,
+            new DropListAsyncMaterializer<E>(materializer, maxElements, isCancelled,
+                List.<E>dropFunction()));
       }
 
       @Override

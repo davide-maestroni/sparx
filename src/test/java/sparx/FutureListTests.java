@@ -327,7 +327,7 @@ public class FutureListTests {
     assertEquals(List.of(1, 2), list);
   }
 
-  //  @Test
+  @Test
   public void drop() {
     var l = List.<Integer>of().toFuture(context).drop(1);
     assertTrue(l.isEmpty());
@@ -373,5 +373,21 @@ public class FutureListTests {
     assertTrue(l.notEmpty());
     assertEquals(3, l.size());
     assertEquals(List.of(1, null, 3), l);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      }).drop(1);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
   }
 }

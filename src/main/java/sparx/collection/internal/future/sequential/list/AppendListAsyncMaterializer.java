@@ -156,7 +156,7 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
     @Override
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      final E appended = ImmaterialState.this.element;
+      final E appended = this.element;
       if (element == appended || (element != null && element.equals(appended))) {
         safeConsume(consumer, true, LOGGER);
       } else {
@@ -203,7 +203,7 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
     @Override
     public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-      final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = ImmaterialState.this.elementsConsumers;
+      final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
         wrapped.materializeElements(new AsyncConsumer<List<E>>() {
@@ -211,9 +211,9 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
           public void accept(final List<E> elements) {
             final int knownSize = safeSize(wrappedSize = elements.size());
             try {
-              setState(new ListToListAsyncMaterializer<E>(appendFunction.apply(elements, element)),
-                  STATUS_DONE);
-              consumeElements(elements);
+              final List<E> materialized = appendFunction.apply(elements, element);
+              setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+              consumeElements(materialized);
             } catch (final Exception e) {
               if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();

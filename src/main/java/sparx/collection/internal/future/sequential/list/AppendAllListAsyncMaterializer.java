@@ -230,7 +230,7 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-      final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = ImmaterialState.this.elementsConsumers;
+      final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
         wrapped.materializeElements(new AsyncConsumer<List<E>>() {
@@ -243,9 +243,9 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
               public void accept(final List<E> elements) {
                 final int knownSize = safeSize(wrappedSize, elementsSize = elements.size());
                 try {
-                  setState(new ListToListAsyncMaterializer<E>(
-                      appendFunction.apply(wrappedElements, elements)), STATUS_DONE);
-                  consumeElements(elements);
+                  final List<E> materialized = appendFunction.apply(wrappedElements, elements);
+                  setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+                  consumeElements(materialized);
                 } catch (final Exception e) {
                   if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
@@ -350,10 +350,10 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      wrapped.materializeSize(new AsyncConsumer<Integer>() {
-        @Override
-        public void accept(final Integer size) {
-          wrappedSize = size;
+      if (wrappedSize >= 0) {
+        if (elementsSize >= 0) {
+          safeConsume(consumer, safeSize(wrappedSize, elementsSize), LOGGER);
+        } else {
           elementsMaterializer.materializeSize(new AsyncConsumer<Integer>() {
             @Override
             public void accept(final Integer size) throws Exception {
@@ -366,12 +366,46 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
             }
           });
         }
+      } else if (elementsSize >= 0) {
+        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+          @Override
+          public void accept(final Integer size) throws Exception {
+            consumer.accept(safeSize(wrappedSize = size, elementsSize));
+          }
 
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      } else {
+        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+          @Override
+          public void accept(final Integer size) throws Exception {
+            wrappedSize = size;
+            if (elementsSize >= 0) {
+              consumer.accept(safeSize(wrappedSize, elementsSize));
+            } else {
+              elementsMaterializer.materializeSize(new AsyncConsumer<Integer>() {
+                @Override
+                public void accept(final Integer size) throws Exception {
+                  consumer.accept(safeSize(wrappedSize, elementsSize = size));
+                }
+
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  consumer.error(error);
+                }
+              });
+            }
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override

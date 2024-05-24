@@ -214,7 +214,7 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
     }
 
     private void materialized(@NotNull final StateConsumer consumer) {
-      final ArrayList<StateConsumer> stateConsumers = ImmaterialState.this.stateConsumers;
+      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
         final ListAsyncMaterializer<E> wrapped = this.wrapped;
