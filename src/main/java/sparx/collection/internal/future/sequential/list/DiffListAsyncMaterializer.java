@@ -20,34 +20,36 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.util.Require;
+import sparx.util.function.Function;
 
 public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(DiffListAsyncMaterializer.class.getName());
 
-  private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
-      2);
-  private final ListAsyncMaterializer<?> elementsMaterializer;
-  private final AtomicBoolean isMaterialized = new AtomicBoolean(false);
-  private final ListAsyncMaterializer<E> wrapped;
+  private static final int STATUS_CANCELLED = 2;
+  private static final int STATUS_DONE = 1;
+  private static final int STATUS_RUNNING = 0;
+
+  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
   private ListAsyncMaterializer<E> state;
 
   public DiffListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final ListAsyncMaterializer<?> elementsMaterializer) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.elementsMaterializer = Require.notNull(elementsMaterializer, "elementsMaterializer");
-  }
-
-  @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
-//    return wrapped.materializeCancel(mayInterruptIfRunning);
+      @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
+      @NotNull final AtomicBoolean isCancelled,
+      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+        Require.notNull(elementsMaterializer, "elementsMaterializer"),
+        Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(decorateFunction, "decorateFunction"));
   }
 
   @Override
@@ -57,122 +59,73 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   @Override
   public boolean isCancelled() {
-    return wrapped.isCancelled();
+    return status.get() == STATUS_CANCELLED;
   }
 
   @Override
   public boolean isDone() {
-    return wrapped.isCancelled() || isMaterialized.get();
+    return status.get() != STATUS_RUNNING;
+  }
+
+  @Override
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
+    state.materializeCancel(mayInterruptIfRunning);
   }
 
   @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
-    materialized(new StateConsumer<E>() {
-      @Override
-      public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-        state.materializeContains(element, consumer);
-      }
-    });
+    state.materializeContains(element, consumer);
   }
 
   @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
-    materialized(new StateConsumer<E>() {
-      @Override
-      public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-        state.materializeElement(index, consumer);
-      }
-    });
+    state.materializeElement(index, consumer);
   }
 
   @Override
   public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-    materialized(new StateConsumer<E>() {
-      @Override
-      public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-        state.materializeElements(consumer);
-      }
-    });
+    state.materializeElements(consumer);
   }
 
   @Override
   public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    materialized(new StateConsumer<E>() {
-      @Override
-      public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-        state.materializeEmpty(consumer);
-      }
-    });
+    state.materializeEmpty(consumer);
   }
 
   @Override
   public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    materialized(new StateConsumer<E>() {
-      @Override
-      public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-        state.materializeOrdered(consumer);
-      }
-    });
+    state.materializeOrdered(consumer);
   }
 
   @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    materialized(new StateConsumer<E>() {
-      @Override
-      public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-        state.materializeSize(consumer);
-      }
-    });
+    state.materializeSize(consumer);
   }
 
   @Override
   public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    materialized(new StateConsumer<E>() {
-      @Override
-      public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-        state.materializeUnordered(consumer);
-      }
-    });
-  }
-
-  private void materialized(@NotNull final StateConsumer<E> consumer) {
-    final ListAsyncMaterializer<E> wrapped = this.wrapped;
-    wrapped.materializeEmpty(new AsyncConsumer<Boolean>() {
-      @Override
-      public void accept(final Boolean empty) {
-        if (state != null) {
-          consumer.accept(state);
-        } else if (empty) {
-          isMaterialized.set(true);
-          consumer.accept(state = wrapped);
-        } else {
-          consumer.accept(state = new ImmaterialState());
-        }
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) {
-        isMaterialized.set(true);
-        consumer.accept(state = new FailedListAsyncMaterializer<E>(-1, -1, error));
-      }
-    });
-  }
-
-  private interface StateConsumer<E> {
-
-    void accept(@NotNull ListAsyncMaterializer<E> state);
+    state.materializeUnordered(consumer);
   }
 
   private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
 
-    private final ElementsCache<E> elementsCache = new ElementsCache<E>(-1);
+    private final Function<List<E>, List<E>> decorateFunction;
+    private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
+        2);
+    private final ArrayList<E> elements = new ArrayList<E>();
+    private final ListAsyncMaterializer<?> elementsMaterializer;
+    private final AtomicBoolean isCancelled;
+    private final ListAsyncMaterializer<E> wrapped;
 
-    private int nextIndex;
-
-    @Override
-    public void materializeCancel(final boolean mayInterruptIfRunning) {
-//      return false;
+    public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
+        @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
+        @NotNull final AtomicBoolean isCancelled,
+        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      this.wrapped = wrapped;
+      this.elementsMaterializer = elementsMaterializer;
+      this.isCancelled = isCancelled;
+      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -182,12 +135,19 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
     @Override
     public boolean isCancelled() {
-      return wrapped.isCancelled() || elementsMaterializer.isCancelled();
+      return status.get() == STATUS_CANCELLED;
     }
 
     @Override
     public boolean isDone() {
-      return isCancelled() || isMaterialized.get();
+      return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public void materializeCancel(final boolean mayInterruptIfRunning) {
+      wrapped.materializeCancel(mayInterruptIfRunning);
+      elementsMaterializer.materializeCancel(mayInterruptIfRunning);
+      setState(new CancelledListAsyncMaterializer<E>(-1), STATUS_CANCELLED);
     }
 
     @Override
@@ -199,7 +159,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
           if (contains) {
             consumer.accept(false);
           } else {
-            elementsMaterializer.materializeContains(element, new AsyncConsumer<Boolean>() {
+            wrapped.materializeContains(element, new AsyncConsumer<Boolean>() {
               @Override
               public void accept(final Boolean contains) throws Exception {
                 consumer.accept(contains);
@@ -223,32 +183,36 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
-      final ElementsCache<E> elementsCache = this.elementsCache;
-      if (elementsCache.hasElement(index)) {
-        safeConsume(consumer, elementsCache.knownSize(), index, elementsCache.getElement(index),
+      if (index < 0) {
+        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
             LOGGER);
       } else {
-        final int originalIndex = index;
-        materializeUntil(index, new IndexedAsyncConsumer<E>() {
-          @Override
-          public void accept(final int size, final int index, final E param) throws Exception {
-            if (originalIndex == index) {
-              consumer.accept(size, index, param);
+        final ArrayList<E> elements = this.elements;
+        if (elements.size() > index) {
+          safeConsume(consumer, -1, index, elements.get(index), LOGGER);
+        } else {
+          final int originalIndex = index;
+          materializeUntil(index, new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E element) throws Exception {
+              if (originalIndex == index) {
+                consumer.accept(size, index, element);
+              }
             }
-          }
 
-          @Override
-          public void complete(final int size) throws Exception {
-            if (originalIndex >= size) {
-              consumer.complete(size);
+            @Override
+            public void complete(final int size) throws Exception {
+              if (originalIndex >= size) {
+                consumer.complete(size);
+              }
             }
-          }
 
-          @Override
-          public void error(final int index, @NotNull final Exception error) throws Exception {
-            consumer.error(index, error);
-          }
-        });
+            @Override
+            public void error(final int index, @NotNull final Exception error) throws Exception {
+              consumer.error(index, error);
+            }
+          });
+        }
       }
     }
 
@@ -256,12 +220,12 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
       materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
         @Override
-        public void accept(final int size, final int index, final E param) {
+        public void accept(final int size, final int index, final E element) {
         }
 
         @Override
-        public void complete(final int size) throws Exception {
-          consumer.accept(elementsCache.getElements());
+        public void complete(final int size) {
+          state.materializeElements(consumer);
         }
 
         @Override
@@ -320,7 +284,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     }
 
     private void consumeComplete(final int size) {
-      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = DiffListAsyncMaterializer.this.elementsConsumers;
+      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
         for (final IndexedAsyncConsumer<E> consumer : consumers) {
           safeConsumeComplete(consumer, size, LOGGER);
@@ -330,7 +294,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     }
 
     private void consumeElement(final int index, final E element) {
-      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = DiffListAsyncMaterializer.this.elementsConsumers;
+      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
       final Iterator<Entry<Integer, ArrayList<IndexedAsyncConsumer<E>>>> entries = elementsConsumers.entrySet()
           .iterator();
       while (entries.hasNext()) {
@@ -357,35 +321,41 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       }
     }
 
-    private void consumeError(final int index, @NotNull final Exception error) {
-      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = DiffListAsyncMaterializer.this.elementsConsumers;
+    private void consumeError(@NotNull final Exception error) {
+      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
         for (final IndexedAsyncConsumer<E> consumer : consumers) {
-          safeConsumeError(consumer, index, error, LOGGER);
+          safeConsumeError(consumer, -1, error, LOGGER);
         }
       }
       elementsConsumers.clear();
     }
 
+    private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
+      if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
+        state = newState;
+      }
+    }
+
     private void materializeUntil(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
-      final ElementsCache<E> elementsCache = this.elementsCache;
-      if (elementsCache.hasElement(index)) {
+      final ArrayList<E> elements = this.elements;
+      if (elements.size() > index) {
         final int size = index + 1;
         for (int i = 0; i < size; ++i) {
-          if (!safeConsume(consumer, -1, i, elementsCache.getElement(i), LOGGER)) {
+          if (!safeConsume(consumer, -1, i, elements.get(i), LOGGER)) {
             return;
           }
         }
         safeConsumeComplete(consumer, size, LOGGER);
       } else {
-        final int size = elementsCache.numElements();
+        final int size = elements.size();
         for (int i = 0; i < size; ++i) {
-          if (!safeConsume(consumer, -1, i, elementsCache.getElement(i), LOGGER)) {
+          if (!safeConsume(consumer, -1, i, elements.get(i), LOGGER)) {
             return;
           }
         }
-        final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = DiffListAsyncMaterializer.this.elementsConsumers;
+        final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
         final boolean needsRun = elementsConsumers.isEmpty();
         ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
         if (indexConsumers == null) {
@@ -393,60 +363,65 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
         }
         indexConsumers.add(consumer);
         if (needsRun) {
-          final int originalIndex = index;
-          wrapped.materializeElement(nextIndex, new IndexedAsyncConsumer<E>() {
+          wrapped.materializeElement(elements.size(), new IndexedAsyncConsumer<E>() {
             @Override
             public void accept(final int size, final int index, final E element) {
               final IndexedAsyncConsumer<E> elementConsumer = this;
               elementsMaterializer.materializeContains(element, new AsyncConsumer<Boolean>() {
                 @Override
                 public void accept(final Boolean contains) {
-                  materialized(new StateConsumer<E>() {
-                    @Override
-                    public void accept(@NotNull final ListAsyncMaterializer<E> ignored) {
-                      ++nextIndex;
-                      if (!contains) {
-                        final int index = elementsCache.numElements();
-                        elementsCache.addElement(-1, index, element);
-                        consumeElement(index, element);
-                      }
-                      if (nextIndex < originalIndex) {
-                        wrapped.materializeElement(nextIndex, elementConsumer);
-                      } else {
-                        consumeComplete(nextIndex);
-                      }
-                    }
-                  });
+                  if (!contains) {
+                    final int wrappedIndex = elements.size();
+                    elements.add(element);
+                    consumeElement(wrappedIndex, element);
+                  }
+                  if (!elementsConsumers.isEmpty()) {
+                    wrapped.materializeElement(index + 1, elementConsumer);
+                  }
                 }
 
                 @Override
                 public void error(@NotNull final Exception error) {
-                  materialized(new StateConsumer<E>() {
-                    @Override
-                    public void accept(@NotNull final ListAsyncMaterializer<E> ignored) {
-                      isMaterialized.set(true);
-                      final int index = elementsCache.numElements() - 1;
-                      state = new FailedListAsyncMaterializer<E>(-1, index, error);
-                      consumeError(index, error);
-                    }
-                  });
+                  if (isCancelled.get()) {
+                    setState(new CancelledListAsyncMaterializer<E>(-1), STATUS_CANCELLED);
+                    consumeError(new CancellationException());
+                  } else {
+                    setState(new FailedListAsyncMaterializer<E>(-1, -1, error), STATUS_DONE);
+                    consumeError(error);
+                  }
                 }
               });
             }
 
             @Override
             public void complete(final int size) {
-              isMaterialized.set(true);
-              final ElementsCache<E> elementsCache = ImmaterialState.this.elementsCache;
-              state = new ListToListAsyncMaterializer<E>(elementsCache.getElements());
-              consumeComplete(elementsCache.numElements());
+              try {
+                final List<E> materialized = decorateFunction.apply(elements);
+                setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+                consumeComplete(elements.size());
+              } catch (final Exception e) {
+                if (e instanceof InterruptedException) {
+                  Thread.currentThread().interrupt();
+                }
+                if (isCancelled.get()) {
+                  setState(new CancelledListAsyncMaterializer<E>(-1), STATUS_CANCELLED);
+                  consumeError(new CancellationException());
+                } else {
+                  setState(new FailedListAsyncMaterializer<E>(-1, -1, e), STATUS_DONE);
+                  consumeError(e);
+                }
+              }
             }
 
             @Override
-            public void error(final int ignored, @NotNull final Exception error) {
-              final int index = elementsCache.numElements() - 1;
-              state = new FailedListAsyncMaterializer<E>(-1, index, error);
-              consumeError(index, error);
+            public void error(final int index, @NotNull final Exception error) {
+              if (isCancelled.get()) {
+                setState(new CancelledListAsyncMaterializer<E>(-1), STATUS_CANCELLED);
+                consumeError(new CancellationException());
+              } else {
+                setState(new FailedListAsyncMaterializer<E>(-1, -1, error), STATUS_DONE);
+                consumeError(error);
+              }
             }
           });
         }

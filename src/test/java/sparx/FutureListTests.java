@@ -292,7 +292,7 @@ public class FutureListTests {
     }
   }
 
-  //  @Test
+  @Test
   public void diff() {
     assertEquals(List.of(2, 4), List.of(1, 2, null, 4).toFuture(context).diff(List.of(1, null)));
     assertEquals(List.of(2, null), List.of(1, 2, null, 4).toFuture(context).diff(List.of(1, 4)));
@@ -305,6 +305,22 @@ public class FutureListTests {
 
     assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).toFuture(context).diff(List.of()));
     assertEquals(List.of(), List.of().toFuture(context).diff(List.of(1, 2, null, 4)));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      }).diff(List.of(false, null));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
   }
 
   @Test

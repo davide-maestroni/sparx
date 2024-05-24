@@ -159,12 +159,17 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
     @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Integer> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
-          state.materializeElement(index, consumer);
-        }
-      });
+      if (index < 0) {
+        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
+            LOGGER);
+      } else {
+        materialized(new StateConsumer() {
+          @Override
+          public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
+            state.materializeElement(index, consumer);
+          }
+        });
+      }
     }
 
     @Override

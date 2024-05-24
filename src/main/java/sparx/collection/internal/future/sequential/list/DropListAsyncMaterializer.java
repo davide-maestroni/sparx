@@ -201,24 +201,29 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
-      final int wrappedIndex = safeIndex(index);
-      wrapped.materializeElement(wrappedIndex, new IndexedAsyncConsumer<E>() {
-        @Override
-        public void accept(final int size, final int index, final E element) throws Exception {
-          consumer.accept(safeSize(wrappedSize = Math.max(wrappedSize, size)), wrappedIndex,
-              element);
-        }
+      if (index < 0) {
+        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
+            LOGGER);
+      } else {
+        final int originalIndex = index;
+        wrapped.materializeElement(safeIndex(index), new IndexedAsyncConsumer<E>() {
+          @Override
+          public void accept(final int size, final int index, final E element) throws Exception {
+            consumer.accept(safeSize(wrappedSize = Math.max(wrappedSize, size)), originalIndex,
+                element);
+          }
 
-        @Override
-        public void complete(final int size) throws Exception {
-          consumer.complete(safeSize(wrappedSize = size));
-        }
+          @Override
+          public void complete(final int size) throws Exception {
+            consumer.complete(safeSize(wrappedSize = size));
+          }
 
-        @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
-          consumer.error(wrappedIndex, error);
-        }
-      });
+          @Override
+          public void error(final int index, @NotNull final Exception error) throws Exception {
+            consumer.error(originalIndex, error);
+          }
+        });
+      }
     }
 
     @Override

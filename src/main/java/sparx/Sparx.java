@@ -44,6 +44,7 @@ import sparx.collection.internal.future.sequential.list.AsyncGetFuture;
 import sparx.collection.internal.future.sequential.list.AsyncWhileFuture;
 import sparx.collection.internal.future.sequential.list.CountListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.CountWhereListAsyncMaterializer;
+import sparx.collection.internal.future.sequential.list.DiffListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.DropListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ElementToListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.EmptyListAsyncMaterializer;
@@ -362,26 +363,26 @@ public class Sparx {
         @Override
         public java.util.List<?> apply(final java.util.List<?> firstParam,
             final java.util.List<?> secondParam) {
-          return lazy.List.wrap(firstParam).appendAll(secondParam);
+          return lazy.List.wrap(firstParam).appendAll(secondParam).materialized();
         }
       };
       private static final BinaryFunction<? extends java.util.List<?>, ?, ? extends java.util.List<?>> APPEND_FUNCTION = new BinaryFunction<java.util.List<?>, Object, java.util.List<?>>() {
         @Override
         public java.util.List<?> apply(final java.util.List<?> firstParam,
             final Object secondParam) {
-          return lazy.List.wrap(firstParam).append(secondParam);
+          return lazy.List.wrap(firstParam).append(secondParam).materialized();
         }
       };
       private static final Function<? extends java.util.List<?>, ? extends java.util.List<?>> DECORATE_FUNCTION = new Function<java.util.List<?>, java.util.List<?>>() {
         @Override
         public java.util.List<?> apply(java.util.List<?> param) {
-          return lazy.List.wrap(param);
+          return lazy.List.wrap(param).materialized();
         }
       };
       private static final BinaryFunction<? extends java.util.List<?>, Integer, ? extends java.util.List<?>> DROP_FUNCTION = new BinaryFunction<java.util.List<?>, Integer, java.util.List<?>>() {
         @Override
         public java.util.List<?> apply(java.util.List<?> firstParam, Integer secondParam) {
-          return lazy.List.wrap(firstParam).drop(secondParam);
+          return lazy.List.wrap(firstParam).drop(secondParam).materialized();
         }
       };
       private static final ElementToListAsyncMaterializer<Boolean> FALSE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
@@ -440,8 +441,10 @@ public class Sparx {
         }
         if (elements instanceof lazy.List) {
           final lazy.List<E> list = (lazy.List<E>) elements;
-          list.materializer.materializeElements();
-          return new ListToListAsyncMaterializer<E>(list);
+          if (list.materializer.knownSize() == 0) {
+            return EmptyListAsyncMaterializer.instance();
+          }
+          return new ListToListAsyncMaterializer<E>(list.materialized());
         }
         if (elements instanceof java.util.List) {
           final java.util.List<E> list = (java.util.List<E>) elements;
@@ -625,7 +628,19 @@ public class Sparx {
 
       @Override
       public @NotNull List<E> diff(@NotNull final Iterable<?> elements) {
-        return null;
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownEmpty()) {
+          return this;
+        }
+        final ListAsyncMaterializer<?> elementsMaterializer = getElementsMaterializer(this,
+            elements);
+        if (elementsMaterializer.knownEmpty()) {
+          return this;
+        }
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        return new List<E>(context, isCancelled,
+            new DiffListAsyncMaterializer<E>(materializer, elementsMaterializer, isCancelled,
+                List.<E>decorateFunction()));
       }
 
       @Override
@@ -974,6 +989,9 @@ public class Sparx {
 
       @Override
       public E get(final int index) {
+        if (index < 0) {
+          throw new IndexOutOfBoundsException(Integer.toString(index));
+        }
         final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(index);
         context.scheduleAfter(new Task() {
           @Override
@@ -5442,7 +5460,7 @@ public class Sparx {
 
       public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext context) {
         return new future.List<E>(Require.notNull(context, "context"), new AtomicBoolean(false),
-            new ListToListAsyncMaterializer<E>(this));
+            new ListToListAsyncMaterializer<E>(materialized()));
       }
 
       @Override
@@ -5459,6 +5477,11 @@ public class Sparx {
         return new List<E>(new AppendAllListMaterializer<E>(materializer,
             new RemoveWhereListMaterializer<E>(elementsMaterializer,
                 elementsContains(materializer))));
+      }
+
+      private @NotNull List<E> materialized() {
+        materializer.materializeElements();
+        return this;
       }
 
       private static class SuppliedMaterializer<E> implements ListMaterializer<E> {

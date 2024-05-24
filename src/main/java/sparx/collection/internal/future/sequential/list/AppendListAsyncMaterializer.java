@@ -177,28 +177,33 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
     @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
-      wrapped.materializeElement(index, new IndexedAsyncConsumer<E>() {
-        @Override
-        public void accept(final int size, final int index, final E element) throws Exception {
-          final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size));
-          consumer.accept(knownSize, index, element);
-        }
-
-        @Override
-        public void complete(final int size) throws Exception {
-          wrappedSize = size;
-          if (size == index) {
-            consumer.accept(safeSize(size), size, element);
-          } else {
-            consumer.complete(safeSize(size));
+      if (index < 0) {
+        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
+            LOGGER);
+      } else {
+        wrapped.materializeElement(index, new IndexedAsyncConsumer<E>() {
+          @Override
+          public void accept(final int size, final int index, final E element) throws Exception {
+            final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size));
+            consumer.accept(knownSize, index, element);
           }
-        }
 
-        @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
-          consumer.error(index, error);
-        }
-      });
+          @Override
+          public void complete(final int size) throws Exception {
+            wrappedSize = size;
+            if (size == index) {
+              consumer.accept(safeSize(size), size, element);
+            } else {
+              consumer.complete(safeSize(size));
+            }
+          }
+
+          @Override
+          public void error(final int index, @NotNull final Exception error) throws Exception {
+            consumer.error(index, error);
+          }
+        });
+      }
     }
 
     @Override
