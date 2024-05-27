@@ -51,6 +51,7 @@ import sparx.collection.internal.future.sequential.list.DropWhileListAsyncMateri
 import sparx.collection.internal.future.sequential.list.ElementToListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.EndsWithListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ExistsListAsyncMaterializer;
+import sparx.collection.internal.future.sequential.list.FilterListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListToListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.SwitchListAsyncMaterializer;
@@ -850,13 +851,27 @@ public class Sparx extends SparxItf {
       }
 
       @Override
-      public @NotNull List<E> filter(@NotNull IndexedPredicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        return new List<E>(context, isCancelled,
+            new FilterListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+                List.<E>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<E> filter(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> filter(@NotNull final Predicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        return new List<E>(context, isCancelled,
+            new FilterListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                isCancelled, List.<E>decorateFunction()));
       }
 
       @Override

@@ -30,10 +30,12 @@ import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.util.Require;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedPredicate;
 
-public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+public class FilterListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
-  private static final Logger LOGGER = Logger.getLogger(DiffListAsyncMaterializer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(
+      FilterListAsyncMaterializer.class.getName());
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -43,13 +45,12 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private ListAsyncMaterializer<E> state;
 
-  public DiffListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
+  public FilterListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"),
-        Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(predicate, "predicate"), Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
   }
 
@@ -110,18 +111,18 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
         2);
     private final ArrayList<E> elements = new ArrayList<E>();
-    private final ListAsyncMaterializer<?> elementsMaterializer;
     private final AtomicBoolean isCancelled;
+    private final IndexedPredicate<? super E> predicate;
     private final ListAsyncMaterializer<E> wrapped;
 
     private int nextIndex;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
+        @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final AtomicBoolean isCancelled,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
-      this.elementsMaterializer = elementsMaterializer;
+      this.predicate = predicate;
       this.isCancelled = isCancelled;
       this.decorateFunction = decorateFunction;
     }
@@ -144,35 +145,24 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     @Override
     public void materializeCancel(final boolean mayInterruptIfRunning) {
       wrapped.materializeCancel(mayInterruptIfRunning);
-      elementsMaterializer.materializeCancel(mayInterruptIfRunning);
       setState(new CancelledListAsyncMaterializer<E>(-1), STATUS_CANCELLED);
     }
 
     @Override
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      elementsMaterializer.materializeContains(element, new AsyncConsumer<Boolean>() {
+      materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
         @Override
-        public void accept(final Boolean contains) throws Exception {
-          if (contains) {
-            consumer.accept(false);
-          } else {
-            wrapped.materializeContains(element, new AsyncConsumer<Boolean>() {
-              @Override
-              public void accept(final Boolean contains) throws Exception {
-                consumer.accept(contains);
-              }
-
-              @Override
-              public void error(@NotNull final Exception error) throws Exception {
-                consumer.error(error);
-              }
-            });
-          }
+        public void accept(final int size, final int index, final E element) {
         }
 
         @Override
-        public void error(@NotNull Exception error) throws Exception {
+        public void complete(final int size) {
+          state.materializeContains(element, consumer);
+        }
+
+        @Override
+        public void error(final int index, @NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -354,30 +344,27 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
             public void accept(final int size, final int index, final E element) {
               nextIndex = index + 1;
               final IndexedAsyncConsumer<E> elementConsumer = this;
-              elementsMaterializer.materializeContains(element, new AsyncConsumer<Boolean>() {
-                @Override
-                public void accept(final Boolean contains) {
-                  if (!contains) {
-                    final int wrappedIndex = elements.size();
-                    elements.add(element);
-                    consumeElement(wrappedIndex, element);
-                  }
-                  if (!elementsConsumers.isEmpty()) {
-                    wrapped.materializeElement(nextIndex, elementConsumer);
-                  }
+              try {
+                final int wrappedIndex = elements.size();
+                if (predicate.test(wrappedIndex, element)) {
+                  elements.add(element);
+                  consumeElement(wrappedIndex, element);
                 }
-
-                @Override
-                public void error(@NotNull final Exception error) {
-                  if (isCancelled.get()) {
-                    setState(new CancelledListAsyncMaterializer<E>(-1), STATUS_CANCELLED);
-                    consumeError(new CancellationException());
-                  } else {
-                    setState(new FailedListAsyncMaterializer<E>(-1, -1, error), STATUS_DONE);
-                    consumeError(error);
-                  }
+                if (!elementsConsumers.isEmpty()) {
+                  wrapped.materializeElement(nextIndex, elementConsumer);
                 }
-              });
+              } catch (final Exception e) {
+                if (e instanceof InterruptedException) {
+                  Thread.currentThread().interrupt();
+                }
+                if (isCancelled.get()) {
+                  setState(new CancelledListAsyncMaterializer<E>(-1), STATUS_CANCELLED);
+                  consumeError(new CancellationException());
+                } else {
+                  setState(new FailedListAsyncMaterializer<E>(-1, -1, e), STATUS_DONE);
+                  consumeError(e);
+                }
+              }
             }
 
             @Override

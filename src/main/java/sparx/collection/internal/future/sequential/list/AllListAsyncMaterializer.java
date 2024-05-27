@@ -267,12 +267,12 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
     private void setState(@NotNull final ListAsyncMaterializer<Boolean> newState,
         final int statusCode) {
       final ListAsyncMaterializer<Boolean> state;
-      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
         state = AllListAsyncMaterializer.this.state = newState;
       } else {
         state = AllListAsyncMaterializer.this.state;
       }
+      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       for (final StateConsumer stateConsumer : stateConsumers) {
         stateConsumer.accept(state);
       }

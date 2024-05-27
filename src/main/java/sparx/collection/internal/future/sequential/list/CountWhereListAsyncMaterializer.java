@@ -271,12 +271,12 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
     private void setState(@NotNull final ListAsyncMaterializer<Integer> newState,
         final int statusCode) {
       final ListAsyncMaterializer<Integer> state;
-      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
         state = CountWhereListAsyncMaterializer.this.state = newState;
       } else {
         state = CountWhereListAsyncMaterializer.this.state;
       }
+      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       for (final StateConsumer stateConsumer : stateConsumers) {
         stateConsumer.accept(state);
       }

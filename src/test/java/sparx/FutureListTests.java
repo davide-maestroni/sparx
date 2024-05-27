@@ -722,4 +722,34 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
     }
   }
+
+  @Test
+  public void filter() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertFalse(l.filter(Objects::nonNull).isEmpty());
+    assertEquals(List.of(1, 2, 4), l.filter(Objects::nonNull));
+    assertEquals(List.of(1, 2), l.filter(Objects::nonNull).filter(i -> i < 3));
+    assertEquals(List.of(4), l.filter(Objects::nonNull).filter(i -> i > 3));
+    assertEquals(List.of(), l.filter(Objects::nonNull).filter(i -> i > 4));
+    assertThrows(NullPointerException.class, () -> l.filter(i -> i > 4).size());
+
+    assertTrue(List.of().toFuture(context).filter(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().toFuture(context).filter(Objects::isNull).size());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).filter(i -> {
+        Thread.sleep(60000);
+        return false;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
 }
