@@ -81,6 +81,7 @@ public class FutureListTests {
     var l = List.of(1, null, 3).toFuture(context).all(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
+      // TODO
 //      var itr = l.iterator();
 //      assertThrows(NullPointerException.class, itr::hasNext);
 //      assertThrows(NullPointerException.class, itr::next);
@@ -270,6 +271,7 @@ public class FutureListTests {
     var l = List.of(1, null, 3).toFuture(context).count(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
+      // TODO
 //      var itr = l.iterator();
 //      assertThrows(NullPointerException.class, itr::hasNext);
 //      assertThrows(NullPointerException.class, itr::next);
@@ -328,6 +330,19 @@ public class FutureListTests {
     var list = new ArrayList<>();
     List.of(1, 2, 3).toFuture(context).doFor(e -> list.add(e));
     assertEquals(List.of(1, 2, 3), list);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).nonBlockingFor(i -> Thread.sleep(60000));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
   }
 
   @Test
@@ -341,6 +356,22 @@ public class FutureListTests {
       return e < 2;
     });
     assertEquals(List.of(1, 2), list);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).nonBlockingWhile(i -> {
+        Thread.sleep(60000);
+        return true;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
   }
 
   @Test
@@ -630,6 +661,56 @@ public class FutureListTests {
         Thread.sleep(60000);
         return true;
       }).endsWith(List.of(false));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void exists() {
+    assertFalse(List.of().toFuture(context).exists(Objects::nonNull).isEmpty());
+    assertTrue(List.of().toFuture(context).exists(Objects::nonNull).notEmpty());
+    assertEquals(1, List.of().toFuture(context).exists(Objects::nonNull).size());
+    assertFalse(List.of().toFuture(context).exists(Objects::nonNull).first());
+    assertFalse(List.of(1, 2, 3).toFuture(context).exists(i -> i > 3).first());
+    {
+      var itr = List.of(1, 2, 3).toFuture(context).exists(i -> i > 3).iterator();
+      assertTrue(itr.hasNext());
+      assertFalse(itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    assertTrue(List.of(1, 2, 3).toFuture(context).exists(i -> i > 0).first());
+    {
+      var itr = List.of(1, 2, 3).toFuture(context).exists(i -> i > 0).iterator();
+      assertTrue(itr.hasNext());
+      assertTrue(itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    var l = List.of(1, null, 3).toFuture(context).exists(i -> i > 1);
+    assertThrows(NullPointerException.class, l::first);
+    {
+      // TODO
+//      var itr = l.iterator();
+//      assertThrows(NullPointerException.class, itr::hasNext);
+//      assertThrows(NullPointerException.class, itr::next);
+    }
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).exists(i -> {
+        Thread.sleep(60000);
+        return false;
+      });
       executor.submit(() -> {
         try {
           Thread.sleep(1000);

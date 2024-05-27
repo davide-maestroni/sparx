@@ -73,10 +73,6 @@ public class AsyncGetFuture<E> implements Future<Void> {
           @Override
           public void error(@NotNull final Exception error) {
             synchronized (status) {
-              if (isCancelled()) {
-                status.notifyAll();
-                throw new CancellationException();
-              }
               AsyncGetFuture.this.error = error;
               status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
               status.notifyAll();
@@ -114,11 +110,12 @@ public class AsyncGetFuture<E> implements Future<Void> {
       while (!isDone()) {
         status.wait();
       }
+      if (isCancelled()) {
+        throw new CancellationException();
+      }
       final Exception error = this.error;
       if (error instanceof InterruptedException) {
         throw (InterruptedException) error;
-      } else if (error instanceof CancellationException) {
-        throw (CancellationException) error;
       } else if (error != null) {
         throw new ExecutionException(error);
       }
@@ -136,14 +133,16 @@ public class AsyncGetFuture<E> implements Future<Void> {
         status.wait(timeoutMillis);
         timeoutMillis -= System.currentTimeMillis() - startTimeMillis;
       }
-      if (!isDone()) {
+      final int statusCode = status.get();
+      if (statusCode == STATUS_RUNNING) {
         throw new TimeoutException("timeout after " + unit.toMillis(timeout) + " ms");
+      }
+      if (statusCode == STATUS_CANCELLED) {
+        throw new CancellationException();
       }
       final Exception error = this.error;
       if (error instanceof InterruptedException) {
         throw (InterruptedException) error;
-      } else if (error instanceof CancellationException) {
-        throw (CancellationException) error;
       } else if (error != null) {
         throw new ExecutionException(error);
       }

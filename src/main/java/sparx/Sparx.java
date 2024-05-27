@@ -50,6 +50,7 @@ import sparx.collection.internal.future.sequential.list.DropRightWhileListAsyncM
 import sparx.collection.internal.future.sequential.list.DropWhileListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ElementToListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.EndsWithListAsyncMaterializer;
+import sparx.collection.internal.future.sequential.list.ExistsListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListToListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.SwitchListAsyncMaterializer;
@@ -824,13 +825,28 @@ public class Sparx extends SparxItf {
       }
 
       @Override
-      public @NotNull List<Boolean> exists(@NotNull IndexedPredicate<? super E> predicate) {
-        return null;
+      public @NotNull List<Boolean> exists(@NotNull final IndexedPredicate<? super E> predicate) {
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new List<Boolean>(context, isCancelled, FALSE_MATERIALIZER);
+        }
+        return new List<Boolean>(context, isCancelled,
+            new ExistsListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+                List.<Boolean>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<Boolean> exists(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return new List<Boolean>(context, isCancelled, FALSE_MATERIALIZER);
+        }
+        return new List<Boolean>(context, isCancelled,
+            new ExistsListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                isCancelled, List.<Boolean>decorateFunction()));
+
       }
 
       @Override
