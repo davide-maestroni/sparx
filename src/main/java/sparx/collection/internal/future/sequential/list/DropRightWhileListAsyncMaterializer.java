@@ -140,7 +140,7 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
     @Override
     public void materializeCancel(final boolean mayInterruptIfRunning) {
       wrapped.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<E>(-1), STATUS_CANCELLED);
+      setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
     }
 
     @Override
@@ -216,7 +216,7 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
 
           @Override
           public void error(@NotNull final Exception error) {
-            setState(new FailedListAsyncMaterializer<E>(-1, -1, error), STATUS_DONE);
+            setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
           }
         });
       } else {
@@ -250,9 +250,9 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
                   Thread.currentThread().interrupt();
                 }
                 if (isCancelled.get()) {
-                  setState(new CancelledListAsyncMaterializer<E>(-1), STATUS_CANCELLED);
+                  setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
                 } else {
-                  setState(new FailedListAsyncMaterializer<E>(-1, index, e), STATUS_DONE);
+                  setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
                 }
               }
             }
@@ -264,9 +264,9 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
             @Override
             public void error(final int index, @NotNull final Exception error) {
               if (isCancelled.get()) {
-                setState(new CancelledListAsyncMaterializer<E>(-1), STATUS_CANCELLED);
+                setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
               } else {
-                setState(new FailedListAsyncMaterializer<E>(-1, index, error), STATUS_DONE);
+                setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
               }
             }
           });

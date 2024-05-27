@@ -143,7 +143,7 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
     @Override
     public void materializeCancel(final boolean mayInterruptIfRunning) {
       wrapped.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<Integer>(1), STATUS_CANCELLED);
+      setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
     }
 
     @Override
@@ -223,9 +223,9 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
                 Thread.currentThread().interrupt();
               }
               if (isCancelled.get()) {
-                setState(new CancelledListAsyncMaterializer<Integer>(1), STATUS_CANCELLED);
+                setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
               } else {
-                setState(new FailedListAsyncMaterializer<Integer>(1, -1, e), STATUS_DONE);
+                setState(new FailedListAsyncMaterializer<Integer>(e), STATUS_DONE);
               }
             }
           }
@@ -238,9 +238,9 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
           @Override
           public void error(final int index, @NotNull final Exception error) {
             if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<Integer>(1), STATUS_CANCELLED);
+              setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
             } else {
-              setState(new FailedListAsyncMaterializer<Integer>(1, -1, error), STATUS_DONE);
+              setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
             }
           }
         });
@@ -254,9 +254,9 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
           @Override
           public void error(@NotNull final Exception error) {
             if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<Integer>(1), STATUS_CANCELLED);
+              setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
             } else {
-              setState(new FailedListAsyncMaterializer<Integer>(1, -1, error), STATUS_DONE);
+              setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
             }
           }
         });

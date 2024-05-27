@@ -146,7 +146,7 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
     @Override
     public void materializeCancel(final boolean mayInterruptIfRunning) {
       wrapped.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<E>(safeSize(wrappedSize)), STATUS_CANCELLED);
+      setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
     }
 
     @Override
@@ -233,7 +233,6 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         wrapped.materializeElements(new AsyncConsumer<List<E>>() {
           @Override
           public void accept(final List<E> elements) {
-            final int knownSize = safeSize(wrappedSize = elements.size());
             try {
               final List<E> materialized = appendFunction.apply(elements, element);
               setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
@@ -243,10 +242,10 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
                 Thread.currentThread().interrupt();
               }
               if (isCancelled.get()) {
-                setState(new CancelledListAsyncMaterializer<E>(knownSize), STATUS_CANCELLED);
+                setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
                 consumeError(new CancellationException());
               } else {
-                setState(new FailedListAsyncMaterializer<E>(knownSize, -1, e), STATUS_DONE);
+                setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
                 consumeError(e);
               }
             }
@@ -254,12 +253,11 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
           @Override
           public void error(@NotNull final Exception error) {
-            final int knownSize = safeSize(wrappedSize);
             if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<E>(knownSize), STATUS_CANCELLED);
+              setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
               consumeError(new CancellationException());
             } else {
-              setState(new FailedListAsyncMaterializer<E>(knownSize, -1, error), STATUS_DONE);
+              setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
               consumeError(error);
             }
           }

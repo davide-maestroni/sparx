@@ -143,7 +143,7 @@ public class ExistsListAsyncMaterializer<E> implements ListAsyncMaterializer<Boo
     @Override
     public void materializeCancel(final boolean mayInterruptIfRunning) {
       wrapped.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<Boolean>(1), STATUS_CANCELLED);
+      setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
     }
 
     @Override
@@ -223,9 +223,9 @@ public class ExistsListAsyncMaterializer<E> implements ListAsyncMaterializer<Boo
                       Thread.currentThread().interrupt();
                     }
                     if (isCancelled.get()) {
-                      setState(new CancelledListAsyncMaterializer<Boolean>(1), STATUS_CANCELLED);
+                      setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
                     } else {
-                      setState(new FailedListAsyncMaterializer<Boolean>(1, index, e), STATUS_DONE);
+                      setState(new FailedListAsyncMaterializer<Boolean>(e), STATUS_DONE);
                     }
                   }
                 }
@@ -238,10 +238,9 @@ public class ExistsListAsyncMaterializer<E> implements ListAsyncMaterializer<Boo
                 @Override
                 public void error(final int index, @NotNull final Exception error) {
                   if (isCancelled.get()) {
-                    setState(new CancelledListAsyncMaterializer<Boolean>(1), STATUS_CANCELLED);
+                    setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
                   } else {
-                    setState(new FailedListAsyncMaterializer<Boolean>(1, index, error),
-                        STATUS_DONE);
+                    setState(new FailedListAsyncMaterializer<Boolean>(error), STATUS_DONE);
                   }
                 }
               });
@@ -251,9 +250,9 @@ public class ExistsListAsyncMaterializer<E> implements ListAsyncMaterializer<Boo
           @Override
           public void error(@NotNull final Exception error) {
             if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<Boolean>(1), STATUS_CANCELLED);
+              setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
             } else {
-              setState(new FailedListAsyncMaterializer<Boolean>(1, 0, error), STATUS_DONE);
+              setState(new FailedListAsyncMaterializer<Boolean>(error), STATUS_DONE);
             }
           }
         });

@@ -27,13 +27,8 @@ public class FailedListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       FailedListAsyncMaterializer.class.getName());
 
   private final Exception error;
-  private final int index;
-  private final int size;
 
-  public FailedListAsyncMaterializer(final int size, final int index,
-      @NotNull final Exception error) {
-    this.size = size;
-    this.index = index;
+  public FailedListAsyncMaterializer(@NotNull final Exception error) {
     this.error = error;
   }
 
@@ -49,7 +44,7 @@ public class FailedListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
   @Override
   public int knownSize() {
-    return size;
+    return -1;
   }
 
   @Override
@@ -64,13 +59,13 @@ public class FailedListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
   @Override
   public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    safeConsumeError(consumer, index, error, LOGGER);
+    safeConsumeError(consumer, -1, error, LOGGER);
   }
 
   @Override
   public void materializeElement(final int ignored,
       @NotNull final IndexedAsyncConsumer<E> consumer) {
-    safeConsumeError(consumer, index, error, LOGGER);
+    safeConsumeError(consumer, -1, error, LOGGER);
   }
 
   @Override

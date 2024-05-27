@@ -25,15 +25,16 @@ import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
 
-public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
+public class GroupWithPaddingIteratorMaterializer<E, I extends Iterator<E>> implements
     IteratorMaterializer<I> {
 
   private volatile IteratorMaterializer<I> state;
 
-  public GroupIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int maxSize, @NotNull final Function<? super List<E>, ? extends I> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxSize, "maxSize"), Require.notNull(mapper, "mapper"));
+  public GroupWithPaddingIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      final int size, final E padding,
+      @NotNull final Function<? super List<E>, ? extends I> mapper) {
+    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), Require.positive(size, "size"),
+        padding, Require.notNull(mapper, "mapper"));
   }
 
   @Override
@@ -59,13 +60,15 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
   private class ImmaterialState implements IteratorMaterializer<I> {
 
     private final Function<? super List<E>, ? extends I> mapper;
-    private final int maxSize;
+    private final int size;
+    private final E padding;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int maxSize,
-        @NotNull final Function<? super List<E>, ? extends I> mapper) {
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int size,
+        final E padding, @NotNull final Function<? super List<E>, ? extends I> mapper) {
       this.wrapped = wrapped;
-      this.maxSize = maxSize;
+      this.size = size;
+      this.padding = padding;
       this.mapper = mapper;
     }
 
@@ -73,11 +76,11 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
     public int knownSize() {
       final int knownSize = wrapped.knownSize();
       if (knownSize > 0) {
-        final long maxSize = this.maxSize;
-        if (knownSize < maxSize) {
+        final long size = this.size;
+        if (knownSize < size) {
           return 1;
         }
-        return SizeOverflowException.safeCast((knownSize + (maxSize >> 1)) / maxSize);
+        return SizeOverflowException.safeCast((knownSize + (size >> 1)) / size);
       }
       return -1;
     }
@@ -93,16 +96,20 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
       if (!wrapped.materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      final int maxSize = this.maxSize;
-      final ArrayList<E> elements = new ArrayList<E>(maxSize);
+      final int size = this.size;
+      final ArrayList<E> chunk = new ArrayList<E>(size);
       do {
-        elements.add(wrapped.materializeNext());
-      } while (elements.size() < maxSize && wrapped.materializeHasNext());
+        chunk.add(wrapped.materializeNext());
+      } while (chunk.size() < size && wrapped.materializeHasNext());
+      final E padding = this.padding;
+      while (chunk.size() < size) {
+        chunk.add(padding);
+      }
       if (!wrapped.materializeHasNext()) {
         state = EmptyIteratorMaterializer.instance();
       }
       try {
-        return mapper.apply(elements);
+        return mapper.apply(chunk);
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
@@ -111,10 +118,10 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        final long maxSize = this.maxSize;
+        final long size = this.size;
         final int skipped = wrapped.materializeSkip(
-            (int) Math.min(Integer.MAX_VALUE, maxSize * count));
-        return (int) ((skipped + (maxSize >> 1)) / maxSize);
+            (int) Math.min(Integer.MAX_VALUE, size * count));
+        return (int) ((skipped + (size >> 1)) / size);
       }
       return 0;
     }

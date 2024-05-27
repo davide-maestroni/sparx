@@ -141,7 +141,7 @@ public class DropRightListAsyncMaterializer<E> implements ListAsyncMaterializer<
     @Override
     public void materializeCancel(final boolean mayInterruptIfRunning) {
       wrapped.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<E>(safeSize(wrappedSize)), STATUS_CANCELLED);
+      setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
     }
 
     @Override
@@ -157,7 +157,7 @@ public class DropRightListAsyncMaterializer<E> implements ListAsyncMaterializer<
 
           @Override
           public void error(@NotNull final Exception error) throws Exception {
-            setState(new FailedListAsyncMaterializer<E>(-1, -1, error), STATUS_DONE);
+            setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
             consumer.error(error);
           }
         });
@@ -227,7 +227,7 @@ public class DropRightListAsyncMaterializer<E> implements ListAsyncMaterializer<
 
           @Override
           public void error(@NotNull final Exception error) throws Exception {
-            setState(new FailedListAsyncMaterializer<E>(-1, -1, error), STATUS_DONE);
+            setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
             consumer.error(-1, error);
           }
         });
@@ -277,7 +277,7 @@ public class DropRightListAsyncMaterializer<E> implements ListAsyncMaterializer<
 
             @Override
             public void error(@NotNull final Exception error) throws Exception {
-              setState(new FailedListAsyncMaterializer<E>(-1, -1, error), STATUS_DONE);
+              setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
               consumer.error(-1, error);
             }
           });
@@ -323,10 +323,10 @@ public class DropRightListAsyncMaterializer<E> implements ListAsyncMaterializer<
               Thread.currentThread().interrupt();
             }
             if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<E>(0), STATUS_CANCELLED);
+              setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
               consumeError(new CancellationException());
             } else {
-              setState(new FailedListAsyncMaterializer<E>(0, -1, e), STATUS_DONE);
+              setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
               consumeError(e);
             }
           }
@@ -334,7 +334,6 @@ public class DropRightListAsyncMaterializer<E> implements ListAsyncMaterializer<
           wrapped.materializeElements(new AsyncConsumer<List<E>>() {
             @Override
             public void accept(final List<E> elements) {
-              final int knownSize = safeSize(wrappedSize = elements.size());
               try {
                 final List<E> materialized = dropFunction.apply(elements, maxElements);
                 setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
@@ -344,10 +343,10 @@ public class DropRightListAsyncMaterializer<E> implements ListAsyncMaterializer<
                   Thread.currentThread().interrupt();
                 }
                 if (isCancelled.get()) {
-                  setState(new CancelledListAsyncMaterializer<E>(knownSize), STATUS_CANCELLED);
+                  setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
                   consumeError(new CancellationException());
                 } else {
-                  setState(new FailedListAsyncMaterializer<E>(knownSize, -1, e), STATUS_DONE);
+                  setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
                   consumeError(e);
                 }
               }
@@ -355,12 +354,11 @@ public class DropRightListAsyncMaterializer<E> implements ListAsyncMaterializer<
 
             @Override
             public void error(@NotNull final Exception error) {
-              final int knownSize = safeSize(wrappedSize);
               if (isCancelled.get()) {
-                setState(new CancelledListAsyncMaterializer<E>(knownSize), STATUS_CANCELLED);
+                setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
                 consumeError(new CancellationException());
               } else {
-                setState(new FailedListAsyncMaterializer<E>(knownSize, -1, error), STATUS_DONE);
+                setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
                 consumeError(error);
               }
             }
@@ -418,10 +416,6 @@ public class DropRightListAsyncMaterializer<E> implements ListAsyncMaterializer<
         safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
-    }
-
-    private int safeSize(final int wrappedSize) {
-      return wrappedSize >= 0 ? Math.max(0, wrappedSize - maxElements) : -1;
     }
 
     private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {

@@ -19,8 +19,8 @@ import java.util.concurrent.CancellationException;
 
 public class CancelledListAsyncMaterializer<E> extends FailedListAsyncMaterializer<E> {
 
-  public CancelledListAsyncMaterializer(final int size) {
-    super(size, -1, new CancellationException());
+  public CancelledListAsyncMaterializer() {
+    super(new CancellationException());
   }
 
   @Override

@@ -88,6 +88,7 @@ import sparx.collection.internal.lazy.iterator.FloatArrayToIteratorMaterializer;
 import sparx.collection.internal.lazy.iterator.FoldLeftIteratorMaterializer;
 import sparx.collection.internal.lazy.iterator.FoldRightIteratorMaterializer;
 import sparx.collection.internal.lazy.iterator.GroupIteratorMaterializer;
+import sparx.collection.internal.lazy.iterator.GroupWithPaddingIteratorMaterializer;
 import sparx.collection.internal.lazy.iterator.IncludesAllIteratorMaterializer;
 import sparx.collection.internal.lazy.iterator.IncludesSliceIteratorMaterializer;
 import sparx.collection.internal.lazy.iterator.InsertAfterIteratorMaterializer;
@@ -161,6 +162,7 @@ import sparx.collection.internal.lazy.list.FloatArrayToListMaterializer;
 import sparx.collection.internal.lazy.list.FoldLeftListMaterializer;
 import sparx.collection.internal.lazy.list.FoldRightListMaterializer;
 import sparx.collection.internal.lazy.list.GroupListMaterializer;
+import sparx.collection.internal.lazy.list.GroupWithPaddingListMaterializer;
 import sparx.collection.internal.lazy.list.IncludesAllListMaterializer;
 import sparx.collection.internal.lazy.list.IncludesSliceListMaterializer;
 import sparx.collection.internal.lazy.list.InsertAfterListMaterializer;
@@ -2761,7 +2763,7 @@ public class Sparx extends SparxItf {
           return Iterator.of();
         }
         return new Iterator<Iterator<E>>(
-            new GroupIteratorMaterializer<E, Iterator<E>>(materializer, size, padding,
+            new GroupWithPaddingIteratorMaterializer<E, Iterator<E>>(materializer, size, padding,
                 (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
       }
 
@@ -4725,8 +4727,9 @@ public class Sparx extends SparxItf {
         if (size == 1) {
           return group(1);
         }
-        return new List<List<E>>(new GroupListMaterializer<E, List<E>>(materializer, size, padding,
-            (Function<? super java.util.List<E>, ? extends List<E>>) FROM_JAVA_LIST));
+        return new List<List<E>>(
+            new GroupWithPaddingListMaterializer<E, List<E>>(materializer, size, padding,
+                (Function<? super java.util.List<E>, ? extends List<E>>) FROM_JAVA_LIST));
       }
 
       @Override

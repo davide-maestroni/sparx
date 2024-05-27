@@ -144,7 +144,7 @@ public class EndsWithListAsyncMaterializer<E> implements ListAsyncMaterializer<B
     public void materializeCancel(final boolean mayInterruptIfRunning) {
       wrapped.materializeCancel(mayInterruptIfRunning);
       elementsMaterializer.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<Boolean>(1), STATUS_CANCELLED);
+      setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
     }
 
     @Override
@@ -245,9 +245,9 @@ public class EndsWithListAsyncMaterializer<E> implements ListAsyncMaterializer<B
 
     private void setState(@NotNull final Exception error) {
       if (isCancelled.get()) {
-        setState(new CancelledListAsyncMaterializer<Boolean>(1), STATUS_CANCELLED);
+        setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
       } else {
-        setState(new FailedListAsyncMaterializer<Boolean>(1, -1, error), STATUS_DONE);
+        setState(new FailedListAsyncMaterializer<Boolean>(error), STATUS_DONE);
       }
     }
 
