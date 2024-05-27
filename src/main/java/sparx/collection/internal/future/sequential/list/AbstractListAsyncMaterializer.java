@@ -21,9 +21,9 @@ import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 
-abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
-  <T> boolean safeConsume(@NotNull final IndexedAsyncConsumer<T> consumer, final int size,
+  protected <T> boolean safeConsume(@NotNull final IndexedAsyncConsumer<T> consumer, final int size,
       final int index, final T value, @NotNull final Logger logger) {
     try {
       consumer.accept(size, index, value);
@@ -44,7 +44,7 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     return true;
   }
 
-  <T> void safeConsume(@NotNull final AsyncConsumer<T> consumer, final T value,
+  protected <T> void safeConsume(@NotNull final AsyncConsumer<T> consumer, final T value,
       @NotNull final Logger logger) {
     try {
       consumer.accept(value);
@@ -63,8 +63,8 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     }
   }
 
-  void safeConsumeComplete(@NotNull final IndexedAsyncConsumer<?> consumer, final int size,
-      @NotNull final Logger logger) {
+  protected void safeConsumeComplete(@NotNull final IndexedAsyncConsumer<?> consumer,
+      final int size, @NotNull final Logger logger) {
     try {
       consumer.complete(size);
     } catch (final Exception e) {
@@ -75,8 +75,8 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     }
   }
 
-  void safeConsumeError(@NotNull final AsyncConsumer<?> consumer, @NotNull final Exception error,
-      @NotNull final Logger logger) {
+  protected void safeConsumeError(@NotNull final AsyncConsumer<?> consumer,
+      @NotNull final Exception error, @NotNull final Logger logger) {
     try {
       consumer.error(error);
     } catch (final Exception e) {
@@ -87,7 +87,7 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     }
   }
 
-  void safeConsumeError(@NotNull final IndexedAsyncConsumer<?> consumer, final int index,
+  protected void safeConsumeError(@NotNull final IndexedAsyncConsumer<?> consumer, final int index,
       @NotNull final Exception error, @NotNull final Logger logger) {
     try {
       consumer.error(index, error);

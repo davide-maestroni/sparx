@@ -34,6 +34,7 @@ import sparx.collection.AbstractListSequence;
 import sparx.collection.Sequence;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
+import sparx.collection.internal.future.sequential.list.AbstractListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.AllListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.AppendAllListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.AppendListAsyncMaterializer;
@@ -45,7 +46,6 @@ import sparx.collection.internal.future.sequential.list.CountWhereListAsyncMater
 import sparx.collection.internal.future.sequential.list.DiffListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.DropListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ElementToListAsyncMaterializer;
-import sparx.collection.internal.future.sequential.list.EmptyListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListToListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.SwitchListAsyncMaterializer;
@@ -1756,6 +1756,74 @@ public class Sparx extends SparxItf {
           throw UncheckedException.throwUnchecked(error);
         }
         return param;
+      }
+    }
+
+    private static class EmptyListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+
+      private static final EmptyListAsyncMaterializer<?> INSTANCE = new EmptyListAsyncMaterializer<Object>();
+      private static final Logger LOGGER = Logger.getLogger(
+          EmptyListAsyncMaterializer.class.getName());
+
+      @SuppressWarnings("unchecked")
+      public static @NotNull <E> EmptyListAsyncMaterializer<E> instance() {
+        return (EmptyListAsyncMaterializer<E>) INSTANCE;
+      }
+
+      @Override
+      public boolean isCancelled() {
+        return false;
+      }
+
+      @Override
+      public boolean isDone() {
+        return true;
+      }
+
+      @Override
+      public int knownSize() {
+        return 0;
+      }
+
+      @Override
+      public void materializeCancel(final boolean mayInterruptIfRunning) {
+      }
+
+      @Override
+      public void materializeContains(final Object element,
+          @NotNull final AsyncConsumer<Boolean> consumer) {
+        safeConsume(consumer, false, LOGGER);
+      }
+
+      @Override
+      public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+        safeConsumeComplete(consumer, 0, LOGGER);
+      }
+
+      @Override
+      public void materializeElement(final int index,
+          @NotNull final IndexedAsyncConsumer<E> consumer) {
+        if (index < 0) {
+          safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
+              LOGGER);
+        } else {
+          safeConsumeComplete(consumer, 0, LOGGER);
+        }
+      }
+
+      @Override
+      public void materializeElements(@NotNull final AsyncConsumer<java.util.List<E>> consumer) {
+        safeConsume(consumer, lazy.List.<E>of(), LOGGER);
+      }
+
+      @Override
+      public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
+        safeConsume(consumer, true, LOGGER);
+      }
+
+      @Override
+      public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
+        safeConsume(consumer, 0, LOGGER);
       }
     }
   }

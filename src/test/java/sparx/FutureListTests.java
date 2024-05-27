@@ -394,7 +394,7 @@ public class FutureListTests {
       var f = List.of(1, 2, 3).toFuture(context).all(i -> {
         Thread.sleep(60000);
         return true;
-      }).drop(1);
+      }).append(false).drop(1);
       executor.submit(() -> {
         try {
           Thread.sleep(1000);
