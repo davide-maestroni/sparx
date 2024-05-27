@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection.internal.future.sequential.list;
+package sparx.collection.internal.future.list;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,12 +26,10 @@ import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.util.Require;
 import sparx.util.function.Function;
-import sparx.util.function.IndexedPredicate;
 
-public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer<Integer> {
+public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Integer> {
 
-  private static final Logger LOGGER = Logger.getLogger(
-      CountWhereListAsyncMaterializer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(CountListAsyncMaterializer.class.getName());
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -41,12 +39,11 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
 
   private ListAsyncMaterializer<Integer> state;
 
-  public CountWhereListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
+  public CountListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"), Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
   }
 
@@ -62,7 +59,7 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
 
   @Override
   public int knownSize() {
-    return -1;
+    return 1;
   }
 
   @Override
@@ -111,16 +108,13 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
 
     private final Function<List<Integer>, List<Integer>> decorateFunction;
     private final AtomicBoolean isCancelled;
-    private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final AtomicBoolean isCancelled,
         @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
       this.isCancelled = isCancelled;
       this.decorateFunction = decorateFunction;
     }
@@ -137,7 +131,7 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
 
     @Override
     public int knownSize() {
-      return -1;
+      return 1;
     }
 
     @Override
@@ -208,43 +202,6 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
         final ListAsyncMaterializer<E> wrapped = this.wrapped;
-        wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
-          private int count;
-
-          @Override
-          public void accept(final int size, final int index, final E element) {
-            try {
-              if (predicate.test(index, element)) {
-                ++count;
-              }
-              wrapped.materializeElement(index + 1, this);
-            } catch (final Exception e) {
-              if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-              }
-              if (isCancelled.get()) {
-                setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
-              } else {
-                setState(new FailedListAsyncMaterializer<Integer>(e), STATUS_DONE);
-              }
-            }
-          }
-
-          @Override
-          public void complete(final int size) throws Exception {
-            setState(count);
-          }
-
-          @Override
-          public void error(final int index, @NotNull final Exception error) {
-            if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
-            } else {
-              setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
-            }
-          }
-        });
-
         wrapped.materializeSize(new AsyncConsumer<Integer>() {
           @Override
           public void accept(final Integer size) throws Exception {
@@ -272,9 +229,9 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
         final int statusCode) {
       final ListAsyncMaterializer<Integer> state;
       if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = CountWhereListAsyncMaterializer.this.state = newState;
+        state = CountListAsyncMaterializer.this.state = newState;
       } else {
-        state = CountWhereListAsyncMaterializer.this.state;
+        state = CountListAsyncMaterializer.this.state;
       }
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       for (final StateConsumer stateConsumer : stateConsumers) {

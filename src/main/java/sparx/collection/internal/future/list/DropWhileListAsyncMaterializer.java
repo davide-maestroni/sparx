@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection.internal.future.sequential.list;
+package sparx.collection.internal.future.list;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,7 +27,7 @@ import sparx.util.Require;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -37,7 +37,7 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
 
   private ListAsyncMaterializer<E> state;
 
-  public DropRightWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+  public DropWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
@@ -109,8 +109,6 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
-    private int wrappedSize;
-
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final AtomicBoolean isCancelled,
@@ -119,7 +117,6 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
       this.predicate = predicate;
       this.isCancelled = isCancelled;
       this.dropFunction = dropFunction;
-      wrappedSize = wrapped.knownSize();
     }
 
     @Override
@@ -206,71 +203,63 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
     }
 
     private void materialized(@NotNull final StateConsumer<E> consumer) {
-      if (wrappedSize < 0) {
-        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
+      stateConsumers.add(consumer);
+      if (stateConsumers.size() == 1) {
+        final ListAsyncMaterializer<E> wrapped = this.wrapped;
+        wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
           @Override
-          public void accept(final Integer size) {
-            wrappedSize = size;
-            materialized(consumer);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
-          }
-        });
-      } else {
-        final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
-        stateConsumers.add(consumer);
-        if (stateConsumers.size() == 1) {
-          final ListAsyncMaterializer<E> wrapped = this.wrapped;
-          wrapped.materializeElement(wrappedSize - 1, new IndexedAsyncConsumer<E>() {
-            @Override
-            public void accept(final int size, final int index, final E element) {
-              try {
-                if (predicate.test(index, element)) {
-                  if (index > 0) {
-                    wrapped.materializeElement(index - 1, this);
-                  } else {
-                    final List<E> materialized = dropFunction.apply(Collections.<E>emptyList(), 0);
-                    setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
-                  }
+          public void accept(final int size, final int index, final E element) {
+            try {
+              if (predicate.test(index, element)) {
+                wrapped.materializeElement(index + 1, this);
+              } else {
+                if (index == 0) {
+                  setState(wrapped, STATUS_DONE);
                 } else {
-                  final int maxElements = wrappedSize - index - 1;
-                  if (maxElements == 0) {
-                    setState(wrapped, STATUS_DONE);
-                  } else {
-                    setState(
-                        new DropRightListAsyncMaterializer<E>(wrapped, maxElements, isCancelled,
-                            dropFunction), STATUS_DONE);
-                  }
-                }
-              } catch (final Exception e) {
-                if (e instanceof InterruptedException) {
-                  Thread.currentThread().interrupt();
-                }
-                if (isCancelled.get()) {
-                  setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
-                } else {
-                  setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
+                  setState(
+                      new DropListAsyncMaterializer<E>(wrapped, index, isCancelled, dropFunction),
+                      STATUS_DONE);
                 }
               }
-            }
-
-            @Override
-            public void complete(final int size) {
-            }
-
-            @Override
-            public void error(final int index, @NotNull final Exception error) {
+            } catch (final Exception e) {
+              if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+              }
               if (isCancelled.get()) {
                 setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
               } else {
-                setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+                setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
               }
             }
-          });
-        }
+          }
+
+          @Override
+          public void complete(final int size) {
+            try {
+              final List<E> materialized = dropFunction.apply(Collections.<E>emptyList(), 0);
+              setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+            } catch (final Exception e) {
+              if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+              }
+              if (isCancelled.get()) {
+                setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+              } else {
+                setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
+              }
+            }
+          }
+
+          @Override
+          public void error(final int index, @NotNull final Exception error) {
+            if (isCancelled.get()) {
+              setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+            } else {
+              setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+            }
+          }
+        });
       }
     }
 
@@ -278,9 +267,9 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
       final ListAsyncMaterializer<E> state;
       final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
       if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = DropRightWhileListAsyncMaterializer.this.state = newState;
+        state = DropWhileListAsyncMaterializer.this.state = newState;
       } else {
-        state = DropRightWhileListAsyncMaterializer.this.state;
+        state = DropWhileListAsyncMaterializer.this.state;
       }
       for (final StateConsumer<E> stateConsumer : stateConsumers) {
         stateConsumer.accept(state);

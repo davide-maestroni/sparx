@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection.internal.future.sequential.list;
+package sparx.collection.internal.future.list;
 
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -23,12 +22,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.future.AsyncConsumer;
+import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
+import sparx.util.function.IndexedConsumer;
 
-public class AsyncGetFuture<E> implements Future<Void> {
+public class AsyncForFuture<E> implements Future<Void> {
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -40,10 +40,12 @@ public class AsyncGetFuture<E> implements Future<Void> {
 
   private Exception error;
 
-  public AsyncGetFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
-      @NotNull final ListAsyncMaterializer<E> materializer) {
+  public AsyncForFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
+      @NotNull final ListAsyncMaterializer<E> materializer,
+      @NotNull final IndexedConsumer<? super E> consumer) {
     this.context = context;
     this.taskID = Require.notNull(taskID, "taskID");
+    Require.notNull(consumer, "consumer");
     context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
@@ -57,9 +59,17 @@ public class AsyncGetFuture<E> implements Future<Void> {
 
       @Override
       public void run() {
-        materializer.materializeElements(new AsyncConsumer<List<E>>() {
+        materializer.materializeEach(new IndexedAsyncConsumer<E>() {
           @Override
-          public void accept(final List<E> param) {
+          public void accept(final int size, final int index, final E param) throws Exception {
+            if (isCancelled()) {
+              throw new CancellationException();
+            }
+            consumer.accept(index, param);
+          }
+
+          @Override
+          public void complete(final int size) {
             synchronized (status) {
               if (isCancelled()) {
                 status.notifyAll();
@@ -71,9 +81,9 @@ public class AsyncGetFuture<E> implements Future<Void> {
           }
 
           @Override
-          public void error(@NotNull final Exception error) {
+          public void error(final int index, @NotNull final Exception error) {
             synchronized (status) {
-              AsyncGetFuture.this.error = error;
+              AsyncForFuture.this.error = error;
               status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
               status.notifyAll();
             }

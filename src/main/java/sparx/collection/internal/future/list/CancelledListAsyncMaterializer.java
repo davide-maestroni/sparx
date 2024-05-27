@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection.internal.future.sequential.list;
+package sparx.collection.internal.future.list;
 
-import java.util.List;
-import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.future.AsyncConsumer;
-import sparx.collection.internal.future.CollectionAsyncMaterializer;
-import sparx.collection.internal.future.IndexedAsyncConsumer;
+import java.util.concurrent.CancellationException;
 
-public interface ListAsyncMaterializer<E> extends CollectionAsyncMaterializer<E> {
+public class CancelledListAsyncMaterializer<E> extends FailedListAsyncMaterializer<E> {
 
-  void materializeElement(int index, @NotNull IndexedAsyncConsumer<E> consumer);
+  public CancelledListAsyncMaterializer() {
+    super(new CancellationException());
+  }
 
-  void materializeElements(@NotNull AsyncConsumer<List<E>> consumer);
+  @Override
+  public boolean isCancelled() {
+    return true;
+  }
 }
