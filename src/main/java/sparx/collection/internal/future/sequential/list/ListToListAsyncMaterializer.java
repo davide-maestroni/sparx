@@ -34,11 +34,6 @@ public class ListToListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
-  public boolean knownEmpty() {
-    return elements.isEmpty();
-  }
-
-  @Override
   public boolean isCancelled() {
     return false;
   }
@@ -46,6 +41,11 @@ public class ListToListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   @Override
   public boolean isDone() {
     return true;
+  }
+
+  @Override
+  public int knownSize() {
+    return elements.size();
   }
 
   @Override
@@ -57,6 +57,20 @@ public class ListToListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     safeConsume(consumer, elements.contains(element), LOGGER);
+  }
+
+  @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    final List<E> elements = this.elements;
+    final int size = elements.size();
+    int i = 0;
+    while (i < size) {
+      if (!safeConsume(consumer, size, i, elements.get(i), LOGGER)) {
+        return;
+      }
+      ++i;
+    }
+    safeConsumeComplete(consumer, size, LOGGER);
   }
 
   @Override
@@ -86,26 +100,7 @@ public class ListToListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
-  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    final List<E> elements = this.elements;
-    final int size = elements.size();
-    int i = 0;
-    while (i < size) {
-      if (!safeConsume(consumer, size, i, elements.get(i), LOGGER)) {
-        return;
-      }
-      ++i;
-    }
-    safeConsumeComplete(consumer, size, LOGGER);
-  }
-
-  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     safeConsume(consumer, elements.size(), LOGGER);
-  }
-
-  @Override
-  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    materializeOrdered(consumer);
   }
 }

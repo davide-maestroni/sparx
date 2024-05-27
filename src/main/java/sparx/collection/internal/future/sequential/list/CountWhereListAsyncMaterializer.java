@@ -51,11 +51,6 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
-  public boolean knownEmpty() {
-    return false;
-  }
-
-  @Override
   public boolean isCancelled() {
     return status.get() == STATUS_CANCELLED;
   }
@@ -63,6 +58,11 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
   @Override
   public boolean isDone() {
     return status.get() != STATUS_RUNNING;
+  }
+
+  @Override
+  public int knownSize() {
+    return -1;
   }
 
   @Override
@@ -74,6 +74,11 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     state.materializeContains(element, consumer);
+  }
+
+  @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
+    state.materializeEach(consumer);
   }
 
   @Override
@@ -93,18 +98,8 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
-  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
-    state.materializeOrdered(consumer);
-  }
-
-  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     state.materializeSize(consumer);
-  }
-
-  @Override
-  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
-    state.materializeUnordered(consumer);
   }
 
   private interface StateConsumer {
@@ -131,11 +126,6 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
     }
 
     @Override
-    public boolean knownEmpty() {
-      return false;
-    }
-
-    @Override
     public boolean isCancelled() {
       return status.get() == STATUS_CANCELLED;
     }
@@ -143,6 +133,11 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public int knownSize() {
+      return -1;
     }
 
     @Override
@@ -158,6 +153,16 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
         @Override
         public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
           state.materializeContains(element, consumer);
+        }
+      });
+    }
+
+    @Override
+    public void materializeEach(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
+      materialized(new StateConsumer() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
+          state.materializeEach(consumer);
         }
       });
     }
@@ -194,28 +199,8 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
     }
 
     @Override
-    public void materializeOrdered(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
-          state.materializeOrdered(consumer);
-        }
-      });
-    }
-
-    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 1, LOGGER);
-    }
-
-    @Override
-    public void materializeUnordered(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
-          state.materializeOrdered(consumer);
-        }
-      });
     }
 
     private void materialized(@NotNull final StateConsumer consumer) {
@@ -267,7 +252,7 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
           }
 
           @Override
-          public void error(@NotNull final Exception error) throws Exception {
+          public void error(@NotNull final Exception error) {
             if (isCancelled.get()) {
               setState(new CancelledListAsyncMaterializer<Integer>(1), STATUS_CANCELLED);
             } else {

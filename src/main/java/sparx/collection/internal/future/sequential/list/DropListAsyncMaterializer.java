@@ -37,6 +37,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   private static final int STATUS_DONE = 1;
   private static final int STATUS_RUNNING = 0;
 
+  private final int knownSize;
   private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
   private ListAsyncMaterializer<E> state;
@@ -44,14 +45,10 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   public DropListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final int maxElements, @NotNull final AtomicBoolean isCancelled,
       @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxElements, "maxElements"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(dropFunction, "dropFunction"));
-  }
-
-  @Override
-  public boolean knownEmpty() {
-    return false;
+    final int wrappedSize = wrapped.knownSize();
+    knownSize = wrappedSize >= 0 ? Math.max(0, wrappedSize - maxElements) : -1;
+    state = new ImmaterialState(wrapped, Require.positive(maxElements, "maxElements"),
+        Require.notNull(isCancelled, "isCancelled"), Require.notNull(dropFunction, "dropFunction"));
   }
 
   @Override
@@ -65,6 +62,11 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   }
 
   @Override
+  public int knownSize() {
+    return knownSize;
+  }
+
+  @Override
   public void materializeCancel(final boolean mayInterruptIfRunning) {
     state.materializeCancel(mayInterruptIfRunning);
   }
@@ -73,6 +75,11 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     state.materializeContains(element, consumer);
+  }
+
+  @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    state.materializeEach(consumer);
   }
 
   @Override
@@ -91,18 +98,8 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   }
 
   @Override
-  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeOrdered(consumer);
-  }
-
-  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     state.materializeSize(consumer);
-  }
-
-  @Override
-  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeUnordered(consumer);
   }
 
   private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
@@ -126,11 +123,6 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     }
 
     @Override
-    public boolean knownEmpty() {
-      return false;
-    }
-
-    @Override
     public boolean isCancelled() {
       return status.get() == STATUS_CANCELLED;
     }
@@ -138,6 +130,11 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public int knownSize() {
+      return knownSize;
     }
 
     @Override
@@ -196,6 +193,28 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
           }
         });
       }
+    }
+
+    @Override
+    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+      wrapped.materializeElement(maxElements, new IndexedAsyncConsumer<E>() {
+        @Override
+        public void accept(final int size, final int index, final E element) throws Exception {
+          consumer.accept(safeSize(wrappedSize = Math.max(wrappedSize, size)), index - maxElements,
+              element);
+          wrapped.materializeElement(index + 1, this);
+        }
+
+        @Override
+        public void complete(final int size) throws Exception {
+          consumer.complete(safeSize(wrappedSize = size));
+        }
+
+        @Override
+        public void error(final int index, @NotNull final Exception error) throws Exception {
+          consumer.error(index - maxElements, error);
+        }
+      });
     }
 
     @Override
@@ -306,28 +325,6 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     }
 
     @Override
-    public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      wrapped.materializeElement(maxElements, new IndexedAsyncConsumer<E>() {
-        @Override
-        public void accept(final int size, final int index, final E element) throws Exception {
-          consumer.accept(safeSize(wrappedSize = Math.max(wrappedSize, size)), index - maxElements,
-              element);
-          wrapped.materializeElement(index + 1, this);
-        }
-
-        @Override
-        public void complete(final int size) throws Exception {
-          consumer.complete(safeSize(wrappedSize = size));
-        }
-
-        @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
-          consumer.error(index - maxElements, error);
-        }
-      });
-    }
-
-    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       if (wrappedSize >= 0) {
         safeConsume(consumer, safeSize(wrappedSize), LOGGER);
@@ -344,11 +341,6 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
           }
         });
       }
-    }
-
-    @Override
-    public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materializeOrdered(consumer);
     }
 
     private void consumeElements(@NotNull final List<E> elements) {

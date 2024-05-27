@@ -53,11 +53,6 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   }
 
   @Override
-  public boolean knownEmpty() {
-    return false;
-  }
-
-  @Override
   public boolean isCancelled() {
     return status.get() == STATUS_CANCELLED;
   }
@@ -65,6 +60,11 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   @Override
   public boolean isDone() {
     return status.get() != STATUS_RUNNING;
+  }
+
+  @Override
+  public int knownSize() {
+    return -1;
   }
 
   @Override
@@ -76,6 +76,11 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     state.materializeContains(element, consumer);
+  }
+
+  @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    state.materializeEach(consumer);
   }
 
   @Override
@@ -94,18 +99,8 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   }
 
   @Override
-  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeOrdered(consumer);
-  }
-
-  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     state.materializeSize(consumer);
-  }
-
-  @Override
-  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeUnordered(consumer);
   }
 
   private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
@@ -131,11 +126,6 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     }
 
     @Override
-    public boolean knownEmpty() {
-      return false;
-    }
-
-    @Override
     public boolean isCancelled() {
       return status.get() == STATUS_CANCELLED;
     }
@@ -143,6 +133,11 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public int knownSize() {
+      return -1;
     }
 
     @Override
@@ -180,6 +175,11 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
           consumer.error(error);
         }
       });
+    }
+
+    @Override
+    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+      materializeUntil(Integer.MAX_VALUE, consumer);
     }
 
     @Override
@@ -257,11 +257,6 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     }
 
     @Override
-    public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materializeUntil(Integer.MAX_VALUE, consumer);
-    }
-
-    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
         @Override
@@ -278,11 +273,6 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
           consumer.error(error);
         }
       });
-    }
-
-    @Override
-    public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materializeUntil(Integer.MAX_VALUE, consumer);
     }
 
     private void consumeComplete(final int size) {
@@ -331,12 +321,6 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
         }
       }
       elementsConsumers.clear();
-    }
-
-    private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
-      if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = newState;
-      }
     }
 
     private void materializeUntil(final int index,
@@ -428,6 +412,12 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
             }
           });
         }
+      }
+    }
+
+    private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
+      if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
+        state = newState;
       }
     }
   }

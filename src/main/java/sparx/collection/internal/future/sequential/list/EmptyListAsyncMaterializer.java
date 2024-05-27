@@ -33,17 +33,8 @@ public class EmptyListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
   }
 
   @Override
-  public boolean knownEmpty() {
-    return true;
-  }
-
-  @Override
   public boolean isCancelled() {
     return false;
-  }
-
-  @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
   }
 
   @Override
@@ -52,9 +43,23 @@ public class EmptyListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
   }
 
   @Override
+  public int knownSize() {
+    return 0;
+  }
+
+  @Override
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
+  }
+
+  @Override
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     safeConsume(consumer, false, LOGGER);
+  }
+
+  @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    safeConsumeComplete(consumer, 0, LOGGER);
   }
 
   @Override
@@ -78,17 +83,7 @@ public class EmptyListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
   }
 
   @Override
-  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    safeConsumeComplete(consumer, 0, LOGGER);
-  }
-
-  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     safeConsume(consumer, 0, LOGGER);
-  }
-
-  @Override
-  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    materializeOrdered(consumer);
   }
 }

@@ -50,11 +50,6 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   }
 
   @Override
-  public boolean knownEmpty() {
-    return false;
-  }
-
-  @Override
   public boolean isCancelled() {
     return status.get() == STATUS_CANCELLED;
   }
@@ -62,6 +57,11 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   @Override
   public boolean isDone() {
     return status.get() != STATUS_RUNNING;
+  }
+
+  @Override
+  public int knownSize() {
+    return 1;
   }
 
   @Override
@@ -73,6 +73,11 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     state.materializeContains(element, consumer);
+  }
+
+  @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
+    state.materializeEach(consumer);
   }
 
   @Override
@@ -92,18 +97,8 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
   }
 
   @Override
-  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-    state.materializeOrdered(consumer);
-  }
-
-  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     state.materializeSize(consumer);
-  }
-
-  @Override
-  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-    state.materializeUnordered(consumer);
   }
 
   private interface StateConsumer {
@@ -130,11 +125,6 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
     }
 
     @Override
-    public boolean knownEmpty() {
-      return false;
-    }
-
-    @Override
     public boolean isCancelled() {
       return status.get() == STATUS_CANCELLED;
     }
@@ -142,6 +132,11 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public int knownSize() {
+      return 1;
     }
 
     @Override
@@ -157,6 +152,16 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
         @Override
         public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
           state.materializeContains(element, consumer);
+        }
+      });
+    }
+
+    @Override
+    public void materializeEach(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
+      materialized(new StateConsumer() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+          state.materializeEach(consumer);
         }
       });
     }
@@ -188,28 +193,8 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
     }
 
     @Override
-    public void materializeOrdered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
-          state.materializeOrdered(consumer);
-        }
-      });
-    }
-
-    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 1, LOGGER);
-    }
-
-    @Override
-    public void materializeUnordered(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
-          state.materializeOrdered(consumer);
-        }
-      });
     }
 
     private void materialized(@NotNull final StateConsumer consumer) {

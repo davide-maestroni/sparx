@@ -29,12 +29,11 @@ public class ElementToListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   private final List<E> elements;
 
   public ElementToListAsyncMaterializer(@NotNull final List<E> element) {
+    if (element.size() != 1) {
+      throw new IllegalArgumentException(
+          "'element' must not have size 1, but is: " + element.size());
+    }
     this.elements = element;
-  }
-
-  @Override
-  public boolean knownEmpty() {
-    return false;
   }
 
   @Override
@@ -48,6 +47,11 @@ public class ElementToListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   }
 
   @Override
+  public int knownSize() {
+    return 1;
+  }
+
+  @Override
   public void materializeCancel(final boolean mayInterruptIfRunning) {
   }
 
@@ -56,6 +60,13 @@ public class ElementToListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     safeConsume(consumer, elements.contains(element), LOGGER);
+  }
+
+  @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    if (safeConsume(consumer, 1, 0, elements.get(0), LOGGER)) {
+      safeConsumeComplete(consumer, 1, LOGGER);
+    }
   }
 
   @Override
@@ -81,19 +92,7 @@ public class ElementToListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   }
 
   @Override
-  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    if (safeConsume(consumer, 1, 0, elements.get(0), LOGGER)) {
-      safeConsumeComplete(consumer, 1, LOGGER);
-    }
-  }
-
-  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     safeConsume(consumer, 1, LOGGER);
-  }
-
-  @Override
-  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    materializeOrdered(consumer);
   }
 }

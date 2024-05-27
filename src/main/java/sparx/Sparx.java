@@ -19,8 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
-import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -466,7 +464,7 @@ public class Sparx extends SparxItf {
       public @NotNull List<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        if (materializer.knownEmpty()) {
+        if (materializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
         }
         return new List<Boolean>(context, isCancelled,
@@ -478,7 +476,7 @@ public class Sparx extends SparxItf {
       public @NotNull List<Boolean> all(@NotNull final Predicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        if (materializer.knownEmpty()) {
+        if (materializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
         }
         return new List<Boolean>(context, isCancelled,
@@ -490,7 +488,7 @@ public class Sparx extends SparxItf {
       public @NotNull List<E> append(final E element) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        if (materializer.knownEmpty()) {
+        if (materializer.knownSize() == 0) {
           return new List<E>(context, isCancelled,
               new ElementToListAsyncMaterializer<E>(lazy.List.of(element)));
         }
@@ -506,9 +504,9 @@ public class Sparx extends SparxItf {
         final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(this,
             elements);
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        if (elementsMaterializer.knownEmpty()) {
+        if (elementsMaterializer.knownSize() == 0) {
           return this;
-        } else if (materializer.knownEmpty()) {
+        } else if (materializer.knownSize() == 0) {
           return new List<E>(context, isCancelled, elementsMaterializer);
         }
         return new List<E>(context, isCancelled,
@@ -593,8 +591,13 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        if (materializer.knownEmpty()) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0) {
           return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
+        }
+        if (knownSize > 0) {
+          return new List<Integer>(context, isCancelled,
+              new ElementToListAsyncMaterializer<Integer>(lazy.List.of(knownSize)));
         }
         return new List<Integer>(context, isCancelled,
             new CountListAsyncMaterializer<E>(materializer, isCancelled,
@@ -606,7 +609,7 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        if (materializer.knownEmpty()) {
+        if (materializer.knownSize() == 0) {
           return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
         }
         return new List<Integer>(context, isCancelled,
@@ -619,7 +622,7 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        if (materializer.knownEmpty()) {
+        if (materializer.knownSize() == 0) {
           return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
         }
         return new List<Integer>(context, isCancelled,
@@ -630,12 +633,12 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull List<E> diff(@NotNull final Iterable<?> elements) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
-        if (materializer.knownEmpty()) {
+        if (materializer.knownSize() == 0) {
           return this;
         }
         final ListAsyncMaterializer<?> elementsMaterializer = getElementsMaterializer(this,
             elements);
-        if (elementsMaterializer.knownEmpty()) {
+        if (elementsMaterializer.knownSize() == 0) {
           return this;
         }
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
@@ -715,10 +718,14 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull List<E> drop(final int maxElements) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
-        if (maxElements <= 0 || materializer.knownEmpty()) {
+        final int knownSize = materializer.knownSize();
+        if (maxElements <= 0 || knownSize == 0) {
           return this;
         }
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
+          return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
+        }
         return new List<E>(context, isCancelled,
             new DropListAsyncMaterializer<E>(materializer, maxElements, isCancelled,
                 List.<E>dropFunction()));
@@ -3869,11 +3876,13 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull List<E> appendAll(@NotNull final Iterable<? extends E> elements) {
         final ListMaterializer<E> materializer = this.materializer;
-        if (materializer.knownSize() == 0) {
-          return new List<E>(getElementsMaterializer(elements));
+        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return this;
+        } else if (materializer.knownSize() == 0) {
+          return new List<E>(elementsMaterializer);
         }
-        return new List<E>(
-            new AppendAllListMaterializer<E>(materializer, getElementsMaterializer(elements)));
+        return new List<E>(new AppendAllListMaterializer<E>(materializer, elementsMaterializer));
       }
 
       @Override

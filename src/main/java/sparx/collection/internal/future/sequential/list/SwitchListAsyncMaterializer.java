@@ -49,11 +49,6 @@ public class SwitchListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
-  public boolean knownEmpty() {
-    return wrapped.knownEmpty();
-  }
-
-  @Override
   public boolean isCancelled() {
     return wrapped.isCancelled();
   }
@@ -61,6 +56,11 @@ public class SwitchListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   @Override
   public boolean isDone() {
     return wrapped.isDone();
+  }
+
+  @Override
+  public int knownSize() {
+    return wrapped.knownSize();
   }
 
   @Override
@@ -109,6 +109,32 @@ public class SwitchListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           wrapped.materializeContains(element, switchConsumer);
         } catch (final Exception e) {
           safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    final ContextIndexedAsyncConsumer<E> switchConsumer = new ContextIndexedAsyncConsumer<E>(
+        toContext, toTaskID, consumer, LOGGER);
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeEach(switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, -1, e, LOGGER);
         }
       }
     });
@@ -193,32 +219,6 @@ public class SwitchListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
-  public void materializeOrdered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    final ContextIndexedAsyncConsumer<E> switchConsumer = new ContextIndexedAsyncConsumer<E>(
-        toContext, toTaskID, consumer, LOGGER);
-    fromContext.scheduleAfter(new Task() {
-      @Override
-      public @NotNull String taskID() {
-        return fromTaskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
-      }
-
-      @Override
-      public void run() {
-        try {
-          wrapped.materializeOrdered(switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, -1, e, LOGGER);
-        }
-      }
-    });
-  }
-
-  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     final ContextAsyncConsumer<Integer> switchConsumer = new ContextAsyncConsumer<Integer>(
         toContext, toTaskID, consumer, LOGGER);
@@ -239,32 +239,6 @@ public class SwitchListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           wrapped.materializeSize(switchConsumer);
         } catch (final Exception e) {
           safeConsumeError(switchConsumer, e, LOGGER);
-        }
-      }
-    });
-  }
-
-  @Override
-  public void materializeUnordered(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    final ContextIndexedAsyncConsumer<E> switchConsumer = new ContextIndexedAsyncConsumer<E>(
-        toContext, toTaskID, consumer, LOGGER);
-    fromContext.scheduleAfter(new Task() {
-      @Override
-      public @NotNull String taskID() {
-        return fromTaskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
-      }
-
-      @Override
-      public void run() {
-        try {
-          wrapped.materializeUnordered(switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, -1, e, LOGGER);
         }
       }
     });
