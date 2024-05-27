@@ -25,13 +25,13 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
-import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 import sparx.util.function.BinaryFunction;
 
-public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+public class DropRightListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
-  private static final Logger LOGGER = Logger.getLogger(DropListAsyncMaterializer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(
+      DropRightListAsyncMaterializer.class.getName());
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -42,7 +42,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private ListAsyncMaterializer<E> state;
 
-  public DropListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+  public DropRightListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final int maxElements, @NotNull final AtomicBoolean isCancelled,
       @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
     final int wrappedSize = wrapped.knownSize();
@@ -111,7 +111,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     private final AtomicBoolean isCancelled;
     private final ListAsyncMaterializer<E> wrapped;
 
-    private int wrappedSize = -1;
+    private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int maxElements,
         @NotNull final AtomicBoolean isCancelled,
@@ -120,6 +120,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       this.maxElements = maxElements;
       this.isCancelled = isCancelled;
       this.dropFunction = dropFunction;
+      wrappedSize = wrapped.knownSize();
     }
 
     @Override
@@ -146,75 +147,117 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     @Override
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      if (element == null) {
-        wrapped.materializeElement(maxElements, new IndexedAsyncConsumer<E>() {
+      if (wrappedSize < 0) {
+        wrapped.materializeSize(new AsyncConsumer<Integer>() {
           @Override
-          public void accept(final int size, final int index, final E elem) throws Exception {
-            wrappedSize = Math.max(wrappedSize, size);
-            if (elem == null) {
-              consumer.accept(true);
-            } else {
-              wrapped.materializeElement(index + 1, this);
-            }
-          }
-
-          @Override
-          public void complete(final int size) throws Exception {
+          public void accept(final Integer size) {
             wrappedSize = size;
-            consumer.accept(false);
+            materializeContains(element, consumer);
           }
 
           @Override
-          public void error(final int index, @NotNull final Exception error) throws Exception {
+          public void error(@NotNull final Exception error) throws Exception {
+            setState(new FailedListAsyncMaterializer<E>(-1, -1, error), STATUS_DONE);
             consumer.error(error);
           }
         });
+      }
+      final int maxIndex = wrappedSize - maxElements - 1;
+      if (maxIndex < 0) {
+        safeConsume(consumer, false, LOGGER);
       } else {
-        wrapped.materializeElement(maxElements, new IndexedAsyncConsumer<E>() {
-          @Override
-          public void accept(final int size, final int index, final E elem) throws Exception {
-            wrappedSize = Math.max(wrappedSize, size);
-            if (element.equals(elem)) {
-              consumer.accept(true);
-            } else {
-              wrapped.materializeElement(index + 1, this);
+        if (element == null) {
+          wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E elem) throws Exception {
+              if (elem == null) {
+                consumer.accept(true);
+              } else if (index < maxIndex) {
+                wrapped.materializeElement(index + 1, this);
+              }
             }
-          }
 
-          @Override
-          public void complete(final int size) throws Exception {
-            wrappedSize = size;
-            consumer.accept(false);
-          }
+            @Override
+            public void complete(final int size) throws Exception {
+              wrappedSize = size;
+              consumer.accept(false);
+            }
 
-          @Override
-          public void error(final int index, @NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
+            @Override
+            public void error(final int index, @NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
+        } else {
+          wrapped.materializeElement(maxElements, new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E elem) throws Exception {
+              wrappedSize = Math.max(wrappedSize, size);
+              if (element.equals(elem)) {
+                consumer.accept(true);
+              } else if (index < maxIndex) {
+                wrapped.materializeElement(index + 1, this);
+              }
+            }
+
+            @Override
+            public void complete(final int size) throws Exception {
+              wrappedSize = size;
+              consumer.accept(false);
+            }
+
+            @Override
+            public void error(final int index, @NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
+        }
       }
     }
 
     @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      wrapped.materializeElement(maxElements, new IndexedAsyncConsumer<E>() {
-        @Override
-        public void accept(final int size, final int index, final E element) throws Exception {
-          consumer.accept(safeSize(wrappedSize = Math.max(wrappedSize, size)), index - maxElements,
-              element);
-          wrapped.materializeElement(index + 1, this);
-        }
+      if (wrappedSize < 0) {
+        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+          @Override
+          public void accept(final Integer size) {
+            wrappedSize = size;
+            materializeEach(consumer);
+          }
 
-        @Override
-        public void complete(final int size) throws Exception {
-          consumer.complete(safeSize(wrappedSize = size));
-        }
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            setState(new FailedListAsyncMaterializer<E>(-1, -1, error), STATUS_DONE);
+            consumer.error(-1, error);
+          }
+        });
+      }
+      final int maxIndex = wrappedSize - maxElements - 1;
+      if (maxIndex < 0) {
+        safeConsumeComplete(consumer, 0, LOGGER);
+      } else {
+        wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
+          @Override
+          public void accept(final int size, final int index, final E element) throws Exception {
+            consumer.accept(maxIndex + 1, index, element);
+            if (index < maxIndex) {
+              wrapped.materializeElement(index + 1, this);
+            } else {
+              complete(0);
+            }
+          }
 
-        @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
-          consumer.error(index - maxElements, error);
-        }
-      });
+          @Override
+          public void complete(final int size) throws Exception {
+            consumer.complete(maxIndex + 1);
+          }
+
+          @Override
+          public void error(final int index, @NotNull final Exception error) throws Exception {
+            consumer.error(index, error);
+          }
+        });
+      }
     }
 
     @Override
@@ -224,24 +267,44 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
         safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
             LOGGER);
       } else {
-        final int originalIndex = index;
-        wrapped.materializeElement(safeIndex(index), new IndexedAsyncConsumer<E>() {
-          @Override
-          public void accept(final int size, final int index, final E element) throws Exception {
-            consumer.accept(safeSize(wrappedSize = Math.max(wrappedSize, size)), originalIndex,
-                element);
-          }
+        if (wrappedSize < 0) {
+          wrapped.materializeSize(new AsyncConsumer<Integer>() {
+            @Override
+            public void accept(final Integer size) {
+              wrappedSize = size;
+              materializeEach(consumer);
+            }
 
-          @Override
-          public void complete(final int size) throws Exception {
-            consumer.complete(safeSize(wrappedSize = size));
-          }
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              setState(new FailedListAsyncMaterializer<E>(-1, -1, error), STATUS_DONE);
+              consumer.error(-1, error);
+            }
+          });
+        }
+        final int maxIndex = wrappedSize - maxElements - 1;
+        if (maxIndex < 0) {
+          safeConsumeComplete(consumer, 0, LOGGER);
+        } else if (index > maxIndex) {
+          safeConsumeComplete(consumer, maxIndex + 1, LOGGER);
+        } else {
+          wrapped.materializeElement(index, new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E element) throws Exception {
+              consumer.accept(maxIndex + 1, index, element);
+            }
 
-          @Override
-          public void error(final int index, @NotNull final Exception error) throws Exception {
-            consumer.error(originalIndex, error);
-          }
-        });
+            @Override
+            public void complete(final int size) throws Exception {
+              consumer.complete(maxIndex + 1);
+            }
+
+            @Override
+            public void error(final int index, @NotNull final Exception error) throws Exception {
+              consumer.error(index, error);
+            }
+          });
+        }
       }
     }
 
@@ -325,12 +388,12 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       if (wrappedSize >= 0) {
-        safeConsume(consumer, safeSize(wrappedSize), LOGGER);
+        safeConsume(consumer, Math.max(0, wrappedSize - maxElements), LOGGER);
       } else {
         wrapped.materializeSize(new AsyncConsumer<Integer>() {
           @Override
           public void accept(final Integer size) throws Exception {
-            consumer.accept(safeSize(wrappedSize = size));
+            consumer.accept(Math.max(0, (wrappedSize = size) - maxElements));
           }
 
           @Override
@@ -357,18 +420,8 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       elementsConsumers.clear();
     }
 
-    private int safeIndex(final int index) {
-      if (index >= 0) {
-        return IndexOverflowException.safeCast((long) maxElements + index);
-      }
-      return index;
-    }
-
     private int safeSize(final int wrappedSize) {
-      if (wrappedSize >= 0) {
-        return Math.max(0, wrappedSize - maxElements);
-      }
-      return -1;
+      return wrappedSize >= 0 ? Math.max(0, wrappedSize - maxElements) : -1;
     }
 
     private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {

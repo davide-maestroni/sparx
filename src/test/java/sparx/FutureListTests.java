@@ -406,4 +406,166 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
     }
   }
+
+  @Test
+  public void dropRight() {
+    var l = List.<Integer>of().toFuture(context).dropRight(1);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    l = List.<Integer>of().toFuture(context).dropRight(0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    l = List.<Integer>of().toFuture(context).dropRight(-1);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+
+    l = List.of(1, null, 3).toFuture(context).dropRight(1);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(2, l.size());
+    assertEquals(List.of(1, null), l);
+    l = List.of(1, null, 3).toFuture(context).dropRight(2);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertEquals(List.of(1), l);
+    l = List.of(1, null, 3).toFuture(context).dropRight(3);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+    l = List.of(1, null, 3).toFuture(context).dropRight(4);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+    l = List.of(1, null, 3).toFuture(context).dropRight(0);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+    l = List.of(1, null, 3).toFuture(context).dropRight(-1);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      }).append(false).dropRight(1);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void dropRightWhile() {
+    var l = List.<Integer>of().toFuture(context).dropRightWhile(e -> e > 0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+
+    l = List.of(1, null, 3).toFuture(context).dropRightWhile(Objects::isNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+    l = List.of(1, null, 3).toFuture(context).dropRightWhile(Objects::nonNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(2, l.size());
+    assertEquals(List.of(1, null), l);
+    l = List.of(1, null, 3).toFuture(context).dropRightWhile(e -> e < 1);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+
+    l = List.of(1, 2, 3).toFuture(context).dropRightWhile(e -> e > 0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).dropRightWhile(e -> e > 0).size());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).dropRightWhile(i -> {
+        Thread.sleep(60000);
+        return true;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void dropWhile() {
+    var l = List.<Integer>of().toFuture(context).dropWhile(e -> e > 0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+
+    l = List.of(1, null, 3).toFuture(context).dropWhile(Objects::isNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+    l = List.of(1, null, 3).toFuture(context).dropWhile(Objects::nonNull);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(2, l.size());
+    assertEquals(List.of(null, 3), l);
+    l = List.of(1, null, 3).toFuture(context).dropWhile(e -> e < 1);
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(3, l.size());
+    assertEquals(List.of(1, null, 3), l);
+
+    l = List.of(1, 2, 3).toFuture(context).dropWhile(e -> e > 0);
+    assertTrue(l.isEmpty());
+    assertFalse(l.notEmpty());
+    assertEquals(0, l.size());
+    assertEquals(List.of(), l);
+
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).dropWhile(e -> e > 0).size());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).dropWhile(i -> {
+        Thread.sleep(60000);
+        return true;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
 }

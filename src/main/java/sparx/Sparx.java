@@ -45,6 +45,9 @@ import sparx.collection.internal.future.sequential.list.CountListAsyncMaterializ
 import sparx.collection.internal.future.sequential.list.CountWhereListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.DiffListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.DropListAsyncMaterializer;
+import sparx.collection.internal.future.sequential.list.DropRightListAsyncMaterializer;
+import sparx.collection.internal.future.sequential.list.DropRightWhileListAsyncMaterializer;
+import sparx.collection.internal.future.sequential.list.DropWhileListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ElementToListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListToListAsyncMaterializer;
@@ -384,6 +387,12 @@ public class Sparx extends SparxItf {
           return lazy.List.wrap(firstParam).drop(secondParam).materialized();
         }
       };
+      private static final BinaryFunction<? extends java.util.List<?>, Integer, ? extends java.util.List<?>> DROP_RIGHT_FUNCTION = new BinaryFunction<java.util.List<?>, Integer, java.util.List<?>>() {
+        @Override
+        public java.util.List<?> apply(java.util.List<?> firstParam, Integer secondParam) {
+          return lazy.List.wrap(firstParam).dropRight(secondParam).materialized();
+        }
+      };
       private static final ElementToListAsyncMaterializer<Boolean> FALSE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
           lazy.List.of(false));
       private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
@@ -425,6 +434,11 @@ public class Sparx extends SparxItf {
       @SuppressWarnings("unchecked")
       private static @NotNull <E> BinaryFunction<java.util.List<E>, Integer, java.util.List<E>> dropFunction() {
         return (BinaryFunction<java.util.List<E>, Integer, java.util.List<E>>) DROP_FUNCTION;
+      }
+
+      @SuppressWarnings("unchecked")
+      private static @NotNull <E> BinaryFunction<java.util.List<E>, Integer, java.util.List<E>> dropRightFunction() {
+        return (BinaryFunction<java.util.List<E>, Integer, java.util.List<E>>) DROP_RIGHT_FUNCTION;
       }
 
       @SuppressWarnings("unchecked")
@@ -732,28 +746,63 @@ public class Sparx extends SparxItf {
       }
 
       @Override
-      public @NotNull List<E> dropRight(int maxElements) {
-        return null;
+      public @NotNull List<E> dropRight(final int maxElements) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (maxElements <= 0 || knownSize == 0) {
+          return this;
+        }
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
+          return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
+        }
+        return new List<E>(context, isCancelled,
+            new DropRightListAsyncMaterializer<E>(materializer, maxElements, isCancelled,
+                List.<E>dropRightFunction()));
       }
 
       @Override
-      public @NotNull List<E> dropRightWhile(@NotNull IndexedPredicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> dropRightWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(context, isCancelled,
+            new DropRightWhileListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+                List.<E>dropRightFunction()));
       }
 
       @Override
-      public @NotNull List<E> dropRightWhile(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> dropRightWhile(@NotNull final Predicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(context, isCancelled,
+            new DropRightWhileListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                isCancelled, List.<E>dropRightFunction()));
       }
 
       @Override
-      public @NotNull List<E> dropWhile(@NotNull IndexedPredicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> dropWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(context, isCancelled,
+            new DropWhileListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+                List.<E>dropFunction()));
       }
 
       @Override
-      public @NotNull List<E> dropWhile(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        return new List<E>(context, isCancelled,
+            new DropWhileListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                isCancelled, List.<E>dropFunction()));
       }
 
       @Override
