@@ -568,4 +568,77 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
     }
   }
+
+  @Test
+  public void endsWith() {
+    var l = List.<Integer>of().toFuture(context).endsWith(List.of());
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertTrue(l.first());
+
+    l = List.<Integer>of().toFuture(context).endsWith(List.of(1));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertFalse(l.first());
+
+    l = List.of(1, null, 3).toFuture(context).endsWith(List.of());
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertTrue(l.first());
+
+    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertTrue(l.first());
+
+    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(null));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertFalse(l.first());
+
+    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(null, 3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertTrue(l.first());
+
+    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(1, null));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertFalse(l.first());
+
+    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(1, null, 3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertTrue(l.first());
+
+    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(null, null, 3));
+    assertFalse(l.isEmpty());
+    assertTrue(l.notEmpty());
+    assertEquals(1, l.size());
+    assertFalse(l.first());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      }).endsWith(List.of(false));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
 }

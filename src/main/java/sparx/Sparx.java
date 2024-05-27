@@ -49,6 +49,7 @@ import sparx.collection.internal.future.sequential.list.DropRightListAsyncMateri
 import sparx.collection.internal.future.sequential.list.DropRightWhileListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.DropWhileListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ElementToListAsyncMaterializer;
+import sparx.collection.internal.future.sequential.list.EndsWithListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.ListToListAsyncMaterializer;
 import sparx.collection.internal.future.sequential.list.SwitchListAsyncMaterializer;
@@ -767,6 +768,7 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DropRightWhileListAsyncMaterializer<E>(materializer, predicate, isCancelled,
                 List.<E>dropRightFunction()));
@@ -778,6 +780,7 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DropRightWhileListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
                 isCancelled, List.<E>dropRightFunction()));
@@ -789,6 +792,7 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DropWhileListAsyncMaterializer<E>(materializer, predicate, isCancelled,
                 List.<E>dropFunction()));
@@ -800,14 +804,23 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DropWhileListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
                 isCancelled, List.<E>dropFunction()));
       }
 
       @Override
-      public @NotNull List<Boolean> endsWith(@NotNull Iterable<?> elements) {
-        return null;
+      public @NotNull List<Boolean> endsWith(@NotNull final Iterable<?> elements) {
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(this,
+            elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
+        }
+        return new List<Boolean>(context, isCancelled,
+            new EndsWithListAsyncMaterializer<E>(materializer, elementsMaterializer, isCancelled,
+                List.<Boolean>decorateFunction()));
       }
 
       @Override
