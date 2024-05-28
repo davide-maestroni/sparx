@@ -28,6 +28,8 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
+import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 import sparx.util.function.Function;
 
@@ -45,11 +47,11 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   public DiffListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
-      @NotNull final AtomicBoolean isCancelled,
+      @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(elementsMaterializer, "elementsMaterializer"),
-        Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
   }
 
@@ -106,6 +108,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
 
+    private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
     private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
         2);
@@ -118,10 +121,11 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
-        @NotNull final AtomicBoolean isCancelled,
+        @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
+      this.context = context;
       this.isCancelled = isCancelled;
       this.decorateFunction = decorateFunction;
     }
@@ -323,6 +327,11 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       elementsConsumers.clear();
     }
 
+    private @NotNull String getTaskID() {
+      final String taskID = context.currentTaskID();
+      return taskID != null ? taskID : "";
+    }
+
     private void materializeUntil(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       final ArrayList<E> elements = this.elements;
@@ -363,7 +372,23 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
                     consumeElement(wrappedIndex, element);
                   }
                   if (!elementsConsumers.isEmpty()) {
-                    wrapped.materializeElement(nextIndex, elementConsumer);
+                    final String taskID = getTaskID();
+                    context.scheduleAfter(new Task() {
+                      @Override
+                      public @NotNull String taskID() {
+                        return taskID;
+                      }
+
+                      @Override
+                      public int weight() {
+                        return 1;
+                      }
+
+                      @Override
+                      public void run() {
+                        wrapped.materializeElement(nextIndex, elementConsumer);
+                      }
+                    });
                   }
                 }
 

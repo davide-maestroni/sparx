@@ -24,6 +24,8 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
+import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 import sparx.util.function.Function;
 
@@ -42,11 +44,11 @@ public class EndsWithListAsyncMaterializer<E> implements ListAsyncMaterializer<B
 
   public EndsWithListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
-      @NotNull final AtomicBoolean isCancelled,
+      @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(elementsMaterializer, "elementsMaterializer"),
-        Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
   }
 
@@ -109,6 +111,7 @@ public class EndsWithListAsyncMaterializer<E> implements ListAsyncMaterializer<B
 
   private class ImmaterialState extends AbstractListAsyncMaterializer<Boolean> {
 
+    private final ExecutionContext context;
     private final Function<List<Boolean>, List<Boolean>> decorateFunction;
     private final ListAsyncMaterializer<Object> elementsMaterializer;
     private final AtomicBoolean isCancelled;
@@ -117,10 +120,11 @@ public class EndsWithListAsyncMaterializer<E> implements ListAsyncMaterializer<B
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
-        @NotNull final AtomicBoolean isCancelled,
+        @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
         @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
+      this.context = context;
       this.isCancelled = isCancelled;
       this.decorateFunction = decorateFunction;
     }
@@ -197,6 +201,11 @@ public class EndsWithListAsyncMaterializer<E> implements ListAsyncMaterializer<B
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 1, LOGGER);
+    }
+
+    private @NotNull String getTaskID() {
+      final String taskID = context.currentTaskID();
+      return taskID != null ? taskID : "";
     }
 
     private void materialized(@NotNull final StateConsumer consumer) {
@@ -282,49 +291,81 @@ public class EndsWithListAsyncMaterializer<E> implements ListAsyncMaterializer<B
         } else {
           final IndexedAsyncConsumer<Object> elementConsumer = this;
           if (element == null) {
-            wrapped.materializeElement(--wrappedIndex, new IndexedAsyncConsumer<E>() {
+            final String taskID = getTaskID();
+            context.scheduleAfter(new Task() {
               @Override
-              public void accept(final int size, final int index, final E wrappedElement)
-                  throws Exception {
-                if (wrappedElement != null) {
-                  setState(false);
-                } else if (elementIndex == 0) {
-                  setState(true);
-                } else {
-                  elementsMaterializer.materializeElement(elementIndex - 1, elementConsumer);
-                }
+              public @NotNull String taskID() {
+                return taskID;
               }
 
               @Override
-              public void complete(final int size) {
+              public int weight() {
+                return 1;
               }
 
               @Override
-              public void error(final int index, @NotNull final Exception error) {
-                setState(error);
+              public void run() {
+                wrapped.materializeElement(--wrappedIndex, new IndexedAsyncConsumer<E>() {
+                  @Override
+                  public void accept(final int size, final int index, final E wrappedElement)
+                      throws Exception {
+                    if (wrappedElement != null) {
+                      setState(false);
+                    } else if (elementIndex == 0) {
+                      setState(true);
+                    } else {
+                      elementsMaterializer.materializeElement(elementIndex - 1, elementConsumer);
+                    }
+                  }
+
+                  @Override
+                  public void complete(final int size) {
+                  }
+
+                  @Override
+                  public void error(final int index, @NotNull final Exception error) {
+                    setState(error);
+                  }
+                });
               }
             });
           } else {
-            wrapped.materializeElement(--wrappedIndex, new IndexedAsyncConsumer<E>() {
+            final String taskID = getTaskID();
+            context.scheduleAfter(new Task() {
               @Override
-              public void accept(final int size, final int index, final E wrappedElement)
-                  throws Exception {
-                if (!element.equals(wrappedElement)) {
-                  setState(false);
-                } else if (elementIndex == 0) {
-                  setState(true);
-                } else {
-                  elementsMaterializer.materializeElement(elementIndex - 1, elementConsumer);
-                }
+              public @NotNull String taskID() {
+                return taskID;
               }
 
               @Override
-              public void complete(final int size) {
+              public int weight() {
+                return 1;
               }
 
               @Override
-              public void error(final int index, @NotNull final Exception error) {
-                setState(error);
+              public void run() {
+                wrapped.materializeElement(--wrappedIndex, new IndexedAsyncConsumer<E>() {
+                  @Override
+                  public void accept(final int size, final int index, final E wrappedElement)
+                      throws Exception {
+                    if (!element.equals(wrappedElement)) {
+                      setState(false);
+                    } else if (elementIndex == 0) {
+                      setState(true);
+                    } else {
+                      elementsMaterializer.materializeElement(elementIndex - 1, elementConsumer);
+                    }
+                  }
+
+                  @Override
+                  public void complete(final int size) {
+                  }
+
+                  @Override
+                  public void error(final int index, @NotNull final Exception error) {
+                    setState(error);
+                  }
+                });
               }
             });
           }

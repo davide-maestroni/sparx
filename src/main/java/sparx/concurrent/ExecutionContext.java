@@ -16,11 +16,14 @@
 package sparx.concurrent;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public interface ExecutionContext {
 
   @NotNull
   ExecutionContext fork();
+
+  @Nullable String currentTaskID();
 
   boolean interruptTask(@NotNull String taskID);
 

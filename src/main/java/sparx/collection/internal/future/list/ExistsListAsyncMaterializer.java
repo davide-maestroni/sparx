@@ -24,6 +24,8 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
+import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
@@ -42,11 +44,12 @@ public class ExistsListAsyncMaterializer<E> implements ListAsyncMaterializer<Boo
   private ListAsyncMaterializer<Boolean> state;
 
   public ExistsListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"), Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(predicate, "predicate"), Require.notNull(context, "context"),
+        Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
   }
 
@@ -109,6 +112,7 @@ public class ExistsListAsyncMaterializer<E> implements ListAsyncMaterializer<Boo
 
   private class ImmaterialState extends AbstractListAsyncMaterializer<Boolean> {
 
+    private final ExecutionContext context;
     private final Function<List<Boolean>, List<Boolean>> decorateFunction;
     private final AtomicBoolean isCancelled;
     private final IndexedPredicate<? super E> predicate;
@@ -117,10 +121,11 @@ public class ExistsListAsyncMaterializer<E> implements ListAsyncMaterializer<Boo
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final AtomicBoolean isCancelled,
+        @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
         @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
       this.wrapped = wrapped;
       this.predicate = predicate;
+      this.context = context;
       this.isCancelled = isCancelled;
       this.decorateFunction = decorateFunction;
     }
@@ -198,6 +203,11 @@ public class ExistsListAsyncMaterializer<E> implements ListAsyncMaterializer<Boo
       safeConsume(consumer, 1, LOGGER);
     }
 
+    private @NotNull String getTaskID() {
+      final String taskID = context.currentTaskID();
+      return taskID != null ? taskID : "";
+    }
+
     private void materialized(@NotNull final StateConsumer consumer) {
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
@@ -209,39 +219,72 @@ public class ExistsListAsyncMaterializer<E> implements ListAsyncMaterializer<Boo
             if (empty) {
               setState(false);
             } else {
-              wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
+              final String taskID = getTaskID();
+              context.scheduleAfter(new Task() {
                 @Override
-                public void accept(final int size, final int index, final E element) {
-                  try {
-                    if (predicate.test(index, element)) {
-                      setState(true);
-                    } else {
-                      wrapped.materializeElement(index + 1, this);
-                    }
-                  } catch (final Exception e) {
-                    if (e instanceof InterruptedException) {
-                      Thread.currentThread().interrupt();
-                    }
-                    if (isCancelled.get()) {
-                      setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
-                    } else {
-                      setState(new FailedListAsyncMaterializer<Boolean>(e), STATUS_DONE);
-                    }
-                  }
+                public @NotNull String taskID() {
+                  return taskID;
                 }
 
                 @Override
-                public void complete(final int size) throws Exception {
-                  setState(false);
+                public int weight() {
+                  return 1;
                 }
 
                 @Override
-                public void error(final int index, @NotNull final Exception error) {
-                  if (isCancelled.get()) {
-                    setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
-                  } else {
-                    setState(new FailedListAsyncMaterializer<Boolean>(error), STATUS_DONE);
-                  }
+                public void run() {
+                  wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
+                    @Override
+                    public void accept(final int size, final int index, final E element) {
+                      try {
+                        if (predicate.test(index, element)) {
+                          setState(true);
+                        } else {
+                          final String taskID = getTaskID();
+                          final IndexedAsyncConsumer<E> elementConsumer = this;
+                          context.scheduleAfter(new Task() {
+                            @Override
+                            public @NotNull String taskID() {
+                              return taskID;
+                            }
+
+                            @Override
+                            public int weight() {
+                              return 1;
+                            }
+
+                            @Override
+                            public void run() {
+                              wrapped.materializeElement(index + 1, elementConsumer);
+                            }
+                          });
+                        }
+                      } catch (final Exception e) {
+                        if (e instanceof InterruptedException) {
+                          Thread.currentThread().interrupt();
+                        }
+                        if (isCancelled.get()) {
+                          setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
+                        } else {
+                          setState(new FailedListAsyncMaterializer<Boolean>(e), STATUS_DONE);
+                        }
+                      }
+                    }
+
+                    @Override
+                    public void complete(final int size) throws Exception {
+                      setState(false);
+                    }
+
+                    @Override
+                    public void error(final int index, @NotNull final Exception error) {
+                      if (isCancelled.get()) {
+                        setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
+                      } else {
+                        setState(new FailedListAsyncMaterializer<Boolean>(error), STATUS_DONE);
+                      }
+                    }
+                  });
                 }
               });
             }

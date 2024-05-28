@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 
@@ -158,6 +159,17 @@ public class ExecutorContext implements ExecutionContext {
   @Override
   public @NotNull ExecutionContext fork() {
     return worker.fork();
+  }
+
+  @Override
+  public @Nullable String currentTaskID() {
+    synchronized (lock) {
+      final Task runningTask = this.runningTask;
+      if (runningTask != null) {
+        return runningTask.taskID();
+      }
+    }
+    return null;
   }
 
   @Override

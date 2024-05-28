@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
+import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.IndexedPredicate;
@@ -38,11 +40,12 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
   private ListAsyncMaterializer<E> state;
 
   public DropRightWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
     state = new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"),
-        Require.notNull(isCancelled, "isCancelled"), Require.notNull(dropFunction, "dropFunction"));
+        Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(dropFunction, "dropFunction"));
   }
 
   @Override
@@ -103,6 +106,7 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
 
   private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
 
+    private final ExecutionContext context;
     private final BinaryFunction<List<E>, Integer, List<E>> dropFunction;
     private final AtomicBoolean isCancelled;
     private final IndexedPredicate<? super E> predicate;
@@ -113,10 +117,11 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final AtomicBoolean isCancelled,
+        @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
         @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
       this.wrapped = wrapped;
       this.predicate = predicate;
+      this.context = context;
       this.isCancelled = isCancelled;
       this.dropFunction = dropFunction;
       wrappedSize = wrapped.knownSize();
@@ -205,6 +210,11 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
       });
     }
 
+    private @NotNull String getTaskID() {
+      final String taskID = context.currentTaskID();
+      return taskID != null ? taskID : "";
+    }
+
     private void materialized(@NotNull final StateConsumer<E> consumer) {
       if (wrappedSize < 0) {
         wrapped.materializeSize(new AsyncConsumer<Integer>() {
@@ -230,7 +240,24 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
               try {
                 if (predicate.test(index, element)) {
                   if (index > 0) {
-                    wrapped.materializeElement(index - 1, this);
+                    final String taskID = getTaskID();
+                    final IndexedAsyncConsumer<E> elementConsumer = this;
+                    context.scheduleAfter(new Task() {
+                      @Override
+                      public @NotNull String taskID() {
+                        return taskID;
+                      }
+
+                      @Override
+                      public int weight() {
+                        return 1;
+                      }
+
+                      @Override
+                      public void run() {
+                        wrapped.materializeElement(index - 1, elementConsumer);
+                      }
+                    });
                   } else {
                     final List<E> materialized = dropFunction.apply(Collections.<E>emptyList(), 0);
                     setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
@@ -240,9 +267,8 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
                   if (maxElements == 0) {
                     setState(wrapped, STATUS_DONE);
                   } else {
-                    setState(
-                        new DropRightListAsyncMaterializer<E>(wrapped, maxElements, isCancelled,
-                            dropFunction), STATUS_DONE);
+                    setState(new DropRightListAsyncMaterializer<E>(wrapped, maxElements, context,
+                        isCancelled, dropFunction), STATUS_DONE);
                   }
                 }
               } catch (final Exception e) {

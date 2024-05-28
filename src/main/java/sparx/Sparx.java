@@ -486,8 +486,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
         }
+        final ExecutionContext context = this.context;
         return new List<Boolean>(context, isCancelled,
-            new AllListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+            new AllListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
                 List.<Boolean>decorateFunction()));
       }
 
@@ -498,8 +499,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
         }
+        final ExecutionContext context = this.context;
         return new List<Boolean>(context, isCancelled,
-            new AllListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+            new AllListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate), context,
                 isCancelled, List.<Boolean>decorateFunction()));
       }
 
@@ -518,7 +520,6 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<E> appendAll(@NotNull final Iterable<? extends E> elements) {
-        final ExecutionContext context = this.context;
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(this,
             elements);
@@ -625,28 +626,28 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<Integer> count(@NotNull final IndexedPredicate<? super E> predicate) {
-        final ExecutionContext context = this.context;
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
           return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
         }
+        final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
-            new CountWhereListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+            new CountWhereListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
                 List.<Integer>decorateFunction()));
       }
 
       @Override
       public @NotNull List<Integer> count(@NotNull final Predicate<? super E> predicate) {
-        final ExecutionContext context = this.context;
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
           return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
         }
+        final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
             new CountWhereListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                isCancelled, List.<Integer>decorateFunction()));
+                context, isCancelled, List.<Integer>decorateFunction()));
       }
 
       @Override
@@ -660,10 +661,11 @@ public class Sparx extends SparxItf {
         if (elementsMaterializer.knownSize() == 0) {
           return this;
         }
+        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
-            new DiffListAsyncMaterializer<E>(materializer, elementsMaterializer, isCancelled,
-                List.<E>decorateFunction()));
+            new DiffListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
+                isCancelled, List.<E>decorateFunction()));
       }
 
       @Override
@@ -745,8 +747,9 @@ public class Sparx extends SparxItf {
         if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
           return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
         }
+        final ExecutionContext context = this.context;
         return new List<E>(context, isCancelled,
-            new DropListAsyncMaterializer<E>(materializer, maxElements, isCancelled,
+            new DropListAsyncMaterializer<E>(materializer, maxElements, context, isCancelled,
                 List.<E>dropFunction()));
       }
 
@@ -761,8 +764,9 @@ public class Sparx extends SparxItf {
         if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
           return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
         }
+        final ExecutionContext context = this.context;
         return new List<E>(context, isCancelled,
-            new DropRightListAsyncMaterializer<E>(materializer, maxElements, isCancelled,
+            new DropRightListAsyncMaterializer<E>(materializer, maxElements, context, isCancelled,
                 List.<E>dropRightFunction()));
       }
 
@@ -772,10 +776,11 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
+        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
-            new DropRightWhileListAsyncMaterializer<E>(materializer, predicate, isCancelled,
-                List.<E>dropRightFunction()));
+            new DropRightWhileListAsyncMaterializer<E>(materializer, predicate, context,
+                isCancelled, List.<E>dropRightFunction()));
       }
 
       @Override
@@ -784,10 +789,11 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
+        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DropRightWhileListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                isCancelled, List.<E>dropRightFunction()));
+                context, isCancelled, List.<E>dropRightFunction()));
       }
 
       @Override
@@ -796,9 +802,10 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
+        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
-            new DropWhileListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+            new DropWhileListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
                 List.<E>dropFunction()));
       }
 
@@ -808,10 +815,11 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
+        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DropWhileListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                isCancelled, List.<E>dropFunction()));
+                context, isCancelled, List.<E>dropFunction()));
       }
 
       @Override
@@ -822,9 +830,10 @@ public class Sparx extends SparxItf {
         if (elementsMaterializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
         }
+        final ExecutionContext context = this.context;
         return new List<Boolean>(context, isCancelled,
-            new EndsWithListAsyncMaterializer<E>(materializer, elementsMaterializer, isCancelled,
-                List.<Boolean>decorateFunction()));
+            new EndsWithListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
+                isCancelled, List.<Boolean>decorateFunction()));
       }
 
       @Override
@@ -834,8 +843,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, FALSE_MATERIALIZER);
         }
+        final ExecutionContext context = this.context;
         return new List<Boolean>(context, isCancelled,
-            new ExistsListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+            new ExistsListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
                 List.<Boolean>decorateFunction()));
       }
 
@@ -846,8 +856,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, FALSE_MATERIALIZER);
         }
+        final ExecutionContext context = this.context;
         return new List<Boolean>(context, isCancelled,
-            new ExistsListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+            new ExistsListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate), context,
                 isCancelled, List.<Boolean>decorateFunction()));
 
       }
@@ -858,9 +869,10 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
+        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
-            new FilterListAsyncMaterializer<E>(materializer, predicate, isCancelled,
+            new FilterListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
                 List.<E>decorateFunction()));
       }
 
@@ -870,20 +882,21 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
+        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new FilterListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                isCancelled, List.<E>decorateFunction()));
+                context, isCancelled, List.<E>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<E> findAny(@NotNull IndexedPredicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> findAny(@NotNull final IndexedPredicate<? super E> predicate) {
+        return findFirst(predicate);
       }
 
       @Override
-      public @NotNull List<E> findAny(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> findAny(@NotNull final Predicate<? super E> predicate) {
+        return findFirst(predicate);
       }
 
       @Override

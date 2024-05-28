@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
+import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.IndexedPredicate;
@@ -38,11 +40,12 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
   private ListAsyncMaterializer<E> state;
 
   public DropWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
     state = new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"),
-        Require.notNull(isCancelled, "isCancelled"), Require.notNull(dropFunction, "dropFunction"));
+        Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(dropFunction, "dropFunction"));
   }
 
   @Override
@@ -103,6 +106,7 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
 
   private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
 
+    private final ExecutionContext context;
     private final BinaryFunction<List<E>, Integer, List<E>> dropFunction;
     private final AtomicBoolean isCancelled;
     private final IndexedPredicate<? super E> predicate;
@@ -111,10 +115,11 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final AtomicBoolean isCancelled,
+        @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
         @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
       this.wrapped = wrapped;
       this.predicate = predicate;
+      this.context = context;
       this.isCancelled = isCancelled;
       this.dropFunction = dropFunction;
     }
@@ -202,6 +207,11 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
       });
     }
 
+    private @NotNull String getTaskID() {
+      final String taskID = context.currentTaskID();
+      return taskID != null ? taskID : "";
+    }
+
     private void materialized(@NotNull final StateConsumer<E> consumer) {
       final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
@@ -212,14 +222,30 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
           public void accept(final int size, final int index, final E element) {
             try {
               if (predicate.test(index, element)) {
-                wrapped.materializeElement(index + 1, this);
+                final String taskID = getTaskID();
+                final IndexedAsyncConsumer<E> elementConsumer = this;
+                context.scheduleAfter(new Task() {
+                  @Override
+                  public @NotNull String taskID() {
+                    return taskID;
+                  }
+
+                  @Override
+                  public int weight() {
+                    return 1;
+                  }
+
+                  @Override
+                  public void run() {
+                    wrapped.materializeElement(index + 1, elementConsumer);
+                  }
+                });
               } else {
                 if (index == 0) {
                   setState(wrapped, STATUS_DONE);
                 } else {
-                  setState(
-                      new DropListAsyncMaterializer<E>(wrapped, index, isCancelled, dropFunction),
-                      STATUS_DONE);
+                  setState(new DropListAsyncMaterializer<E>(wrapped, index, context, isCancelled,
+                      dropFunction), STATUS_DONE);
                 }
               }
             } catch (final Exception e) {
