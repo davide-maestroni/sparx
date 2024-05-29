@@ -52,6 +52,9 @@ import sparx.collection.internal.future.list.ElementToListAsyncMaterializer;
 import sparx.collection.internal.future.list.EndsWithListAsyncMaterializer;
 import sparx.collection.internal.future.list.ExistsListAsyncMaterializer;
 import sparx.collection.internal.future.list.FilterListAsyncMaterializer;
+import sparx.collection.internal.future.list.FindFirstListAsyncMaterializer;
+import sparx.collection.internal.future.list.FindIndexListAsyncMaterializer;
+import sparx.collection.internal.future.list.FindIndexOfSliceListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
 import sparx.collection.internal.future.list.SwitchListAsyncMaterializer;
@@ -885,8 +888,8 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
-            new FilterListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                context, isCancelled, List.<E>decorateFunction()));
+            new FilterListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate), context,
+                isCancelled, List.<E>decorateFunction()));
       }
 
       @Override
@@ -900,33 +903,83 @@ public class Sparx extends SparxItf {
       }
 
       @Override
-      public @NotNull List<E> findFirst(@NotNull IndexedPredicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> findFirst(@NotNull final IndexedPredicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        final ExecutionContext context = this.context;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        return new List<E>(context, isCancelled,
+            new FindFirstListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
+                List.<E>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<E> findFirst(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> findFirst(@NotNull final Predicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (materializer.knownSize() == 0) {
+          return this;
+        }
+        final ExecutionContext context = this.context;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        return new List<E>(context, isCancelled,
+            new FindFirstListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                context, isCancelled, List.<E>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<Integer> findIndexOf(Object element) {
-        return null;
+      public @NotNull List<Integer> findIndexOf(final Object element) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownSize() == 0) {
+          return new List<Integer>(context, isCancelled,
+              EmptyListAsyncMaterializer.<Integer>instance());
+        }
+        return new List<Integer>(context, isCancelled,
+            new FindIndexListAsyncMaterializer<E>(materializer, equalsElement(element), context,
+                isCancelled, List.<Integer>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate) {
-        return null;
+      public @NotNull List<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(this,
+            elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
+        }
+        final ExecutionContext context = this.context;
+        return new List<Integer>(context, isCancelled,
+            new FindIndexOfSliceListAsyncMaterializer<E>(materializer, elementsMaterializer,
+                context, isCancelled, List.<Integer>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<Integer> findIndexWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownSize() == 0) {
+          return new List<Integer>(context, isCancelled,
+              EmptyListAsyncMaterializer.<Integer>instance());
+        }
+        return new List<Integer>(context, isCancelled,
+            new FindIndexListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
+                List.<Integer>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<Integer> findIndexOfSlice(@NotNull Iterable<?> elements) {
-        return null;
+      public @NotNull List<Integer> findIndexWhere(@NotNull final Predicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownSize() == 0) {
+          return new List<Integer>(context, isCancelled,
+              EmptyListAsyncMaterializer.<Integer>instance());
+        }
+        return new List<Integer>(context, isCancelled,
+            new FindIndexListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                context, isCancelled, List.<Integer>decorateFunction()));
       }
 
       @Override
@@ -2516,6 +2569,14 @@ public class Sparx extends SparxItf {
       }
 
       @Override
+      public @NotNull Iterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
+        final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+            elements);
+        return new Iterator<Integer>(
+            new FindIndexOfSliceIteratorMaterializer<E>(materializer, elementsMaterializer));
+      }
+
+      @Override
       public @NotNull Iterator<Integer> findIndexWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
         final IteratorMaterializer<E> materializer = this.materializer;
@@ -2534,14 +2595,6 @@ public class Sparx extends SparxItf {
         }
         return new Iterator<Integer>(
             new FindIndexIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull Iterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
-        final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
-            elements);
-        return new Iterator<Integer>(
-            new FindIndexOfSliceIteratorMaterializer<E>(materializer, elementsMaterializer));
       }
 
       @Override
@@ -4427,6 +4480,13 @@ public class Sparx extends SparxItf {
       }
 
       @Override
+      public @NotNull List<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
+        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
+        return new List<Integer>(
+            new FindIndexOfSliceListMaterializer<E>(materializer, elementsMaterializer));
+      }
+
+      @Override
       public @NotNull List<Integer> findIndexWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
         final ListMaterializer<E> materializer = this.materializer;
@@ -4444,13 +4504,6 @@ public class Sparx extends SparxItf {
         }
         return new List<Integer>(
             new FindIndexListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull List<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
-        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
-        return new List<Integer>(
-            new FindIndexOfSliceListMaterializer<E>(materializer, elementsMaterializer));
       }
 
       @Override
@@ -6314,6 +6367,12 @@ public class Sparx extends SparxItf {
       }
 
       @Override
+      public @NotNull ListIterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().findIndexOfSlice(elements).map(offsetMapper(nextIndex())));
+      }
+
+      @Override
       public @NotNull ListIterator<Integer> findIndexWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
         if (atEnd()) {
@@ -6332,12 +6391,6 @@ public class Sparx extends SparxItf {
         }
         return new ListIterator<Integer>(List.<Integer>of(),
             currentRight().findIndexWhere(predicate).map(offsetMapper(nextIndex())));
-      }
-
-      @Override
-      public @NotNull ListIterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
-        return new ListIterator<Integer>(List.<Integer>of(),
-            currentRight().findIndexOfSlice(elements).map(offsetMapper(nextIndex())));
       }
 
       @Override

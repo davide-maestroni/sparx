@@ -752,4 +752,135 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
     }
   }
+
+  @Test
+  public void findAny() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertFalse(l.findAny(Objects::isNull).isEmpty());
+    assertEquals(1, l.findAny(Objects::isNull).size());
+    assertEquals(List.of(null), l.findAny(Objects::isNull));
+    assertFalse(l.findAny(i -> i < 4).isEmpty());
+    assertEquals(1, l.findAny(i -> i < 4).size());
+
+    assertTrue(List.of().toFuture(context).findAny(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().toFuture(context).findAny(Objects::isNull).size());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).findAny(i -> {
+        Thread.sleep(60000);
+        return false;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void findIndexOf() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertFalse(l.findIndexOf(null).isEmpty());
+    assertEquals(1, l.findIndexOf(null).size());
+    assertEquals(2, l.findIndexOf(null).first());
+    assertEquals(List.of(2), l.findIndexOf(null));
+    assertFalse(l.findIndexOf(4).isEmpty());
+    assertEquals(1, l.findIndexOf(4).size());
+    assertEquals(3, l.findIndexOf(4).first());
+    assertEquals(List.of(3), l.findIndexOf(4));
+    assertTrue(l.findIndexOf(3).isEmpty());
+    assertEquals(0, l.findIndexOf(3).size());
+    assertThrows(IndexOutOfBoundsException.class, () -> l.findIndexOf(3).first());
+    assertEquals(List.of(), l.findIndexOf(3));
+
+    assertTrue(List.of().toFuture(context).findIndexOf(null).isEmpty());
+    assertEquals(0, List.of().toFuture(context).findIndexOf(null).size());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      }).findIndexOf(false);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void findIndexOfSlice() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertFalse(l.findIndexOfSlice(List.of(2, null)).isEmpty());
+    assertEquals(1, l.findIndexOfSlice(List.of(2, null)).size());
+    assertEquals(1, l.findIndexOfSlice(List.of(2, null)).first());
+    assertEquals(List.of(1), l.findIndexOfSlice(List.of(2, null)));
+    assertFalse(l.findIndexOfSlice(List.of(null)).isEmpty());
+    assertEquals(1, l.findIndexOfSlice(List.of(null)).size());
+    assertEquals(2, l.findIndexOfSlice(List.of(null)).first());
+    assertEquals(List.of(2), l.findIndexOfSlice(List.of(null)));
+    assertTrue(l.findIndexOfSlice(List.of(null, 2)).isEmpty());
+    assertEquals(0, l.findIndexOfSlice(List.of(null, 2)).size());
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.findIndexOfSlice(List.of(null, 2)).first());
+    assertEquals(List.of(), l.findIndexOfSlice(List.of(null, 2)));
+    assertFalse(l.findIndexOfSlice(List.of()).isEmpty());
+    assertEquals(1, l.findIndexOfSlice(List.of()).size());
+    assertEquals(0, l.findIndexOfSlice(List.of()).first());
+    assertEquals(List.of(0), l.findIndexOfSlice(List.of()));
+
+    assertEquals(2,
+        List.of(1, 1, 1, 1, 2, 1).toFuture(context).findIndexOfSlice(List.of(1, 1, 2)).first());
+
+    assertTrue(List.of().toFuture(context).findIndexOfSlice(List.of(null)).isEmpty());
+    assertEquals(0, List.of().toFuture(context).findIndexOfSlice(List.of(null)).size());
+    assertFalse(List.of().toFuture(context).findIndexOfSlice(List.of()).isEmpty());
+    assertEquals(1, List.of().toFuture(context).findIndexOfSlice(List.of()).size());
+    assertEquals(0, List.of().toFuture(context).findIndexOfSlice(List.of()).first());
+    assertEquals(List.of(0), List.of().toFuture(context).findIndexOfSlice(List.of()));
+  }
+
+  @Test
+  public void findIndexWhere() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertFalse(l.findIndexWhere(Objects::isNull).isEmpty());
+    assertEquals(1, l.findIndexWhere(Objects::isNull).size());
+    assertEquals(2, l.findIndexWhere(Objects::isNull).first());
+    assertEquals(List.of(2), l.findIndexWhere(Objects::isNull));
+    assertFalse(l.findIndexWhere(i -> i > 1).isEmpty());
+    assertEquals(1, l.findIndexWhere(i -> i > 1).size());
+    assertEquals(1, l.findIndexWhere(i -> i > 1).first());
+    assertEquals(List.of(1), l.findIndexWhere(i -> i > 1));
+    assertThrows(NullPointerException.class, () -> l.findIndexWhere(i -> i > 3).isEmpty());
+    assertThrows(NullPointerException.class, () -> l.findIndexWhere(i -> i > 3).first());
+
+    assertTrue(List.of().toFuture(context).findIndexWhere(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().toFuture(context).findIndexWhere(Objects::isNull).size());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).findIndexWhere(i -> {
+        Thread.sleep(60000);
+        return false;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
 }

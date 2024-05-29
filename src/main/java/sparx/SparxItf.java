@@ -134,15 +134,15 @@ class SparxItf {
 
       @Override
       @NotNull
+      Collection<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+
+      @Override
+      @NotNull
       Collection<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
 
       @Override
       @NotNull
       Collection<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
-
-      @Override
-      @NotNull
-      Collection<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
       @Override
       @NotNull
@@ -594,15 +594,15 @@ class SparxItf {
 
       @Override
       @NotNull
+      Iterator<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+
+      @Override
+      @NotNull
       Iterator<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
 
       @Override
       @NotNull
       Iterator<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
-
-      @Override
-      @NotNull
-      Iterator<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
       @Override
       @NotNull
@@ -1102,15 +1102,15 @@ class SparxItf {
 
       @Override
       @NotNull
+      List<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+
+      @Override
+      @NotNull
       List<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
 
       @Override
       @NotNull
       List<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
-
-      @Override
-      @NotNull
-      List<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
       @Override
       @NotNull
@@ -1580,15 +1580,15 @@ class SparxItf {
 
       @Override
       @NotNull
+      ListIterator<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+
+      @Override
+      @NotNull
       ListIterator<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
 
       @Override
       @NotNull
       ListIterator<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
-
-      @Override
-      @NotNull
-      ListIterator<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
       @Override
       @NotNull
@@ -2059,15 +2059,15 @@ class SparxItf {
 
       @Override
       @NotNull
+      Set<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+
+      @Override
+      @NotNull
       Set<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
 
       @Override
       @NotNull
       Set<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
-
-      @Override
-      @NotNull
-      Set<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
       @Override
       @NotNull
@@ -2509,15 +2509,15 @@ class SparxItf {
 
       @Override
       @NotNull
+      Stream<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+
+      @Override
+      @NotNull
       Stream<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
 
       @Override
       @NotNull
       Stream<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
-
-      @Override
-      @NotNull
-      Stream<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
       @Override
       @NotNull
