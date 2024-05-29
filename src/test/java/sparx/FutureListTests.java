@@ -848,6 +848,22 @@ public class FutureListTests {
     assertEquals(1, List.of().toFuture(context).findIndexOfSlice(List.of()).size());
     assertEquals(0, List.of().toFuture(context).findIndexOfSlice(List.of()).first());
     assertEquals(List.of(0), List.of().toFuture(context).findIndexOfSlice(List.of()));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      }).findIndexOfSlice(List.of(false));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
   }
 
   @Test

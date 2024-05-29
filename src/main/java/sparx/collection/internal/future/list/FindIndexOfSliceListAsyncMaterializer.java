@@ -229,7 +229,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMateri
           }
 
           @Override
-          public void error(@NotNull final Exception error) throws Exception {
+          public void error(@NotNull final Exception error) {
             if (isCancelled.get()) {
               setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
             } else {
@@ -287,18 +287,17 @@ public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMateri
       }
 
       @Override
-      public void accept(final int size, final int index, final Object element) throws Exception {
+      public void accept(final int size, final int index, final Object element) {
+        final DequeueList<Object> wrappedElements = this.wrappedElements;
         if (isWrapped) {
+          ++wrappedIndex;
+          isWrapped = false;
+          wrappedElements.add(element);
+          final ListAsyncMaterializer<Object> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
           if (element == this.element || (element != null && element.equals(this.element))) {
-            wrappedElements.add(element);
-            ++wrappedIndex;
-            isWrapped = false;
             elementsMaterializer.materializeElement(++elementIndex, this);
           } else {
-            if (!wrappedElements.isEmpty()) {
-              wrappedElements.removeFirst();
-            }
-            isWrapped = false;
+            wrappedElements.removeFirst();
             elementsMaterializer.materializeElement(elementIndex = 0, this);
           }
         } else if (elementIndex >= wrappedElements.size()) {
@@ -306,7 +305,8 @@ public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMateri
           taskID = getTaskID();
           context.scheduleAfter(this);
         } else {
-          final Object wrappedElement = wrappedElements.peekFirst();
+          final Object wrappedElement = wrappedElements.get(index);
+          final ListAsyncMaterializer<Object> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
           if (wrappedElement == element || (wrappedElement != null && wrappedElement.equals(
               element))) {
             elementsMaterializer.materializeElement(++elementIndex, this);
