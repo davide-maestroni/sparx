@@ -282,23 +282,10 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
             final List<E> wrappedElements = elements;
             elementsMaterializer.materializeElements(new AsyncConsumer<List<E>>() {
               @Override
-              public void accept(final List<E> elements) {
-                try {
-                  final List<E> materialized = appendFunction.apply(wrappedElements, elements);
-                  setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
-                  consumeElements(materialized);
-                } catch (final Exception e) {
-                  if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                  }
-                  if (isCancelled.get()) {
-                    setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
-                    consumeError(new CancellationException());
-                  } else {
-                    setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
-                    consumeError(e);
-                  }
-                }
+              public void accept(final List<E> elements) throws Exception {
+                final List<E> materialized = appendFunction.apply(wrappedElements, elements);
+                setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+                consumeElements(materialized);
               }
 
               @Override

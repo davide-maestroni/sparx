@@ -217,60 +217,7 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        final ListAsyncMaterializer<E> wrapped = this.wrapped;
-        wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
-          private int count;
-
-          @Override
-          public void accept(final int size, final int index, final E element) {
-            try {
-              if (predicate.test(index, element)) {
-                ++count;
-              }
-              final String taskID = getTaskID();
-              final IndexedAsyncConsumer<E> elementConsumer = this;
-              context.scheduleAfter(new Task() {
-                @Override
-                public @NotNull String taskID() {
-                  return taskID;
-                }
-
-                @Override
-                public int weight() {
-                  return 1;
-                }
-
-                @Override
-                public void run() {
-                  wrapped.materializeElement(index + 1, elementConsumer);
-                }
-              });
-            } catch (final Exception e) {
-              if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-              }
-              if (isCancelled.get()) {
-                setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
-              } else {
-                setState(new FailedListAsyncMaterializer<Integer>(e), STATUS_DONE);
-              }
-            }
-          }
-
-          @Override
-          public void complete(final int size) throws Exception {
-            setState(count);
-          }
-
-          @Override
-          public void error(final int index, @NotNull final Exception error) {
-            if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
-            } else {
-              setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
-            }
-          }
-        });
+        wrapped.materializeElement(0, new MaterializingAsyncConsumer());
       }
     }
 
@@ -292,6 +239,52 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
         stateConsumer.accept(state);
       }
       stateConsumers.clear();
+    }
+
+    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+
+      private int count;
+      private int index;
+      private String taskID;
+
+      @Override
+      public void accept(final int size, final int index, final E element) throws Exception {
+        if (predicate.test(index, element)) {
+          ++count;
+        }
+        this.index = index + 1;
+        taskID = getTaskID();
+        context.scheduleAfter(this);
+      }
+
+      @Override
+      public void complete(final int size) throws Exception {
+        setState(count);
+      }
+
+      @Override
+      public void error(final int index, @NotNull final Exception error) {
+        if (isCancelled.get()) {
+          setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
+        } else {
+          setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
+        }
+      }
+
+      @Override
+      public void run() {
+        wrapped.materializeElement(index, this);
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
     }
   }
 }

@@ -232,23 +232,10 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       if (elementsConsumers.size() == 1) {
         wrapped.materializeElements(new AsyncConsumer<List<E>>() {
           @Override
-          public void accept(final List<E> elements) {
-            try {
-              final List<E> materialized = appendFunction.apply(elements, element);
-              setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
-              consumeElements(materialized);
-            } catch (final Exception e) {
-              if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-              }
-              if (isCancelled.get()) {
-                setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
-                consumeError(new CancellationException());
-              } else {
-                setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
-                consumeError(e);
-              }
-            }
+          public void accept(final List<E> elements) throws Exception {
+            final List<E> materialized = appendFunction.apply(elements, element);
+            setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+            consumeElements(materialized);
           }
 
           @Override

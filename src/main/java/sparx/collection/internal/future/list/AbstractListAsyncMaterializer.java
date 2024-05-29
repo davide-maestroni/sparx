@@ -31,14 +31,7 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
       if (error instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
-      try {
-        consumer.error(index, error);
-      } catch (final Exception e) {
-        if (e instanceof InterruptedException) {
-          Thread.currentThread().interrupt();
-        }
-        logger.log(Level.SEVERE, "Ignored exception", e);
-      }
+      safeConsumeError(consumer, index, error, logger);
       return false;
     }
     return true;
@@ -52,14 +45,7 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
       if (error instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
-      try {
-        consumer.error(error);
-      } catch (final Exception e) {
-        if (e instanceof InterruptedException) {
-          Thread.currentThread().interrupt();
-        }
-        logger.log(Level.SEVERE, "Ignored exception", e);
-      }
+      safeConsumeError(consumer, error, logger);
     }
   }
 
@@ -67,11 +53,11 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
       final int size, @NotNull final Logger logger) {
     try {
       consumer.complete(size);
-    } catch (final Exception e) {
-      if (e instanceof InterruptedException) {
+    } catch (final Exception error) {
+      if (error instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
-      logger.log(Level.SEVERE, "Ignored exception", e);
+      safeConsumeError(consumer, -1, error, logger);
     }
   }
 

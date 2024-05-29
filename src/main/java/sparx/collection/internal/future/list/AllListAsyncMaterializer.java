@@ -211,93 +211,7 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        final ListAsyncMaterializer<E> wrapped = this.wrapped;
-        wrapped.materializeEmpty(new AsyncConsumer<Boolean>() {
-          @Override
-          public void accept(final Boolean empty) throws Exception {
-            if (empty) {
-              setState(true);
-            } else {
-              final String taskID = getTaskID();
-              context.scheduleAfter(new Task() {
-                @Override
-                public @NotNull String taskID() {
-                  return taskID;
-                }
-
-                @Override
-                public int weight() {
-                  return 1;
-                }
-
-                @Override
-                public void run() {
-                  wrapped.materializeElement(0, new IndexedAsyncConsumer<E>() {
-                    @Override
-                    public void accept(final int size, final int index, final E element) {
-                      try {
-                        if (!predicate.test(index, element)) {
-                          setState(false);
-                        } else {
-                          final String taskID = context.currentTaskID();
-                          final IndexedAsyncConsumer<E> elementConsumer = this;
-                          context.scheduleAfter(new Task() {
-                            @Override
-                            public @NotNull String taskID() {
-                              return taskID != null ? taskID : "";
-                            }
-
-                            @Override
-                            public int weight() {
-                              return 1;
-                            }
-
-                            @Override
-                            public void run() {
-                              wrapped.materializeElement(index + 1, elementConsumer);
-                            }
-                          });
-                        }
-                      } catch (final Exception e) {
-                        if (e instanceof InterruptedException) {
-                          Thread.currentThread().interrupt();
-                        }
-                        if (isCancelled.get()) {
-                          setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
-                        } else {
-                          setState(new FailedListAsyncMaterializer<Boolean>(e), STATUS_DONE);
-                        }
-                      }
-                    }
-
-                    @Override
-                    public void complete(final int size) throws Exception {
-                      setState(true);
-                    }
-
-                    @Override
-                    public void error(final int index, @NotNull final Exception error) {
-                      if (isCancelled.get()) {
-                        setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
-                      } else {
-                        setState(new FailedListAsyncMaterializer<Boolean>(error), STATUS_DONE);
-                      }
-                    }
-                  });
-                }
-              });
-            }
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
-            } else {
-              setState(new FailedListAsyncMaterializer<Boolean>(error), STATUS_DONE);
-            }
-          }
-        });
+        wrapped.materializeEmpty(new MaterializingAsyncConsumer());
       }
     }
 
@@ -319,6 +233,68 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
         stateConsumer.accept(state);
       }
       stateConsumers.clear();
+    }
+
+    private class MaterializingAsyncConsumer implements AsyncConsumer<Boolean>,
+        IndexedAsyncConsumer<E>, Task {
+
+      private int index;
+      private String taskID;
+
+      @Override
+      public void accept(final Boolean empty) throws Exception {
+        if (empty) {
+          setState(true);
+        } else {
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      }
+
+      @Override
+      public void accept(final int size, final int index, final E element) throws Exception {
+        if (!predicate.test(index, element)) {
+          setState(false);
+        } else {
+          this.index = index + 1;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      }
+
+      @Override
+      public void complete(final int size) throws Exception {
+        setState(true);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        if (isCancelled.get()) {
+          setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
+        } else {
+          setState(new FailedListAsyncMaterializer<Boolean>(error), STATUS_DONE);
+        }
+      }
+
+      @Override
+      public void error(final int index, @NotNull final Exception error) {
+        error(error);
+      }
+
+      @Override
+      public void run() {
+        wrapped.materializeElement(index, this);
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
     }
   }
 }

@@ -349,81 +349,7 @@ public class FilterListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         }
         indexConsumers.add(consumer);
         if (needsRun) {
-          wrapped.materializeElement(nextIndex, new IndexedAsyncConsumer<E>() {
-            @Override
-            public void accept(final int size, final int index, final E element) {
-              nextIndex = index + 1;
-              final IndexedAsyncConsumer<E> elementConsumer = this;
-              try {
-                final int wrappedIndex = elements.size();
-                if (predicate.test(wrappedIndex, element)) {
-                  elements.add(element);
-                  consumeElement(wrappedIndex, element);
-                }
-                if (!elementsConsumers.isEmpty()) {
-                  final String taskID = getTaskID();
-                  context.scheduleAfter(new Task() {
-                    @Override
-                    public @NotNull String taskID() {
-                      return taskID;
-                    }
-
-                    @Override
-                    public int weight() {
-                      return 1;
-                    }
-
-                    @Override
-                    public void run() {
-                      wrapped.materializeElement(nextIndex, elementConsumer);
-                    }
-                  });
-                }
-              } catch (final Exception e) {
-                if (e instanceof InterruptedException) {
-                  Thread.currentThread().interrupt();
-                }
-                if (isCancelled.get()) {
-                  setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
-                  consumeError(new CancellationException());
-                } else {
-                  setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
-                  consumeError(e);
-                }
-              }
-            }
-
-            @Override
-            public void complete(final int size) {
-              try {
-                final List<E> materialized = decorateFunction.apply(elements);
-                setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
-                consumeComplete(elements.size());
-              } catch (final Exception e) {
-                if (e instanceof InterruptedException) {
-                  Thread.currentThread().interrupt();
-                }
-                if (isCancelled.get()) {
-                  setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
-                  consumeError(new CancellationException());
-                } else {
-                  setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
-                  consumeError(e);
-                }
-              }
-            }
-
-            @Override
-            public void error(final int index, @NotNull final Exception error) {
-              if (isCancelled.get()) {
-                setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
-                consumeError(new CancellationException());
-              } else {
-                setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
-                consumeError(error);
-              }
-            }
-          });
+          wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer());
         }
       }
     }
@@ -431,6 +357,58 @@ public class FilterListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
     private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
       if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
         state = newState;
+      }
+    }
+
+    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+
+      private String taskID;
+
+      @Override
+      public void accept(final int size, final int index, final E element) throws Exception {
+        nextIndex = index + 1;
+        final int wrappedIndex = elements.size();
+        if (predicate.test(wrappedIndex, element)) {
+          elements.add(element);
+          consumeElement(wrappedIndex, element);
+        }
+        if (!elementsConsumers.isEmpty()) {
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      }
+
+      @Override
+      public void complete(final int size) throws Exception {
+        final List<E> materialized = decorateFunction.apply(elements);
+        setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+        consumeComplete(elements.size());
+      }
+
+      @Override
+      public void error(final int index, @NotNull final Exception error) {
+        if (isCancelled.get()) {
+          setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+          consumeError(new CancellationException());
+        } else {
+          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+          consumeError(error);
+        }
+      }
+
+      @Override
+      public void run() {
+        wrapped.materializeElement(nextIndex, this);
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
       }
     }
   }
