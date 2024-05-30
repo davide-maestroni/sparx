@@ -278,7 +278,7 @@ public class EndsWithListAsyncMaterializer<E> implements ListAsyncMaterializer<B
     private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<Object>, Task {
 
       private Object element;
-      private int elementIndex;
+      private int elementsIndex;
       private boolean isWrapped;
       private String taskID;
       private int wrappedIndex;
@@ -292,18 +292,18 @@ public class EndsWithListAsyncMaterializer<E> implements ListAsyncMaterializer<B
         if (isWrapped) {
           if (this.element == null ? element != null : !this.element.equals(element)) {
             setState(false);
-          } else if (elementIndex == 0) {
+          } else if (elementsIndex == 0) {
             setState(true);
           } else {
             isWrapped = false;
-            elementsMaterializer.materializeElement(elementIndex - 1, this);
+            elementsMaterializer.materializeElement(elementsIndex - 1, this);
           }
         } else {
           if (wrappedIndex == 0) {
             setState(false);
           } else {
             this.element = element;
-            elementIndex = index;
+            elementsIndex = index;
             taskID = getTaskID();
             context.scheduleAfter(this);
           }

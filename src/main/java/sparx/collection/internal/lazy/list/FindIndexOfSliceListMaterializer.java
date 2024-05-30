@@ -19,7 +19,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.DequeueList;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 
@@ -143,7 +142,6 @@ public class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Int
         throw new ConcurrentModificationException();
       }
       try {
-        final DequeueList<E> queue = new DequeueList<E>();
         final ListMaterializer<E> wrapped = this.wrapped;
         final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
         Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
@@ -160,34 +158,12 @@ public class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Int
           }
           final E left = wrapped.materializeElement(i);
           Object right = elementsIterator.next();
-          if (left != right && (left == null || !left.equals(right))) {
-            boolean matches = false;
-            while (!queue.isEmpty() && !matches) {
-              ++index;
-              queue.pop();
-              matches = true;
-              elementsIterator = elementsMaterializer.materializeIterator();
-              for (final E e : queue) {
-                if (!wrapped.canMaterializeElement(i + 1)) {
-                  final int result = index - queue.size();
-                  state = new IndexState(result);
-                  return result;
-                }
-                right = elementsIterator.next();
-                if (e != right && (e == null || !e.equals(right))) {
-                  matches = false;
-                  break;
-                }
-              }
-            }
-            if (!matches) {
-              elementsIterator = elementsMaterializer.materializeIterator();
-            }
-            ++index;
+          if (left == right || (left != null && left.equals(right))) {
+            ++i;
           } else {
-            queue.add(left);
+            i = ++index;
+            elementsIterator = elementsMaterializer.materializeIterator();
           }
-          ++i;
         }
         state = NOT_FOUND;
         return -1;

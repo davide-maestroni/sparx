@@ -27,8 +27,9 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedPredicate;
 
-public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMaterializer<Integer> {
+public class FindLastIndexListAsyncMaterializer<E> implements ListAsyncMaterializer<Integer> {
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -38,13 +39,13 @@ public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMateri
 
   private ListAsyncMaterializer<Integer> state;
 
-  public FindIndexOfSliceListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
-      @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
+  public FindLastIndexListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
+      @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"),
-        Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
+        Require.notNull(predicate, "predicate"), Require.notNull(context, "context"),
+        Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
   }
 
@@ -109,17 +110,17 @@ public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMateri
 
     private final ExecutionContext context;
     private final Function<List<Integer>, List<Integer>> decorateFunction;
-    private final ListAsyncMaterializer<Object> elementsMaterializer;
     private final AtomicBoolean isCancelled;
+    private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
+        @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
         @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
       this.wrapped = wrapped;
-      this.elementsMaterializer = elementsMaterializer;
+      this.predicate = predicate;
       this.context = context;
       this.isCancelled = isCancelled;
       this.decorateFunction = decorateFunction;
@@ -217,25 +218,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMateri
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        elementsMaterializer.materializeEmpty(new AsyncConsumer<Boolean>() {
-          @Override
-          public void accept(final Boolean empty) throws Exception {
-            if (empty) {
-              setState(0);
-            } else {
-              wrapped.materializeEmpty(new MaterializingAsyncConsumer());
-            }
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
-            } else {
-              setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
-            }
-          }
-        });
+        wrapped.materializeSize(new MaterializingAsyncConsumer());
       }
     }
 
@@ -253,9 +236,9 @@ public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMateri
         final int statusCode) {
       final ListAsyncMaterializer<Integer> state;
       if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = FindIndexOfSliceListAsyncMaterializer.this.state = newState;
+        state = FindLastIndexListAsyncMaterializer.this.state = newState;
       } else {
-        state = FindIndexOfSliceListAsyncMaterializer.this.state;
+        state = FindLastIndexListAsyncMaterializer.this.state;
       }
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       for (final StateConsumer stateConsumer : stateConsumers) {
@@ -264,52 +247,38 @@ public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMateri
       stateConsumers.clear();
     }
 
-    private class MaterializingAsyncConsumer implements AsyncConsumer<Boolean>,
-        IndexedAsyncConsumer<Object>, Task {
+    private class MaterializingAsyncConsumer implements AsyncConsumer<Integer>,
+        IndexedAsyncConsumer<E>, Task {
 
-      private Object element;
-      private int elementsIndex;
       private int index;
-      private boolean isWrapped;
       private String taskID;
-      private int wrappedIndex;
 
       @Override
-      public void accept(final Boolean empty) throws Exception {
-        if (empty) {
+      public void accept(final Integer size) throws Exception {
+        if (size == 0) {
           setState();
         } else {
-          isWrapped = false;
-          elementsMaterializer.materializeElement(elementsIndex, this);
-        }
-      }
-
-      @Override
-      public void accept(final int size, final int index, final Object element) {
-        if (isWrapped) {
-          ++wrappedIndex;
-          isWrapped = false;
-          final ListAsyncMaterializer<Object> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
-          if (element == this.element || (element != null && element.equals(this.element))) {
-            elementsMaterializer.materializeElement(++elementsIndex, this);
-          } else {
-            wrappedIndex = ++this.index;
-            elementsMaterializer.materializeElement(elementsIndex = 0, this);
-          }
-        } else {
-          this.element = element;
+          index = size - 1;
           taskID = getTaskID();
           context.scheduleAfter(this);
         }
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (isWrapped) {
+      public void accept(final int size, final int index, final E element) throws Exception {
+        if (predicate.test(index, element)) {
+          setState(index);
+        } else if (index == 0) {
           setState();
         } else {
-          setState(index);
+          this.index = index - 1;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
         }
+      }
+
+      @Override
+      public void complete(final int size) {
       }
 
       @Override
@@ -327,10 +296,8 @@ public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMateri
       }
 
       @Override
-      @SuppressWarnings("unchecked")
       public void run() {
-        isWrapped = true;
-        ((ListAsyncMaterializer<Object>) wrapped).materializeElement(wrappedIndex, this);
+        wrapped.materializeElement(index, this);
       }
 
       @Override

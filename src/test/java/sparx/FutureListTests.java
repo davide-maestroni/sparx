@@ -17,6 +17,7 @@ package sparx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -885,6 +886,162 @@ public class FutureListTests {
 
     if (TEST_ASYNC_CANCEL) {
       var f = List.of(1, 2, 3).toFuture(context).findIndexWhere(i -> {
+        Thread.sleep(60000);
+        return false;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void findLast() {
+    var l = List.of(1, 2, null, 4, 5).toFuture(context);
+    assertFalse(l.findLast(Objects::isNull).isEmpty());
+    assertEquals(1, l.findLast(Objects::isNull).size());
+    assertNull(l.findLast(Objects::isNull).first());
+    assertEquals(List.of(null), l.findLast(Objects::isNull));
+    assertThrows(NullPointerException.class, () -> l.findLast(i -> i < 4).first());
+    assertFalse(l.findLast(i -> i < 5).isEmpty());
+    assertEquals(1, l.findLast(i -> i < 5).size());
+    assertEquals(4, l.findLast(i -> i < 5).first());
+    assertEquals(List.of(4), l.findLast(i -> i < 5));
+    assertTrue(l.findLast(i -> i != null && i > 5).isEmpty());
+    assertEquals(0, l.findLast(i -> i != null && i > 5).size());
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.findLast(i -> i != null && i > 5).first());
+    assertEquals(List.of(), l.findLast(i -> i != null && i > 5));
+
+    assertTrue(List.of().toFuture(context).findLast(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().toFuture(context).findLast(Objects::isNull).size());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).findLast(i -> {
+        Thread.sleep(60000);
+        return false;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void findLastIndexOf() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertFalse(l.findLastIndexOf(null).isEmpty());
+    assertEquals(1, l.findLastIndexOf(null).size());
+    assertEquals(2, l.findLastIndexOf(null).first());
+    assertEquals(List.of(2), l.findLastIndexOf(null));
+    assertFalse(l.findLastIndexOf(4).isEmpty());
+    assertEquals(1, l.findLastIndexOf(4).size());
+    assertEquals(3, l.findLastIndexOf(4).first());
+    assertEquals(List.of(3), l.findLastIndexOf(4));
+    assertTrue(l.findLastIndexOf(3).isEmpty());
+    assertEquals(0, l.findLastIndexOf(3).size());
+    assertThrows(IndexOutOfBoundsException.class, () -> l.findLastIndexOf(3).first());
+    assertEquals(List.of(), l.findLastIndexOf(3));
+
+    assertTrue(List.of().toFuture(context).findLastIndexOf(null).isEmpty());
+    assertEquals(0, List.of().toFuture(context).findLastIndexOf(null).size());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      }).findLastIndexOf(false);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void findLastIndexOfSlice() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertFalse(l.findLastIndexOfSlice(List.of(2, null)).isEmpty());
+    assertEquals(1, l.findLastIndexOfSlice(List.of(2, null)).size());
+    assertEquals(1, l.findLastIndexOfSlice(List.of(2, null)).first());
+    assertEquals(List.of(1), l.findLastIndexOfSlice(List.of(2, null)));
+    assertFalse(l.findLastIndexOfSlice(List.of(null)).isEmpty());
+    assertEquals(1, l.findLastIndexOfSlice(List.of(null)).size());
+    assertEquals(2, l.findLastIndexOfSlice(List.of(null)).first());
+    assertEquals(List.of(2), l.findLastIndexOfSlice(List.of(null)));
+    assertTrue(l.findLastIndexOfSlice(List.of(null, 2)).isEmpty());
+    assertEquals(0, l.findLastIndexOfSlice(List.of(null, 2)).size());
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.findLastIndexOfSlice(List.of(null, 2)).first());
+    assertEquals(List.of(), l.findLastIndexOfSlice(List.of(null, 2)));
+    assertFalse(l.findLastIndexOfSlice(List.of()).isEmpty());
+    assertEquals(1, l.findLastIndexOfSlice(List.of()).size());
+    assertEquals(4, l.findLastIndexOfSlice(List.of()).first());
+    assertEquals(List.of(4), l.findLastIndexOfSlice(List.of()));
+
+    assertEquals(2,
+        List.of(1, 1, 1, 1, 2, 1).toFuture(context).findLastIndexOfSlice(List.of(1, 1, 2)).first());
+
+    assertTrue(List.of().toFuture(context).findLastIndexOfSlice(List.of(null)).isEmpty());
+    assertEquals(0, List.of().toFuture(context).findLastIndexOfSlice(List.of(null)).size());
+    assertFalse(List.of().toFuture(context).findLastIndexOfSlice(List.of()).isEmpty());
+    assertEquals(1, List.of().toFuture(context).findLastIndexOfSlice(List.of()).size());
+    assertEquals(0, List.of().toFuture(context).findLastIndexOfSlice(List.of()).first());
+    assertEquals(List.of(0), List.of().toFuture(context).findLastIndexOfSlice(List.of()));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+        Thread.sleep(60000);
+        return true;
+      }).findLastIndexOfSlice(List.of(false));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void findLastIndexWhere() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertFalse(l.findLastIndexWhere(Objects::isNull).isEmpty());
+    assertEquals(1, l.findLastIndexWhere(Objects::isNull).size());
+    assertEquals(2, l.findLastIndexWhere(Objects::isNull).first());
+    assertEquals(List.of(2), l.findLastIndexWhere(Objects::isNull));
+    assertFalse(l.findLastIndexWhere(i -> i > 1).isEmpty());
+    assertEquals(1, l.findLastIndexWhere(i -> i > 1).size());
+    assertEquals(3, l.findLastIndexWhere(i -> i > 1).first());
+    assertEquals(List.of(3), l.findLastIndexWhere(i -> i > 1));
+    assertThrows(NullPointerException.class, () -> l.findLastIndexWhere(i -> i < 3).isEmpty());
+    assertThrows(NullPointerException.class, () -> l.findLastIndexWhere(i -> i < 3).first());
+
+    assertTrue(List.of().toFuture(context).findLastIndexWhere(Objects::isNull).isEmpty());
+    assertEquals(0, List.of().toFuture(context).findLastIndexWhere(Objects::isNull).size());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).findLastIndexWhere(i -> {
         Thread.sleep(60000);
         return false;
       });

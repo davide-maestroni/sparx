@@ -86,7 +86,9 @@ public class FindIndexOfSliceIteratorMaterializer<E> implements IteratorMaterial
         }
         final E left = wrapped.materializeNext();
         Object right = elementsIterator.next();
-        if (left != right && (left == null || !left.equals(right))) {
+        if (left == right || (left != null && left.equals(right))) {
+          queue.add(left);
+        } else {
           boolean matches = false;
           while (!queue.isEmpty() && !matches) {
             ++index;
@@ -110,8 +112,6 @@ public class FindIndexOfSliceIteratorMaterializer<E> implements IteratorMaterial
             elementsIterator = elementsMaterializer.materializeIterator();
           }
           ++index;
-        } else {
-          queue.add(left);
         }
       }
       state = EmptyIteratorMaterializer.instance();

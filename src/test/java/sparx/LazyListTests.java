@@ -625,10 +625,6 @@ public class LazyListTests {
 
     assertTrue(List.of().findLastIndexOf(null).isEmpty());
     assertEquals(0, List.of().findLastIndexOf(null).size());
-    assertFalse(List.of().findLastIndexOfSlice(List.of()).isEmpty());
-    assertEquals(1, List.of().findLastIndexOfSlice(List.of()).size());
-    assertEquals(0, List.of().findLastIndexOfSlice(List.of()).first());
-    assertEquals(List.of(0), List.of().findLastIndexOfSlice(List.of()));
   }
 
   @Test
@@ -656,6 +652,10 @@ public class LazyListTests {
 
     assertTrue(List.of().findLastIndexOfSlice(List.of(null)).isEmpty());
     assertEquals(0, List.of().findLastIndexOfSlice(List.of(null)).size());
+    assertFalse(List.of().findLastIndexOfSlice(List.of()).isEmpty());
+    assertEquals(1, List.of().findLastIndexOfSlice(List.of()).size());
+    assertEquals(0, List.of().findLastIndexOfSlice(List.of()).first());
+    assertEquals(List.of(0), List.of().findLastIndexOfSlice(List.of()));
   }
 
   @Test

@@ -55,6 +55,9 @@ import sparx.collection.internal.future.list.FilterListAsyncMaterializer;
 import sparx.collection.internal.future.list.FindFirstListAsyncMaterializer;
 import sparx.collection.internal.future.list.FindIndexListAsyncMaterializer;
 import sparx.collection.internal.future.list.FindIndexOfSliceListAsyncMaterializer;
+import sparx.collection.internal.future.list.FindLastIndexListAsyncMaterializer;
+import sparx.collection.internal.future.list.FindLastIndexOfSliceListAsyncMaterializer;
+import sparx.collection.internal.future.list.FindLastListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
 import sparx.collection.internal.future.list.SwitchListAsyncMaterializer;
@@ -556,6 +559,15 @@ public class Sparx extends SparxItf {
           }
           context.scheduleBefore(new Task() {
             @Override
+            public void run() {
+              try {
+                materializer.materializeCancel(mayInterruptIfRunning);
+              } catch (final Exception e) {
+                LOGGER.log(Level.SEVERE, "Ignored exception", e);
+              }
+            }
+
+            @Override
             public @NotNull String taskID() {
               return taskID;
             }
@@ -563,15 +575,6 @@ public class Sparx extends SparxItf {
             @Override
             public int weight() {
               return 1;
-            }
-
-            @Override
-            public void run() {
-              try {
-                materializer.materializeCancel(mayInterruptIfRunning);
-              } catch (final Exception e) {
-                LOGGER.log(Level.SEVERE, "Ignored exception", e);
-              }
             }
           });
           return true;
@@ -584,6 +587,15 @@ public class Sparx extends SparxItf {
         final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
         context.scheduleAfter(new Task() {
           @Override
+          public void run() {
+            try {
+              materializer.materializeContains(o, consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+
+          @Override
           public @NotNull String taskID() {
             return taskID;
           }
@@ -591,15 +603,6 @@ public class Sparx extends SparxItf {
           @Override
           public int weight() {
             return 1; // TODO: size?
-          }
-
-          @Override
-          public void run() {
-            try {
-              materializer.materializeContains(o, consumer);
-            } catch (final Exception e) {
-              consumer.error(e);
-            }
           }
         });
         try {
@@ -936,6 +939,7 @@ public class Sparx extends SparxItf {
           return new List<Integer>(context, isCancelled,
               EmptyListAsyncMaterializer.<Integer>instance());
         }
+        final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
             new FindIndexListAsyncMaterializer<E>(materializer, equalsElement(element), context,
                 isCancelled, List.<Integer>decorateFunction()));
@@ -964,6 +968,7 @@ public class Sparx extends SparxItf {
           return new List<Integer>(context, isCancelled,
               EmptyListAsyncMaterializer.<Integer>instance());
         }
+        final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
             new FindIndexListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
                 List.<Integer>decorateFunction()));
@@ -977,46 +982,113 @@ public class Sparx extends SparxItf {
           return new List<Integer>(context, isCancelled,
               EmptyListAsyncMaterializer.<Integer>instance());
         }
+        final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
             new FindIndexListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
                 context, isCancelled, List.<Integer>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<E> findLast(@NotNull IndexedPredicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> findLast(@NotNull final IndexedPredicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownSize() == 0) {
+          return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
+        }
+        final ExecutionContext context = this.context;
+        return new List<E>(context, isCancelled,
+            new FindLastListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
+                List.<E>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<E> findLast(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<E> findLast(@NotNull final Predicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownSize() == 0) {
+          return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
+        }
+        final ExecutionContext context = this.context;
+        return new List<E>(context, isCancelled,
+            new FindLastListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                context, isCancelled, List.<E>decorateFunction()));
       }
 
       @Override
-      public @NotNull List<Integer> findLastIndexOf(Object element) {
-        return null;
-      }
-
-      @Override
-      public @NotNull List<Integer> findLastIndexWhere(
-          @NotNull IndexedPredicate<? super E> predicate) {
-        return null;
-      }
-
-      @Override
-      public @NotNull List<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate) {
-        return null;
+      public @NotNull List<Integer> findLastIndexOf(final Object element) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownSize() == 0) {
+          return new List<Integer>(context, isCancelled,
+              EmptyListAsyncMaterializer.<Integer>instance());
+        }
+        final ExecutionContext context = this.context;
+        return new List<Integer>(context, isCancelled,
+            new FindLastIndexListAsyncMaterializer<E>(materializer, equalsElement(element), context,
+                isCancelled, List.<Integer>decorateFunction()));
       }
 
       @Override
       public @NotNull List<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements) {
-        return null;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(this,
+            elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          final int knownSize = materializer.knownSize();
+          if (knownSize >= 0) {
+            return new List<Integer>(context, isCancelled,
+                new ElementToListAsyncMaterializer<Integer>(lazy.List.of(knownSize)));
+          }
+        }
+        final ExecutionContext context = this.context;
+        return new List<Integer>(context, isCancelled,
+            new FindLastIndexOfSliceListAsyncMaterializer<E>(materializer, elementsMaterializer,
+                context, isCancelled, List.<Integer>decorateFunction()));
+      }
+
+      @Override
+      public @NotNull List<Integer> findLastIndexWhere(
+          @NotNull final IndexedPredicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownSize() == 0) {
+          return new List<Integer>(context, isCancelled,
+              EmptyListAsyncMaterializer.<Integer>instance());
+        }
+        final ExecutionContext context = this.context;
+        return new List<Integer>(context, isCancelled,
+            new FindLastIndexListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
+                List.<Integer>decorateFunction()));
+      }
+
+      @Override
+      public @NotNull List<Integer> findLastIndexWhere(
+          @NotNull final Predicate<? super E> predicate) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownSize() == 0) {
+          return new List<Integer>(context, isCancelled,
+              EmptyListAsyncMaterializer.<Integer>instance());
+        }
+        final ExecutionContext context = this.context;
+        return new List<Integer>(context, isCancelled,
+            new FindLastIndexListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
+                context, isCancelled, List.<Integer>decorateFunction()));
       }
 
       @Override
       public E first() {
         final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(0);
         context.scheduleAfter(new Task() {
+          @Override
+          public void run() {
+            try {
+              materializer.materializeElement(0, consumer);
+            } catch (final Exception e) {
+              consumer.error(0, e);
+            }
+          }
+
           @Override
           public @NotNull String taskID() {
             return taskID;
@@ -1025,15 +1097,6 @@ public class Sparx extends SparxItf {
           @Override
           public int weight() {
             return 1;
-          }
-
-          @Override
-          public void run() {
-            try {
-              materializer.materializeElement(0, consumer);
-            } catch (final Exception e) {
-              consumer.error(0, e);
-            }
           }
         });
         try {
@@ -1126,6 +1189,15 @@ public class Sparx extends SparxItf {
         final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
         context.scheduleAfter(new Task() {
           @Override
+          public void run() {
+            try {
+              materializer.materializeElements(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+
+          @Override
           public @NotNull String taskID() {
             return taskID;
           }
@@ -1133,15 +1205,6 @@ public class Sparx extends SparxItf {
           @Override
           public int weight() {
             return 1; // TODO: size
-          }
-
-          @Override
-          public void run() {
-            try {
-              materializer.materializeElements(consumer);
-            } catch (final Exception e) {
-              consumer.error(e);
-            }
           }
         });
         try {
@@ -1164,6 +1227,15 @@ public class Sparx extends SparxItf {
         final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(index);
         context.scheduleAfter(new Task() {
           @Override
+          public void run() {
+            try {
+              materializer.materializeElement(index, consumer);
+            } catch (final Exception e) {
+              consumer.error(index, e);
+            }
+          }
+
+          @Override
           public @NotNull String taskID() {
             return taskID;
           }
@@ -1171,15 +1243,6 @@ public class Sparx extends SparxItf {
           @Override
           public int weight() {
             return 1;
-          }
-
-          @Override
-          public void run() {
-            try {
-              materializer.materializeElement(index, consumer);
-            } catch (final Exception e) {
-              consumer.error(index, e);
-            }
           }
         });
         try {
@@ -1195,6 +1258,15 @@ public class Sparx extends SparxItf {
         final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
         context.scheduleAfter(new Task() {
           @Override
+          public void run() {
+            try {
+              materializer.materializeElements(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+
+          @Override
           public @NotNull String taskID() {
             return taskID;
           }
@@ -1202,15 +1274,6 @@ public class Sparx extends SparxItf {
           @Override
           public int weight() {
             return 1; // TODO: size
-          }
-
-          @Override
-          public void run() {
-            try {
-              materializer.materializeElements(consumer);
-            } catch (final Exception e) {
-              consumer.error(e);
-            }
           }
         });
         try {
@@ -1256,16 +1319,6 @@ public class Sparx extends SparxItf {
         if (o == null) {
           context.scheduleAfter(new Task() {
             @Override
-            public @NotNull String taskID() {
-              return taskID;
-            }
-
-            @Override
-            public int weight() {
-              return 1; // TODO: size
-            }
-
-            @Override
             public void run() {
               try {
                 materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
@@ -1292,9 +1345,7 @@ public class Sparx extends SparxItf {
                 consumer.error(e);
               }
             }
-          });
-        } else {
-          context.scheduleAfter(new Task() {
+
             @Override
             public @NotNull String taskID() {
               return taskID;
@@ -1304,7 +1355,9 @@ public class Sparx extends SparxItf {
             public int weight() {
               return 1; // TODO: size
             }
-
+          });
+        } else {
+          context.scheduleAfter(new Task() {
             @Override
             public void run() {
               try {
@@ -1331,6 +1384,16 @@ public class Sparx extends SparxItf {
               } catch (final Exception e) {
                 consumer.error(e);
               }
+            }
+
+            @Override
+            public @NotNull String taskID() {
+              return taskID;
+            }
+
+            @Override
+            public int weight() {
+              return 1; // TODO: size
             }
           });
         }
@@ -1372,6 +1435,15 @@ public class Sparx extends SparxItf {
         final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
         context.scheduleAfter(new Task() {
           @Override
+          public void run() {
+            try {
+              materializer.materializeEmpty(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+
+          @Override
           public @NotNull String taskID() {
             return taskID;
           }
@@ -1379,15 +1451,6 @@ public class Sparx extends SparxItf {
           @Override
           public int weight() {
             return 1;
-          }
-
-          @Override
-          public void run() {
-            try {
-              materializer.materializeEmpty(consumer);
-            } catch (final Exception e) {
-              consumer.error(e);
-            }
           }
         });
         try {
@@ -1408,16 +1471,6 @@ public class Sparx extends SparxItf {
         final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(-1);
         context.scheduleAfter(new Task() {
           @Override
-          public @NotNull String taskID() {
-            return taskID;
-          }
-
-          @Override
-          public int weight() {
-            return 1;
-          }
-
-          @Override
           public void run() {
             try {
               materializer.materializeSize(new AsyncConsumer<Integer>() {
@@ -1434,6 +1487,16 @@ public class Sparx extends SparxItf {
             } catch (final Exception e) {
               consumer.error(-1, e);
             }
+          }
+
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return 1;
           }
         });
         try {
@@ -1763,6 +1826,15 @@ public class Sparx extends SparxItf {
         final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>();
         context.scheduleAfter(new Task() {
           @Override
+          public void run() {
+            try {
+              materializer.materializeSize(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+
+          @Override
           public @NotNull String taskID() {
             return taskID;
           }
@@ -1770,15 +1842,6 @@ public class Sparx extends SparxItf {
           @Override
           public int weight() {
             return 1;
-          }
-
-          @Override
-          public void run() {
-            try {
-              materializer.materializeSize(consumer);
-            } catch (final Exception e) {
-              consumer.error(e);
-            }
           }
         });
         try {
@@ -2627,6 +2690,12 @@ public class Sparx extends SparxItf {
       }
 
       @Override
+      public @NotNull Iterator<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
+        return new Iterator<Integer>(new FindLastIndexOfSliceIteratorMaterializer<E>(materializer,
+            List.getElementsMaterializer(elements)));
+      }
+
+      @Override
       public @NotNull Iterator<Integer> findLastIndexWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
         final IteratorMaterializer<E> materializer = this.materializer;
@@ -2646,12 +2715,6 @@ public class Sparx extends SparxItf {
         }
         return new Iterator<Integer>(
             new FindLastIndexIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull Iterator<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
-        return new Iterator<Integer>(new FindLastIndexOfSliceIteratorMaterializer<E>(materializer,
-            List.getElementsMaterializer(elements)));
       }
 
       @Override
@@ -4536,6 +4599,19 @@ public class Sparx extends SparxItf {
       }
 
       @Override
+      public @NotNull List<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
+        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
+        if (elementsMaterializer.knownSize() == 0) {
+          final int knownSize = materializer.knownSize();
+          if (knownSize >= 0) {
+            return List.of(knownSize);
+          }
+        }
+        return new List<Integer>(
+            new FindLastIndexOfSliceListMaterializer<E>(materializer, elementsMaterializer));
+      }
+
+      @Override
       public @NotNull List<Integer> findLastIndexWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
         final ListMaterializer<E> materializer = this.materializer;
@@ -4554,13 +4630,6 @@ public class Sparx extends SparxItf {
         }
         return new List<Integer>(
             new FindLastIndexListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
-      }
-
-      @Override
-      public @NotNull List<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
-        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
-        return new List<Integer>(
-            new FindLastIndexOfSliceListMaterializer<E>(materializer, elementsMaterializer));
       }
 
       @Override
@@ -6421,6 +6490,13 @@ public class Sparx extends SparxItf {
       }
 
       @Override
+      public @NotNull ListIterator<Integer> findLastIndexOfSlice(
+          @NotNull final Iterable<?> elements) {
+        return new ListIterator<Integer>(List.<Integer>of(),
+            currentRight().findLastIndexOfSlice(elements).map(offsetMapper(nextIndex())));
+      }
+
+      @Override
       public @NotNull ListIterator<Integer> findLastIndexWhere(
           @NotNull final IndexedPredicate<? super E> predicate) {
         if (atEnd()) {
@@ -6439,13 +6515,6 @@ public class Sparx extends SparxItf {
         }
         return new ListIterator<Integer>(List.<Integer>of(),
             currentRight().findLastIndexWhere(predicate).map(offsetMapper(nextIndex())));
-      }
-
-      @Override
-      public @NotNull ListIterator<Integer> findLastIndexOfSlice(
-          @NotNull final Iterable<?> elements) {
-        return new ListIterator<Integer>(List.<Integer>of(),
-            currentRight().findLastIndexOfSlice(elements).map(offsetMapper(nextIndex())));
       }
 
       @Override
