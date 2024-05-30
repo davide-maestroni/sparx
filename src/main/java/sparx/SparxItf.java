@@ -490,6 +490,34 @@ class SparxItf {
       Collection<E> union(@NotNull Iterable<? extends E> elements);
     }
 
+    public interface Future<E, T> extends java.util.concurrent.Future<T> {
+
+      @NotNull
+      java.util.concurrent.Future<?> nonBlockingFor(@NotNull Consumer<? super E> consumer);
+
+      @NotNull
+      java.util.concurrent.Future<?> nonBlockingFor(@NotNull IndexedConsumer<? super E> consumer);
+
+      @NotNull
+      java.util.concurrent.Future<?> nonBlockingGet();
+
+      @NotNull
+      java.util.concurrent.Future<?> nonBlockingWhile(
+          @NotNull IndexedPredicate<? super E> predicate);
+
+      @NotNull
+      java.util.concurrent.Future<?> nonBlockingWhile(
+          @NotNull IndexedPredicate<? super E> condition,
+          @NotNull IndexedConsumer<? super E> consumer);
+
+      @NotNull
+      java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> predicate);
+
+      @NotNull
+      java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> condition,
+          @NotNull Consumer<? super E> consumer);
+    }
+
     public interface Iterator<E> extends java.util.Iterator<E>, Stream<E> {
 
       @Override

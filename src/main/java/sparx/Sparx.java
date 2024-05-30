@@ -369,8 +369,8 @@ public class Sparx extends SparxItf {
     private future() {
     }
 
-    public static class List<E> extends AbstractListSequence<E> implements Future<lazy.List<E>>,
-        itf.List<E> {
+    public static class List<E> extends AbstractListSequence<E> implements
+        itf.Future<E, lazy.List<E>>, itf.List<E> {
 
       private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> APPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {
         @Override
@@ -1108,7 +1108,7 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull <F> List<F> flatMap(
-          @NotNull Function<? super E, ? extends Iterable<F>> mapper) {
+          @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
         return null;
       }
 
@@ -1592,34 +1592,41 @@ public class Sparx extends SparxItf {
         return null;
       }
 
+      @Override
       public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
         return new AsyncForFuture<E>(context, taskID, materializer, toIndexedConsumer(consumer));
       }
 
+      @Override
       public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
         return new AsyncForFuture<E>(context, taskID, materializer, consumer);
       }
 
+      @Override
       public @NotNull Future<?> nonBlockingGet() {
         return new AsyncGetFuture<E>(context, taskID, materializer);
       }
 
+      @Override
       public @NotNull Future<?> nonBlockingWhile(
           @NotNull final IndexedPredicate<? super E> predicate) {
         return new AsyncWhileFuture<E>(context, taskID, materializer, predicate);
       }
 
+      @Override
       public @NotNull Future<?> nonBlockingWhile(
           @NotNull final IndexedPredicate<? super E> condition,
           @NotNull final IndexedConsumer<? super E> consumer) {
         return new AsyncWhileFuture<E>(context, taskID, materializer, condition, consumer);
       }
 
+      @Override
       public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
         return new AsyncWhileFuture<E>(context, taskID, materializer,
             toIndexedPredicate(predicate));
       }
 
+      @Override
       public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
           @NotNull final Consumer<? super E> consumer) {
         return new AsyncWhileFuture<E>(context, taskID, materializer, toIndexedPredicate(condition),
