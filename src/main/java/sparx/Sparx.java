@@ -1114,7 +1114,7 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull <F> List<F> flatMap(
-          @NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
         return null;
       }
 

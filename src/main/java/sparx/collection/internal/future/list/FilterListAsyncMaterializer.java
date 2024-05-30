@@ -367,10 +367,11 @@ public class FilterListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
         nextIndex = index + 1;
-        final int wrappedIndex = elements.size();
-        if (predicate.test(wrappedIndex, element)) {
+        if (predicate.test(index, element)) {
+          final ArrayList<E> elements = ImmaterialState.this.elements;
+          final int elementsIndex = elements.size();
           elements.add(element);
-          consumeElement(wrappedIndex, element);
+          consumeElement(elementsIndex, element);
         }
         if (!elementsConsumers.isEmpty()) {
           taskID = getTaskID();

@@ -5,7 +5,7 @@ import java.util.stream.Collectors
 import java.util.stream.Stream
 
 buildscript {
-  ext.mustacheVersion = '0.9.11'
+  ext.mustacheVersion = '0.9.13'
   dependencies {
     classpath "com.github.spullara.mustache.java:compiler:$mustacheVersion"
   }
@@ -30,7 +30,7 @@ compileJava {
 
 dependencies {
   implementation 'org.jetbrains:annotations:24.1.0'
-  testImplementation platform('org.junit:junit-bom:5.10.1')
+  testImplementation platform('org.junit:junit-bom:5.11.0-M2')
   testImplementation 'org.junit.jupiter:junit-jupiter'
 }
 
