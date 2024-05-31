@@ -41,16 +41,6 @@ public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
   public void accept(final P param) {
     context.scheduleAfter(new Task() {
       @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
-      }
-
-      @Override
       public void run() {
         try {
           wrapped.accept(param);
@@ -65,12 +55,7 @@ public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
           }
         }
       }
-    });
-  }
 
-  @Override
-  public void error(@NotNull final Exception error) {
-    context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
         return taskID;
@@ -80,7 +65,12 @@ public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
       public int weight() {
         return 1;
       }
+    });
+  }
 
+  @Override
+  public void error(@NotNull final Exception error) {
+    context.scheduleAfter(new Task() {
       @Override
       public void run() {
         try {
@@ -91,6 +81,16 @@ public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
           }
           logger.log(Level.SEVERE, "Ignored exception", e);
         }
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
       }
     });
   }

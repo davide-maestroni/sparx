@@ -49,16 +49,6 @@ public class AsyncWhileFuture<E> implements Future<Void> {
     Require.notNull(predicate, "predicate");
     context.scheduleAfter(new Task() {
       @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
-      }
-
-      @Override
       public void run() {
         materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
           @Override
@@ -98,6 +88,16 @@ public class AsyncWhileFuture<E> implements Future<Void> {
           }
         });
       }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
     });
   }
 
@@ -109,16 +109,6 @@ public class AsyncWhileFuture<E> implements Future<Void> {
     this.taskID = Require.notNull(taskID, "taskID");
     Require.notNull(consumer, "consumer");
     context.scheduleAfter(new Task() {
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
-      }
-
       @Override
       public void run() {
         materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
@@ -159,6 +149,16 @@ public class AsyncWhileFuture<E> implements Future<Void> {
             }
           }
         });
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
       }
     });
   }

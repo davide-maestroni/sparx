@@ -69,6 +69,15 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   public void materializeCancel(final boolean mayInterruptIfRunning) {
     fromContext.scheduleAfter(new Task() {
       @Override
+      public void run() {
+        try {
+          wrapped.materializeCancel(mayInterruptIfRunning);
+        } catch (final Exception e) {
+          LOGGER.log(Level.SEVERE, "Ignored exception", e);
+        }
+      }
+
+      @Override
       public @NotNull String taskID() {
         return fromTaskID;
       }
@@ -76,15 +85,6 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       @Override
       public int weight() {
         return 1;
-      }
-
-      @Override
-      public void run() {
-        try {
-          wrapped.materializeCancel(mayInterruptIfRunning);
-        } catch (final Exception e) {
-          LOGGER.log(Level.SEVERE, "Ignored exception", e);
-        }
       }
     });
   }
@@ -96,6 +96,15 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         toContext, toTaskID, consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
+      public void run() {
+        try {
+          wrapped.materializeContains(element, switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+
+      @Override
       public @NotNull String taskID() {
         return fromTaskID;
       }
@@ -103,15 +112,6 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       @Override
       public int weight() {
         return 1;
-      }
-
-      @Override
-      public void run() {
-        try {
-          wrapped.materializeContains(element, switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, e, LOGGER);
-        }
       }
     });
   }
@@ -122,6 +122,15 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         toContext, toTaskID, consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
+      public void run() {
+        try {
+          wrapped.materializeEach(switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, -1, e, LOGGER);
+        }
+      }
+
+      @Override
       public @NotNull String taskID() {
         return fromTaskID;
       }
@@ -129,15 +138,6 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       @Override
       public int weight() {
         return 1;
-      }
-
-      @Override
-      public void run() {
-        try {
-          wrapped.materializeEach(switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, -1, e, LOGGER);
-        }
       }
     });
   }
@@ -148,6 +148,15 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         toContext, toTaskID, consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
+      public void run() {
+        try {
+          wrapped.materializeElement(index, switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, index, e, LOGGER);
+        }
+      }
+
+      @Override
       public @NotNull String taskID() {
         return fromTaskID;
       }
@@ -155,15 +164,6 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       @Override
       public int weight() {
         return 1;
-      }
-
-      @Override
-      public void run() {
-        try {
-          wrapped.materializeElement(index, switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, index, e, LOGGER);
-        }
       }
     });
   }
@@ -174,6 +174,15 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         toContext, toTaskID, consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
+      public void run() {
+        try {
+          wrapped.materializeElements(switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+
+      @Override
       public @NotNull String taskID() {
         return fromTaskID;
       }
@@ -181,15 +190,6 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       @Override
       public int weight() {
         return 1;
-      }
-
-      @Override
-      public void run() {
-        try {
-          wrapped.materializeElements(switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, e, LOGGER);
-        }
       }
     });
   }
@@ -200,6 +200,15 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         toContext, toTaskID, consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
+      public void run() {
+        try {
+          wrapped.materializeEmpty(switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+
+      @Override
       public @NotNull String taskID() {
         return fromTaskID;
       }
@@ -207,15 +216,6 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       @Override
       public int weight() {
         return 1;
-      }
-
-      @Override
-      public void run() {
-        try {
-          wrapped.materializeEmpty(switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, e, LOGGER);
-        }
       }
     });
   }
@@ -226,6 +226,15 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         toContext, toTaskID, consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
+      public void run() {
+        try {
+          wrapped.materializeSize(switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+
+      @Override
       public @NotNull String taskID() {
         return fromTaskID;
       }
@@ -233,15 +242,6 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       @Override
       public int weight() {
         return 1;
-      }
-
-      @Override
-      public void run() {
-        try {
-          wrapped.materializeSize(switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, e, LOGGER);
-        }
       }
     });
   }

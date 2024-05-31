@@ -48,16 +48,6 @@ public class AsyncForFuture<E> implements Future<Void> {
     Require.notNull(consumer, "consumer");
     context.scheduleAfter(new Task() {
       @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
-      }
-
-      @Override
       public void run() {
         materializer.materializeEach(new IndexedAsyncConsumer<E>() {
           @Override
@@ -89,6 +79,16 @@ public class AsyncForFuture<E> implements Future<Void> {
             }
           }
         });
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
       }
     });
   }

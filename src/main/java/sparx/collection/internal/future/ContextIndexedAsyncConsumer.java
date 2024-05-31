@@ -42,16 +42,6 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
   public void accept(final int size, final int index, final P param) throws Exception {
     context.scheduleAfter(new Task() {
       @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
-      }
-
-      @Override
       public void run() {
         try {
           wrapped.accept(size, index, param);
@@ -69,12 +59,7 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
           }
         }
       }
-    });
-  }
 
-  @Override
-  public void complete(final int size) throws Exception {
-    context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
         return taskID;
@@ -84,7 +69,12 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
       public int weight() {
         return 1;
       }
+    });
+  }
 
+  @Override
+  public void complete(final int size) throws Exception {
+    context.scheduleAfter(new Task() {
       @Override
       public void run() {
         try {
@@ -103,12 +93,7 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
           }
         }
       }
-    });
-  }
 
-  @Override
-  public void error(final int index, @NotNull final Exception error) throws Exception {
-    context.scheduleAfter(new Task() {
       @Override
       public @NotNull String taskID() {
         return taskID;
@@ -118,7 +103,12 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
       public int weight() {
         return 1;
       }
+    });
+  }
 
+  @Override
+  public void error(final int index, @NotNull final Exception error) throws Exception {
+    context.scheduleAfter(new Task() {
       @Override
       public void run() {
         try {
@@ -129,6 +119,16 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
           }
           logger.log(Level.SEVERE, "Ignored exception", e);
         }
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
       }
     });
   }
