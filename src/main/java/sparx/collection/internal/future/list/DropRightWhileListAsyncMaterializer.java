@@ -104,7 +104,7 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
     void accept(@NotNull ListAsyncMaterializer<E> state);
   }
 
-  private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
+  private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final ExecutionContext context;
     private final BinaryFunction<List<E>, Integer, List<E>> dropFunction;

@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
@@ -106,7 +105,7 @@ public class FindFirstListAsyncMaterializer<E> implements ListAsyncMaterializer<
     void accept(@NotNull ListAsyncMaterializer<E> state);
   }
 
-  private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
+  private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;

@@ -15,6 +15,9 @@
  */
 package sparx.collection.internal.future.list;
 
+import static sparx.collection.internal.future.AsyncConsumers.safeConsume;
+import static sparx.collection.internal.future.AsyncConsumers.safeConsumeError;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -106,7 +109,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     state.materializeSize(consumer);
   }
 
-  private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
+  private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final ExecutionContext context;
     private final BinaryFunction<List<E>, Integer, List<E>> dropFunction;

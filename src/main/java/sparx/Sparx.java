@@ -15,6 +15,10 @@
  */
 package sparx;
 
+import static sparx.collection.internal.future.AsyncConsumers.safeConsume;
+import static sparx.collection.internal.future.AsyncConsumers.safeConsumeComplete;
+import static sparx.collection.internal.future.AsyncConsumers.safeConsumeError;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,7 +38,6 @@ import sparx.collection.AbstractListSequence;
 import sparx.collection.Sequence;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
-import sparx.collection.internal.future.list.AbstractListAsyncMaterializer;
 import sparx.collection.internal.future.list.AllListAsyncMaterializer;
 import sparx.collection.internal.future.list.AppendAllListAsyncMaterializer;
 import sparx.collection.internal.future.list.AppendListAsyncMaterializer;
@@ -1990,7 +1993,7 @@ public class Sparx extends SparxItf {
       }
     }
 
-    private static class EmptyListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+    private static class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
       private static final EmptyListAsyncMaterializer<?> INSTANCE = new EmptyListAsyncMaterializer<Object>();
       private static final Logger LOGGER = Logger.getLogger(

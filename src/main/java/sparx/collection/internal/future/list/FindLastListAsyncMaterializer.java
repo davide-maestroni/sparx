@@ -105,7 +105,7 @@ public class FindLastListAsyncMaterializer<E> implements ListAsyncMaterializer<E
     void accept(@NotNull ListAsyncMaterializer<E> state);
   }
 
-  private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
+  private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;

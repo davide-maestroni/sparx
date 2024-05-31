@@ -61,11 +61,11 @@ public class AsyncForFuture<E> implements Future<Void> {
       public void run() {
         materializer.materializeEach(new IndexedAsyncConsumer<E>() {
           @Override
-          public void accept(final int size, final int index, final E param) throws Exception {
+          public void accept(final int size, final int index, final E element) throws Exception {
             if (isCancelled()) {
               throw new CancellationException();
             }
-            consumer.accept(index, param);
+            consumer.accept(index, element);
           }
 
           @Override

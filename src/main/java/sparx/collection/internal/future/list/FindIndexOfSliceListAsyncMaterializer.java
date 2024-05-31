@@ -105,7 +105,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> implements ListAsyncMateri
     void accept(@NotNull ListAsyncMaterializer<Integer> state);
   }
 
-  private class ImmaterialState extends AbstractListAsyncMaterializer<Integer> {
+  private class ImmaterialState implements ListAsyncMaterializer<Integer> {
 
     private final ExecutionContext context;
     private final Function<List<Integer>, List<Integer>> decorateFunction;

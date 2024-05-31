@@ -15,13 +15,15 @@
  */
 package sparx.collection.internal.future.list;
 
+import static sparx.collection.internal.future.AsyncConsumers.safeConsumeError;
+
 import java.util.List;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 
-public class FailedListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       FailedListAsyncMaterializer.class.getName());

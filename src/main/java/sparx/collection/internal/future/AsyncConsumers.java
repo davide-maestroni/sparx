@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection.internal.future.list;
+package sparx.collection.internal.future;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.internal.future.AsyncConsumer;
-import sparx.collection.internal.future.IndexedAsyncConsumer;
 
-public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+public class AsyncConsumers {
 
-  protected <T> boolean safeConsume(@NotNull final IndexedAsyncConsumer<T> consumer, final int size,
-      final int index, final T value, @NotNull final Logger logger) {
+  private AsyncConsumers() {
+  }
+
+  public static <T> boolean safeConsume(@NotNull final IndexedAsyncConsumer<T> consumer,
+      final int size, final int index, final T value, @NotNull final Logger logger) {
     try {
       consumer.accept(size, index, value);
     } catch (final Exception error) {
@@ -37,7 +38,7 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     return true;
   }
 
-  protected <T> void safeConsume(@NotNull final AsyncConsumer<T> consumer, final T value,
+  public static <T> void safeConsume(@NotNull final AsyncConsumer<T> consumer, final T value,
       @NotNull final Logger logger) {
     try {
       consumer.accept(value);
@@ -49,7 +50,7 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
   }
 
-  protected void safeConsumeComplete(@NotNull final IndexedAsyncConsumer<?> consumer,
+  public static void safeConsumeComplete(@NotNull final IndexedAsyncConsumer<?> consumer,
       final int size, @NotNull final Logger logger) {
     try {
       consumer.complete(size);
@@ -61,7 +62,7 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
   }
 
-  protected void safeConsumeError(@NotNull final AsyncConsumer<?> consumer,
+  public static void safeConsumeError(@NotNull final AsyncConsumer<?> consumer,
       @NotNull final Exception error, @NotNull final Logger logger) {
     try {
       consumer.error(error);
@@ -73,8 +74,8 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
   }
 
-  protected void safeConsumeError(@NotNull final IndexedAsyncConsumer<?> consumer, final int index,
-      @NotNull final Exception error, @NotNull final Logger logger) {
+  public static void safeConsumeError(@NotNull final IndexedAsyncConsumer<?> consumer,
+      final int index, @NotNull final Exception error, @NotNull final Logger logger) {
     try {
       consumer.error(index, error);
     } catch (final Exception e) {

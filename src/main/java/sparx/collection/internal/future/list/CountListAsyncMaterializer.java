@@ -15,6 +15,9 @@
  */
 package sparx.collection.internal.future.list;
 
+import static sparx.collection.internal.future.AsyncConsumers.safeConsume;
+import static sparx.collection.internal.future.AsyncConsumers.safeConsumeError;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -104,7 +107,7 @@ public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Inte
     void accept(@NotNull ListAsyncMaterializer<Integer> state);
   }
 
-  private class ImmaterialState extends AbstractListAsyncMaterializer<Integer> {
+  private class ImmaterialState implements ListAsyncMaterializer<Integer> {
 
     private final Function<List<Integer>, List<Integer>> decorateFunction;
     private final AtomicBoolean isCancelled;

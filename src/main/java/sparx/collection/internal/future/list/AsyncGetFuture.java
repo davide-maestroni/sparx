@@ -59,7 +59,7 @@ public class AsyncGetFuture<E> implements Future<Void> {
       public void run() {
         materializer.materializeElements(new AsyncConsumer<List<E>>() {
           @Override
-          public void accept(final List<E> param) {
+          public void accept(final List<E> elements) {
             synchronized (status) {
               if (isCancelled()) {
                 status.notifyAll();

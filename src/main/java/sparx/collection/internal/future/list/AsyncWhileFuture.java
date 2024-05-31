@@ -62,11 +62,11 @@ public class AsyncWhileFuture<E> implements Future<Void> {
       public void run() {
         materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
           @Override
-          public void accept(final int size, final int index, final E param) throws Exception {
+          public void accept(final int size, final int index, final E element) throws Exception {
             if (isCancelled()) {
               throw new CancellationException();
             }
-            if (predicate.test(index, param)) {
+            if (predicate.test(index, element)) {
               materializer.materializeElement(index + 1, this);
             } else {
               synchronized (status) {
@@ -123,12 +123,12 @@ public class AsyncWhileFuture<E> implements Future<Void> {
       public void run() {
         materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
           @Override
-          public void accept(final int size, final int index, final E param) throws Exception {
+          public void accept(final int size, final int index, final E element) throws Exception {
             if (isCancelled()) {
               throw new CancellationException();
             }
-            if (condition.test(index, param)) {
-              consumer.accept(index, param);
+            if (condition.test(index, element)) {
+              consumer.accept(index, element);
               materializer.materializeElement(index + 1, this);
             } else {
               synchronized (status) {

@@ -15,6 +15,10 @@
  */
 package sparx.collection.internal.future.list;
 
+import static sparx.collection.internal.future.AsyncConsumers.safeConsume;
+import static sparx.collection.internal.future.AsyncConsumers.safeConsumeComplete;
+import static sparx.collection.internal.future.AsyncConsumers.safeConsumeError;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -106,7 +110,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     state.materializeSize(consumer);
   }
 
-  private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
+  private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
@@ -246,7 +250,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
       materializeUntil(0, new IndexedAsyncConsumer<E>() {
         @Override
-        public void accept(final int size, final int index, final E param) {
+        public void accept(final int size, final int index, final E element) {
         }
 
         @Override
@@ -265,7 +269,7 @@ public class DiffListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
         @Override
-        public void accept(final int size, final int index, final E param) {
+        public void accept(final int size, final int index, final E element) {
         }
 
         @Override

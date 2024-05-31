@@ -15,6 +15,9 @@
  */
 package sparx.collection.internal.future.list;
 
+import static sparx.collection.internal.future.AsyncConsumers.safeConsume;
+import static sparx.collection.internal.future.AsyncConsumers.safeConsumeError;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -29,7 +32,7 @@ import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.function.BinaryFunction;
 
-public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+public class AppendAllListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       AppendAllListAsyncMaterializer.class.getName());
@@ -118,7 +121,7 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     state.materializeSize(consumer);
   }
 
-  private class ImmaterialState extends AbstractListAsyncMaterializer<E> {
+  private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final BinaryFunction<List<E>, List<E>, List<E>> appendFunction;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
