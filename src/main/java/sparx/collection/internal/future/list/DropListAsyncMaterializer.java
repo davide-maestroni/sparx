@@ -32,7 +32,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
-import sparx.util.function.BinaryFunction;
+import sparx.util.function.Function;
 
 public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
@@ -50,12 +50,12 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   public DropListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final int maxElements, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
-      @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
+      @NotNull final Function<List<E>, List<E>> decorateFunction) {
     final int wrappedSize = wrapped.knownSize();
     knownSize = wrappedSize >= 0 ? Math.max(0, wrappedSize - maxElements) : -1;
     state = new ImmaterialState(wrapped, Require.positive(maxElements, "maxElements"),
         Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(dropFunction, "dropFunction"));
+        Require.notNull(decorateFunction, "decorateFunction"));
   }
 
   @Override
@@ -112,7 +112,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final ExecutionContext context;
-    private final BinaryFunction<List<E>, Integer, List<E>> dropFunction;
+    private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
     private final int maxElements;
@@ -123,12 +123,12 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int maxElements,
         @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
-        @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
+        @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.maxElements = maxElements;
       this.context = context;
       this.isCancelled = isCancelled;
-      this.dropFunction = dropFunction;
+      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -204,8 +204,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
       if (elementsConsumers.size() == 1) {
         if (wrappedSize >= 0 && wrappedSize <= maxElements) {
           try {
-            final List<E> materialized = dropFunction.apply(Collections.<E>emptyList(),
-                maxElements);
+            final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
             setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
           } catch (final Exception e) {
             if (e instanceof InterruptedException) {
@@ -220,25 +219,7 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
             }
           }
         } else {
-          wrapped.materializeElements(new AsyncConsumer<List<E>>() {
-            @Override
-            public void accept(final List<E> elements) throws Exception {
-              final List<E> materialized = dropFunction.apply(elements, maxElements);
-              setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
-              consumeElements(materialized);
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) {
-              if (isCancelled.get()) {
-                setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
-                consumeError(new CancellationException());
-              } else {
-                setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
-                consumeError(error);
-              }
-            }
-          });
+          wrapped.materializeElement(maxElements, new MaterializingAsyncConsumer());
         }
       }
     }
@@ -316,6 +297,53 @@ public class DropListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
     private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
       if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
         state = newState;
+      }
+    }
+
+    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+
+      private final ArrayList<E> elements = new ArrayList<E>();
+
+      private int index;
+      private String taskID;
+
+      @Override
+      public void accept(final int size, final int index, final E element) {
+        elements.add(element);
+        this.index = index + 1;
+        taskID = getTaskID();
+        context.scheduleAfter(this);
+      }
+
+      @Override
+      public void complete(final int size) throws Exception {
+        consumeElements(decorateFunction.apply(elements));
+      }
+
+      @Override
+      public void error(final int index, @NotNull final Exception error) {
+        if (isCancelled.get()) {
+          setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+          consumeError(new CancellationException());
+        } else {
+          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+          consumeError(error);
+        }
+      }
+
+      @Override
+      public void run() {
+        wrapped.materializeElement(index, this);
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
       }
     }
 

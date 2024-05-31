@@ -364,6 +364,71 @@ public class FlatMapListAsyncMaterializer<E, F> implements ListAsyncMaterializer
       }
     }
 
+    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+
+      private final MaterializingElementAsyncConsumer consumer;
+
+      private String taskID;
+
+      private MaterializingAsyncConsumer(final int maxIndex) {
+        consumer = new MaterializingElementAsyncConsumer(maxIndex, this);
+      }
+
+      private MaterializingAsyncConsumer(
+          @NotNull final MaterializingElementAsyncConsumer consumer) {
+        this.consumer = consumer;
+      }
+
+      @Override
+      public void accept(final int size, final int index, final E element) throws Exception {
+        final IteratorAsyncMaterializer<F> materializer = mapper.apply(index, element);
+        if (materializer.knownSize() == 0) {
+          schedule();
+        } else {
+          (elementsMaterializer = materializer).materializeNext(consumer);
+        }
+      }
+
+      @Override
+      public void complete(final int size) throws Exception {
+        final List<F> materialized = decorateFunction.apply(elements);
+        setState(new ListToListAsyncMaterializer<F>(materialized), STATUS_DONE);
+        consumeComplete(elements.size());
+      }
+
+      @Override
+      public void error(final int index, @NotNull final Exception error) {
+        if (isCancelled.get()) {
+          setState(new CancelledListAsyncMaterializer<F>(), STATUS_CANCELLED);
+          consumeError(new CancellationException());
+        } else {
+          setState(new FailedListAsyncMaterializer<F>(error), STATUS_DONE);
+          consumeError(error);
+        }
+      }
+
+      @Override
+      public void run() {
+        wrapped.materializeElement(nextIndex, this);
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return 1;
+      }
+
+      private void schedule() {
+        ++nextIndex;
+        taskID = getTaskID();
+        context.scheduleAfter(this);
+      }
+    }
+
     private class MaterializingContainsElementAsyncConsumer implements IndexedAsyncConsumer<F>,
         Task {
 
@@ -462,71 +527,6 @@ public class FlatMapListAsyncMaterializer<E, F> implements ListAsyncMaterializer
       @Override
       public int weight() {
         return 1;
-      }
-    }
-
-    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
-
-      private final MaterializingElementAsyncConsumer consumer;
-
-      private String taskID;
-
-      private MaterializingAsyncConsumer(final int maxIndex) {
-        consumer = new MaterializingElementAsyncConsumer(maxIndex, this);
-      }
-
-      private MaterializingAsyncConsumer(
-          @NotNull final MaterializingElementAsyncConsumer consumer) {
-        this.consumer = consumer;
-      }
-
-      @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        final IteratorAsyncMaterializer<F> materializer = mapper.apply(index, element);
-        if (materializer.knownSize() == 0) {
-          schedule();
-        } else {
-          (elementsMaterializer = materializer).materializeNext(consumer);
-        }
-      }
-
-      @Override
-      public void complete(final int size) throws Exception {
-        final List<F> materialized = decorateFunction.apply(elements);
-        setState(new ListToListAsyncMaterializer<F>(materialized), STATUS_DONE);
-        consumeComplete(elements.size());
-      }
-
-      @Override
-      public void error(final int index, @NotNull final Exception error) {
-        if (isCancelled.get()) {
-          setState(new CancelledListAsyncMaterializer<F>(), STATUS_CANCELLED);
-          consumeError(new CancellationException());
-        } else {
-          setState(new FailedListAsyncMaterializer<F>(error), STATUS_DONE);
-          consumeError(error);
-        }
-      }
-
-      @Override
-      public void run() {
-        wrapped.materializeElement(nextIndex, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
-      }
-
-      private void schedule() {
-        ++nextIndex;
-        taskID = getTaskID();
-        context.scheduleAfter(this);
       }
     }
 

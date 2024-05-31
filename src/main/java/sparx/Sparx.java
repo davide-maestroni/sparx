@@ -428,18 +428,6 @@ public class Sparx extends SparxItf {
           return lazy.List.wrap(param).materialized();
         }
       };
-      private static final BinaryFunction<? extends java.util.List<?>, Integer, ? extends java.util.List<?>> DROP_FUNCTION = new BinaryFunction<java.util.List<?>, Integer, java.util.List<?>>() {
-        @Override
-        public java.util.List<?> apply(java.util.List<?> firstParam, Integer secondParam) {
-          return lazy.List.wrap(firstParam).drop(secondParam).materialized();
-        }
-      };
-      private static final BinaryFunction<? extends java.util.List<?>, Integer, ? extends java.util.List<?>> DROP_RIGHT_FUNCTION = new BinaryFunction<java.util.List<?>, Integer, java.util.List<?>>() {
-        @Override
-        public java.util.List<?> apply(java.util.List<?> firstParam, Integer secondParam) {
-          return lazy.List.wrap(firstParam).dropRight(secondParam).materialized();
-        }
-      };
       private static final ElementToListAsyncMaterializer<Boolean> FALSE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
           lazy.List.of(false));
       private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
@@ -476,16 +464,6 @@ public class Sparx extends SparxItf {
       @SuppressWarnings("unchecked")
       private static @NotNull <E> Function<java.util.List<E>, java.util.List<E>> decorateFunction() {
         return (Function<java.util.List<E>, java.util.List<E>>) DECORATE_FUNCTION;
-      }
-
-      @SuppressWarnings("unchecked")
-      private static @NotNull <E> BinaryFunction<java.util.List<E>, Integer, java.util.List<E>> dropFunction() {
-        return (BinaryFunction<java.util.List<E>, Integer, java.util.List<E>>) DROP_FUNCTION;
-      }
-
-      @SuppressWarnings("unchecked")
-      private static @NotNull <E> BinaryFunction<java.util.List<E>, Integer, java.util.List<E>> dropRightFunction() {
-        return (BinaryFunction<java.util.List<E>, Integer, java.util.List<E>>) DROP_RIGHT_FUNCTION;
       }
 
       @SuppressWarnings("unchecked")
@@ -818,7 +796,7 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         return new List<E>(context, isCancelled,
             new DropListAsyncMaterializer<E>(materializer, maxElements, context, isCancelled,
-                List.<E>dropFunction()));
+                List.<E>decorateFunction()));
       }
 
       @Override
@@ -835,7 +813,7 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         return new List<E>(context, isCancelled,
             new DropRightListAsyncMaterializer<E>(materializer, maxElements, context, isCancelled,
-                List.<E>dropRightFunction()));
+                List.<E>decorateFunction()));
       }
 
       @Override
@@ -848,7 +826,7 @@ public class Sparx extends SparxItf {
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DropRightWhileListAsyncMaterializer<E>(materializer, predicate, context,
-                isCancelled, List.<E>dropRightFunction()));
+                isCancelled, List.<E>decorateFunction()));
       }
 
       @Override
@@ -861,7 +839,7 @@ public class Sparx extends SparxItf {
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DropRightWhileListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                context, isCancelled, List.<E>dropRightFunction()));
+                context, isCancelled, List.<E>decorateFunction()));
       }
 
       @Override
@@ -874,7 +852,7 @@ public class Sparx extends SparxItf {
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DropWhileListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
-                List.<E>dropFunction()));
+                List.<E>decorateFunction()));
       }
 
       @Override
@@ -887,7 +865,7 @@ public class Sparx extends SparxItf {
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DropWhileListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                context, isCancelled, List.<E>dropFunction()));
+                context, isCancelled, List.<E>decorateFunction()));
       }
 
       @Override
@@ -1199,14 +1177,14 @@ public class Sparx extends SparxItf {
       }
 
       @Override
-      public @NotNull List<E> flatMapAfter(int numElements,
-          @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      public @NotNull List<E> flatMapAfter(final int numElements,
+          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
         return null;
       }
 
       @Override
-      public @NotNull List<E> flatMapAfter(int numElements,
-          @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+      public @NotNull List<E> flatMapAfter(final int numElements,
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
         return null;
       }
 

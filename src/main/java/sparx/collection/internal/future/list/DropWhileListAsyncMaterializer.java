@@ -26,7 +26,7 @@ import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
-import sparx.util.function.BinaryFunction;
+import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
 public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
@@ -42,10 +42,10 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
   public DropWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
-      @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
+      @NotNull final Function<List<E>, List<E>> decorateFunction) {
     state = new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"),
         Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(dropFunction, "dropFunction"));
+        Require.notNull(decorateFunction, "decorateFunction"));
   }
 
   @Override
@@ -107,7 +107,7 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final ExecutionContext context;
-    private final BinaryFunction<List<E>, Integer, List<E>> dropFunction;
+    private final Function<List<E>, List<E>> decorateFunction;
     private final AtomicBoolean isCancelled;
     private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
@@ -116,12 +116,12 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
-        @NotNull final BinaryFunction<List<E>, Integer, List<E>> dropFunction) {
+        @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.context = context;
       this.isCancelled = isCancelled;
-      this.dropFunction = dropFunction;
+      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -250,14 +250,14 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
             setState(wrapped, STATUS_DONE);
           } else {
             setState(new DropListAsyncMaterializer<E>(wrapped, index, context, isCancelled,
-                dropFunction), STATUS_DONE);
+                decorateFunction), STATUS_RUNNING);
           }
         }
       }
 
       @Override
       public void complete(final int size) throws Exception {
-        final List<E> materialized = dropFunction.apply(Collections.<E>emptyList(), 0);
+        final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
         setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
       }
 
