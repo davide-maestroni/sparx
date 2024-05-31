@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -38,6 +40,11 @@ import sparx.collection.AbstractListSequence;
 import sparx.collection.Sequence;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
+import sparx.collection.internal.future.iterator.CollectionToIteratorAsyncMaterializer;
+import sparx.collection.internal.future.iterator.IteratorAsyncMaterializer;
+import sparx.collection.internal.future.iterator.IteratorToIteratorAsyncMaterializer;
+import sparx.collection.internal.future.iterator.ListAsyncMaterializerToIteratorAsyncMaterializer;
+import sparx.collection.internal.future.iterator.ListToIteratorAsyncMaterializer;
 import sparx.collection.internal.future.list.AllListAsyncMaterializer;
 import sparx.collection.internal.future.list.AppendAllListAsyncMaterializer;
 import sparx.collection.internal.future.list.AppendListAsyncMaterializer;
@@ -61,6 +68,7 @@ import sparx.collection.internal.future.list.FindIndexOfSliceListAsyncMaterializ
 import sparx.collection.internal.future.list.FindLastIndexListAsyncMaterializer;
 import sparx.collection.internal.future.list.FindLastIndexOfSliceListAsyncMaterializer;
 import sparx.collection.internal.future.list.FindLastListAsyncMaterializer;
+import sparx.collection.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
 import sparx.collection.internal.future.list.SwitchListAsyncMaterializer;
@@ -367,6 +375,31 @@ public class Sparx extends SparxItf {
     };
   }
 
+  @SuppressWarnings("unchecked")
+  private static @NotNull <E> IteratorAsyncMaterializer<E> getElementsMaterializer(
+      @NotNull final ExecutionContext context, @NotNull final String taskID,
+      @NotNull final Iterable<? extends E> elements) {
+    if (elements instanceof future.List) {
+      final future.List<E> list = (future.List<E>) elements;
+      if (context == list.context && taskID.equals(list.taskID)) {
+        return new ListAsyncMaterializerToIteratorAsyncMaterializer<E>(list.materializer);
+      }
+      return new ListAsyncMaterializerToIteratorAsyncMaterializer<E>(
+          new SwitchListAsyncMaterializer<E>(list.context, list.taskID, context, taskID,
+              list.materializer));
+    }
+    if (elements instanceof List) {
+      return new ListToIteratorAsyncMaterializer<E>((List<E>) elements);
+    }
+    if (elements instanceof Collection) {
+      return new CollectionToIteratorAsyncMaterializer<E>((Collection<E>) elements);
+    }
+    if (elements instanceof Iterator) {
+      return new IteratorToIteratorAsyncMaterializer<E>((Iterator<E>) elements);
+    }
+    return new IteratorToIteratorAsyncMaterializer<E>((Iterator<E>) elements.iterator());
+  }
+
   public static class future {
 
     private future() {
@@ -457,14 +490,15 @@ public class Sparx extends SparxItf {
 
       @SuppressWarnings("unchecked")
       private static @NotNull <E> ListAsyncMaterializer<E> getElementsMaterializer(
-          @NotNull final List<?> toList, @NotNull final Iterable<? extends E> elements) {
+          @NotNull final ExecutionContext context, @NotNull final String taskID,
+          @NotNull final Iterable<? extends E> elements) {
         if (elements instanceof future.List) {
           final List<E> list = (List<E>) elements;
-          if (toList.context == list.context && toList.taskID.equals(list.taskID)) {
+          if (context == list.context && taskID.equals(list.taskID)) {
             return list.materializer;
           }
-          return new SwitchListAsyncMaterializer<E>(list.context, list.taskID, toList.context,
-              toList.taskID, list.materializer);
+          return new SwitchListAsyncMaterializer<E>(list.context, list.taskID, context, taskID,
+              list.materializer);
         }
         if (elements instanceof lazy.List) {
           final lazy.List<E> list = (lazy.List<E>) elements;
@@ -486,6 +520,30 @@ public class Sparx extends SparxItf {
           list.add(element);
         }
         return new ListToListAsyncMaterializer<E>(list);
+      }
+
+      private static @NotNull <E, F> IndexedFunction<E, IteratorAsyncMaterializer<F>> getElementToMaterializer(
+          @NotNull final ExecutionContext context, @NotNull final String taskID,
+          @NotNull final Function<? super E, ? extends Iterable<? extends F>> mapper) {
+        return new IndexedFunction<E, IteratorAsyncMaterializer<F>>() {
+          @Override
+          public IteratorAsyncMaterializer<F> apply(final int index, final E element)
+              throws Exception {
+            return Sparx.getElementsMaterializer(context, taskID, mapper.apply(element));
+          }
+        };
+      }
+
+      private static @NotNull <E, F> IndexedFunction<E, IteratorAsyncMaterializer<F>> getElementToMaterializer(
+          @NotNull final ExecutionContext context, @NotNull final String taskID,
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends F>> mapper) {
+        return new IndexedFunction<E, IteratorAsyncMaterializer<F>>() {
+          @Override
+          public IteratorAsyncMaterializer<F> apply(final int index, final E element)
+              throws Exception {
+            return Sparx.getElementsMaterializer(context, taskID, mapper.apply(index, element));
+          }
+        };
       }
 
       @Override
@@ -529,9 +587,10 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<E> appendAll(@NotNull final Iterable<? extends E> elements) {
+        final ExecutionContext context = this.context;
         final ListAsyncMaterializer<E> materializer = this.materializer;
-        final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(this,
-            elements);
+        final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(context,
+            taskID, elements);
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (elementsMaterializer.knownSize() == 0) {
           return this;
@@ -665,12 +724,12 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        final ListAsyncMaterializer<?> elementsMaterializer = getElementsMaterializer(this,
-            elements);
+        final ExecutionContext context = this.context;
+        final ListAsyncMaterializer<?> elementsMaterializer = getElementsMaterializer(context,
+            taskID, elements);
         if (elementsMaterializer.knownSize() == 0) {
           return this;
         }
-        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DiffListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
@@ -833,13 +892,13 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<Boolean> endsWith(@NotNull final Iterable<?> elements) {
+        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(this,
-            elements);
+        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
+            taskID, elements);
         if (elementsMaterializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
         }
-        final ExecutionContext context = this.context;
         return new List<Boolean>(context, isCancelled,
             new EndsWithListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
                 isCancelled, List.<Boolean>decorateFunction()));
@@ -950,13 +1009,13 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
+        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(this,
-            elements);
+        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
+            taskID, elements);
         if (elementsMaterializer.knownSize() == 0) {
           return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
         }
-        final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
             new FindIndexOfSliceListAsyncMaterializer<E>(materializer, elementsMaterializer,
                 context, isCancelled, List.<Integer>decorateFunction()));
@@ -1033,9 +1092,10 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements) {
+        final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(this,
-            elements);
+        final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
+            taskID, elements);
         if (elementsMaterializer.knownSize() == 0) {
           final int knownSize = materializer.knownSize();
           if (knownSize >= 0) {
@@ -1043,7 +1103,6 @@ public class Sparx extends SparxItf {
                 new ElementToListAsyncMaterializer<Integer>(lazy.List.of(knownSize)));
           }
         }
-        final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
             new FindLastIndexOfSliceListAsyncMaterializer<E>(materializer, elementsMaterializer,
                 context, isCancelled, List.<Integer>decorateFunction()));
@@ -1112,13 +1171,31 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull <F> List<F> flatMap(
           @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
-        return null;
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownSize() == 0) {
+          return new List<F>(context, isCancelled, EmptyListAsyncMaterializer.<F>instance());
+        }
+        final ExecutionContext context = this.context;
+        return new List<F>(context, isCancelled,
+            new FlatMapListAsyncMaterializer<E, F>(materializer,
+                getElementToMaterializer(context, taskID, mapper), context, isCancelled,
+                List.<F>decorateFunction()));
       }
 
       @Override
       public @NotNull <F> List<F> flatMap(
           @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
-        return null;
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
+        if (materializer.knownSize() == 0) {
+          return new List<F>(context, isCancelled, EmptyListAsyncMaterializer.<F>instance());
+        }
+        final ExecutionContext context = this.context;
+        return new List<F>(context, isCancelled,
+            new FlatMapListAsyncMaterializer<E, F>(materializer,
+                getElementToMaterializer(context, taskID, mapper), context, isCancelled,
+                List.<F>decorateFunction()));
       }
 
       @Override
@@ -1870,6 +1947,8 @@ public class Sparx extends SparxItf {
       public @NotNull List<Boolean> startsWith(@NotNull Iterable<?> elements) {
         return null;
       }
+
+      // TODO: stopCancelPropagation + switchMap, mergeMap, concatMap(==flatMap)
 
       @Override
       public @NotNull List<E> sorted(@NotNull Comparator<? super E> comparator) {

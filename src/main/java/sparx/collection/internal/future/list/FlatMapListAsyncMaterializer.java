@@ -482,12 +482,12 @@ public class FlatMapListAsyncMaterializer<E, F> implements ListAsyncMaterializer
 
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
-        final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<F>> mapper = ImmaterialState.this.mapper;
-        IteratorAsyncMaterializer<F> materializer = mapper.apply(index, element);
-        while (materializer.knownSize() == 0) {
-          materializer = mapper.apply(index, element);
+        final IteratorAsyncMaterializer<F> materializer = mapper.apply(index, element);
+        if (materializer.knownSize() == 0) {
+          schedule();
+        } else {
+          (elementsMaterializer = materializer).materializeNext(consumer);
         }
-        (elementsMaterializer = materializer).materializeNext(consumer);
       }
 
       @Override

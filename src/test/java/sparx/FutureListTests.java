@@ -1056,4 +1056,40 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
     }
   }
+
+  @Test
+  public void flatMap() {
+    var l = List.of(1, 2).toFuture(context);
+    assertFalse(l.flatMap(i -> List.of(i, i)).isEmpty());
+    assertEquals(4, l.flatMap(i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2, 2), l.flatMap(i -> List.of(i, i).toFuture(context)));
+    assertEquals(2, l.flatMap(i -> List.of(i, i)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMap(i -> List.of(i, i).toFuture(context)).get(4));
+    assertTrue(l.flatMap(i -> List.of()).isEmpty());
+    assertEquals(0, l.flatMap(i -> List.of()).size());
+    assertEquals(List.of(), l.flatMap(i -> List.of().toFuture(context)));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.flatMap(i -> List.of()).first());
+    assertFalse(l.flatMap(i -> List.of(null)).isEmpty());
+    assertEquals(2, l.flatMap(i -> List.of(null).toFuture(context)).size());
+    assertEquals(List.of(null, null), l.flatMap(i -> List.of(null)));
+    assertNull(l.flatMap(i -> List.of(null)).get(1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.flatMap(i -> List.of(null)).get(2));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
 }
