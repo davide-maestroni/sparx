@@ -249,7 +249,7 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
           if (index == 0) {
             setState(wrapped, STATUS_DONE);
           } else {
-            setState(new DropListAsyncMaterializer<E>(wrapped, index, context, isCancelled,
+            setState(new DropListAsyncMaterializer<E>(wrapped, index, status, context, isCancelled,
                 decorateFunction), STATUS_RUNNING);
           }
         }

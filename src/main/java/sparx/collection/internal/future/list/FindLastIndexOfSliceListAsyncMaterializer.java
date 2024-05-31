@@ -28,14 +28,8 @@ import sparx.concurrent.ExecutionContext.Task;
 import sparx.util.Require;
 import sparx.util.function.Function;
 
-public class FindLastIndexOfSliceListAsyncMaterializer<E> implements
-    ListAsyncMaterializer<Integer> {
-
-  private static final int STATUS_CANCELLED = 2;
-  private static final int STATUS_DONE = 1;
-  private static final int STATUS_RUNNING = 0;
-
-  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
+public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
+    AbstractListAsyncMaterializer<Integer> {
 
   private ListAsyncMaterializer<Integer> state;
 
@@ -43,20 +37,11 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> implements
       @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
       @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
+    super(new AtomicInteger(STATUS_RUNNING));
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(elementsMaterializer, "elementsMaterializer"),
         Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return status.get() == STATUS_CANCELLED;
-  }
-
-  @Override
-  public boolean isDone() {
-    return status.get() != STATUS_RUNNING;
   }
 
   @Override

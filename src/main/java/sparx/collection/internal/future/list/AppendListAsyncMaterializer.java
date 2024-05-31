@@ -31,23 +31,19 @@ import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.function.BinaryFunction;
 
-public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       AppendListAsyncMaterializer.class.getName());
 
-  private static final int STATUS_CANCELLED = 2;
-  private static final int STATUS_DONE = 1;
-  private static final int STATUS_RUNNING = 0;
-
   private final int knownSize;
-  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
   private ListAsyncMaterializer<E> state;
 
   public AppendListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final E element, @NotNull final AtomicBoolean isCancelled,
       @NotNull final BinaryFunction<List<E>, E, List<E>> appendFunction) {
+    super(new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize());
     state = new ImmaterialState(wrapped, element, Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(appendFunction, "appendFunction"));
@@ -58,16 +54,6 @@ public class AppendListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
       return SizeOverflowException.safeCast((long) wrappedSize + 1);
     }
     return -1;
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return status.get() == STATUS_CANCELLED;
-  }
-
-  @Override
-  public boolean isDone() {
-    return status.get() != STATUS_RUNNING;
   }
 
   @Override

@@ -32,15 +32,9 @@ import sparx.util.Require;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
-public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolean> {
+public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Boolean> {
 
   private static final Logger LOGGER = Logger.getLogger(AllListAsyncMaterializer.class.getName());
-
-  private static final int STATUS_CANCELLED = 2;
-  private static final int STATUS_DONE = 1;
-  private static final int STATUS_RUNNING = 0;
-
-  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
   private ListAsyncMaterializer<Boolean> state;
 
@@ -48,20 +42,11 @@ public class AllListAsyncMaterializer<E> implements ListAsyncMaterializer<Boolea
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
+    super(new AtomicInteger(STATUS_RUNNING));
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"), Require.notNull(context, "context"),
         Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return status.get() == STATUS_CANCELLED;
-  }
-
-  @Override
-  public boolean isDone() {
-    return status.get() != STATUS_RUNNING;
   }
 
   @Override

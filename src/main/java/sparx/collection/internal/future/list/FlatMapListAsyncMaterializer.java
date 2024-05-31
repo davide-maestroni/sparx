@@ -39,16 +39,10 @@ import sparx.util.Require;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
 
-public class FlatMapListAsyncMaterializer<E, F> implements ListAsyncMaterializer<F> {
+public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterializer<F> {
 
   private static final Logger LOGGER = Logger.getLogger(
       FlatMapListAsyncMaterializer.class.getName());
-
-  private static final int STATUS_CANCELLED = 2;
-  private static final int STATUS_DONE = 1;
-  private static final int STATUS_RUNNING = 0;
-
-  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
   private ListAsyncMaterializer<F> state;
 
@@ -56,20 +50,11 @@ public class FlatMapListAsyncMaterializer<E, F> implements ListAsyncMaterializer
       @NotNull final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<F>> mapper,
       @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<F>, List<F>> decorateFunction) {
+    super(new AtomicInteger(STATUS_RUNNING));
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(mapper, "mapper"), Require.notNull(context, "context"),
         Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return status.get() == STATUS_CANCELLED;
-  }
-
-  @Override
-  public boolean isDone() {
-    return status.get() != STATUS_RUNNING;
   }
 
   @Override

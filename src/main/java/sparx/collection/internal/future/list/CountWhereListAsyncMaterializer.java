@@ -33,16 +33,10 @@ import sparx.util.Require;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
-public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer<Integer> {
+public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Integer> {
 
   private static final Logger LOGGER = Logger.getLogger(
       CountWhereListAsyncMaterializer.class.getName());
-
-  private static final int STATUS_CANCELLED = 2;
-  private static final int STATUS_DONE = 1;
-  private static final int STATUS_RUNNING = 0;
-
-  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
   private ListAsyncMaterializer<Integer> state;
 
@@ -50,6 +44,7 @@ public class CountWhereListAsyncMaterializer<E> implements ListAsyncMaterializer
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
+    super(new AtomicInteger(STATUS_RUNNING));
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"), Require.notNull(context, "context"),
         Require.notNull(isCancelled, "isCancelled"),

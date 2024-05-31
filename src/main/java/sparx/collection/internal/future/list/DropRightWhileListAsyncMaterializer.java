@@ -29,13 +29,7 @@ import sparx.util.Require;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
-public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
-
-  private static final int STATUS_CANCELLED = 2;
-  private static final int STATUS_DONE = 1;
-  private static final int STATUS_RUNNING = 0;
-
-  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
+public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
   private ListAsyncMaterializer<E> state;
 
@@ -43,19 +37,10 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
+    super(new AtomicInteger(STATUS_RUNNING));
     state = new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"),
         Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return status.get() == STATUS_CANCELLED;
-  }
-
-  @Override
-  public boolean isDone() {
-    return status.get() != STATUS_RUNNING;
   }
 
   @Override
@@ -273,9 +258,8 @@ public class DropRightWhileListAsyncMaterializer<E> implements ListAsyncMaterial
           if (maxElements == 0) {
             setState(wrapped, STATUS_DONE);
           } else {
-            setState(
-                new DropRightListAsyncMaterializer<E>(wrapped, maxElements, context, isCancelled,
-                    decorateFunction), STATUS_RUNNING);
+            setState(new DropRightListAsyncMaterializer<E>(wrapped, maxElements, status, context,
+                isCancelled, decorateFunction), STATUS_RUNNING);
           }
         }
       }

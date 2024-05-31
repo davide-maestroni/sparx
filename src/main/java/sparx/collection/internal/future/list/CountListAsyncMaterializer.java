@@ -30,34 +30,19 @@ import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.util.Require;
 import sparx.util.function.Function;
 
-public class CountListAsyncMaterializer<E> implements ListAsyncMaterializer<Integer> {
+public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Integer> {
 
   private static final Logger LOGGER = Logger.getLogger(CountListAsyncMaterializer.class.getName());
-
-  private static final int STATUS_CANCELLED = 2;
-  private static final int STATUS_DONE = 1;
-  private static final int STATUS_RUNNING = 0;
-
-  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
   private ListAsyncMaterializer<Integer> state;
 
   public CountListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
+    super(new AtomicInteger(STATUS_RUNNING));
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(isCancelled, "isCancelled"),
         Require.notNull(decorateFunction, "decorateFunction"));
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return status.get() == STATUS_CANCELLED;
-  }
-
-  @Override
-  public boolean isDone() {
-    return status.get() != STATUS_RUNNING;
   }
 
   @Override
