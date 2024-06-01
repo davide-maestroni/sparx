@@ -190,7 +190,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           context.scheduleAfter(this);
         } else {
           if (index == 0) {
-            setState(wrapped, STATUS_DONE);
+            setState(wrapped, STATUS_RUNNING);
           } else {
             setState(new DropListAsyncMaterializer<E>(wrapped, index, status, context, isCancelled,
                 decorateFunction), STATUS_RUNNING);

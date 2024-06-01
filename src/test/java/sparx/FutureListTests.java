@@ -1092,4 +1092,54 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
     }
   }
+
+  @Test
+  public void flatMapAfter() {
+    var l = List.of(1, 2).toFuture(context);
+    assertFalse(l.flatMapAfter(-1, i -> List.of(i, i).toFuture(context)).isEmpty());
+    assertEquals(2, l.flatMapAfter(-1, i -> List.of(i, i)).size());
+    assertEquals(l, l.flatMapAfter(-1, i -> List.of(i, i).toFuture(context)));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapAfter(2, i -> List.of(i, i)).get(2));
+    assertFalse(l.flatMapAfter(0, i -> List.of(i, i).toFuture(context)).isEmpty());
+    assertEquals(3, l.flatMapAfter(0, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2), l.flatMapAfter(0, i -> List.of(i, i).toFuture(context)));
+    assertEquals(2, l.flatMapAfter(0, i -> List.of(i, i).toFuture(context)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapAfter(0, i -> List.of(i, i)).get(3));
+    assertFalse(l.flatMapAfter(1, i -> List.of(i, i).toFuture(context)).isEmpty());
+    assertEquals(3, l.flatMapAfter(1, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2, 2), l.flatMapAfter(1, i -> List.of(i, i).toFuture(context)));
+    assertEquals(2, l.flatMapAfter(1, i -> List.of(i, i)).get(2));
+    assertFalse(l.flatMapAfter(2, i -> List.of(i, i).toFuture(context)).isEmpty());
+    assertEquals(2, l.flatMapAfter(2, i -> List.of(i, i).toFuture(context)).size());
+    assertEquals(List.of(1, 2), l.flatMapAfter(2, i -> List.of(i, i)));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapAfter(2, i -> List.of(i, i)).get(2));
+
+    assertFalse(l.flatMapAfter(0, i -> List.of()).isEmpty());
+    assertEquals(1, l.flatMapAfter(0, i -> List.<Integer>of().toFuture(context)).size());
+    assertEquals(List.of(2), l.flatMapAfter(0, i -> List.of()));
+    assertEquals(2, l.flatMapAfter(0, i -> List.<Integer>of().toFuture(context)).get(0));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.flatMapAfter(0, i -> List.of()).get(1));
+    assertFalse(l.flatMapAfter(1, i -> List.<Integer>of().toFuture(context)).isEmpty());
+    assertEquals(1, l.flatMapAfter(1, i -> List.of()).size());
+    assertEquals(List.of(1), l.flatMapAfter(1, i -> List.<Integer>of().toFuture(context)));
+    assertEquals(1, l.flatMapAfter(1, i -> List.of()).get(0));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapAfter(1, i -> List.<Integer>of().toFuture(context)).get(1));
+    assertFalse(l.flatMapAfter(2, i -> List.of()).isEmpty());
+    assertEquals(2, l.flatMapAfter(2, i -> List.of()).size());
+    assertEquals(List.of(1, 2), l.flatMapAfter(2, i -> List.<Integer>of().toFuture(context)));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapAfter(2, i -> List.<Integer>of().toFuture(context)).get(2));
+
+    assertTrue(List.of().toFuture(context).flatMapAfter(0, i -> List.of(i, i)).isEmpty());
+    assertEquals(0,
+        List.of().toFuture(context).flatMapAfter(0, i -> List.of(i, i).toFuture(context)).size());
+    assertEquals(List.of(), List.of().toFuture(context).flatMapAfter(0, i -> List.of(i, i)));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().toFuture(context).flatMapAfter(0, i -> List.of(i, i).toFuture(context))
+            .first());
+  }
 }

@@ -68,6 +68,7 @@ import sparx.collection.internal.future.list.FindIndexOfSliceListAsyncMaterializ
 import sparx.collection.internal.future.list.FindLastIndexListAsyncMaterializer;
 import sparx.collection.internal.future.list.FindLastIndexOfSliceListAsyncMaterializer;
 import sparx.collection.internal.future.list.FindLastListAsyncMaterializer;
+import sparx.collection.internal.future.list.FlatMapAfterListAsyncMaterializer;
 import sparx.collection.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListAsyncMaterializer;
 import sparx.collection.internal.future.list.ListToListAsyncMaterializer;
@@ -500,7 +501,7 @@ public class Sparx extends SparxItf {
         return new ListToListAsyncMaterializer<E>(list);
       }
 
-      private static @NotNull <E, F> IndexedFunction<E, IteratorAsyncMaterializer<F>> getElementToMaterializer(
+      private static @NotNull <E, F> IndexedFunction<E, IteratorAsyncMaterializer<F>> getElementToIteratorMaterializer(
           @NotNull final ExecutionContext context, @NotNull final String taskID,
           @NotNull final Function<? super E, ? extends Iterable<? extends F>> mapper) {
         return new IndexedFunction<E, IteratorAsyncMaterializer<F>>() {
@@ -512,7 +513,7 @@ public class Sparx extends SparxItf {
         };
       }
 
-      private static @NotNull <E, F> IndexedFunction<E, IteratorAsyncMaterializer<F>> getElementToMaterializer(
+      private static @NotNull <E, F> IndexedFunction<E, IteratorAsyncMaterializer<F>> getElementToIteratorMaterializer(
           @NotNull final ExecutionContext context, @NotNull final String taskID,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends F>> mapper) {
         return new IndexedFunction<E, IteratorAsyncMaterializer<F>>() {
@@ -520,6 +521,28 @@ public class Sparx extends SparxItf {
           public IteratorAsyncMaterializer<F> apply(final int index, final E element)
               throws Exception {
             return Sparx.getElementsMaterializer(context, taskID, mapper.apply(index, element));
+          }
+        };
+      }
+
+      private static @NotNull <E> IndexedFunction<E, ListAsyncMaterializer<E>> getElementToMaterializer(
+          @NotNull final ExecutionContext context, @NotNull final String taskID,
+          @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        return new IndexedFunction<E, ListAsyncMaterializer<E>>() {
+          @Override
+          public ListAsyncMaterializer<E> apply(final int index, final E element) throws Exception {
+            return getElementsMaterializer(context, taskID, mapper.apply(element));
+          }
+        };
+      }
+
+      private static @NotNull <E> IndexedFunction<E, ListAsyncMaterializer<E>> getElementToMaterializer(
+          @NotNull final ExecutionContext context, @NotNull final String taskID,
+          @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+        return new IndexedFunction<E, ListAsyncMaterializer<E>>() {
+          @Override
+          public ListAsyncMaterializer<E> apply(final int index, final E element) throws Exception {
+            return getElementsMaterializer(context, taskID, mapper.apply(index, element));
           }
         };
       }
@@ -1157,7 +1180,7 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         return new List<F>(context, isCancelled,
             new FlatMapListAsyncMaterializer<E, F>(materializer,
-                getElementToMaterializer(context, taskID, mapper), context, isCancelled,
+                getElementToIteratorMaterializer(context, taskID, mapper), context, isCancelled,
                 List.<F>decorateFunction()));
       }
 
@@ -1172,20 +1195,44 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         return new List<F>(context, isCancelled,
             new FlatMapListAsyncMaterializer<E, F>(materializer,
-                getElementToMaterializer(context, taskID, mapper), context, isCancelled,
+                getElementToIteratorMaterializer(context, taskID, mapper), context, isCancelled,
                 List.<F>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> flatMapAfter(final int numElements,
           @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
-        return null;
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
+          return this;
+        }
+        final ExecutionContext context = this.context;
+        return new List<E>(context, isCancelled,
+            new FlatMapAfterListAsyncMaterializer<E>(materializer, numElements,
+                getElementToMaterializer(context, taskID, mapper), context, isCancelled,
+                List.<E>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> flatMapAfter(final int numElements,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-        return null;
+        if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+          return this;
+        }
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        final int knownSize = materializer.knownSize();
+        if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
+          return this;
+        }
+        final ExecutionContext context = this.context;
+        return new List<E>(context, isCancelled,
+            new FlatMapAfterListAsyncMaterializer<E>(materializer, numElements,
+                getElementToMaterializer(context, taskID, mapper), context, isCancelled,
+                List.<E>decorateFunction()));
       }
 
       @Override
