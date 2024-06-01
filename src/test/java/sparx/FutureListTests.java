@@ -1141,5 +1141,21 @@ public class FutureListTests {
     assertThrows(IndexOutOfBoundsException.class,
         () -> List.of().toFuture(context).flatMapAfter(0, i -> List.of(i, i).toFuture(context))
             .first());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMapAfter(0, i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
   }
 }

@@ -152,7 +152,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
             if (index < numElements + elementsSize) {
               elementsMaterializer.materializeElement(index - numElements, consumer);
             } else {
-              wrapped.materializeElement(index - elementsSize, consumer);
+              wrapped.materializeElement(index - elementsSize + 1, consumer);
             }
           } else {
             materialized(new AsyncConsumer<ListAsyncMaterializer<E>>() {
