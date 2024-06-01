@@ -31,57 +31,19 @@ import sparx.util.function.IndexedPredicate;
 
 public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
-  private ListAsyncMaterializer<E> state;
-
   public DropRightWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    state = new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"),
+    setState(new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"),
         Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction"));
+        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
   }
 
   @Override
   public int knownSize() {
     return -1;
-  }
-
-  @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
-    state.materializeCancel(mayInterruptIfRunning);
-  }
-
-  @Override
-  public void materializeContains(final Object element,
-      @NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeContains(element, consumer);
-  }
-
-  @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeEach(consumer);
-  }
-
-  @Override
-  public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeElement(index, consumer);
-  }
-
-  @Override
-  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-    state.materializeElements(consumer);
-  }
-
-  @Override
-  public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeEmpty(consumer);
-  }
-
-  @Override
-  public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    state.materializeSize(consumer);
   }
 
   private interface StateConsumer<E> {
@@ -224,13 +186,9 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     }
 
     private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
-      final ListAsyncMaterializer<E> state;
+      final ListAsyncMaterializer<E> state = DropRightWhileListAsyncMaterializer.this.setState(
+          newState, statusCode);
       final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
-      if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = DropRightWhileListAsyncMaterializer.this.state = newState;
-      } else {
-        state = DropRightWhileListAsyncMaterializer.this.state;
-      }
       for (final StateConsumer<E> stateConsumer : stateConsumers) {
         stateConsumer.accept(state);
       }

@@ -38,69 +38,20 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
   private static final Logger LOGGER = Logger.getLogger(
       CountWhereListAsyncMaterializer.class.getName());
 
-  private ListAsyncMaterializer<Integer> state;
-
   public CountWhereListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+    setState(new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(predicate, "predicate"), Require.notNull(context, "context"),
         Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction"));
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return status.get() == STATUS_CANCELLED;
-  }
-
-  @Override
-  public boolean isDone() {
-    return status.get() != STATUS_RUNNING;
+        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
   }
 
   @Override
   public int knownSize() {
     return -1;
-  }
-
-  @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
-    state.materializeCancel(mayInterruptIfRunning);
-  }
-
-  @Override
-  public void materializeContains(final Object element,
-      @NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeContains(element, consumer);
-  }
-
-  @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
-    state.materializeEach(consumer);
-  }
-
-  @Override
-  public void materializeElement(final int index,
-      @NotNull final IndexedAsyncConsumer<Integer> consumer) {
-    state.materializeElement(index, consumer);
-  }
-
-  @Override
-  public void materializeElements(@NotNull final AsyncConsumer<List<Integer>> consumer) {
-    state.materializeElements(consumer);
-  }
-
-  @Override
-  public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeEmpty(consumer);
-  }
-
-  @Override
-  public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    state.materializeSize(consumer);
   }
 
   private interface StateConsumer {
@@ -226,12 +177,8 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     private void setState(@NotNull final ListAsyncMaterializer<Integer> newState,
         final int statusCode) {
-      final ListAsyncMaterializer<Integer> state;
-      if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = CountWhereListAsyncMaterializer.this.state = newState;
-      } else {
-        state = CountWhereListAsyncMaterializer.this.state;
-      }
+      final ListAsyncMaterializer<Integer> state = CountWhereListAsyncMaterializer.this.setState(
+          newState, statusCode);
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       for (final StateConsumer stateConsumer : stateConsumers) {
         stateConsumer.accept(state);

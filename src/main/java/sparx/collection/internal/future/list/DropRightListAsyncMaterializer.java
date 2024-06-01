@@ -41,8 +41,6 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
   private final int knownSize;
 
-  private ListAsyncMaterializer<E> state;
-
   public DropRightListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final int maxElements, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
@@ -58,50 +56,14 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     super(status);
     final int wrappedSize = wrapped.knownSize();
     knownSize = wrappedSize >= 0 ? Math.max(0, wrappedSize - maxElements) : -1;
-    state = new ImmaterialState(wrapped, Require.positive(maxElements, "maxElements"),
+    setState(new ImmaterialState(wrapped, Require.positive(maxElements, "maxElements"),
         Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction"));
+        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
   }
 
   @Override
   public int knownSize() {
     return knownSize;
-  }
-
-  @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
-    state.materializeCancel(mayInterruptIfRunning);
-  }
-
-  @Override
-  public void materializeContains(final Object element,
-      @NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeContains(element, consumer);
-  }
-
-  @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeEach(consumer);
-  }
-
-  @Override
-  public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeElement(index, consumer);
-  }
-
-  @Override
-  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-    state.materializeElements(consumer);
-  }
-
-  @Override
-  public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeEmpty(consumer);
-  }
-
-  @Override
-  public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    state.materializeSize(consumer);
   }
 
   private class ImmaterialState implements ListAsyncMaterializer<E> {
@@ -333,12 +295,6 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     private @NotNull String getTaskID() {
       final String taskID = context.currentTaskID();
       return taskID != null ? taskID : "";
-    }
-
-    private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
-      if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = newState;
-      }
     }
 
     private class MaterializingAsyncConsumer implements AsyncConsumer<Integer>,

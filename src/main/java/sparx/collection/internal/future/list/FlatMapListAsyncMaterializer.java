@@ -44,58 +44,20 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
   private static final Logger LOGGER = Logger.getLogger(
       FlatMapListAsyncMaterializer.class.getName());
 
-  private ListAsyncMaterializer<F> state;
-
   public FlatMapListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<F>> mapper,
       @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<F>, List<F>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(mapper, "mapper"), Require.notNull(context, "context"),
-        Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction"));
+    setState(
+        new ImmaterialState(Require.notNull(wrapped, "wrapped"), Require.notNull(mapper, "mapper"),
+            Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
+            Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
   }
 
   @Override
   public int knownSize() {
     return -1;
-  }
-
-  @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
-    state.materializeCancel(mayInterruptIfRunning);
-  }
-
-  @Override
-  public void materializeContains(final Object element,
-      @NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeContains(element, consumer);
-  }
-
-  @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<F> consumer) {
-    state.materializeEach(consumer);
-  }
-
-  @Override
-  public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<F> consumer) {
-    state.materializeElement(index, consumer);
-  }
-
-  @Override
-  public void materializeElements(@NotNull final AsyncConsumer<List<F>> consumer) {
-    state.materializeElements(consumer);
-  }
-
-  @Override
-  public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeEmpty(consumer);
-  }
-
-  @Override
-  public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    state.materializeSize(consumer);
   }
 
   private class ImmaterialState implements ListAsyncMaterializer<F> {
@@ -208,7 +170,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
         @Override
         public void complete(final int size) {
-          state.materializeElements(consumer);
+          getState().materializeElements(consumer);
         }
 
         @Override
@@ -340,12 +302,6 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
             wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer(index));
           }
         }
-      }
-    }
-
-    private void setState(@NotNull final ListAsyncMaterializer<F> newState, final int statusCode) {
-      if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = newState;
       }
     }
 

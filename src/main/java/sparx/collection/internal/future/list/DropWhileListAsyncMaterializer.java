@@ -29,74 +29,21 @@ import sparx.util.Require;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
-public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
-
-  private static final int STATUS_CANCELLED = 2;
-  private static final int STATUS_DONE = 1;
-  private static final int STATUS_RUNNING = 0;
-
-  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
-
-  private ListAsyncMaterializer<E> state;
+public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
   public DropWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    state = new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"),
+    super(new AtomicInteger(STATUS_RUNNING));
+    setState(new ImmaterialState(wrapped, Require.notNull(predicate, "predicate"),
         Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction"));
-  }
-
-  @Override
-  public boolean isCancelled() {
-    return status.get() == STATUS_CANCELLED;
-  }
-
-  @Override
-  public boolean isDone() {
-    return status.get() != STATUS_RUNNING;
+        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
   }
 
   @Override
   public int knownSize() {
     return -1;
-  }
-
-  @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
-    state.materializeCancel(mayInterruptIfRunning);
-  }
-
-  @Override
-  public void materializeContains(final Object element,
-      @NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeContains(element, consumer);
-  }
-
-  @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeEach(consumer);
-  }
-
-  @Override
-  public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeElement(index, consumer);
-  }
-
-  @Override
-  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-    state.materializeElements(consumer);
-  }
-
-  @Override
-  public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeEmpty(consumer);
-  }
-
-  @Override
-  public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    state.materializeSize(consumer);
   }
 
   private interface StateConsumer<E> {
@@ -221,13 +168,9 @@ public class DropWhileListAsyncMaterializer<E> implements ListAsyncMaterializer<
     }
 
     private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
-      final ListAsyncMaterializer<E> state;
+      final ListAsyncMaterializer<E> state = DropWhileListAsyncMaterializer.this.setState(newState,
+          statusCode);
       final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
-      if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = DropWhileListAsyncMaterializer.this.state = newState;
-      } else {
-        state = DropWhileListAsyncMaterializer.this.state;
-      }
       for (final StateConsumer<E> stateConsumer : stateConsumers) {
         stateConsumer.accept(state);
       }

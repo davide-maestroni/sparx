@@ -36,59 +36,20 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
   private static final Logger LOGGER = Logger.getLogger(
       EndsWithListAsyncMaterializer.class.getName());
 
-  private ListAsyncMaterializer<Boolean> state;
-
   public EndsWithListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
       @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
+    setState(new ImmaterialState(Require.notNull(wrapped, "wrapped"),
         Require.notNull(elementsMaterializer, "elementsMaterializer"),
         Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction"));
+        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
   }
 
   @Override
   public int knownSize() {
     return 1;
-  }
-
-  @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
-    state.materializeCancel(mayInterruptIfRunning);
-  }
-
-  @Override
-  public void materializeContains(final Object element,
-      @NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeContains(element, consumer);
-  }
-
-  @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-    state.materializeEach(consumer);
-  }
-
-  @Override
-  public void materializeElement(final int index,
-      @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-    state.materializeElement(index, consumer);
-  }
-
-  @Override
-  public void materializeElements(@NotNull final AsyncConsumer<List<Boolean>> consumer) {
-    state.materializeElements(consumer);
-  }
-
-  @Override
-  public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-    state.materializeEmpty(consumer);
-  }
-
-  @Override
-  public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-    state.materializeSize(consumer);
   }
 
   private interface StateConsumer {
@@ -249,12 +210,8 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
     private void setState(@NotNull final ListAsyncMaterializer<Boolean> newState,
         final int statusCode) {
-      final ListAsyncMaterializer<Boolean> state;
-      if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
-        state = EndsWithListAsyncMaterializer.this.state = newState;
-      } else {
-        state = EndsWithListAsyncMaterializer.this.state;
-      }
+      final ListAsyncMaterializer<Boolean> state = EndsWithListAsyncMaterializer.this.setState(
+          newState, statusCode);
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       for (final StateConsumer stateConsumer : stateConsumers) {
         stateConsumer.accept(state);

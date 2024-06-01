@@ -15,17 +15,22 @@
  */
 package sparx.collection.internal.future.list;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
+import sparx.collection.internal.future.AsyncConsumer;
+import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.util.Require;
 
 abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
-  protected static final int STATUS_CANCELLED = 2;
-  protected static final int STATUS_DONE = 1;
-  protected static final int STATUS_RUNNING = 0;
+  static final int STATUS_CANCELLED = 2;
+  static final int STATUS_DONE = 1;
+  static final int STATUS_RUNNING = 0;
 
-  protected final AtomicInteger status;
+  final AtomicInteger status;
+
+  private ListAsyncMaterializer<E> state;
 
   AbstractListAsyncMaterializer(@NotNull final AtomicInteger status) {
     this.status = Require.notNull(status, "status");
@@ -41,5 +46,53 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     return status.get() != STATUS_RUNNING;
   }
 
-  // TODO: state
+  @Override
+  public void materializeCancel(final boolean mayInterruptIfRunning) {
+    state.materializeCancel(mayInterruptIfRunning);
+  }
+
+  @Override
+  public void materializeContains(final Object element,
+      @NotNull final AsyncConsumer<Boolean> consumer) {
+    state.materializeContains(element, consumer);
+  }
+
+  @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    state.materializeEach(consumer);
+  }
+
+  @Override
+  public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
+    state.materializeElement(index, consumer);
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+    state.materializeElements(consumer);
+  }
+
+  @Override
+  public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
+    state.materializeEmpty(consumer);
+  }
+
+  @Override
+  public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
+    state.materializeSize(consumer);
+  }
+
+  @NotNull
+  ListAsyncMaterializer<E> getState() {
+    return state;
+  }
+
+  @NotNull
+  ListAsyncMaterializer<E> setState(@NotNull final ListAsyncMaterializer<E> newState,
+      final int statusCode) {
+    if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
+      state = newState;
+    }
+    return state;
+  }
 }
