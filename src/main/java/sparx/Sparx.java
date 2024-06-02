@@ -236,7 +236,6 @@ import sparx.util.function.IndexedPredicate;
 import sparx.util.function.Predicate;
 import sparx.util.function.Supplier;
 
-// TODO: Stream <= Iterator && <= ListIterator
 // TODO: equals, clone, Serializable
 
 public class Sparx extends SparxItf {
@@ -394,6 +393,7 @@ public class Sparx extends SparxItf {
     if (elements instanceof Collection) {
       return new CollectionToIteratorAsyncMaterializer<E>((Collection<E>) elements);
     }
+    // TODO: future.Iterator
     if (elements instanceof Iterator) {
       return new IteratorToIteratorAsyncMaterializer<E>((Iterator<E>) elements);
     }
@@ -1394,6 +1394,7 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<? extends List<E>> group(int maxSize) {
+        // TODO: implement slice
         return null;
       }
 
@@ -1566,7 +1567,7 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull lazy.Iterator<E> iterator() {
-        // TODO...
+        // TODO: future.Iterator
         return lazy.Iterator.wrap(this);
       }
 
@@ -1618,13 +1619,13 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull lazy.ListIterator<E> listIterator() {
-        // TODO...
+        // TODO: future.ListIterator
         return lazy.ListIterator.wrap(this);
       }
 
       @Override
       public @NotNull lazy.ListIterator<E> listIterator(final int index) {
-        // TODO...
+        // TODO: future.ListIterator
         return lazy.ListIterator.wrap(this);
       }
 
@@ -1972,7 +1973,7 @@ public class Sparx extends SparxItf {
         return null;
       }
 
-      // TODO: stopCancelPropagation + switchMap, mergeMap, concatMap(==flatMap)
+      // TODO: stopCancelPropagation + switchMap, mergeMap, concatMap(==flatMap) + flatMapAll(?)
 
       @Override
       public @NotNull List<E> sorted(@NotNull Comparator<? super E> comparator) {
@@ -4321,6 +4322,11 @@ public class Sparx extends SparxItf {
       @SuppressWarnings("unchecked")
       public @NotNull <F> List<F> as() {
         return (List<F>) this;
+      }
+
+      public @NotNull future.List<E> asFuture(@NotNull final ExecutionContext context) {
+        return new future.List<E>(Require.notNull(context, "context"), new AtomicBoolean(false),
+            new ListToListAsyncMaterializer<E>(this));
       }
 
       @Override
