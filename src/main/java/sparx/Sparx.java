@@ -36,8 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
-import sparx.collection.AbstractListSequence;
-import sparx.collection.Sequence;
+import sparx.SparxItf.itf.Sequence;
 import sparx.collection.internal.future.AsyncConsumer;
 import sparx.collection.internal.future.IndexedAsyncConsumer;
 import sparx.collection.internal.future.iterator.CollectionToIteratorAsyncMaterializer;
@@ -180,7 +179,7 @@ import sparx.collection.internal.lazy.list.FloatArrayToListMaterializer;
 import sparx.collection.internal.lazy.list.FoldLeftListMaterializer;
 import sparx.collection.internal.lazy.list.FoldRightListMaterializer;
 import sparx.collection.internal.lazy.list.GroupListMaterializer;
-import sparx.collection.internal.lazy.list.GroupWithPaddingListMaterializer;
+import sparx.collection.internal.lazy.list.GroupListMaterializer.Chunker;
 import sparx.collection.internal.lazy.list.IncludesAllListMaterializer;
 import sparx.collection.internal.lazy.list.IncludesSliceListMaterializer;
 import sparx.collection.internal.lazy.list.InsertAfterListMaterializer;
@@ -4041,6 +4040,13 @@ public class Sparx extends SparxItf {
     public static class List<E> extends AbstractListSequence<E> implements itf.List<E> {
 
       private static final List<?> EMPTY_LIST = new List<Object>(EmptyListMaterializer.instance());
+      private static final Chunker<?, ? extends List<?>> CHUNKER = new Chunker<Object, List<Object>>() {
+        @Override
+        public @NotNull List<Object> getChunk(@NotNull final ListMaterializer<Object> materializer,
+            final int start, final int end) {
+          return new List<Object>(materializer).slice(start, end);
+        }
+      };
       private static final List<Boolean> FALSE_LIST = new List<Boolean>(
           new ElementToListMaterializer<Boolean>(false));
       private static final List<?> NULL_LIST = new List<Object>(
@@ -4206,6 +4212,21 @@ public class Sparx extends SparxItf {
 
       public static @NotNull <E> List<E> wrap(@NotNull final Iterable<? extends E> elements) {
         return new List<E>(getElementsMaterializer(elements));
+      }
+
+      private static @NotNull <E> Chunker<E, List<E>> getChunker(final int size, final E padding) {
+        return new Chunker<E, List<E>>() {
+          @Override
+          public @NotNull List<E> getChunk(@NotNull final ListMaterializer<E> materializer,
+              final int start, final int end) {
+            final List<E> sliced = new List<E>(materializer).slice(start, end);
+            final int paddingSize = size - sliced.size();
+            if (paddingSize > 0) {
+              return sliced.appendAll(List.times(paddingSize, padding));
+            }
+            return sliced;
+          }
+        };
       }
 
       @SuppressWarnings("unchecked")
@@ -4962,11 +4983,10 @@ public class Sparx extends SparxItf {
           return List.of();
         }
         return new List<List<E>>(new GroupListMaterializer<E, List<E>>(materializer, maxSize,
-            (Function<? super java.util.List<E>, ? extends List<E>>) FROM_JAVA_LIST));
+            (Chunker<E, ? extends List<E>>) CHUNKER));
       }
 
       @Override
-      @SuppressWarnings("unchecked")
       public @NotNull List<? extends List<E>> group(final int size, final E padding) {
         Require.positive(size, "size");
         final ListMaterializer<E> materializer = this.materializer;
@@ -4977,8 +4997,7 @@ public class Sparx extends SparxItf {
           return group(1);
         }
         return new List<List<E>>(
-            new GroupWithPaddingListMaterializer<E, List<E>>(materializer, size, padding,
-                (Function<? super java.util.List<E>, ? extends List<E>>) FROM_JAVA_LIST));
+            new GroupListMaterializer<E, List<E>>(materializer, size, getChunker(size, padding)));
       }
 
       @Override

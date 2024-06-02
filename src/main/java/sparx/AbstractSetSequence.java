@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.collection;
+package sparx;
 
-import java.util.AbstractList;
+import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.SparxItf.itf.Sequence;
+import sparx.collection.internal.lazy.list.ListMaterializer;
+import sparx.util.Require;
 
-public abstract class AbstractListSequence<E> extends AbstractList<E> implements Sequence<E> {
+public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements Sequence<E> {
 
-  @Override
-  public boolean add(final E e) {
-    throw new UnsupportedOperationException();
+  private final ListMaterializer<E> materializer;
+
+  public AbstractSetSequence(@NotNull final ListMaterializer<E> materializer) {
+    this.materializer = Require.notNull(materializer, "materializer");
   }
 
   @Override
   public boolean addAll(@NotNull final Collection<? extends E> c) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean addAll(final int index, final @NotNull Collection<? extends E> c) {
     throw new UnsupportedOperationException();
   }
 
@@ -42,13 +42,33 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   }
 
   @Override
-  public boolean notEmpty() {
-    return !isEmpty();
+  public boolean contains(final Object o) {
+    return materializer.materializeContains(o);
   }
 
   @Override
-  public E remove(final int index) {
-    throw new UnsupportedOperationException();
+  public E first() {
+    return materializer.materializeElement(0);
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return materializer.materializeEmpty();
+  }
+
+  @Override
+  public @NotNull Iterator<E> iterator() {
+    return materializer.materializeIterator();
+  }
+
+  @Override
+  public E last() {
+    return materializer.materializeElement(size() - 1);
+  }
+
+  @Override
+  public boolean notEmpty() {
+    return !isEmpty();
   }
 
   @Override
@@ -64,5 +84,10 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   @Override
   public boolean retainAll(@NotNull final Collection<?> c) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int size() {
+    return materializer.materializeSize();
   }
 }

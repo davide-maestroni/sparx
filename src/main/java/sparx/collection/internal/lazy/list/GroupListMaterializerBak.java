@@ -24,15 +24,16 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
+import sparx.util.function.Function;
 
-public class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L> {
+public class GroupListMaterializerBak<E, L extends List<E>> implements ListMaterializer<L> {
 
   private volatile ListMaterializer<L> state;
 
-  public GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
-      @NotNull final Chunker<E, ? extends L> chunker) {
+  public GroupListMaterializerBak(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
+      @NotNull final Function<? super List<E>, ? extends L> mapper) {
     state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxSize, "maxSize"), Require.notNull(chunker, "chunker"));
+        Require.positive(maxSize, "maxSize"), Require.notNull(mapper, "mapper"));
   }
 
   @Override
@@ -75,16 +76,10 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
     return state.materializeSize();
   }
 
-  public interface Chunker<E, L extends List<E>> {
-
-    @NotNull
-    L getChunk(@NotNull ListMaterializer<E> materializer, int start, int end);
-  }
-
   private class ImmaterialState extends AbstractListMaterializer<L> implements ListMaterializer<L> {
 
-    private final Chunker<E, ? extends L> chunker;
     private final ArrayList<L> elements = new ArrayList<L>();
+    private final Function<? super List<E>, ? extends L> mapper;
     private final int maxSize;
     private final AtomicInteger modCount = new AtomicInteger();
     private final ListMaterializer<E> wrapped;
@@ -92,10 +87,10 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
     private int elementsCount;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
-        @NotNull final Chunker<E, ? extends L> chunker) {
+        @NotNull final Function<? super List<E>, ? extends L> mapper) {
       this.wrapped = wrapped;
       this.maxSize = maxSize;
-      this.chunker = chunker;
+      this.mapper = mapper;
     }
 
     @Override
@@ -141,9 +136,16 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
       }
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
-      final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + maxSize);
+      final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + maxSize - 1);
+      final ArrayList<E> chunk = new ArrayList<E>();
+      for (int i = (int) wrappedIndex; i <= endIndex && wrapped.canMaterializeElement(i); ++i) {
+        chunk.add(wrapped.materializeElement(i));
+      }
+      if (expectedCount != modCount.get()) {
+        throw new ConcurrentModificationException();
+      }
       try {
-        final L element = chunker.getChunk(wrapped, (int) wrappedIndex, endIndex);
+        final L element = mapper.apply(chunk);
         while (elements.size() <= index) {
           elements.add(null);
         }
