@@ -17,19 +17,10 @@ package sparx;
 
 import java.util.AbstractSet;
 import java.util.Collection;
-import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.SparxItf.itf.Sequence;
-import sparx.collection.internal.lazy.list.ListMaterializer;
-import sparx.util.Require;
 
 public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements Sequence<E> {
-
-  private final ListMaterializer<E> materializer;
-
-  public AbstractSetSequence(@NotNull final ListMaterializer<E> materializer) {
-    this.materializer = Require.notNull(materializer, "materializer");
-  }
 
   @Override
   public boolean addAll(@NotNull final Collection<? extends E> c) {
@@ -39,31 +30,6 @@ public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements S
   @Override
   public void clear() {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean contains(final Object o) {
-    return materializer.materializeContains(o);
-  }
-
-  @Override
-  public E first() {
-    return materializer.materializeElement(0);
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return materializer.materializeEmpty();
-  }
-
-  @Override
-  public @NotNull Iterator<E> iterator() {
-    return materializer.materializeIterator();
-  }
-
-  @Override
-  public E last() {
-    return materializer.materializeElement(size() - 1);
   }
 
   @Override
@@ -84,10 +50,5 @@ public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements S
   @Override
   public boolean retainAll(@NotNull final Collection<?> c) {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int size() {
-    return materializer.materializeSize();
   }
 }
