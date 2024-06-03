@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 
@@ -31,8 +30,7 @@ public class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
 
   public FoldRightListMaterializer(@NotNull final ListMaterializer<E> wrapped, final F identity,
       @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), identity,
-        Require.notNull(operation, "operation"));
+    state = new ImmaterialState(wrapped, identity, operation);
   }
 
   @Override

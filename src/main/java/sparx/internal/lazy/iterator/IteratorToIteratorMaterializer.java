@@ -17,14 +17,13 @@ package sparx.internal.lazy.iterator;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class IteratorToIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private final Iterator<E> elements;
 
   public IteratorToIteratorMaterializer(@NotNull final Iterator<E> elements) {
-    this.elements = Require.notNull(elements, "elements");
+    this.elements = elements;
   }
 
   @Override

@@ -17,14 +17,13 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
-import sparx.util.Require;
 
 public class DequeueToIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private final DequeueList<E> elements;
 
   public DequeueToIteratorMaterializer(@NotNull final DequeueList<E> elements) {
-    this.elements = Require.notNull(elements, "elements");
+    this.elements = elements;
   }
 
   @Override

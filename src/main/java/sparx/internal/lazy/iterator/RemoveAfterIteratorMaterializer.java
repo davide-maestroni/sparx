@@ -16,16 +16,15 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class RemoveAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
+  // numElements: not negative
   public RemoveAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int numElements) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNegative(numElements, "numElements"));
+    state = new ImmaterialState(wrapped, numElements);
   }
 
   @Override

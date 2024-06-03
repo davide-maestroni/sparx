@@ -16,7 +16,6 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class OrElseIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
@@ -24,8 +23,7 @@ public class OrElseIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   public OrElseIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IteratorMaterializer<E> elementsMaterializer) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+    state = new ImmaterialState(wrapped, elementsMaterializer);
   }
 
   @Override

@@ -16,7 +16,6 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
 public class AppendIteratorMaterializer<E> implements IteratorMaterializer<E> {
@@ -25,7 +24,7 @@ public class AppendIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   public AppendIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final E element) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), element);
+    state = new ImmaterialState(wrapped, element);
   }
 
   @Override
@@ -53,9 +52,8 @@ public class AppendIteratorMaterializer<E> implements IteratorMaterializer<E> {
     private final E element;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        final E element) {
-      this.wrapped = Require.notNull(wrapped, "wrapped");
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final E element) {
+      this.wrapped = wrapped;
       this.element = element;
     }
 

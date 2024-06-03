@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.function.BinaryFunction;
 
@@ -43,8 +42,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       @NotNull final BinaryFunction<List<E>, E, List<E>> appendFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize());
-    setState(new ImmaterialState(wrapped, element, Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(appendFunction, "appendFunction")), STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, element, isCancelled, appendFunction), STATUS_RUNNING);
   }
 
   private static int safeSize(final int wrappedSize) {

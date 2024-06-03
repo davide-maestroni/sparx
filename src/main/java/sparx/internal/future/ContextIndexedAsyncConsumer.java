@@ -20,7 +20,6 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
-import sparx.util.Require;
 
 public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
 
@@ -32,10 +31,10 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
   public ContextIndexedAsyncConsumer(@NotNull final ExecutionContext context,
       @NotNull final String taskID, @NotNull final IndexedAsyncConsumer<P> wrapped,
       @NotNull final Logger logger) {
-    this.context = Require.notNull(context, "context");
-    this.taskID = Require.notNull(taskID, "taskID");
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.logger = Require.notNull(logger, "logger");
+    this.context = context;
+    this.taskID = taskID;
+    this.wrapped = wrapped;
+    this.logger = logger;
   }
 
   @Override

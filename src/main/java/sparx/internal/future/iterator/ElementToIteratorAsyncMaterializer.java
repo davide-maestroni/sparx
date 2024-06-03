@@ -65,6 +65,7 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
     if (consumed) {
       safeConsumeComplete(consumer, 1, LOGGER);
     } else {
+      consumed = true;
       safeConsume(consumer, 1, 0, element, LOGGER);
     }
   }

@@ -17,7 +17,6 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedConsumer;
 
@@ -30,8 +29,8 @@ public class PeekIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   public PeekIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedConsumer<? super E> consumer) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.consumer = Require.notNull(consumer, "consumer");
+    this.wrapped = wrapped;
+    this.consumer = consumer;
   }
 
   @Override

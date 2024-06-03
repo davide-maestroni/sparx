@@ -18,7 +18,6 @@ package sparx.internal.lazy.iterator;
 import java.util.Collection;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class CollectionToIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
@@ -28,7 +27,7 @@ public class CollectionToIteratorMaterializer<E> extends AbstractIteratorMateria
   private int pos;
 
   public CollectionToIteratorMaterializer(@NotNull final Collection<E> elements) {
-    this.elements = Require.notNull(elements, "elements");
+    this.elements = elements;
     iterator = elements.iterator();
   }
 

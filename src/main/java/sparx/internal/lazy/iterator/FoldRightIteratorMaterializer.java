@@ -17,7 +17,6 @@ package sparx.internal.lazy.iterator;
 
 import java.util.ArrayList;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 
@@ -28,8 +27,7 @@ public class FoldRightIteratorMaterializer<E, F> implements IteratorMaterializer
   public FoldRightIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final F identity,
       @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), identity,
-        Require.notNull(operation, "operation"));
+    state = new ImmaterialState(wrapped, identity, operation);
   }
 
   @Override

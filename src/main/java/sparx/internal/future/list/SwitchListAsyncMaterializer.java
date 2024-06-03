@@ -27,7 +27,6 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.ContextAsyncConsumer;
 import sparx.internal.future.ContextIndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
-import sparx.util.Require;
 
 public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
@@ -43,11 +42,11 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   public SwitchListAsyncMaterializer(@NotNull final ExecutionContext fromContext,
       @NotNull final String fromTaskID, @NotNull final ExecutionContext toContext,
       @NotNull final String toTaskID, @NotNull final ListAsyncMaterializer<E> wrapped) {
-    this.fromContext = Require.notNull(fromContext, "fromContext");
-    this.fromTaskID = Require.notNull(fromTaskID, "fromTaskID");
-    this.toContext = Require.notNull(toContext, "toContext");
-    this.toTaskID = Require.notNull(toTaskID, "toTaskID");
-    this.wrapped = Require.notNull(wrapped, "wrapped");
+    this.fromContext = fromContext;
+    this.fromTaskID = fromTaskID;
+    this.toContext = toContext;
+    this.toTaskID = toTaskID;
+    this.wrapped = wrapped;
   }
 
   @Override

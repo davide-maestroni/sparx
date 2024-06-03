@@ -18,7 +18,6 @@ package sparx.internal.lazy.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
 public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
@@ -27,11 +26,12 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
   private final int numElements;
   private final ListMaterializer<E> wrapped;
 
+  // numElements: not negative
   public InsertAllAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       final int numElements, @NotNull final ListMaterializer<E> elementsMaterializer) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.numElements = Require.notNegative(numElements, "numElements");
-    this.elementsMaterializer = Require.notNull(elementsMaterializer, "elementsMaterializer");
+    this.wrapped = wrapped;
+    this.numElements = numElements;
+    this.elementsMaterializer = elementsMaterializer;
   }
 
   @Override

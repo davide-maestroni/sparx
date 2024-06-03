@@ -17,7 +17,6 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
@@ -27,8 +26,7 @@ public class FindIndexIteratorMaterializer<E> implements IteratorMaterializer<In
 
   public FindIndexIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"));
+    state = new ImmaterialState(wrapped, predicate);
   }
 
   @Override

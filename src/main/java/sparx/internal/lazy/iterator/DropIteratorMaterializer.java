@@ -17,16 +17,15 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class DropIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
+  // maxElements: positive
   public DropIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int maxElements) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxElements, "maxElements"));
+    state = new ImmaterialState(wrapped, maxElements);
   }
 
   @Override
@@ -54,8 +53,7 @@ public class DropIteratorMaterializer<E> implements IteratorMaterializer<E> {
     private final int maxElements;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        final int maxElements) {
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int maxElements) {
       this.wrapped = wrapped;
       this.maxElements = maxElements;
     }

@@ -22,7 +22,6 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.list.ListAsyncMaterializer;
-import sparx.util.Require;
 
 public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
     IteratorAsyncMaterializer<E> {
@@ -36,7 +35,7 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
 
   public ListAsyncMaterializerToIteratorAsyncMaterializer(
       @NotNull final ListAsyncMaterializer<E> materializer) {
-    this.materializer = Require.notNull(materializer, "materializer");
+    this.materializer = materializer;
   }
 
   @Override

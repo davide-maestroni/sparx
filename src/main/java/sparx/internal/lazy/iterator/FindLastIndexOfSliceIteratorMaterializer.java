@@ -20,7 +20,6 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
 import sparx.util.DequeueList;
-import sparx.util.Require;
 
 public class FindLastIndexOfSliceIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
 
@@ -28,8 +27,7 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> implements IteratorMate
 
   public FindLastIndexOfSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+    state = new ImmaterialState(wrapped, elementsMaterializer);
   }
 
   @Override

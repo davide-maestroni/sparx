@@ -19,7 +19,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 public class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer<Integer> {
@@ -30,8 +29,7 @@ public class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer
 
   public FindLastIndexOfSliceListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+    state = new ImmaterialState(wrapped, elementsMaterializer);
   }
 
   @Override

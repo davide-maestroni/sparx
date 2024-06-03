@@ -18,7 +18,6 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
-import sparx.util.Require;
 
 public class ListMaterializerToIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
@@ -27,7 +26,7 @@ public class ListMaterializerToIteratorMaterializer<E> implements IteratorMateri
   private int pos;
 
   public ListMaterializerToIteratorMaterializer(@NotNull final ListMaterializer<E> wrapped) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
+    this.wrapped = wrapped;
   }
 
   @Override

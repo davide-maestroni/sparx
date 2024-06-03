@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
@@ -33,8 +32,8 @@ public class RemoveFirstWhereListMaterializer<E> extends AbstractListMaterialize
 
   public RemoveFirstWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    state = new ImmaterialState(Require.notNull(predicate, "predicate"));
+    this.wrapped = wrapped;
+    state = new ImmaterialState(predicate);
   }
 
   @Override

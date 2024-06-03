@@ -25,7 +25,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
-import sparx.util.Require;
 import sparx.util.function.Function;
 
 public class FindIndexOfSliceListAsyncMaterializer<E> extends
@@ -36,10 +35,9 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"),
-        Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
+    setState(
+        new ImmaterialState(wrapped, elementsMaterializer, context, isCancelled, decorateFunction),
+        STATUS_RUNNING);
   }
 
   @Override

@@ -16,7 +16,6 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class DoubleArrayToIteratorMaterializer implements IteratorMaterializer<Double> {
 
@@ -25,7 +24,7 @@ public class DoubleArrayToIteratorMaterializer implements IteratorMaterializer<D
   private int pos;
 
   public DoubleArrayToIteratorMaterializer(@NotNull final double... elements) {
-    this.elements = Require.notNull(elements, "elements");
+    this.elements = elements;
   }
 
   @Override

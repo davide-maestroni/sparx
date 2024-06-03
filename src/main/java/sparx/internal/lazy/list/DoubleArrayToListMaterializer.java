@@ -17,14 +17,13 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class DoubleArrayToListMaterializer implements ListMaterializer<Double> {
 
   private final double[] elements;
 
   public DoubleArrayToListMaterializer(@NotNull final double... elements) {
-    this.elements = Require.notNull(elements, "elements");
+    this.elements = elements;
   }
 
   @Override

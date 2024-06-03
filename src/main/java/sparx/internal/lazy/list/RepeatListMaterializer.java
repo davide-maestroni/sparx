@@ -17,15 +17,15 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class RepeatListMaterializer<E> implements ListMaterializer<E> {
 
   private final E element;
   private final int times;
 
+  // times: positive
   public RepeatListMaterializer(final int times, final E element) {
-    this.times = Require.positive(times, "times");
+    this.times = times;
     this.element = element;
   }
 

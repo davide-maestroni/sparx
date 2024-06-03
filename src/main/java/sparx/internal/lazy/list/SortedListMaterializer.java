@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 public class SortedListMaterializer<E> implements ListMaterializer<E> {
@@ -31,8 +30,7 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
 
   public SortedListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Comparator<? super E> comparator) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(comparator, "comparator"));
+    state = new ImmaterialState(wrapped, comparator);
   }
 
   @Override

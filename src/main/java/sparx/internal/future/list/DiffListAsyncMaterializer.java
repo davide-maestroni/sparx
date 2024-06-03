@@ -34,7 +34,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
-import sparx.util.Require;
 import sparx.util.function.Function;
 
 public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
@@ -46,10 +45,9 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"),
-        Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
+    setState(
+        new ImmaterialState(wrapped, elementsMaterializer, context, isCancelled, decorateFunction),
+        STATUS_RUNNING);
   }
 
   @Override

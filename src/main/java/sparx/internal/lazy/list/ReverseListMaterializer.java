@@ -19,14 +19,13 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
-import sparx.util.Require;
 
 public class ReverseListMaterializer<E> implements ListMaterializer<E> {
 
   private final ListMaterializer<E> wrapped;
 
   public ReverseListMaterializer(@NotNull final ListMaterializer<E> wrapped) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
+    this.wrapped = wrapped;
   }
 
   @Override

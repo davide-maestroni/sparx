@@ -28,7 +28,6 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.util.IndexOverflowException;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.function.BinaryFunction;
 
@@ -45,9 +44,8 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       @NotNull final BinaryFunction<List<E>, List<E>, List<E>> appendFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize(), elementsMaterializer.knownSize());
-    setState(new ImmaterialState(wrapped, elementsMaterializer,
-        Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(appendFunction, "appendFunction")), STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, elementsMaterializer, isCancelled, appendFunction),
+        STATUS_RUNNING);
   }
 
   private static int safeIndex(final int wrappedSize, final int elementsIndex) {

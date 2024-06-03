@@ -28,7 +28,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
-import sparx.util.Require;
 import sparx.util.function.Function;
 
 public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Boolean> {
@@ -41,10 +40,9 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"),
-        Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
+    setState(
+        new ImmaterialState(wrapped, elementsMaterializer, context, isCancelled, decorateFunction),
+        STATUS_RUNNING);
   }
 
   @Override

@@ -18,7 +18,6 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.Action;
 
@@ -30,8 +29,8 @@ public class FinallyIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   public FinallyIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final Action action) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.action = Require.notNull(action, "action");
+    this.wrapped = wrapped;
+    this.action = action;
   }
 
   @Override

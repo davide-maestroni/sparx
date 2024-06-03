@@ -16,14 +16,13 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class CountIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
 
   private volatile IteratorMaterializer<Integer> state;
 
   public CountIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"));
+    state = new ImmaterialState(wrapped);
   }
 
   @Override

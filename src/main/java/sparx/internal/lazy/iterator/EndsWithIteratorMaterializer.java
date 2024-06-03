@@ -18,7 +18,6 @@ package sparx.internal.lazy.iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
 import sparx.util.DequeueList;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
 public class EndsWithIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
@@ -27,8 +26,7 @@ public class EndsWithIteratorMaterializer<E> implements IteratorMaterializer<Boo
 
   public EndsWithIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+    state = new ImmaterialState(wrapped, elementsMaterializer);
   }
 
   @Override

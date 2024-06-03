@@ -17,7 +17,6 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 
@@ -27,8 +26,7 @@ public class SwitchExceptionallyIteratorMaterializer<E> extends AbstractIterator
 
   public SwitchExceptionallyIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedFunction<? super Throwable, ? extends IteratorMaterializer<E>> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(mapper, "mapper"));
+    state = new ImmaterialState(wrapped, mapper);
   }
 
   @Override

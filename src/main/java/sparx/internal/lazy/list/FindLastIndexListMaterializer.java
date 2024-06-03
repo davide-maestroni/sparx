@@ -19,7 +19,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
@@ -31,8 +30,7 @@ public class FindLastIndexListMaterializer<E> implements ListMaterializer<Intege
 
   public FindLastIndexListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"));
+    state = new ImmaterialState(wrapped, predicate);
   }
 
   @Override

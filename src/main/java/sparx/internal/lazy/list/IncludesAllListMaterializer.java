@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 public class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean> {
@@ -32,8 +31,7 @@ public class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean>
 
   public IncludesAllListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final Iterable<?> elements) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elements, "elements"));
+    state = new ImmaterialState(wrapped, elements);
   }
 
   @Override

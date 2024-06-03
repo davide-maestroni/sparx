@@ -21,7 +21,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
 
@@ -31,9 +30,9 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
 
   public CollectionToListMaterializer(@NotNull final Collection<E> elements) {
     if (elements.size() > SIZE_THRESHOLD) {
-      this.state = new ImmaterialState(Require.notNull(elements, "elements"));
+      this.state = new ImmaterialState(elements);
     } else {
-      this.state = new WrapperState(Require.notNull(elements, "elements"));
+      this.state = new WrapperState(elements);
     }
   }
 

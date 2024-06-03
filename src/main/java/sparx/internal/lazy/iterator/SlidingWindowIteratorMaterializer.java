@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
@@ -30,20 +29,18 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
 
   private final IteratorMaterializer<I> state;
 
+  // maxSize: positive
+  // step: positive
   public SlidingWindowIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int maxSize, final int step,
       @NotNull final Function<? super List<E>, ? extends I> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxSize, "maxSize"), Require.positive(step, "step"),
-        Require.notNull(mapper, "mapper"));
+    state = new ImmaterialState(wrapped, maxSize, step, mapper);
   }
 
   public SlidingWindowIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int size, final int step, final E padding,
       @NotNull final Function<? super List<E>, ? extends I> mapper) {
-    state = new ImmaterialPaddingState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(size, "size"), Require.positive(step, "step"), padding,
-        Require.notNull(mapper, "mapper"));
+    state = new ImmaterialPaddingState(wrapped, size, step, padding, mapper);
   }
 
   @Override

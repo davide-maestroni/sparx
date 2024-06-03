@@ -17,7 +17,6 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
@@ -32,8 +31,8 @@ public class RemoveWhereIteratorMaterializer<E> extends AbstractIteratorMaterial
 
   public RemoveWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.predicate = Require.notNull(predicate, "predicate");
+    this.wrapped = wrapped;
+    this.predicate = predicate;
   }
 
   @Override

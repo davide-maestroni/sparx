@@ -29,7 +29,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
@@ -39,16 +38,16 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
   private static final Logger LOGGER = Logger.getLogger(
       FlatMapAfterListAsyncMaterializer.class.getName());
 
+  // numElements: not negative
   public FlatMapAfterListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends ListAsyncMaterializer<E>> mapper,
       @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNegative(numElements, "numElements"), Require.notNull(mapper, "mapper"),
-        Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
+    setState(
+        new ImmaterialState(wrapped, numElements, mapper, context, isCancelled, decorateFunction),
+        STATUS_RUNNING);
   }
 
   @Override

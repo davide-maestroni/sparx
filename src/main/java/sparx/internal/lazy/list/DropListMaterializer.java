@@ -17,7 +17,6 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class DropListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
@@ -25,9 +24,10 @@ public class DropListMaterializer<E> extends AbstractListMaterializer<E> impleme
   private final int maxElements;
   private final ListMaterializer<E> wrapped;
 
+  // maxElements: positive
   public DropListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxElements) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.maxElements = Require.positive(maxElements, "maxElements");
+    this.wrapped = wrapped;
+    this.maxElements = maxElements;
   }
 
   @Override

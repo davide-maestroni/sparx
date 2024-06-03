@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
@@ -31,11 +30,11 @@ public class GroupWithPaddingListMaterializer<E, L extends List<E>> implements L
 
   private volatile ListMaterializer<L> state;
 
+  // size: positive
   public GroupWithPaddingListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       final int size, final E padding,
       @NotNull final Function<? super List<E>, ? extends L> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), Require.positive(size, "size"),
-        padding, Require.notNull(mapper, "mapper"));
+    state = new ImmaterialState(wrapped, size, padding, mapper);
   }
 
   @Override

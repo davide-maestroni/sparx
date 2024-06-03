@@ -18,7 +18,6 @@ package sparx.internal.lazy.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
@@ -29,7 +28,7 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
 
   public RemoveSliceListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
       final int end) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
+    this.wrapped = wrapped;
     if (start >= 0 && end >= 0) {
       state = new MaterialState(start, Math.max(0, end - start));
     } else {

@@ -18,16 +18,15 @@ package sparx.internal.lazy.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
-public class ListMaterializerIterator<E> implements Iterator<E> {
+class ListMaterializerIterator<E> implements Iterator<E> {
 
   private final ListMaterializer<E> materializer;
   private int nextIndex;
 
   // Cannot use materializer.materializeIterator()
   public ListMaterializerIterator(@NotNull final ListMaterializer<E> materializer) {
-    this.materializer = Require.notNull(materializer, "materializer");
+    this.materializer = materializer;
   }
 
   @Override

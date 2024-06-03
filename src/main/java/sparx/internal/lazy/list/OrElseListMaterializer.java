@@ -17,7 +17,6 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class OrElseListMaterializer<E> implements ListMaterializer<E> {
 
@@ -25,8 +24,7 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
 
   public OrElseListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final ListMaterializer<E> elementsMaterializer) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+    state = new ImmaterialState(wrapped, elementsMaterializer);
   }
 
   @Override

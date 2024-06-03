@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 
@@ -37,12 +36,11 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
       @NotNull final IndexedFunction<? super E, F> mapper) {
     final int knownSize = wrapped.knownSize();
     if (knownSize < 0 || knownSize > SIZE_THRESHOLD) {
-      state = new MapState(Require.notNull(wrapped, "wrapped"), Require.notNull(mapper, "mapper"));
+      state = new MapState(wrapped, mapper);
     } else {
       final Object[] elements = new Object[knownSize];
       Arrays.fill(elements, EMPTY);
-      state = new ArrayState(Require.notNull(wrapped, "wrapped"), Require.notNull(mapper, "mapper"),
-          elements);
+      state = new ArrayState(wrapped, mapper, elements);
     }
   }
 

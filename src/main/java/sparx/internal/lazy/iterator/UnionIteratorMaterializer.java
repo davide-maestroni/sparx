@@ -19,7 +19,6 @@ import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.function.IndexedPredicate;
 
 public class UnionIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
@@ -28,8 +27,7 @@ public class UnionIteratorMaterializer<E> extends AbstractIteratorMaterializer<E
 
   public UnionIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IteratorMaterializer<E> elementsMaterializer) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+    state = new ImmaterialState(wrapped, elementsMaterializer);
   }
 
   private static @NotNull <E> IndexedPredicate<E> elementsContains(@NotNull final Set<E> elements) {

@@ -19,7 +19,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 
@@ -31,11 +30,12 @@ public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> imp
 
   private volatile State<E> state;
 
+  // numElements: not negative
   public MapAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.numElements = Require.notNegative(numElements, "numElements");
-    state = new ImmaterialState(Require.notNull(mapper, "mapper"));
+    this.wrapped = wrapped;
+    this.numElements = numElements;
+    state = new ImmaterialState(mapper);
   }
 
   @Override

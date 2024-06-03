@@ -16,7 +16,6 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 
@@ -24,11 +23,11 @@ public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer
 
   private volatile IteratorMaterializer<E> state;
 
+  // numElements: not negative
   public FlatMapAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNegative(numElements, "numElements"), Require.notNull(mapper, "mapper"));
+    state = new ImmaterialState(wrapped, numElements, mapper);
   }
 
   @Override

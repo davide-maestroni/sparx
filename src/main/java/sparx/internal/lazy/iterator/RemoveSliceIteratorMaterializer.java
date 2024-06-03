@@ -18,7 +18,6 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
-import sparx.util.Require;
 
 public class RemoveSliceIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
@@ -27,10 +26,9 @@ public class RemoveSliceIteratorMaterializer<E> extends AbstractIteratorMaterial
   public RemoveSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int start, final int end) {
     if (start >= 0 && end >= 0) {
-      state = new MaterialState(Require.notNull(wrapped, "wrapped"), start,
-          Math.max(0, end - start));
+      state = new MaterialState(wrapped, start, Math.max(0, end - start));
     } else {
-      state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), start, end);
+      state = new ImmaterialState(wrapped, start, end);
     }
   }
 

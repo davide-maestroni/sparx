@@ -17,14 +17,13 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class LongArrayToListMaterializer implements ListMaterializer<Long> {
 
   private final long[] elements;
 
   public LongArrayToListMaterializer(@NotNull final long... elements) {
-    this.elements = Require.notNull(elements, "elements");
+    this.elements = elements;
   }
 
   @Override

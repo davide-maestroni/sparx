@@ -19,7 +19,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 public class StartsWithListMaterializer<E> implements ListMaterializer<Boolean> {
@@ -31,8 +30,7 @@ public class StartsWithListMaterializer<E> implements ListMaterializer<Boolean> 
 
   public StartsWithListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+    state = new ImmaterialState(wrapped, elementsMaterializer);
   }
 
   @Override

@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
@@ -33,8 +32,7 @@ public class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> 
   public FlatMapLastWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"));
+    state = new ImmaterialState(wrapped, predicate, mapper);
   }
 
   @Override

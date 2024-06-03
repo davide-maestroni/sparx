@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
@@ -30,11 +29,11 @@ public class GroupWithPaddingIteratorMaterializer<E, I extends Iterator<E>> impl
 
   private volatile IteratorMaterializer<I> state;
 
+  // size: positive
   public GroupWithPaddingIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int size, final E padding,
       @NotNull final Function<? super List<E>, ? extends I> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"), Require.positive(size, "size"),
-        padding, Require.notNull(mapper, "mapper"));
+    state = new ImmaterialState(wrapped, size, padding, mapper);
   }
 
   @Override

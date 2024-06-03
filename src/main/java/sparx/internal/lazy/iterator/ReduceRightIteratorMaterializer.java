@@ -18,7 +18,6 @@ package sparx.internal.lazy.iterator;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 
@@ -28,8 +27,7 @@ public class ReduceRightIteratorMaterializer<E> implements IteratorMaterializer<
 
   public ReduceRightIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(operation, "operation"));
+    state = new ImmaterialState(wrapped, operation);
   }
 
   @Override

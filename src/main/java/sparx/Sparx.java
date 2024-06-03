@@ -42,6 +42,7 @@ import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.iterator.CollectionToIteratorAsyncMaterializer;
+import sparx.internal.future.iterator.ElementToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ListAsyncMaterializerToIteratorAsyncMaterializer;
@@ -291,7 +292,6 @@ public class Sparx extends SparxItf {
 
   private static @NotNull <P> IndexedPredicate<P> negated(
       @NotNull final IndexedPredicate<P> predicate) {
-    Require.notNull(predicate, "predicate");
     return new IndexedPredicate<P>() {
       @Override
       public boolean test(final int index, final P param) throws Exception {
@@ -323,7 +323,6 @@ public class Sparx extends SparxItf {
   }
 
   private static @NotNull <T> Comparator<T> reversed(@NotNull final Comparator<T> comparator) {
-    Require.notNull(comparator, "comparator");
     return new Comparator<T>() {
       @Override
       public int compare(final T o1, final T o2) {
@@ -354,7 +353,6 @@ public class Sparx extends SparxItf {
 
   private static @NotNull <E> IndexedPredicate<E> toIndexedPredicate(
       @NotNull final Predicate<E> predicate) {
-    Require.notNull(predicate, "predicate");
     return new IndexedPredicate<E>() {
       @Override
       public boolean test(final int index, final E param) throws Exception {
@@ -365,7 +363,6 @@ public class Sparx extends SparxItf {
 
   private static @NotNull <E> IndexedPredicate<E> toNegatedIndexedPredicate(
       @NotNull final Predicate<E> predicate) {
-    Require.notNull(predicate, "predicate");
     return new IndexedPredicate<E>() {
       @Override
       public boolean test(final int index, final E param) throws Exception {
@@ -374,6 +371,7 @@ public class Sparx extends SparxItf {
     };
   }
 
+  // TODO: move to future.Iterator
   @SuppressWarnings("unchecked")
   private static @NotNull <E> IteratorAsyncMaterializer<E> getElementsMaterializer(
       @NotNull final ExecutionContext context, @NotNull final String taskID,
@@ -388,7 +386,12 @@ public class Sparx extends SparxItf {
               list.materializer));
     }
     if (elements instanceof List) {
-      return new ListToIteratorAsyncMaterializer<E>((List<E>) elements);
+      // TODO: empty
+      final List<E> list = (List<E>) elements;
+      if (list.size() == 1) {
+        return new ElementToIteratorAsyncMaterializer<E>(list.get(0));
+      }
+      return new ListToIteratorAsyncMaterializer<E>(list);
     }
     if (elements instanceof Collection) {
       return new CollectionToIteratorAsyncMaterializer<E>((Collection<E>) elements);
@@ -479,23 +482,38 @@ public class Sparx extends SparxItf {
               list.materializer);
         }
         if (elements instanceof lazy.List) {
-          final lazy.List<E> list = (lazy.List<E>) elements;
-          if (list.materializer.knownSize() == 0) {
+          final lazy.List<E> materialized = ((lazy.List<E>) elements).materialized();
+          final int size = materialized.size();
+          if (size == 0) {
             return EmptyListAsyncMaterializer.instance();
           }
-          return new ListToListAsyncMaterializer<E>(list.materialized());
+          if (size == 1) {
+            return new ElementToListAsyncMaterializer<E>(materialized);
+          }
+          return new ListToListAsyncMaterializer<E>(materialized);
         }
         if (elements instanceof java.util.List) {
           final java.util.List<E> list = (java.util.List<E>) elements;
-          if (list.isEmpty()) {
+          final int size = list.size();
+          if (size == 0) {
             return EmptyListAsyncMaterializer.instance();
           }
-          return new ListToListAsyncMaterializer<E>(list);
+          if (size == 1) {
+            return new ElementToListAsyncMaterializer<E>(lazy.List.wrap(list));
+          }
+          return new ListToListAsyncMaterializer<E>(lazy.List.wrap(list));
         }
         // TODO: future.Iterator
         final ArrayList<E> list = new ArrayList<E>();
         for (final E element : elements) {
           list.add(element);
+        }
+        final int size = list.size();
+        if (size == 0) {
+          return EmptyListAsyncMaterializer.instance();
+        }
+        if (size == 1) {
+          return new ElementToListAsyncMaterializer<E>(lazy.List.wrap(list));
         }
         return new ListToListAsyncMaterializer<E>(list);
       }
@@ -555,8 +573,8 @@ public class Sparx extends SparxItf {
         }
         final ExecutionContext context = this.context;
         return new List<Boolean>(context, isCancelled,
-            new AllListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
-                List.<Boolean>decorateFunction()));
+            new AllListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+                context, isCancelled, List.<Boolean>decorateFunction()));
       }
 
       @Override
@@ -567,9 +585,9 @@ public class Sparx extends SparxItf {
           return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
         }
         final ExecutionContext context = this.context;
-        return new List<Boolean>(context, isCancelled,
-            new AllListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate), context,
-                isCancelled, List.<Boolean>decorateFunction()));
+        return new List<Boolean>(context, isCancelled, new AllListAsyncMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+            List.<Boolean>decorateFunction()));
       }
 
       @Override
@@ -590,10 +608,10 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(context,
-            taskID, elements);
+            taskID, Require.notNull(elements, "elements"));
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (elementsMaterializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         } else if (materializer.knownSize() == 0) {
           return new List<E>(context, isCancelled, elementsMaterializer);
         }
@@ -701,7 +719,8 @@ public class Sparx extends SparxItf {
         }
         final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
-            new CountWhereListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
+            new CountWhereListAsyncMaterializer<E>(materializer,
+                Require.notNull(predicate, "predicate"), context, isCancelled,
                 List.<Integer>decorateFunction()));
       }
 
@@ -714,23 +733,24 @@ public class Sparx extends SparxItf {
         }
         final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
-            new CountWhereListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                context, isCancelled, List.<Integer>decorateFunction()));
+            new CountWhereListAsyncMaterializer<E>(materializer,
+                toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+                List.<Integer>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> diff(@NotNull final Iterable<?> elements) {
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         final ListAsyncMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
         final ListAsyncMaterializer<?> elementsMaterializer = getElementsMaterializer(context,
-            taskID, elements);
+            taskID, Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
             new DiffListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
                 isCancelled, List.<E>decorateFunction()));
@@ -807,11 +827,11 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull List<E> drop(final int maxElements) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         final int knownSize = materializer.knownSize();
         if (maxElements <= 0 || knownSize == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
           return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
         }
@@ -824,11 +844,11 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull List<E> dropRight(final int maxElements) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         final int knownSize = materializer.knownSize();
         if (maxElements <= 0 || knownSize == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
           return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
         }
@@ -841,61 +861,63 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull List<E> dropRightWhile(@NotNull final IndexedPredicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
-            new DropRightWhileListAsyncMaterializer<E>(materializer, predicate, context,
-                isCancelled, List.<E>decorateFunction()));
+            new DropRightWhileListAsyncMaterializer<E>(materializer,
+                Require.notNull(predicate, "predicate"), context, isCancelled,
+                List.<E>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> dropRightWhile(@NotNull final Predicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         return new List<E>(context, isCancelled,
-            new DropRightWhileListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                context, isCancelled, List.<E>decorateFunction()));
+            new DropRightWhileListAsyncMaterializer<E>(materializer,
+                toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+                List.<E>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> dropWhile(@NotNull final IndexedPredicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        return new List<E>(context, isCancelled,
-            new DropWhileListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
-                List.<E>decorateFunction()));
+        return new List<E>(context, isCancelled, new DropWhileListAsyncMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), context, isCancelled,
+            List.<E>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        return new List<E>(context, isCancelled,
-            new DropWhileListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                context, isCancelled, List.<E>decorateFunction()));
+        return new List<E>(context, isCancelled, new DropWhileListAsyncMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+            List.<E>decorateFunction()));
       }
 
       @Override
       public @NotNull List<Boolean> endsWith(@NotNull final Iterable<?> elements) {
         final ExecutionContext context = this.context;
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
-            taskID, elements);
+            taskID, Require.notNull(elements, "elements"));
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (elementsMaterializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
         }
@@ -906,55 +928,57 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<Boolean> exists(@NotNull final IndexedPredicate<? super E> predicate) {
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, FALSE_MATERIALIZER);
         }
         final ExecutionContext context = this.context;
         return new List<Boolean>(context, isCancelled,
-            new ExistsListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
+            new ExistsListAsyncMaterializer<E>(materializer,
+                Require.notNull(predicate, "predicate"), context, isCancelled,
                 List.<Boolean>decorateFunction()));
       }
 
       @Override
       public @NotNull List<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
           return new List<Boolean>(context, isCancelled, FALSE_MATERIALIZER);
         }
         final ExecutionContext context = this.context;
         return new List<Boolean>(context, isCancelled,
-            new ExistsListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate), context,
-                isCancelled, List.<Boolean>decorateFunction()));
+            new ExistsListAsyncMaterializer<E>(materializer,
+                toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+                List.<Boolean>decorateFunction()));
 
       }
 
       @Override
       public @NotNull List<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        return new List<E>(context, isCancelled,
-            new FilterListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
-                List.<E>decorateFunction()));
+        return new List<E>(context, isCancelled, new FilterListAsyncMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), context, isCancelled,
+            List.<E>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> filter(@NotNull final Predicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        return new List<E>(context, isCancelled,
-            new FilterListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate), context,
-                isCancelled, List.<E>decorateFunction()));
+        return new List<E>(context, isCancelled, new FilterListAsyncMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+            List.<E>decorateFunction()));
       }
 
       @Override
@@ -969,28 +993,28 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<E> findFirst(@NotNull final IndexedPredicate<? super E> predicate) {
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         final ListAsyncMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        return new List<E>(context, isCancelled,
-            new FindFirstListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
-                List.<E>decorateFunction()));
+        return new List<E>(context, isCancelled, new FindFirstListAsyncMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), context, isCancelled,
+            List.<E>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> findFirst(@NotNull final Predicate<? super E> predicate) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (materializer.knownSize() == 0) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
-        return new List<E>(context, isCancelled,
-            new FindFirstListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                context, isCancelled, List.<E>decorateFunction()));
+        return new List<E>(context, isCancelled, new FindFirstListAsyncMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+            List.<E>decorateFunction()));
       }
 
       @Override
@@ -1010,9 +1034,9 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull List<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
         final ExecutionContext context = this.context;
-        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
-            taskID, elements);
+            taskID, Require.notNull(elements, "elements"));
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (elementsMaterializer.knownSize() == 0) {
           return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
         }
@@ -1032,7 +1056,8 @@ public class Sparx extends SparxItf {
         }
         final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
-            new FindIndexListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
+            new FindIndexListAsyncMaterializer<E>(materializer,
+                Require.notNull(predicate, "predicate"), context, isCancelled,
                 List.<Integer>decorateFunction()));
       }
 
@@ -1046,8 +1071,9 @@ public class Sparx extends SparxItf {
         }
         final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
-            new FindIndexListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                context, isCancelled, List.<Integer>decorateFunction()));
+            new FindIndexListAsyncMaterializer<E>(materializer,
+                toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+                List.<Integer>decorateFunction()));
       }
 
       @Override
@@ -1058,9 +1084,9 @@ public class Sparx extends SparxItf {
           return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
         }
         final ExecutionContext context = this.context;
-        return new List<E>(context, isCancelled,
-            new FindLastListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
-                List.<E>decorateFunction()));
+        return new List<E>(context, isCancelled, new FindLastListAsyncMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), context, isCancelled,
+            List.<E>decorateFunction()));
       }
 
       @Override
@@ -1071,9 +1097,9 @@ public class Sparx extends SparxItf {
           return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
         }
         final ExecutionContext context = this.context;
-        return new List<E>(context, isCancelled,
-            new FindLastListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                context, isCancelled, List.<E>decorateFunction()));
+        return new List<E>(context, isCancelled, new FindLastListAsyncMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+            List.<E>decorateFunction()));
       }
 
       @Override
@@ -1091,11 +1117,11 @@ public class Sparx extends SparxItf {
       }
 
       @Override
-      public @NotNull List<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements) {
+      public @NotNull List<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
         final ExecutionContext context = this.context;
         final AtomicBoolean isCancelled = new AtomicBoolean(false);
         final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
-            taskID, elements);
+            taskID, Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           final int knownSize = materializer.knownSize();
           if (knownSize >= 0) {
@@ -1119,7 +1145,8 @@ public class Sparx extends SparxItf {
         }
         final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
-            new FindLastIndexListAsyncMaterializer<E>(materializer, predicate, context, isCancelled,
+            new FindLastIndexListAsyncMaterializer<E>(materializer,
+                Require.notNull(predicate, "predicate"), context, isCancelled,
                 List.<Integer>decorateFunction()));
       }
 
@@ -1134,8 +1161,9 @@ public class Sparx extends SparxItf {
         }
         final ExecutionContext context = this.context;
         return new List<Integer>(context, isCancelled,
-            new FindLastIndexListAsyncMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                context, isCancelled, List.<Integer>decorateFunction()));
+            new FindLastIndexListAsyncMaterializer<E>(materializer,
+                toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+                List.<Integer>decorateFunction()));
       }
 
       @Override
@@ -1179,7 +1207,8 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         return new List<F>(context, isCancelled,
             new FlatMapListAsyncMaterializer<E, F>(materializer,
-                getElementToIteratorMaterializer(context, taskID, mapper), context, isCancelled,
+                getElementToIteratorMaterializer(context, taskID,
+                    Require.notNull(mapper, "mapper")), context, isCancelled,
                 List.<F>decorateFunction()));
       }
 
@@ -1194,44 +1223,47 @@ public class Sparx extends SparxItf {
         final ExecutionContext context = this.context;
         return new List<F>(context, isCancelled,
             new FlatMapListAsyncMaterializer<E, F>(materializer,
-                getElementToIteratorMaterializer(context, taskID, mapper), context, isCancelled,
+                getElementToIteratorMaterializer(context, taskID,
+                    Require.notNull(mapper, "mapper")), context, isCancelled,
                 List.<F>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> flatMapAfter(final int numElements,
           @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
         if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
         return new List<E>(context, isCancelled,
             new FlatMapAfterListAsyncMaterializer<E>(materializer, numElements,
-                getElementToMaterializer(context, taskID, mapper), context, isCancelled,
-                List.<E>decorateFunction()));
+                getElementToMaterializer(context, taskID, Require.notNull(mapper, "mapper")),
+                context, isCancelled, List.<E>decorateFunction()));
       }
 
       @Override
       public @NotNull List<E> flatMapAfter(final int numElements,
           @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+        final AtomicBoolean isCancelled = new AtomicBoolean(false);
         if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ListAsyncMaterializer<E> materializer = this.materializer;
         final int knownSize = materializer.knownSize();
         if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
-          return this;
+          return new List<E>(context, isCancelled, materializer);
         }
         final ExecutionContext context = this.context;
         return new List<E>(context, isCancelled,
             new FlatMapAfterListAsyncMaterializer<E>(materializer, numElements,
-                getElementToMaterializer(context, taskID, mapper), context, isCancelled,
-                List.<E>decorateFunction()));
+                getElementToMaterializer(context, taskID, Require.notNull(mapper, "mapper")),
+                context, isCancelled, List.<E>decorateFunction()));
       }
 
       @Override
@@ -1699,12 +1731,14 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
-        return new AsyncForFuture<E>(context, taskID, materializer, toIndexedConsumer(consumer));
+        return new AsyncForFuture<E>(context, taskID, materializer,
+            toIndexedConsumer(Require.notNull(consumer, "consumer")));
       }
 
       @Override
       public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
-        return new AsyncForFuture<E>(context, taskID, materializer, consumer);
+        return new AsyncForFuture<E>(context, taskID, materializer,
+            Require.notNull(consumer, "consumer"));
       }
 
       @Override
@@ -1715,27 +1749,30 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull Future<?> nonBlockingWhile(
           @NotNull final IndexedPredicate<? super E> predicate) {
-        return new AsyncWhileFuture<E>(context, taskID, materializer, predicate);
+        return new AsyncWhileFuture<E>(context, taskID, materializer,
+            Require.notNull(predicate, "predicate"));
       }
 
       @Override
       public @NotNull Future<?> nonBlockingWhile(
           @NotNull final IndexedPredicate<? super E> condition,
           @NotNull final IndexedConsumer<? super E> consumer) {
-        return new AsyncWhileFuture<E>(context, taskID, materializer, condition, consumer);
+        return new AsyncWhileFuture<E>(context, taskID, materializer,
+            Require.notNull(condition, "condition"), Require.notNull(consumer, "consumer"));
       }
 
       @Override
       public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
         return new AsyncWhileFuture<E>(context, taskID, materializer,
-            toIndexedPredicate(predicate));
+            toIndexedPredicate(Require.notNull(predicate, "predicate")));
       }
 
       @Override
       public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
           @NotNull final Consumer<? super E> consumer) {
-        return new AsyncWhileFuture<E>(context, taskID, materializer, toIndexedPredicate(condition),
-            toIndexedConsumer(consumer));
+        return new AsyncWhileFuture<E>(context, taskID, materializer,
+            toIndexedPredicate(Require.notNull(condition, "condition")),
+            toIndexedConsumer(Require.notNull(consumer, "consumer")));
       }
 
       @Override
@@ -2016,6 +2053,8 @@ public class Sparx extends SparxItf {
       }
     }
 
+    // TODO: SynchronizedListAsyncMaterializer
+
     private static class BlockingConsumer<P> extends Semaphore implements AsyncConsumer<P> {
 
       private Exception error;
@@ -2185,7 +2224,7 @@ public class Sparx extends SparxItf {
       private final IteratorMaterializer<E> materializer;
 
       private Iterator(@NotNull final IteratorMaterializer<E> materializer) {
-        this.materializer = Require.notNull(materializer, "materializer");
+        this.materializer = materializer;
       }
 
       @SuppressWarnings("unchecked")
@@ -2270,7 +2309,8 @@ public class Sparx extends SparxItf {
       }
 
       public static @NotNull Iterator<Character> ofChars(@NotNull final CharSequence chars) {
-        return new Iterator<Character>(new CharSequenceToIteratorMaterializer(chars));
+        return new Iterator<Character>(
+            new CharSequenceToIteratorMaterializer(Require.notNull(chars, "chars")));
       }
 
       public static @NotNull Iterator<Double> ofDoubles(final double... elements) {
@@ -2308,15 +2348,17 @@ public class Sparx extends SparxItf {
       public static @NotNull <E> Iterator<E> ofLoop(final E initialValue,
           @NotNull final IndexedPredicate<? super E> predicate,
           @NotNull final IndexedFunction<? super E, ? extends E> update) {
-        return new Iterator<E>(new LoopToIteratorMaterializer<E>(initialValue, predicate, update));
+        return new Iterator<E>(
+            new LoopToIteratorMaterializer<E>(initialValue, Require.notNull(predicate, "predicate"),
+                Require.notNull(update, "update")));
       }
 
       public static @NotNull <E> Iterator<E> ofLoop(final E initialValue,
           @NotNull final Predicate<? super E> predicate,
           @NotNull final Function<? super E, ? extends E> update) {
-        return new Iterator<E>(
-            new LoopToIteratorMaterializer<E>(initialValue, toIndexedPredicate(predicate),
-                toIndexedFunction(update)));
+        return new Iterator<E>(new LoopToIteratorMaterializer<E>(initialValue,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            toIndexedFunction(Require.notNull(update, "update"))));
       }
 
       public static @NotNull <E> Iterator<E> times(final int count, final E element) {
@@ -2327,7 +2369,7 @@ public class Sparx extends SparxItf {
       }
 
       public static @NotNull <E> Iterator<E> wrap(@NotNull final Iterable<? extends E> elements) {
-        return new Iterator<E>(getElementsMaterializer(elements));
+        return new Iterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
       }
 
       @SuppressWarnings("unchecked")
@@ -2337,7 +2379,11 @@ public class Sparx extends SparxItf {
           return ((Iterator<E>) elements).materializer;
         }
         if (elements instanceof List) {
-          return new ListMaterializerToIteratorMaterializer<E>(((List<E>) elements).materializer);
+          final ListMaterializer<E> materializer = ((List<E>) elements).materializer;
+          if (materializer.knownSize() == 0) {
+            return EmptyIteratorMaterializer.instance();
+          }
+          return new ListMaterializerToIteratorMaterializer<E>(materializer);
         }
         if (elements instanceof java.util.List) {
           final java.util.List<E> list = (java.util.List<E>) elements;
@@ -2379,7 +2425,6 @@ public class Sparx extends SparxItf {
       private static @NotNull <E, T extends Throwable> IndexedFunction<Throwable, IteratorMaterializer<E>> getExceptionToMaterializer(
           @NotNull final Class<T> exceptionType,
           @NotNull final Function<? super T, ? extends Iterable<? extends E>> mapper) {
-        Require.notNull(exceptionType, "exceptionType");
         return new IndexedFunction<Throwable, IteratorMaterializer<E>>() {
           @Override
           @SuppressWarnings("unchecked")
@@ -2399,7 +2444,6 @@ public class Sparx extends SparxItf {
       private static @NotNull <E, T extends Throwable> IndexedFunction<Throwable, IteratorMaterializer<E>> getExceptionToMaterializer(
           @NotNull final Class<T> exceptionType,
           @NotNull final IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper) {
-        Require.notNull(exceptionType, "exceptionType");
         return new IndexedFunction<Throwable, IteratorMaterializer<E>>() {
           @Override
           @SuppressWarnings("unchecked")
@@ -2425,7 +2469,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(true);
         }
-        return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<Boolean>(
+            new AllIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -2434,8 +2479,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(true);
         }
-        return new Iterator<Boolean>(
-            new AllIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -2451,10 +2496,10 @@ public class Sparx extends SparxItf {
       public @NotNull Iterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return new Iterator<E>(getElementsMaterializer(elements));
+          return new Iterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
         }
-        return new Iterator<E>(
-            new AppendAllIteratorMaterializer<E>(materializer, getElementsMaterializer(elements)));
+        return new Iterator<E>(new AppendAllIteratorMaterializer<E>(materializer,
+            getElementsMaterializer(Require.notNull(elements, "elements"))));
       }
 
       @Override
@@ -2484,8 +2529,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(0);
         }
-        return new Iterator<Integer>(
-            new CountWhereIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<Integer>(new CountWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -2494,8 +2539,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(0);
         }
-        return new Iterator<Integer>(
-            new CountWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<Integer>(new CountWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -2505,7 +2550,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
-            elements);
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           return this;
         }
@@ -2628,7 +2673,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new DropRightWhileIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<E>(new DropRightWhileIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -2637,8 +2683,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new DropRightWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<E>(new DropRightWhileIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -2647,7 +2693,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new DropWhileIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<E>(new DropWhileIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -2656,14 +2703,14 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new DropWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<E>(new DropWhileIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
       public @NotNull Iterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
         return new Iterator<Boolean>(new EndsWithIteratorMaterializer<E>(materializer,
-            List.getElementsMaterializer(elements)));
+            List.getElementsMaterializer(Require.notNull(elements, "elements"))));
       }
 
       @Override
@@ -2673,7 +2720,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(false);
         }
-        return new Iterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -2682,8 +2730,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(false);
         }
-        return new Iterator<Boolean>(
-            new ExistsIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -2692,8 +2740,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new RemoveWhereIteratorMaterializer<E>(materializer, negated(predicate)));
+        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
+            negated(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -2703,7 +2751,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
-            toNegatedIndexedPredicate(predicate)));
+            toNegatedIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -2722,7 +2770,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new FindFirstIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<E>(new FindFirstIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -2731,8 +2780,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new FindFirstIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<E>(new FindFirstIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -2748,7 +2797,7 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull Iterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
         final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
-            elements);
+            Require.notNull(elements, "elements"));
         return new Iterator<Integer>(
             new FindIndexOfSliceIteratorMaterializer<E>(materializer, elementsMaterializer));
       }
@@ -2760,7 +2809,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<Integer>(new FindIndexIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<Integer>(new FindIndexIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -2770,8 +2820,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<Integer>(
-            new FindIndexIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<Integer>(new FindIndexIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -2780,7 +2830,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new FindLastIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<E>(new FindLastIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -2789,8 +2840,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new FindLastIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<E>(new FindLastIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -2806,7 +2857,7 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull Iterator<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
         return new Iterator<Integer>(new FindLastIndexOfSliceIteratorMaterializer<E>(materializer,
-            List.getElementsMaterializer(elements)));
+            List.getElementsMaterializer(Require.notNull(elements, "elements"))));
       }
 
       @Override
@@ -2816,8 +2867,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<Integer>(
-            new FindLastIndexIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<Integer>(new FindLastIndexIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -2827,8 +2878,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<Integer>(
-            new FindLastIndexIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<Integer>(new FindLastIndexIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -2843,8 +2894,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<F>(
-            new FlatMapIteratorMaterializer<E, F>(materializer, getElementToMaterializer(mapper)));
+        return new Iterator<F>(new FlatMapIteratorMaterializer<E, F>(materializer,
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -2854,8 +2905,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<F>(
-            new FlatMapIteratorMaterializer<E, F>(materializer, getElementToMaterializer(mapper)));
+        return new Iterator<F>(new FlatMapIteratorMaterializer<E, F>(materializer,
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -2870,7 +2921,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new FlatMapAfterIteratorMaterializer<E>(materializer, numElements,
-            getElementToMaterializer(mapper)));
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -2885,7 +2936,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new FlatMapAfterIteratorMaterializer<E>(materializer, numElements,
-            getElementToMaterializer(mapper)));
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -2896,8 +2947,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new FlatMapFirstWhereIteratorMaterializer<E>(materializer, predicate,
-            getElementToMaterializer(mapper)));
+        return new Iterator<E>(new FlatMapFirstWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"),
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -2908,7 +2960,8 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new FlatMapFirstWhereIteratorMaterializer<E>(materializer,
-            toIndexedPredicate(predicate), getElementToMaterializer(mapper)));
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -2919,8 +2972,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new FlatMapLastWhereIteratorMaterializer<E>(materializer, predicate,
-            getElementToMaterializer(mapper)));
+        return new Iterator<E>(new FlatMapLastWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"),
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -2930,9 +2984,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new FlatMapLastWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                getElementToMaterializer(mapper)));
+        return new Iterator<E>(new FlatMapLastWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -2942,8 +2996,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new FlatMapWhereIteratorMaterializer<E>(materializer, predicate,
-            getElementToMaterializer(mapper)));
+        return new Iterator<E>(new FlatMapWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"),
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -2953,9 +3008,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new FlatMapWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                getElementToMaterializer(mapper)));
+        return new Iterator<E>(new FlatMapWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -2971,8 +3026,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(identity);
         }
-        return new Iterator<F>(
-            new FoldLeftIteratorMaterializer<E, F>(materializer, identity, operation));
+        return new Iterator<F>(new FoldLeftIteratorMaterializer<E, F>(materializer, identity,
+            Require.notNull(operation, "operation")));
       }
 
       @Override
@@ -2982,8 +3037,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(identity);
         }
-        return new Iterator<F>(
-            new FoldRightIteratorMaterializer<E, F>(materializer, identity, operation));
+        return new Iterator<F>(new FoldRightIteratorMaterializer<E, F>(materializer, identity,
+            Require.notNull(operation, "operation")));
       }
 
       @Override
@@ -2993,9 +3048,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<Iterator<E>>(
-            new GroupIteratorMaterializer<E, Iterator<E>>(materializer, maxSize,
-                (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
+        return new Iterator<Iterator<E>>(new GroupIteratorMaterializer<E, Iterator<E>>(materializer,
+            Require.positive(maxSize, "maxSize"),
+            (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
       }
 
       @Override
@@ -3006,7 +3061,8 @@ public class Sparx extends SparxItf {
           return Iterator.of();
         }
         return new Iterator<Iterator<E>>(
-            new GroupWithPaddingIteratorMaterializer<E, Iterator<E>>(materializer, size, padding,
+            new GroupWithPaddingIteratorMaterializer<E, Iterator<E>>(materializer,
+                Require.positive(size, "size"), padding,
                 (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
       }
 
@@ -3027,14 +3083,14 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull Iterator<Boolean> includesAll(@NotNull final Iterable<?> elements) {
-        return new Iterator<Boolean>(
-            new IncludesAllIteratorMaterializer<E>(materializer, elements));
+        return new Iterator<Boolean>(new IncludesAllIteratorMaterializer<E>(materializer,
+            Require.notNull(elements, "elements")));
       }
 
       @Override
       public @NotNull Iterator<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
         return new Iterator<Boolean>(new IncludesSliceIteratorMaterializer<E>(materializer,
-            List.getElementsMaterializer(elements)));
+            List.getElementsMaterializer(Require.notNull(elements, "elements"))));
       }
 
       @Override
@@ -3069,8 +3125,8 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull Iterator<E> insertAll(@NotNull final Iterable<? extends E> elements) {
-        return new Iterator<E>(
-            new InsertAllIteratorMaterializer<E>(materializer, getElementsMaterializer(elements)));
+        return new Iterator<E>(new InsertAllIteratorMaterializer<E>(materializer,
+            getElementsMaterializer(Require.notNull(elements, "elements"))));
       }
 
       @Override
@@ -3096,7 +3152,7 @@ public class Sparx extends SparxItf {
           }
         }
         return new Iterator<E>(new InsertAllAfterIteratorMaterializer<E>(materializer, numElements,
-            getElementsMaterializer(elements)));
+            getElementsMaterializer(Require.notNull(elements, "elements"))));
       }
 
       @Override
@@ -3106,7 +3162,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
-            elements);
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           return Iterator.of();
         }
@@ -3144,8 +3200,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<F>(
-            new MapIteratorMaterializer<E, F>(materializer, toIndexedFunction(mapper)));
+        return new Iterator<F>(new MapIteratorMaterializer<E, F>(materializer,
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -3154,7 +3210,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<F>(new MapIteratorMaterializer<E, F>(materializer, mapper));
+        return new Iterator<F>(
+            new MapIteratorMaterializer<E, F>(materializer, Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -3169,7 +3226,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new MapAfterIteratorMaterializer<E>(materializer, numElements,
-            toIndexedFunction(mapper)));
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -3183,8 +3240,8 @@ public class Sparx extends SparxItf {
         if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
           return this;
         }
-        return new Iterator<E>(
-            new MapAfterIteratorMaterializer<E>(materializer, numElements, mapper));
+        return new Iterator<E>(new MapAfterIteratorMaterializer<E>(materializer, numElements,
+            Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -3195,8 +3252,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new MapFirstWhereIteratorMaterializer<E>(materializer, predicate, mapper));
+        return new Iterator<E>(new MapFirstWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -3206,9 +3263,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new MapFirstWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
+        return new Iterator<E>(new MapFirstWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -3218,8 +3275,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new MapLastWhereIteratorMaterializer<E>(materializer, predicate, mapper));
+        return new Iterator<E>(new MapLastWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -3229,9 +3286,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new MapLastWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
+        return new Iterator<E>(new MapLastWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -3241,8 +3298,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new MapWhereIteratorMaterializer<E>(materializer, predicate, mapper));
+        return new Iterator<E>(new MapWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -3252,9 +3309,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new MapWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
+        return new Iterator<E>(new MapWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -3263,7 +3320,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<E>(new MaxIteratorMaterializer<E>(materializer, comparator));
+        return new Iterator<E>(new MaxIteratorMaterializer<E>(materializer,
+            Require.notNull(comparator, "comparator")));
       }
 
       @Override
@@ -3272,7 +3330,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<E>(new MaxIteratorMaterializer<E>(materializer, reversed(comparator)));
+        return new Iterator<E>(new MaxIteratorMaterializer<E>(materializer,
+            reversed(Require.notNull(comparator, "comparator"))));
       }
 
       @Override
@@ -3287,8 +3346,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(false);
         }
-        return new Iterator<Boolean>(
-            new ExistsIteratorMaterializer<E>(materializer, negated(predicate)));
+        return new Iterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer,
+            negated(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -3297,8 +3356,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(false);
         }
-        return new Iterator<Boolean>(
-            new ExistsIteratorMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
+        return new Iterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer,
+            toNegatedIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -3313,8 +3372,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(true);
         }
-        return new Iterator<Boolean>(
-            new AllIteratorMaterializer<E>(materializer, negated(predicate)));
+        return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer,
+            negated(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -3323,13 +3382,14 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of(true);
         }
-        return new Iterator<Boolean>(
-            new AllIteratorMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
+        return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer,
+            toNegatedIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
       public @NotNull Iterator<E> orElse(@NotNull final Iterable<E> elements) {
-        final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return new Iterator<E>(elementsMaterializer);
@@ -3343,10 +3403,11 @@ public class Sparx extends SparxItf {
           @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
         final IteratorMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return new Iterator<E>(new SuppliedMaterializer<E>(supplier));
+          return new Iterator<E>(
+              new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier")));
         }
-        return new Iterator<E>(
-            new OrElseIteratorMaterializer<E>(materializer, new SuppliedMaterializer<E>(supplier)));
+        return new Iterator<E>(new OrElseIteratorMaterializer<E>(materializer,
+            new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier"))));
       }
 
       @Override
@@ -3355,8 +3416,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new PeekIteratorMaterializer<E>(materializer, toIndexedConsumer(consumer)));
+        return new Iterator<E>(new PeekIteratorMaterializer<E>(materializer,
+            toIndexedConsumer(Require.notNull(consumer, "consumer"))));
       }
 
       @Override
@@ -3365,7 +3426,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new PeekIteratorMaterializer<E>(materializer, consumer));
+        return new Iterator<E>(
+            new PeekIteratorMaterializer<E>(materializer, Require.notNull(consumer, "consumer")));
       }
 
       @Override
@@ -3376,7 +3438,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new PeekExceptionallyIteratorMaterializer<E>(materializer,
-            toIndexedConsumer(consumer)));
+            toIndexedConsumer(Require.notNull(consumer, "consumer"))));
       }
 
       @Override
@@ -3386,8 +3448,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new PeekExceptionallyIteratorMaterializer<E>(materializer, consumer));
+        return new Iterator<E>(new PeekExceptionallyIteratorMaterializer<E>(materializer,
+            Require.notNull(consumer, "consumer")));
       }
 
       @Override
@@ -3413,7 +3475,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<E>(new ReduceLeftIteratorMaterializer<E>(materializer, operation));
+        return new Iterator<E>(new ReduceLeftIteratorMaterializer<E>(materializer,
+            Require.notNull(operation, "operation")));
       }
 
       @Override
@@ -3423,7 +3486,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.of();
         }
-        return new Iterator<E>(new ReduceRightIteratorMaterializer<E>(materializer, operation));
+        return new Iterator<E>(new ReduceRightIteratorMaterializer<E>(materializer,
+            Require.notNull(operation, "operation")));
       }
 
       @Override
@@ -3474,8 +3538,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new RemoveFirstWhereIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<E>(new RemoveFirstWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -3485,7 +3549,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new RemoveFirstWhereIteratorMaterializer<E>(materializer,
-            toIndexedPredicate(predicate)));
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -3505,7 +3569,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new RemoveLastWhereIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<E>(new RemoveLastWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -3515,7 +3580,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new RemoveLastWhereIteratorMaterializer<E>(materializer,
-            toIndexedPredicate(predicate)));
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -3555,7 +3620,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -3564,8 +3630,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new RemoveWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -3610,8 +3676,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new MapFirstWhereIteratorMaterializer<E>(materializer, predicate,
-            replacementMapper(replacement)));
+        return new Iterator<E>(new MapFirstWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), replacementMapper(replacement)));
       }
 
       @Override
@@ -3621,9 +3687,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new MapFirstWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                replacementMapper(replacement)));
+        return new Iterator<E>(new MapFirstWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            replacementMapper(replacement)));
       }
 
       @Override
@@ -3644,8 +3710,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new MapLastWhereIteratorMaterializer<E>(materializer, predicate,
-            replacementMapper(replacement)));
+        return new Iterator<E>(new MapLastWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), replacementMapper(replacement)));
       }
 
       @Override
@@ -3655,9 +3721,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new MapLastWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                replacementMapper(replacement)));
+        return new Iterator<E>(new MapLastWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            replacementMapper(replacement)));
       }
 
       @Override
@@ -3689,7 +3755,7 @@ public class Sparx extends SparxItf {
           }
         }
         return new Iterator<E>(new ReplaceSliceIteratorMaterializer<E>(materializer, start, end,
-            getElementsMaterializer(patch)));
+            getElementsMaterializer(Require.notNull(patch, "patch"))));
       }
 
       @Override
@@ -3699,8 +3765,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new MapWhereIteratorMaterializer<E>(materializer, predicate,
-            replacementMapper(replacement)));
+        return new Iterator<E>(new MapWhereIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), replacementMapper(replacement)));
       }
 
       @Override
@@ -3710,9 +3776,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new MapWhereIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                replacementMapper(replacement)));
+        return new Iterator<E>(new MapWhereIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            replacementMapper(replacement)));
       }
 
       @Override
@@ -3750,7 +3816,8 @@ public class Sparx extends SparxItf {
           }
           return this;
         }
-        return new Iterator<E>(new FinallyIteratorMaterializer<E>(materializer, action));
+        return new Iterator<E>(
+            new FinallyIteratorMaterializer<E>(materializer, Require.notNull(action, "action")));
       }
 
       @Override
@@ -3811,7 +3878,8 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull Iterator<Boolean> startsWith(@NotNull final Iterable<?> elements) {
-        final IteratorMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
+        final IteratorMaterializer<?> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           return Iterator.of(true);
         }
@@ -3833,7 +3901,8 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
-            getExceptionToMaterializer(exceptionType, mapper)));
+            getExceptionToMaterializer(Require.notNull(exceptionType, "exceptionType"),
+                Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -3845,7 +3914,8 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
-            getExceptionToMaterializer(exceptionType, mapper)));
+            getExceptionToMaterializer(Require.notNull(exceptionType, "exceptionType"),
+                Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -3856,7 +3926,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
-            getElementToMaterializer(mapper)));
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -3867,7 +3937,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new Iterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
-            getElementToMaterializer(mapper)));
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -3906,7 +3976,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new TakeRightWhileIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<E>(new TakeRightWhileIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -3915,8 +3986,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new TakeRightWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<E>(new TakeRightWhileIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -3925,7 +3996,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(new TakeWhileIteratorMaterializer<E>(materializer, predicate));
+        return new Iterator<E>(new TakeWhileIteratorMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -3934,8 +4006,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new Iterator<E>(
-            new TakeWhileIteratorMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new Iterator<E>(new TakeWhileIteratorMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       public @NotNull List<E> toList() {
@@ -3951,7 +4023,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return Iterator.wrap(elements);
         }
-        final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           return this;
         }
@@ -3965,7 +4038,7 @@ public class Sparx extends SparxItf {
 
         private SuppliedMaterializer(
             @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
-          state = new ImmaterialState(Require.notNull(supplier, "supplier"));
+          state = new ImmaterialState(supplier);
         }
 
         @Override
@@ -4056,17 +4129,11 @@ public class Sparx extends SparxItf {
           new ElementToListMaterializer<Boolean>(true));
       private static final List<Integer> ZERO_LIST = new List<Integer>(
           new ElementToListMaterializer<Integer>(0));
-      private static final Function<? extends java.util.List<?>, ? extends List<?>> FROM_JAVA_LIST = new Function<java.util.List<Object>, List<Object>>() {
-        @Override
-        public List<Object> apply(final java.util.List<Object> param) {
-          return new List<Object>(new ListToListMaterializer<Object>(param));
-        }
-      };
 
       private final ListMaterializer<E> materializer;
 
       private List(@NotNull final ListMaterializer<E> materializer) {
-        this.materializer = Require.notNull(materializer, "materializer");
+        this.materializer = materializer;
       }
 
       public static @NotNull <E> List<E> from(@NotNull final Iterable<E> elements) {
@@ -4169,7 +4236,8 @@ public class Sparx extends SparxItf {
       }
 
       public static @NotNull List<Character> ofChars(@NotNull final CharSequence chars) {
-        return new List<Character>(new CharSequenceToListMaterializer(chars));
+        return new List<Character>(
+            new CharSequenceToListMaterializer(Require.notNull(chars, "chars")));
       }
 
       public static @NotNull List<Double> ofDoubles(final double... elements) {
@@ -4212,7 +4280,7 @@ public class Sparx extends SparxItf {
       }
 
       public static @NotNull <E> List<E> wrap(@NotNull final Iterable<? extends E> elements) {
-        return new List<E>(getElementsMaterializer(elements));
+        return new List<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
       }
 
       private static @NotNull <E> Chunker<E, List<E>> getChunker(final int size, final E padding) {
@@ -4238,8 +4306,12 @@ public class Sparx extends SparxItf {
         }
         if (elements instanceof java.util.List) {
           final java.util.List<E> list = (java.util.List<E>) elements;
-          if (list.isEmpty()) {
+          final int size = list.size();
+          if (size == 0) {
             return EmptyListMaterializer.instance();
+          }
+          if (size == 1) {
+            return new ElementToListMaterializer<E>(list.get(0));
           }
           return new ListToListMaterializer<E>(list);
         }
@@ -4279,7 +4351,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return TRUE_LIST;
         }
-        return new List<Boolean>(new AllListMaterializer<E>(materializer, predicate));
+        return new List<Boolean>(
+            new AllListMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -4288,8 +4361,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return TRUE_LIST;
         }
-        return new List<Boolean>(
-            new AllListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<Boolean>(new AllListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -4304,7 +4377,8 @@ public class Sparx extends SparxItf {
       @Override
       public @NotNull List<E> appendAll(@NotNull final Iterable<? extends E> elements) {
         final ListMaterializer<E> materializer = this.materializer;
-        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           return this;
         } else if (materializer.knownSize() == 0) {
@@ -4353,7 +4427,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return ZERO_LIST;
         }
-        return new List<Integer>(new CountWhereListMaterializer<E>(materializer, predicate));
+        return new List<Integer>(new CountWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -4362,8 +4437,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return ZERO_LIST;
         }
-        return new List<Integer>(
-            new CountWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<Integer>(new CountWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -4372,7 +4447,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        final ListMaterializer<Object> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<Object> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           return this;
         }
@@ -4564,7 +4640,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new DropRightWhileListMaterializer<E>(materializer, predicate));
+        return new List<E>(new DropRightWhileListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -4573,8 +4650,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new DropRightWhileListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<E>(new DropRightWhileListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -4583,7 +4660,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new DropWhileListMaterializer<E>(materializer, predicate));
+        return new List<E>(new DropWhileListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -4592,13 +4670,14 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new DropWhileListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<E>(new DropWhileListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
       public @NotNull List<Boolean> endsWith(@NotNull final Iterable<?> elements) {
-        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           return TRUE_LIST;
         }
@@ -4612,7 +4691,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return FALSE_LIST;
         }
-        return new List<Boolean>(new ExistsListMaterializer<E>(materializer, predicate));
+        return new List<Boolean>(
+            new ExistsListMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -4621,8 +4701,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return FALSE_LIST;
         }
-        return new List<Boolean>(
-            new ExistsListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<Boolean>(new ExistsListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -4631,7 +4711,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new RemoveWhereListMaterializer<E>(materializer, negated(predicate)));
+        return new List<E>(new RemoveWhereListMaterializer<E>(materializer,
+            negated(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -4640,8 +4721,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new RemoveWhereListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
+        return new List<E>(new RemoveWhereListMaterializer<E>(materializer,
+            toNegatedIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -4660,7 +4741,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new FindFirstListMaterializer<E>(materializer, predicate));
+        return new List<E>(new FindFirstListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -4669,8 +4751,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new FindFirstListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<E>(new FindFirstListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -4685,7 +4767,8 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
-        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         return new List<Integer>(
             new FindIndexOfSliceListMaterializer<E>(materializer, elementsMaterializer));
       }
@@ -4697,7 +4780,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return List.of();
         }
-        return new List<Integer>(new FindIndexListMaterializer<E>(materializer, predicate));
+        return new List<Integer>(new FindIndexListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -4706,8 +4790,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return List.of();
         }
-        return new List<Integer>(
-            new FindIndexListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<Integer>(new FindIndexListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -4716,7 +4800,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new FindLastListMaterializer<E>(materializer, predicate));
+        return new List<E>(
+            new FindLastListMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -4725,8 +4810,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new FindLastListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<E>(new FindLastListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -4741,7 +4826,8 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
-        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           final int knownSize = materializer.knownSize();
           if (knownSize >= 0) {
@@ -4759,7 +4845,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return List.of();
         }
-        return new List<Integer>(new FindLastIndexListMaterializer<E>(materializer, predicate));
+        return new List<Integer>(new FindLastIndexListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -4769,8 +4856,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return List.of();
         }
-        return new List<Integer>(
-            new FindLastIndexListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<Integer>(new FindLastIndexListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -4788,10 +4875,10 @@ public class Sparx extends SparxItf {
         }
         if (knownSize == 1) {
           return new List<F>(new SingleFlatMapListMaterializer<E, F>(materializer,
-              getElementToMaterializer(mapper)));
+              getElementToMaterializer(Require.notNull(mapper, "mapper"))));
         }
-        return new List<F>(
-            new FlatMapListMaterializer<E, F>(materializer, toIndexedFunction(mapper)));
+        return new List<F>(new FlatMapListMaterializer<E, F>(materializer,
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -4804,9 +4891,10 @@ public class Sparx extends SparxItf {
         }
         if (knownSize == 1) {
           return new List<F>(new SingleFlatMapListMaterializer<E, F>(materializer,
-              getElementToMaterializer(mapper)));
+              getElementToMaterializer(Require.notNull(mapper, "mapper"))));
         }
-        return new List<F>(new FlatMapListMaterializer<E, F>(materializer, mapper));
+        return new List<F>(
+            new FlatMapListMaterializer<E, F>(materializer, Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -4822,10 +4910,10 @@ public class Sparx extends SparxItf {
         }
         if (numElements == 0 && knownSize == 1) {
           return new List<E>(new SingleFlatMapListMaterializer<E, E>(materializer,
-              getElementToMaterializer(mapper)));
+              getElementToMaterializer(Require.notNull(mapper, "mapper"))));
         }
         return new List<E>(new FlatMapAfterListMaterializer<E>(materializer, numElements,
-            getElementToMaterializer(mapper)));
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -4841,10 +4929,10 @@ public class Sparx extends SparxItf {
         }
         if (numElements == 0 && knownSize == 1) {
           return new List<E>(new SingleFlatMapListMaterializer<E, E>(materializer,
-              getElementToMaterializer(mapper)));
+              getElementToMaterializer(Require.notNull(mapper, "mapper"))));
         }
         return new List<E>(new FlatMapAfterListMaterializer<E>(materializer, numElements,
-            getElementToMaterializer(mapper)));
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -4857,11 +4945,13 @@ public class Sparx extends SparxItf {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer, predicate,
-              getElementToMaterializer(mapper)));
+          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"),
+              getElementToMaterializer(Require.notNull(mapper, "mapper"))));
         }
-        return new List<E>(new FlatMapFirstWhereListMaterializer<E>(materializer, predicate,
-            getElementToMaterializer(mapper)));
+        return new List<E>(new FlatMapFirstWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"),
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -4873,13 +4963,13 @@ public class Sparx extends SparxItf {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(
-              new SingleFlatMapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                  getElementToMaterializer(mapper)));
+          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              getElementToMaterializer(Require.notNull(mapper, "mapper"))));
         }
-        return new List<E>(
-            new FlatMapFirstWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                getElementToMaterializer(mapper)));
+        return new List<E>(new FlatMapFirstWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -4891,11 +4981,13 @@ public class Sparx extends SparxItf {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer, predicate,
-              getElementToMaterializer(mapper)));
+          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"),
+              getElementToMaterializer(Require.notNull(mapper, "mapper"))));
         }
-        return new List<E>(new FlatMapLastWhereListMaterializer<E>(materializer, predicate,
-            getElementToMaterializer(mapper)));
+        return new List<E>(new FlatMapLastWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"),
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -4907,13 +4999,13 @@ public class Sparx extends SparxItf {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(
-              new SingleFlatMapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                  getElementToMaterializer(mapper)));
+          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              getElementToMaterializer(Require.notNull(mapper, "mapper"))));
         }
-        return new List<E>(
-            new FlatMapLastWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                getElementToMaterializer(mapper)));
+        return new List<E>(new FlatMapLastWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            getElementToMaterializer(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -4925,10 +5017,12 @@ public class Sparx extends SparxItf {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer, predicate,
-              getElementToMaterializer(mapper)));
+          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"),
+              getElementToMaterializer(Require.notNull(mapper, "mapper"))));
         }
-        return new List<E>(new FlatMapWhereListMaterializer<E>(materializer, predicate, mapper));
+        return new List<E>(new FlatMapWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -4940,13 +5034,13 @@ public class Sparx extends SparxItf {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<E>(
-              new SingleFlatMapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                  getElementToMaterializer(mapper)));
+          return new List<E>(new SingleFlatMapWhereListMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              getElementToMaterializer(Require.notNull(mapper, "mapper"))));
         }
-        return new List<E>(
-            new FlatMapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
+        return new List<E>(new FlatMapWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -4962,7 +5056,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return List.of(identity);
         }
-        return new List<F>(new FoldLeftListMaterializer<E, F>(materializer, identity, operation));
+        return new List<F>(new FoldLeftListMaterializer<E, F>(materializer, identity,
+            Require.notNull(operation, "operation")));
       }
 
       @Override
@@ -4972,7 +5067,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return List.of(identity);
         }
-        return new List<F>(new FoldRightListMaterializer<E, F>(materializer, identity, operation));
+        return new List<F>(new FoldRightListMaterializer<E, F>(materializer, identity,
+            Require.notNull(operation, "operation")));
       }
 
       @Override
@@ -5018,12 +5114,14 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<Boolean> includesAll(@NotNull final Iterable<?> elements) {
-        return new List<Boolean>(new IncludesAllListMaterializer<E>(materializer, elements));
+        return new List<Boolean>(new IncludesAllListMaterializer<E>(materializer,
+            Require.notNull(elements, "elements")));
       }
 
       @Override
       public @NotNull List<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
-        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         return new List<Boolean>(
             new IncludesSliceListMaterializer<E>(materializer, elementsMaterializer));
       }
@@ -5097,7 +5195,7 @@ public class Sparx extends SparxItf {
           }
         }
         return new List<E>(new InsertAllAfterListMaterializer<E>(materializer, numElements,
-            getElementsMaterializer(elements)));
+            getElementsMaterializer(Require.notNull(elements, "elements"))));
       }
 
       @Override
@@ -5106,7 +5204,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        final ListMaterializer<Object> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<Object> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           return List.of();
         }
@@ -5176,10 +5275,11 @@ public class Sparx extends SparxItf {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<F>(
-              new SingleMapListMaterializer<E, F>(materializer, toIndexedFunction(mapper)));
+          return new List<F>(new SingleMapListMaterializer<E, F>(materializer,
+              toIndexedFunction(Require.notNull(mapper, "mapper"))));
         }
-        return new List<F>(new MapListMaterializer<E, F>(materializer, toIndexedFunction(mapper)));
+        return new List<F>(new MapListMaterializer<E, F>(materializer,
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -5190,9 +5290,11 @@ public class Sparx extends SparxItf {
           return List.of();
         }
         if (knownSize == 1) {
-          return new List<F>(new SingleMapListMaterializer<E, F>(materializer, mapper));
+          return new List<F>(
+              new SingleMapListMaterializer<E, F>(materializer, Require.notNull(mapper, "mapper")));
         }
-        return new List<F>(new MapListMaterializer<E, F>(materializer, mapper));
+        return new List<F>(
+            new MapListMaterializer<E, F>(materializer, Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -5207,11 +5309,11 @@ public class Sparx extends SparxItf {
           return this;
         }
         if (numElements == 0 && knownSize == 1) {
-          return new List<E>(
-              new SingleMapListMaterializer<E, E>(materializer, toIndexedFunction(mapper)));
+          return new List<E>(new SingleMapListMaterializer<E, E>(materializer,
+              toIndexedFunction(Require.notNull(mapper, "mapper"))));
         }
-        return new List<E>(
-            new MapAfterListMaterializer<E>(materializer, numElements, toIndexedFunction(mapper)));
+        return new List<E>(new MapAfterListMaterializer<E>(materializer, numElements,
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -5226,9 +5328,11 @@ public class Sparx extends SparxItf {
           return this;
         }
         if (numElements == 0 && knownSize == 1) {
-          return new List<E>(new SingleMapListMaterializer<E, E>(materializer, mapper));
+          return new List<E>(
+              new SingleMapListMaterializer<E, E>(materializer, Require.notNull(mapper, "mapper")));
         }
-        return new List<E>(new MapAfterListMaterializer<E>(materializer, numElements, mapper));
+        return new List<E>(new MapAfterListMaterializer<E>(materializer, numElements,
+            Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -5240,10 +5344,11 @@ public class Sparx extends SparxItf {
           return this;
         }
         if (knownSize == 1) {
-          return new List<E>(
-              new SingleMapWhereListMaterializer<E>(materializer, predicate, mapper));
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
         }
-        return new List<E>(new MapFirstWhereListMaterializer<E>(materializer, predicate, mapper));
+        return new List<E>(new MapFirstWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -5255,13 +5360,13 @@ public class Sparx extends SparxItf {
           return this;
         }
         if (knownSize == 1) {
-          return new List<E>(
-              new SingleMapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                  toIndexedFunction(mapper)));
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              toIndexedFunction(Require.notNull(mapper, "mapper"))));
         }
-        return new List<E>(
-            new MapFirstWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
+        return new List<E>(new MapFirstWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -5273,10 +5378,11 @@ public class Sparx extends SparxItf {
           return this;
         }
         if (knownSize == 1) {
-          return new List<E>(
-              new SingleMapWhereListMaterializer<E>(materializer, predicate, mapper));
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
         }
-        return new List<E>(new MapLastWhereListMaterializer<E>(materializer, predicate, mapper));
+        return new List<E>(new MapLastWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -5288,13 +5394,13 @@ public class Sparx extends SparxItf {
           return this;
         }
         if (knownSize == 1) {
-          return new List<E>(
-              new SingleMapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                  toIndexedFunction(mapper)));
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              toIndexedFunction(Require.notNull(mapper, "mapper"))));
         }
-        return new List<E>(
-            new MapLastWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
+        return new List<E>(new MapLastWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -5304,7 +5410,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new MapWhereListMaterializer<E>(materializer, predicate, mapper));
+        return new List<E>(
+            new MapWhereListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+                Require.notNull(mapper, "mapper")));
       }
 
       @Override
@@ -5314,9 +5422,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new MapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                toIndexedFunction(mapper)));
+        return new List<E>(new MapWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -5325,7 +5433,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new MaxListMaterializer<E>(materializer, comparator));
+        return new List<E>(
+            new MaxListMaterializer<E>(materializer, Require.notNull(comparator, "comparator")));
       }
 
       @Override
@@ -5334,7 +5443,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new MaxListMaterializer<E>(materializer, reversed(comparator)));
+        return new List<E>(new MaxListMaterializer<E>(materializer,
+            reversed(Require.notNull(comparator, "comparator"))));
       }
 
       @Override
@@ -5343,7 +5453,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return FALSE_LIST;
         }
-        return new List<Boolean>(new ExistsListMaterializer<E>(materializer, negated(predicate)));
+        return new List<Boolean>(new ExistsListMaterializer<E>(materializer,
+            negated(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -5352,8 +5463,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return FALSE_LIST;
         }
-        return new List<Boolean>(
-            new ExistsListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
+        return new List<Boolean>(new ExistsListMaterializer<E>(materializer,
+            toNegatedIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -5363,7 +5474,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return TRUE_LIST;
         }
-        return new List<Boolean>(new AllListMaterializer<E>(materializer, negated(predicate)));
+        return new List<Boolean>(new AllListMaterializer<E>(materializer,
+            negated(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -5372,13 +5484,14 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return TRUE_LIST;
         }
-        return new List<Boolean>(
-            new AllListMaterializer<E>(materializer, toNegatedIndexedPredicate(predicate)));
+        return new List<Boolean>(new AllListMaterializer<E>(materializer,
+            toNegatedIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
       public @NotNull List<E> orElse(@NotNull final Iterable<E> elements) {
-        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return new List<E>(elementsMaterializer);
@@ -5391,10 +5504,10 @@ public class Sparx extends SparxItf {
           @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
-          return new List<E>(new SuppliedMaterializer<E>(supplier));
+          return new List<E>(new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier")));
         }
-        return new List<E>(
-            new OrElseListMaterializer<E>(materializer, new SuppliedMaterializer<E>(supplier)));
+        return new List<E>(new OrElseListMaterializer<E>(materializer,
+            new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier"))));
       }
 
       @Override
@@ -5418,7 +5531,8 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<E> prependAll(@NotNull final Iterable<? extends E> elements) {
-        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         final ListMaterializer<E> materializer = this.materializer;
         if (materializer.knownSize() == 0) {
           return new List<E>(elementsMaterializer);
@@ -5439,7 +5553,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new ReduceLeftListMaterializer<E>(materializer, operation));
+        return new List<E>(new ReduceLeftListMaterializer<E>(materializer,
+            Require.notNull(operation, "operation")));
       }
 
       @Override
@@ -5449,7 +5564,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new ReduceRightListMaterializer<E>(materializer, operation));
+        return new List<E>(new ReduceRightListMaterializer<E>(materializer,
+            Require.notNull(operation, "operation")));
       }
 
       @Override
@@ -5495,7 +5611,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new RemoveFirstWhereListMaterializer<E>(materializer, predicate));
+        return new List<E>(new RemoveFirstWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -5504,8 +5621,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new RemoveFirstWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<E>(new RemoveFirstWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -5525,7 +5642,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new RemoveLastWhereListMaterializer<E>(materializer, predicate));
+        return new List<E>(new RemoveLastWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -5534,8 +5652,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new RemoveLastWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<E>(new RemoveLastWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -5574,7 +5692,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new RemoveWhereListMaterializer<E>(materializer, predicate));
+        return new List<E>(new RemoveWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -5583,8 +5702,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new RemoveWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<E>(new RemoveWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -5641,11 +5760,11 @@ public class Sparx extends SparxItf {
           return this;
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, predicate,
-              replacementMapper(replacement)));
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), replacementMapper(replacement)));
         }
-        return new List<E>(new MapFirstWhereListMaterializer<E>(materializer, predicate,
-            replacementMapper(replacement)));
+        return new List<E>(new MapFirstWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), replacementMapper(replacement)));
       }
 
       @Override
@@ -5657,13 +5776,13 @@ public class Sparx extends SparxItf {
           return this;
         }
         if (knownSize == 1) {
-          return new List<E>(
-              new SingleMapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                  replacementMapper(replacement)));
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              replacementMapper(replacement)));
         }
-        return new List<E>(
-            new MapFirstWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                replacementMapper(replacement)));
+        return new List<E>(new MapFirstWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            replacementMapper(replacement)));
       }
 
       @Override
@@ -5691,11 +5810,11 @@ public class Sparx extends SparxItf {
           return this;
         }
         if (knownSize == 1) {
-          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer, predicate,
-              replacementMapper(replacement)));
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), replacementMapper(replacement)));
         }
-        return new List<E>(new MapLastWhereListMaterializer<E>(materializer, predicate,
-            replacementMapper(replacement)));
+        return new List<E>(new MapLastWhereListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate"), replacementMapper(replacement)));
       }
 
       @Override
@@ -5707,13 +5826,13 @@ public class Sparx extends SparxItf {
           return this;
         }
         if (knownSize == 1) {
-          return new List<E>(
-              new SingleMapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                  replacementMapper(replacement)));
+          return new List<E>(new SingleMapWhereListMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              replacementMapper(replacement)));
         }
-        return new List<E>(
-            new MapLastWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                replacementMapper(replacement)));
+        return new List<E>(new MapLastWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            replacementMapper(replacement)));
       }
 
       @Override
@@ -5745,7 +5864,7 @@ public class Sparx extends SparxItf {
           }
         }
         return new List<E>(new ReplaceSliceListMaterializer<E>(materializer, start, end,
-            getElementsMaterializer(patch)));
+            getElementsMaterializer(Require.notNull(patch, "patch"))));
       }
 
       @Override
@@ -5755,8 +5874,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new MapWhereListMaterializer<E>(materializer, predicate,
-            replacementMapper(replacement)));
+        return new List<E>(
+            new MapWhereListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+                replacementMapper(replacement)));
       }
 
       @Override
@@ -5766,9 +5886,9 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new MapWhereListMaterializer<E>(materializer, toIndexedPredicate(predicate),
-                replacementMapper(replacement)));
+        return new List<E>(new MapWhereListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate")),
+            replacementMapper(replacement)));
       }
 
       @Override
@@ -5840,7 +5960,8 @@ public class Sparx extends SparxItf {
 
       @Override
       public @NotNull List<Boolean> startsWith(@NotNull final Iterable<?> elements) {
-        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           return TRUE_LIST;
         }
@@ -5859,7 +5980,8 @@ public class Sparx extends SparxItf {
         if (knownSize == 0 || knownSize == 1) {
           return this;
         }
-        return new List<E>(new SortedListMaterializer<E>(materializer, comparator));
+        return new List<E>(
+            new SortedListMaterializer<E>(materializer, Require.notNull(comparator, "comparator")));
       }
 
       @Override
@@ -5892,7 +6014,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new TakeRightWhileListMaterializer<E>(materializer, predicate));
+        return new List<E>(new TakeRightWhileListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -5901,8 +6024,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new TakeRightWhileListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<E>(new TakeRightWhileListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -5911,7 +6034,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(new TakeWhileListMaterializer<E>(materializer, predicate));
+        return new List<E>(new TakeWhileListMaterializer<E>(materializer,
+            Require.notNull(predicate, "predicate")));
       }
 
       @Override
@@ -5920,8 +6044,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return this;
         }
-        return new List<E>(
-            new TakeWhileListMaterializer<E>(materializer, toIndexedPredicate(predicate)));
+        return new List<E>(new TakeWhileListMaterializer<E>(materializer,
+            toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
 
       public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext context) {
@@ -5936,7 +6060,8 @@ public class Sparx extends SparxItf {
         if (materializer.knownSize() == 0) {
           return (List<E>) List.from(elements);
         }
-        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(elements);
+        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
         if (elementsMaterializer.knownSize() == 0) {
           return this;
         }
@@ -6319,8 +6444,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return TRUE_ITERATOR;
         }
-        return new ListIterator<Boolean>(List.<Boolean>of(),
-            currentRight().all(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().all(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -6366,8 +6491,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return ZERO_ITERATOR;
         }
-        return new ListIterator<Integer>(List.<Integer>of(),
-            currentRight().count(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<Integer>(List.<Integer>of(), currentRight().count(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -6393,14 +6518,15 @@ public class Sparx extends SparxItf {
       @Override
       public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
         if (!atEnd()) {
-          currentRight().doFor(offsetConsumer(nextIndex(), consumer));
+          currentRight().doFor(offsetConsumer(nextIndex(), Require.notNull(consumer, "consumer")));
         }
       }
 
       @Override
       public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
         if (!atEnd()) {
-          currentRight().doWhile(offsetPredicate(nextIndex(), predicate));
+          currentRight().doWhile(
+              offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")));
         }
       }
 
@@ -6409,8 +6535,8 @@ public class Sparx extends SparxItf {
           @NotNull final IndexedConsumer<? super E> consumer) {
         if (!atEnd()) {
           final int offset = nextIndex();
-          currentRight().doWhile(offsetPredicate(offset, condition),
-              offsetConsumer(offset, consumer));
+          currentRight().doWhile(offsetPredicate(offset, Require.notNull(condition, "condition")),
+              offsetConsumer(offset, Require.notNull(consumer, "consumer")));
         }
       }
 
@@ -6457,8 +6583,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().dropRightWhile(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<E>(currentLeft(), currentRight().dropRightWhile(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -6476,8 +6602,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().dropWhile(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<E>(currentLeft(), currentRight().dropWhile(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -6499,8 +6625,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return FALSE_ITERATOR;
         }
-        return new ListIterator<Boolean>(List.<Boolean>of(),
-            currentRight().exists(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().exists(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -6535,8 +6661,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return ListIterator.of();
         }
-        return new ListIterator<E>(List.<E>of(),
-            currentRight().findAny(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<E>(List.<E>of(), currentRight().findAny(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -6553,8 +6679,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return ListIterator.of();
         }
-        return new ListIterator<E>(List.<E>of(),
-            currentRight().findFirst(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<E>(List.<E>of(), currentRight().findFirst(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -6586,9 +6712,9 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return ListIterator.of();
         }
-        return new ListIterator<Integer>(List.<Integer>of(),
-            currentRight().findIndexWhere(offsetPredicate(nextIndex(), predicate))
-                .map(offsetMapper(nextIndex())));
+        return new ListIterator<Integer>(List.<Integer>of(), currentRight().findIndexWhere(
+                offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")))
+            .map(offsetMapper(nextIndex())));
       }
 
       @Override
@@ -6607,8 +6733,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return ListIterator.of();
         }
-        return new ListIterator<E>(List.<E>of(),
-            currentRight().findLast(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<E>(List.<E>of(), currentRight().findLast(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -6641,9 +6767,9 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return ListIterator.of();
         }
-        return new ListIterator<Integer>(List.<Integer>of(),
-            currentRight().findLastIndexWhere(offsetPredicate(nextIndex(), predicate))
-                .map(offsetMapper(nextIndex())));
+        return new ListIterator<Integer>(List.<Integer>of(), currentRight().findLastIndexWhere(
+                offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")))
+            .map(offsetMapper(nextIndex())));
       }
 
       @Override
@@ -6703,10 +6829,10 @@ public class Sparx extends SparxItf {
         if (pos >= 0) {
           return new ListIterator<E>(left,
               right.flatMapAfter(SizeOverflowException.safeCast((long) numElements + pos),
-                  offsetFunction(nextIndex(), mapper)));
+                  offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().flatMapAfter(numElements, offsetFunction(nextIndex(), mapper)));
+        return new ListIterator<E>(currentLeft(), currentRight().flatMapAfter(numElements,
+            offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -6716,9 +6842,9 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().flatMapFirstWhere(offsetPredicate(nextIndex(), predicate),
-                offsetFunction(nextIndex(), mapper)));
+        return new ListIterator<E>(currentLeft(), currentRight().flatMapFirstWhere(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")),
+            offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -6739,9 +6865,9 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().flatMapLastWhere(offsetPredicate(nextIndex(), predicate),
-                offsetFunction(nextIndex(), mapper)));
+        return new ListIterator<E>(currentLeft(), currentRight().flatMapLastWhere(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")),
+            offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -6763,7 +6889,8 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new ListIterator<E>(currentLeft().flatMapWhere(predicate, mapper),
-            currentRight().flatMapWhere(offsetPredicate(nextIndex(), predicate),
+            currentRight().flatMapWhere(
+                offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")),
                 offsetFunction(nextIndex(), mapper)));
       }
 
@@ -6961,8 +7088,8 @@ public class Sparx extends SparxItf {
         if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().mapAfter(numElements, offsetFunction(nextIndex(), mapper)));
+        return new ListIterator<E>(currentLeft(), currentRight().mapAfter(numElements,
+            offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -6972,9 +7099,9 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().mapFirstWhere(offsetPredicate(nextIndex(), predicate),
-                offsetFunction(nextIndex(), mapper)));
+        return new ListIterator<E>(currentLeft(), currentRight().mapFirstWhere(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")),
+            offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -6993,9 +7120,9 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().mapLastWhere(offsetPredicate(nextIndex(), predicate),
-                offsetFunction(nextIndex(), mapper)));
+        return new ListIterator<E>(currentLeft(), currentRight().mapLastWhere(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")),
+            offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
       }
 
       @Override
@@ -7159,8 +7286,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return FALSE_ITERATOR;
         }
-        return new ListIterator<Boolean>(List.<Boolean>of(),
-            currentRight().notAll(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().notAll(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -7182,8 +7309,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return TRUE_ITERATOR;
         }
-        return new ListIterator<Boolean>(List.<Boolean>of(),
-            currentRight().notExists(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().notExists(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -7301,8 +7428,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().removeFirstWhere(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<E>(currentLeft(), currentRight().removeFirstWhere(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -7328,8 +7455,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().removeLastWhere(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<E>(currentLeft(), currentRight().removeLastWhere(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -7355,8 +7482,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().removeWhere(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<E>(currentLeft(), currentRight().removeWhere(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -7400,8 +7527,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().replaceFirstWhere(offsetPredicate(nextIndex(), predicate), replacement));
+        return new ListIterator<E>(currentLeft(), currentRight().replaceFirstWhere(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")), replacement));
       }
 
       @Override
@@ -7411,7 +7538,7 @@ public class Sparx extends SparxItf {
           return this;
         }
         return new ListIterator<E>(currentLeft(),
-            currentRight().replaceFirstWhere(predicate, replacement));
+            currentRight().replaceFirstWhere(Require.notNull(predicate, "predicate"), replacement));
       }
 
       @Override
@@ -7428,8 +7555,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return this;
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().replaceLastWhere(offsetPredicate(nextIndex(), predicate), replacement));
+        return new ListIterator<E>(currentLeft(), currentRight().replaceLastWhere(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")), replacement));
       }
 
       @Override
@@ -7532,8 +7659,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return ListIterator.of();
         }
-        return new ListIterator<E>(List.<E>of(),
-            currentRight().takeRightWhile(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<E>(List.<E>of(), currentRight().takeRightWhile(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override
@@ -7551,8 +7678,8 @@ public class Sparx extends SparxItf {
         if (atEnd()) {
           return ListIterator.of();
         }
-        return new ListIterator<E>(currentLeft(),
-            currentRight().takeWhile(offsetPredicate(nextIndex(), predicate)));
+        return new ListIterator<E>(currentLeft(), currentRight().takeWhile(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
       }
 
       @Override

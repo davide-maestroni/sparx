@@ -17,7 +17,6 @@ package sparx.internal.lazy.iterator;
 
 import java.util.HashSet;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class IncludesAllIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
 
@@ -25,8 +24,7 @@ public class IncludesAllIteratorMaterializer<E> implements IteratorMaterializer<
 
   public IncludesAllIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final Iterable<?> elements) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elements, "elements"));
+    state = new ImmaterialState(wrapped, elements);
   }
 
   @Override

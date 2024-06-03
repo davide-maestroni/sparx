@@ -18,14 +18,13 @@ package sparx.internal.lazy.list;
 import java.util.Iterator;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class ListToListMaterializer<E> implements ListMaterializer<E> {
 
   private final List<E> elements;
 
   public ListToListMaterializer(@NotNull final List<E> elements) {
-    this.elements = Require.notNull(elements, "elements");
+    this.elements = elements;
   }
 
   @Override

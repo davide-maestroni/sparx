@@ -17,7 +17,6 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class ResizeListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
@@ -26,10 +25,11 @@ public class ResizeListMaterializer<E> extends AbstractListMaterializer<E> imple
   private final E padding;
   private final ListMaterializer<E> wrapped;
 
+  // numElements: positive
   public ResizeListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int numElements,
       final E padding) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.numElements = Require.positive(numElements, "numElements");
+    this.wrapped = wrapped;
+    this.numElements = numElements;
     this.padding = padding;
   }
 

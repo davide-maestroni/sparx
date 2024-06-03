@@ -18,7 +18,6 @@ package sparx.internal.lazy.iterator;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class MaxIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
@@ -26,8 +25,7 @@ public class MaxIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   public MaxIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final Comparator<? super E> comparator) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(comparator, "comparator"));
+    state = new ImmaterialState(wrapped, comparator);
   }
 
   @Override

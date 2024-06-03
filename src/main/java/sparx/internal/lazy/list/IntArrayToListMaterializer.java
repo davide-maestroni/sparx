@@ -17,14 +17,13 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class IntArrayToListMaterializer implements ListMaterializer<Integer> {
 
   private final int[] elements;
 
   public IntArrayToListMaterializer(@NotNull final int... elements) {
-    this.elements = Require.notNull(elements, "elements");
+    this.elements = elements;
   }
 
   @Override

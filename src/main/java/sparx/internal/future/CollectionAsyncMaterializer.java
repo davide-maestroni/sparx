@@ -34,4 +34,6 @@ public interface CollectionAsyncMaterializer<E> {
   void materializeEmpty(@NotNull AsyncConsumer<Boolean> consumer);
 
   void materializeSize(@NotNull AsyncConsumer<Integer> consumer);
+
+  // TODO: weightElement, weightElements
 }

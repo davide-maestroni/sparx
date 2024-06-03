@@ -17,7 +17,6 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
@@ -33,8 +32,8 @@ public class LoopToIteratorMaterializer<E> extends AbstractIteratorMaterializer<
   public LoopToIteratorMaterializer(final E initialValue,
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final IndexedFunction<? super E, ? extends E> update) {
-    this.predicate = Require.notNull(predicate, "predicate");
-    this.update = Require.notNull(update, "update");
+    this.predicate = predicate;
+    this.update = update;
     current = initialValue;
   }
 

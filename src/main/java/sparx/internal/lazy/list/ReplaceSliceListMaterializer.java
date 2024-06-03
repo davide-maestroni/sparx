@@ -18,7 +18,6 @@ package sparx.internal.lazy.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
 public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
@@ -30,8 +29,8 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
 
   public ReplaceSliceListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
       final int end, @NotNull final ListMaterializer<E> elementsMaterializer) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.elementsMaterializer = Require.notNull(elementsMaterializer, "elementsMaterializer");
+    this.wrapped = wrapped;
+    this.elementsMaterializer = elementsMaterializer;
     if (start >= 0 && end >= 0) {
       state = new MaterialState(start, Math.max(0, end - start));
     } else {

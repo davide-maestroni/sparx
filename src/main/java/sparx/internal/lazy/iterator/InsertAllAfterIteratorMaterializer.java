@@ -16,18 +16,16 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 
 public class InsertAllAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
+  // numElements: not negative
   public InsertAllAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int numElements, @NotNull final IteratorMaterializer<E> elementsMaterializer) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNegative(numElements, "numElements"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+    state = new ImmaterialState(wrapped, numElements, elementsMaterializer);
   }
 
   @Override

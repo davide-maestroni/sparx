@@ -23,7 +23,6 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
-import sparx.util.Require;
 
 public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterializer<E> {
 
@@ -35,7 +34,7 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
   private int index;
 
   public ListToIteratorAsyncMaterializer(@NotNull final List<E> elements) {
-    this.elements = Require.notNull(elements, "elements");
+    this.elements = elements;
   }
 
   @Override

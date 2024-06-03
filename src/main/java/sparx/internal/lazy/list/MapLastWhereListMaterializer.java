@@ -19,7 +19,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
@@ -34,9 +33,8 @@ public class MapLastWhereListMaterializer<E> extends AbstractListMaterializer<E>
   public MapLastWhereListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    state = new ImmaterialState(Require.notNull(predicate, "predicate"),
-        Require.notNull(mapper, "mapper"));
+    this.wrapped = wrapped;
+    state = new ImmaterialState(predicate, mapper);
   }
 
   @Override

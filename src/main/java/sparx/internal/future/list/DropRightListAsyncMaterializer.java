@@ -31,7 +31,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
-import sparx.util.Require;
 import sparx.util.function.Function;
 
 public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
@@ -41,6 +40,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
   private final int knownSize;
 
+  // maxElements: positive
   public DropRightListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final int maxElements, @NotNull final ExecutionContext context,
       @NotNull final AtomicBoolean isCancelled,
@@ -56,9 +56,8 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     super(status);
     final int wrappedSize = wrapped.knownSize();
     knownSize = wrappedSize >= 0 ? Math.max(0, wrappedSize - maxElements) : -1;
-    setState(new ImmaterialState(wrapped, Require.positive(maxElements, "maxElements"),
-        Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, maxElements, context, isCancelled, decorateFunction),
+        STATUS_RUNNING);
   }
 
   @Override

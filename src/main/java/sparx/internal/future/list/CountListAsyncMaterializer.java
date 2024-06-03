@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
-import sparx.util.Require;
 import sparx.util.function.Function;
 
 public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Integer> {
@@ -38,9 +37,7 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
       @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(isCancelled, "isCancelled"),
-        Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, isCancelled, decorateFunction), STATUS_RUNNING);
   }
 
   @Override

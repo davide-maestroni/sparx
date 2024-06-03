@@ -17,7 +17,6 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
@@ -36,9 +35,9 @@ public class FlatMapWhereIteratorMaterializer<E> implements IteratorMaterializer
   public FlatMapWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.predicate = Require.notNull(predicate, "predicate");
-    this.mapper = Require.notNull(mapper, "mapper");
+    this.wrapped = wrapped;
+    this.predicate = predicate;
+    this.mapper = mapper;
   }
 
   @Override

@@ -20,14 +20,13 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class IteratorToListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile ListMaterializer<E> state;
 
   public IteratorToListMaterializer(@NotNull final Iterator<E> iterator) {
-    this.state = new ImmaterialState(Require.notNull(iterator, "iterator"));
+    this.state = new ImmaterialState(iterator);
   }
 
   @Override
@@ -70,8 +69,7 @@ public class IteratorToListMaterializer<E> implements ListMaterializer<E> {
     return state.materializeSize();
   }
 
-  private class ImmaterialState extends AbstractListMaterializer<E> implements
-      ListMaterializer<E> {
+  private class ImmaterialState extends AbstractListMaterializer<E> implements ListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
     private final Iterator<E> iterator;

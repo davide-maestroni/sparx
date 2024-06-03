@@ -26,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
-import sparx.util.Require;
 
 public class AsyncGetFuture<E> implements Future<Void> {
 
@@ -43,7 +42,7 @@ public class AsyncGetFuture<E> implements Future<Void> {
   public AsyncGetFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final ListAsyncMaterializer<E> materializer) {
     this.context = context;
-    this.taskID = Require.notNull(taskID, "taskID");
+    this.taskID = taskID;
     context.scheduleAfter(new Task() {
       @Override
       public void run() {

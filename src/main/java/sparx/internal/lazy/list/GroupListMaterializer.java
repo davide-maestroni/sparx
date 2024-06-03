@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 
@@ -29,10 +28,10 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
 
   private volatile ListMaterializer<L> state;
 
+  // maxSize: positive
   public GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
       @NotNull final Chunker<E, ? extends L> chunker) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxSize, "maxSize"), Require.notNull(chunker, "chunker"));
+    state = new ImmaterialState(wrapped, maxSize, chunker);
   }
 
   @Override

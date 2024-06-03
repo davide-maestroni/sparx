@@ -19,7 +19,6 @@ import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
 import sparx.util.DequeueList;
-import sparx.util.Require;
 
 public class IncludesSliceIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
 
@@ -27,8 +26,7 @@ public class IncludesSliceIteratorMaterializer<E> implements IteratorMaterialize
 
   public IncludesSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(elementsMaterializer, "elementsMaterializer"));
+    state = new ImmaterialState(wrapped, elementsMaterializer);
   }
 
   @Override

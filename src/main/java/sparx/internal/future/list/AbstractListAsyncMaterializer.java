@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
-import sparx.util.Require;
 
 abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
@@ -33,7 +32,7 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   private ListAsyncMaterializer<E> state;
 
   AbstractListAsyncMaterializer(@NotNull final AtomicInteger status) {
-    this.status = Require.notNull(status, "status");
+    this.status = status;
   }
 
   @Override

@@ -17,16 +17,15 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class ResizeIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 
+  // numElements: positive
   public ResizeIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int numElements, final E padding) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(numElements, "numElements"), padding);
+    state = new ImmaterialState(wrapped, numElements, padding);
   }
 
   @Override

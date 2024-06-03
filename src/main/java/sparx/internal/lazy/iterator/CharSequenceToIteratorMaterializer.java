@@ -16,7 +16,6 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 
 public class CharSequenceToIteratorMaterializer implements IteratorMaterializer<Character> {
 
@@ -25,7 +24,7 @@ public class CharSequenceToIteratorMaterializer implements IteratorMaterializer<
   private int pos;
 
   public CharSequenceToIteratorMaterializer(@NotNull final CharSequence elements) {
-    this.elements = Require.notNull(elements, "elements");
+    this.elements = elements;
   }
 
   @Override

@@ -19,7 +19,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 
 public class CountListMaterializer<E> implements ListMaterializer<Integer> {
@@ -27,7 +26,7 @@ public class CountListMaterializer<E> implements ListMaterializer<Integer> {
   private volatile State state;
 
   public CountListMaterializer(@NotNull final ListMaterializer<E> wrapped) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"));
+    state = new ImmaterialState(wrapped);
   }
 
   @Override

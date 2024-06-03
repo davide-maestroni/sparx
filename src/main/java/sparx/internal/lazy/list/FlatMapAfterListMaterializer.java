@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
@@ -32,12 +31,13 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile State<E> state;
 
+  // numElements: not negative
   public FlatMapAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper) {
-    this.wrapped = Require.notNull(wrapped, "wrapped");
-    this.numElements = Require.notNegative(numElements, "numElements");
-    state = new ImmaterialState(Require.notNull(mapper, "mapper"));
+    this.wrapped = wrapped;
+    this.numElements = numElements;
+    state = new ImmaterialState(mapper);
   }
 
   @Override

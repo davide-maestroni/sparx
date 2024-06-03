@@ -19,7 +19,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 
@@ -29,8 +28,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
 
   public SingleFlatMapListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<F>> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.notNull(mapper, "mapper"));
+    state = new ImmaterialState(wrapped, mapper);
   }
 
   @Override

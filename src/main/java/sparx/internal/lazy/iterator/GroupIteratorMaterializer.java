@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.function.Function;
@@ -30,10 +29,10 @@ public class GroupIteratorMaterializer<E, I extends Iterator<E>> implements
 
   private volatile IteratorMaterializer<I> state;
 
+  // maxSize: positive
   public GroupIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int maxSize, @NotNull final Function<? super List<E>, ? extends I> mapper) {
-    state = new ImmaterialState(Require.notNull(wrapped, "wrapped"),
-        Require.positive(maxSize, "maxSize"), Require.notNull(mapper, "mapper"));
+    state = new ImmaterialState(wrapped, maxSize, mapper);
   }
 
   @Override

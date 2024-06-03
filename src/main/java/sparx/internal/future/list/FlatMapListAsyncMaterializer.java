@@ -35,7 +35,6 @@ import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.iterator.IteratorAsyncMaterializer;
-import sparx.util.Require;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
 
@@ -49,10 +48,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
       @NotNull final Function<List<F>, List<F>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(
-        new ImmaterialState(Require.notNull(wrapped, "wrapped"), Require.notNull(mapper, "mapper"),
-            Require.notNull(context, "context"), Require.notNull(isCancelled, "isCancelled"),
-            Require.notNull(decorateFunction, "decorateFunction")), STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, mapper, context, isCancelled, decorateFunction),
+        STATUS_RUNNING);
   }
 
   @Override

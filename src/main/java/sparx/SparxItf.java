@@ -1990,6 +1990,8 @@ class SparxItf {
       ListIterator<E> union(@NotNull Iterable<? extends E> elements);
     }
 
+    // TODO: Option???
+
     public interface Sequence<E> extends Iterable<E> {
 
       @NotNull
