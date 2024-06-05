@@ -142,6 +142,11 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
     }
 
     @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
       wrapped.materializeElement(0, new MaterializingEachAsyncConsumer(consumer));
     }
@@ -413,7 +418,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
         if (isWrapped) {
           wrappedSize = size;
           setState(new ListToListAsyncMaterializer<E>(decorateFunction.apply(elements)),
-              STATUS_DONE);
+              STATUS_RUNNING);
           consumeElements(elements);
         } else {
           elementsSize = size;

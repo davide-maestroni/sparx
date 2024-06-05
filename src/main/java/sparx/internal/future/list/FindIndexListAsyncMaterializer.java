@@ -15,11 +15,14 @@
  */
 package sparx.internal.future.list;
 
+import static sparx.internal.future.AsyncConsumers.safeConsumeError;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
@@ -29,6 +32,9 @@ import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
 public class FindIndexListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Integer> {
+
+  private static final Logger LOGGER = Logger.getLogger(
+      FindIndexListAsyncMaterializer.class.getName());
 
   public FindIndexListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
@@ -112,6 +118,11 @@ public class FindIndexListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<Integer>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer() {
         @Override
@@ -192,12 +203,12 @@ public class FindIndexListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     private void setState() throws Exception {
       setState(new ListToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.<Integer>emptyList())), STATUS_DONE);
+          decorateFunction.apply(Collections.<Integer>emptyList())), STATUS_RUNNING);
     }
 
     private void setState(final int index) throws Exception {
       setState(new ListToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.singletonList(index))), STATUS_DONE);
+          decorateFunction.apply(Collections.singletonList(index))), STATUS_RUNNING);
     }
 
     private void setState(@NotNull final ListAsyncMaterializer<Integer> newState,

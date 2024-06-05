@@ -4036,6 +4036,10 @@ public class lazy extends Sparx {
               elementsContains(materializer))));
     }
 
+    int knownSize() {
+      return materializer.knownSize();
+    }
+
     @NotNull
     List<E> materialized() {
       materializer.materializeElements();

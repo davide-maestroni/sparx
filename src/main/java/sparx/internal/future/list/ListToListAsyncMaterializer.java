@@ -68,6 +68,11 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
+    materializeElements(consumer);
+  }
+
+  @Override
   public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
     final List<E> elements = this.elements;
     final int size = elements.size();

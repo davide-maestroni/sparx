@@ -142,6 +142,11 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     }
 
     @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
       materializeUntil(Integer.MAX_VALUE, consumer);
     }
@@ -367,7 +372,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void complete(final int size) throws Exception {
         final List<E> materialized = decorateFunction.apply(elements);
-        setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+        setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_RUNNING);
         consumeComplete(elements.size());
       }
 

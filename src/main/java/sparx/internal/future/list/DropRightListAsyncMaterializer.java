@@ -132,8 +132,13 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
           @Override
           public void error(@NotNull final Exception error) throws Exception {
-            setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
-            consumer.error(error);
+            if (isCancelled.get()) {
+              setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+              consumer.error(new CancellationException());
+            } else {
+              setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+              consumer.error(error);
+            }
           }
         });
       }
@@ -151,6 +156,11 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
       if (wrappedSize < 0) {
         wrapped.materializeSize(new AsyncConsumer<Integer>() {
@@ -162,8 +172,13 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
           @Override
           public void error(@NotNull final Exception error) throws Exception {
-            setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
-            consumer.error(-1, error);
+            if (isCancelled.get()) {
+              setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+              consumer.error(-1, new CancellationException());
+            } else {
+              setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+              consumer.error(-1, error);
+            }
           }
         });
       }
@@ -192,8 +207,13 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
             @Override
             public void error(@NotNull final Exception error) throws Exception {
-              setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
-              consumer.error(-1, error);
+              if (isCancelled.get()) {
+                setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+                consumer.error(-1, new CancellationException());
+              } else {
+                setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+                consumer.error(-1, error);
+              }
             }
           });
         }
@@ -231,7 +251,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         if (wrappedSize >= 0 && wrappedSize <= maxElements) {
           try {
             final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-            setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+            setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_RUNNING);
           } catch (final Exception e) {
             if (e instanceof InterruptedException) {
               Thread.currentThread().interrupt();

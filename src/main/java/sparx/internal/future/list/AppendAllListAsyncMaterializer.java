@@ -142,6 +142,11 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
       wrapped.materializeEach(new IndexedAsyncConsumer<E>() {
         @Override
@@ -243,7 +248,7 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
               @Override
               public void accept(final List<E> elements) throws Exception {
                 final List<E> materialized = appendFunction.apply(wrappedElements, elements);
-                setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+                setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_RUNNING);
                 consumeElements(materialized);
               }
 

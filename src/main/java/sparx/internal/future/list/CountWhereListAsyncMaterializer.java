@@ -119,6 +119,11 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<Integer>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer() {
         @Override
@@ -194,7 +199,7 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     private void setState(final int size) throws Exception {
       setState(new ListToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.singletonList(size))), STATUS_DONE);
+          decorateFunction.apply(Collections.singletonList(size))), STATUS_RUNNING);
     }
 
     private void setState(@NotNull final ListAsyncMaterializer<Integer> newState,

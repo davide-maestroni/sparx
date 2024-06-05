@@ -128,6 +128,11 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     }
 
     @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<F> consumer) {
       materializeUntil(Integer.MAX_VALUE, consumer);
     }
@@ -355,7 +360,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       @Override
       public void complete(final int size) throws Exception {
         final List<F> materialized = decorateFunction.apply(elements);
-        setState(new ListToListAsyncMaterializer<F>(materialized), STATUS_DONE);
+        setState(new ListToListAsyncMaterializer<F>(materialized), STATUS_RUNNING);
         consumeComplete(elements.size());
       }
 

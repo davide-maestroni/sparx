@@ -15,11 +15,14 @@
  */
 package sparx.internal.future.list;
 
+import static sparx.internal.future.AsyncConsumers.safeConsumeError;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
@@ -29,6 +32,9 @@ import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
 public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+
+  private static final Logger LOGGER = Logger.getLogger(
+      DropRightWhileListAsyncMaterializer.class.getName());
 
   public DropRightWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
@@ -115,6 +121,11 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     }
 
     @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -197,7 +208,16 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
           @Override
           public void error(@NotNull final Exception error) {
-            setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+            if (isCancelled.get()) {
+              final CancelledListAsyncMaterializer<E> state = new CancelledListAsyncMaterializer<E>();
+              setState(state, STATUS_CANCELLED);
+              consumer.accept(state);
+            } else {
+              final FailedListAsyncMaterializer<E> state = new FailedListAsyncMaterializer<E>(
+                  error);
+              setState(state, STATUS_DONE);
+              consumer.accept(state);
+            }
           }
         });
       } else {
@@ -233,7 +253,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
             context.scheduleAfter(this);
           } else {
             final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-            setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_DONE);
+            setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_RUNNING);
           }
         } else {
           final int maxElements = wrappedSize - index - 1;

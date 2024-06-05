@@ -46,7 +46,7 @@ public class AsyncGetFuture<E> implements Future<Void> {
     context.scheduleAfter(new Task() {
       @Override
       public void run() {
-        materializer.materializeElements(new AsyncConsumer<List<E>>() {
+        materializer.materializeDone(new AsyncConsumer<List<E>>() {
           @Override
           public void accept(final List<E> elements) {
             synchronized (status) {

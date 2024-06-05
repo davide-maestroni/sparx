@@ -57,6 +57,22 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
+  public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
+    state.materializeElements(new AsyncConsumer<List<E>>() {
+      @Override
+      public void accept(final List<E> elements) throws Exception {
+        setState(state, STATUS_DONE);
+        consumer.accept(elements);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) throws Exception {
+        consumer.error(error);
+      }
+    });
+  }
+
+  @Override
   public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
     state.materializeEach(consumer);
   }

@@ -16,6 +16,7 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.AsyncConsumers.safeConsume;
+import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -118,6 +119,11 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<Boolean>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<Boolean> consumer) {
       materialized(new StateConsumer() {
         @Override
@@ -188,7 +194,7 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     private void setState(final boolean allMatches) throws Exception {
       setState(new ListToListAsyncMaterializer<Boolean>(
-          decorateFunction.apply(Collections.singletonList(allMatches))), STATUS_DONE);
+          decorateFunction.apply(Collections.singletonList(allMatches))), STATUS_RUNNING);
     }
 
     private void setState(@NotNull final ListAsyncMaterializer<Boolean> newState,

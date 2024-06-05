@@ -15,11 +15,14 @@
  */
 package sparx.internal.future.list;
 
+import static sparx.internal.future.AsyncConsumers.safeConsumeError;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
@@ -29,6 +32,9 @@ import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
 public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+
+  private static final Logger LOGGER = Logger.getLogger(
+      FindFirstListAsyncMaterializer.class.getName());
 
   public FindFirstListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
@@ -109,6 +115,11 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           state.materializeContains(element, consumer);
         }
       });
+    }
+
+    @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
@@ -193,12 +204,12 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     private void setState() throws Exception {
       setState(
           new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList())),
-          STATUS_DONE);
+          STATUS_RUNNING);
     }
 
     private void setState(final E element) throws Exception {
       setState(new ListToListAsyncMaterializer<E>(
-          decorateFunction.apply(Collections.singletonList(element))), STATUS_DONE);
+          decorateFunction.apply(Collections.singletonList(element))), STATUS_RUNNING);
     }
 
     private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
