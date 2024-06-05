@@ -77,7 +77,7 @@ public class AsyncGetFuture<E> implements Future<Void> {
 
       @Override
       public int weight() {
-        return 1;
+        return materializer.weightElements();
       }
     });
   }

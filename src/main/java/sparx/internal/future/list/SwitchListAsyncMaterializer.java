@@ -60,6 +60,11 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return wrapped.isMaterializedOnce();
+  }
+
+  @Override
   public int knownSize() {
     return wrapped.knownSize();
   }
@@ -110,7 +115,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElements();
       }
     });
   }
@@ -136,7 +141,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElements();
       }
     });
   }
@@ -162,7 +167,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     });
   }
@@ -188,7 +193,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.isDone() ? 1 : wrapped.weightElements();
       }
     });
   }
@@ -214,7 +219,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     });
   }
@@ -240,8 +245,23 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightSize();
       }
     });
+  }
+
+  @Override
+  public int weightElement() {
+    return wrapped.weightElement();
+  }
+
+  @Override
+  public int weightElements() {
+    return wrapped.weightElements();
+  }
+
+  @Override
+  public int weightSize() {
+    return wrapped.weightSize();
   }
 }

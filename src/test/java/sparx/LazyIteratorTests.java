@@ -32,8 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
-import sparx.Sparx.lazy.Iterator;
-import sparx.Sparx.lazy.List;
+import sparx.lazy.Iterator;
+import sparx.lazy.List;
 import sparx.util.IntOverflowException;
 
 public class LazyIteratorTests {

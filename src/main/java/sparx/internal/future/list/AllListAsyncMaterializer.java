@@ -45,6 +45,11 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -76,12 +81,17 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
+      return true;
     }
 
     @Override
@@ -145,6 +155,21 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 1, LOGGER);
+    }
+
+    @Override
+    public int weightElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightElements() {
+      return wrapped.weightElement();
+    }
+
+    @Override
+    public int weightSize() {
+      return 1;
     }
 
     private @NotNull String getTaskID() {
@@ -234,7 +259,7 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     }
   }

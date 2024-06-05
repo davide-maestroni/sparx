@@ -51,6 +51,11 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return false;
+  }
+
+  @Override
   public int knownSize() {
     return -1;
   }
@@ -87,6 +92,11 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
+      return false;
     }
 
     @Override
@@ -227,6 +237,22 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
           consumer.error(error);
         }
       });
+    }
+
+    @Override
+    public int weightElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightElements() {
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightElement() + elementsMaterializer.weightElement());
+    }
+
+    @Override
+    public int weightSize() {
+      return weightElements();
     }
 
     private void consumeComplete(final int size) {
@@ -373,7 +399,8 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public int weight() {
-        return 1;
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightElement() + elementsMaterializer.weightElements());
       }
     }
   }

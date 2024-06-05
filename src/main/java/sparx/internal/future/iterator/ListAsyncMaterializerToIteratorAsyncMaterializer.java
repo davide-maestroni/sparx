@@ -117,4 +117,19 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
       });
     }
   }
+
+  @Override
+  public int weightHasNext() {
+    return materializer.weightElement();
+  }
+
+  @Override
+  public int weightNext() {
+    return materializer.weightElement();
+  }
+
+  @Override
+  public int weightSkip(final int count) {
+    return materializer.weightSize();
+  }
 }

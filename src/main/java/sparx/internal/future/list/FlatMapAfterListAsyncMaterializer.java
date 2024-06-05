@@ -51,6 +51,11 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return false;
+  }
+
+  @Override
   public int knownSize() {
     return -1;
   }
@@ -89,6 +94,11 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     @Override
     public boolean isDone() {
+      return false;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
       return false;
     }
 
@@ -292,6 +302,22 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       }
     }
 
+    @Override
+    public int weightElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightElements() {
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightSize() + wrapped.weightElement());
+    }
+
+    @Override
+    public int weightSize() {
+      return weightElements();
+    }
+
     private void consumeElements(@NotNull final List<E> elements) {
       final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
       for (final AsyncConsumer<List<E>> elementsConsumer : elementsConsumers) {
@@ -424,7 +450,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public int weight() {
-        return 1;
+        return Math.max(wrapped.weightElement(), elementsMaterializer.weightElement());
       }
 
       private void schedule() {
@@ -480,7 +506,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
 
       private void schedule() {
@@ -533,7 +559,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
 
       private void schedule() {
@@ -614,7 +640,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public int weight() {
-        return 1;
+        return Math.max(wrapped.weightElement(), elementsMaterializer.weightElement());
       }
 
       private void schedule() {

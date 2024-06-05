@@ -46,6 +46,11 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -83,6 +88,11 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
+      return true;
     }
 
     @Override
@@ -147,6 +157,22 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 1, LOGGER);
+    }
+
+    @Override
+    public int weightElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightElements() {
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightSize() + elementsMaterializer.weightElement());
+    }
+
+    @Override
+    public int weightSize() {
+      return 1;
     }
 
     private @NotNull String getTaskID() {
@@ -275,7 +301,8 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
       @Override
       public int weight() {
-        return 1;
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightElement() + elementsMaterializer.weightElement());
       }
     }
   }

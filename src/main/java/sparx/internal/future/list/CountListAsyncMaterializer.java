@@ -41,6 +41,11 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -73,6 +78,11 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
+      return true;
     }
 
     @Override
@@ -141,6 +151,21 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 1, LOGGER);
+    }
+
+    @Override
+    public int weightElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightElements() {
+      return wrapped.weightSize();
+    }
+
+    @Override
+    public int weightSize() {
+      return 1;
     }
 
     private void materialized(@NotNull final StateConsumer consumer) {

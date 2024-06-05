@@ -52,6 +52,11 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return false;
+  }
+
+  @Override
   public int knownSize() {
     return -1;
   }
@@ -88,6 +93,11 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
+      return false;
     }
 
     @Override
@@ -217,6 +227,21 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           consumer.error(error);
         }
       });
+    }
+
+    @Override
+    public int weightElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightElements() {
+      return wrapped.weightElement();
+    }
+
+    @Override
+    public int weightSize() {
+      return weightElements();
     }
 
     private void consumeComplete(final int size) {
@@ -351,7 +376,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     }
   }

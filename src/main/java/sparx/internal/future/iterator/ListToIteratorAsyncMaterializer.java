@@ -82,4 +82,19 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
       safeConsume(consumer, skipped, LOGGER);
     }
   }
+
+  @Override
+  public int weightHasNext() {
+    return 1;
+  }
+
+  @Override
+  public int weightNext() {
+    return 1;
+  }
+
+  @Override
+  public int weightSkip(int count) {
+    return 1;
+  }
 }

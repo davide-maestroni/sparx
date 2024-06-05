@@ -61,6 +61,11 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return false;
+  }
+
+  @Override
   public int knownSize() {
     return knownSize;
   }
@@ -96,6 +101,11 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
+      return false;
     }
 
     @Override
@@ -275,6 +285,21 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
     }
 
+    @Override
+    public int weightElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightElements() {
+      return wrapped.weightSize();
+    }
+
+    @Override
+    public int weightSize() {
+      return wrapped.weightSize();
+    }
+
     private void consumeElements(@NotNull final List<E> elements) {
       final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
       for (final AsyncConsumer<List<E>> elementsConsumer : elementsConsumers) {
@@ -360,7 +385,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     }
 
@@ -415,7 +440,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     }
 
@@ -467,7 +492,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     }
 
@@ -517,7 +542,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     }
   }

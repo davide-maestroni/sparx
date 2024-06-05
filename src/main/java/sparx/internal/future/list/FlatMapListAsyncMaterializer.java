@@ -53,6 +53,11 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return false;
+  }
+
+  @Override
   public int knownSize() {
     return -1;
   }
@@ -90,6 +95,11 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
+      return false;
     }
 
     @Override
@@ -213,6 +223,21 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
           consumer.error(error);
         }
       });
+    }
+
+    @Override
+    public int weightElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightElements() {
+      return wrapped.weightElement();
+    }
+
+    @Override
+    public int weightSize() {
+      return weightElements();
     }
 
     private void consumeComplete(final int size) {
@@ -357,7 +382,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       @Override
       public int weight() {
-        return 1;
+        final int weight = wrapped.weightElement();
+        return weight == Integer.MAX_VALUE ? weight : weight + 1;
       }
 
       private void schedule() {
@@ -415,7 +441,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     }
 
@@ -464,7 +490,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     }
 
@@ -517,18 +543,18 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
 
       @Override
+      public void run() {
+        elementsMaterializer.materializeNext(this);
+      }
+
+      @Override
       public @NotNull String taskID() {
         return taskID;
       }
 
       @Override
       public int weight() {
-        return 1;
-      }
-
-      @Override
-      public void run() {
-        elementsMaterializer.materializeNext(this);
+        return elementsMaterializer.weightNext();
       }
     }
   }

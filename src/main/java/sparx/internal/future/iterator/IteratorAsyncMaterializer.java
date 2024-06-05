@@ -34,4 +34,10 @@ public interface IteratorAsyncMaterializer<E> {
   void materializeNext(@NotNull IndexedAsyncConsumer<E> consumer);
 
   void materializeSkip(int count, @NotNull AsyncConsumer<Integer> consumer);
+
+  int weightHasNext();
+
+  int weightNext();
+
+  int weightSkip(int count);
 }

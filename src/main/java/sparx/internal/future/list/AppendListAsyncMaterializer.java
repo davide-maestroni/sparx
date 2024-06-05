@@ -53,6 +53,11 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return false;
+  }
+
+  @Override
   public int knownSize() {
     return knownSize;
   }
@@ -85,6 +90,11 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
+      return false;
     }
 
     @Override
@@ -223,6 +233,22 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           }
         });
       }
+    }
+
+    @Override
+    public int weightElement() {
+      return wrapped.weightElement();
+    }
+
+    @Override
+    public int weightElements() {
+      final int weight = wrapped.weightElement();
+      return weight == Integer.MAX_VALUE ? weight : weight + 1;
+    }
+
+    @Override
+    public int weightSize() {
+      return wrapped.weightSize();
     }
 
     private void consumeElements(@NotNull final List<E> elements) {

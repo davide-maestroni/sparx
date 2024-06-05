@@ -18,7 +18,7 @@ package sparx;
 import java.util.AbstractSet;
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
-import sparx.SparxItf.itf.Sequence;
+import sparx.itf.Sequence;
 
 public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements Sequence<E> {
 

@@ -33,8 +33,8 @@ import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import sparx.Sparx.lazy.List;
 import sparx.concurrent.ExecutorContext;
+import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 
 public class FutureListTests {

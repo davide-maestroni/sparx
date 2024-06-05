@@ -28,7 +28,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import sparx.Sparx.lazy.List;
+import sparx.lazy.List;
 import sparx.util.function.Function;
 import sparx.util.function.Supplier;
 

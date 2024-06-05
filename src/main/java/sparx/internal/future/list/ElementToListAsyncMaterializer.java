@@ -51,6 +51,11 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -98,5 +103,20 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     safeConsume(consumer, 1, LOGGER);
+  }
+
+  @Override
+  public int weightElement() {
+    return 1;
+  }
+
+  @Override
+  public int weightElements() {
+    return 1;
+  }
+
+  @Override
+  public int weightSize() {
+    return 1;
   }
 }

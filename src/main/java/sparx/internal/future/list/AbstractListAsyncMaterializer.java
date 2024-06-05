@@ -81,13 +81,28 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     state.materializeSize(consumer);
   }
 
+  @Override
+  public int weightElement() {
+    return state.weightElement();
+  }
+
+  @Override
+  public int weightElements() {
+    return state.weightElements();
+  }
+
+  @Override
+  public int weightSize() {
+    return state.weightSize();
+  }
+
   @NotNull
-  ListAsyncMaterializer<E> getState() {
+  final ListAsyncMaterializer<E> getState() {
     return state;
   }
 
   @NotNull
-  ListAsyncMaterializer<E> setState(@NotNull final ListAsyncMaterializer<E> newState,
+  final ListAsyncMaterializer<E> setState(@NotNull final ListAsyncMaterializer<E> newState,
       final int statusCode) {
     if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
       state = newState;

@@ -94,7 +94,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
 
       @Override
       public int weight() {
-        return 1;
+        return materializer.weightElement();
       }
     });
   }
@@ -155,7 +155,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
 
       @Override
       public int weight() {
-        return 1;
+        return materializer.weightElement();
       }
     });
   }

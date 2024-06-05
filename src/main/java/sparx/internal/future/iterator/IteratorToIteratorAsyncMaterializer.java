@@ -85,4 +85,19 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
       safeConsume(consumer, skipped, LOGGER);
     }
   }
+
+  @Override
+  public int weightHasNext() {
+    return 1;
+  }
+
+  @Override
+  public int weightNext() {
+    return 1;
+  }
+
+  @Override
+  public int weightSkip(final int count) {
+    return Math.max(1, count);
+  }
 }

@@ -40,6 +40,11 @@ public class FindLastIndexListAsyncMaterializer<E> extends AbstractListAsyncMate
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -77,6 +82,11 @@ public class FindLastIndexListAsyncMaterializer<E> extends AbstractListAsyncMate
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
+      return true;
     }
 
     @Override
@@ -150,6 +160,22 @@ public class FindLastIndexListAsyncMaterializer<E> extends AbstractListAsyncMate
           state.materializeSize(consumer);
         }
       });
+    }
+
+    @Override
+    public int weightElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightElements() {
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightSize() + wrapped.weightElement());
+    }
+
+    @Override
+    public int weightSize() {
+      return weightElements();
     }
 
     private @NotNull String getTaskID() {
@@ -246,7 +272,7 @@ public class FindLastIndexListAsyncMaterializer<E> extends AbstractListAsyncMate
 
       @Override
       public int weight() {
-        return 1;
+        return wrapped.weightElement();
       }
     }
   }

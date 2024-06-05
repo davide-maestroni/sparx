@@ -41,6 +41,11 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
   }
 
   @Override
+  public boolean isMaterializedOnce() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -78,6 +83,11 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
     @Override
     public boolean isDone() {
       return status.get() != STATUS_RUNNING;
+    }
+
+    @Override
+    public boolean isMaterializedOnce() {
+      return true;
     }
 
     @Override
@@ -151,6 +161,24 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
           state.materializeSize(consumer);
         }
       });
+    }
+
+    @Override
+    public int weightElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightElements() {
+      final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightSize() + elementsMaterializer.weightSize()
+              + elementsMaterializer.weightElements());
+    }
+
+    @Override
+    public int weightSize() {
+      return weightElements();
     }
 
     private @NotNull String getTaskID() {
@@ -235,7 +263,7 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
         if (isWrapped) {
           --wrappedIndex;
           isWrapped = false;
-          final ListAsyncMaterializer<Object> elementsMaterializer = FindLastIndexOfSliceListAsyncMaterializer.ImmaterialState.this.elementsMaterializer;
+          final ListAsyncMaterializer<Object> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
           if (element == this.element || (element != null && element.equals(this.element))) {
             if (elementsIndex == 0) {
               setState(this.index - elementsSize + 1);
@@ -289,7 +317,8 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
 
       @Override
       public int weight() {
-        return 1;
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightElement() + elementsMaterializer.weightElement());
       }
     }
   }

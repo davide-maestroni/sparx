@@ -79,4 +79,19 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
       safeConsume(consumer, 1, LOGGER);
     }
   }
+
+  @Override
+  public int weightHasNext() {
+    return 1;
+  }
+
+  @Override
+  public int weightNext() {
+    return 1;
+  }
+
+  @Override
+  public int weightSkip(final int count) {
+    return 1;
+  }
 }
