@@ -36,11 +36,13 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       TransformListAsyncMaterializer.class.getName());
 
   private final AtomicBoolean isCancelled;
+  private final int knownSize;
 
   public TransformListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final AtomicBoolean isCancelled) {
+      @NotNull final AtomicBoolean isCancelled, final int knownSize) {
     super(new AtomicInteger(STATUS_RUNNING));
     this.isCancelled = isCancelled;
+    this.knownSize = knownSize;
     setState(new ImmaterialState(wrapped, isCancelled), STATUS_RUNNING);
   }
 
@@ -51,7 +53,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
   @Override
   public int knownSize() {
-    return 1;
+    return knownSize;
   }
 
   @Override
@@ -173,12 +175,22 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      safeConsume(consumer, false, LOGGER);
+      materialized(new StateConsumer<F>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+          state.materializeEmpty(consumer);
+        }
+      });
     }
 
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      safeConsume(consumer, 1, LOGGER);
+      materialized(new StateConsumer<F>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+          state.materializeSize(consumer);
+        }
+      });
     }
 
     @Override
@@ -200,7 +212,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       wrapped.materializeElements(new AsyncConsumer<List<E>>() {
         @Override
         public void accept(final List<E> elements) {
-          final LazyState state = new LazyState(transform(elements), isCancelled);
+          final TransformState state = new TransformState(transform(elements), isCancelled);
           setState(state, STATUS_RUNNING);
           consumer.accept(state);
         }
@@ -222,12 +234,13 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
   }
 
-  private class LazyState implements ListAsyncMaterializer<F> {
+  private class TransformState implements ListAsyncMaterializer<F> {
 
     private final List<F> elements;
     private final AtomicBoolean isCancelled;
 
-    private LazyState(@NotNull final List<F> elements, @NotNull final AtomicBoolean isCancelled) {
+    private TransformState(@NotNull final List<F> elements,
+        @NotNull final AtomicBoolean isCancelled) {
       this.elements = elements;
       this.isCancelled = isCancelled;
     }
