@@ -70,6 +70,7 @@ import sparx.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
+import sparx.internal.future.list.TransformListAsyncMaterializer;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
@@ -272,12 +273,29 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyListAsyncMaterializer<E, Boolean> lazyMaterializerAll(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicBoolean isCancelled,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyListAsyncMaterializer<E, Boolean>(materializer, isCancelled) {
+        @Override
+        protected @NotNull java.util.List<Boolean> transform(@NotNull java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).all(predicate);
+        }
+      };
+    }
+
     @Override
     public @NotNull List<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicBoolean isCancelled = new AtomicBoolean(false);
       if (materializer.knownSize() == 0) {
         return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
+      }
+      if (materializer.isMaterializedOnce()) {
+        return new List<Boolean>(context, isCancelled,
+            lazyMaterializerAll(materializer, isCancelled,
+                Require.notNull(predicate, "predicate")));
       }
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, isCancelled,
@@ -291,6 +309,11 @@ class future extends Sparx {
       final AtomicBoolean isCancelled = new AtomicBoolean(false);
       if (materializer.knownSize() == 0) {
         return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
+      }
+      if (materializer.isMaterializedOnce()) {
+        return new List<Boolean>(context, isCancelled,
+            lazyMaterializerAll(materializer, isCancelled,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, isCancelled, new AllListAsyncMaterializer<E>(materializer,
@@ -1760,7 +1783,7 @@ class future extends Sparx {
     }
 
     private static abstract class LazyListAsyncMaterializer<E, F> extends
-        sparx.internal.future.list.LazyListAsyncMaterializer<E, F> {
+        TransformListAsyncMaterializer<E, F> {
 
       private LazyListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
           @NotNull final AtomicBoolean isCancelled) {

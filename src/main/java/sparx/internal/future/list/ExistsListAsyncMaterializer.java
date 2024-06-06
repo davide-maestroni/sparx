@@ -16,6 +16,7 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.AsyncConsumers.safeConsume;
+import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
@@ -136,12 +137,19 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
-          state.materializeElement(index, consumer);
-        }
-      });
+      if (index < 0) {
+        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
+            LOGGER);
+      } else if (index > 1) {
+        safeConsumeComplete(consumer, 1, LOGGER);
+      } else {
+        materialized(new StateConsumer() {
+          @Override
+          public void accept(@NotNull final ListAsyncMaterializer<Boolean> state) {
+            state.materializeElement(index, consumer);
+          }
+        });
+      }
     }
 
     @Override

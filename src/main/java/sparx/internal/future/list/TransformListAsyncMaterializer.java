@@ -29,13 +29,15 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 
-public abstract class LazyListAsyncMaterializer<E, F> extends AbstractListAsyncMaterializer<F> {
+public abstract class TransformListAsyncMaterializer<E, F> extends
+    AbstractListAsyncMaterializer<F> {
 
-  private static final Logger LOGGER = Logger.getLogger(LazyListAsyncMaterializer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(
+      TransformListAsyncMaterializer.class.getName());
 
   private final AtomicBoolean isCancelled;
 
-  public LazyListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+  public TransformListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final AtomicBoolean isCancelled) {
     super(new AtomicInteger(STATUS_RUNNING));
     this.isCancelled = isCancelled;
@@ -54,10 +56,11 @@ public abstract class LazyListAsyncMaterializer<E, F> extends AbstractListAsyncM
 
   @Override
   public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
-    super.materializeDone(new AsyncConsumer<List<F>>() {
+    getState().materializeElements(new AsyncConsumer<List<F>>() {
       @Override
       public void accept(final List<F> elements) throws Exception {
         materialize(elements);
+        setState(getState(), STATUS_DONE);
         consumer.accept(elements);
       }
 
@@ -246,7 +249,7 @@ public abstract class LazyListAsyncMaterializer<E, F> extends AbstractListAsyncM
 
     @Override
     public int knownSize() {
-      return LazyListAsyncMaterializer.this.knownSize(elements);
+      return TransformListAsyncMaterializer.this.knownSize(elements);
     }
 
     @Override
@@ -291,12 +294,17 @@ public abstract class LazyListAsyncMaterializer<E, F> extends AbstractListAsyncM
       int i = -1;
       try {
         final List<F> elements = this.elements;
-        if (index < 0 || index >= elements.size()) {
-          safeConsumeError(consumer, -1, new IndexOutOfBoundsException(Integer.toString(index)),
+        if (index < 0) {
+          safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
               LOGGER);
         } else {
-          i = index;
-          safeConsume(consumer, elements.size(), index, elements.get(index), LOGGER);
+          final int size = elements.size();
+          if (index >= size) {
+            safeConsumeComplete(consumer, size, LOGGER);
+          } else {
+            i = index;
+            safeConsume(consumer, size, index, elements.get(index), LOGGER);
+          }
         }
       } catch (final Exception error) {
         consumeError(consumer, i, error);

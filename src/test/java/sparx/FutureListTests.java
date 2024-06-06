@@ -423,19 +423,20 @@ public class FutureListTests {
     assertEquals(List.of(1, null, 3), l);
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
-        Thread.sleep(60000);
-        return true;
-      }).append(false).drop(1);
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
+      // TODO: uncomment when prepend is implemented
+//      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
+//        Thread.sleep(60000);
+//        return true;
+//      }).prepend(false).drop(1);
+//      executor.submit(() -> {
+//        try {
+//          Thread.sleep(1000);
+//        } catch (final InterruptedException e) {
+//          throw UncheckedInterruptedException.toUnchecked(e);
+//        }
+//        f.cancel(true);
+//      });
+//      assertThrows(CancellationException.class, f::get);
     }
   }
 

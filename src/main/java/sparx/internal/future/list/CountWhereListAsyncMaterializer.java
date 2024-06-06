@@ -16,6 +16,7 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.AsyncConsumers.safeConsume;
+import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
@@ -139,6 +140,8 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
       if (index < 0) {
         safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
             LOGGER);
+      } else if (index > 1) {
+        safeConsumeComplete(consumer, 1, LOGGER);
       } else {
         materialized(new StateConsumer() {
           @Override
