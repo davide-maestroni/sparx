@@ -45,7 +45,17 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    this(wrapped, numElements, mapper, new AtomicInteger(STATUS_RUNNING), context, cancelException,
+        decorateFunction);
+  }
+
+  FlatMapAfterListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      final int numElements,
+      @NotNull final IndexedFunction<? super E, ? extends ListAsyncMaterializer<E>> mapper,
+      @NotNull final AtomicInteger status, @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
+      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+    super(status);
     setState(new ImmaterialState(wrapped, numElements, mapper, context, cancelException,
         decorateFunction), STATUS_RUNNING);
   }

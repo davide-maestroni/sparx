@@ -66,6 +66,8 @@ import sparx.internal.future.list.FindLastIndexListAsyncMaterializer;
 import sparx.internal.future.list.FindLastIndexOfSliceListAsyncMaterializer;
 import sparx.internal.future.list.FindLastListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapAfterListAsyncMaterializer;
+import sparx.internal.future.list.FlatMapFirstWhereListAsyncMaterializer;
+import sparx.internal.future.list.FlatMapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
@@ -1409,25 +1411,65 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> flatMapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
         @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      return new List<E>(context, cancelException,
+          new FlatMapFirstWhereListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"),
+              getElementToMaterializer(context, taskID, Require.notNull(mapper, "mapper")), context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> flatMapFirstWhere(@NotNull Predicate<? super E> predicate,
         @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      return new List<E>(context, cancelException,
+          new FlatMapFirstWhereListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              getElementToMaterializer(context, taskID, Require.notNull(mapper, "mapper")), context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> flatMapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
         @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      return new List<E>(context, cancelException,
+          new FlatMapLastWhereListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"),
+              getElementToMaterializer(context, taskID, Require.notNull(mapper, "mapper")), context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
         @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      return new List<E>(context, cancelException,
+          new FlatMapLastWhereListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              getElementToMaterializer(context, taskID, Require.notNull(mapper, "mapper")), context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -2388,8 +2430,6 @@ class future extends Sparx {
       }
     }
   }
-
-  // TODO: SynchronizedListAsyncMaterializer
 
   private static class BlockingConsumer<P> extends Semaphore implements AsyncConsumer<P> {
 

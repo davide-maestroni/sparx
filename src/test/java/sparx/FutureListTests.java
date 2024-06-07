@@ -1159,4 +1159,203 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
     }
   }
+
+  @Test
+  public void flatMapFirstWhere() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertFalse(l.flatMapFirstWhere(i -> false, i -> List.of(i, i)).isEmpty());
+    assertEquals(4, l.flatMapFirstWhere(i -> false, i -> List.of(i, i).toFuture(context)).size());
+    assertEquals(l, l.flatMapFirstWhere(i -> false, i -> List.of(i, i)));
+    assertNull(l.flatMapFirstWhere(i -> false, i -> List.of(i, i).toFuture(context)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhere(i -> false, i -> List.of(i, i)).get(4));
+    assertFalse(l.flatMapFirstWhere(i -> true, i -> List.of(i, i).toFuture(context)).isEmpty());
+    assertEquals(5, l.flatMapFirstWhere(i -> true, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2, null, 4),
+        l.flatMapFirstWhere(i -> true, i -> List.of(i, i).toFuture(context)));
+    assertEquals(1, l.flatMapFirstWhere(i -> true, i -> List.of(i, i)).get(1));
+    assertNull(l.flatMapFirstWhere(i -> true, i -> List.of(i, i).toFuture(context)).get(3));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhere(i -> true, i -> List.of(i, i)).get(5));
+    assertFalse(l.flatMapFirstWhere(Objects::isNull, i -> List.of(3)).isEmpty());
+    assertEquals(4, l.flatMapFirstWhere(Objects::isNull, i -> List.of(3)).size());
+    assertEquals(List.of(1, 2, 3, 4),
+        l.flatMapFirstWhere(Objects::isNull, i -> List.of(3).toFuture(context)));
+    assertEquals(2, l.flatMapFirstWhere(Objects::isNull, i -> List.of(3)).get(1));
+    assertEquals(3, l.flatMapFirstWhere(Objects::isNull, i -> List.of(3).toFuture(context)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhere(Objects::isNull, i -> List.of(3).toFuture(context)).get(4));
+
+    assertFalse(
+        l.flatMapFirstWhere(i -> false, i -> List.<Integer>of().toFuture(context)).isEmpty());
+    assertEquals(4, l.flatMapFirstWhere(i -> false, i -> List.of()).size());
+    assertEquals(l, l.flatMapFirstWhere(i -> false, i -> List.<Integer>of().toFuture(context)));
+    assertNull(l.flatMapFirstWhere(i -> false, i -> List.of()).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhere(i -> false, i -> List.<Integer>of().toFuture(context)).get(4));
+    assertFalse(l.flatMapFirstWhere(i -> true, i -> List.of()).isEmpty());
+    assertEquals(3,
+        l.flatMapFirstWhere(i -> true, i -> List.<Integer>of().toFuture(context)).size());
+    assertEquals(List.of(2, null, 4), l.flatMapFirstWhere(i -> true, i -> List.of()));
+    assertEquals(4,
+        l.flatMapFirstWhere(i -> true, i -> List.<Integer>of().toFuture(context)).get(2));
+    assertNull(l.flatMapFirstWhere(i -> true, i -> List.of()).get(1));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhere(i -> true, i -> List.<Integer>of().toFuture(context)).get(3));
+    assertFalse(l.flatMapFirstWhere(Objects::isNull, i -> List.of()).isEmpty());
+    assertEquals(3,
+        l.flatMapFirstWhere(Objects::isNull, i -> List.<Integer>of().toFuture(context)).size());
+    assertEquals(List.of(1, 2, 4),
+        l.flatMapFirstWhere(Objects::isNull, i -> List.<Integer>of().toFuture(context)));
+    assertEquals(2, l.flatMapFirstWhere(Objects::isNull, i -> List.of()).get(1));
+    assertEquals(4,
+        l.flatMapFirstWhere(Objects::isNull, i -> List.<Integer>of().toFuture(context)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhere(Objects::isNull, i -> List.of()).get(3));
+
+    assertFalse(l.flatMapFirstWhere(i -> i == 1, i -> List.of(i, i).toFuture(context)).isEmpty());
+    assertEquals(5, l.flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 1, 2, null, 4),
+        l.flatMapFirstWhere(i -> i == 1, i -> List.of(i, i).toFuture(context)));
+    assertEquals(1, l.flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).get(1));
+    assertNull(l.flatMapFirstWhere(i -> i == 1, i -> List.of(i, i).toFuture(context)).get(3));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).get(5));
+    assertFalse(l.flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapFirstWhere(i -> i > 2, i -> List.of(i, i).toFuture(context)).size());
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(0));
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapFirstWhere(i -> i > 2, i -> List.of(i, i).toFuture(context)).get(1));
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapFirstWhere(i -> i > 2, i -> List.of(i, i).toFuture(context)).get(2));
+
+    assertTrue(List.of().flatMapFirstWhere(i -> false, i -> List.of()).isEmpty());
+    assertEquals(0,
+        List.of().flatMapFirstWhere(i -> false, i -> List.of().toFuture(context)).size());
+    assertEquals(List.of(), List.of().flatMapFirstWhere(i -> false, i -> List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().flatMapFirstWhere(i -> false, i -> List.of().toFuture(context)).get(2));
+    assertTrue(List.of().flatMapFirstWhere(i -> true, i -> List.of().toFuture(context)).isEmpty());
+    assertEquals(0, List.of().flatMapFirstWhere(i -> true, i -> List.of()).size());
+    assertEquals(List.of(),
+        List.of().flatMapFirstWhere(i -> true, i -> List.of().toFuture(context)));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().flatMapFirstWhere(i -> true, i -> List.of()).get(2));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMapFirstWhere(i -> true, i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void flatMapLastWhere() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertFalse(l.flatMapLastWhere(i -> false, i -> List.of(i, i).toFuture(context)).isEmpty());
+    assertEquals(4, l.flatMapLastWhere(i -> false, i -> List.of(i, i)).size());
+    assertEquals(l, l.flatMapLastWhere(i -> false, i -> List.of(i, i).toFuture(context)));
+    assertNull(l.flatMapLastWhere(i -> false, i -> List.of(i, i)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhere(i -> false, i -> List.of(i, i).toFuture(context)).get(4));
+    assertFalse(l.flatMapLastWhere(i -> true, i -> List.of(i, i)).isEmpty());
+    assertEquals(5, l.flatMapLastWhere(i -> true, i -> List.of(i, i).toFuture(context)).size());
+    assertEquals(List.of(1, 2, null, 4, 4), l.flatMapLastWhere(i -> true, i -> List.of(i, i)));
+    assertEquals(2, l.flatMapLastWhere(i -> true, i -> List.of(i, i).toFuture(context)).get(1));
+    assertNull(l.flatMapLastWhere(i -> true, i -> List.of(i, i)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhere(i -> true, i -> List.of(i, i)).get(5));
+    assertFalse(l.flatMapLastWhere(Objects::isNull, i -> List.of(3)).isEmpty());
+    assertEquals(4, l.flatMapLastWhere(Objects::isNull, i -> List.of(3).toFuture(context)).size());
+    assertEquals(List.of(1, 2, 3, 4),
+        l.flatMapLastWhere(Objects::isNull, i -> List.of(3).toFuture(context)));
+    assertEquals(2, l.flatMapLastWhere(Objects::isNull, i -> List.of(3)).get(1));
+    assertEquals(3, l.flatMapLastWhere(Objects::isNull, i -> List.of(3).toFuture(context)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhere(Objects::isNull, i -> List.of(3).toFuture(context)).get(4));
+
+    assertFalse(
+        l.flatMapLastWhere(i -> false, i -> List.<Integer>of().toFuture(context)).isEmpty());
+    assertEquals(4, l.flatMapLastWhere(i -> false, i -> List.of()).size());
+    assertEquals(l, l.flatMapLastWhere(i -> false, i -> List.<Integer>of().toFuture(context)));
+    assertNull(l.flatMapLastWhere(i -> false, i -> List.of()).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhere(i -> false, i -> List.<Integer>of().toFuture(context)).get(4));
+    assertFalse(l.flatMapLastWhere(i -> true, i -> List.of()).isEmpty());
+    assertEquals(3,
+        l.flatMapLastWhere(i -> true, i -> List.<Integer>of().toFuture(context)).size());
+    assertEquals(List.of(1, 2, null), l.flatMapLastWhere(i -> true, i -> List.of()));
+    assertEquals(2,
+        l.flatMapLastWhere(i -> true, i -> List.<Integer>of().toFuture(context)).get(1));
+    assertNull(l.flatMapLastWhere(i -> true, i -> List.of()).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhere(i -> true, i -> List.of()).get(3));
+    assertFalse(
+        l.flatMapLastWhere(Objects::isNull, i -> List.<Integer>of().toFuture(context)).isEmpty());
+    assertEquals(3, l.flatMapLastWhere(Objects::isNull, i -> List.of()).size());
+    assertEquals(List.of(1, 2, 4),
+        l.flatMapLastWhere(Objects::isNull, i -> List.<Integer>of().toFuture(context)));
+    assertEquals(2, l.flatMapLastWhere(Objects::isNull, i -> List.of()).get(1));
+    assertEquals(4,
+        l.flatMapLastWhere(Objects::isNull, i -> List.<Integer>of().toFuture(context)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhere(Objects::isNull, i -> List.of()).get(3));
+
+    assertFalse(l.flatMapLastWhere(i -> i == 4, i -> List.of(i, i).toFuture(context)).isEmpty());
+    assertEquals(5, l.flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).size());
+    assertEquals(List.of(1, 2, null, 4, 4),
+        l.flatMapLastWhere(i -> i == 4, i -> List.of(i, i).toFuture(context)));
+    assertEquals(2, l.flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).get(1));
+    assertNull(l.flatMapLastWhere(i -> i == 4, i -> List.of(i, i).toFuture(context)).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.flatMapLastWhere(i -> i == 4, i -> List.of(i, i).toFuture(context)).get(5));
+    assertFalse(l.flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapLastWhere(i -> i < 2, i -> List.of(i, i).toFuture(context)).size());
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).get(3));
+    assertThrows(NullPointerException.class,
+        () -> l.flatMapLastWhere(i -> i < 2, i -> List.of(i, i).toFuture(context)).get(2));
+
+    assertTrue(List.of().flatMapLastWhere(i -> false, i -> List.of()).isEmpty());
+    assertEquals(0,
+        List.of().flatMapLastWhere(i -> false, i -> List.of().toFuture(context)).size());
+    assertEquals(List.of(), List.of().flatMapLastWhere(i -> false, i -> List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().flatMapLastWhere(i -> false, i -> List.of().toFuture(context)).get(2));
+    assertTrue(List.of().flatMapLastWhere(i -> true, i -> List.of()).toFuture(context).isEmpty());
+    assertEquals(0, List.of().flatMapLastWhere(i -> true, i -> List.of()).size());
+    assertEquals(List.of(),
+        List.of().flatMapLastWhere(i -> true, i -> List.of().toFuture(context)));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().flatMapLastWhere(i -> true, i -> List.of()).get(2));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMapLastWhere(i -> true, i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
 }
