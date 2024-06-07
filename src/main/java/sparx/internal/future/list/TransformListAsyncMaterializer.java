@@ -21,8 +21,8 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -35,15 +35,15 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
   private static final Logger LOGGER = Logger.getLogger(
       TransformListAsyncMaterializer.class.getName());
 
-  private final AtomicBoolean isCancelled;
+  private final AtomicReference<CancellationException> cancelException;
   private final int knownSize;
 
   public TransformListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final AtomicBoolean isCancelled, final int knownSize) {
+      @NotNull final AtomicReference<CancellationException> cancelException, final int knownSize) {
     super(new AtomicInteger(STATUS_RUNNING));
-    this.isCancelled = isCancelled;
+    this.cancelException = cancelException;
     this.knownSize = knownSize;
-    setState(new ImmaterialState(wrapped, isCancelled), STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, cancelException), STATUS_RUNNING);
   }
 
   @Override
@@ -68,9 +68,10 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
       @Override
       public void error(@NotNull final Exception error) throws Exception {
-        if (isCancelled.get()) {
-          setState(new CancelledListAsyncMaterializer<F>(), STATUS_CANCELLED);
-          consumer.error(new CancellationException());
+        final CancellationException exception = cancelException.get();
+        if (exception != null) {
+          setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+          consumer.error(exception);
         } else {
           setState(new FailedListAsyncMaterializer<F>(error), STATUS_DONE);
           consumer.error(error);
@@ -92,13 +93,13 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
   private class ImmaterialState implements ListAsyncMaterializer<F> {
 
-    private final AtomicBoolean isCancelled;
+    private final AtomicReference<CancellationException> cancelException;
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final AtomicBoolean isCancelled) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
-      this.isCancelled = isCancelled;
+      this.cancelException = cancelException;
     }
 
     @Override
@@ -122,8 +123,8 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
-    public void materializeCancel(final boolean mayInterruptIfRunning) {
-      setState(new CancelledListAsyncMaterializer<F>(), STATUS_CANCELLED);
+    public void materializeCancel(@NotNull final CancellationException exception) {
+      setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
     }
 
     @Override
@@ -212,15 +213,17 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       wrapped.materializeElements(new AsyncConsumer<List<E>>() {
         @Override
         public void accept(final List<E> elements) {
-          final TransformState state = new TransformState(transform(elements), isCancelled);
+          final TransformState state = new TransformState(transform(elements), cancelException);
           setState(state, STATUS_RUNNING);
           consumer.accept(state);
         }
 
         @Override
         public void error(@NotNull final Exception error) {
-          if (isCancelled.get()) {
-            final CancelledListAsyncMaterializer<F> state = new CancelledListAsyncMaterializer<F>();
+          final CancellationException exception = cancelException.get();
+          if (exception != null) {
+            final CancelledListAsyncMaterializer<F> state = new CancelledListAsyncMaterializer<F>(
+                exception);
             setState(state, STATUS_CANCELLED);
             consumer.accept(state);
           } else {
@@ -230,19 +233,18 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
           }
         }
       });
-
     }
   }
 
   private class TransformState implements ListAsyncMaterializer<F> {
 
+    private final AtomicReference<CancellationException> cancelException;
     private final List<F> elements;
-    private final AtomicBoolean isCancelled;
 
     private TransformState(@NotNull final List<F> elements,
-        @NotNull final AtomicBoolean isCancelled) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.elements = elements;
-      this.isCancelled = isCancelled;
+      this.cancelException = cancelException;
     }
 
     @Override
@@ -266,8 +268,8 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
-    public void materializeCancel(final boolean mayInterruptIfRunning) {
-      setState(new CancelledListAsyncMaterializer<F>(), STATUS_CANCELLED);
+    public void materializeCancel(@NotNull final CancellationException exception) {
+      setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
     }
 
     @Override
@@ -367,10 +369,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       if (error instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
-      if (isCancelled.get()) {
-        setState(new CancelledListAsyncMaterializer<F>(), STATUS_CANCELLED);
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
         try {
-          consumer.error(new CancellationException());
+          consumer.error(exception);
         } catch (final Exception e) {
           if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
@@ -395,10 +398,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       if (error instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
-      if (isCancelled.get()) {
-        setState(new CancelledListAsyncMaterializer<F>(), STATUS_CANCELLED);
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
         try {
-          consumer.error(index, new CancellationException());
+          consumer.error(index, exception);
         } catch (final Exception e) {
           if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();

@@ -21,8 +21,8 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
@@ -40,11 +40,11 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
   public AppendAllListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
-      @NotNull final AtomicBoolean isCancelled,
+      @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, List<E>, List<E>> appendFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize(), elementsMaterializer.knownSize());
-    setState(new ImmaterialState(wrapped, elementsMaterializer, isCancelled, appendFunction),
+    setState(new ImmaterialState(wrapped, elementsMaterializer, cancelException, appendFunction),
         STATUS_RUNNING);
   }
 
@@ -75,10 +75,10 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final BinaryFunction<List<E>, List<E>, List<E>> appendFunction;
+    private final AtomicReference<CancellationException> cancelException;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
     private final ListAsyncMaterializer<E> elementsMaterializer;
-    private final AtomicBoolean isCancelled;
     private final ListAsyncMaterializer<E> wrapped;
 
     private int elementsSize = -1;
@@ -86,11 +86,11 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
-        @NotNull final AtomicBoolean isCancelled,
+        @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final BinaryFunction<List<E>, List<E>, List<E>> appendFunction) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
-      this.isCancelled = isCancelled;
+      this.cancelException = cancelException;
       this.appendFunction = appendFunction;
     }
 
@@ -115,10 +115,10 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
-    public void materializeCancel(final boolean mayInterruptIfRunning) {
-      wrapped.materializeCancel(mayInterruptIfRunning);
-      elementsMaterializer.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+    public void materializeCancel(@NotNull final CancellationException exception) {
+      wrapped.materializeCancel(exception);
+      elementsMaterializer.materializeCancel(exception);
+      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
     }
 
     @Override
@@ -254,9 +254,10 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
               @Override
               public void error(@NotNull final Exception error) {
-                if (isCancelled.get()) {
-                  setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
-                  consumeError(new CancellationException());
+                final CancellationException exception = cancelException.get();
+                if (exception != null) {
+                  setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+                  consumeError(exception);
                 } else {
                   setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
                   consumeError(error);
@@ -267,9 +268,10 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
           @Override
           public void error(@NotNull final Exception error) {
-            if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
-              consumeError(new CancellationException());
+            final CancellationException exception = cancelException.get();
+            if (exception != null) {
+              setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+              consumeError(exception);
             } else {
               setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
               consumeError(error);

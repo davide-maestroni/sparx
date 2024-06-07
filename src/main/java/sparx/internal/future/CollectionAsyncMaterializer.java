@@ -15,6 +15,7 @@
  */
 package sparx.internal.future;
 
+import java.util.concurrent.CancellationException;
 import org.jetbrains.annotations.NotNull;
 
 public interface CollectionAsyncMaterializer<E> {
@@ -27,7 +28,7 @@ public interface CollectionAsyncMaterializer<E> {
 
   int knownSize();
 
-  void materializeCancel(boolean mayInterruptIfRunning);
+  void materializeCancel(@NotNull CancellationException exception);
 
   void materializeContains(Object element, @NotNull AsyncConsumer<Boolean> consumer);
 

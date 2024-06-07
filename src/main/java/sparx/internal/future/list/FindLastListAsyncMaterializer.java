@@ -20,8 +20,9 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
@@ -38,10 +39,10 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
   public FindLastListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
-      @NotNull final AtomicBoolean isCancelled,
+      @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, context, isCancelled, decorateFunction),
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction),
         STATUS_RUNNING);
   }
 
@@ -52,7 +53,7 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
   @Override
   public int knownSize() {
-    return 1;
+    return -1;
   }
 
   private interface StateConsumer<E> {
@@ -62,21 +63,22 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
+    private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
-    private final AtomicBoolean isCancelled;
     private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.context = context;
-      this.isCancelled = isCancelled;
+      this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
     }
 
@@ -97,13 +99,13 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
     @Override
     public int knownSize() {
-      return 1;
+      return -1;
     }
 
     @Override
-    public void materializeCancel(final boolean mayInterruptIfRunning) {
-      wrapped.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+    public void materializeCancel(@NotNull final CancellationException exception) {
+      wrapped.materializeCancel(exception);
+      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
     }
 
     @Override
@@ -263,8 +265,9 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
       @Override
       public void error(@NotNull final Exception error) {
-        if (isCancelled.get()) {
-          setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+        final CancellationException exception = cancelException.get();
+        if (exception != null) {
+          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
         } else {
           setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
         }

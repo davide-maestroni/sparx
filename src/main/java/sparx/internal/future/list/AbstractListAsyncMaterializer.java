@@ -16,6 +16,7 @@
 package sparx.internal.future.list;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
@@ -46,8 +47,8 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
-    state.materializeCancel(mayInterruptIfRunning);
+  public void materializeCancel(@NotNull final CancellationException exception) {
+    state.materializeCancel(exception);
   }
 
   @Override

@@ -20,8 +20,9 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
@@ -38,12 +39,12 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
   public FindIndexOfSliceListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
-      @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
+      @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(
-        new ImmaterialState(wrapped, elementsMaterializer, context, isCancelled, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
+        decorateFunction), STATUS_RUNNING);
   }
 
   @Override
@@ -53,7 +54,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
   @Override
   public int knownSize() {
-    return 1;
+    return -1;
   }
 
   private interface StateConsumer {
@@ -63,21 +64,22 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
   private class ImmaterialState implements ListAsyncMaterializer<Integer> {
 
+    private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<Integer>, List<Integer>> decorateFunction;
     private final ListAsyncMaterializer<Object> elementsMaterializer;
-    private final AtomicBoolean isCancelled;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
-        @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
       this.context = context;
-      this.isCancelled = isCancelled;
+      this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
     }
 
@@ -98,13 +100,13 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
     @Override
     public int knownSize() {
-      return 1;
+      return -1;
     }
 
     @Override
-    public void materializeCancel(final boolean mayInterruptIfRunning) {
-      wrapped.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
+    public void materializeCancel(@NotNull final CancellationException exception) {
+      wrapped.materializeCancel(exception);
+      setState(new CancelledListAsyncMaterializer<Integer>(exception), STATUS_CANCELLED);
     }
 
     @Override
@@ -216,8 +218,9 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
           @Override
           public void error(@NotNull final Exception error) {
-            if (isCancelled.get()) {
-              setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
+            final CancellationException exception = cancelException.get();
+            if (exception != null) {
+              setState(new CancelledListAsyncMaterializer<Integer>(exception), STATUS_CANCELLED);
             } else {
               setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
             }
@@ -297,8 +300,9 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
       @Override
       public void error(@NotNull final Exception error) {
-        if (isCancelled.get()) {
-          setState(new CancelledListAsyncMaterializer<Integer>(), STATUS_CANCELLED);
+        final CancellationException exception = cancelException.get();
+        if (exception != null) {
+          setState(new CancelledListAsyncMaterializer<Integer>(exception), STATUS_CANCELLED);
         } else {
           setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
         }

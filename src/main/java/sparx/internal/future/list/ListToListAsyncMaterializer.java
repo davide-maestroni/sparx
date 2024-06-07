@@ -20,6 +20,7 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
@@ -57,7 +58,7 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
+  public void materializeCancel(@NotNull final CancellationException exception) {
   }
 
   @Override

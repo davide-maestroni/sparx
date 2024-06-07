@@ -17,6 +17,7 @@ package sparx.internal.future.iterator;
 
 import static sparx.internal.future.AsyncConsumers.safeConsume;
 
+import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
@@ -54,7 +55,7 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
   }
 
   @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
+  public void materializeCancel(@NotNull final CancellationException exception) {
   }
 
   @Override

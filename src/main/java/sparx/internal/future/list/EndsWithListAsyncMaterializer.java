@@ -22,8 +22,9 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
@@ -39,12 +40,12 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
   public EndsWithListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
-      @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
+      @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(
-        new ImmaterialState(wrapped, elementsMaterializer, context, isCancelled, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
+        decorateFunction), STATUS_RUNNING);
   }
 
   @Override
@@ -64,21 +65,22 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
   private class ImmaterialState implements ListAsyncMaterializer<Boolean> {
 
+    private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<Boolean>, List<Boolean>> decorateFunction;
     private final ListAsyncMaterializer<Object> elementsMaterializer;
-    private final AtomicBoolean isCancelled;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
-        @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
       this.context = context;
-      this.isCancelled = isCancelled;
+      this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
     }
 
@@ -103,10 +105,10 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     @Override
-    public void materializeCancel(final boolean mayInterruptIfRunning) {
-      wrapped.materializeCancel(mayInterruptIfRunning);
-      elementsMaterializer.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
+    public void materializeCancel(@NotNull final CancellationException exception) {
+      wrapped.materializeCancel(exception);
+      elementsMaterializer.materializeCancel(exception);
+      setState(new CancelledListAsyncMaterializer<Boolean>(exception), STATUS_CANCELLED);
     }
 
     @Override
@@ -239,8 +241,9 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     private void setState(@NotNull final Exception error) {
-      if (isCancelled.get()) {
-        setState(new CancelledListAsyncMaterializer<Boolean>(), STATUS_CANCELLED);
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setState(new CancelledListAsyncMaterializer<Boolean>(exception), STATUS_CANCELLED);
       } else {
         setState(new FailedListAsyncMaterializer<Boolean>(error), STATUS_DONE);
       }

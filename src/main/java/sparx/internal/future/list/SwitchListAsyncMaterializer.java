@@ -18,6 +18,7 @@ package sparx.internal.future.list;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -70,12 +71,12 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public void materializeCancel(final boolean mayInterruptIfRunning) {
+  public void materializeCancel(@NotNull final CancellationException exception) {
     fromContext.scheduleAfter(new Task() {
       @Override
       public void run() {
         try {
-          wrapped.materializeCancel(mayInterruptIfRunning);
+          wrapped.materializeCancel(exception);
         } catch (final Exception e) {
           LOGGER.log(Level.SEVERE, "Ignored exception", e);
         }

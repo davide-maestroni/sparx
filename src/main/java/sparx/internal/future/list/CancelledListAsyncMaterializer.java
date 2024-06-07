@@ -16,11 +16,12 @@
 package sparx.internal.future.list;
 
 import java.util.concurrent.CancellationException;
+import org.jetbrains.annotations.NotNull;
 
 public class CancelledListAsyncMaterializer<E> extends FailedListAsyncMaterializer<E> {
 
-  public CancelledListAsyncMaterializer() {
-    super(new CancellationException());
+  public CancelledListAsyncMaterializer(@NotNull final CancellationException exception) {
+    super(exception);
   }
 
   @Override

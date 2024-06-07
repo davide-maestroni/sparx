@@ -20,7 +20,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
@@ -2370,8 +2371,8 @@ public class lazy extends Sparx {
     }
 
     public @NotNull future.List<E> asFuture(@NotNull final ExecutionContext context) {
-      return new future.List<E>(Require.notNull(context, "context"), new AtomicBoolean(false),
-          new ListToListAsyncMaterializer<E>(this));
+      return new future.List<E>(Require.notNull(context, "context"),
+          new AtomicReference<CancellationException>(), new ListToListAsyncMaterializer<E>(this));
     }
 
     @Override
@@ -4015,7 +4016,8 @@ public class lazy extends Sparx {
     }
 
     public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext context) {
-      return new future.List<E>(Require.notNull(context, "context"), new AtomicBoolean(false),
+      return new future.List<E>(Require.notNull(context, "context"),
+          new AtomicReference<CancellationException>(),
           new ListToListAsyncMaterializer<E>(materialized()));
     }
 

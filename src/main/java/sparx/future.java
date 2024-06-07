@@ -28,7 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -120,6 +120,11 @@ class future extends Sparx {
     return new IteratorToIteratorAsyncMaterializer<E>((java.util.Iterator<E>) elements.iterator());
   }
 
+  private static boolean isFuture(final Iterable<?> elements) {
+    // TODO: future.Iterator
+    return elements instanceof List;
+  }
+
   public static class List<E> extends AbstractListSequence<E> implements
       itf.Future<E, lazy.List<E>>, itf.List<E> {
 
@@ -151,16 +156,17 @@ class future extends Sparx {
 
     private static final Logger LOGGER = Logger.getLogger(List.class.getName());
 
+    private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final AtomicBoolean isCancelled;
     private final ListAsyncMaterializer<E> materializer;
     private final String taskID;
 
-    List(@NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
+    List(@NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final ListAsyncMaterializer<E> materializer) {
       this.context = context;
       this.materializer = materializer;
-      this.isCancelled = isCancelled;
+      this.cancelException = cancelException;
       taskID = Integer.toHexString(System.identityHashCode(this));
     }
 
@@ -276,9 +282,9 @@ class future extends Sparx {
 
     private static @NotNull <E> LazyListAsyncMaterializer<E, Boolean> lazyMaterializerAll(
         @NotNull final ListAsyncMaterializer<E> materializer,
-        @NotNull final AtomicBoolean isCancelled,
+        @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final IndexedPredicate<? super E> predicate) {
-      return new LazyListAsyncMaterializer<E, Boolean>(materializer, isCancelled, 1) {
+      return new LazyListAsyncMaterializer<E, Boolean>(materializer, cancelException, 1) {
         @Override
         protected @NotNull java.util.List<Boolean> transform(@NotNull java.util.List<E> elements) {
           return ((lazy.List<E>) elements).all(predicate);
@@ -288,8 +294,10 @@ class future extends Sparx {
 
     private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerAppend(
         @NotNull final ListAsyncMaterializer<E> materializer,
-        @NotNull final AtomicBoolean isCancelled, final E element, final int knownSize) {
-      return new LazyListAsyncMaterializer<E, E>(materializer, isCancelled, knownSize) {
+        @NotNull final AtomicReference<CancellationException> cancelException, final E element) {
+      final int knownSize = materializer.knownSize();
+      final int size = knownSize > 0 ? SizeOverflowException.safeCast(knownSize + 1) : -1;
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, size) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull java.util.List<E> elements) {
           return ((lazy.List<E>) elements).append(element);
@@ -299,10 +307,13 @@ class future extends Sparx {
 
     private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerAppendAll(
         @NotNull final ListAsyncMaterializer<E> materializer,
-        @NotNull final AtomicBoolean isCancelled, @NotNull final Iterable<? extends E> elements,
-        final int knownSize) {
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<? extends E> elements, final int elementsKnownSize) {
+      final int knownSize = materializer.knownSize();
+      final int size = knownSize > 0 && elementsKnownSize > 0 ? SizeOverflowException.safeCast(
+          knownSize + elementsKnownSize) : -1;
       final Iterable<? extends E> appended = elements;
-      return new LazyListAsyncMaterializer<E, E>(materializer, isCancelled, knownSize) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, size) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull java.util.List<E> elements) {
           return ((lazy.List<E>) elements).appendAll(appended);
@@ -313,55 +324,55 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> all(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
+        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
       }
       if (materializer.isMaterializedOnce()) {
-        return new List<Boolean>(context, isCancelled,
-            lazyMaterializerAll(materializer, isCancelled,
+        return new List<Boolean>(context, cancelException,
+            lazyMaterializerAll(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
       final ExecutionContext context = this.context;
-      return new List<Boolean>(context, isCancelled,
+      return new List<Boolean>(context, cancelException,
           new AllListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              context, isCancelled, List.<Boolean>decorateFunction()));
+              context, cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Boolean> all(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
+        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
       }
       if (materializer.isMaterializedOnce()) {
-        return new List<Boolean>(context, isCancelled,
-            lazyMaterializerAll(materializer, isCancelled,
+        return new List<Boolean>(context, cancelException,
+            lazyMaterializerAll(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
       final ExecutionContext context = this.context;
-      return new List<Boolean>(context, isCancelled, new AllListAsyncMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
-          List.<Boolean>decorateFunction()));
+      return new List<Boolean>(context, cancelException,
+          new AllListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              List.<Boolean>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> append(final E element) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final long knownSize = materializer.knownSize();
       if (knownSize == 0) {
-        return new List<E>(context, isCancelled,
+        return new List<E>(context, cancelException,
             new ElementToListAsyncMaterializer<E>(lazy.List.of(element)));
       }
       if (materializer.isMaterializedOnce()) {
-        final int size = knownSize > 0 ? SizeOverflowException.safeCast(knownSize + 1) : -1;
-        return new List<E>(context, isCancelled,
-            lazyMaterializerAppend(materializer, isCancelled, element, size));
+        return new List<E>(context, cancelException,
+            lazyMaterializerAppend(materializer, cancelException, element));
       }
-      return new List<E>(context, isCancelled,
-          new AppendListAsyncMaterializer<E>(materializer, element, isCancelled,
+      return new List<E>(context, cancelException,
+          new AppendListAsyncMaterializer<E>(materializer, element, cancelException,
               List.<E>appendFunction()));
     }
 
@@ -371,23 +382,22 @@ class future extends Sparx {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(context, taskID,
           Require.notNull(elements, "elements"));
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
-      final long knownSize = materializer.knownSize();
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final int elementsKnownSize = elementsMaterializer.knownSize();
       if (elementsKnownSize == 0) {
-        return new List<E>(context, isCancelled, materializer);
-      } else if (knownSize == 0) {
-        return new List<E>(context, isCancelled, elementsMaterializer);
+        return new List<E>(context, cancelException, materializer);
       }
-      if (materializer.isMaterializedOnce()) {
-        final int size = knownSize > 0 && elementsKnownSize > 0 ? SizeOverflowException.safeCast(
-            knownSize + elementsKnownSize) : -1;
-        return new List<E>(context, isCancelled,
-            lazyMaterializerAppendAll(materializer, isCancelled,
-                Require.notNull(elements, "elements"), size));
+      final long knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException, elementsMaterializer);
       }
-      return new List<E>(context, isCancelled,
-          new AppendAllListAsyncMaterializer<E>(materializer, elementsMaterializer, isCancelled,
+      if (materializer.isMaterializedOnce() && !isFuture(elements)) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerAppendAll(materializer, cancelException,
+                Require.notNull(elements, "elements"), elementsKnownSize));
+      }
+      return new List<E>(context, cancelException,
+          new AppendAllListAsyncMaterializer<E>(materializer, elementsMaterializer, cancelException,
               List.<E>appendAllFunction()));
     }
 
@@ -404,7 +414,8 @@ class future extends Sparx {
 
     @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
-      if (!materializer.isDone() && isCancelled.compareAndSet(false, true)) {
+      if (!materializer.isDone() && cancelException.compareAndSet(null,
+          new CancellationException())) {
         if (mayInterruptIfRunning) {
           context.interruptTask(taskID);
         }
@@ -412,7 +423,7 @@ class future extends Sparx {
           @Override
           public void run() {
             try {
-              materializer.materializeCancel(mayInterruptIfRunning);
+              materializer.materializeCancel(cancelException.get());
             } catch (final Exception e) {
               LOGGER.log(Level.SEVERE, "Ignored exception", e);
             }
@@ -470,64 +481,64 @@ class future extends Sparx {
     public @NotNull List<Integer> count() {
       final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
-        return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
+        return new List<Integer>(context, cancelException, ZERO_MATERIALIZER);
       }
       if (knownSize > 0) {
-        return new List<Integer>(context, isCancelled,
+        return new List<Integer>(context, cancelException,
             new ElementToListAsyncMaterializer<Integer>(lazy.List.of(knownSize)));
       }
-      return new List<Integer>(context, isCancelled,
-          new CountListAsyncMaterializer<E>(materializer, isCancelled,
+      return new List<Integer>(context, cancelException,
+          new CountListAsyncMaterializer<E>(materializer, cancelException,
               List.<Integer>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Integer> count(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
+        return new List<Integer>(context, cancelException, ZERO_MATERIALIZER);
       }
       final ExecutionContext context = this.context;
-      return new List<Integer>(context, isCancelled,
+      return new List<Integer>(context, cancelException,
           new CountWhereListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, isCancelled,
+              Require.notNull(predicate, "predicate"), context, cancelException,
               List.<Integer>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Integer> count(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
+        return new List<Integer>(context, cancelException, ZERO_MATERIALIZER);
       }
       final ExecutionContext context = this.context;
-      return new List<Integer>(context, isCancelled,
+      return new List<Integer>(context, cancelException,
           new CountWhereListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
               List.<Integer>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> diff(@NotNull final Iterable<?> elements) {
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
       final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
       final ListAsyncMaterializer<?> elementsMaterializer = getElementsMaterializer(context, taskID,
           Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
-      return new List<E>(context, isCancelled,
-          new DiffListAsyncMaterializer<E>(materializer, elementsMaterializer, context, isCancelled,
-              List.<E>decorateFunction()));
+      return new List<E>(context, cancelException,
+          new DiffListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -619,89 +630,91 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> drop(final int maxElements) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final int knownSize = materializer.knownSize();
       if (maxElements <= 0 || knownSize == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
-        return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled,
-          new DropListAsyncMaterializer<E>(materializer, maxElements, context, isCancelled,
+      return new List<E>(context, cancelException,
+          new DropListAsyncMaterializer<E>(materializer, maxElements, context, cancelException,
               List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> dropRight(final int maxElements) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final int knownSize = materializer.knownSize();
       if (maxElements <= 0 || knownSize == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
-        return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled,
-          new DropRightListAsyncMaterializer<E>(materializer, maxElements, context, isCancelled,
+      return new List<E>(context, cancelException,
+          new DropRightListAsyncMaterializer<E>(materializer, maxElements, context, cancelException,
               List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> dropRightWhile(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled,
+      return new List<E>(context, cancelException,
           new DropRightWhileListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, isCancelled,
+              Require.notNull(predicate, "predicate"), context, cancelException,
               List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> dropRightWhile(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled,
+      return new List<E>(context, cancelException,
           new DropRightWhileListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
               List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> dropWhile(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled, new DropWhileListAsyncMaterializer<E>(materializer,
-          Require.notNull(predicate, "predicate"), context, isCancelled,
-          List.<E>decorateFunction()));
+      return new List<E>(context, cancelException,
+          new DropWhileListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled, new DropWhileListAsyncMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
-          List.<E>decorateFunction()));
+      return new List<E>(context, cancelException,
+          new DropWhileListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
@@ -709,65 +722,65 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
           taskID, Require.notNull(elements, "elements"));
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (elementsMaterializer.knownSize() == 0) {
-        return new List<Boolean>(context, isCancelled, TRUE_MATERIALIZER);
+        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
       }
-      return new List<Boolean>(context, isCancelled,
+      return new List<Boolean>(context, cancelException,
           new EndsWithListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              isCancelled, List.<Boolean>decorateFunction()));
+              cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Boolean> exists(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, isCancelled, FALSE_MATERIALIZER);
+        return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
       }
       final ExecutionContext context = this.context;
-      return new List<Boolean>(context, isCancelled,
+      return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              context, isCancelled, List.<Boolean>decorateFunction()));
+              context, cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, isCancelled, FALSE_MATERIALIZER);
+        return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
       }
       final ExecutionContext context = this.context;
-      return new List<Boolean>(context, isCancelled,
+      return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
               List.<Boolean>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled,
+      return new List<E>(context, cancelException,
           new FilterListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              context, isCancelled, List.<E>decorateFunction()));
+              context, cancelException, List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> filter(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled, new FilterListAsyncMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+      return new List<E>(context, cancelException, new FilterListAsyncMaterializer<E>(materializer,
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
           List.<E>decorateFunction()));
     }
 
@@ -783,42 +796,44 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> findFirst(@NotNull final IndexedPredicate<? super E> predicate) {
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
       final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled, new FindFirstListAsyncMaterializer<E>(materializer,
-          Require.notNull(predicate, "predicate"), context, isCancelled,
-          List.<E>decorateFunction()));
+      return new List<E>(context, cancelException,
+          new FindFirstListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> findFirst(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled, new FindFirstListAsyncMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
-          List.<E>decorateFunction()));
+      return new List<E>(context, cancelException,
+          new FindFirstListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Integer> findIndexOf(final Object element) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, isCancelled,
+        return new List<Integer>(context, cancelException,
             EmptyListAsyncMaterializer.<Integer>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<Integer>(context, isCancelled,
+      return new List<Integer>(context, cancelException,
           new FindIndexListAsyncMaterializer<E>(materializer, equalsElement(element), context,
-              isCancelled, List.<Integer>decorateFunction()));
+              cancelException, List.<Integer>decorateFunction()));
     }
 
     @Override
@@ -826,117 +841,119 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
           taskID, Require.notNull(elements, "elements"));
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (elementsMaterializer.knownSize() == 0) {
-        return new List<Integer>(context, isCancelled, ZERO_MATERIALIZER);
+        return new List<Integer>(context, cancelException, ZERO_MATERIALIZER);
       }
-      return new List<Integer>(context, isCancelled,
+      return new List<Integer>(context, cancelException,
           new FindIndexOfSliceListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              isCancelled, List.<Integer>decorateFunction()));
+              cancelException, List.<Integer>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Integer> findIndexWhere(
         @NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, isCancelled,
+        return new List<Integer>(context, cancelException,
             EmptyListAsyncMaterializer.<Integer>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<Integer>(context, isCancelled,
+      return new List<Integer>(context, cancelException,
           new FindIndexListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, isCancelled,
+              Require.notNull(predicate, "predicate"), context, cancelException,
               List.<Integer>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Integer> findIndexWhere(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, isCancelled,
+        return new List<Integer>(context, cancelException,
             EmptyListAsyncMaterializer.<Integer>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<Integer>(context, isCancelled,
+      return new List<Integer>(context, cancelException,
           new FindIndexListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
               List.<Integer>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> findLast(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled, new FindLastListAsyncMaterializer<E>(materializer,
-          Require.notNull(predicate, "predicate"), context, isCancelled,
-          List.<E>decorateFunction()));
+      return new List<E>(context, cancelException,
+          new FindLastListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> findLast(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, isCancelled, EmptyListAsyncMaterializer.<E>instance());
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled, new FindLastListAsyncMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
-          List.<E>decorateFunction()));
+      return new List<E>(context, cancelException,
+          new FindLastListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Integer> findLastIndexOf(final Object element) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, isCancelled,
+        return new List<Integer>(context, cancelException,
             EmptyListAsyncMaterializer.<Integer>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<Integer>(context, isCancelled,
+      return new List<Integer>(context, cancelException,
           new FindLastIndexListAsyncMaterializer<E>(materializer, equalsElement(element), context,
-              isCancelled, List.<Integer>decorateFunction()));
+              cancelException, List.<Integer>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
           taskID, Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
         final int knownSize = materializer.knownSize();
         if (knownSize >= 0) {
-          return new List<Integer>(context, isCancelled,
+          return new List<Integer>(context, cancelException,
               new ElementToListAsyncMaterializer<Integer>(lazy.List.of(knownSize)));
         }
       }
-      return new List<Integer>(context, isCancelled,
+      return new List<Integer>(context, cancelException,
           new FindLastIndexOfSliceListAsyncMaterializer<E>(materializer, elementsMaterializer,
-              context, isCancelled, List.<Integer>decorateFunction()));
+              context, cancelException, List.<Integer>decorateFunction()));
     }
 
     @Override
     public @NotNull List<Integer> findLastIndexWhere(
         @NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, isCancelled,
+        return new List<Integer>(context, cancelException,
             EmptyListAsyncMaterializer.<Integer>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<Integer>(context, isCancelled,
+      return new List<Integer>(context, cancelException,
           new FindLastIndexListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, isCancelled,
+              Require.notNull(predicate, "predicate"), context, cancelException,
               List.<Integer>decorateFunction()));
     }
 
@@ -944,15 +961,15 @@ class future extends Sparx {
     public @NotNull List<Integer> findLastIndexWhere(
         @NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, isCancelled,
+        return new List<Integer>(context, cancelException,
             EmptyListAsyncMaterializer.<Integer>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<Integer>(context, isCancelled,
+      return new List<Integer>(context, cancelException,
           new FindLastIndexListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, isCancelled,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
               List.<Integer>decorateFunction()));
     }
 
@@ -993,66 +1010,68 @@ class future extends Sparx {
     public @NotNull <F> List<F> flatMap(
         @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<F>(context, isCancelled, EmptyListAsyncMaterializer.<F>instance());
+        return new List<F>(context, cancelException, EmptyListAsyncMaterializer.<F>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<F>(context, isCancelled, new FlatMapListAsyncMaterializer<E, F>(materializer,
-          getElementToIteratorMaterializer(context, taskID, Require.notNull(mapper, "mapper")),
-          context, isCancelled, List.<F>decorateFunction()));
+      return new List<F>(context, cancelException,
+          new FlatMapListAsyncMaterializer<E, F>(materializer,
+              getElementToIteratorMaterializer(context, taskID, Require.notNull(mapper, "mapper")),
+              context, cancelException, List.<F>decorateFunction()));
     }
 
     @Override
     public @NotNull <F> List<F> flatMap(
         @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<F>(context, isCancelled, EmptyListAsyncMaterializer.<F>instance());
+        return new List<F>(context, cancelException, EmptyListAsyncMaterializer.<F>instance());
       }
       final ExecutionContext context = this.context;
-      return new List<F>(context, isCancelled, new FlatMapListAsyncMaterializer<E, F>(materializer,
-          getElementToIteratorMaterializer(context, taskID, Require.notNull(mapper, "mapper")),
-          context, isCancelled, List.<F>decorateFunction()));
+      return new List<F>(context, cancelException,
+          new FlatMapListAsyncMaterializer<E, F>(materializer,
+              getElementToIteratorMaterializer(context, taskID, Require.notNull(mapper, "mapper")),
+              context, cancelException, List.<F>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> flatMapAfter(final int numElements,
         @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
       if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled,
+      return new List<E>(context, cancelException,
           new FlatMapAfterListAsyncMaterializer<E>(materializer, numElements,
               getElementToMaterializer(context, taskID, Require.notNull(mapper, "mapper")), context,
-              isCancelled, List.<E>decorateFunction()));
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> flatMapAfter(final int numElements,
         @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-      final AtomicBoolean isCancelled = new AtomicBoolean(false);
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
       if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
-        return new List<E>(context, isCancelled, materializer);
+        return new List<E>(context, cancelException, materializer);
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, isCancelled,
+      return new List<E>(context, cancelException,
           new FlatMapAfterListAsyncMaterializer<E>(materializer, numElements,
               getElementToMaterializer(context, taskID, Require.notNull(mapper, "mapper")), context,
-              isCancelled, List.<E>decorateFunction()));
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -1281,7 +1300,7 @@ class future extends Sparx {
 
     @Override
     public boolean isCancelled() {
-      return materializer.isCancelled() || isCancelled.get();
+      return materializer.isCancelled() || cancelException.get() != null;
     }
 
     @Override
@@ -1826,8 +1845,9 @@ class future extends Sparx {
         TransformListAsyncMaterializer<E, F> {
 
       public LazyListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-          @NotNull final AtomicBoolean isCancelled, final int knownSize) {
-        super(wrapped, isCancelled, knownSize);
+          @NotNull final AtomicReference<CancellationException> cancelException,
+          final int knownSize) {
+        super(wrapped, cancelException, knownSize);
       }
 
       @Override
@@ -2152,7 +2172,7 @@ class future extends Sparx {
     }
 
     @Override
-    public void materializeCancel(final boolean mayInterruptIfRunning) {
+    public void materializeCancel(@NotNull final CancellationException exception) {
     }
 
     @Override

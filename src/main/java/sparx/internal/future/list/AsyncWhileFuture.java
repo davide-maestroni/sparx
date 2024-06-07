@@ -38,7 +38,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
   private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
   private final String taskID;
 
-  private Exception error;
+  private volatile Exception error;
 
   public AsyncWhileFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final ListAsyncMaterializer<E> materializer,
@@ -52,7 +52,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
           @Override
           public void accept(final int size, final int index, final E element) throws Exception {
             if (isCancelled()) {
-              throw new CancellationException();
+              throw getCancelException();
             }
             if (predicate.test(index, element)) {
               materializer.materializeElement(index + 1, this);
@@ -67,10 +67,6 @@ public class AsyncWhileFuture<E> implements Future<Void> {
           @Override
           public void complete(final int size) {
             synchronized (status) {
-              if (isCancelled()) {
-                status.notifyAll();
-                throw new CancellationException();
-              }
               status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
               status.notifyAll();
             }
@@ -79,8 +75,9 @@ public class AsyncWhileFuture<E> implements Future<Void> {
           @Override
           public void error(final int index, @NotNull final Exception error) {
             synchronized (status) {
-              AsyncWhileFuture.this.error = error;
-              status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+              if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+                AsyncWhileFuture.this.error = error;
+              }
               status.notifyAll();
             }
           }
@@ -112,7 +109,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
           @Override
           public void accept(final int size, final int index, final E element) throws Exception {
             if (isCancelled()) {
-              throw new CancellationException();
+              throw getCancelException();
             }
             if (condition.test(index, element)) {
               consumer.accept(index, element);
@@ -128,10 +125,6 @@ public class AsyncWhileFuture<E> implements Future<Void> {
           @Override
           public void complete(final int size) {
             synchronized (status) {
-              if (isCancelled()) {
-                status.notifyAll();
-                throw new CancellationException();
-              }
               status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
               status.notifyAll();
             }
@@ -140,8 +133,9 @@ public class AsyncWhileFuture<E> implements Future<Void> {
           @Override
           public void error(final int index, @NotNull final Exception error) {
             synchronized (status) {
-              AsyncWhileFuture.this.error = error;
-              status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+              if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+                AsyncWhileFuture.this.error = error;
+              }
               status.notifyAll();
             }
           }
@@ -163,6 +157,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
     if (status.compareAndSet(STATUS_RUNNING, STATUS_CANCELLED)) {
+      error = new CancellationException();
       if (mayInterruptIfRunning) {
         context.interruptTask(taskID);
       }
@@ -188,7 +183,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
         status.wait();
       }
       if (isCancelled()) {
-        throw new CancellationException();
+        throw getCancelException();
       }
       final Exception error = this.error;
       if (error instanceof InterruptedException) {
@@ -215,7 +210,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
         throw new TimeoutException("timeout after " + unit.toMillis(timeout) + " ms");
       }
       if (statusCode == STATUS_CANCELLED) {
-        throw new CancellationException();
+        throw getCancelException();
       }
       final Exception error = this.error;
       if (error instanceof InterruptedException) {
@@ -225,5 +220,10 @@ public class AsyncWhileFuture<E> implements Future<Void> {
       }
     }
     return null;
+  }
+
+  private @NotNull CancellationException getCancelException() {
+    return error instanceof CancellationException ? (CancellationException) error
+        : new CancellationException();
   }
 }

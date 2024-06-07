@@ -26,8 +26,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
@@ -42,12 +42,12 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
   public DiffListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
-      @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
+      @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(
-        new ImmaterialState(wrapped, elementsMaterializer, context, isCancelled, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
+        decorateFunction), STATUS_RUNNING);
   }
 
   @Override
@@ -62,25 +62,26 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
+    private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
     private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
         2);
     private final ArrayList<E> elements = new ArrayList<E>();
     private final ListAsyncMaterializer<?> elementsMaterializer;
-    private final AtomicBoolean isCancelled;
     private final ListAsyncMaterializer<E> wrapped;
 
     private int nextIndex;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
-        @NotNull final ExecutionContext context, @NotNull final AtomicBoolean isCancelled,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
       this.context = context;
-      this.isCancelled = isCancelled;
+      this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
     }
 
@@ -105,10 +106,10 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     }
 
     @Override
-    public void materializeCancel(final boolean mayInterruptIfRunning) {
-      wrapped.materializeCancel(mayInterruptIfRunning);
-      elementsMaterializer.materializeCancel(mayInterruptIfRunning);
-      setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
+    public void materializeCancel(@NotNull final CancellationException exception) {
+      wrapped.materializeCancel(exception);
+      elementsMaterializer.materializeCancel(exception);
+      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
     }
 
     @Override
@@ -378,9 +379,10 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public void error(@NotNull final Exception error) {
-        if (isCancelled.get()) {
-          setState(new CancelledListAsyncMaterializer<E>(), STATUS_CANCELLED);
-          consumeError(new CancellationException());
+        final CancellationException exception = cancelException.get();
+        if (exception != null) {
+          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+          consumeError(exception);
         } else {
           setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
           consumeError(error);
