@@ -51,11 +51,6 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
   }
 
   @Override
-  public boolean isMaterializedOnce() {
-    return false;
-  }
-
-  @Override
   public int knownSize() {
     return -1;
   }
@@ -103,7 +98,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
     }
 
     @Override
-    public boolean isMaterializedOnce() {
+    public boolean isMaterializedAtOnce() {
       return false;
     }
 

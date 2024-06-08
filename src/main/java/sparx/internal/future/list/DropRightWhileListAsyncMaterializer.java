@@ -47,11 +47,6 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
   }
 
   @Override
-  public boolean isMaterializedOnce() {
-    return false;
-  }
-
-  @Override
   public int knownSize() {
     return -1;
   }
@@ -96,7 +91,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     }
 
     @Override
-    public boolean isMaterializedOnce() {
+    public boolean isMaterializedAtOnce() {
       return false;
     }
 

@@ -48,7 +48,7 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
   }
 
   @Override
-  public boolean isMaterializedOnce() {
+  public boolean isMaterializedAtOnce() {
     return true;
   }
 
@@ -94,7 +94,7 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
     }
 
     @Override
-    public boolean isMaterializedOnce() {
+    public boolean isMaterializedAtOnce() {
       return true;
     }
 

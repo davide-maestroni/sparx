@@ -48,7 +48,7 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public boolean isMaterializedOnce() {
+  public boolean isMaterializedAtOnce() {
     return true;
   }
 

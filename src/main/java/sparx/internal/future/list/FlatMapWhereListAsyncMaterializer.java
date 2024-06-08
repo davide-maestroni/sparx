@@ -37,19 +37,22 @@ import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.iterator.IteratorAsyncMaterializer;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
 
-public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterializer<F> {
+public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      FlatMapListAsyncMaterializer.class.getName());
+      FlatMapWhereListAsyncMaterializer.class.getName());
 
-  public FlatMapListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<F>> mapper,
+  public FlatMapWhereListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<E>> mapper,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<F>, List<F>> decorateFunction) {
+      @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, mapper, context, cancelException, decorateFunction),
+    setState(
+        new ImmaterialState(wrapped, predicate, mapper, context, cancelException, decorateFunction),
         STATUS_RUNNING);
   }
 
@@ -58,26 +61,29 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     return -1;
   }
 
-  private class ImmaterialState implements ListAsyncMaterializer<F> {
+  private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<F>, List<F>> decorateFunction;
-    private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>>(
+    private final Function<List<E>, List<E>> decorateFunction;
+    private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
         2);
-    private final ArrayList<F> elements = new ArrayList<F>();
-    private final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<F>> mapper;
+    private final ArrayList<E> elements = new ArrayList<E>();
+    private final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<E>> mapper;
+    private final IndexedPredicate<? super E> predicate;
     private final ListAsyncMaterializer<E> wrapped;
 
-    private IteratorAsyncMaterializer<F> elementsMaterializer;
+    private IteratorAsyncMaterializer<E> elementsMaterializer;
     private int nextIndex;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<F>> mapper,
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<E>> mapper,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<F>, List<F>> decorateFunction) {
+        @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
+      this.predicate = predicate;
       this.mapper = mapper;
       this.context = context;
       this.cancelException = cancelException;
@@ -107,11 +113,11 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
-      final IteratorAsyncMaterializer<F> elementsMaterializer = this.elementsMaterializer;
+      final IteratorAsyncMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer != null) {
         elementsMaterializer.materializeCancel(exception);
       }
-      setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
     }
 
     @Override
@@ -125,30 +131,30 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
+    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
       safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<F> consumer) {
+    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
       materializeUntil(Integer.MAX_VALUE, consumer);
     }
 
     @Override
     public void materializeElement(final int index,
-        @NotNull final IndexedAsyncConsumer<F> consumer) {
+        @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
         safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
             LOGGER);
       } else {
-        final ArrayList<F> elements = this.elements;
+        final ArrayList<E> elements = this.elements;
         if (elements.size() > index) {
           safeConsume(consumer, -1, index, elements.get(index), LOGGER);
         } else {
           final int originalIndex = index;
-          materializeUntil(index, new IndexedAsyncConsumer<F>() {
+          materializeUntil(index, new IndexedAsyncConsumer<E>() {
             @Override
-            public void accept(final int size, final int index, final F element) throws Exception {
+            public void accept(final int size, final int index, final E element) throws Exception {
               if (originalIndex == index) {
                 consumer.accept(size, index, element);
               }
@@ -171,10 +177,10 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     }
 
     @Override
-    public void materializeElements(@NotNull final AsyncConsumer<List<F>> consumer) {
-      materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<F>() {
+    public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+      materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
         @Override
-        public void accept(final int size, final int index, final F element) {
+        public void accept(final int size, final int index, final E element) {
         }
 
         @Override
@@ -191,9 +197,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      materializeUntil(0, new IndexedAsyncConsumer<F>() {
+      materializeUntil(0, new IndexedAsyncConsumer<E>() {
         @Override
-        public void accept(final int size, final int index, final F element) {
+        public void accept(final int size, final int index, final E element) {
         }
 
         @Override
@@ -210,9 +216,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<F>() {
+      materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
         @Override
-        public void accept(final int size, final int index, final F element) {
+        public void accept(final int size, final int index, final E element) {
         }
 
         @Override
@@ -243,22 +249,22 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     }
 
     private void consumeComplete(final int size) {
-      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
-      for (final ArrayList<IndexedAsyncConsumer<F>> consumers : elementsConsumers.values()) {
-        for (final IndexedAsyncConsumer<F> consumer : consumers) {
+      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
+      for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
+        for (final IndexedAsyncConsumer<E> consumer : consumers) {
           safeConsumeComplete(consumer, size, LOGGER);
         }
       }
       elementsConsumers.clear();
     }
 
-    private void consumeElement(final int index, final F element) {
-      @SuppressWarnings("unchecked") final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = (HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>>) this.elementsConsumers.clone();
+    private void consumeElement(final int index, final E element) {
+      @SuppressWarnings("unchecked") final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = (HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>) this.elementsConsumers.clone();
       final HashSet<Integer> keysToRemove = new HashSet<Integer>();
-      for (final Entry<Integer, ArrayList<IndexedAsyncConsumer<F>>> entry : elementsConsumers.entrySet()) {
+      for (final Entry<Integer, ArrayList<IndexedAsyncConsumer<E>>> entry : elementsConsumers.entrySet()) {
         final int key = entry.getKey();
         if (key < index) {
-          final Iterator<IndexedAsyncConsumer<F>> consumers = entry.getValue().iterator();
+          final Iterator<IndexedAsyncConsumer<E>> consumers = entry.getValue().iterator();
           while (consumers.hasNext()) {
             if (!safeConsume(consumers.next(), -1, index, element, LOGGER)) {
               consumers.remove();
@@ -268,7 +274,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
             keysToRemove.add(key);
           }
         } else if (key == index) {
-          for (final IndexedAsyncConsumer<F> consumer : entry.getValue()) {
+          for (final IndexedAsyncConsumer<E> consumer : entry.getValue()) {
             if (safeConsume(consumer, -1, index, element, LOGGER)) {
               safeConsumeComplete(consumer, index + 1, LOGGER);
             }
@@ -280,9 +286,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     }
 
     private void consumeError(@NotNull final Exception error) {
-      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
-      for (final ArrayList<IndexedAsyncConsumer<F>> consumers : elementsConsumers.values()) {
-        for (final IndexedAsyncConsumer<F> consumer : consumers) {
+      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
+      for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
+        for (final IndexedAsyncConsumer<E> consumer : consumers) {
           safeConsumeError(consumer, -1, error, LOGGER);
         }
       }
@@ -295,8 +301,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     }
 
     private void materializeUntil(final int index,
-        @NotNull final IndexedAsyncConsumer<F> consumer) {
-      final ArrayList<F> elements = this.elements;
+        @NotNull final IndexedAsyncConsumer<E> consumer) {
+      final ArrayList<E> elements = this.elements;
       if (elements.size() > index) {
         final int size = index + 1;
         for (int i = 0; i < size; ++i) {
@@ -312,11 +318,11 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
             return;
           }
         }
-        final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
+        final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
         final boolean needsRun = elementsConsumers.isEmpty();
-        ArrayList<IndexedAsyncConsumer<F>> indexConsumers = elementsConsumers.get(index);
+        ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
         if (indexConsumers == null) {
-          elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<F>>(2));
+          elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<E>>(2));
         }
         indexConsumers.add(consumer);
         if (needsRun) {
@@ -333,31 +339,46 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       private final MaterializingElementAsyncConsumer consumer;
 
+      private final int maxIndex;
       private String taskID;
 
       private MaterializingAsyncConsumer(final int maxIndex) {
+        this.maxIndex = maxIndex;
         consumer = new MaterializingElementAsyncConsumer(maxIndex, this);
       }
 
-      private MaterializingAsyncConsumer(
+      private MaterializingAsyncConsumer(final int maxIndex,
           @NotNull final MaterializingElementAsyncConsumer consumer) {
+        this.maxIndex = maxIndex;
         this.consumer = consumer;
       }
 
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
-        final IteratorAsyncMaterializer<F> materializer = mapper.apply(index, element);
-        if (materializer.knownSize() == 0) {
-          schedule();
+        if (predicate.test(index, element)) {
+          final IteratorAsyncMaterializer<E> materializer = mapper.apply(index, element);
+          if (materializer.knownSize() == 0) {
+            schedule();
+          } else {
+            (elementsMaterializer = materializer).materializeNext(consumer);
+          }
         } else {
-          (elementsMaterializer = materializer).materializeNext(consumer);
+          final ArrayList<E> elements = ImmaterialState.this.elements;
+          final int elementIndex = elements.size();
+          elements.add(element);
+          consumeElement(elementIndex, element);
+          if (elements.size() > maxIndex) {
+            consumeComplete(elements.size());
+          } else {
+            schedule();
+          }
         }
       }
 
       @Override
       public void complete(final int size) throws Exception {
-        final List<F> materialized = decorateFunction.apply(elements);
-        setState(new ListToListAsyncMaterializer<F>(materialized), STATUS_RUNNING);
+        final List<E> materialized = decorateFunction.apply(elements);
+        setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_RUNNING);
         consumeComplete(elements.size());
       }
 
@@ -365,10 +386,10 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       public void error(final int index, @NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
           consumeError(exception);
         } else {
-          setState(new FailedListAsyncMaterializer<F>(error), STATUS_DONE);
+          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
           consumeError(error);
         }
       }
@@ -396,7 +417,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
     }
 
-    private class MaterializingContainsElementAsyncConsumer implements IndexedAsyncConsumer<F>,
+    private class MaterializingContainsElementAsyncConsumer implements IndexedAsyncConsumer<E>,
         Task {
 
       private final AsyncConsumer<Boolean> consumer;
@@ -412,7 +433,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void accept(final int size, final int index, final F element) throws Exception {
+      public void accept(final int size, final int index, final E element) throws Exception {
         if (this.element.equals(element)) {
           consumer.accept(true);
         } else {
@@ -448,7 +469,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
     }
 
-    private class MaterializingContainsNullAsyncConsumer implements IndexedAsyncConsumer<F>, Task {
+    private class MaterializingContainsNullAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
 
       private final AsyncConsumer<Boolean> consumer;
 
@@ -461,7 +482,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void accept(final int size, final int index, final F element) throws Exception {
+      public void accept(final int size, final int index, final E element) throws Exception {
         if (element == null) {
           consumer.accept(true);
         } else {
@@ -497,7 +518,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
     }
 
-    private class MaterializingElementAsyncConsumer implements IndexedAsyncConsumer<F>, Task {
+    private class MaterializingElementAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
 
       private final MaterializingAsyncConsumer consumer;
       private final int maxIndex;
@@ -506,7 +527,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       private MaterializingElementAsyncConsumer(final int maxIndex) {
         this.maxIndex = maxIndex;
-        consumer = new MaterializingAsyncConsumer(this);
+        consumer = new MaterializingAsyncConsumer(maxIndex, this);
       }
 
       private MaterializingElementAsyncConsumer(final int maxIndex,
@@ -516,8 +537,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void accept(final int size, final int index, final F element) {
-        final ArrayList<F> elements = ImmaterialState.this.elements;
+      public void accept(final int size, final int index, final E element) {
+        final ArrayList<E> elements = FlatMapWhereListAsyncMaterializer.ImmaterialState.this.elements;
         final int elementIndex = elements.size();
         elements.add(element);
         consumeElement(elementIndex, element);
@@ -538,10 +559,10 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       public void error(final int index, @NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
           consumeError(exception);
         } else {
-          setState(new FailedListAsyncMaterializer<F>(error), STATUS_DONE);
+          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
           consumeError(error);
         }
       }

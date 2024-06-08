@@ -47,6 +47,11 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
+  public boolean isMaterializedAtOnce() {
+    return isDone();
+  }
+
+  @Override
   public void materializeCancel(@NotNull final CancellationException exception) {
     state.materializeCancel(exception);
   }

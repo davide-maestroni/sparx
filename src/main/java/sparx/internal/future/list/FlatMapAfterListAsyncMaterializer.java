@@ -61,11 +61,6 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
   }
 
   @Override
-  public boolean isMaterializedOnce() {
-    return false;
-  }
-
-  @Override
   public int knownSize() {
     return -1;
   }
@@ -109,7 +104,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
     }
 
     @Override
-    public boolean isMaterializedOnce() {
+    public boolean isMaterializedAtOnce() {
       return false;
     }
 

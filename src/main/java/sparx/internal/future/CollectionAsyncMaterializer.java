@@ -24,7 +24,7 @@ public interface CollectionAsyncMaterializer<E> {
 
   boolean isDone();
 
-  boolean isMaterializedOnce();
+  boolean isMaterializedAtOnce();
 
   int knownSize();
 

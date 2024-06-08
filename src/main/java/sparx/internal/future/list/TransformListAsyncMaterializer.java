@@ -47,7 +47,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
   }
 
   @Override
-  public boolean isMaterializedOnce() {
+  public boolean isMaterializedAtOnce() {
     return true;
   }
 
@@ -113,7 +113,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
-    public boolean isMaterializedOnce() {
+    public boolean isMaterializedAtOnce() {
       return true;
     }
 
@@ -156,12 +156,17 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<F> consumer) {
-      materialized(new StateConsumer<F>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
-          state.materializeElement(index, consumer);
-        }
-      });
+      if (index < 0) {
+        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
+            LOGGER);
+      } else {
+        materialized(new StateConsumer<F>() {
+          @Override
+          public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+            state.materializeElement(index, consumer);
+          }
+        });
+      }
     }
 
     @Override
@@ -258,7 +263,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
-    public boolean isMaterializedOnce() {
+    public boolean isMaterializedAtOnce() {
       return true;
     }
 

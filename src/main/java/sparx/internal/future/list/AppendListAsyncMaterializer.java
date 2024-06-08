@@ -54,11 +54,6 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
-  public boolean isMaterializedOnce() {
-    return false;
-  }
-
-  @Override
   public int knownSize() {
     return knownSize;
   }
@@ -94,7 +89,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
-    public boolean isMaterializedOnce() {
+    public boolean isMaterializedAtOnce() {
       return false;
     }
 

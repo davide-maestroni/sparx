@@ -61,8 +61,8 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public boolean isMaterializedOnce() {
-    return wrapped.isMaterializedOnce();
+  public boolean isMaterializedAtOnce() {
+    return wrapped.isMaterializedAtOnce();
   }
 
   @Override

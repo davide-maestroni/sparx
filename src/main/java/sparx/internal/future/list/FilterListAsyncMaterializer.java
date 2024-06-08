@@ -52,7 +52,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
-  public boolean isMaterializedOnce() {
+  public boolean isMaterializedAtOnce() {
     return false;
   }
 
@@ -97,7 +97,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
-    public boolean isMaterializedOnce() {
+    public boolean isMaterializedAtOnce() {
       return false;
     }
 

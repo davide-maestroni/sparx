@@ -47,7 +47,7 @@ public class FindLastIndexListAsyncMaterializer<E> extends AbstractListAsyncMate
   }
 
   @Override
-  public boolean isMaterializedOnce() {
+  public boolean isMaterializedAtOnce() {
     return true;
   }
 
@@ -93,7 +93,7 @@ public class FindLastIndexListAsyncMaterializer<E> extends AbstractListAsyncMate
     }
 
     @Override
-    public boolean isMaterializedOnce() {
+    public boolean isMaterializedAtOnce() {
       return true;
     }
 

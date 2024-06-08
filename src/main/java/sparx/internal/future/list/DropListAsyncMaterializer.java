@@ -60,11 +60,6 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
   }
 
   @Override
-  public boolean isMaterializedOnce() {
-    return false;
-  }
-
-  @Override
   public int knownSize() {
     return knownSize;
   }
@@ -103,7 +98,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     }
 
     @Override
-    public boolean isMaterializedOnce() {
+    public boolean isMaterializedAtOnce() {
       return false;
     }
 
