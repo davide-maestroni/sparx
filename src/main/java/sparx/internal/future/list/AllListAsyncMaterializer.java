@@ -138,8 +138,7 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else if (index > 1) {
         safeConsumeComplete(consumer, 1, LOGGER);
       } else {
@@ -271,11 +270,6 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
         } else {
           consumeState(setFailed(error));
         }
-      }
-
-      @Override
-      public void error(final int index, @NotNull final Exception error) {
-        error(error);
       }
 
       @Override

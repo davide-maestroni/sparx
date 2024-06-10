@@ -47,8 +47,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -88,12 +87,17 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
     }
 
     @Override
@@ -109,7 +113,8 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
-      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+      setCancelled(exception);
+      consumeError(exception);
     }
 
     @Override
@@ -126,7 +131,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -146,8 +151,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         final ArrayList<E> elements = this.elements;
         if (elements.size() > index) {
@@ -170,8 +174,8 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
             }
 
             @Override
-            public void error(final int index, @NotNull final Exception error) throws Exception {
-              consumer.error(index, error);
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
             }
           });
         }
@@ -191,7 +195,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -210,7 +214,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -229,10 +233,15 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
+    }
+
+    @Override
+    public int weightContains() {
+      return weightElements();
     }
 
     @Override
@@ -246,11 +255,16 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
+    public int weightEmpty() {
+      return weightElements();
+    }
+
+    @Override
     public int weightSize() {
       return weightElements();
     }
 
-    private void consumeComplete(final int size) {
+    private void consumeElements(final int size) {
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
         for (final IndexedAsyncConsumer<E> consumer : consumers) {
@@ -284,14 +298,14 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           keysToRemove.add(key);
         }
       }
-      this.elementsConsumers.keySet().removeAll(keysToRemove);
+      elementsConsumers.keySet().removeAll(keysToRemove);
     }
 
     private void consumeError(@NotNull final Exception error) {
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
         for (final IndexedAsyncConsumer<E> consumer : consumers) {
-          safeConsumeError(consumer, -1, error, LOGGER);
+          safeConsumeError(consumer, error, LOGGER);
         }
       }
       elementsConsumers.clear();
@@ -339,34 +353,42 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
-        nextIndex = index + 1;
-        if (predicate.test(index, element)) {
-          final ArrayList<E> elements = ImmaterialState.this.elements;
-          final int elementsIndex = elements.size();
-          elements.add(element);
-          consumeElement(elementsIndex, element);
-        }
-        if (!elementsConsumers.isEmpty()) {
-          taskID = getTaskID();
-          context.scheduleAfter(this);
+        if (FilterListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          nextIndex = index + 1;
+          if (predicate.test(index, element)) {
+            final ArrayList<E> elements = ImmaterialState.this.elements;
+            final int elementsIndex = elements.size();
+            elements.add(element);
+            consumeElement(elementsIndex, element);
+          }
+          if (!elementsConsumers.isEmpty()) {
+            taskID = getTaskID();
+            context.scheduleAfter(this);
+          }
         }
       }
 
       @Override
       public void complete(final int size) throws Exception {
-        final List<E> materialized = decorateFunction.apply(elements);
-        setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_RUNNING);
-        consumeComplete(elements.size());
+        if (FilterListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          final List<E> materialized = decorateFunction.apply(elements);
+          setDone(new ListToListAsyncMaterializer<E>(materialized));
+          consumeElements(elements.size());
+        }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) {
+      public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+          setCancelled(exception);
           consumeError(exception);
         } else {
-          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+          setFailed(error);
           consumeError(error);
         }
       }

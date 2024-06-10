@@ -73,7 +73,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
           }
 
           @Override
-          public void error(final int index, @NotNull final Exception error) {
+          public void error(@NotNull final Exception error) {
             synchronized (status) {
               if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
                 AsyncWhileFuture.this.error = error;
@@ -131,7 +131,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
           }
 
           @Override
-          public void error(final int index, @NotNull final Exception error) {
+          public void error(@NotNull final Exception error) {
             synchronized (status) {
               if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
                 AsyncWhileFuture.this.error = error;

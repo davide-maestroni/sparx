@@ -110,6 +110,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       wrapped.materializeCancel(exception);
       elementsMaterializer.materializeCancel(exception);
       setCancelled(exception);
+      consumeError(exception);
     }
 
     @Override
@@ -162,8 +163,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         final ArrayList<E> elements = this.elements;
         if (elements.size() > index) {
@@ -186,8 +186,8 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
             }
 
             @Override
-            public void error(final int index, @NotNull final Exception error) throws Exception {
-              consumer.error(index, error);
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
             }
           });
         }
@@ -207,7 +207,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -226,7 +226,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -245,7 +245,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -319,7 +319,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
         for (final IndexedAsyncConsumer<E> consumer : consumers) {
-          safeConsumeError(consumer, -1, error, LOGGER);
+          safeConsumeError(consumer, error, LOGGER);
         }
       }
       elementsConsumers.clear();
@@ -416,11 +416,6 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
           setFailed(error);
           consumeError(error);
         }
-      }
-
-      @Override
-      public void error(final int index, @NotNull final Exception error) {
-        error(error);
       }
 
       @Override

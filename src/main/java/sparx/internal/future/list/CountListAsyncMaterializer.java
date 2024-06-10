@@ -128,8 +128,7 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Integer> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else if (index > 1) {
         safeConsumeComplete(consumer, 1, LOGGER);
       } else {
@@ -179,7 +178,7 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
     @Override
     public int weightEmpty() {
-      return weightElements();
+      return 1;
     }
 
     @Override

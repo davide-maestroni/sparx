@@ -141,8 +141,7 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else if (index > 1) {
         safeConsumeComplete(consumer, 1, LOGGER);
       } else {
@@ -187,8 +186,10 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
     @Override
     public int weightElements() {
+      final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + elementsMaterializer.weightElement());
+          (long) wrapped.weightSize() + elementsMaterializer.weightSize()
+              + elementsMaterializer.weightElement());
     }
 
     @Override
@@ -286,7 +287,7 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       @Override
       public void accept(final int size, final int index, final Object element) throws Exception {
         if (EndsWithListAsyncMaterializer.this.isCancelled()) {
-          error(isWrapped ? wrappedIndex : elementsIndex, new CancellationException());
+          error(new CancellationException());
         } else if (isWrapped) {
           if (this.element == null ? element != null : !this.element.equals(element)) {
             setState(false);
@@ -311,12 +312,12 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       @Override
       public void complete(final int size) {
         if (EndsWithListAsyncMaterializer.this.isCancelled()) {
-          error(isWrapped ? wrappedIndex : elementsIndex, new CancellationException());
+          error(new CancellationException());
         }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) {
+      public void error(@NotNull final Exception error) {
         setState(error);
       }
 

@@ -42,8 +42,7 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -84,12 +83,17 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
     }
 
     @Override
@@ -105,7 +109,7 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
-      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+      consumeState(setCancelled(exception));
     }
 
     @Override
@@ -138,8 +142,7 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         materialized(new StateConsumer<E>() {
           @Override
@@ -181,6 +184,11 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     @Override
+    public int weightContains() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
@@ -191,8 +199,21 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     @Override
+    public int weightEmpty() {
+      return weightElements();
+    }
+
+    @Override
     public int weightSize() {
       return weightElements();
+    }
+
+    private void consumeState(@NotNull final ListAsyncMaterializer<E> state) {
+      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
+      for (final StateConsumer<E> stateConsumer : stateConsumers) {
+        stateConsumer.accept(state);
+      }
+      stateConsumers.clear();
     }
 
     private @NotNull String getTaskID() {
@@ -209,24 +230,13 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     private void setState() throws Exception {
-      setState(
-          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList())),
-          STATUS_RUNNING);
+      consumeState(setDone(
+          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
     }
 
     private void setState(final E element) throws Exception {
-      setState(new ListToListAsyncMaterializer<E>(
-          decorateFunction.apply(Collections.singletonList(element))), STATUS_RUNNING);
-    }
-
-    private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
-      final ListAsyncMaterializer<E> state = FindLastListAsyncMaterializer.this.setState(newState,
-          statusCode);
-      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
-      for (final StateConsumer<E> stateConsumer : stateConsumers) {
-        stateConsumer.accept(state);
-      }
-      stateConsumers.clear();
+      consumeState(setDone(new ListToListAsyncMaterializer<E>(
+          decorateFunction.apply(Collections.singletonList(element)))));
     }
 
     private class MaterializingAsyncConsumer implements AsyncConsumer<Integer>,
@@ -267,15 +277,10 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+          consumeState(setCancelled(exception));
         } else {
-          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+          consumeState(setFailed(error));
         }
-      }
-
-      @Override
-      public void error(final int index, @NotNull final Exception error) {
-        error(error);
       }
 
       @Override

@@ -139,8 +139,7 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Integer> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else if (index > 1) {
         safeConsumeComplete(consumer, 1, LOGGER);
       } else {
@@ -195,7 +194,7 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     @Override
     public int weightSize() {
-      return weightElements();
+      return 1;
     }
 
     private @NotNull String getTaskID() {
@@ -233,7 +232,7 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
         if (CountWhereListAsyncMaterializer.this.isCancelled()) {
-          error(count, new CancellationException());
+          error(new CancellationException());
         } else {
           if (predicate.test(index, element)) {
             ++count;
@@ -247,14 +246,14 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
       @Override
       public void complete(final int size) throws Exception {
         if (CountWhereListAsyncMaterializer.this.isCancelled()) {
-          error(count, new CancellationException());
+          error(new CancellationException());
         } else {
           setState(count);
         }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) {
+      public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
           consumeState(setCancelled(exception));

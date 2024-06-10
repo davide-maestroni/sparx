@@ -42,8 +42,7 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -84,12 +83,17 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
     }
 
     @Override
@@ -105,7 +109,7 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
-      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+      consumeState(setCancelled(exception));
     }
 
     @Override
@@ -138,8 +142,7 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         materialized(new StateConsumer<E>() {
           @Override
@@ -181,18 +184,36 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
+    public int weightContains() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return wrapped.weightElement();
+      return wrapped.weightEmpty();
+    }
+
+    @Override
+    public int weightEmpty() {
+      return weightElements();
     }
 
     @Override
     public int weightSize() {
       return weightElements();
+    }
+
+    private void consumeState(@NotNull final ListAsyncMaterializer<E> state) {
+      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
+      for (final StateConsumer<E> stateConsumer : stateConsumers) {
+        stateConsumer.accept(state);
+      }
+      stateConsumers.clear();
     }
 
     private @NotNull String getTaskID() {
@@ -209,24 +230,13 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     private void setState() throws Exception {
-      setState(
-          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList())),
-          STATUS_RUNNING);
+      consumeState(setDone(
+          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
     }
 
     private void setState(final E element) throws Exception {
-      setState(new ListToListAsyncMaterializer<E>(
-          decorateFunction.apply(Collections.singletonList(element))), STATUS_RUNNING);
-    }
-
-    private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
-      final ListAsyncMaterializer<E> state = FindFirstListAsyncMaterializer.this.setState(newState,
-          statusCode);
-      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
-      for (final StateConsumer<E> stateConsumer : stateConsumers) {
-        stateConsumer.accept(state);
-      }
-      stateConsumers.clear();
+      consumeState(setDone(new ListToListAsyncMaterializer<E>(
+          decorateFunction.apply(Collections.singletonList(element)))));
     }
 
     private class MaterializingAsyncConsumer implements AsyncConsumer<Boolean>,
@@ -237,7 +247,9 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
       @Override
       public void accept(final Boolean empty) throws Exception {
-        if (empty) {
+        if (FindFirstListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (empty) {
           setState();
         } else {
           taskID = getTaskID();
@@ -247,7 +259,9 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
-        if (predicate.test(index, element)) {
+        if (FindFirstListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (predicate.test(index, element)) {
           setState(element);
         } else {
           this.index = index + 1;
@@ -258,22 +272,21 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
       @Override
       public void complete(final int size) throws Exception {
-        setState();
+        if (FindFirstListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          setState();
+        }
       }
 
       @Override
       public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+          consumeState(setCancelled(exception));
         } else {
-          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+          consumeState(setFailed(error));
         }
-      }
-
-      @Override
-      public void error(final int index, @NotNull final Exception error) {
-        error(error);
       }
 
       @Override

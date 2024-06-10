@@ -1320,7 +1320,7 @@ class future extends Sparx {
           try {
             materializer.materializeElement(0, consumer);
           } catch (final Exception e) {
-            consumer.error(0, e);
+            consumer.error(e);
           }
         }
 
@@ -1573,7 +1573,7 @@ class future extends Sparx {
           try {
             materializer.materializeElement(index, consumer);
           } catch (final Exception e) {
-            consumer.error(index, e);
+            consumer.error(e);
           }
         }
 
@@ -1762,11 +1762,11 @@ class future extends Sparx {
 
               @Override
               public void error(@NotNull final Exception error) {
-                consumer.error(-1, error);
+                consumer.error(error);
               }
             });
           } catch (final Exception e) {
-            consumer.error(-1, e);
+            consumer.error(e);
           }
         }
 
@@ -2292,7 +2292,7 @@ class future extends Sparx {
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
+      public void error(@NotNull final Exception error) throws Exception {
         consumer.error(error);
       }
 
@@ -2338,7 +2338,7 @@ class future extends Sparx {
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
+      public void error(@NotNull final Exception error) throws Exception {
         consumer.error(error);
       }
 
@@ -2388,7 +2388,7 @@ class future extends Sparx {
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
+      public void error(@NotNull final Exception error) throws Exception {
         consumer.error(error);
       }
 
@@ -2436,7 +2436,7 @@ class future extends Sparx {
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
+      public void error(@NotNull final Exception error) throws Exception {
         consumer.error(error);
       }
 
@@ -2524,7 +2524,7 @@ class future extends Sparx {
     }
 
     @Override
-    public void error(final int index, @NotNull final Exception error) {
+    public void error(@NotNull final Exception error) {
       this.error = error;
       release();
     }
@@ -2598,8 +2598,7 @@ class future extends Sparx {
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         safeConsumeComplete(consumer, 0, LOGGER);
       }

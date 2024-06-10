@@ -46,6 +46,11 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public boolean isFailed() {
+    return true;
+  }
+
+  @Override
   public boolean isMaterializedAtOnce() {
     return true;
   }
@@ -72,13 +77,13 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   @Override
   public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    safeConsumeError(consumer, -1, error, LOGGER);
+    safeConsumeError(consumer, error, LOGGER);
   }
 
   @Override
   public void materializeElement(final int ignored,
       @NotNull final IndexedAsyncConsumer<E> consumer) {
-    safeConsumeError(consumer, -1, error, LOGGER);
+    safeConsumeError(consumer, error, LOGGER);
   }
 
   @Override
@@ -97,12 +102,22 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public int weightContains() {
+    return 1;
+  }
+
+  @Override
   public int weightElement() {
     return 1;
   }
 
   @Override
   public int weightElements() {
+    return 1;
+  }
+
+  @Override
+  public int weightEmpty() {
     return 1;
   }
 

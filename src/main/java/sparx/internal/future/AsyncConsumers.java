@@ -32,7 +32,7 @@ public class AsyncConsumers {
       if (error instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
-      safeConsumeError(consumer, index, error, logger);
+      safeConsumeError(consumer, error, logger);
       return false;
     }
     return true;
@@ -58,7 +58,7 @@ public class AsyncConsumers {
       if (error instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
-      safeConsumeError(consumer, -1, error, logger);
+      safeConsumeError(consumer, error, logger);
     }
   }
 
@@ -75,9 +75,9 @@ public class AsyncConsumers {
   }
 
   public static void safeConsumeError(@NotNull final IndexedAsyncConsumer<?> consumer,
-      final int index, @NotNull final Exception error, @NotNull final Logger logger) {
+      @NotNull final Exception error, @NotNull final Logger logger) {
     try {
-      consumer.error(index, error);
+      consumer.error(error);
     } catch (final Exception e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt();

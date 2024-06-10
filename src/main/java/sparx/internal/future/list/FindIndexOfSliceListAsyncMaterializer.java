@@ -44,7 +44,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
-        decorateFunction), STATUS_RUNNING);
+        decorateFunction));
   }
 
   @Override
@@ -85,12 +85,17 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
     }
 
     @Override
@@ -106,7 +111,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
-      setState(new CancelledListAsyncMaterializer<Integer>(exception), STATUS_CANCELLED);
+      consumeState(setCancelled(exception));
     }
 
     @Override
@@ -139,8 +144,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Integer> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         materialized(new StateConsumer() {
           @Override
@@ -182,19 +186,39 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     }
 
     @Override
+    public int weightContains() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
+      final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightElement() + ((long) elementsMaterializer.weightElement() * 2));
+          (long) wrapped.weightEmpty() + elementsMaterializer.weightEmpty()
+              + elementsMaterializer.weightElement());
+    }
+
+    @Override
+    public int weightEmpty() {
+      return weightElements();
     }
 
     @Override
     public int weightSize() {
       return weightElements();
+    }
+
+    private void consumeState(@NotNull final ListAsyncMaterializer<Integer> state) {
+      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
+      for (final StateConsumer stateConsumer : stateConsumers) {
+        stateConsumer.accept(state);
+      }
+      stateConsumers.clear();
     }
 
     private @NotNull String getTaskID() {
@@ -209,7 +233,9 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
         elementsMaterializer.materializeEmpty(new AsyncConsumer<Boolean>() {
           @Override
           public void accept(final Boolean empty) throws Exception {
-            if (empty) {
+            if (FindIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
+              error(new CancellationException());
+            } else if (empty) {
               setState(0);
             } else {
               wrapped.materializeEmpty(new MaterializingAsyncConsumer());
@@ -220,9 +246,9 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
           public void error(@NotNull final Exception error) {
             final CancellationException exception = cancelException.get();
             if (exception != null) {
-              setState(new CancelledListAsyncMaterializer<Integer>(exception), STATUS_CANCELLED);
+              consumeState(setCancelled(exception));
             } else {
-              setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
+              consumeState(setFailed(error));
             }
           }
         });
@@ -230,24 +256,13 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     }
 
     private void setState() throws Exception {
-      setState(new ListToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.<Integer>emptyList())), STATUS_RUNNING);
+      consumeState(setDone(new ListToListAsyncMaterializer<Integer>(
+          decorateFunction.apply(Collections.<Integer>emptyList()))));
     }
 
     private void setState(final int index) throws Exception {
-      setState(new ListToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.singletonList(index))), STATUS_RUNNING);
-    }
-
-    private void setState(@NotNull final ListAsyncMaterializer<Integer> newState,
-        final int statusCode) {
-      final ListAsyncMaterializer<Integer> state = FindIndexOfSliceListAsyncMaterializer.this.setState(
-          newState, statusCode);
-      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
-      for (final StateConsumer stateConsumer : stateConsumers) {
-        stateConsumer.accept(state);
-      }
-      stateConsumers.clear();
+      consumeState(setDone(new ListToListAsyncMaterializer<Integer>(
+          decorateFunction.apply(Collections.singletonList(index)))));
     }
 
     private class MaterializingAsyncConsumer implements AsyncConsumer<Boolean>,
@@ -262,7 +277,9 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
       @Override
       public void accept(final Boolean empty) throws Exception {
-        if (empty) {
+        if (FindIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (empty) {
           setState();
         } else {
           isWrapped = false;
@@ -272,7 +289,9 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
       @Override
       public void accept(final int size, final int index, final Object element) {
-        if (isWrapped) {
+        if (FindIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (isWrapped) {
           ++wrappedIndex;
           isWrapped = false;
           final ListAsyncMaterializer<Object> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
@@ -291,7 +310,9 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
       @Override
       public void complete(final int size) throws Exception {
-        if (isWrapped) {
+        if (FindIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (isWrapped) {
           setState();
         } else {
           setState(index);
@@ -302,15 +323,10 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<Integer>(exception), STATUS_CANCELLED);
+          consumeState(setCancelled(exception));
         } else {
-          setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
+          consumeState(setFailed(error));
         }
-      }
-
-      @Override
-      public void error(final int index, @NotNull final Exception error) {
-        error(error);
       }
 
       @Override

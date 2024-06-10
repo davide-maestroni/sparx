@@ -140,8 +140,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         materialized(new StateConsumer<E>() {
           @Override
@@ -184,7 +183,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     @Override
     public int weightContains() {
-      return 0;
+      return weightElements();
     }
 
     @Override
@@ -200,7 +199,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     @Override
     public int weightEmpty() {
-      return 0;
+      return weightElements();
     }
 
     @Override
@@ -226,8 +225,12 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
         wrapped.materializeSize(new AsyncConsumer<Integer>() {
           @Override
           public void accept(final Integer size) {
-            wrappedSize = size;
-            materialized(consumer);
+            if (DropRightWhileListAsyncMaterializer.this.isCancelled()) {
+              error(new CancellationException());
+            } else {
+              wrappedSize = size;
+              materialized(consumer);
+            }
           }
 
           @Override
@@ -256,7 +259,9 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
-        if (predicate.test(index, element)) {
+        if (DropRightWhileListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (predicate.test(index, element)) {
           if (index > 0) {
             this.index = index - 1;
             taskID = getTaskID();
@@ -279,10 +284,13 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
       @Override
       public void complete(final int size) {
+        if (DropRightWhileListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) {
+      public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
           consumeState(setCancelled(exception));

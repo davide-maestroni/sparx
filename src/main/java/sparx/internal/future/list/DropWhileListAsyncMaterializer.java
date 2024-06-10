@@ -137,8 +137,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         materialized(new StateConsumer<E>() {
           @Override
@@ -233,7 +232,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
         if (DropWhileListAsyncMaterializer.this.isCancelled()) {
-          error(this.index, new CancellationException());
+          error(new CancellationException());
         } else if (predicate.test(index, element)) {
           this.index = index + 1;
           taskID = getTaskID();
@@ -252,7 +251,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       @Override
       public void complete(final int size) throws Exception {
         if (DropWhileListAsyncMaterializer.this.isCancelled()) {
-          error(index, new CancellationException());
+          error(new CancellationException());
         } else {
           final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
           consumeState(setDone(new ListToListAsyncMaterializer<E>(materialized)));
@@ -260,7 +259,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) {
+      public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
           consumeState(setCancelled(exception));

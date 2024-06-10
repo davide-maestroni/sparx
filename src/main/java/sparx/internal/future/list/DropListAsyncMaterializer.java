@@ -115,6 +115,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
       setCancelled(exception);
+      consumeError(exception);
     }
 
     @Override
@@ -143,15 +144,14 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         final int originalIndex = index;
         wrapped.materializeElement(safeIndex(index), new IndexedAsyncConsumer<E>() {
           @Override
           public void accept(final int size, final int index, final E element) throws Exception {
             if (DropListAsyncMaterializer.this.isCancelled()) {
-              error(originalIndex, new CancellationException());
+              error(new CancellationException());
             } else {
               consumer.accept(safeSize(wrappedSize = Math.max(wrappedSize, size)), originalIndex,
                   element);
@@ -161,15 +161,15 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
           @Override
           public void complete(final int size) throws Exception {
             if (DropListAsyncMaterializer.this.isCancelled()) {
-              error(originalIndex, new CancellationException());
+              error(new CancellationException());
             } else {
               consumer.complete(safeSize(wrappedSize = size));
             }
           }
 
           @Override
-          public void error(final int index, @NotNull final Exception error) throws Exception {
-            consumer.error(originalIndex, error);
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
           }
         });
       }
@@ -317,7 +317,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void accept(final int size, final int index, final E element) {
         if (DropListAsyncMaterializer.this.isCancelled()) {
-          error(elements.size(), new CancellationException());
+          error(new CancellationException());
         } else {
           elements.add(element);
           this.index = index + 1;
@@ -329,14 +329,14 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void complete(final int size) throws Exception {
         if (DropListAsyncMaterializer.this.isCancelled()) {
-          error(elements.size(), new CancellationException());
+          error(new CancellationException());
         } else {
           consumeElements(decorateFunction.apply(elements));
         }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) {
+      public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
           setCancelled(exception);
@@ -381,7 +381,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
         if (DropListAsyncMaterializer.this.isCancelled()) {
-          error(this.index, new CancellationException());
+          error(new CancellationException());
         } else {
           wrappedSize = Math.max(wrappedSize, size);
           if (this.element.equals(element)) {
@@ -397,7 +397,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void complete(final int size) throws Exception {
         if (DropListAsyncMaterializer.this.isCancelled()) {
-          error(index, new CancellationException());
+          error(new CancellationException());
         } else {
           wrappedSize = size;
           consumer.accept(false);
@@ -405,7 +405,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
+      public void error(@NotNull final Exception error) throws Exception {
         consumer.error(error);
       }
 
@@ -440,7 +440,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
         if (DropListAsyncMaterializer.this.isCancelled()) {
-          error(this.index, new CancellationException());
+          error(new CancellationException());
         } else {
           wrappedSize = Math.max(wrappedSize, size);
           if (element == null) {
@@ -456,7 +456,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void complete(final int size) throws Exception {
         if (DropListAsyncMaterializer.this.isCancelled()) {
-          error(index, new CancellationException());
+          error(new CancellationException());
         } else {
           wrappedSize = size;
           consumer.accept(false);
@@ -464,7 +464,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
+      public void error(@NotNull final Exception error) throws Exception {
         consumer.error(error);
       }
 
@@ -498,7 +498,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
         if (DropListAsyncMaterializer.this.isCancelled()) {
-          error(this.index, new CancellationException());
+          error(new CancellationException());
         } else {
           consumer.accept(safeSize(wrappedSize = Math.max(wrappedSize, size)), index - maxElements,
               element);
@@ -511,15 +511,15 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void complete(final int size) throws Exception {
         if (DropListAsyncMaterializer.this.isCancelled()) {
-          error(index, new CancellationException());
+          error(new CancellationException());
         } else {
           consumer.complete(safeSize(wrappedSize = size));
         }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
-        consumer.error(index - maxElements, error);
+      public void error(@NotNull final Exception error) throws Exception {
+        consumer.error(error);
       }
 
       @Override

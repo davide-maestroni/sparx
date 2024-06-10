@@ -23,6 +23,5 @@ public interface IndexedAsyncConsumer<P> {
 
   void complete(int size) throws Exception;
 
-  // TODO: verify index
-  void error(int index, @NotNull Exception error) throws Exception;
+  void error(@NotNull Exception error) throws Exception;
 }
