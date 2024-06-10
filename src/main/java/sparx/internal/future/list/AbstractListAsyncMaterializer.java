@@ -24,7 +24,8 @@ import sparx.internal.future.IndexedAsyncConsumer;
 
 abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
-  static final int STATUS_CANCELLED = 2;
+  static final int STATUS_CANCELLED = 3;
+  static final int STATUS_FAILED = 2;
   static final int STATUS_DONE = 1;
   static final int STATUS_RUNNING = 0;
 
@@ -44,6 +45,11 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   @Override
   public boolean isDone() {
     return status.get() != STATUS_RUNNING;
+  }
+
+  @Override
+  public boolean isFailed() {
+    return status.get() == STATUS_FAILED;
   }
 
   @Override
@@ -104,6 +110,11 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
+  public int weightContains() {
+    return state.weightContains();
+  }
+
+  @Override
   public int weightElement() {
     return state.weightElement();
   }
@@ -111,6 +122,11 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   @Override
   public int weightElements() {
     return state.weightElements();
+  }
+
+  @Override
+  public int weightEmpty() {
+    return state.weightEmpty();
   }
 
   @Override
@@ -124,7 +140,27 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @NotNull
-  final ListAsyncMaterializer<E> setState(@NotNull final ListAsyncMaterializer<E> newState,
+  final ListAsyncMaterializer<E> setCancelled(@NotNull final CancellationException exception) {
+    return setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+  }
+
+  @NotNull
+  final ListAsyncMaterializer<E> setFailed(@NotNull final Exception error) {
+    return setState(new FailedListAsyncMaterializer<E>(error), STATUS_FAILED);
+  }
+
+  @NotNull
+  final ListAsyncMaterializer<E> setDone(@NotNull final ListAsyncMaterializer<E> doneState) {
+    return setState(doneState, STATUS_DONE);
+  }
+
+  @NotNull
+  final ListAsyncMaterializer<E> setState(@NotNull final ListAsyncMaterializer<E> newState) {
+    return setState(newState, STATUS_RUNNING);
+  }
+
+  @NotNull
+  private ListAsyncMaterializer<E> setState(@NotNull final ListAsyncMaterializer<E> newState,
       final int statusCode) {
     if (status.compareAndSet(STATUS_RUNNING, statusCode)) {
       state = newState;

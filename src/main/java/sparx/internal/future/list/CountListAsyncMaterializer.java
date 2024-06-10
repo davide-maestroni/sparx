@@ -39,7 +39,7 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, cancelException, decorateFunction), STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, cancelException, decorateFunction));
   }
 
   @Override
@@ -69,12 +69,17 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
     }
 
     @Override
@@ -90,7 +95,7 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
-      setState(new CancelledListAsyncMaterializer<Integer>(exception), STATUS_CANCELLED);
+      consumeState(setCancelled(exception));
     }
 
     @Override
@@ -158,6 +163,11 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     }
 
     @Override
+    public int weightContains() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
@@ -168,8 +178,21 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     }
 
     @Override
+    public int weightEmpty() {
+      return weightElements();
+    }
+
+    @Override
     public int weightSize() {
       return 1;
+    }
+
+    private void consumeState(@NotNull final ListAsyncMaterializer<Integer> state) {
+      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
+      for (final StateConsumer stateConsumer : stateConsumers) {
+        stateConsumer.accept(state);
+      }
+      stateConsumers.clear();
     }
 
     private void materialized(@NotNull final StateConsumer consumer) {
@@ -180,16 +203,20 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
         wrapped.materializeSize(new AsyncConsumer<Integer>() {
           @Override
           public void accept(final Integer size) throws Exception {
-            setState(size);
+            if (CountListAsyncMaterializer.this.isCancelled()) {
+              error(new CancellationException());
+            } else {
+              setState(size);
+            }
           }
 
           @Override
           public void error(@NotNull final Exception error) {
             final CancellationException exception = cancelException.get();
             if (exception != null) {
-              setState(new CancelledListAsyncMaterializer<Integer>(exception), STATUS_CANCELLED);
+              consumeState(setCancelled(exception));
             } else {
-              setState(new FailedListAsyncMaterializer<Integer>(error), STATUS_DONE);
+              consumeState(setFailed(error));
             }
           }
         });
@@ -197,19 +224,8 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     }
 
     private void setState(final int size) throws Exception {
-      setState(new ListToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.singletonList(size))), STATUS_RUNNING);
-    }
-
-    private void setState(@NotNull final ListAsyncMaterializer<Integer> newState,
-        final int statusCode) {
-      final ListAsyncMaterializer<Integer> state = CountListAsyncMaterializer.this.setState(
-          newState, statusCode);
-      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
-      for (final StateConsumer stateConsumer : stateConsumers) {
-        stateConsumer.accept(state);
-      }
-      stateConsumers.clear();
+      consumeState(setDone(new ListToListAsyncMaterializer<Integer>(
+          decorateFunction.apply(Collections.singletonList(size)))));
     }
   }
 }

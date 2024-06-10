@@ -43,8 +43,7 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -89,6 +88,11 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
     }
 
     @Override
+    public boolean isFailed() {
+      return false;
+    }
+
+    @Override
     public boolean isMaterializedAtOnce() {
       return false;
     }
@@ -101,7 +105,7 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
-      setState(new CancelledListAsyncMaterializer<Boolean>(exception), STATUS_CANCELLED);
+      consumeState(setCancelled(exception));
     }
 
     @Override
@@ -169,6 +173,11 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
     }
 
     @Override
+    public int weightContains() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
@@ -179,8 +188,21 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
     }
 
     @Override
+    public int weightEmpty() {
+      return 1;
+    }
+
+    @Override
     public int weightSize() {
       return 1;
+    }
+
+    private void consumeState(@NotNull final ListAsyncMaterializer<Boolean> state) {
+      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
+      for (final StateConsumer stateConsumer : stateConsumers) {
+        stateConsumer.accept(state);
+      }
+      stateConsumers.clear();
     }
 
     private @NotNull String getTaskID() {
@@ -197,19 +219,8 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
     }
 
     private void setState(final boolean allMatches) throws Exception {
-      setState(new ListToListAsyncMaterializer<Boolean>(
-          decorateFunction.apply(Collections.singletonList(allMatches))), STATUS_RUNNING);
-    }
-
-    private void setState(@NotNull final ListAsyncMaterializer<Boolean> newState,
-        final int statusCode) {
-      final ListAsyncMaterializer<Boolean> state = AllListAsyncMaterializer.this.setState(newState,
-          statusCode);
-      final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
-      for (final StateConsumer stateConsumer : stateConsumers) {
-        stateConsumer.accept(state);
-      }
-      stateConsumers.clear();
+      consumeState(setDone(new ListToListAsyncMaterializer<Boolean>(
+          decorateFunction.apply(Collections.singletonList(allMatches)))));
     }
 
     private class MaterializingAsyncConsumer implements AsyncConsumer<Boolean>,
@@ -220,7 +231,9 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
 
       @Override
       public void accept(final Boolean empty) throws Exception {
-        if (empty) {
+        if (AllListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (empty) {
           setState(true);
         } else {
           taskID = getTaskID();
@@ -230,7 +243,9 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
 
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
-        if (!predicate.test(index, element)) {
+        if (AllListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (!predicate.test(index, element)) {
           setState(false);
         } else {
           this.index = index + 1;
@@ -241,16 +256,20 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
 
       @Override
       public void complete(final int size) throws Exception {
-        setState(true);
+        if (AllListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          setState(true);
+        }
       }
 
       @Override
       public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<Boolean>(exception), STATUS_CANCELLED);
+          consumeState(setCancelled(exception));
         } else {
-          setState(new FailedListAsyncMaterializer<Boolean>(error), STATUS_DONE);
+          consumeState(setFailed(error));
         }
       }
 

@@ -488,6 +488,8 @@ class itf {
 
   public interface Future<E, T> extends java.util.concurrent.Future<T> {
 
+    boolean isFailed();
+
     @NotNull
     java.util.concurrent.Future<?> nonBlockingFor(@NotNull Consumer<? super E> consumer);
 
@@ -1992,6 +1994,8 @@ class itf {
     @NotNull
     Sequence<Boolean> all(@NotNull Predicate<? super E> predicate);
 
+    // TODO: some?
+
     <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper); // TODO: cannot inherit!!!
 
     @NotNull
@@ -2318,6 +2322,8 @@ class itf {
     Sequence<E> resizeTo(int numElements, E padding);
 
     int size();
+
+    // TODO: Sequence<E> slice(int start);
 
     @NotNull
     Sequence<E> slice(int start, int end);

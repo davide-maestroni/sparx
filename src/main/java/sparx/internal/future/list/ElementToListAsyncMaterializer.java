@@ -52,6 +52,11 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   }
 
   @Override
+  public boolean isFailed() {
+    return false;
+  }
+
+  @Override
   public boolean isMaterializedAtOnce() {
     return true;
   }
@@ -112,12 +117,22 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   }
 
   @Override
+  public int weightContains() {
+    return 1;
+  }
+
+  @Override
   public int weightElement() {
     return 1;
   }
 
   @Override
   public int weightElements() {
+    return 1;
+  }
+
+  @Override
+  public int weightEmpty() {
     return 1;
   }
 

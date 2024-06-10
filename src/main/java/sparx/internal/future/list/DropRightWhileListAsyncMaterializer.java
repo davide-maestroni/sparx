@@ -42,8 +42,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -82,12 +81,17 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
     }
 
     @Override
@@ -103,7 +107,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
-      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+      consumeState(setCancelled(exception));
     }
 
     @Override
@@ -179,6 +183,11 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     }
 
     @Override
+    public int weightContains() {
+      return 0;
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
@@ -190,8 +199,21 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     }
 
     @Override
+    public int weightEmpty() {
+      return 0;
+    }
+
+    @Override
     public int weightSize() {
       return weightElements();
+    }
+
+    private void consumeState(@NotNull final ListAsyncMaterializer<E> state) {
+      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
+      for (final StateConsumer<E> stateConsumer : stateConsumers) {
+        stateConsumer.accept(state);
+      }
+      stateConsumers.clear();
     }
 
     private @NotNull String getTaskID() {
@@ -212,15 +234,9 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
           public void error(@NotNull final Exception error) {
             final CancellationException exception = cancelException.get();
             if (exception != null) {
-              final CancelledListAsyncMaterializer<E> state = new CancelledListAsyncMaterializer<E>(
-                  exception);
-              setState(state, STATUS_CANCELLED);
-              consumer.accept(state);
+              consumer.accept(setCancelled(exception));
             } else {
-              final FailedListAsyncMaterializer<E> state = new FailedListAsyncMaterializer<E>(
-                  error);
-              setState(state, STATUS_DONE);
-              consumer.accept(state);
+              consumer.accept(setFailed(error));
             }
           }
         });
@@ -231,16 +247,6 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
           wrapped.materializeElement(wrappedSize - 1, new MaterializingAsyncConsumer());
         }
       }
-    }
-
-    private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
-      final ListAsyncMaterializer<E> state = DropRightWhileListAsyncMaterializer.this.setState(
-          newState, statusCode);
-      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
-      for (final StateConsumer<E> stateConsumer : stateConsumers) {
-        stateConsumer.accept(state);
-      }
-      stateConsumers.clear();
     }
 
     private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
@@ -257,15 +263,16 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
             context.scheduleAfter(this);
           } else {
             final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-            setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_RUNNING);
+            consumeState(setDone(new ListToListAsyncMaterializer<E>(materialized)));
           }
         } else {
           final int maxElements = wrappedSize - index - 1;
           if (maxElements == 0) {
-            setState(wrapped, STATUS_RUNNING);
+            consumeState(setState(wrapped));
           } else {
-            setState(new DropRightListAsyncMaterializer<E>(wrapped, maxElements, status, context,
-                cancelException, decorateFunction), STATUS_RUNNING);
+            consumeState(setState(
+                new DropRightListAsyncMaterializer<E>(wrapped, maxElements, status, context,
+                    cancelException, decorateFunction)));
           }
         }
       }
@@ -278,9 +285,9 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
       public void error(final int index, @NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+          consumeState(setCancelled(exception));
         } else {
-          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+          consumeState(setFailed(error));
         }
       }
 

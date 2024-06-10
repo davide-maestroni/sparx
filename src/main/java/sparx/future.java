@@ -668,7 +668,7 @@ class future extends Sparx {
 
         @Override
         public int weight() {
-          return materializer.weightElements();
+          return materializer.weightContains();
         }
       });
       try {
@@ -1506,20 +1506,20 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull <F> List<F> fold(F identity,
-        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
+    public @NotNull <F> List<F> fold(final F identity,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      return foldLeft(identity, operation);
+    }
+
+    @Override
+    public @NotNull <F> List<F> foldLeft(final F identity,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
       return null;
     }
 
     @Override
-    public @NotNull <F> List<F> foldLeft(F identity,
-        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
-      return null;
-    }
-
-    @Override
-    public @NotNull <F> List<F> foldRight(F identity,
-        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation) {
+    public @NotNull <F> List<F> foldRight(final F identity,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
       return null;
     }
 
@@ -1704,6 +1704,11 @@ class future extends Sparx {
     }
 
     @Override
+    public boolean isFailed() {
+      return materializer.isFailed();
+    }
+
+    @Override
     public boolean isEmpty() {
       final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
       context.scheduleAfter(new Task() {
@@ -1723,7 +1728,7 @@ class future extends Sparx {
 
         @Override
         public int weight() {
-          return materializer.weightElement();
+          return materializer.weightEmpty();
         }
       });
       try {
@@ -2555,6 +2560,11 @@ class future extends Sparx {
     }
 
     @Override
+    public boolean isFailed() {
+      return false;
+    }
+
+    @Override
     public boolean isMaterializedAtOnce() {
       return true;
     }
@@ -2611,12 +2621,22 @@ class future extends Sparx {
     }
 
     @Override
+    public int weightContains() {
+      return 1;
+    }
+
+    @Override
     public int weightElement() {
       return 1;
     }
 
     @Override
     public int weightElements() {
+      return 1;
+    }
+
+    @Override
+    public int weightEmpty() {
       return 1;
     }
 

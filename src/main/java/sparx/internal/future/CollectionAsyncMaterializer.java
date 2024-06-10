@@ -24,6 +24,8 @@ public interface CollectionAsyncMaterializer<E> {
 
   boolean isDone();
 
+  boolean isFailed();
+
   boolean isMaterializedAtOnce();
 
   int knownSize();
@@ -38,9 +40,13 @@ public interface CollectionAsyncMaterializer<E> {
 
   void materializeSize(@NotNull AsyncConsumer<Integer> consumer);
 
+  int weightContains();
+
   int weightElement();
 
   int weightElements();
+
+  int weightEmpty();
 
   int weightSize();
 }

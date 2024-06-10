@@ -47,7 +47,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
-        decorateFunction), STATUS_RUNNING);
+        decorateFunction));
   }
 
   @Override
@@ -82,12 +82,17 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
     }
 
     @Override
@@ -104,7 +109,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
       elementsMaterializer.materializeCancel(exception);
-      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+      setCancelled(exception);
     }
 
     @Override
@@ -113,13 +118,19 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       elementsMaterializer.materializeContains(element, new AsyncConsumer<Boolean>() {
         @Override
         public void accept(final Boolean contains) throws Exception {
-          if (contains) {
+          if (DiffListAsyncMaterializer.this.isCancelled()) {
+            error(new CancellationException());
+          } else if (contains) {
             consumer.accept(false);
           } else {
             wrapped.materializeContains(element, new AsyncConsumer<Boolean>() {
               @Override
               public void accept(final Boolean contains) throws Exception {
-                consumer.accept(contains);
+                if (DiffListAsyncMaterializer.this.isCancelled()) {
+                  error(new CancellationException());
+                } else {
+                  consumer.accept(contains);
+                }
               }
 
               @Override
@@ -241,6 +252,12 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     }
 
     @Override
+    public int weightContains() {
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightContains() + elementsMaterializer.weightContains());
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
@@ -249,6 +266,11 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     public int weightElements() {
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightElement() + elementsMaterializer.weightElement());
+    }
+
+    @Override
+    public int weightEmpty() {
+      return weightElements();
     }
 
     @Override
@@ -347,39 +369,51 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public void accept(final Boolean contains) {
-        if (!contains) {
-          final int wrappedIndex = elements.size();
-          elements.add(element);
-          consumeElement(wrappedIndex, element);
-        }
-        if (!elementsConsumers.isEmpty()) {
-          taskID = getTaskID();
-          context.scheduleAfter(this);
+        if (DiffListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          if (!contains) {
+            final int wrappedIndex = elements.size();
+            elements.add(element);
+            consumeElement(wrappedIndex, element);
+          }
+          if (!elementsConsumers.isEmpty()) {
+            taskID = getTaskID();
+            context.scheduleAfter(this);
+          }
         }
       }
 
       @Override
       public void accept(final int size, final int index, final E element) {
-        this.element = element;
-        nextIndex = index + 1;
-        elementsMaterializer.materializeContains(element, this);
+        if (DiffListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          this.element = element;
+          nextIndex = index + 1;
+          elementsMaterializer.materializeContains(element, this);
+        }
       }
 
       @Override
       public void complete(final int size) throws Exception {
-        final List<E> materialized = decorateFunction.apply(elements);
-        setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_RUNNING);
-        consumeComplete(elements.size());
+        if (DiffListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          final List<E> materialized = decorateFunction.apply(elements);
+          setDone(new ListToListAsyncMaterializer<E>(materialized));
+          consumeComplete(elements.size());
+        }
       }
 
       @Override
       public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+          setCancelled(exception);
           consumeError(exception);
         } else {
-          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+          setFailed(error);
           consumeError(error);
         }
       }

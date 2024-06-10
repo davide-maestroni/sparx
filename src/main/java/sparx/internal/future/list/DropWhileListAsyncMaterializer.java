@@ -42,8 +42,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -79,12 +78,17 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
     }
 
     @Override
@@ -100,7 +104,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
-      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+      consumeState(setCancelled(exception));
     }
 
     @Override
@@ -176,6 +180,11 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
+    public int weightContains() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
@@ -186,8 +195,21 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
+    public int weightEmpty() {
+      return weightElements();
+    }
+
+    @Override
     public int weightSize() {
       return weightElements();
+    }
+
+    private void consumeState(@NotNull final ListAsyncMaterializer<E> state) {
+      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
+      for (final StateConsumer<E> stateConsumer : stateConsumers) {
+        stateConsumer.accept(state);
+      }
+      stateConsumers.clear();
     }
 
     private @NotNull String getTaskID() {
@@ -203,16 +225,6 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
     }
 
-    private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
-      final ListAsyncMaterializer<E> state = DropWhileListAsyncMaterializer.this.setState(newState,
-          statusCode);
-      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
-      for (final StateConsumer<E> stateConsumer : stateConsumers) {
-        stateConsumer.accept(state);
-      }
-      stateConsumers.clear();
-    }
-
     private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
 
       private int index;
@@ -220,34 +232,40 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
-        if (predicate.test(index, element)) {
+        if (DropWhileListAsyncMaterializer.this.isCancelled()) {
+          error(this.index, new CancellationException());
+        } else if (predicate.test(index, element)) {
           this.index = index + 1;
           taskID = getTaskID();
           context.scheduleAfter(this);
         } else {
           if (index == 0) {
-            setState(wrapped, STATUS_RUNNING);
+            consumeState(setState(wrapped));
           } else {
-            setState(
+            consumeState(setState(
                 new DropListAsyncMaterializer<E>(wrapped, index, status, context, cancelException,
-                    decorateFunction), STATUS_RUNNING);
+                    decorateFunction)));
           }
         }
       }
 
       @Override
       public void complete(final int size) throws Exception {
-        final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-        setState(new ListToListAsyncMaterializer<E>(materialized), STATUS_RUNNING);
+        if (DropWhileListAsyncMaterializer.this.isCancelled()) {
+          error(index, new CancellationException());
+        } else {
+          final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
+          consumeState(setDone(new ListToListAsyncMaterializer<E>(materialized)));
+        }
       }
 
       @Override
       public void error(final int index, @NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+          consumeState(setCancelled(exception));
         } else {
-          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+          consumeState(setFailed(error));
         }
       }
 
