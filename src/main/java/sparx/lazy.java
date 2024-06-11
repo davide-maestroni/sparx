@@ -451,7 +451,8 @@ public class lazy extends Sparx {
         return Iterator.of(true);
       }
       return new Iterator<Boolean>(
-          new AllIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
+          new AllIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+              true));
     }
 
     @Override
@@ -461,7 +462,7 @@ public class lazy extends Sparx {
         return Iterator.of(true);
       }
       return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), true));
     }
 
     @Override
@@ -700,7 +701,8 @@ public class lazy extends Sparx {
         return Iterator.of(false);
       }
       return new Iterator<Boolean>(
-          new ExistsIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
+          new ExistsIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+              false));
     }
 
     @Override
@@ -710,7 +712,7 @@ public class lazy extends Sparx {
         return Iterator.of(false);
       }
       return new Iterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), false));
     }
 
     @Override
@@ -1057,7 +1059,7 @@ public class lazy extends Sparx {
         return Iterator.of(false);
       }
       return new Iterator<Boolean>(
-          new ExistsIteratorMaterializer<E>(materializer, equalsElement(element)));
+          new ExistsIteratorMaterializer<E>(materializer, equalsElement(element), false));
     }
 
     @Override
@@ -1319,49 +1321,29 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Boolean> notAll(@NotNull final IndexedPredicate<? super E> predicate) {
-      final IteratorMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return Iterator.of(false);
-      }
-      return new Iterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer,
-          negated(Require.notNull(predicate, "predicate"))));
-    }
-
-    @Override
-    public @NotNull Iterator<Boolean> notAll(@NotNull final Predicate<? super E> predicate) {
-      final IteratorMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return Iterator.of(false);
-      }
-      return new Iterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer,
-          toNegatedIndexedPredicate(Require.notNull(predicate, "predicate"))));
-    }
-
-    @Override
     public boolean notEmpty() {
       return materializer.materializeHasNext();
     }
 
     @Override
-    public @NotNull Iterator<Boolean> notExists(
-        @NotNull final IndexedPredicate<? super E> predicate) {
+    public @NotNull Iterator<Boolean> only(@NotNull final IndexedPredicate<? super E> predicate) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
-        return Iterator.of(true);
+        return Iterator.of(false);
       }
-      return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer,
-          negated(Require.notNull(predicate, "predicate"))));
+      return new Iterator<Boolean>(
+          new AllIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+              false));
     }
 
     @Override
-    public @NotNull Iterator<Boolean> notExists(@NotNull final Predicate<? super E> predicate) {
+    public @NotNull Iterator<Boolean> only(@NotNull final Predicate<? super E> predicate) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
-        return Iterator.of(true);
+        return Iterator.of(false);
       }
       return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer,
-          toNegatedIndexedPredicate(Require.notNull(predicate, "predicate"))));
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), false));
     }
 
     @Override
@@ -1852,6 +1834,27 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull Iterator<Boolean> some(@NotNull final IndexedPredicate<? super E> predicate) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return Iterator.of(true);
+      }
+      return new Iterator<Boolean>(
+          new ExistsIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+              true));
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> some(@NotNull final Predicate<? super E> predicate) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return Iterator.of(true);
+      }
+      return new Iterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer,
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), true));
+    }
+
+    @Override
     public @NotNull Iterator<Boolean> startsWith(@NotNull final Iterable<?> elements) {
       final IteratorMaterializer<?> elementsMaterializer = getElementsMaterializer(
           Require.notNull(elements, "elements"));
@@ -2324,7 +2327,7 @@ public class lazy extends Sparx {
         return TRUE_LIST;
       }
       return new List<Boolean>(
-          new AllListMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
+          new AllListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"), true));
     }
 
     @Override
@@ -2334,7 +2337,7 @@ public class lazy extends Sparx {
         return TRUE_LIST;
       }
       return new List<Boolean>(new AllListMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), true));
     }
 
     @Override
@@ -2663,7 +2666,8 @@ public class lazy extends Sparx {
         return FALSE_LIST;
       }
       return new List<Boolean>(
-          new ExistsListMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
+          new ExistsListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+              false));
     }
 
     @Override
@@ -2673,7 +2677,7 @@ public class lazy extends Sparx {
         return FALSE_LIST;
       }
       return new List<Boolean>(new ExistsListMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), false));
     }
 
     @Override
@@ -3079,7 +3083,8 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return FALSE_LIST;
       }
-      return new List<Boolean>(new ExistsListMaterializer<E>(materializer, equalsElement(element)));
+      return new List<Boolean>(
+          new ExistsListMaterializer<E>(materializer, equalsElement(element), false));
     }
 
     @Override
@@ -3419,43 +3424,23 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull List<Boolean> notAll(@NotNull final IndexedPredicate<? super E> predicate) {
+    public @NotNull List<Boolean> only(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return FALSE_LIST;
       }
-      return new List<Boolean>(new ExistsListMaterializer<E>(materializer,
-          negated(Require.notNull(predicate, "predicate"))));
+      return new List<Boolean>(
+          new AllListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"), false));
     }
 
     @Override
-    public @NotNull List<Boolean> notAll(@NotNull final Predicate<? super E> predicate) {
+    public @NotNull List<Boolean> only(@NotNull final Predicate<? super E> predicate) {
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return FALSE_LIST;
       }
-      return new List<Boolean>(new ExistsListMaterializer<E>(materializer,
-          toNegatedIndexedPredicate(Require.notNull(predicate, "predicate"))));
-    }
-
-    @Override
-    public @NotNull List<Boolean> notExists(@NotNull final IndexedPredicate<? super E> predicate) {
-      final ListMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return TRUE_LIST;
-      }
       return new List<Boolean>(new AllListMaterializer<E>(materializer,
-          negated(Require.notNull(predicate, "predicate"))));
-    }
-
-    @Override
-    public @NotNull List<Boolean> notExists(@NotNull final Predicate<? super E> predicate) {
-      final ListMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return TRUE_LIST;
-      }
-      return new List<Boolean>(new AllListMaterializer<E>(materializer,
-          toNegatedIndexedPredicate(Require.notNull(predicate, "predicate"))));
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), false));
     }
 
     @Override
@@ -3923,6 +3908,27 @@ public class lazy extends Sparx {
         }
       }
       return new List<E>(new SliceListMaterializer<E>(materializer, start, end));
+    }
+
+    @Override
+    public @NotNull List<Boolean> some(@NotNull final IndexedPredicate<? super E> predicate) {
+      final ListMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return TRUE_LIST;
+      }
+      return new List<Boolean>(
+          new ExistsListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+              true));
+    }
+
+    @Override
+    public @NotNull List<Boolean> some(@NotNull final Predicate<? super E> predicate) {
+      final ListMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return TRUE_LIST;
+      }
+      return new List<Boolean>(new ExistsListMaterializer<E>(materializer,
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), true));
     }
 
     @Override
@@ -5239,44 +5245,26 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull ListIterator<Boolean> notAll(
-        @NotNull final IndexedPredicate<? super E> predicate) {
-      if (atEnd()) {
-        return FALSE_ITERATOR;
-      }
-      return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().notAll(
-          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
-    }
-
-    @Override
-    public @NotNull ListIterator<Boolean> notAll(@NotNull final Predicate<? super E> predicate) {
-      if (atEnd()) {
-        return FALSE_ITERATOR;
-      }
-      return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().notAll(predicate));
-    }
-
-    @Override
     public boolean notEmpty() {
       return !left.isEmpty() || !right.isEmpty();
     }
 
     @Override
-    public @NotNull ListIterator<Boolean> notExists(
+    public @NotNull ListIterator<Boolean> only(
         @NotNull final IndexedPredicate<? super E> predicate) {
       if (atEnd()) {
-        return TRUE_ITERATOR;
+        return FALSE_ITERATOR;
       }
-      return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().notExists(
+      return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().only(
           offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
     }
 
     @Override
-    public @NotNull ListIterator<Boolean> notExists(@NotNull final Predicate<? super E> predicate) {
+    public @NotNull ListIterator<Boolean> only(@NotNull final Predicate<? super E> predicate) {
       if (atEnd()) {
-        return TRUE_ITERATOR;
+        return FALSE_ITERATOR;
       }
-      return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().notExists(predicate));
+      return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().only(predicate));
     }
 
     @Override
@@ -5585,6 +5573,24 @@ public class lazy extends Sparx {
         return ListIterator.of();
       }
       return new ListIterator<E>(List.<E>of(), currentRight().slice(start, end));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> some(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return TRUE_ITERATOR;
+      }
+      return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().some(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> some(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return TRUE_ITERATOR;
+      }
+      return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().some(predicate));
     }
 
     @Override

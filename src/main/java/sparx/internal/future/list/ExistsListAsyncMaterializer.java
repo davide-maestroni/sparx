@@ -40,11 +40,13 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       ExistsListAsyncMaterializer.class.getName());
 
   public ExistsListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
+      @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
+      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, predicate, defaultResult, context, cancelException,
+        decorateFunction));
   }
 
   @Override
@@ -62,17 +64,19 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<Boolean>, List<Boolean>> decorateFunction;
+    private final boolean defaultResult;
     private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
       this.wrapped = wrapped;
       this.predicate = predicate;
+      this.defaultResult = defaultResult;
       this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
@@ -234,7 +238,7 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         if (ExistsListAsyncMaterializer.this.isCancelled()) {
           error(new CancellationException());
         } else if (empty) {
-          setState(false);
+          setState(defaultResult);
         } else {
           taskID = getTaskID();
           context.scheduleAfter(this);

@@ -24,8 +24,8 @@ public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boole
   private volatile IteratorMaterializer<Boolean> state;
 
   public ExistsIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate) {
-    state = new ImmaterialState(wrapped, predicate);
+      @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult) {
+    state = new ImmaterialState(wrapped, predicate, defaultResult);
   }
 
   @Override
@@ -50,13 +50,15 @@ public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boole
 
   private class ImmaterialState implements IteratorMaterializer<Boolean> {
 
+    private final boolean defaultResult;
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate) {
+        @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult) {
       this.wrapped = wrapped;
       this.predicate = predicate;
+      this.defaultResult = defaultResult;
     }
 
     @Override
@@ -74,7 +76,7 @@ public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boole
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (!wrapped.materializeHasNext()) {
         state = EmptyIteratorMaterializer.instance();
-        return false;
+        return defaultResult;
       }
       try {
         final IndexedPredicate<? super E> predicate = this.predicate;

@@ -538,7 +538,7 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new AllListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              context, cancelException, List.<Boolean>decorateFunction()));
+              true, context, cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
@@ -556,8 +556,8 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new AllListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<Boolean>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), true, context,
+              cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
@@ -1002,7 +1002,7 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              context, cancelException, List.<Boolean>decorateFunction()));
+              false, context, cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
@@ -1020,8 +1020,8 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<Boolean>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), false, context,
+              cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
@@ -1967,22 +1967,12 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate) {
+    public @NotNull List<Boolean> only(@NotNull IndexedPredicate<? super E> predicate) {
       return null;
     }
 
     @Override
-    public @NotNull List<Boolean> notAll(@NotNull Predicate<? super E> predicate) {
-      return null;
-    }
-
-    @Override
-    public @NotNull List<Boolean> notExists(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
-    }
-
-    @Override
-    public @NotNull List<Boolean> notExists(@NotNull Predicate<? super E> predicate) {
+    public @NotNull List<Boolean> only(@NotNull Predicate<? super E> predicate) {
       return null;
     }
 
@@ -2191,6 +2181,16 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> slice(int start, int end) {
+      return null;
+    }
+
+    @Override
+    public @NotNull List<Boolean> some(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull List<Boolean> some(@NotNull Predicate<? super E> predicate) {
       return null;
     }
 

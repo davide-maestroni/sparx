@@ -1494,26 +1494,14 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void notAll() {
-    assertFalse(Iterator.of().notAll(Objects::isNull).isEmpty());
-    assertTrue(Iterator.of().notAll(Objects::isNull).notEmpty());
-    assertEquals(1, Iterator.of().notAll(Objects::isNull).size());
-    assertFalse(Iterator.of().notAll(Objects::isNull).first());
-    assertFalse(Iterator.of(1, 2, 3).notAll(i -> i < 4).first());
-    assertTrue(Iterator.of(1, 2, 3).notAll(i -> i < 1).first());
-    var itr = Iterator.of(1, null, 3).notAll(i -> i < 2);
-    assertThrows(NullPointerException.class, itr::first);
-  }
-
-  @Test
-  public void notExists() {
-    assertFalse(Iterator.of().notExists(Objects::nonNull).isEmpty());
-    assertTrue(Iterator.of().notExists(Objects::nonNull).notEmpty());
-    assertEquals(1, Iterator.of().notExists(Objects::nonNull).size());
-    assertTrue(Iterator.of().notExists(Objects::nonNull).first());
-    assertFalse(Iterator.of(1, 2, 3).notExists(i -> i > 2).first());
-    assertTrue(Iterator.of(1, 2, 3).notExists(i -> i < 1).first());
-    var itr = Iterator.of(1, null, 3).notExists(i -> i < 1);
+  public void only() {
+    assertFalse(Iterator.of().only(Objects::nonNull).isEmpty());
+    assertTrue(Iterator.of().only(Objects::nonNull).notEmpty());
+    assertEquals(1, Iterator.of().only(Objects::nonNull).size());
+    assertFalse(Iterator.of().only(Objects::nonNull).first());
+    assertFalse(Iterator.of(1, 2, 3).only(i -> i < 3).first());
+    assertTrue(Iterator.of(1, 2, 3).only(i -> i > 0).first());
+    var itr = Iterator.of(1, null, 3).only(i -> i > 0);
     assertThrows(NullPointerException.class, itr::first);
   }
 
@@ -1589,7 +1577,7 @@ public class LazyIteratorTests {
   @Test
   public void peek() {
     var list = new ArrayList<Integer>();
-    Supplier<Iterator<Integer>> itr = () -> Iterator.<Integer>of(1, 2, 3).peek(i -> list.add(i));
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3).peek(i -> list.add(i));
     assertFalse(itr.get().isEmpty());
     assertTrue(list.isEmpty());
     assertTrue(itr.get().notEmpty());
@@ -2818,6 +2806,18 @@ public class LazyIteratorTests {
     assertTrue(itr.get().notEmpty());
     assertEquals(1, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3, 0)), itr.get().map(Iterator::toList).toList());
+  }
+
+  @Test
+  public void some() {
+    assertFalse(Iterator.of().some(Objects::isNull).isEmpty());
+    assertTrue(Iterator.of().some(Objects::isNull).notEmpty());
+    assertEquals(1, Iterator.of().some(Objects::isNull).size());
+    assertTrue(Iterator.of().some(Objects::isNull).first());
+    assertFalse(Iterator.of(1, 2, 3).some(i -> i > 3).first());
+    assertTrue(Iterator.of(1, 2, 3).some(i -> i > 1).first());
+    var itr = Iterator.of(1, null, 3).some(i -> i > 1);
+    assertThrows(NullPointerException.class, itr::first);
   }
 
   @Test

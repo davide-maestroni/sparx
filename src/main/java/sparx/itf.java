@@ -315,19 +315,11 @@ class itf {
 
     @Override
     @NotNull
-    Collection<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+    Collection<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Collection<Boolean> notAll(@NotNull Predicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Collection<Boolean> notExists(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Collection<Boolean> notExists(@NotNull Predicate<? super E> predicate);
+    Collection<Boolean> only(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -452,6 +444,14 @@ class itf {
     @Override
     @NotNull
     Collection<E> slice(int start, int end);
+
+    @Override
+    @NotNull
+    Collection<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Collection<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -815,19 +815,11 @@ class itf {
 
     @Override
     @NotNull
-    Iterator<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+    Iterator<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Iterator<Boolean> notAll(@NotNull Predicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Iterator<Boolean> notExists(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Iterator<Boolean> notExists(@NotNull Predicate<? super E> predicate);
+    Iterator<Boolean> only(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -973,6 +965,14 @@ class itf {
 
     @NotNull
     Iterator<? extends Iterator<E>> slidingWindow(int size, int step, E padding);
+
+    @Override
+    @NotNull
+    Iterator<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Iterator<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1316,19 +1316,11 @@ class itf {
 
     @Override
     @NotNull
-    List<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+    List<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    List<Boolean> notAll(@NotNull Predicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    List<Boolean> notExists(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    List<Boolean> notExists(@NotNull Predicate<? super E> predicate);
+    List<Boolean> only(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1462,6 +1454,14 @@ class itf {
     @Override
     @NotNull
     List<E> slice(int start, int end);
+
+    @Override
+    @NotNull
+    List<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    List<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1807,19 +1807,11 @@ class itf {
 
     @Override
     @NotNull
-    ListIterator<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+    ListIterator<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    ListIterator<Boolean> notAll(@NotNull Predicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    ListIterator<Boolean> notExists(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    ListIterator<Boolean> notExists(@NotNull Predicate<? super E> predicate);
+    ListIterator<Boolean> only(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1953,6 +1945,14 @@ class itf {
 
     @Override
     @NotNull
+    ListIterator<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    ListIterator<Boolean> some(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
     ListIterator<Boolean> startsWith(@NotNull Iterable<?> elements);
 
     @Override
@@ -1993,8 +1993,6 @@ class itf {
 
     @NotNull
     Sequence<Boolean> all(@NotNull Predicate<? super E> predicate);
-
-    // TODO: some?
 
     <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper); // TODO: cannot inherit!!!
 
@@ -2217,19 +2215,13 @@ class itf {
     @NotNull
     Sequence<E> min(@NotNull Comparator<? super E> comparator);
 
-    @NotNull
-    Sequence<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
-
-    @NotNull
-    Sequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);
-
     boolean notEmpty();
 
     @NotNull
-    Sequence<Boolean> notExists(@NotNull IndexedPredicate<? super E> predicate);
+    Sequence<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
 
     @NotNull
-    Sequence<Boolean> notExists(@NotNull Predicate<? super E> predicate);
+    Sequence<Boolean> only(@NotNull Predicate<? super E> predicate);
 
     @NotNull
     Sequence<E> orElse(@NotNull Iterable<E> elements);
@@ -2327,6 +2319,12 @@ class itf {
 
     @NotNull
     Sequence<E> slice(int start, int end);
+
+    @NotNull
+    Sequence<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
+
+    @NotNull
+    Sequence<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @NotNull
     Sequence<Boolean> startsWith(@NotNull Iterable<?> elements);
@@ -2634,19 +2632,11 @@ class itf {
 
     @Override
     @NotNull
-    Set<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+    Set<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Set<Boolean> notAll(@NotNull Predicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Set<Boolean> notExists(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Set<Boolean> notExists(@NotNull Predicate<? super E> predicate);
+    Set<Boolean> only(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -2771,6 +2761,14 @@ class itf {
     @Override
     @NotNull
     Set<E> slice(int start, int end);
+
+    @Override
+    @NotNull
+    Set<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -3100,19 +3098,11 @@ class itf {
 
     @Override
     @NotNull
-    Stream<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+    Stream<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Boolean> notAll(@NotNull Predicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Stream<Boolean> notExists(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Stream<Boolean> notExists(@NotNull Predicate<? super E> predicate);
+    Stream<Boolean> only(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -3237,6 +3227,14 @@ class itf {
     @Override
     @NotNull
     Stream<E> slice(int start, int end);
+
+    @Override
+    @NotNull
+    Stream<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Stream<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
