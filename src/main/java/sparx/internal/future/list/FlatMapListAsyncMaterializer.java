@@ -49,8 +49,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<F>, List<F>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, mapper, context, cancelException, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, mapper, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -86,12 +85,17 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
     }
 
     @Override
@@ -111,7 +115,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       if (elementsMaterializer != null) {
         elementsMaterializer.materializeCancel(exception);
       }
-      setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+      setCancelled(exception);
+      consumeError(exception);
     }
 
     @Override
@@ -138,8 +143,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<F> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         final ArrayList<F> elements = this.elements;
         if (elements.size() > index) {
@@ -162,8 +166,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
             }
 
             @Override
-            public void error(final int index, @NotNull final Exception error) throws Exception {
-              consumer.error(index, error);
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
             }
           });
         }
@@ -183,7 +187,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -202,7 +206,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -221,10 +225,15 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
+    }
+
+    @Override
+    public int weightContains() {
+      return weightElements();
     }
 
     @Override
@@ -235,6 +244,11 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     @Override
     public int weightElements() {
       return wrapped.weightElement();
+    }
+
+    @Override
+    public int weightEmpty() {
+      return weightElements();
     }
 
     @Override
@@ -283,7 +297,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<F>> consumers : elementsConsumers.values()) {
         for (final IndexedAsyncConsumer<F> consumer : consumers) {
-          safeConsumeError(consumer, -1, error, LOGGER);
+          safeConsumeError(consumer, error, LOGGER);
         }
       }
       elementsConsumers.clear();
@@ -346,29 +360,37 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
-        final IteratorAsyncMaterializer<F> materializer = mapper.apply(index, element);
-        if (materializer.knownSize() == 0) {
-          schedule();
+        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
         } else {
-          (elementsMaterializer = materializer).materializeNext(consumer);
+          final IteratorAsyncMaterializer<F> materializer = mapper.apply(index, element);
+          if (materializer.knownSize() == 0) {
+            schedule();
+          } else {
+            (elementsMaterializer = materializer).materializeNext(consumer);
+          }
         }
       }
 
       @Override
       public void complete(final int size) throws Exception {
-        final List<F> materialized = decorateFunction.apply(elements);
-        setState(new ListToListAsyncMaterializer<F>(materialized), STATUS_RUNNING);
-        consumeComplete(elements.size());
+        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          final List<F> materialized = decorateFunction.apply(elements);
+          setDone(new ListToListAsyncMaterializer<F>(materialized));
+          consumeComplete(elements.size());
+        }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) {
+      public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+          setCancelled(exception);
           consumeError(exception);
         } else {
-          setState(new FailedListAsyncMaterializer<F>(error), STATUS_DONE);
+          setFailed(error);
           consumeError(error);
         }
       }
@@ -413,7 +435,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       @Override
       public void accept(final int size, final int index, final F element) throws Exception {
-        if (this.element.equals(element)) {
+        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (this.element.equals(element)) {
           consumer.accept(true);
         } else {
           this.index = index + 1;
@@ -424,11 +448,15 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       @Override
       public void complete(final int size) throws Exception {
-        consumer.accept(false);
+        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          consumer.accept(false);
+        }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
+      public void error(@NotNull final Exception error) throws Exception {
         consumer.error(error);
       }
 
@@ -462,7 +490,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       @Override
       public void accept(final int size, final int index, final F element) throws Exception {
-        if (element == null) {
+        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (element == null) {
           consumer.accept(true);
         } else {
           this.index = index + 1;
@@ -473,11 +503,15 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       @Override
       public void complete(final int size) throws Exception {
-        consumer.accept(false);
+        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          consumer.accept(false);
+        }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
+      public void error(@NotNull final Exception error) throws Exception {
         consumer.error(error);
       }
 
@@ -517,31 +551,39 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       @Override
       public void accept(final int size, final int index, final F element) {
-        final ArrayList<F> elements = ImmaterialState.this.elements;
-        final int elementIndex = elements.size();
-        elements.add(element);
-        consumeElement(elementIndex, element);
-        if (elements.size() > maxIndex) {
-          consumeComplete(elements.size());
+        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
         } else {
-          taskID = getTaskID();
-          context.scheduleAfter(this);
+          final ArrayList<F> elements = ImmaterialState.this.elements;
+          final int elementIndex = elements.size();
+          elements.add(element);
+          consumeElement(elementIndex, element);
+          if (elements.size() > maxIndex) {
+            consumeComplete(elements.size());
+          } else {
+            taskID = getTaskID();
+            context.scheduleAfter(this);
+          }
         }
       }
 
       @Override
       public void complete(final int size) {
-        consumer.schedule();
+        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          consumer.schedule();
+        }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) {
+      public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+          setCancelled(exception);
           consumeError(exception);
         } else {
-          setState(new FailedListAsyncMaterializer<F>(error), STATUS_DONE);
+          setFailed(error);
           consumeError(error);
         }
       }

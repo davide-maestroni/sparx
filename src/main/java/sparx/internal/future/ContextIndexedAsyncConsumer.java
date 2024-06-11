@@ -49,7 +49,7 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
             Thread.currentThread().interrupt();
           }
           try {
-            wrapped.error(index, error);
+            wrapped.error(error);
           } catch (final Exception e) {
             if (e instanceof InterruptedException) {
               Thread.currentThread().interrupt();
@@ -83,7 +83,7 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
             Thread.currentThread().interrupt();
           }
           try {
-            wrapped.error(size, error);
+            wrapped.error(error);
           } catch (final Exception e) {
             if (e instanceof InterruptedException) {
               Thread.currentThread().interrupt();
@@ -106,12 +106,12 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
   }
 
   @Override
-  public void error(final int index, @NotNull final Exception error) throws Exception {
+  public void error(@NotNull final Exception error) throws Exception {
     context.scheduleAfter(new Task() {
       @Override
       public void run() {
         try {
-          wrapped.error(index, error);
+          wrapped.error(error);
         } catch (final Exception e) {
           if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();

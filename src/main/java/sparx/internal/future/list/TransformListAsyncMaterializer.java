@@ -43,7 +43,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     super(new AtomicInteger(STATUS_RUNNING));
     this.cancelException = cancelException;
     this.knownSize = knownSize;
-    setState(new ImmaterialState(wrapped, cancelException), STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, cancelException));
   }
 
   @Override
@@ -62,7 +62,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       @Override
       public void accept(final List<F> elements) throws Exception {
         materialize(elements);
-        setState(getState(), STATUS_DONE);
+        setDone(getState());
         consumer.accept(elements);
       }
 
@@ -70,10 +70,10 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       public void error(@NotNull final Exception error) throws Exception {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+          setCancelled(exception);
           consumer.error(exception);
         } else {
-          setState(new FailedListAsyncMaterializer<F>(error), STATUS_DONE);
+          setFailed(error);
           consumer.error(error);
         }
       }
@@ -113,6 +113,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
+    public boolean isFailed() {
+      return false;
+    }
+
+    @Override
     public boolean isMaterializedAtOnce() {
       return true;
     }
@@ -124,7 +129,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
-      setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+      setCancelled(exception);
     }
 
     @Override
@@ -157,8 +162,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<F> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         materialized(new StateConsumer<F>() {
           @Override
@@ -200,12 +204,22 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
+    public int weightContains() {
+      return 1;
+    }
+
+    @Override
     public int weightElement() {
       return 1;
     }
 
     @Override
     public int weightElements() {
+      return 1;
+    }
+
+    @Override
+    public int weightEmpty() {
       return 1;
     }
 
@@ -218,23 +232,16 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       wrapped.materializeElements(new AsyncConsumer<List<E>>() {
         @Override
         public void accept(final List<E> elements) {
-          final TransformState state = new TransformState(transform(elements), cancelException);
-          setState(state, STATUS_RUNNING);
-          consumer.accept(state);
+          consumer.accept(setState(new TransformState(transform(elements), cancelException)));
         }
 
         @Override
         public void error(@NotNull final Exception error) {
           final CancellationException exception = cancelException.get();
           if (exception != null) {
-            final CancelledListAsyncMaterializer<F> state = new CancelledListAsyncMaterializer<F>(
-                exception);
-            setState(state, STATUS_CANCELLED);
-            consumer.accept(state);
+            consumer.accept(setCancelled(exception));
           } else {
-            final FailedListAsyncMaterializer<F> state = new FailedListAsyncMaterializer<F>(error);
-            setState(state, STATUS_DONE);
-            consumer.accept(state);
+            consumer.accept(setFailed(error));
           }
         }
       });
@@ -263,6 +270,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
+    public boolean isFailed() {
+      return false;
+    }
+
+    @Override
     public boolean isMaterializedAtOnce() {
       return true;
     }
@@ -274,7 +286,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
-      setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+      setCancelled(exception);
     }
 
     @Override
@@ -304,7 +316,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
         }
         safeConsumeComplete(consumer, i, LOGGER);
       } catch (final Exception error) {
-        consumeError(consumer, i, error);
+        consumeError(consumer, error);
       }
     }
 
@@ -315,7 +327,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       try {
         final List<F> elements = this.elements;
         if (index < 0) {
-          safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
+          safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)),
               LOGGER);
         } else {
           final int size = elements.size();
@@ -327,7 +339,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
           }
         }
       } catch (final Exception error) {
-        consumeError(consumer, i, error);
+        consumeError(consumer, error);
       }
     }
 
@@ -355,12 +367,22 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
+    public int weightContains() {
+      return 1;
+    }
+
+    @Override
     public int weightElement() {
       return 1;
     }
 
     @Override
     public int weightElements() {
+      return 1;
+    }
+
+    @Override
+    public int weightEmpty() {
       return 1;
     }
 
@@ -376,7 +398,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       }
       final CancellationException exception = cancelException.get();
       if (exception != null) {
-        setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+        setCancelled(exception);
         try {
           consumer.error(exception);
         } catch (final Exception e) {
@@ -386,7 +408,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
           LOGGER.log(Level.SEVERE, "Ignored exception", e);
         }
       } else {
-        setState(new FailedListAsyncMaterializer<F>(error), STATUS_DONE);
+        setFailed(error);
         try {
           consumer.error(error);
         } catch (final Exception e) {
@@ -398,16 +420,16 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       }
     }
 
-    private void consumeError(@NotNull final IndexedAsyncConsumer<?> consumer, final int index,
+    private void consumeError(@NotNull final IndexedAsyncConsumer<?> consumer,
         @NotNull final Exception error) {
       if (error instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
       final CancellationException exception = cancelException.get();
       if (exception != null) {
-        setState(new CancelledListAsyncMaterializer<F>(exception), STATUS_CANCELLED);
+        setCancelled(exception);
         try {
-          consumer.error(index, exception);
+          consumer.error(exception);
         } catch (final Exception e) {
           if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
@@ -415,9 +437,9 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
           LOGGER.log(Level.SEVERE, "Ignored exception", e);
         }
       } else {
-        setState(new FailedListAsyncMaterializer<F>(error), STATUS_DONE);
+        setFailed(error);
         try {
-          consumer.error(index, error);
+          consumer.error(error);
         } catch (final Exception e) {
           if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();

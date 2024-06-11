@@ -48,6 +48,11 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public boolean isFailed() {
+    return false;
+  }
+
+  @Override
   public boolean isMaterializedAtOnce() {
     return true;
   }
@@ -91,8 +96,7 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     final List<E> elements = this.elements;
     if (index < 0) {
-      safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-          LOGGER);
+      safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
     } else {
       final int size = elements.size();
       if (index >= size) {
@@ -119,6 +123,11 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public int weightContains() {
+    return 1;
+  }
+
+  @Override
   public int weightElement() {
     return 1;
   }
@@ -126,6 +135,11 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public int weightElements() {
     return elements.size();
+  }
+
+  @Override
+  public int weightEmpty() {
+    return 1;
   }
 
   @Override

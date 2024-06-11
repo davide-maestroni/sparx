@@ -72,7 +72,7 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
+      public void error(@NotNull final Exception error) throws Exception {
         consumer.error(error);
       }
     });
@@ -92,8 +92,8 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) throws Exception {
-        consumer.error(index, error);
+      public void error(@NotNull final Exception error) throws Exception {
+        consumer.error(error);
       }
     });
   }

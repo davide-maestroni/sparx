@@ -44,9 +44,8 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(
-        new ImmaterialState(wrapped, predicate, mapper, context, cancelException, decorateFunction),
-        STATUS_RUNNING);
+    setState(new ImmaterialState(wrapped, predicate, mapper, context, cancelException,
+        decorateFunction));
   }
 
   @Override
@@ -85,12 +84,17 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
     @Override
     public boolean isCancelled() {
-      return status.get() == STATUS_CANCELLED;
+      return false;
     }
 
     @Override
     public boolean isDone() {
-      return status.get() != STATUS_RUNNING;
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
     }
 
     @Override
@@ -106,7 +110,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
-      setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+      consumeState(setCancelled(exception));
     }
 
     @Override
@@ -139,8 +143,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, index, new IndexOutOfBoundsException(Integer.toString(index)),
-            LOGGER);
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         materialized(new StateConsumer<E>() {
           @Override
@@ -167,10 +170,12 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         @Override
         public void accept(final int size, final int index, final E element) throws Exception {
           try {
-            if (predicate.test(index, element)) {
-              setState(
+            if (FlatMapFirstWhereListAsyncMaterializer.this.isCancelled()) {
+              error(new CancellationException());
+            } else if (predicate.test(index, element)) {
+              consumeState(setState(
                   new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                      cancelException, decorateFunction), STATUS_RUNNING);
+                      cancelException, decorateFunction)));
               getState().materializeEmpty(consumer);
               return;
             }
@@ -180,9 +185,9 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
             }
             final CancellationException exception = cancelException.get();
             if (exception != null) {
-              setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+              consumeState(setCancelled(exception));
             } else {
-              setState(new FailedListAsyncMaterializer<E>(e), STATUS_DONE);
+              consumeState(setFailed(e));
             }
             return;
           }
@@ -191,11 +196,15 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
         @Override
         public void complete(final int size) throws Exception {
-          consumer.accept(true);
+          if (FlatMapFirstWhereListAsyncMaterializer.this.isCancelled()) {
+            error(new CancellationException());
+          } else {
+            consumer.accept(true);
+          }
         }
 
         @Override
-        public void error(final int index, @NotNull final Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -212,6 +221,11 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
     }
 
     @Override
+    public int weightContains() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
@@ -222,8 +236,21 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
     }
 
     @Override
+    public int weightEmpty() {
+      return weightElements();
+    }
+
+    @Override
     public int weightSize() {
       return weightElements();
+    }
+
+    private void consumeState(@NotNull final ListAsyncMaterializer<E> state) {
+      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
+      for (final StateConsumer<E> stateConsumer : stateConsumers) {
+        stateConsumer.accept(state);
+      }
+      stateConsumers.clear();
     }
 
     private @NotNull String getTaskID() {
@@ -239,16 +266,6 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
       }
     }
 
-    private void setState(@NotNull final ListAsyncMaterializer<E> newState, final int statusCode) {
-      final ListAsyncMaterializer<E> state = FlatMapFirstWhereListAsyncMaterializer.this.setState(
-          newState, statusCode);
-      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
-      for (final StateConsumer<E> stateConsumer : stateConsumers) {
-        stateConsumer.accept(state);
-      }
-      stateConsumers.clear();
-    }
-
     private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
 
       private int index;
@@ -256,9 +273,12 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public void accept(final int size, final int index, final E element) throws Exception {
-        if (predicate.test(index, element)) {
-          setState(new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-              cancelException, decorateFunction), STATUS_RUNNING);
+        if (FlatMapFirstWhereListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else if (predicate.test(index, element)) {
+          consumeState(setState(
+              new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
+                  cancelException, decorateFunction)));
         } else {
           this.index = index + 1;
           taskID = getTaskID();
@@ -268,16 +288,20 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public void complete(final int size) {
-        setState(wrapped, STATUS_RUNNING);
+        if (FlatMapFirstWhereListAsyncMaterializer.this.isCancelled()) {
+          error(new CancellationException());
+        } else {
+          consumeState(setState(wrapped));
+        }
       }
 
       @Override
-      public void error(final int index, @NotNull final Exception error) {
+      public void error(@NotNull final Exception error) {
         final CancellationException exception = cancelException.get();
         if (exception != null) {
-          setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+          consumeState(setCancelled(exception));
         } else {
-          setState(new FailedListAsyncMaterializer<E>(error), STATUS_DONE);
+          consumeState(setFailed(error));
         }
       }
 

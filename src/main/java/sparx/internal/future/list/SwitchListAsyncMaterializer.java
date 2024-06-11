@@ -61,6 +61,11 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public boolean isFailed() {
+    return wrapped.isFailed();
+  }
+
+  @Override
   public boolean isMaterializedAtOnce() {
     return wrapped.isMaterializedAtOnce();
   }
@@ -157,7 +162,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         try {
           wrapped.materializeEach(switchConsumer);
         } catch (final Exception e) {
-          safeConsumeError(switchConsumer, -1, e, LOGGER);
+          safeConsumeError(switchConsumer, e, LOGGER);
         }
       }
 
@@ -183,7 +188,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
         try {
           wrapped.materializeElement(index, switchConsumer);
         } catch (final Exception e) {
-          safeConsumeError(switchConsumer, index, e, LOGGER);
+          safeConsumeError(switchConsumer, e, LOGGER);
         }
       }
 
@@ -278,6 +283,11 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public int weightContains() {
+    return wrapped.weightContains();
+  }
+
+  @Override
   public int weightElement() {
     return wrapped.weightElement();
   }
@@ -285,6 +295,11 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public int weightElements() {
     return wrapped.weightElements();
+  }
+
+  @Override
+  public int weightEmpty() {
+    return wrapped.weightEmpty();
   }
 
   @Override
