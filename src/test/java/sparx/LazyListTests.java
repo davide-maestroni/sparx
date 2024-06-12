@@ -35,39 +35,6 @@ import sparx.util.function.Supplier;
 public class LazyListTests {
 
   @Test
-  public void all() {
-    assertFalse(List.of().all(Objects::nonNull).isEmpty());
-    assertTrue(List.of().all(Objects::nonNull).notEmpty());
-    assertEquals(1, List.of().all(Objects::nonNull).size());
-    assertTrue(List.of().all(Objects::nonNull).first());
-    assertFalse(List.of(1, 2, 3).all(i -> i < 3).first());
-    {
-      var itr = List.of(1, 2, 3).all(i -> i < 3).iterator();
-      assertTrue(itr.hasNext());
-      assertFalse(itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
-    assertTrue(List.of(1, 2, 3).all(i -> i > 0).first());
-    {
-      var itr = List.of(1, 2, 3).all(i -> i > 0).iterator();
-      assertTrue(itr.hasNext());
-      assertTrue(itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
-    var l = List.of(1, null, 3).all(i -> i > 0);
-    assertThrows(NullPointerException.class, l::first);
-    {
-      var itr = l.iterator();
-      assertTrue(itr.hasNext());
-      assertThrows(NullPointerException.class, itr::next);
-    }
-  }
-
-  @Test
   public void append() {
     var l = List.<Integer>of().append(1).append(2).append(3);
     assertFalse(l.isEmpty());
@@ -397,6 +364,39 @@ public class LazyListTests {
 
     assertThrows(NullPointerException.class,
         () -> List.of(1, null, 3).dropWhile(e -> e > 0).size());
+  }
+
+  @Test
+  public void each() {
+    assertFalse(List.of().each(Objects::nonNull).isEmpty());
+    assertTrue(List.of().each(Objects::nonNull).notEmpty());
+    assertEquals(1, List.of().each(Objects::nonNull).size());
+    assertFalse(List.of().each(Objects::nonNull).first());
+    assertFalse(List.of(1, 2, 3).each(i -> i > 3).first());
+    {
+      var itr = List.of(1, 2, 3).each(i -> i < 3).iterator();
+      assertTrue(itr.hasNext());
+      assertFalse(itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    assertTrue(List.of(1, 2, 3).each(i -> i > 0).first());
+    {
+      var itr = List.of(1, 2, 3).each(i -> i > 0).iterator();
+      assertTrue(itr.hasNext());
+      assertTrue(itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    var l = List.of(1, null, 3).each(i -> i > 0);
+    assertThrows(NullPointerException.class, l::first);
+    {
+      var itr = l.iterator();
+      assertTrue(itr.hasNext());
+      assertThrows(NullPointerException.class, itr::next);
+    }
   }
 
   @Test
@@ -1445,30 +1445,63 @@ public class LazyListTests {
   }
 
   @Test
-  public void only() {
-    assertFalse(List.of().only(Objects::nonNull).isEmpty());
-    assertTrue(List.of().only(Objects::nonNull).notEmpty());
-    assertEquals(1, List.of().only(Objects::nonNull).size());
-    assertFalse(List.of().only(Objects::nonNull).first());
-    assertFalse(List.of(1, 2, 3).only(i -> i > 3).first());
+  public void none() {
+    assertFalse(List.of().none(Objects::nonNull).isEmpty());
+    assertTrue(List.of().none(Objects::nonNull).notEmpty());
+    assertEquals(1, List.of().none(Objects::nonNull).size());
+    assertTrue(List.of().none(Objects::nonNull).first());
+    assertFalse(List.of(1, 2, 3).none(i -> i < 3).first());
     {
-      var itr = List.of(1, 2, 3).only(i -> i < 3).iterator();
+      var itr = List.of(1, 2, 3).none(i -> i < 3).iterator();
       assertTrue(itr.hasNext());
       assertFalse(itr.next());
       assertThrows(UnsupportedOperationException.class, itr::remove);
       assertFalse(itr.hasNext());
       assertThrows(NoSuchElementException.class, itr::next);
     }
-    assertTrue(List.of(1, 2, 3).only(i -> i > 0).first());
+    assertTrue(List.of(1, 2, 3).none(i -> i < 0).first());
     {
-      var itr = List.of(1, 2, 3).only(i -> i > 0).iterator();
+      var itr = List.of(1, 2, 3).none(i -> i < 0).iterator();
       assertTrue(itr.hasNext());
       assertTrue(itr.next());
       assertThrows(UnsupportedOperationException.class, itr::remove);
       assertFalse(itr.hasNext());
       assertThrows(NoSuchElementException.class, itr::next);
     }
-    var l = List.of(1, null, 3).only(i -> i > 0);
+    var l = List.of(1, null, 3).none(i -> i < 0);
+    assertThrows(NullPointerException.class, l::first);
+    {
+      var itr = l.iterator();
+      assertTrue(itr.hasNext());
+      assertThrows(NullPointerException.class, itr::next);
+    }
+  }
+
+  @Test
+  public void notAll() {
+    assertFalse(List.of().notAll(Objects::isNull).isEmpty());
+    assertTrue(List.of().notAll(Objects::isNull).notEmpty());
+    assertEquals(1, List.of().notAll(Objects::isNull).size());
+    assertTrue(List.of().notAll(Objects::isNull).first());
+    assertTrue(List.of(1, 2, 3).notAll(i -> i > 3).first());
+    {
+      var itr = List.of(1, 2, 3).notAll(i -> i > 3).iterator();
+      assertTrue(itr.hasNext());
+      assertTrue(itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    assertFalse(List.of(1, 2, 3).notAll(i -> i > 0).first());
+    {
+      var itr = List.of(1, 2, 3).notAll(i -> i > 0).iterator();
+      assertTrue(itr.hasNext());
+      assertFalse(itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+    var l = List.of(1, null, 3).notAll(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
       var itr = l.iterator();
@@ -2490,39 +2523,6 @@ public class LazyListTests {
     assertEquals(0, List.of().slice(1, -1).size());
     assertEquals(List.of(), List.of().slice(1, -1));
     assertThrows(IndexOutOfBoundsException.class, () -> List.of().slice(1, -1).get(0));
-  }
-
-  @Test
-  public void some() {
-    assertFalse(List.of().some(Objects::isNull).isEmpty());
-    assertTrue(List.of().some(Objects::isNull).notEmpty());
-    assertEquals(1, List.of().some(Objects::isNull).size());
-    assertTrue(List.of().some(Objects::isNull).first());
-    assertFalse(List.of(1, 2, 3).some(i -> i > 3).first());
-    {
-      var itr = List.of(1, 2, 3).some(i -> i > 3).iterator();
-      assertTrue(itr.hasNext());
-      assertFalse(itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
-    assertTrue(List.of(1, 2, 3).some(i -> i > 0).first());
-    {
-      var itr = List.of(1, 2, 3).some(i -> i > 0).iterator();
-      assertTrue(itr.hasNext());
-      assertTrue(itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
-    var l = List.of(1, null, 3).some(i -> i > 1);
-    assertThrows(NullPointerException.class, l::first);
-    {
-      var itr = l.iterator();
-      assertTrue(itr.hasNext());
-      assertThrows(NullPointerException.class, itr::next);
-    }
   }
 
   @Test

@@ -39,18 +39,6 @@ import sparx.util.IntOverflowException;
 public class LazyIteratorTests {
 
   @Test
-  public void all() {
-    assertFalse(Iterator.of().all(Objects::nonNull).isEmpty());
-    assertTrue(Iterator.of().all(Objects::nonNull).notEmpty());
-    assertEquals(1, Iterator.of().all(Objects::nonNull).size());
-    assertTrue(Iterator.of().all(Objects::nonNull).first());
-    assertFalse(Iterator.of(1, 2, 3).all(i -> i < 3).first());
-    assertTrue(Iterator.of(1, 2, 3).all(i -> i > 0).first());
-    var itr = Iterator.of(1, null, 3).all(i -> i > 0);
-    assertThrows(NullPointerException.class, itr::first);
-  }
-
-  @Test
   public void append() {
     var itr = Iterator.<Integer>of().append(1).append(2).append(3);
     assertFalse(itr.isEmpty());
@@ -325,6 +313,18 @@ public class LazyIteratorTests {
 
     assertThrows(NullPointerException.class,
         () -> Iterator.of(1, null, 3).dropWhile(e -> e > 0).size());
+  }
+
+  @Test
+  public void each() {
+    assertFalse(Iterator.of().each(Objects::nonNull).isEmpty());
+    assertTrue(Iterator.of().each(Objects::nonNull).notEmpty());
+    assertEquals(1, Iterator.of().each(Objects::nonNull).size());
+    assertFalse(Iterator.of().each(Objects::nonNull).first());
+    assertFalse(Iterator.of(1, 2, 3).each(i -> i < 3).first());
+    assertTrue(Iterator.of(1, 2, 3).each(i -> i > 0).first());
+    var itr = Iterator.of(1, null, 3).each(i -> i > 0);
+    assertThrows(NullPointerException.class, itr::first);
   }
 
   @Test
@@ -1494,14 +1494,26 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void only() {
-    assertFalse(Iterator.of().only(Objects::nonNull).isEmpty());
-    assertTrue(Iterator.of().only(Objects::nonNull).notEmpty());
-    assertEquals(1, Iterator.of().only(Objects::nonNull).size());
-    assertFalse(Iterator.of().only(Objects::nonNull).first());
-    assertFalse(Iterator.of(1, 2, 3).only(i -> i < 3).first());
-    assertTrue(Iterator.of(1, 2, 3).only(i -> i > 0).first());
-    var itr = Iterator.of(1, null, 3).only(i -> i > 0);
+  public void none() {
+    assertFalse(Iterator.of().none(Objects::nonNull).isEmpty());
+    assertTrue(Iterator.of().none(Objects::nonNull).notEmpty());
+    assertEquals(1, Iterator.of().none(Objects::nonNull).size());
+    assertTrue(Iterator.of().none(Objects::nonNull).first());
+    assertFalse(Iterator.of(1, 2, 3).none(i -> i < 3).first());
+    assertTrue(Iterator.of(1, 2, 3).none(i -> i < 0).first());
+    var itr = Iterator.of(1, null, 3).none(i -> i < 0);
+    assertThrows(NullPointerException.class, itr::first);
+  }
+
+  @Test
+  public void notAll() {
+    assertFalse(Iterator.of().notAll(Objects::isNull).isEmpty());
+    assertTrue(Iterator.of().notAll(Objects::isNull).notEmpty());
+    assertEquals(1, Iterator.of().notAll(Objects::isNull).size());
+    assertTrue(Iterator.of().notAll(Objects::isNull).first());
+    assertFalse(Iterator.of(1, 2, 3).notAll(i -> i < 4).first());
+    assertTrue(Iterator.of(1, 2, 3).notAll(i -> i > 1).first());
+    var itr = Iterator.of(1, null, 3).notAll(i -> i > 0);
     assertThrows(NullPointerException.class, itr::first);
   }
 
@@ -2806,18 +2818,6 @@ public class LazyIteratorTests {
     assertTrue(itr.get().notEmpty());
     assertEquals(1, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3, 0)), itr.get().map(Iterator::toList).toList());
-  }
-
-  @Test
-  public void some() {
-    assertFalse(Iterator.of().some(Objects::isNull).isEmpty());
-    assertTrue(Iterator.of().some(Objects::isNull).notEmpty());
-    assertEquals(1, Iterator.of().some(Objects::isNull).size());
-    assertTrue(Iterator.of().some(Objects::isNull).first());
-    assertFalse(Iterator.of(1, 2, 3).some(i -> i > 3).first());
-    assertTrue(Iterator.of(1, 2, 3).some(i -> i > 1).first());
-    var itr = Iterator.of(1, null, 3).some(i -> i > 1);
-    assertThrows(NullPointerException.class, itr::first);
   }
 
   @Test

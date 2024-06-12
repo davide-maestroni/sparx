@@ -37,14 +37,6 @@ class itf {
   public interface Collection<E> extends java.util.Collection<E>, Sequence<E> {
 
     @Override
-    @NotNull
-    Collection<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Collection<Boolean> all(@NotNull Predicate<? super E> predicate);
-
-    @Override
     <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper);
 
     @Override
@@ -90,6 +82,14 @@ class itf {
     @Override
     @NotNull
     Collection<E> dropWhile(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Collection<Boolean> each(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Collection<Boolean> each(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -315,11 +315,19 @@ class itf {
 
     @Override
     @NotNull
-    Collection<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
+    Collection<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Collection<Boolean> only(@NotNull Predicate<? super E> predicate);
+    Collection<Boolean> none(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Collection<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Collection<Boolean> notAll(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -443,15 +451,11 @@ class itf {
 
     @Override
     @NotNull
+    Collection<E> slice(int start);
+
+    @Override
+    @NotNull
     Collection<E> slice(int start, int end);
-
-    @Override
-    @NotNull
-    Collection<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Collection<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -518,14 +522,6 @@ class itf {
 
     @Override
     @NotNull
-    Iterator<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Iterator<Boolean> all(@NotNull Predicate<? super E> predicate);
-
-    @Override
-    @NotNull
     Iterator<E> append(E element);
 
     @Override
@@ -575,6 +571,14 @@ class itf {
     @Override
     @NotNull
     Iterator<E> dropWhile(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Iterator<Boolean> each(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Iterator<Boolean> each(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -815,11 +819,19 @@ class itf {
 
     @Override
     @NotNull
-    Iterator<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
+    Iterator<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Iterator<Boolean> only(@NotNull Predicate<? super E> predicate);
+    Iterator<Boolean> none(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Iterator<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Iterator<Boolean> notAll(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -958,6 +970,10 @@ class itf {
 
     @Override
     @NotNull
+    Iterator<E> slice(int start);
+
+    @Override
+    @NotNull
     Iterator<E> slice(int start, int end);
 
     @NotNull
@@ -965,14 +981,6 @@ class itf {
 
     @NotNull
     Iterator<? extends Iterator<E>> slidingWindow(int size, int step, E padding);
-
-    @Override
-    @NotNull
-    Iterator<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Iterator<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1025,14 +1033,6 @@ class itf {
 
   public interface List<E> extends Collection<E>, java.util.List<E>, Sequence<E> {
 
-    @Override
-    @NotNull
-    List<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    List<Boolean> all(@NotNull Predicate<? super E> predicate);
-
     @NotNull
     List<E> append(E element);
 
@@ -1082,6 +1082,14 @@ class itf {
     @Override
     @NotNull
     List<E> dropWhile(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    List<Boolean> each(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    List<Boolean> each(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1316,11 +1324,19 @@ class itf {
 
     @Override
     @NotNull
-    List<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
+    List<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    List<Boolean> only(@NotNull Predicate<? super E> predicate);
+    List<Boolean> none(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    List<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    List<Boolean> notAll(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1453,15 +1469,11 @@ class itf {
 
     @Override
     @NotNull
+    List<E> slice(int start);
+
+    @Override
+    @NotNull
     List<E> slice(int start, int end);
-
-    @Override
-    @NotNull
-    List<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    List<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1500,14 +1512,6 @@ class itf {
   }
 
   public interface ListIterator<E> extends java.util.ListIterator<E>, Stream<E> {
-
-    @Override
-    @NotNull
-    ListIterator<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    ListIterator<Boolean> all(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1560,6 +1564,14 @@ class itf {
     @Override
     @NotNull
     ListIterator<E> dropWhile(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    ListIterator<Boolean> each(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    ListIterator<Boolean> each(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1807,11 +1819,19 @@ class itf {
 
     @Override
     @NotNull
-    ListIterator<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
+    ListIterator<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    ListIterator<Boolean> only(@NotNull Predicate<? super E> predicate);
+    ListIterator<Boolean> none(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    ListIterator<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    ListIterator<Boolean> notAll(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1941,15 +1961,11 @@ class itf {
 
     @Override
     @NotNull
+    ListIterator<E> slice(int start);
+
+    @Override
+    @NotNull
     ListIterator<E> slice(int start, int end);
-
-    @Override
-    @NotNull
-    ListIterator<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    ListIterator<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1988,12 +2004,13 @@ class itf {
 
   public interface Sequence<E> extends Iterable<E> {
 
-    @NotNull
-    Sequence<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);
-
-    @NotNull
-    Sequence<Boolean> all(@NotNull Predicate<? super E> predicate);
-
+    // TODO: all => none      = ! all or empty
+    // TODO: any => notExists = ! exists or empty
+    // TODO: only => each     = all and not empty
+    // TODO: exists           = exists and not empty
+    // each => All false
+    // none => !All true
+    // notA => !Exi true
     <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper); // TODO: cannot inherit!!!
 
     @NotNull
@@ -2041,6 +2058,12 @@ class itf {
 
     @NotNull
     Sequence<E> dropWhile(@NotNull Predicate<? super E> predicate);
+
+    @NotNull
+    Sequence<Boolean> each(@NotNull IndexedPredicate<? super E> predicate);
+
+    @NotNull
+    Sequence<Boolean> each(@NotNull Predicate<? super E> predicate);
 
     @NotNull
     Sequence<Boolean> endsWith(@NotNull Iterable<?> elements);
@@ -2215,13 +2238,19 @@ class itf {
     @NotNull
     Sequence<E> min(@NotNull Comparator<? super E> comparator);
 
+    @NotNull
+    Sequence<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);
+
+    @NotNull
+    Sequence<Boolean> none(@NotNull Predicate<? super E> predicate);
+
+    @NotNull
+    Sequence<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+
+    @NotNull
+    Sequence<Boolean> notAll(@NotNull Predicate<? super E> predicate);
+
     boolean notEmpty();
-
-    @NotNull
-    Sequence<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
-
-    @NotNull
-    Sequence<Boolean> only(@NotNull Predicate<? super E> predicate);
 
     @NotNull
     Sequence<E> orElse(@NotNull Iterable<E> elements);
@@ -2315,16 +2344,11 @@ class itf {
 
     int size();
 
-    // TODO: Sequence<E> slice(int start);
+    @NotNull
+    Sequence<E> slice(int start);
 
     @NotNull
     Sequence<E> slice(int start, int end);
-
-    @NotNull
-    Sequence<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
-
-    @NotNull
-    Sequence<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @NotNull
     Sequence<Boolean> startsWith(@NotNull Iterable<?> elements);
@@ -2360,14 +2384,6 @@ class itf {
   }
 
   public interface Set<E> extends java.util.Set<E>, Sequence<E> {
-
-    @Override
-    @NotNull
-    Set<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Set<Boolean> all(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -2412,6 +2428,14 @@ class itf {
     @Override
     @NotNull
     Set<E> dropWhile(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean> each(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean> each(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -2632,11 +2656,19 @@ class itf {
 
     @Override
     @NotNull
-    Set<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
+    Set<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Set<Boolean> only(@NotNull Predicate<? super E> predicate);
+    Set<Boolean> none(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean> notAll(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -2760,15 +2792,11 @@ class itf {
 
     @Override
     @NotNull
+    Set<E> slice(int start);
+
+    @Override
+    @NotNull
     Set<E> slice(int start, int end);
-
-    @Override
-    @NotNull
-    Set<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Set<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -2804,14 +2832,6 @@ class itf {
   }
 
   public interface Stream<E> extends java.util.Iterator<E>, Sequence<E> {
-
-    @Override
-    @NotNull
-    Stream<Boolean> all(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Stream<Boolean> all(@NotNull Predicate<? super E> predicate);
 
     @NotNull
     Stream<E> append(E element);
@@ -2862,6 +2882,14 @@ class itf {
     @Override
     @NotNull
     Stream<E> dropWhile(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Stream<Boolean> each(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Stream<Boolean> each(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -3098,11 +3126,19 @@ class itf {
 
     @Override
     @NotNull
-    Stream<Boolean> only(@NotNull IndexedPredicate<? super E> predicate);
+    Stream<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Boolean> only(@NotNull Predicate<? super E> predicate);
+    Stream<Boolean> none(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Stream<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Stream<Boolean> notAll(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -3226,15 +3262,11 @@ class itf {
 
     @Override
     @NotNull
+    Stream<E> slice(int start);
+
+    @Override
+    @NotNull
     Stream<E> slice(int start, int end);
-
-    @Override
-    @NotNull
-    Stream<Boolean> some(@NotNull IndexedPredicate<? super E> predicate);
-
-    @Override
-    @NotNull
-    Stream<Boolean> some(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull

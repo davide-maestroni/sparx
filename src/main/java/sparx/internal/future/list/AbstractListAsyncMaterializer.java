@@ -31,6 +31,7 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
 
   final AtomicInteger status;
 
+  private CancellationException cancelException;
   private ListAsyncMaterializer<E> state;
 
   AbstractListAsyncMaterializer(@NotNull final AtomicInteger status) {
@@ -59,6 +60,7 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
 
   @Override
   public void materializeCancel(@NotNull final CancellationException exception) {
+    cancelException = exception;
     state.materializeCancel(exception);
   }
 
@@ -166,5 +168,50 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
       state = newState;
     }
     return state;
+  }
+
+  protected abstract class CancellableAsyncConsumer<P> implements AsyncConsumer<P> {
+
+    @Override
+    public void accept(final P param) throws Exception {
+      final CancellationException cancelException = AbstractListAsyncMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+      } else {
+        safeAccept(param);
+      }
+    }
+
+    protected void safeAccept(final P param) throws Exception {
+    }
+  }
+
+  protected abstract class CancellableIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
+
+    @Override
+    public void accept(final int size, final int index, final P param) throws Exception {
+      final CancellationException cancelException = AbstractListAsyncMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+      } else {
+        safeAccept(size, index, param);
+      }
+    }
+
+    @Override
+    public void complete(final int size) throws Exception {
+      final CancellationException cancelException = AbstractListAsyncMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+      } else {
+        safeComplete(size);
+      }
+    }
+
+    protected void safeAccept(final int size, final int index, final P param) throws Exception {
+    }
+
+    protected void safeComplete(final int size) throws Exception {
+    }
   }
 }
