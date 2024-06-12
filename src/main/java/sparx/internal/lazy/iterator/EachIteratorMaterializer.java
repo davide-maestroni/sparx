@@ -19,13 +19,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class AllIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
+public class EachIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
 
   private volatile IteratorMaterializer<Boolean> state;
 
-  public AllIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
-      final boolean defaultResult) {
+  public EachIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult) {
     state = new ImmaterialState(wrapped, predicate, defaultResult);
   }
 

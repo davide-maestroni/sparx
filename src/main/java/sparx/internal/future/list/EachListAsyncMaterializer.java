@@ -34,11 +34,11 @@ import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
-public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Boolean> {
+public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Boolean> {
 
-  private static final Logger LOGGER = Logger.getLogger(AllListAsyncMaterializer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(EachListAsyncMaterializer.class.getName());
 
-  public AllListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+  public EachListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
@@ -226,17 +226,15 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
           decorateFunction.apply(Collections.singletonList(allMatches)))));
     }
 
-    private class MaterializingAsyncConsumer implements AsyncConsumer<Boolean>,
-        IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends
+        CancellableAllAsyncConsumer<Boolean, E> implements Task {
 
       private int index;
       private String taskID;
 
       @Override
-      public void accept(final Boolean empty) throws Exception {
-        if (AllListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (empty) {
+      public void cancellableAccept(final Boolean empty) throws Exception {
+        if (empty) {
           setState(defaultResult);
         } else {
           taskID = getTaskID();
@@ -245,10 +243,9 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (AllListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (!predicate.test(index, element)) {
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        if (!predicate.test(index, element)) {
           setState(false);
         } else {
           this.index = index + 1;
@@ -258,12 +255,8 @@ public class AllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<B
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (AllListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          setState(true);
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        setState(true);
       }
 
       @Override

@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
-import sparx.internal.lazy.iterator.AllIteratorMaterializer;
 import sparx.internal.lazy.iterator.AppendAllIteratorMaterializer;
 import sparx.internal.lazy.iterator.AppendIteratorMaterializer;
 import sparx.internal.lazy.iterator.ArrayToIteratorMaterializer;
@@ -38,6 +37,7 @@ import sparx.internal.lazy.iterator.DropIteratorMaterializer;
 import sparx.internal.lazy.iterator.DropRightIteratorMaterializer;
 import sparx.internal.lazy.iterator.DropRightWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.DropWhileIteratorMaterializer;
+import sparx.internal.lazy.iterator.EachIteratorMaterializer;
 import sparx.internal.lazy.iterator.ElementToIteratorMaterializer;
 import sparx.internal.lazy.iterator.EmptyIteratorMaterializer;
 import sparx.internal.lazy.iterator.EndsWithIteratorMaterializer;
@@ -100,7 +100,6 @@ import sparx.internal.lazy.iterator.TakeRightIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeRightWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.UnionIteratorMaterializer;
-import sparx.internal.lazy.list.AllListMaterializer;
 import sparx.internal.lazy.list.AppendAllListMaterializer;
 import sparx.internal.lazy.list.AppendListMaterializer;
 import sparx.internal.lazy.list.ArrayToListMaterializer;
@@ -113,6 +112,7 @@ import sparx.internal.lazy.list.DropListMaterializer;
 import sparx.internal.lazy.list.DropRightListMaterializer;
 import sparx.internal.lazy.list.DropRightWhileListMaterializer;
 import sparx.internal.lazy.list.DropWhileListMaterializer;
+import sparx.internal.lazy.list.EachListMaterializer;
 import sparx.internal.lazy.list.ElementToListMaterializer;
 import sparx.internal.lazy.list.EmptyListMaterializer;
 import sparx.internal.lazy.list.EndsWithListMaterializer;
@@ -674,7 +674,7 @@ public class lazy extends Sparx {
         return Iterator.of(false);
       }
       return new Iterator<Boolean>(
-          new AllIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+          new EachIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
               false));
     }
 
@@ -684,7 +684,7 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return Iterator.of(false);
       }
-      return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer,
+      return new Iterator<Boolean>(new EachIteratorMaterializer<E>(materializer,
           toIndexedPredicate(Require.notNull(predicate, "predicate")), false));
     }
 
@@ -1326,7 +1326,7 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return Iterator.of(true);
       }
-      return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer,
+      return new Iterator<Boolean>(new EachIteratorMaterializer<E>(materializer,
           negated(Require.notNull(predicate, "predicate")), true));
     }
 
@@ -1336,7 +1336,7 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return Iterator.of(true);
       }
-      return new Iterator<Boolean>(new AllIteratorMaterializer<E>(materializer,
+      return new Iterator<Boolean>(new EachIteratorMaterializer<E>(materializer,
           toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), true));
     }
 
@@ -2642,7 +2642,8 @@ public class lazy extends Sparx {
         return FALSE_LIST;
       }
       return new List<Boolean>(
-          new AllListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"), false));
+          new EachListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+              false));
     }
 
     @Override
@@ -2651,7 +2652,7 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return FALSE_LIST;
       }
-      return new List<Boolean>(new AllListMaterializer<E>(materializer,
+      return new List<Boolean>(new EachListMaterializer<E>(materializer,
           toIndexedPredicate(Require.notNull(predicate, "predicate")), false));
     }
 
@@ -3435,9 +3436,8 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return TRUE_LIST;
       }
-      return new List<Boolean>(
-          new AllListMaterializer<E>(materializer, negated(Require.notNull(predicate, "predicate")),
-              true));
+      return new List<Boolean>(new EachListMaterializer<E>(materializer,
+          negated(Require.notNull(predicate, "predicate")), true));
     }
 
     @Override
@@ -3446,7 +3446,7 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return TRUE_LIST;
       }
-      return new List<Boolean>(new AllListMaterializer<E>(materializer,
+      return new List<Boolean>(new EachListMaterializer<E>(materializer,
           toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), true));
     }
 

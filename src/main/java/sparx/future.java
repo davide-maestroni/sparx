@@ -42,7 +42,6 @@ import sparx.internal.future.iterator.IteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ListAsyncMaterializerToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ListToIteratorAsyncMaterializer;
-import sparx.internal.future.list.AllListAsyncMaterializer;
 import sparx.internal.future.list.AppendAllListAsyncMaterializer;
 import sparx.internal.future.list.AppendListAsyncMaterializer;
 import sparx.internal.future.list.AsyncForFuture;
@@ -55,6 +54,7 @@ import sparx.internal.future.list.DropListAsyncMaterializer;
 import sparx.internal.future.list.DropRightListAsyncMaterializer;
 import sparx.internal.future.list.DropRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.DropWhileListAsyncMaterializer;
+import sparx.internal.future.list.EachListAsyncMaterializer;
 import sparx.internal.future.list.ElementToListAsyncMaterializer;
 import sparx.internal.future.list.EndsWithListAsyncMaterializer;
 import sparx.internal.future.list.ExistsListAsyncMaterializer;
@@ -977,7 +977,7 @@ class future extends Sparx {
       }
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
-          new AllListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+          new EachListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
               false, context, cancelException, List.<Boolean>decorateFunction()));
     }
 
@@ -995,7 +995,7 @@ class future extends Sparx {
       }
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
-          new AllListAsyncMaterializer<E>(materializer,
+          new EachListAsyncMaterializer<E>(materializer,
               toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), false, context,
               cancelException, List.<Boolean>decorateFunction()));
     }
@@ -2015,7 +2015,7 @@ class future extends Sparx {
       }
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
-          new AllListAsyncMaterializer<E>(materializer,
+          new EachListAsyncMaterializer<E>(materializer,
               negated(Require.notNull(predicate, "predicate")), true, context, cancelException,
               List.<Boolean>decorateFunction()));
     }
@@ -2034,7 +2034,7 @@ class future extends Sparx {
       }
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
-          new AllListAsyncMaterializer<E>(materializer,
+          new EachListAsyncMaterializer<E>(materializer,
               toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), true, context,
               cancelException, List.<Boolean>decorateFunction()));
     }

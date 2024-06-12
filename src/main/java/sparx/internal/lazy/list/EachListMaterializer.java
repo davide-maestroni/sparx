@@ -22,14 +22,14 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class AllListMaterializer<E> implements ListMaterializer<Boolean> {
+public class EachListMaterializer<E> implements ListMaterializer<Boolean> {
 
   private static final State FALSE_STATE = new FalseState();
   private static final State TRUE_STATE = new TrueState();
 
   private volatile State state;
 
-  public AllListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+  public EachListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult) {
     state = new ImmaterialState(wrapped, predicate, defaultResult ? TRUE_STATE : FALSE_STATE);
   }

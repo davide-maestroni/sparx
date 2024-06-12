@@ -178,11 +178,11 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
       if (cancelException != null) {
         error(cancelException);
       } else {
-        safeAccept(param);
+        cancellableAccept(param);
       }
     }
 
-    protected void safeAccept(final P param) throws Exception {
+    public void cancellableAccept(final P param) throws Exception {
     }
   }
 
@@ -194,7 +194,7 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
       if (cancelException != null) {
         error(cancelException);
       } else {
-        safeAccept(size, index, param);
+        cancellableAccept(size, index, param);
       }
     }
 
@@ -204,14 +204,58 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
       if (cancelException != null) {
         error(cancelException);
       } else {
-        safeComplete(size);
+        cancellableComplete(size);
       }
     }
 
-    protected void safeAccept(final int size, final int index, final P param) throws Exception {
+    public void cancellableAccept(final int size, final int index, final P param) throws Exception {
     }
 
-    protected void safeComplete(final int size) throws Exception {
+    public void cancellableComplete(final int size) throws Exception {
+    }
+  }
+
+  protected abstract class CancellableAllAsyncConsumer<P1, P2> implements AsyncConsumer<P1>,
+      IndexedAsyncConsumer<P2> {
+
+    @Override
+    public void accept(final P1 param) throws Exception {
+      final CancellationException cancelException = AbstractListAsyncMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+      } else {
+        cancellableAccept(param);
+      }
+    }
+
+    @Override
+    public void accept(final int size, final int index, final P2 param) throws Exception {
+      final CancellationException cancelException = AbstractListAsyncMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+      } else {
+        cancellableAccept(size, index, param);
+      }
+    }
+
+    @Override
+    public void complete(final int size) throws Exception {
+      final CancellationException cancelException = AbstractListAsyncMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+      } else {
+        cancellableComplete(size);
+      }
+    }
+
+    public void cancellableAccept(final P1 param) throws Exception {
+    }
+
+    public void cancellableAccept(final int size, final int index, final P2 param)
+        throws Exception {
+    }
+
+    public void cancellableComplete(final int size) throws Exception {
     }
   }
 }

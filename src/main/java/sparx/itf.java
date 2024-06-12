@@ -2004,13 +2004,6 @@ class itf {
 
   public interface Sequence<E> extends Iterable<E> {
 
-    // TODO: all => none      = ! all or empty
-    // TODO: any => notExists = ! exists or empty
-    // TODO: only => each     = all and not empty
-    // TODO: exists           = exists and not empty
-    // each => All false
-    // none => !All true
-    // notA => !Exi true
     <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper); // TODO: cannot inherit!!!
 
     @NotNull
