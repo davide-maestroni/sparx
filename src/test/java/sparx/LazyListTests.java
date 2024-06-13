@@ -2767,7 +2767,7 @@ public class LazyListTests {
     assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).union(List.of(1, 4)));
     assertEquals(List.of(1, 2, null, 4, 3), List.of(1, 2, null, 4).union(List.of(1, 3, 4)));
     assertEquals(List.of(1, 2, null, 4, 3, 3), List.of(1, 2, null, 4).union(List.of(3, 1, 3)));
-    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).union(List.of(null, null)));
+    assertEquals(List.of(1, 2, null, 4, null), List.of(1, 2, null, 4).union(List.of(null, null)));
     assertEquals(List.of(1, null, 2, 4), List.of(1, null).union(List.of(1, 2, null, 4)));
     assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).union(List.of(2, 1)));
     assertEquals(List.of(1, null, 2, 4), List.of(1, null).union(List.of(2, 4)));

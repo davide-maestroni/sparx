@@ -32,6 +32,7 @@ import sparx.internal.lazy.iterator.CharSequenceToIteratorMaterializer;
 import sparx.internal.lazy.iterator.CollectionToIteratorMaterializer;
 import sparx.internal.lazy.iterator.CountIteratorMaterializer;
 import sparx.internal.lazy.iterator.CountWhereIteratorMaterializer;
+import sparx.internal.lazy.iterator.DiffIteratorMaterializer;
 import sparx.internal.lazy.iterator.DoubleArrayToIteratorMaterializer;
 import sparx.internal.lazy.iterator.DropIteratorMaterializer;
 import sparx.internal.lazy.iterator.DropRightIteratorMaterializer;
@@ -66,6 +67,7 @@ import sparx.internal.lazy.iterator.InsertAllAfterIteratorMaterializer;
 import sparx.internal.lazy.iterator.InsertAllIteratorMaterializer;
 import sparx.internal.lazy.iterator.InsertIteratorMaterializer;
 import sparx.internal.lazy.iterator.IntArrayToIteratorMaterializer;
+import sparx.internal.lazy.iterator.IntersectIteratorMaterializer;
 import sparx.internal.lazy.iterator.IteratorMaterializer;
 import sparx.internal.lazy.iterator.IteratorToIteratorMaterializer;
 import sparx.internal.lazy.iterator.ListMaterializerToIteratorMaterializer;
@@ -99,7 +101,6 @@ import sparx.internal.lazy.iterator.TakeIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeRightIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeRightWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeWhileIteratorMaterializer;
-import sparx.internal.lazy.iterator.UnionIteratorMaterializer;
 import sparx.internal.lazy.list.AppendAllListMaterializer;
 import sparx.internal.lazy.list.AppendListMaterializer;
 import sparx.internal.lazy.list.ArrayToListMaterializer;
@@ -107,6 +108,7 @@ import sparx.internal.lazy.list.CharSequenceToListMaterializer;
 import sparx.internal.lazy.list.CollectionToListMaterializer;
 import sparx.internal.lazy.list.CountListMaterializer;
 import sparx.internal.lazy.list.CountWhereListMaterializer;
+import sparx.internal.lazy.list.DiffListMaterializer;
 import sparx.internal.lazy.list.DoubleArrayToListMaterializer;
 import sparx.internal.lazy.list.DropListMaterializer;
 import sparx.internal.lazy.list.DropRightListMaterializer;
@@ -138,6 +140,7 @@ import sparx.internal.lazy.list.IncludesSliceListMaterializer;
 import sparx.internal.lazy.list.InsertAfterListMaterializer;
 import sparx.internal.lazy.list.InsertAllAfterListMaterializer;
 import sparx.internal.lazy.list.IntArrayToListMaterializer;
+import sparx.internal.lazy.list.IntersectListMaterializer;
 import sparx.internal.lazy.list.IteratorToListMaterializer;
 import sparx.internal.lazy.list.ListMaterializer;
 import sparx.internal.lazy.list.ListToListMaterializer;
@@ -509,13 +512,12 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+      final IteratorMaterializer<Object> elementsMaterializer = getElementsMaterializer(
           Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
-      return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
-          elementsContains(elementsMaterializer)));
+      return new Iterator<E>(new DiffIteratorMaterializer<E>(materializer, elementsMaterializer));
     }
 
     @Override
@@ -1142,13 +1144,13 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+      final IteratorMaterializer<Object> elementsMaterializer = getElementsMaterializer(
           Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
         return Iterator.of();
       }
-      return new Iterator<E>(new RemoveWhereIteratorMaterializer<E>(materializer,
-          elementsNotContains(elementsMaterializer)));
+      return new Iterator<E>(
+          new IntersectIteratorMaterializer<E>(materializer, elementsMaterializer));
     }
 
     @Override
@@ -2012,7 +2014,8 @@ public class lazy extends Sparx {
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
-      return new Iterator<E>(new UnionIteratorMaterializer<E>(materializer, elementsMaterializer));
+      final List<E> list = toList();
+      return list.appendAll(new Iterator<E>(elementsMaterializer).diff(list)).iterator();
     }
 
     private static class SuppliedMaterializer<E> implements IteratorMaterializer<E> {
@@ -2413,8 +2416,7 @@ public class lazy extends Sparx {
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
-      return new List<E>(
-          new RemoveWhereListMaterializer<E>(materializer, elementsContains(elementsMaterializer)));
+      return new List<E>(new DiffListMaterializer<E>(materializer, elementsMaterializer));
     }
 
     @Override
@@ -3191,8 +3193,7 @@ public class lazy extends Sparx {
       if (elementsMaterializer.knownSize() == 0) {
         return List.of();
       }
-      return new List<E>(new RemoveWhereListMaterializer<E>(materializer,
-          elementsNotContains(elementsMaterializer)));
+      return new List<E>(new IntersectListMaterializer<E>(materializer, elementsMaterializer));
     }
 
     @Override
@@ -4053,9 +4054,7 @@ public class lazy extends Sparx {
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
-      return new List<E>(new AppendAllListMaterializer<E>(materializer,
-          new RemoveWhereListMaterializer<E>(elementsMaterializer,
-              elementsContains(materializer))));
+      return appendAll(new List<E>(elementsMaterializer).diff(this));
     }
 
     int knownSize() {

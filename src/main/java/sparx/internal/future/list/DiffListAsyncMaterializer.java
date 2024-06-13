@@ -55,6 +55,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     return -1;
   }
 
+  // TODO: fix implementation (multiple X)
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;

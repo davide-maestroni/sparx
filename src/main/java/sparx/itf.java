@@ -2346,6 +2346,8 @@ class itf {
     @NotNull
     Sequence<Boolean> startsWith(@NotNull Iterable<?> elements);
 
+    // TODO: symmetricDiff
+
     @NotNull
     Sequence<E> take(int maxElements);
 

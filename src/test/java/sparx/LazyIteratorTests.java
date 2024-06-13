@@ -3085,7 +3085,7 @@ public class LazyIteratorTests {
         Iterator.of(1, 2, null, 4).union(Iterator.of(1, 3, 4)).toList());
     assertEquals(List.of(1, 2, null, 4, 3, 3),
         Iterator.of(1, 2, null, 4).union(List.of(3, 1, 3)).toList());
-    assertEquals(List.of(1, 2, null, 4),
+    assertEquals(List.of(1, 2, null, 4, null),
         Iterator.of(1, 2, null, 4).union(Iterator.of(null, null)).toList());
     assertEquals(List.of(1, null, 2, 4),
         Iterator.of(1, null).union(List.of(1, 2, null, 4)).toList());
