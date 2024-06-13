@@ -264,7 +264,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
             context.scheduleAfter(this);
           } else {
             final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-            consumeState(setDone(new ListToListAsyncMaterializer<E>(materialized)));
+            consumeState(setState(new ListToListAsyncMaterializer<E>(materialized)));
           }
         } else {
           final int maxElements = wrappedSize - index - 1;

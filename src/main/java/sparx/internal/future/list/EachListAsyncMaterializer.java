@@ -222,7 +222,7 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     }
 
     private void setState(final boolean matches) throws Exception {
-      consumeState(setDone(new ListToListAsyncMaterializer<Boolean>(
+      consumeState(EachListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<Boolean>(
           decorateFunction.apply(Collections.singletonList(matches)))));
     }
 

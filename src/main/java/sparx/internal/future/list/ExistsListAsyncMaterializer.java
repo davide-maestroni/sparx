@@ -223,8 +223,9 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     private void setState(final boolean matches) throws Exception {
-      consumeState(setDone(new ListToListAsyncMaterializer<Boolean>(
-          decorateFunction.apply(Collections.singletonList(matches)))));
+      consumeState(ExistsListAsyncMaterializer.this.setState(
+          new ListToListAsyncMaterializer<Boolean>(
+              decorateFunction.apply(Collections.singletonList(matches)))));
     }
 
     private class MaterializingAsyncConsumer extends

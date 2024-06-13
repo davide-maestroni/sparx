@@ -219,8 +219,9 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     private void setState(final int size) throws Exception {
-      consumeState(setDone(new ListToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.singletonList(size)))));
+      consumeState(CountWhereListAsyncMaterializer.this.setState(
+          new ListToListAsyncMaterializer<Integer>(
+              decorateFunction.apply(Collections.singletonList(size)))));
     }
 
     private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements

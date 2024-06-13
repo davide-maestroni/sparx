@@ -251,7 +251,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       @Override
       public void cancellableComplete(final int size) throws Exception {
         final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-        consumeState(setDone(new ListToListAsyncMaterializer<E>(materialized)));
+        consumeState(setState(new ListToListAsyncMaterializer<E>(materialized)));
       }
 
       @Override

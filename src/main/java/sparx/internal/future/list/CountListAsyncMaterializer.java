@@ -219,8 +219,9 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     }
 
     private void setState(final int size) throws Exception {
-      consumeState(setDone(new ListToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.singletonList(size)))));
+      consumeState(CountListAsyncMaterializer.this.setState(
+          new ListToListAsyncMaterializer<Integer>(
+              decorateFunction.apply(Collections.singletonList(size)))));
     }
   }
 }

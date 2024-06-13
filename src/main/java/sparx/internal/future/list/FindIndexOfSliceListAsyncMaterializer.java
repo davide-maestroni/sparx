@@ -254,13 +254,15 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     }
 
     private void setState() throws Exception {
-      consumeState(setDone(new ListToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.<Integer>emptyList()))));
+      consumeState(FindIndexOfSliceListAsyncMaterializer.this.setState(
+          new ListToListAsyncMaterializer<Integer>(
+              decorateFunction.apply(Collections.<Integer>emptyList()))));
     }
 
     private void setState(final int index) throws Exception {
-      consumeState(setDone(new ListToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.singletonList(index)))));
+      consumeState(FindIndexOfSliceListAsyncMaterializer.this.setState(
+          new ListToListAsyncMaterializer<Integer>(
+              decorateFunction.apply(Collections.singletonList(index)))));
     }
 
     private class MaterializingAsyncConsumer extends

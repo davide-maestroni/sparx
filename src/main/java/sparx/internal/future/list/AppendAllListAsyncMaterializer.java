@@ -254,7 +254,7 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
               @Override
               public void cancellableAccept(final List<E> elements) throws Exception {
                 final List<E> materialized = appendFunction.apply(wrappedElements, elements);
-                setDone(new ListToListAsyncMaterializer<E>(materialized));
+                setState(new ListToListAsyncMaterializer<E>(materialized));
                 consumeElements(materialized);
               }
 

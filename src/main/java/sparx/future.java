@@ -74,6 +74,7 @@ import sparx.internal.future.list.FoldLeftListAsyncMaterializer;
 import sparx.internal.future.list.FoldRightListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
+import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
 import sparx.util.Require;
@@ -1691,13 +1692,13 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<? extends List<E>> group(int maxSize) {
+    public @NotNull List<? extends List<E>> group(final int maxSize) {
       // TODO: implement slice
       return null;
     }
 
     @Override
-    public @NotNull List<? extends List<E>> group(int size, E padding) {
+    public @NotNull List<? extends List<E>> group(final int size, final E padding) {
       return null;
     }
 
@@ -2308,8 +2309,40 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> slice(int start, int end) {
-      return null;
+    public @NotNull List<E> slice(final int start, final int end) {
+      if (end == Integer.MAX_VALUE && start >= 0) {
+        return drop(start);
+      }
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if ((start == end) || (end >= 0 && start >= end)) {
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+      }
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (knownSize > 0) {
+        final int knownStart;
+        if (start < 0) {
+          knownStart = Math.max(0, knownSize + start);
+        } else {
+          knownStart = Math.min(knownSize, start);
+        }
+        final int knownEnd;
+        if (end < 0) {
+          knownEnd = Math.max(0, knownSize + end);
+        } else {
+          knownEnd = Math.min(knownSize, end);
+        }
+        if (knownStart >= knownEnd) {
+          return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        }
+      }
+      return new List<E>(context, cancelException,
+          new SliceListAsyncMaterializer<E>(materializer, start, end, context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override

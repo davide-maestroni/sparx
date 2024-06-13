@@ -152,11 +152,6 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @NotNull
-  final ListAsyncMaterializer<E> setDone(@NotNull final ListAsyncMaterializer<E> doneState) {
-    return setState(doneState, STATUS_DONE);
-  }
-
-  @NotNull
   final ListAsyncMaterializer<E> setState(@NotNull final ListAsyncMaterializer<E> newState) {
     return setState(newState, STATUS_RUNNING);
   }

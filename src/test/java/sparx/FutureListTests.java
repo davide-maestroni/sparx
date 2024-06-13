@@ -1614,4 +1614,97 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
     }
   }
+
+  @Test
+  public void slice() {
+    var l = List.of(1, 2, null, 4).toFuture(context);
+    assertTrue(l.slice(1, 1).isEmpty());
+    assertEquals(0, l.slice(1, 1).size());
+    assertEquals(List.of(), l.slice(1, 1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.slice(1, 1).get(0));
+    assertTrue(l.slice(1, 0).isEmpty());
+    assertEquals(0, l.slice(1, 0).size());
+    assertEquals(List.of(), l.slice(1, 0));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.slice(1, 0).get(0));
+    assertTrue(l.slice(1, -3).isEmpty());
+    assertEquals(0, l.slice(1, -3).size());
+    assertEquals(List.of(), l.slice(1, -3));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.slice(1, -3).get(0));
+    assertTrue(l.slice(1, -4).isEmpty());
+    assertEquals(0, l.slice(1, -4).size());
+    assertEquals(List.of(), l.slice(1, -4));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.slice(1, -4).get(0));
+    assertTrue(l.slice(1, -5).isEmpty());
+    assertEquals(0, l.slice(1, -5).size());
+    assertEquals(List.of(), l.slice(1, -5));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.slice(1, -5).get(0));
+    assertTrue(l.slice(-1, 1).isEmpty());
+    assertEquals(0, l.slice(-1, 1).size());
+    assertEquals(List.of(), l.slice(-1, 1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.slice(-1, 1).get(0));
+    assertTrue(l.slice(-1, 3).isEmpty());
+    assertEquals(0, l.slice(-1, 3).size());
+    assertEquals(List.of(), l.slice(-1, 3));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.slice(-1, 3).get(0));
+    assertTrue(l.slice(-1, -1).isEmpty());
+    assertEquals(0, l.slice(-1, -1).size());
+    assertEquals(List.of(), l.slice(-1, -1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.slice(-1, -1).get(0));
+    assertTrue(l.slice(-1, -4).isEmpty());
+    assertEquals(0, l.slice(-1, -4).size());
+    assertEquals(List.of(), l.slice(-1, -4));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.slice(-1, -4).get(0));
+
+    assertFalse(l.slice(1, -1).isEmpty());
+    assertEquals(2, l.slice(1, -1).size());
+    assertEquals(List.of(2, null), l.slice(1, -1));
+    assertNull(l.slice(1, -1).get(1));
+    assertFalse(l.slice(1, -2).isEmpty());
+    assertEquals(1, l.slice(1, -2).size());
+    assertEquals(List.of(2), l.slice(1, -2));
+    assertEquals(2, l.slice(1, -2).get(0));
+    assertFalse(l.slice(1, 3).isEmpty());
+    assertEquals(2, l.slice(1, 3).size());
+    assertEquals(List.of(2, null), l.slice(1, 3));
+    assertNull(l.slice(1, 3).get(1));
+    assertFalse(l.slice(1, 2).isEmpty());
+    assertEquals(1, l.slice(1, 2).size());
+    assertEquals(List.of(2), l.slice(1, 2));
+    assertEquals(2, l.slice(1, 2).get(0));
+    assertFalse(l.slice(-1, 4).isEmpty());
+    assertEquals(1, l.slice(-1, 4).size());
+    assertEquals(List.of(4), l.slice(-1, 4));
+    assertEquals(4, l.slice(-1, 4).get(0));
+    assertFalse(l.slice(-2, -1).isEmpty());
+    assertEquals(1, l.slice(-2, -1).size());
+    assertEquals(List.of(null), l.slice(-2, -1));
+    assertNull(l.slice(-2, -1).get(0));
+
+    assertFalse(l.slice(0, Integer.MAX_VALUE).isEmpty());
+    assertEquals(4, l.slice(0, Integer.MAX_VALUE).size());
+    assertEquals(List.of(1, 2, null, 4), l.slice(0, Integer.MAX_VALUE));
+    assertEquals(2, l.slice(0, Integer.MAX_VALUE).get(1));
+
+    assertTrue(List.of().toFuture(context).slice(1, -1).isEmpty());
+    assertEquals(0, List.of().toFuture(context).slice(1, -1).size());
+    assertEquals(List.of(), List.of().toFuture(context).slice(1, -1));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> List.of().toFuture(context).slice(1, -1).get(0));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).findFirst(i -> {
+        Thread.sleep(60000);
+        return false;
+      }).slice(1);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
 }

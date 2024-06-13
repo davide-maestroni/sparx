@@ -373,7 +373,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       @Override
       public void cancellableComplete(final int size) throws Exception {
         final List<F> materialized = decorateFunction.apply(elements);
-        setDone(new ListToListAsyncMaterializer<F>(materialized));
+        setState(new ListToListAsyncMaterializer<F>(materialized));
         consumeComplete(elements.size());
       }
 

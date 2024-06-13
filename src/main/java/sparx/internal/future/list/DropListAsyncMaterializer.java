@@ -176,7 +176,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         if (wrappedSize >= 0 && wrappedSize <= maxElements) {
           try {
             final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-            setDone(new ListToListAsyncMaterializer<E>(materialized));
+            setState(new ListToListAsyncMaterializer<E>(materialized));
             consumeElements(materialized);
           } catch (final Exception e) {
             if (e instanceof InterruptedException) {
@@ -310,7 +310,9 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
-        consumeElements(decorateFunction.apply(elements));
+        final List<E> materialized = decorateFunction.apply(elements);
+        setState(new ListToListAsyncMaterializer<E>(materialized));
+        consumeElements(materialized);
       }
 
       @Override

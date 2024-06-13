@@ -460,8 +460,9 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       public void cancellableComplete(final int size) throws Exception {
         if (isWrapped) {
           wrappedSize = size;
-          setDone(new ListToListAsyncMaterializer<E>(decorateFunction.apply(elements)));
-          consumeElements(elements);
+          final List<E> materialized = decorateFunction.apply(elements);
+          setState(new ListToListAsyncMaterializer<E>(materialized));
+          consumeElements(materialized);
         } else {
           elementsSize = size;
           isWrapped = true;

@@ -371,7 +371,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       @Override
       public void cancellableComplete(final int size) throws Exception {
         final List<E> materialized = decorateFunction.apply(elements);
-        setDone(new ListToListAsyncMaterializer<E>(materialized));
+        setState(new ListToListAsyncMaterializer<E>(materialized));
         consumeElements(elements.size());
       }
 

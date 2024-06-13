@@ -223,7 +223,7 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     }
 
     private void setState(final F result) throws Exception {
-      consumeState(setDone(new ListToListAsyncMaterializer<F>(
+      consumeState(FoldLeftListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<F>(
           decorateFunction.apply(Collections.singletonList(result)))));
     }
 

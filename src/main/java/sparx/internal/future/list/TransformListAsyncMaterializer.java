@@ -62,7 +62,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       @Override
       public void accept(final List<F> elements) throws Exception {
         materialize(elements);
-        setDone(getState());
+        setState(getState());
         consumer.accept(elements);
       }
 
