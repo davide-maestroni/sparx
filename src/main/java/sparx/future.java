@@ -70,6 +70,8 @@ import sparx.internal.future.list.FlatMapFirstWhereListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapWhereListAsyncMaterializer;
+import sparx.internal.future.list.FoldLeftListAsyncMaterializer;
+import sparx.internal.future.list.FoldRightListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
@@ -1549,13 +1551,33 @@ class future extends Sparx {
     @Override
     public @NotNull <F> List<F> foldLeft(final F identity,
         @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<F>(context, cancelException,
+            new ElementToListAsyncMaterializer<F>(lazy.List.of(identity)));
+      }
+      return new List<F>(context, cancelException,
+          new FoldLeftListAsyncMaterializer<E, F>(materializer, identity,
+              Require.notNull(operation, "operation"), context, cancelException,
+              List.<F>decorateFunction()));
     }
 
     @Override
     public @NotNull <F> List<F> foldRight(final F identity,
         @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<F>(context, cancelException,
+            new ElementToListAsyncMaterializer<F>(lazy.List.of(identity)));
+      }
+      return new List<F>(context, cancelException,
+          new FoldRightListAsyncMaterializer<E, F>(materializer, identity,
+              Require.notNull(operation, "operation"), context, cancelException,
+              List.<F>decorateFunction()));
     }
 
     @Override

@@ -187,7 +187,7 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     @Override
     public int weightElements() {
-      return wrapped.weightElement();
+      return wrapped.weightEmpty();
     }
 
     @Override
@@ -221,9 +221,9 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       }
     }
 
-    private void setState(final boolean allMatches) throws Exception {
+    private void setState(final boolean matches) throws Exception {
       consumeState(setDone(new ListToListAsyncMaterializer<Boolean>(
-          decorateFunction.apply(Collections.singletonList(allMatches)))));
+          decorateFunction.apply(Collections.singletonList(matches)))));
     }
 
     private class MaterializingAsyncConsumer extends

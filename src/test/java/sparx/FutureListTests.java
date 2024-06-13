@@ -1545,4 +1545,73 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
     }
   }
+
+  @Test
+  public void foldLeft() {
+    var l = List.of(1, 2, 3, 4, 5).toFuture(context);
+    assertFalse(l.foldLeft(1, Integer::sum).isEmpty());
+    assertEquals(1, l.foldLeft(1, Integer::sum).size());
+    assertEquals(List.of(16), l.foldLeft(1, Integer::sum));
+    assertEquals(16, l.foldLeft(1, Integer::sum).get(0));
+
+    assertEquals(List.of(1, 2),
+        List.of(1, 2).toFuture(context).foldLeft(List.of(), List::append).get(0));
+
+    assertFalse(List.<Integer>of().toFuture(context).foldLeft(1, Integer::sum).isEmpty());
+    assertEquals(1, List.<Integer>of().toFuture(context).foldLeft(1, Integer::sum).size());
+    assertEquals(List.of(1), List.<Integer>of().toFuture(context).foldLeft(1, Integer::sum));
+    assertEquals(1, List.<Integer>of().toFuture(context).foldLeft(1, Integer::sum).get(0));
+    assertEquals(List.of(), List.of().toFuture(context).foldLeft(List.of(), List::append).get(0));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).foldLeft(0, (a, i) -> {
+        Thread.sleep(60000);
+        return i;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
+
+  @Test
+  public void foldRight() {
+    var l = List.of(1, 2, 3, 4, 5).toFuture(context);
+    assertFalse(l.foldRight(1, Integer::sum).isEmpty());
+    assertEquals(1, l.foldRight(1, Integer::sum).size());
+    assertEquals(List.of(16), l.foldRight(1, Integer::sum));
+    assertEquals(16, l.foldRight(1, Integer::sum).get(0));
+
+    assertEquals(List.of(2, 1),
+        List.of(1, 2).toFuture(context).foldRight(List.of(), (i, li) -> li.append(i)).get(0));
+
+    assertFalse(List.<Integer>of().toFuture(context).foldRight(1, Integer::sum).isEmpty());
+    assertEquals(1, List.<Integer>of().toFuture(context).foldRight(1, Integer::sum).size());
+    assertEquals(List.of(1), List.<Integer>of().toFuture(context).foldRight(1, Integer::sum));
+    assertEquals(1, List.<Integer>of().toFuture(context).foldRight(1, Integer::sum).get(0));
+    assertEquals(List.of(),
+        List.of().toFuture(context).foldRight(List.of(), (i, li) -> li.append(i)).get(0));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).foldRight(0, (i, a) -> {
+        Thread.sleep(60000);
+        return i;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
 }
