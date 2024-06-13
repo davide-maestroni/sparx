@@ -239,14 +239,14 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
           decorateFunction.apply(Collections.singletonList(element)))));
     }
 
-    private class MaterializingAsyncConsumer implements AsyncConsumer<Integer>,
-        IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends
+        CancellableMultiAsyncConsumer<Integer, E> implements Task {
 
       private int index;
       private String taskID;
 
       @Override
-      public void accept(final Integer size) throws Exception {
+      public void cancellableAccept(final Integer size) throws Exception {
         if (size == 0) {
           setState();
         } else {
@@ -257,7 +257,8 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
         if (predicate.test(index, element)) {
           setState(element);
         } else if (index == 0) {
@@ -267,10 +268,6 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
           taskID = getTaskID();
           context.scheduleAfter(this);
         }
-      }
-
-      @Override
-      public void complete(final int size) {
       }
 
       @Override

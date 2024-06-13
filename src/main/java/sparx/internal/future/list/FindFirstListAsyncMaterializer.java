@@ -239,17 +239,15 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           decorateFunction.apply(Collections.singletonList(element)))));
     }
 
-    private class MaterializingAsyncConsumer implements AsyncConsumer<Boolean>,
-        IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends
+        CancellableMultiAsyncConsumer<Boolean, E> implements Task {
 
       private int index;
       private String taskID;
 
       @Override
-      public void accept(final Boolean empty) throws Exception {
-        if (FindFirstListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (empty) {
+      public void cancellableAccept(final Boolean empty) throws Exception {
+        if (empty) {
           setState();
         } else {
           taskID = getTaskID();
@@ -258,10 +256,9 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (FindFirstListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (predicate.test(index, element)) {
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        if (predicate.test(index, element)) {
           setState(element);
         } else {
           this.index = index + 1;
@@ -271,12 +268,8 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (FindFirstListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          setState();
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        setState();
       }
 
       @Override

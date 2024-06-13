@@ -230,12 +230,10 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        elementsMaterializer.materializeEmpty(new AsyncConsumer<Boolean>() {
+        elementsMaterializer.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
           @Override
-          public void accept(final Boolean empty) throws Exception {
-            if (FindIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else if (empty) {
+          public void cancellableAccept(final Boolean empty) throws Exception {
+            if (empty) {
               setState(0);
             } else {
               wrapped.materializeEmpty(new MaterializingAsyncConsumer());
@@ -265,8 +263,8 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
           decorateFunction.apply(Collections.singletonList(index)))));
     }
 
-    private class MaterializingAsyncConsumer implements AsyncConsumer<Boolean>,
-        IndexedAsyncConsumer<Object>, Task {
+    private class MaterializingAsyncConsumer extends
+        CancellableMultiAsyncConsumer<Boolean, Object> implements Task {
 
       private Object element;
       private int elementsIndex;
@@ -276,10 +274,8 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       private int wrappedIndex;
 
       @Override
-      public void accept(final Boolean empty) throws Exception {
-        if (FindIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (empty) {
+      public void cancellableAccept(final Boolean empty) throws Exception {
+        if (empty) {
           setState();
         } else {
           isWrapped = false;
@@ -288,10 +284,8 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       }
 
       @Override
-      public void accept(final int size, final int index, final Object element) {
-        if (FindIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (isWrapped) {
+      public void cancellableAccept(final int size, final int index, final Object element) {
+        if (isWrapped) {
           ++wrappedIndex;
           isWrapped = false;
           final ListAsyncMaterializer<Object> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
@@ -309,10 +303,8 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (FindIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (isWrapped) {
+      public void cancellableComplete(final int size) throws Exception {
+        if (isWrapped) {
           setState();
         } else {
           setState(index);

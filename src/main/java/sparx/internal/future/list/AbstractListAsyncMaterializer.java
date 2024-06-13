@@ -215,7 +215,7 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     }
   }
 
-  protected abstract class CancellableAllAsyncConsumer<P1, P2> implements AsyncConsumer<P1>,
+  protected abstract class CancellableMultiAsyncConsumer<P1, P2> implements AsyncConsumer<P1>,
       IndexedAsyncConsumer<P2> {
 
     @Override

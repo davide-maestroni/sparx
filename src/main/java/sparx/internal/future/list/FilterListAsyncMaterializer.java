@@ -347,38 +347,32 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       }
     }
 
-    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
+        Task {
 
       private String taskID;
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (FilterListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          nextIndex = index + 1;
-          if (predicate.test(index, element)) {
-            final ArrayList<E> elements = ImmaterialState.this.elements;
-            final int elementsIndex = elements.size();
-            elements.add(element);
-            consumeElement(elementsIndex, element);
-          }
-          if (!elementsConsumers.isEmpty()) {
-            taskID = getTaskID();
-            context.scheduleAfter(this);
-          }
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        nextIndex = index + 1;
+        if (predicate.test(index, element)) {
+          final ArrayList<E> elements = ImmaterialState.this.elements;
+          final int elementsIndex = elements.size();
+          elements.add(element);
+          consumeElement(elementsIndex, element);
+        }
+        if (!elementsConsumers.isEmpty()) {
+          taskID = getTaskID();
+          context.scheduleAfter(this);
         }
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (FilterListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          final List<E> materialized = decorateFunction.apply(elements);
-          setDone(new ListToListAsyncMaterializer<E>(materialized));
-          consumeElements(elements.size());
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        final List<E> materialized = decorateFunction.apply(elements);
+        setDone(new ListToListAsyncMaterializer<E>(materialized));
+        consumeElements(elements.size());
       }
 
       @Override

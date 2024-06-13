@@ -116,22 +116,16 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     @Override
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      elementsMaterializer.materializeContains(element, new AsyncConsumer<Boolean>() {
+      elementsMaterializer.materializeContains(element, new CancellableAsyncConsumer<Boolean>() {
         @Override
-        public void accept(final Boolean contains) throws Exception {
-          if (DiffListAsyncMaterializer.this.isCancelled()) {
-            error(new CancellationException());
-          } else if (contains) {
+        public void cancellableAccept(final Boolean contains) throws Exception {
+          if (contains) {
             consumer.accept(false);
           } else {
-            wrapped.materializeContains(element, new AsyncConsumer<Boolean>() {
+            wrapped.materializeContains(element, new CancellableAsyncConsumer<Boolean>() {
               @Override
-              public void accept(final Boolean contains) throws Exception {
-                if (DiffListAsyncMaterializer.this.isCancelled()) {
-                  error(new CancellationException());
-                } else {
-                  consumer.accept(contains);
-                }
+              public void cancellableAccept(final Boolean contains) throws Exception {
+                consumer.accept(contains);
               }
 
               @Override
@@ -143,7 +137,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         }
 
         @Override
-        public void error(@NotNull Exception error) throws Exception {
+        public void error(@NotNull final Exception error) throws Exception {
           consumer.error(error);
         }
       });
@@ -361,49 +355,37 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       }
     }
 
-    private class MaterializingAsyncConsumer implements AsyncConsumer<Boolean>,
-        IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends
+        CancellableMultiAsyncConsumer<Boolean, E> implements Task {
 
       private E element;
       private String taskID;
 
       @Override
-      public void accept(final Boolean contains) {
-        if (DiffListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          if (!contains) {
-            final int wrappedIndex = elements.size();
-            elements.add(element);
-            consumeElement(wrappedIndex, element);
-          }
-          if (!elementsConsumers.isEmpty()) {
-            taskID = getTaskID();
-            context.scheduleAfter(this);
-          }
+      public void cancellableAccept(final Boolean contains) {
+        if (!contains) {
+          final int wrappedIndex = elements.size();
+          elements.add(element);
+          consumeElement(wrappedIndex, element);
+        }
+        if (!elementsConsumers.isEmpty()) {
+          taskID = getTaskID();
+          context.scheduleAfter(this);
         }
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) {
-        if (DiffListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          this.element = element;
-          nextIndex = index + 1;
-          elementsMaterializer.materializeContains(element, this);
-        }
+      public void cancellableAccept(final int size, final int index, final E element) {
+        this.element = element;
+        nextIndex = index + 1;
+        elementsMaterializer.materializeContains(element, this);
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (DiffListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          final List<E> materialized = decorateFunction.apply(elements);
-          setDone(new ListToListAsyncMaterializer<E>(materialized));
-          consumeComplete(elements.size());
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        final List<E> materialized = decorateFunction.apply(elements);
+        setDone(new ListToListAsyncMaterializer<E>(materialized));
+        consumeComplete(elements.size());
       }
 
       @Override

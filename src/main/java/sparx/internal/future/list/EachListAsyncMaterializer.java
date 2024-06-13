@@ -227,7 +227,7 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     }
 
     private class MaterializingAsyncConsumer extends
-        CancellableAllAsyncConsumer<Boolean, E> implements Task {
+        CancellableMultiAsyncConsumer<Boolean, E> implements Task {
 
       private int index;
       private String taskID;

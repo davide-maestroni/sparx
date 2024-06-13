@@ -173,13 +173,12 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
       if (wrappedSize == 0) {
         safeConsume(consumer, true, LOGGER);
       } else if (wrappedSize > 0) {
-        wrapped.materializeElement(wrappedSize - 1, new IndexedAsyncConsumer<E>() {
+        wrapped.materializeElement(wrappedSize - 1, new CancellableIndexedAsyncConsumer<E>() {
           @Override
-          public void accept(final int size, final int index, final E element) throws Exception {
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
             try {
-              if (FlatMapLastWhereListAsyncMaterializer.this.isCancelled()) {
-                error(new CancellationException());
-              } else if (predicate.test(index, element)) {
+              if (predicate.test(index, element)) {
                 consumeState(setState(
                     new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status,
                         context, cancelException, decorateFunction)));
@@ -202,12 +201,8 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           }
 
           @Override
-          public void complete(final int size) throws Exception {
-            if (FlatMapLastWhereListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              consumer.accept(true);
-            }
+          public void cancellableComplete(final int size) throws Exception {
+            consumer.accept(true);
           }
 
           @Override
@@ -216,15 +211,11 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           }
         });
       } else {
-        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) throws Exception {
-            if (FlatMapLastWhereListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              wrappedSize = size;
-              materializeEmpty(consumer);
-            }
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            materializeEmpty(consumer);
           }
 
           @Override
@@ -286,15 +277,11 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
 
     private void materialized(@NotNull final StateConsumer<E> consumer) {
       if (wrappedSize < 0) {
-        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) {
-            if (FlatMapLastWhereListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              wrappedSize = size;
-              materialized(consumer);
-            }
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            materialized(consumer);
           }
 
           @Override
@@ -316,16 +303,16 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
       }
     }
 
-    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
+        Task {
 
       private int index;
       private String taskID;
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (FlatMapLastWhereListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (predicate.test(index, element)) {
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        if (predicate.test(index, element)) {
           consumeState(setState(
               new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
                   cancelException, decorateFunction)));
@@ -337,13 +324,6 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           } else {
             consumeState(setState(wrapped));
           }
-        }
-      }
-
-      @Override
-      public void complete(final int size) {
-        if (FlatMapLastWhereListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
         }
       }
 

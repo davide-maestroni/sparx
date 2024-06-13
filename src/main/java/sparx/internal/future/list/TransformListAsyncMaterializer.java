@@ -323,7 +323,6 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<F> consumer) {
-      int i = -1;
       try {
         final List<F> elements = this.elements;
         if (index < 0) {
@@ -334,7 +333,6 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
           if (index >= size) {
             safeConsumeComplete(consumer, size, LOGGER);
           } else {
-            i = index;
             safeConsume(consumer, size, index, elements.get(index), LOGGER);
           }
         }

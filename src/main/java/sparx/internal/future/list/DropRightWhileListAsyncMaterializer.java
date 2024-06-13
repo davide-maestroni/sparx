@@ -222,15 +222,11 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     private void materialized(@NotNull final StateConsumer<E> consumer) {
       if (wrappedSize < 0) {
-        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) {
-            if (DropRightWhileListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              wrappedSize = size;
-              materialized(consumer);
-            }
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            materialized(consumer);
           }
 
           @Override
@@ -252,16 +248,16 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
       }
     }
 
-    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
+        Task {
 
       private int index;
       private String taskID;
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (DropRightWhileListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (predicate.test(index, element)) {
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        if (predicate.test(index, element)) {
           if (index > 0) {
             this.index = index - 1;
             taskID = getTaskID();
@@ -279,13 +275,6 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
                 new DropRightListAsyncMaterializer<E>(wrapped, maxElements, status, context,
                     cancelException, decorateFunction)));
           }
-        }
-      }
-
-      @Override
-      public void complete(final int size) {
-        if (DropRightWhileListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
         }
       }
 

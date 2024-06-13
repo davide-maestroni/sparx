@@ -230,14 +230,10 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        elementsMaterializer.materializeSize(new AsyncConsumer<Integer>() {
+        elementsMaterializer.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) {
-            if (FindLastIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              wrapped.materializeSize(new MaterializingAsyncConsumer(size));
-            }
+          public void cancellableAccept(final Integer size) {
+            wrapped.materializeSize(new MaterializingAsyncConsumer(size));
           }
 
           @Override
@@ -263,8 +259,8 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
           decorateFunction.apply(Collections.singletonList(index)))));
     }
 
-    private class MaterializingAsyncConsumer implements AsyncConsumer<Integer>,
-        IndexedAsyncConsumer<Object>, Task {
+    private class MaterializingAsyncConsumer extends
+        CancellableMultiAsyncConsumer<Integer, Object> implements Task {
 
       private final int elementsSize;
 
@@ -280,10 +276,8 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
       }
 
       @Override
-      public void accept(final Integer size) throws Exception {
-        if (FindLastIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (elementsSize == 0) {
+      public void cancellableAccept(final Integer size) throws Exception {
+        if (elementsSize == 0) {
           setState(size);
         } else if (size == 0) {
           setState();
@@ -295,10 +289,9 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
       }
 
       @Override
-      public void accept(final int size, final int index, final Object element) throws Exception {
-        if (FindLastIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (isWrapped) {
+      public void cancellableAccept(final int size, final int index, final Object element)
+          throws Exception {
+        if (isWrapped) {
           --wrappedIndex;
           isWrapped = false;
           final ListAsyncMaterializer<Object> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
@@ -320,13 +313,6 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
           this.element = element;
           taskID = getTaskID();
           context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void complete(final int size) {
-        if (FindLastIndexOfSliceListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
         }
       }
 

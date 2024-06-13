@@ -224,16 +224,16 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
     }
 
-    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
+        Task {
 
       private int index;
       private String taskID;
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (DropWhileListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (predicate.test(index, element)) {
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        if (predicate.test(index, element)) {
           this.index = index + 1;
           taskID = getTaskID();
           context.scheduleAfter(this);
@@ -249,13 +249,9 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (DropWhileListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-          consumeState(setDone(new ListToListAsyncMaterializer<E>(materialized)));
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
+        consumeState(setDone(new ListToListAsyncMaterializer<E>(materialized)));
       }
 
       @Override

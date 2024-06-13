@@ -221,20 +221,16 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       if (stateConsumers.size() == 1) {
         final ListAsyncMaterializer<E> wrapped = this.wrapped;
         final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
-        elementsMaterializer.materializeSize(new AsyncConsumer<Integer>() {
+        elementsMaterializer.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void accept(final Integer elementsSize) throws Exception {
-            if (EndsWithListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else if (elementsSize == 0) {
+          public void cancellableAccept(final Integer elementsSize) throws Exception {
+            if (elementsSize == 0) {
               setState(true);
             } else {
-              wrapped.materializeSize(new AsyncConsumer<Integer>() {
+              wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
                 @Override
-                public void accept(final Integer wrappedSize) throws Exception {
-                  if (EndsWithListAsyncMaterializer.this.isCancelled()) {
-                    error(new CancellationException());
-                  } else if (wrappedSize == 0) {
+                public void cancellableAccept(final Integer wrappedSize) throws Exception {
+                  if (wrappedSize == 0) {
                     setState(false);
                   } else {
                     elementsMaterializer.materializeElement(elementsSize - 1,
@@ -272,7 +268,8 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       }
     }
 
-    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<Object>, Task {
+    private class MaterializingAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<Object> implements Task {
 
       private Object element;
       private int elementsIndex;
@@ -285,10 +282,9 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       }
 
       @Override
-      public void accept(final int size, final int index, final Object element) throws Exception {
-        if (EndsWithListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (isWrapped) {
+      public void cancellableAccept(final int size, final int index, final Object element)
+          throws Exception {
+        if (isWrapped) {
           if (this.element == null ? element != null : !this.element.equals(element)) {
             setState(false);
           } else if (elementsIndex == 0) {
@@ -306,13 +302,6 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
             taskID = getTaskID();
             context.scheduleAfter(this);
           }
-        }
-      }
-
-      @Override
-      public void complete(final int size) {
-        if (EndsWithListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
         }
       }
 

@@ -343,7 +343,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
     }
 
-    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
+        Task {
 
       private final MaterializingElementAsyncConsumer consumer;
 
@@ -359,28 +360,21 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        final IteratorAsyncMaterializer<F> materializer = mapper.apply(index, element);
+        if (materializer.knownSize() == 0) {
+          schedule();
         } else {
-          final IteratorAsyncMaterializer<F> materializer = mapper.apply(index, element);
-          if (materializer.knownSize() == 0) {
-            schedule();
-          } else {
-            (elementsMaterializer = materializer).materializeNext(consumer);
-          }
+          (elementsMaterializer = materializer).materializeNext(consumer);
         }
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          final List<F> materialized = decorateFunction.apply(elements);
-          setDone(new ListToListAsyncMaterializer<F>(materialized));
-          consumeComplete(elements.size());
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        final List<F> materialized = decorateFunction.apply(elements);
+        setDone(new ListToListAsyncMaterializer<F>(materialized));
+        consumeComplete(elements.size());
       }
 
       @Override
@@ -418,8 +412,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
     }
 
-    private class MaterializingContainsElementAsyncConsumer implements IndexedAsyncConsumer<F>,
-        Task {
+    private class MaterializingContainsElementAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<F> implements Task {
 
       private final AsyncConsumer<Boolean> consumer;
       private final Object element;
@@ -434,10 +428,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void accept(final int size, final int index, final F element) throws Exception {
-        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (this.element.equals(element)) {
+      public void cancellableAccept(final int size, final int index, final F element)
+          throws Exception {
+        if (this.element.equals(element)) {
           consumer.accept(true);
         } else {
           this.index = index + 1;
@@ -447,12 +440,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          consumer.accept(false);
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        consumer.accept(false);
       }
 
       @Override
@@ -476,7 +465,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
     }
 
-    private class MaterializingContainsNullAsyncConsumer implements IndexedAsyncConsumer<F>, Task {
+    private class MaterializingContainsNullAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<F> implements Task {
 
       private final AsyncConsumer<Boolean> consumer;
 
@@ -489,10 +479,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void accept(final int size, final int index, final F element) throws Exception {
-        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if (element == null) {
+      public void cancellableAccept(final int size, final int index, final F element)
+          throws Exception {
+        if (element == null) {
           consumer.accept(true);
         } else {
           this.index = index + 1;
@@ -502,12 +491,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          consumer.accept(false);
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        consumer.accept(false);
       }
 
       @Override
@@ -531,7 +516,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
     }
 
-    private class MaterializingElementAsyncConsumer implements IndexedAsyncConsumer<F>, Task {
+    private class MaterializingElementAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<F> implements Task {
 
       private final MaterializingAsyncConsumer consumer;
       private final int maxIndex;
@@ -550,30 +536,22 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void accept(final int size, final int index, final F element) {
-        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
+      public void cancellableAccept(final int size, final int index, final F element) {
+        final ArrayList<F> elements = ImmaterialState.this.elements;
+        final int elementIndex = elements.size();
+        elements.add(element);
+        consumeElement(elementIndex, element);
+        if (elements.size() > maxIndex) {
+          consumeComplete(elements.size());
         } else {
-          final ArrayList<F> elements = ImmaterialState.this.elements;
-          final int elementIndex = elements.size();
-          elements.add(element);
-          consumeElement(elementIndex, element);
-          if (elements.size() > maxIndex) {
-            consumeComplete(elements.size());
-          } else {
-            taskID = getTaskID();
-            context.scheduleAfter(this);
-          }
+          taskID = getTaskID();
+          context.scheduleAfter(this);
         }
       }
 
       @Override
-      public void complete(final int size) {
-        if (FlatMapListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          consumer.schedule();
-        }
+      public void cancellableComplete(final int size) {
+        consumer.schedule();
       }
 
       @Override

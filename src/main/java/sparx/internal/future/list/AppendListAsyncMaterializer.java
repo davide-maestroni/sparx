@@ -116,14 +116,10 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       if (element == appended || (element != null && element.equals(appended))) {
         safeConsume(consumer, true, LOGGER);
       } else {
-        wrapped.materializeContains(element, new AsyncConsumer<Boolean>() {
+        wrapped.materializeContains(element, new CancellableAsyncConsumer<Boolean>() {
           @Override
-          public void accept(final Boolean contains) throws Exception {
-            if (AppendListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              consumer.accept(contains);
-            }
+          public void cancellableAccept(final Boolean contains) throws Exception {
+            consumer.accept(contains);
           }
 
           @Override
@@ -141,26 +137,19 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      wrapped.materializeEach(new IndexedAsyncConsumer<E>() {
+      wrapped.materializeEach(new CancellableIndexedAsyncConsumer<E>() {
         @Override
-        public void accept(final int size, final int index, final E element) throws Exception {
-          if (AppendListAsyncMaterializer.this.isCancelled()) {
-            error(new CancellationException());
-          } else {
-            final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size));
-            consumer.accept(knownSize, index, element);
-          }
+        public void cancellableAccept(final int size, final int index, final E element)
+            throws Exception {
+          final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size));
+          consumer.accept(knownSize, index, element);
         }
 
         @Override
-        public void complete(final int size) throws Exception {
-          if (AppendListAsyncMaterializer.this.isCancelled()) {
-            error(new CancellationException());
-          } else {
-            final int knownSize = safeSize(wrappedSize = size);
-            consumer.accept(knownSize, size, element);
-            consumer.complete(knownSize);
-          }
+        public void cancellableComplete(final int size) throws Exception {
+          final int knownSize = safeSize(wrappedSize = size);
+          consumer.accept(knownSize, size, element);
+          consumer.complete(knownSize);
         }
 
         @Override
@@ -176,28 +165,21 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       if (index < 0) {
         safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
-        wrapped.materializeElement(index, new IndexedAsyncConsumer<E>() {
+        wrapped.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
           @Override
-          public void accept(final int size, final int index, final E element) throws Exception {
-            if (AppendListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size));
-              consumer.accept(knownSize, index, element);
-            }
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
+            final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size));
+            consumer.accept(knownSize, index, element);
           }
 
           @Override
-          public void complete(final int size) throws Exception {
-            if (AppendListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
+          public void cancellableComplete(final int size) throws Exception {
+            wrappedSize = size;
+            if (size == index) {
+              consumer.accept(safeSize(size), size, element);
             } else {
-              wrappedSize = size;
-              if (size == index) {
-                consumer.accept(safeSize(size), size, element);
-              } else {
-                consumer.complete(safeSize(size));
-              }
+              consumer.complete(safeSize(size));
             }
           }
 
@@ -214,16 +196,12 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
-        wrapped.materializeElements(new AsyncConsumer<List<E>>() {
+        wrapped.materializeElements(new CancellableAsyncConsumer<List<E>>() {
           @Override
-          public void accept(final List<E> elements) throws Exception {
-            if (AppendListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              final List<E> materialized = appendFunction.apply(elements, element);
-              setDone(new ListToListAsyncMaterializer<E>(materialized));
-              consumeElements(materialized);
-            }
+          public void cancellableAccept(final List<E> elements) throws Exception {
+            final List<E> materialized = appendFunction.apply(elements, element);
+            setDone(new ListToListAsyncMaterializer<E>(materialized));
+            consumeElements(materialized);
           }
 
           @Override
@@ -251,14 +229,10 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       if (wrappedSize >= 0) {
         safeConsume(consumer, safeSize(wrappedSize), LOGGER);
       } else {
-        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) throws Exception {
-            if (AppendListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              consumer.accept(safeSize(wrappedSize = size));
-            }
+          public void cancellableAccept(final Integer size) throws Exception {
+            consumer.accept(safeSize(wrappedSize = size));
           }
 
           @Override

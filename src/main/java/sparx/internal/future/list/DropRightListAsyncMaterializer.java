@@ -125,15 +125,11 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (wrappedSize < 0) {
-        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) throws Exception {
-            if (DropRightListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              wrappedSize = size;
-              materializeContains(element, consumer);
-            }
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            materializeContains(element, consumer);
           }
 
           @Override
@@ -170,15 +166,11 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
       if (wrappedSize < 0) {
-        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) throws Exception {
-            if (DropRightListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              wrappedSize = size;
-              materializeEach(consumer);
-            }
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            materializeEach(consumer);
           }
 
           @Override
@@ -209,15 +201,11 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
         if (wrappedSize < 0) {
-          wrapped.materializeSize(new AsyncConsumer<Integer>() {
+          wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
             @Override
-            public void accept(final Integer size) throws Exception {
-              if (DropRightListAsyncMaterializer.this.isCancelled()) {
-                error(new CancellationException());
-              } else {
-                wrappedSize = size;
-                materializeElement(index, consumer);
-              }
+            public void cancellableAccept(final Integer size) {
+              wrappedSize = size;
+              materializeElement(index, consumer);
             }
 
             @Override
@@ -239,23 +227,16 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         } else if (index > maxIndex) {
           safeConsumeComplete(consumer, maxIndex + 1, LOGGER);
         } else {
-          wrapped.materializeElement(index, new IndexedAsyncConsumer<E>() {
+          wrapped.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
             @Override
-            public void accept(final int size, final int index, final E element) throws Exception {
-              if (DropRightListAsyncMaterializer.this.isCancelled()) {
-                error(new CancellationException());
-              } else {
-                consumer.accept(maxIndex + 1, index, element);
-              }
+            public void cancellableAccept(final int size, final int index, final E element)
+                throws Exception {
+              consumer.accept(maxIndex + 1, index, element);
             }
 
             @Override
-            public void complete(final int size) throws Exception {
-              if (DropRightListAsyncMaterializer.this.isCancelled()) {
-                error(new CancellationException());
-              } else {
-                consumer.complete(maxIndex + 1);
-              }
+            public void cancellableComplete(final int size) throws Exception {
+              consumer.complete(maxIndex + 1);
             }
 
             @Override
@@ -298,15 +279,11 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      wrapped.materializeSize(new AsyncConsumer<Integer>() {
+      wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
         @Override
-        public void accept(final Integer size) throws Exception {
-          if (DropRightListAsyncMaterializer.this.isCancelled()) {
-            error(new CancellationException());
-          } else {
-            wrappedSize = size;
-            consumer.accept(size <= maxElements);
-          }
+        public void cancellableAccept(final Integer size) throws Exception {
+          wrappedSize = size;
+          consumer.accept(size <= maxElements);
         }
 
         @Override
@@ -321,14 +298,10 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       if (wrappedSize >= 0) {
         safeConsume(consumer, Math.max(0, wrappedSize - maxElements), LOGGER);
       } else {
-        wrapped.materializeSize(new AsyncConsumer<Integer>() {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) throws Exception {
-            if (DropRightListAsyncMaterializer.this.isCancelled()) {
-              error(new CancellationException());
-            } else {
-              consumer.accept(Math.max(0, (wrappedSize = size) - maxElements));
-            }
+          public void cancellableAccept(final Integer size) throws Exception {
+            consumer.accept(Math.max(0, (wrappedSize = size) - maxElements));
           }
 
           @Override
@@ -385,8 +358,8 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       return taskID != null ? taskID : "";
     }
 
-    private class MaterializingAsyncConsumer implements AsyncConsumer<Integer>,
-        IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends
+        CancellableMultiAsyncConsumer<Integer, E> implements Task {
 
       private final ArrayList<E> elements = new ArrayList<E>();
 
@@ -395,10 +368,8 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       private String taskID;
 
       @Override
-      public void accept(final Integer size) throws Exception {
-        if (DropRightListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else if ((maxIndex = Math.max(0, size - maxElements)) == 0) {
+      public void cancellableAccept(final Integer size) throws Exception {
+        if ((maxIndex = Math.max(0, size - maxElements)) == 0) {
           consumeElements(decorateFunction.apply(Collections.<E>emptyList()));
         } else {
           taskID = getTaskID();
@@ -407,28 +378,21 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (DropRightListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        elements.add(element);
+        this.index = index + 1;
+        if (this.index >= maxIndex) {
+          consumeElements(decorateFunction.apply(elements));
         } else {
-          elements.add(element);
-          this.index = index + 1;
-          if (this.index >= maxIndex) {
-            consumeElements(decorateFunction.apply(elements));
-          } else {
-            taskID = getTaskID();
-            context.scheduleAfter(this);
-          }
+          taskID = getTaskID();
+          context.scheduleAfter(this);
         }
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (DropRightListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          consumeElements(decorateFunction.apply(elements));
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        consumeElements(decorateFunction.apply(elements));
       }
 
       @Override
@@ -459,8 +423,8 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
     }
 
-    private class MaterializingContainsElementAsyncConsumer implements IndexedAsyncConsumer<E>,
-        Task {
+    private class MaterializingContainsElementAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<E> implements Task {
 
       private final AsyncConsumer<Boolean> consumer;
       private final Object element;
@@ -476,29 +440,22 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (DropRightListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          wrappedSize = Math.max(wrappedSize, size);
-          if (this.element.equals(element)) {
-            consumer.accept(true);
-          } else if (index < maxIndex) {
-            this.index = index + 1;
-            taskID = getTaskID();
-            context.scheduleAfter(this);
-          }
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        wrappedSize = Math.max(wrappedSize, size);
+        if (this.element.equals(element)) {
+          consumer.accept(true);
+        } else if (index < maxIndex) {
+          this.index = index + 1;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
         }
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (DropRightListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          wrappedSize = size;
-          consumer.accept(false);
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        wrappedSize = size;
+        consumer.accept(false);
       }
 
       @Override
@@ -522,7 +479,8 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
     }
 
-    private class MaterializingContainsNullAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class MaterializingContainsNullAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<E> implements Task {
 
       private final AsyncConsumer<Boolean> consumer;
       private final int maxIndex = wrappedSize - maxElements - 1;
@@ -536,29 +494,22 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (DropRightListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          wrappedSize = Math.max(wrappedSize, size);
-          if (element == null) {
-            consumer.accept(true);
-          } else if (index < maxIndex) {
-            this.index = index + 1;
-            taskID = getTaskID();
-            context.scheduleAfter(this);
-          }
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        wrappedSize = Math.max(wrappedSize, size);
+        if (element == null) {
+          consumer.accept(true);
+        } else if (index < maxIndex) {
+          this.index = index + 1;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
         }
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (DropRightListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          wrappedSize = size;
-          consumer.accept(false);
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        wrappedSize = size;
+        consumer.accept(false);
       }
 
       @Override
@@ -582,7 +533,8 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
     }
 
-    private class MaterializingEachAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class MaterializingEachAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<E> implements Task {
 
       private final IndexedAsyncConsumer<E> consumer;
       private final int maxIndex = wrappedSize - maxElements - 1;
@@ -595,28 +547,21 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (DropRightListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        consumer.accept(maxIndex + 1, index, element);
+        if (index < maxIndex) {
+          this.index = index + 1;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
         } else {
-          consumer.accept(maxIndex + 1, index, element);
-          if (index < maxIndex) {
-            this.index = index + 1;
-            taskID = getTaskID();
-            context.scheduleAfter(this);
-          } else {
-            complete(0);
-          }
+          complete(0);
         }
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (DropRightListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          consumer.complete(maxIndex + 1);
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        consumer.complete(maxIndex + 1);
       }
 
       @Override

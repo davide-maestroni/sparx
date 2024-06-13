@@ -33,7 +33,7 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   }
 
   @Override
-  public boolean addAll(final int index, final @NotNull Collection<? extends E> c) {
+  public boolean addAll(final int index, @NotNull final Collection<? extends E> c) {
     throw new UnsupportedOperationException();
   }
 

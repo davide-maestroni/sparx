@@ -223,33 +223,27 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
           decorateFunction.apply(Collections.singletonList(size)))));
     }
 
-    private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
+        Task {
 
       private int count;
       private int index;
       private String taskID;
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (CountWhereListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          if (predicate.test(index, element)) {
-            ++count;
-          }
-          this.index = index + 1;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        if (predicate.test(index, element)) {
+          ++count;
         }
+        this.index = index + 1;
+        taskID = getTaskID();
+        context.scheduleAfter(this);
       }
 
       @Override
-      public void complete(final int size) throws Exception {
-        if (CountWhereListAsyncMaterializer.this.isCancelled()) {
-          error(new CancellationException());
-        } else {
-          setState(count);
-        }
+      public void cancellableComplete(final int size) throws Exception {
+        setState(count);
       }
 
       @Override
