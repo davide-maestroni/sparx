@@ -461,6 +461,9 @@ class itf {
     @NotNull
     Collection<Boolean> startsWith(@NotNull Iterable<?> elements);
 
+    @NotNull
+    Collection<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
+
     @Override
     @NotNull
     Collection<E> take(int maxElements);
@@ -1002,6 +1005,9 @@ class itf {
     Iterator<E> switchExceptionally(
         @NotNull IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper);
 
+    @NotNull
+    Iterator<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
+
     @Override
     @NotNull
     Iterator<E> take(int maxElements);
@@ -1481,6 +1487,9 @@ class itf {
 
     @NotNull
     List<E> sorted(@NotNull Comparator<? super E> comparator);
+
+    @NotNull
+    List<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -1971,6 +1980,9 @@ class itf {
     @NotNull
     ListIterator<Boolean> startsWith(@NotNull Iterable<?> elements);
 
+    @NotNull
+    ListIterator<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
+
     @Override
     @NotNull
     ListIterator<E> take(int maxElements);
@@ -2346,7 +2358,8 @@ class itf {
     @NotNull
     Sequence<Boolean> startsWith(@NotNull Iterable<?> elements);
 
-    // TODO: symmetricDiff
+    @NotNull
+    Sequence<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
 
     @NotNull
     Sequence<E> take(int maxElements);
@@ -2796,6 +2809,9 @@ class itf {
     @Override
     @NotNull
     Set<Boolean> startsWith(@NotNull Iterable<?> elements);
+
+    @NotNull
+    Set<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -3266,6 +3282,9 @@ class itf {
     @Override
     @NotNull
     Stream<Boolean> startsWith(@NotNull Iterable<?> elements);
+
+    @NotNull
+    Stream<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull

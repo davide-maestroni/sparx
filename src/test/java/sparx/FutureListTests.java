@@ -1707,4 +1707,42 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
     }
   }
+
+  @Test
+  public void union() {
+    assertEquals(List.of(1, 2, null, 4),
+        List.of(1, 2, null, 4).toFuture(context).union(List.of(1, null)));
+    assertEquals(List.of(1, 2, null, 4),
+        List.of(1, 2, null, 4).toFuture(context).union(List.of(1, 4)));
+    assertEquals(List.of(1, 2, null, 4, 3),
+        List.of(1, 2, null, 4).toFuture(context).union(List.of(1, 3, 4)));
+    assertEquals(List.of(1, 2, null, 4, 3, 3),
+        List.of(1, 2, null, 4).toFuture(context).union(List.of(3, 1, 3)));
+    assertEquals(List.of(1, 2, null, 4, null),
+        List.of(1, 2, null, 4).toFuture(context).union(List.of(null, null)));
+    assertEquals(List.of(1, null, 2, 4),
+        List.of(1, null).toFuture(context).union(List.of(1, 2, null, 4)));
+    assertEquals(List.of(1, 2, null, 4),
+        List.of(1, 2, null, 4).toFuture(context).union(List.of(2, 1)));
+    assertEquals(List.of(1, null, 2, 4), List.of(1, null).toFuture(context).union(List.of(2, 4)));
+
+    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).toFuture(context).union(List.of()));
+    assertEquals(List.of(1, 2, null, 4), List.of().toFuture(context).union(List.of(1, 2, null, 4)));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).findFirst(i -> {
+        Thread.sleep(60000);
+        return false;
+      }).union(List.of(1));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+    }
+  }
 }

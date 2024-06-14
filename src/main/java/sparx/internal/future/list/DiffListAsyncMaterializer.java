@@ -55,7 +55,6 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     return -1;
   }
 
-  // TODO: fix implementation (multiple X)
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
@@ -368,6 +367,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public void cancellableAccept(final int size, final int index, final E element) {
+        nextIndex = index + 1;
         final HashMap<Object, Integer> elementsBag = ImmaterialState.this.elementsBag;
         final Integer count = elementsBag.get(element);
         if (count == null) {

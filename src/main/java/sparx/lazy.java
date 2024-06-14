@@ -1928,6 +1928,22 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull Iterator<E> symmetricDiff(@NotNull final Iterable<? extends E> elements) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return Iterator.wrap(elements);
+      }
+      final ListMaterializer<E> elementsMaterializer = List.getElementsMaterializer(
+          Require.notNull(elements, "elements"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return this;
+      }
+      final List<E> list = toList();
+      final List<E> elementsList = new List<E>(elementsMaterializer);
+      return list.diff(elementsList).appendAll(elementsList.diff(list)).iterator();
+    }
+
+    @Override
     public int size() {
       return materializer.materializeSkip(Integer.MAX_VALUE);
     }
@@ -3973,6 +3989,22 @@ public class lazy extends Sparx {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull List<E> symmetricDiff(@NotNull final Iterable<? extends E> elements) {
+      final ListMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return (List<E>) List.from(elements);
+      }
+      final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
+          Require.notNull(elements, "elements"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return this;
+      }
+      final List<E> elementsList = new List<E>(elementsMaterializer);
+      return diff(elementsList).appendAll(elementsList.diff(this));
+    }
+
+    @Override
     public @NotNull List<E> take(final int maxElements) {
       if (maxElements <= 0) {
         return List.of();
@@ -4476,7 +4508,10 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull ListIterator<E> diff(@NotNull final Iterable<?> elements) {
-      return new ListIterator<E>(currentLeft().diff(elements), currentRight().diff(elements));
+      final List<?> elementsList = List.from(elements);
+      final List<E> left = currentLeft();
+      return new ListIterator<E>(left.diff(elementsList),
+          currentRight().diff(elementsList.diff(left)));
     }
 
     @Override
@@ -5018,8 +5053,10 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull ListIterator<E> intersect(@NotNull final Iterable<?> elements) {
-      return new ListIterator<E>(currentLeft().intersect(elements),
-          currentRight().intersect(elements));
+      final List<?> elementsList = List.from(elements);
+      final List<E> left = currentLeft();
+      return new ListIterator<E>(left.intersect(elementsList),
+          currentRight().intersect(elementsList.diff(left)));
     }
 
     @Override
@@ -5615,6 +5652,14 @@ public class lazy extends Sparx {
     @Override
     public @NotNull ListIterator<Boolean> startsWith(@NotNull final Iterable<?> elements) {
       return new ListIterator<Boolean>(List.<Boolean>of(), currentRight().startsWith(elements));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> symmetricDiff(@NotNull final Iterable<? extends E> elements) {
+      final List<? extends E> elementsList = List.from(elements);
+      final List<E> left = currentLeft();
+      return new ListIterator<E>(left.symmetricDiff(elementsList),
+          currentRight().symmetricDiff(elementsList.diff(left)));
     }
 
     @Override
