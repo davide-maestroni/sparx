@@ -73,7 +73,7 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
     return state.materializeSize();
   }
 
-  private class ImmaterialState extends AbstractListMaterializer<F> implements ListMaterializer<F> {
+  private class ImmaterialState extends AbstractListMaterializer<F> {
 
     private final ArrayList<F> elements = new ArrayList<F>();
     private final IndexedFunction<? super E, ? extends Iterable<F>> mapper;

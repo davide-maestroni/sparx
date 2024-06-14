@@ -78,7 +78,6 @@ import sparx.internal.lazy.iterator.MapAfterIteratorMaterializer;
 import sparx.internal.lazy.iterator.MapFirstWhereIteratorMaterializer;
 import sparx.internal.lazy.iterator.MapIteratorMaterializer;
 import sparx.internal.lazy.iterator.MapLastWhereIteratorMaterializer;
-import sparx.internal.lazy.iterator.MapWhereIteratorMaterializer;
 import sparx.internal.lazy.iterator.MaxIteratorMaterializer;
 import sparx.internal.lazy.iterator.OrElseIteratorMaterializer;
 import sparx.internal.lazy.iterator.PeekExceptionallyIteratorMaterializer;
@@ -150,7 +149,6 @@ import sparx.internal.lazy.list.MapAfterListMaterializer;
 import sparx.internal.lazy.list.MapFirstWhereListMaterializer;
 import sparx.internal.lazy.list.MapLastWhereListMaterializer;
 import sparx.internal.lazy.list.MapListMaterializer;
-import sparx.internal.lazy.list.MapWhereListMaterializer;
 import sparx.internal.lazy.list.MaxListMaterializer;
 import sparx.internal.lazy.list.OrElseListMaterializer;
 import sparx.internal.lazy.list.PrependAllListMaterializer;
@@ -194,6 +192,48 @@ import sparx.util.function.Supplier;
 public class lazy extends Sparx {
 
   private lazy() {
+  }
+
+  private static @NotNull <E> IndexedFunction<E, E> filteredMapper(
+      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+    return new IndexedFunction<E, E>() {
+      @Override
+      public E apply(final int index, final E element) throws Exception {
+        if (predicate.test(index, element)) {
+          return mapper.apply(index, element);
+        }
+        return element;
+      }
+    };
+  }
+
+  private static @NotNull <E> IndexedFunction<E, E> filteredMapper(
+      @NotNull final Predicate<? super E> predicate,
+      @NotNull final Function<? super E, ? extends E> mapper) {
+    return new IndexedFunction<E, E>() {
+      @Override
+      public E apply(final int index, final E element) throws Exception {
+        if (predicate.test(element)) {
+          return mapper.apply(element);
+        }
+        return element;
+      }
+    };
+  }
+
+  private static @NotNull <E> IndexedFunction<E, E> filteredMapper(
+      @NotNull final Predicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+    return new IndexedFunction<E, E>() {
+      @Override
+      public E apply(final int index, final E element) throws Exception {
+        if (predicate.test(element)) {
+          return mapper.apply(index, element);
+        }
+        return element;
+      }
+    };
   }
 
   public static class Iterator<E> implements itf.Iterator<E> {
@@ -1281,9 +1321,9 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      return new Iterator<E>(
-          new MapWhereIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              Require.notNull(mapper, "mapper")));
+      return new Iterator<E>(new MapIteratorMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"),
+              Require.notNull(mapper, "mapper"))));
     }
 
     @Override
@@ -1293,9 +1333,9 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      return new Iterator<E>(new MapWhereIteratorMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")),
-          toIndexedFunction(Require.notNull(mapper, "mapper"))));
+      return new Iterator<E>(new MapIteratorMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"),
+              Require.notNull(mapper, "mapper"))));
     }
 
     @Override
@@ -1632,9 +1672,8 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      return new Iterator<E>(
-          new MapWhereIteratorMaterializer<E>(materializer, equalsElement(element),
-              replacementMapper(replacement)));
+      return new Iterator<E>(new MapIteratorMaterializer<E, E>(materializer,
+          filteredMapper(equalsElement(element), replacementMapper(replacement))));
     }
 
     @Override
@@ -1744,9 +1783,8 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      return new Iterator<E>(
-          new MapWhereIteratorMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              replacementMapper(replacement)));
+      return new Iterator<E>(new MapIteratorMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"), replacementMapper(replacement))));
     }
 
     @Override
@@ -1756,9 +1794,8 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      return new Iterator<E>(new MapWhereIteratorMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")),
-          replacementMapper(replacement)));
+      return new Iterator<E>(new MapIteratorMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"), replacementMapper(replacement))));
     }
 
     @Override
@@ -3415,9 +3452,9 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      return new List<E>(
-          new MapWhereListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              Require.notNull(mapper, "mapper")));
+      return new List<E>(new MapListMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"),
+              Require.notNull(mapper, "mapper"))));
     }
 
     @Override
@@ -3427,9 +3464,9 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      return new List<E>(new MapWhereListMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")),
-          toIndexedFunction(Require.notNull(mapper, "mapper"))));
+      return new List<E>(new MapListMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"),
+              Require.notNull(mapper, "mapper"))));
     }
 
     @Override
@@ -3731,8 +3768,8 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      return new List<E>(new MapWhereListMaterializer<E>(materializer, equalsElement(element),
-          replacementMapper(replacement)));
+      return new List<E>(new MapListMaterializer<E, E>(materializer,
+          filteredMapper(equalsElement(element), replacementMapper(replacement))));
     }
 
     @Override
@@ -3875,9 +3912,8 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      return new List<E>(
-          new MapWhereListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              replacementMapper(replacement)));
+      return new List<E>(new MapListMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"), replacementMapper(replacement))));
     }
 
     @Override
@@ -3887,9 +3923,8 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      return new List<E>(new MapWhereListMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")),
-          replacementMapper(replacement)));
+      return new List<E>(new MapListMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"), replacementMapper(replacement))));
     }
 
     @Override

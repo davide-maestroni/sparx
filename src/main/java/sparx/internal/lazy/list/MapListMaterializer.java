@@ -15,33 +15,21 @@
  */
 package sparx.internal.lazy.list;
 
-import java.util.Arrays;
 import java.util.ConcurrentModificationException;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
+import sparx.internal.util.ElementsCache;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 
 public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
 
-  private static final Object EMPTY = new Object();
-  private static final int SIZE_THRESHOLD = 64; // TODO: need to benchmark this
-
   private volatile ListMaterializer<F> state;
 
   public MapListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @NotNull final IndexedFunction<? super E, F> mapper) {
-    final int knownSize = wrapped.knownSize();
-    if (knownSize < 0 || knownSize > SIZE_THRESHOLD) {
-      state = new MapState(wrapped, mapper);
-    } else {
-      final Object[] elements = new Object[knownSize];
-      Arrays.fill(elements, EMPTY);
-      state = new ArrayState(wrapped, mapper, elements);
-    }
+    state = new ImmaterialState(wrapped, mapper);
   }
 
   @Override
@@ -79,78 +67,18 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
     return state.materializeSize();
   }
 
-  private class ArrayState extends AbstractListMaterializer<F> implements ListMaterializer<F> {
+  private class ImmaterialState extends AbstractListMaterializer<F> {
 
-    private final Object[] elements;
+    private final ElementsCache<F> elementsCache;
     private final IndexedFunction<? super E, F> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
     private final ListMaterializer<E> wrapped;
 
-    private ArrayState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final IndexedFunction<? super E, F> mapper, @NotNull final Object[] elements) {
-      this.wrapped = wrapped;
-      this.mapper = mapper;
-      this.elements = elements;
-    }
-
-    @Override
-    public boolean canMaterializeElement(final int index) {
-      return index >= 0 && index < elements.length;
-    }
-
-    @Override
-    public int knownSize() {
-      return elements.length;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public F materializeElement(final int index) {
-      final Object[] elements = this.elements;
-      final Object current = elements[index];
-      if (current != EMPTY) {
-        return (F) current;
-      }
-      final AtomicInteger modCount = this.modCount;
-      final int expectedCount = modCount.incrementAndGet();
-      try {
-        final F element = mapper.apply(index, wrapped.materializeElement(index));
-        if (expectedCount != modCount.get()) {
-          throw new ConcurrentModificationException();
-        }
-        return (F) (elements[index] = element);
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
-    }
-
-    @Override
-    public boolean materializeEmpty() {
-      return elements.length == 0;
-    }
-
-    @Override
-    public @NotNull Iterator<F> materializeIterator() {
-      return new ListMaterializerIterator<F>(this);
-    }
-
-    @Override
-    public int materializeSize() {
-      return elements.length;
-    }
-  }
-
-  private class MapState extends AbstractListMaterializer<F> implements ListMaterializer<F> {
-
-    private final HashMap<Integer, F> elements = new HashMap<Integer, F>();
-    private final IndexedFunction<? super E, F> mapper;
-    private final AtomicInteger modCount = new AtomicInteger();
-    private final ListMaterializer<E> wrapped;
-
-    private MapState(@NotNull final ListMaterializer<E> wrapped,
+    private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
         @NotNull final IndexedFunction<? super E, F> mapper) {
       this.wrapped = wrapped;
       this.mapper = mapper;
+      elementsCache = new ElementsCache<F>(wrapped.knownSize());
     }
 
     @Override
@@ -159,43 +87,47 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
     }
 
     @Override
-    public int knownSize() {
-      return wrapped.knownSize();
-    }
-
-    @Override
     public F materializeElement(final int index) {
-      final HashMap<Integer, F> elements = this.elements;
-      if (elements.containsKey(index)) {
-        return elements.get(index);
+      final ElementsCache<F> elementsCache = this.elementsCache;
+      if (elementsCache.has(index)) {
+        return elementsCache.get(index);
       }
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
-        final IndexedFunction<? super E, F> mapper = this.mapper;
         final ListMaterializer<E> wrapped = this.wrapped;
         final F element = mapper.apply(index, wrapped.materializeElement(index));
+        if (elementsCache.set(index, element) == wrapped.knownSize()) {
+          state = new ListToListMaterializer<F>(elementsCache.toList());
+        }
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();
-        }
-        elements.put(index, element);
-        final int knownSize = wrapped.knownSize();
-        if ((knownSize >= 0 && knownSize < (elements.size() << 4)) || elements.size() > (
-            Integer.MAX_VALUE >> 4)) {
-          final Object[] elementsArray = new Object[knownSize];
-          Arrays.fill(elementsArray, EMPTY);
-          for (final Entry<Integer, F> entry : elements.entrySet()) {
-            elementsArray[entry.getKey()] = entry.getValue();
-          }
-          if (expectedCount != modCount.get()) {
-            throw new ConcurrentModificationException();
-          }
-          state = new ArrayState(wrapped, mapper, elementsArray);
         }
         return element;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
+    }
+
+    @Override
+    public int materializeElements() {
+      final int size = super.materializeElements();
+      final AtomicInteger modCount = this.modCount;
+      final int expectedCount = modCount.incrementAndGet();
+      try {
+        state = new ListToListMaterializer<F>(elementsCache.toList());
+        if (expectedCount != modCount.get()) {
+          throw new ConcurrentModificationException();
+        }
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+      return size;
+    }
+
+    @Override
+    public int knownSize() {
+      return wrapped.knownSize();
     }
 
     @Override
@@ -210,7 +142,9 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
 
     @Override
     public int materializeSize() {
-      return wrapped.materializeSize();
+      final int wrappedSize = wrapped.materializeSize();
+      elementsCache.setSize(wrappedSize);
+      return wrappedSize;
     }
   }
 }
