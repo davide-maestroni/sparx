@@ -597,6 +597,19 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerSymmetricDiff(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<? extends E> elements) {
+      final Iterable<? extends E> otherElements = elements;
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).symmetricDiff(otherElements);
+        }
+      };
+    }
+
     private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerUnion(
         @NotNull final ListAsyncMaterializer<E> materializer,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2413,7 +2426,7 @@ class future extends Sparx {
       return null;
     }
 
-    // TODO: stopCancelPropagation + switchMap, mergeMap, concatMap(==flatMap) + flatMapAll(?)
+    // TODO: stopCancelPropagation + switchTo(Context), switchMap, mergeMap, concatMap(==flatMap) + flatMapAll(?)
 
     @Override
     public @NotNull List<E> sorted(@NotNull Comparator<? super E> comparator) {
@@ -2421,8 +2434,31 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> symmetricDiff(@NotNull Iterable<? extends E> elements) {
-      return null;
+    public @NotNull List<E> symmetricDiff(@NotNull final Iterable<? extends E> elements) {
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException,
+            getElementsMaterializer(context, taskID, Require.notNull(elements, "elements")));
+      }
+      final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(context, taskID,
+          Require.notNull(elements, "elements"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce() && !isFuture(elements)) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerSymmetricDiff(materializer, cancelException,
+                Require.notNull(elements, "elements")));
+      }
+      final DiffListAsyncMaterializer<E> left = new DiffListAsyncMaterializer<E>(materializer,
+          elementsMaterializer, context, cancelException, List.<E>decorateFunction());
+      final DiffListAsyncMaterializer<E> right = new DiffListAsyncMaterializer<E>(
+          elementsMaterializer, materializer, context, cancelException, List.<E>decorateFunction());
+      return new List<E>(context, cancelException,
+          new AppendAllListAsyncMaterializer<E>(left, right, cancelException,
+              List.<E>appendAllFunction()));
     }
 
     @Override

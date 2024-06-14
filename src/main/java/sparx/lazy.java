@@ -1938,9 +1938,14 @@ public class lazy extends Sparx {
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
-      final List<E> list = toList();
-      final List<E> elementsList = new List<E>(elementsMaterializer);
-      return list.diff(elementsList).appendAll(elementsList.diff(list)).iterator();
+      final IteratorToListMaterializer<E> listMaterializer = new IteratorToListMaterializer<E>(
+          this);
+      final DiffListMaterializer<E> left = new DiffListMaterializer<E>(listMaterializer,
+          elementsMaterializer);
+      final DiffListMaterializer<E> right = new DiffListMaterializer<E>(elementsMaterializer,
+          listMaterializer);
+      return new Iterator<E>(new ListMaterializerToIteratorMaterializer<E>(
+          new AppendAllListMaterializer<E>(left, right)));
     }
 
     @Override
@@ -4000,8 +4005,11 @@ public class lazy extends Sparx {
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
-      final List<E> elementsList = new List<E>(elementsMaterializer);
-      return diff(elementsList).appendAll(elementsList.diff(this));
+      final DiffListMaterializer<E> left = new DiffListMaterializer<E>(materializer,
+          elementsMaterializer);
+      final DiffListMaterializer<E> right = new DiffListMaterializer<E>(elementsMaterializer,
+          materializer);
+      return new List<E>(new AppendAllListMaterializer<E>(left, right));
     }
 
     @Override

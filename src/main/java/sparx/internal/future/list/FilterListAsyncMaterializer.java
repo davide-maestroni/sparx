@@ -51,11 +51,6 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
-  public boolean isMaterializedAtOnce() {
-    return false;
-  }
-
-  @Override
   public int knownSize() {
     return -1;
   }
