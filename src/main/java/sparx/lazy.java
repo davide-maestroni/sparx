@@ -101,6 +101,7 @@ import sparx.internal.lazy.iterator.TakeIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeRightIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeRightWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeWhileIteratorMaterializer;
+import sparx.internal.lazy.iterator.UnionIteratorMaterializer;
 import sparx.internal.lazy.list.AppendAllListMaterializer;
 import sparx.internal.lazy.list.AppendListMaterializer;
 import sparx.internal.lazy.list.ArrayToListMaterializer;
@@ -2014,8 +2015,7 @@ public class lazy extends Sparx {
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
-      final List<E> list = toList();
-      return list.appendAll(new Iterator<E>(elementsMaterializer).diff(list)).iterator();
+      return new Iterator<E>(new UnionIteratorMaterializer<E>(materializer, elementsMaterializer));
     }
 
     private static class SuppliedMaterializer<E> implements IteratorMaterializer<E> {
@@ -4054,7 +4054,8 @@ public class lazy extends Sparx {
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
-      return appendAll(new List<E>(elementsMaterializer).diff(this));
+      return new List<E>(new AppendAllListMaterializer<E>(materializer,
+          new DiffListMaterializer<E>(elementsMaterializer, materializer)));
     }
 
     int knownSize() {

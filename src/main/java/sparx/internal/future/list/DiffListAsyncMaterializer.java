@@ -67,6 +67,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     private final ListAsyncMaterializer<?> elementsMaterializer;
     private final ListAsyncMaterializer<E> wrapped;
 
+    private HashMap<Object, Integer> elementsBag;
     private int nextIndex;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
@@ -117,31 +118,11 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     @Override
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      elementsMaterializer.materializeContains(element, new CancellableAsyncConsumer<Boolean>() {
-        @Override
-        public void cancellableAccept(final Boolean contains) throws Exception {
-          if (contains) {
-            consumer.accept(false);
-          } else {
-            wrapped.materializeContains(element, new CancellableAsyncConsumer<Boolean>() {
-              @Override
-              public void cancellableAccept(final Boolean contains) throws Exception {
-                consumer.accept(contains);
-              }
-
-              @Override
-              public void error(@NotNull final Exception error) throws Exception {
-                consumer.error(error);
-              }
-            });
-          }
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+      if (element == null) {
+        materializeUntil(0, new MaterializingContainsNullAsyncConsumer(consumer));
+      } else {
+        materializeUntil(0, new MaterializingContainsElementAsyncConsumer(element, consumer));
+      }
     }
 
     @Override
@@ -248,8 +229,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     @Override
     public int weightContains() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightContains() + elementsMaterializer.weightContains());
+      return weightElements();
     }
 
     @Override
@@ -260,7 +240,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     @Override
     public int weightElements() {
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightElement() + elementsMaterializer.weightElement());
+          (long) wrapped.weightElement() + elementsMaterializer.weightElements());
     }
 
     @Override
@@ -325,6 +305,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       return taskID != null ? taskID : "";
     }
 
+    @SuppressWarnings("unchecked")
     private void materializeUntil(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       final ArrayList<E> elements = this.elements;
@@ -351,35 +332,60 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         }
         indexConsumers.add(consumer);
         if (needsRun) {
-          wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer());
+          if (elementsBag == null) {
+            ((ListAsyncMaterializer<Object>) elementsMaterializer).materializeElements(
+                new CancellableAsyncConsumer<List<Object>>() {
+                  @Override
+                  public void cancellableAccept(final List<Object> elements) {
+                    final HashMap<Object, Integer> bag = elementsBag = new HashMap<Object, Integer>();
+                    for (final Object element : elements) {
+                      final Integer count = bag.get(element);
+                      if (count == null) {
+                        bag.put(element, 1);
+                      } else {
+                        bag.put(element, count + 1);
+                      }
+                    }
+                    wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer());
+                  }
+
+                  @Override
+                  public void error(@NotNull final Exception error) {
+                    consumeError(error);
+                  }
+                });
+          } else {
+            wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer());
+          }
         }
       }
     }
 
-    private class MaterializingAsyncConsumer extends
-        CancellableMultiAsyncConsumer<Boolean, E> implements Task {
+    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
+        Task {
 
-      private E element;
       private String taskID;
 
       @Override
-      public void cancellableAccept(final Boolean contains) {
-        if (!contains) {
+      public void cancellableAccept(final int size, final int index, final E element) {
+        final HashMap<Object, Integer> elementsBag = ImmaterialState.this.elementsBag;
+        final Integer count = elementsBag.get(element);
+        if (count == null) {
           final int wrappedIndex = elements.size();
           elements.add(element);
           consumeElement(wrappedIndex, element);
+        } else {
+          final int decCount = count - 1;
+          if (decCount == 0) {
+            elementsBag.remove(element);
+          } else {
+            elementsBag.put(element, decCount);
+          }
         }
         if (!elementsConsumers.isEmpty()) {
           taskID = getTaskID();
           context.scheduleAfter(this);
         }
-      }
-
-      @Override
-      public void cancellableAccept(final int size, final int index, final E element) {
-        this.element = element;
-        nextIndex = index + 1;
-        elementsMaterializer.materializeContains(element, this);
       }
 
       @Override
@@ -413,8 +419,111 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public int weight() {
-        return (int) Math.min(Integer.MAX_VALUE,
-            (long) wrapped.weightElement() + elementsMaterializer.weightElements());
+        return wrapped.weightElement();
+      }
+    }
+
+    private class MaterializingContainsElementAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<E> implements Task {
+
+      private final AsyncConsumer<Boolean> consumer;
+      private final Object element;
+
+      private int index;
+      private String taskID;
+
+      private MaterializingContainsElementAsyncConsumer(@NotNull final Object element,
+          @NotNull final AsyncConsumer<Boolean> consumer) {
+        this.element = element;
+        this.consumer = consumer;
+      }
+
+      @Override
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        if (this.element.equals(element)) {
+          consumer.accept(true);
+        } else {
+          this.index = index + 1;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      }
+
+      @Override
+      public void cancellableComplete(final int size) throws Exception {
+        consumer.accept(false);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) throws Exception {
+        consumer.error(error);
+      }
+
+      @Override
+      public void run() {
+        materializeUntil(index, this);
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElement();
+      }
+    }
+
+    private class MaterializingContainsNullAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<E> implements Task {
+
+      private final AsyncConsumer<Boolean> consumer;
+
+      private int index;
+      private String taskID;
+
+      private MaterializingContainsNullAsyncConsumer(
+          @NotNull final AsyncConsumer<Boolean> consumer) {
+        this.consumer = consumer;
+      }
+
+      @Override
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        if (element == null) {
+          consumer.accept(true);
+        } else {
+          this.index = index + 1;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      }
+
+      @Override
+      public void cancellableComplete(final int size) throws Exception {
+        consumer.accept(false);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) throws Exception {
+        consumer.error(error);
+      }
+
+      @Override
+      public void run() {
+        materializeUntil(index, this);
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElement();
       }
     }
   }

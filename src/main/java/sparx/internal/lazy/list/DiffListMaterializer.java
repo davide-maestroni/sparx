@@ -28,7 +28,7 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
   private volatile ListMaterializer<E> state;
 
   public DiffListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final ListMaterializer<Object> elementsMaterializer) {
+      @NotNull final ListMaterializer<?> elementsMaterializer) {
     state = new ImmaterialState(wrapped, elementsMaterializer);
   }
 
@@ -75,7 +75,7 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState extends AbstractListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
-    private final ListMaterializer<Object> elementsMaterializer;
+    private final ListMaterializer<?> elementsMaterializer;
     private final AtomicInteger modCount = new AtomicInteger();
     private final ListMaterializer<E> wrapped;
 
@@ -83,7 +83,7 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
     private int pos;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final ListMaterializer<Object> elementsMaterializer) {
+        @NotNull final ListMaterializer<?> elementsMaterializer) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
     }
@@ -131,7 +131,7 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
         final AtomicInteger modCount = this.modCount;
         final int expectedCount = modCount.incrementAndGet();
         final HashMap<Object, Integer> bag = elementsBag = new HashMap<Object, Integer>();
-        final ListMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
+        final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
         int i = 0;
         while (elementsMaterializer.canMaterializeElement(i)) {
           final Object element = elementsMaterializer.materializeElement(i++);
