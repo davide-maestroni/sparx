@@ -107,6 +107,12 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
+  public void materializeHasElement(final int index,
+      @NotNull final AsyncConsumer<Boolean> consumer) {
+    state.materializeHasElement(index, consumer);
+  }
+
+  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     state.materializeSize(consumer);
   }
@@ -124,6 +130,11 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   @Override
   public int weightElements() {
     return state.weightElements();
+  }
+
+  @Override
+  public int weightHasElement() {
+    return state.weightHasElement();
   }
 
   @Override

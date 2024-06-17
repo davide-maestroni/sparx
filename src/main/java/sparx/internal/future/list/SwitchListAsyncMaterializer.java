@@ -257,6 +257,33 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public void materializeHasElement(final int index,
+      @NotNull final AsyncConsumer<Boolean> consumer) {
+    final ContextAsyncConsumer<Boolean> switchConsumer = new ContextAsyncConsumer<Boolean>(
+        toContext, toTaskID, consumer, LOGGER);
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeHasElement(index, switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElement();
+      }
+    });
+  }
+
+  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     final ContextAsyncConsumer<Integer> switchConsumer = new ContextAsyncConsumer<Integer>(
         toContext, toTaskID, consumer, LOGGER);
@@ -300,6 +327,11 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public int weightEmpty() {
     return wrapped.weightEmpty();
+  }
+
+  @Override
+  public int weightHasElement() {
+    return wrapped.weightHasElement();
   }
 
   @Override

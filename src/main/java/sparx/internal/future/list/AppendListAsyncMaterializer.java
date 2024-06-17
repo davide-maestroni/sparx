@@ -225,6 +225,34 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
+    public void materializeHasElement(final int index,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      if (index < 0) {
+        safeConsume(consumer, false, LOGGER);
+      } else if (index < wrappedSize || index < safeSize(wrappedSize)) {
+        safeConsume(consumer, true, LOGGER);
+      } else {
+        materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
+          @Override
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
+            consumer.accept(true);
+          }
+
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            consumer.accept(false);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       if (wrappedSize >= 0) {
         safeConsume(consumer, safeSize(wrappedSize), LOGGER);
@@ -256,6 +284,11 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     @Override
     public int weightElements() {
       return wrapped.weightElements();
+    }
+
+    @Override
+    public int weightHasElement() {
+      return weightElement();
     }
 
     @Override

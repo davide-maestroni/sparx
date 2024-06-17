@@ -227,6 +227,17 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
     }
 
     @Override
+    public void materializeHasElement(final int index,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+          state.materializeHasElement(index, consumer);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -255,6 +266,11 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
     @Override
     public int weightEmpty() {
       return wrapped.weightElement();
+    }
+
+    @Override
+    public int weightHasElement() {
+      return weightElements();
     }
 
     @Override

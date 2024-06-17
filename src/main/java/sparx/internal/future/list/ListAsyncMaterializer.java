@@ -28,4 +28,12 @@ public interface ListAsyncMaterializer<E> extends CollectionAsyncMaterializer<E>
   void materializeElement(int index, @NotNull IndexedAsyncConsumer<E> consumer);
 
   void materializeElements(@NotNull AsyncConsumer<List<E>> consumer);
+
+  void materializeHasElement(int index, @NotNull AsyncConsumer<Boolean> consumer);
+
+  int weightElement();
+
+  int weightElements();
+
+  int weightHasElement();
 }

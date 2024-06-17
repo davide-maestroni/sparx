@@ -184,7 +184,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
           if (numElements >= wrappedSize) {
             wrapped.materializeElement(index, consumer);
           } else if (elementsSize >= 0) {
-            if (index < numElements + elementsSize) {
+            if (index < SizeOverflowException.safeCast((long) numElements + elementsSize)) {
               elementsMaterializer.materializeElement(index - numElements, consumer);
             } else {
               wrapped.materializeElement(index - elementsSize + 1, consumer);
@@ -294,6 +294,32 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
     }
 
     @Override
+    public void materializeHasElement(final int index,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      if (index < 0) {
+        safeConsume(consumer, false, LOGGER);
+      } else {
+        materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
+          @Override
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
+            consumer.accept(true);
+          }
+
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            consumer.accept(false);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       if (wrappedSize >= 0) {
         if (elementsSize >= 0) {
@@ -356,6 +382,11 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
     @Override
     public int weightEmpty() {
       return weightSize();
+    }
+
+    @Override
+    public int weightHasElement() {
+      return weightElements();
     }
 
     @Override

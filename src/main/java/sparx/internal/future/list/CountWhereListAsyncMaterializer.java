@@ -168,6 +168,12 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
+    public void materializeHasElement(final int index,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      safeConsume(consumer, index == 0, LOGGER);
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 1, LOGGER);
     }
@@ -185,6 +191,11 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
     @Override
     public int weightElements() {
       return wrapped.weightElement();
+    }
+
+    @Override
+    public int weightHasElement() {
+      return 1;
     }
 
     @Override

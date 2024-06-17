@@ -176,6 +176,17 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
     }
 
     @Override
+    public void materializeHasElement(final int index,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      materialized(new StateConsumer() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
+          state.materializeHasElement(index, consumer);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer() {
         @Override
@@ -205,6 +216,11 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
 
     @Override
     public int weightEmpty() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightHasElement() {
       return weightElements();
     }
 

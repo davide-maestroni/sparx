@@ -219,6 +219,41 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
     }
 
     @Override
+    public void materializeHasElement(final int index,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      if (index < 0) {
+        safeConsume(consumer, false, LOGGER);
+      } else {
+        final ArrayList<E> elements = this.elements;
+        if (elements.size() > index) {
+          safeConsume(consumer, true, LOGGER);
+        } else {
+          final int originalIndex = index;
+          materializeUntil(index, new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E element) throws Exception {
+              if (originalIndex == index) {
+                consumer.accept(true);
+              }
+            }
+
+            @Override
+            public void complete(final int size) throws Exception {
+              if (originalIndex >= size) {
+                consumer.accept(false);
+              }
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
+        }
+      }
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
         @Override
@@ -254,6 +289,11 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     @Override
     public int weightEmpty() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightHasElement() {
       return weightElements();
     }
 

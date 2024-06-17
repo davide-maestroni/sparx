@@ -194,6 +194,17 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
+    public void materializeHasElement(final int index,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      materialized(new StateConsumer<F>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+          state.materializeHasElement(index, consumer);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer<F>() {
         @Override
@@ -220,6 +231,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
     @Override
     public int weightEmpty() {
+      return 1;
+    }
+
+    @Override
+    public int weightHasElement() {
       return 1;
     }
 
@@ -356,6 +372,16 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
+    public void materializeHasElement(final int index,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      try {
+        safeConsume(consumer, index >= 0 && index < elements.size(), LOGGER);
+      } catch (final Exception error) {
+        consumeError(consumer, error);
+      }
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       try {
         safeConsume(consumer, elements.size(), LOGGER);
@@ -381,6 +407,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
     @Override
     public int weightEmpty() {
+      return 1;
+    }
+
+    @Override
+    public int weightHasElement() {
       return 1;
     }
 

@@ -2889,6 +2889,12 @@ class future extends Sparx {
     }
 
     @Override
+    public void materializeHasElement(final int index,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      safeConsume(consumer, false, LOGGER);
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 0, LOGGER);
     }
@@ -2910,6 +2916,11 @@ class future extends Sparx {
 
     @Override
     public int weightEmpty() {
+      return 1;
+    }
+
+    @Override
+    public int weightHasElement() {
       return 1;
     }
 

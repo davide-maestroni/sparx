@@ -118,6 +118,12 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public void materializeHasElement(final int index,
+      @NotNull final AsyncConsumer<Boolean> consumer) {
+    safeConsume(consumer, index >= 0 && index < elements.size(), LOGGER);
+  }
+
+  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     safeConsume(consumer, elements.size(), LOGGER);
   }
@@ -139,6 +145,11 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   @Override
   public int weightEmpty() {
+    return 1;
+  }
+
+  @Override
+  public int weightHasElement() {
     return 1;
   }
 

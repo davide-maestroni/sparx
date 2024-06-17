@@ -79,6 +79,8 @@ public class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
     private final AtomicInteger modCount = new AtomicInteger();
     private final IndexedPredicate<? super E> predicate;
 
+    private int index;
+
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate) {
       iterator = wrapped.materializeIterator();
@@ -99,7 +101,7 @@ public class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
               return false;
             }
             final E next = iterator.next();
-            if (!predicate.test(elements.size(), next)) {
+            if (!predicate.test(this.index++, next)) {
               elements.add(next);
             }
           } while (elements.size() <= index);
