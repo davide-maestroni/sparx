@@ -143,7 +143,7 @@ public class MapFirstWhereListMaterializer<E> extends AbstractListMaterializer<E
           throw new ConcurrentModificationException();
         }
         if (!wrapped.canMaterializeElement(i)) {
-          state = new ElementState<E>(i, null);
+          state = new ElementState<E>(-1, null);
           return -1;
         }
         return pos = i;
