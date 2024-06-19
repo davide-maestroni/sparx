@@ -48,7 +48,7 @@ public class ReverseListMaterializer<E> implements ListMaterializer<E> {
   @Override
   public E materializeElement(final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
-    final long wrappedIndex = wrapped.materializeSize() - index - 1;
+    final long wrappedIndex = (long) wrapped.materializeSize() - index - 1;
     return wrapped.materializeElement(IndexOverflowException.safeCast(wrappedIndex));
   }
 

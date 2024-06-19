@@ -34,7 +34,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
-import sparx.util.IntOverflowException;
+import sparx.util.SizeOverflowException;
 
 public class LazyIteratorTests {
 
@@ -2907,7 +2907,7 @@ public class LazyIteratorTests {
     assertEquals(List.of(1, 4), itr.get().toList());
 
     itr = () -> Iterator.of(1, null, 3).filter(i -> i > 0)
-        .switchExceptionally(IntOverflowException.class, t -> List.of(4));
+        .switchExceptionally(SizeOverflowException.class, t -> List.of(4));
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     Supplier<Iterator<Integer>> iter = itr;

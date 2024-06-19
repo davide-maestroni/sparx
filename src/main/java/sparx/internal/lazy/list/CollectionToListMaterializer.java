@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 
@@ -102,7 +103,15 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     @Override
     @SuppressWarnings("SuspiciousMethodCalls")
     public boolean materializeContains(final Object element) {
-      return elements.contains(element);
+      try {
+        return elements.contains(element);
+      } catch (final NullPointerException e) {
+        // some collections do not support null elements
+        if (element == null) {
+          return false;
+        }
+        throw e;
+      }
     }
 
     @Override
@@ -172,7 +181,15 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     @Override
     @SuppressWarnings("SuspiciousMethodCalls")
     public boolean materializeContains(final Object element) {
-      return elements.contains(element);
+      try {
+        return elements.contains(element);
+      } catch (final NullPointerException e) {
+        // some collections do not support null elements
+        if (element == null) {
+          return false;
+        }
+        throw e;
+      }
     }
 
     @Override
@@ -181,7 +198,11 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
       while (iterator.hasNext() && index-- > 0) {
         iterator.next();
       }
-      return iterator.next();
+      try {
+        return iterator.next();
+      } catch (final NoSuchElementException ignored) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
     }
 
     @Override

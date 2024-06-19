@@ -15,7 +15,7 @@
  */
 package sparx.util;
 
-public class IndexOverflowException extends IntOverflowException {
+public class IndexOverflowException extends IndexOutOfBoundsException {
 
   public static int safeCast(final long index) {
     if (index >= Integer.MAX_VALUE) {
@@ -25,6 +25,6 @@ public class IndexOverflowException extends IntOverflowException {
   }
 
   public IndexOverflowException(final long index) {
-    super(index);
+    super(Long.toString(index));
   }
 }

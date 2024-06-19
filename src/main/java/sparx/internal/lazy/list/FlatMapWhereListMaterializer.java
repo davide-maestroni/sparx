@@ -110,7 +110,7 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
     public boolean materializeContains(final Object element) {
       final ArrayList<E> elements = this.elements;
       if (elements.contains(element)) {
-        return false;
+        return true;
       }
       final ListMaterializer<E> wrapped = this.wrapped;
       final IndexedPredicate<? super E> predicate = this.predicate;
