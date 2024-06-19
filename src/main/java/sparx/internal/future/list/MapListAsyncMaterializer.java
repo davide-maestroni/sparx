@@ -292,6 +292,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
         @Override
         public void cancellableAccept(final Integer size) throws Exception {
+          elements.setSize(size);
           consumer.accept(size);
         }
 
@@ -393,6 +394,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       @Override
       public void cancellableAccept(final int size, int index, final E element) throws Exception {
         final ElementsCache<F> elements = ImmaterialState.this.elements;
+        elements.setSize(size);
         final F mapped;
         if (!elements.has(index)) {
           mapped = mapper.apply(index, element);
@@ -465,6 +467,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       @Override
       public void cancellableAccept(final int size, int index, final E element) throws Exception {
         final ElementsCache<F> elements = ImmaterialState.this.elements;
+        elements.setSize(size);
         final F mapped;
         if (!elements.has(index)) {
           mapped = mapper.apply(index, element);
@@ -489,6 +492,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
+        elements.setSize(size);
         consumer.accept(false);
       }
 
@@ -537,6 +541,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       @Override
       public void cancellableAccept(final int size, int index, final E element) throws Exception {
         final ElementsCache<F> elements = ImmaterialState.this.elements;
+        elements.setSize(size);
         final F mapped;
         if (!elements.has(index)) {
           mapped = mapper.apply(index, element);
@@ -561,6 +566,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
+        elements.setSize(size);
         consumer.accept(false);
       }
 

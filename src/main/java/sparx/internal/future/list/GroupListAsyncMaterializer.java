@@ -95,7 +95,6 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
-      elements.setSize(knownSize);
     }
 
     @Override
