@@ -30,12 +30,15 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sparx.concurrent.ExecutorContext;
 import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
+import sparx.util.function.Function;
+import sparx.util.function.Supplier;
 
 public class FutureListTests {
 
@@ -1616,6 +1619,26 @@ public class FutureListTests {
   }
 
   @Test
+  public void group() throws Exception {
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)), () -> l,
+        ll -> ll.group(1));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5)), () -> l, ll -> ll.group(2));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5)), () -> l, ll -> ll.group(3));
+    test(List.of(List.of(1, 2, 3, 4, 5)), () -> l, ll -> ll.group(10));
+  }
+
+  @Test
+  public void groupWithPadding() throws Exception {
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)),
+        () -> l, ll -> ll.group(1, null));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)), () -> l, ll -> ll.group(2, null));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, -1)), () -> l, ll -> ll.group(3, -1));
+    test(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)), () -> l, ll -> ll.group(10, -1));
+  }
+
+  @Test
   public void slice() {
     var l = List.of(1, 2, null, 4).toFuture(context);
     assertTrue(l.slice(1, 1).isEmpty());
@@ -1744,5 +1767,54 @@ public class FutureListTests {
       });
       assertThrows(CancellationException.class, f::get);
     }
+  }
+
+  private <E, F> void test(@NotNull final java.util.List<F> expected,
+      @NotNull final Supplier<? extends List<E>> baseSupplier,
+      @NotNull final Function<future.List<E>, future.List<? extends F>> actualTransformer)
+      throws Exception {
+    test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(context)));
+    // TODO: implement map...
+    // test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(context).map(e -> e)));
+  }
+
+  private <E> void test(@NotNull final java.util.List<E> expected,
+      @NotNull final Supplier<? extends future.List<? extends E>> actualSupplier) throws Exception {
+    assertEquals(expected.isEmpty(), actualSupplier.get().isEmpty());
+    assertEquals(!expected.isEmpty(), actualSupplier.get().notEmpty());
+    assertEquals(expected.size(), actualSupplier.get().size());
+    assertEquals(expected, actualSupplier.get());
+    assertThrows(IndexOutOfBoundsException.class, () -> actualSupplier.get().get(-1));
+    for (int i = 0; i < expected.size(); i++) {
+      assertEquals(expected.get(i), actualSupplier.get().get(i));
+    }
+    assertThrows(IndexOutOfBoundsException.class, () -> actualSupplier.get().get(expected.size()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> actualSupplier.get().get(Integer.MIN_VALUE));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> actualSupplier.get().get(Integer.MAX_VALUE));
+    var list = actualSupplier.get();
+    assertThrows(IndexOutOfBoundsException.class, () -> list.get(-1));
+    for (int i = 0; i < expected.size(); i++) {
+      assertEquals(expected.get(i), list.get(i));
+    }
+    assertThrows(IndexOutOfBoundsException.class, () -> list.get(expected.size()));
+    assertThrows(IndexOutOfBoundsException.class, () -> list.get(Integer.MIN_VALUE));
+    assertThrows(IndexOutOfBoundsException.class, () -> list.get(Integer.MAX_VALUE));
+    for (final E element : expected) {
+      assertTrue(actualSupplier.get().contains(element));
+    }
+    var lst = actualSupplier.get();
+    for (final E element : expected) {
+      assertTrue(lst.contains(element));
+    }
+    var itr = actualSupplier.get().iterator();
+    for (final E element : expected) {
+      assertTrue(itr.hasNext());
+      assertEquals(element, itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+    }
+    assertFalse(itr.hasNext());
+    assertThrows(NoSuchElementException.class, itr::next);
   }
 }

@@ -2331,7 +2331,7 @@ public class lazy extends Sparx {
         public @NotNull List<E> getChunk(@NotNull final ListMaterializer<E> materializer,
             final int start, final int end) {
           final List<E> sliced = new List<E>(materializer).slice(start, end);
-          final int paddingSize = size - sliced.size();
+          final int paddingSize = size - (end - start);
           if (paddingSize > 0) {
             return sliced.appendAll(List.times(paddingSize, padding));
           }
@@ -3121,18 +3121,17 @@ public class lazy extends Sparx {
     @Override
     @SuppressWarnings("unchecked")
     public @NotNull List<? extends List<E>> group(final int maxSize) {
-      Require.positive(maxSize, "maxSize");
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return List.of();
       }
-      return new List<List<E>>(new GroupListMaterializer<E, List<E>>(materializer, maxSize,
-          (Chunker<E, ? extends List<E>>) CHUNKER));
+      return new List<List<E>>(
+          new GroupListMaterializer<E, List<E>>(materializer, Require.positive(maxSize, "maxSize"),
+              (Chunker<E, ? extends List<E>>) CHUNKER));
     }
 
     @Override
     public @NotNull List<? extends List<E>> group(final int size, final E padding) {
-      Require.positive(size, "size");
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return List.of();
@@ -3140,8 +3139,8 @@ public class lazy extends Sparx {
       if (size == 1) {
         return group(1);
       }
-      return new List<List<E>>(
-          new GroupListMaterializer<E, List<E>>(materializer, size, getChunker(size, padding)));
+      return new List<List<E>>(new GroupListMaterializer<E, List<E>>(materializer, size,
+          getChunker(Require.positive(size, "size"), padding)));
     }
 
     @Override

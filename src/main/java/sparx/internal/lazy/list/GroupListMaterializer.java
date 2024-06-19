@@ -124,26 +124,27 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
       if (index < 0) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
+      final ElementsCache<L> elements = this.elements;
+      if (elements.has(index)) {
+        return elements.get(index);
+      }
       final long maxSize = this.maxSize;
       final ListMaterializer<E> wrapped = this.wrapped;
       final long wrappedIndex = index * maxSize;
       if (wrappedIndex >= Integer.MAX_VALUE || !wrapped.canMaterializeElement((int) wrappedIndex)) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
-      final ElementsCache<L> elements = this.elements;
-      if (elements.has(index)) {
-        return elements.get(index);
-      }
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
-      final int endIndex = (int) Math.min(Integer.MAX_VALUE, wrappedIndex + maxSize);
+      final int wrappedSize = wrapped.materializeSize();
+      final int endIndex = (int) Math.min(wrappedSize, wrappedIndex + maxSize);
       try {
         final L element = chunker.getChunk(wrapped, (int) wrappedIndex, endIndex);
         elements.set(index, element);
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();
         }
-        if (elements.count() == (wrapped.knownSize() + maxSize - 1) / maxSize) {
+        if (elements.count() == (wrappedSize + maxSize - 1) / maxSize) {
           state = new ListToListMaterializer<L>(elements.toList());
         }
         return element;

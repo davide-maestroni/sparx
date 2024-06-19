@@ -36,6 +36,10 @@ public class ElementsCache<E> {
     }
   }
 
+  public boolean contains(final Object element) {
+    return state.contains(element);
+  }
+
   public int count() {
     return state.count();
   }
@@ -61,6 +65,8 @@ public class ElementsCache<E> {
   }
 
   private interface CacheState<E> {
+
+    boolean contains(Object element);
 
     int count();
 
@@ -88,6 +94,11 @@ public class ElementsCache<E> {
       } else {
         elements = new ArrayList<Object>();
       }
+    }
+
+    @Override
+    public boolean contains(final Object element) {
+      return elements.contains(element);
     }
 
     @Override
@@ -142,6 +153,12 @@ public class ElementsCache<E> {
 
     private MapState(final int size) {
       this.size = size;
+    }
+
+    @Override
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public boolean contains(final Object element) {
+      return elements.containsValue(element);
     }
 
     @Override

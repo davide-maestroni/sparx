@@ -72,6 +72,8 @@ import sparx.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapWhereListAsyncMaterializer;
 import sparx.internal.future.list.FoldLeftListAsyncMaterializer;
 import sparx.internal.future.list.FoldRightListAsyncMaterializer;
+import sparx.internal.future.list.GroupListAsyncMaterializer;
+import sparx.internal.future.list.GroupListAsyncMaterializer.Chunker;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
@@ -101,7 +103,7 @@ class future extends Sparx {
       @NotNull final Iterable<? extends E> elements) {
     if (elements instanceof List) {
       final List<E> list = (List<E>) elements;
-      if (context == list.context && taskID.equals(list.taskID)) {
+      if (context.equals(list.context) && taskID.equals(list.taskID)) {
         return new ListAsyncMaterializerToIteratorAsyncMaterializer<E>(list.materializer);
       }
       return new ListAsyncMaterializerToIteratorAsyncMaterializer<E>(
@@ -169,6 +171,17 @@ class future extends Sparx {
 
     List(@NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final ExecutionContext fromContext, @NotNull final String fromTaskID,
+        @NotNull final ListAsyncMaterializer<E> materializer) {
+      this.context = context;
+      this.cancelException = cancelException;
+      taskID = Integer.toHexString(System.identityHashCode(this));
+      this.materializer = new SwitchListAsyncMaterializer<E>(fromContext, fromTaskID, context,
+          taskID, materializer);
+    }
+
+    List(@NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final ListAsyncMaterializer<E> materializer) {
       this.context = context;
       this.materializer = materializer;
@@ -189,6 +202,81 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     private static @NotNull <E> Function<java.util.List<E>, java.util.List<E>> decorateFunction() {
       return (Function<java.util.List<E>, java.util.List<E>>) DECORATE_FUNCTION;
+    }
+
+    private static @NotNull <E> Chunker<E, List<E>> getChunker(
+        @NotNull final ExecutionContext context, @NotNull final String taskID,
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      return new Chunker<E, List<E>>() {
+        @Override
+        public @NotNull List<E> getChunk(@NotNull final ListAsyncMaterializer<E> materializer,
+            final int start, final int end) {
+          return new List<E>(context, cancelException, materializer).slice(start, end);
+        }
+
+        @Override
+        public void getElements(@NotNull final List<E> chunk,
+            @NotNull final AsyncConsumer<java.util.List<E>> consumer) {
+          final ListAsyncMaterializer<E> materializer = chunk.materializer;
+          context.scheduleAfter(new Task() {
+            @Override
+            public void run() {
+              materializer.materializeElements(consumer);
+            }
+
+            @Override
+            public @NotNull String taskID() {
+              return taskID;
+            }
+
+            @Override
+            public int weight() {
+              return materializer.weightElements();
+            }
+          });
+        }
+      };
+    }
+
+    private static @NotNull <E> Chunker<E, List<E>> getChunker(
+        @NotNull final ExecutionContext context, @NotNull final String taskID,
+        @NotNull final AtomicReference<CancellationException> cancelException, final int size,
+        final E padding) {
+      return new Chunker<E, List<E>>() {
+        @Override
+        public @NotNull List<E> getChunk(@NotNull final ListAsyncMaterializer<E> materializer,
+            final int start, final int end) {
+          final List<E> sliced = new List<E>(context, cancelException, materializer).slice(start,
+              end);
+          final int paddingSize = size - (end - start);
+          if (paddingSize > 0) {
+            return sliced.appendAll(lazy.List.times(paddingSize, padding));
+          }
+          return sliced;
+        }
+
+        @Override
+        public void getElements(@NotNull final List<E> chunk,
+            @NotNull final AsyncConsumer<java.util.List<E>> consumer) {
+          final ListAsyncMaterializer<E> materializer = chunk.materializer;
+          context.scheduleAfter(new Task() {
+            @Override
+            public void run() {
+              materializer.materializeElements(consumer);
+            }
+
+            @Override
+            public @NotNull String taskID() {
+              return taskID;
+            }
+
+            @Override
+            public int weight() {
+              return materializer.weightElements();
+            }
+          });
+        }
+      };
     }
 
     @SuppressWarnings("unchecked")
@@ -1765,13 +1853,33 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<? extends List<E>> group(final int maxSize) {
-      // TODO: implement slice
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<List<E>>(context, cancelException,
+            EmptyListAsyncMaterializer.<List<E>>instance());
+      }
+      return new List<List<E>>(context, cancelException,
+          new GroupListAsyncMaterializer<E, List<E>>(materializer,
+              Require.positive(maxSize, "maxSize"),
+              List.<E>getChunker(context, taskID, cancelException), cancelException,
+              List.<List<E>>decorateFunction()));
     }
 
     @Override
     public @NotNull List<? extends List<E>> group(final int size, final E padding) {
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<List<E>>(context, cancelException,
+            EmptyListAsyncMaterializer.<List<E>>instance());
+      }
+      return new List<List<E>>(context, cancelException,
+          new GroupListAsyncMaterializer<E, List<E>>(materializer, size,
+              List.getChunker(context, taskID, cancelException, Require.positive(size, "size"),
+                  padding), cancelException, List.<List<E>>decorateFunction()));
     }
 
     @Override
@@ -2426,7 +2534,7 @@ class future extends Sparx {
       return null;
     }
 
-    // TODO: stopCancelPropagation + switchTo(Context), switchMap, mergeMap, concatMap(==flatMap) + flatMapAll(?)
+    // TODO: stopCancelPropagation + switchMap, mergeMap, concatMap(==flatMap) + flatMapAll(?)
 
     @Override
     public @NotNull List<E> sorted(@NotNull Comparator<? super E> comparator) {
@@ -2459,6 +2567,14 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new AppendAllListAsyncMaterializer<E>(left, right, cancelException,
               List.<E>appendAllFunction()));
+    }
+
+    public @NotNull List<E> switchTo(@NotNull final ExecutionContext context) {
+      if (context.equals(this.context)) {
+        return this;
+      }
+      return new List<E>(context, new AtomicReference<CancellationException>(), this.context,
+          taskID, materializer);
     }
 
     @Override
