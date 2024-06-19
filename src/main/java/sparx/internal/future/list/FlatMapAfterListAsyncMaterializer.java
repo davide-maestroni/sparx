@@ -423,7 +423,11 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
               throws Exception {
-            consumer.accept(elementsMaterializer = mapper.apply(index, element));
+            if (elementsMaterializer == null) {
+              consumer.accept(elementsMaterializer = mapper.apply(index, element));
+            } else {
+              consumer.accept(elementsMaterializer);
+            }
           }
 
           @Override

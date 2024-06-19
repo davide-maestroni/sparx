@@ -36,6 +36,7 @@ public class ElementsCache<E> {
     }
   }
 
+  // TODO: remove??
   public boolean contains(final Object element) {
     return state.contains(element);
   }

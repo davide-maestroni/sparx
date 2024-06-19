@@ -254,12 +254,15 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
             safeConsumeComplete(consumer, safeSize(wrappedSize, maxSize), LOGGER);
             return;
           }
-          final int maxSize = this.maxSize;
-          final Chunker<E, ? extends L> chunker = this.chunker;
-          final ListAsyncMaterializer<E> wrapped = this.wrapped;
-          final int endIndex = (int) Math.min(size, (long) startIndex + maxSize);
-          final L chunk = chunker.getChunk(wrapped, startIndex, endIndex);
-          elements.set(index, chunk);
+          final L chunk;
+          if (!elements.has(index)) {
+            final int maxSize = this.maxSize;
+            final int endIndex = (int) Math.min(size, (long) startIndex + maxSize);
+            chunk = chunker.getChunk(wrapped, startIndex, endIndex);
+            elements.set(index, chunk);
+          } else {
+            chunk = elements.get(index);
+          }
           safeConsume(consumer, safeSize(wrappedSize, maxSize), index, chunk, LOGGER);
         } else {
           wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
