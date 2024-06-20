@@ -16,15 +16,10 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.AsyncConsumers.safeConsume;
-import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -64,7 +59,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<F>, List<F>> decorateFunction;
-    private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>>(
+    private final ArrayList<AsyncConsumer<List<F>>> elementsConsumers = new ArrayList<AsyncConsumer<List<F>>>(
         2);
     private final ElementsCache<F> elements = new ElementsCache<F>(knownSize);
     private final IndexedFunction<? super E, ? extends F> mapper;
@@ -157,17 +152,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
         }
         ++i;
       }
-      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
-      final boolean needsRun = elementsConsumers.isEmpty();
-      ArrayList<IndexedAsyncConsumer<F>> indexConsumers = elementsConsumers.get(Integer.MAX_VALUE);
-      if (indexConsumers == null) {
-        elementsConsumers.put(Integer.MAX_VALUE,
-            indexConsumers = new ArrayList<IndexedAsyncConsumer<F>>(2));
-      }
-      indexConsumers.add(consumer);
-      if (needsRun) {
-        wrapped.materializeElement(i, new MaterializingAsyncConsumer());
-      }
+      wrapped.materializeElement(i, new MaterializingEachAsyncConsumer(consumer));
     }
 
     @Override
@@ -180,27 +165,26 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
         if (elements.has(index)) {
           safeConsume(consumer, -1, index, elements.get(index), LOGGER);
         } else {
-          final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
-          final boolean needsRun = elementsConsumers.isEmpty();
-          ArrayList<IndexedAsyncConsumer<F>> indexConsumers = elementsConsumers.get(index);
-          if (indexConsumers == null) {
-            elementsConsumers.put(index,
-                indexConsumers = new ArrayList<IndexedAsyncConsumer<F>>(2));
-          }
-          final int originalIndex = index;
-          indexConsumers.add(new IndexedAsyncConsumer<F>() {
+          wrapped.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
             @Override
-            public void accept(final int size, final int index, final F element) throws Exception {
-              if (originalIndex == index) {
-                consumer.accept(size, index, element);
+            public void cancellableAccept(final int size, final int index, final E element)
+                throws Exception {
+              final ElementsCache<F> elements = ImmaterialState.this.elements;
+              elements.setSize(size);
+              final F mapped;
+              if (!elements.has(index)) {
+                mapped = mapper.apply(index, element);
+                elements.set(index, mapped);
+              } else {
+                mapped = elements.get(index);
               }
+              consumer.accept(size, index, mapped);
             }
 
             @Override
-            public void complete(final int size) throws Exception {
-              if (originalIndex >= size) {
-                consumer.complete(size);
-              }
+            public void cancellableComplete(final int size) throws Exception {
+              elements.setSize(size);
+              consumer.complete(size);
             }
 
             @Override
@@ -208,38 +192,15 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
               consumer.error(error);
             }
           });
-          if (needsRun) {
-            wrapped.materializeElement(index, new MaterializingAsyncConsumer());
-          }
         }
       }
     }
 
     @Override
     public void materializeElements(@NotNull final AsyncConsumer<List<F>> consumer) {
-      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
-      final boolean needsRun = elementsConsumers.isEmpty();
-      ArrayList<IndexedAsyncConsumer<F>> indexConsumers = elementsConsumers.get(Integer.MAX_VALUE);
-      if (indexConsumers == null) {
-        elementsConsumers.put(Integer.MAX_VALUE,
-            indexConsumers = new ArrayList<IndexedAsyncConsumer<F>>(2));
-      }
-      indexConsumers.add(new IndexedAsyncConsumer<F>() {
-        @Override
-        public void accept(final int size, final int index, final F element) {
-        }
-
-        @Override
-        public void complete(final int size) {
-          getState().materializeElements(consumer);
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
-      if (needsRun) {
+      final ArrayList<AsyncConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
+      elementsConsumers.add(consumer);
+      if (elementsConsumers.size() == 1) {
         int i = 0;
         while (elements.has(i)) {
           ++i;
@@ -333,49 +294,18 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       return wrapped.weightSize();
     }
 
-    private void consumeComplete(final int size) {
-      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
-      for (final ArrayList<IndexedAsyncConsumer<F>> consumers : elementsConsumers.values()) {
-        for (final IndexedAsyncConsumer<F> consumer : consumers) {
-          safeConsumeComplete(consumer, size, LOGGER);
-        }
+    private void consumeElements(@NotNull final List<F> elements) {
+      final ArrayList<AsyncConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
+      for (final AsyncConsumer<List<F>> elementsConsumer : elementsConsumers) {
+        safeConsume(elementsConsumer, elements, LOGGER);
       }
       elementsConsumers.clear();
     }
 
-    private void consumeElement(final int size, final int index, final F element) {
-      @SuppressWarnings("unchecked") final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = (HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>>) this.elementsConsumers.clone();
-      final HashSet<Integer> keysToRemove = new HashSet<Integer>();
-      for (final Entry<Integer, ArrayList<IndexedAsyncConsumer<F>>> entry : elementsConsumers.entrySet()) {
-        final int key = entry.getKey();
-        if (key < index) {
-          final Iterator<IndexedAsyncConsumer<F>> consumers = entry.getValue().iterator();
-          while (consumers.hasNext()) {
-            if (!safeConsume(consumers.next(), size, index, element, LOGGER)) {
-              consumers.remove();
-            }
-          }
-          if (entry.getValue().isEmpty()) {
-            keysToRemove.add(key);
-          }
-        } else if (key == index) {
-          for (final IndexedAsyncConsumer<F> consumer : entry.getValue()) {
-            if (safeConsume(consumer, size, index, element, LOGGER)) {
-              safeConsumeComplete(consumer, index + 1, LOGGER);
-            }
-          }
-          keysToRemove.add(key);
-        }
-      }
-      elementsConsumers.keySet().removeAll(keysToRemove);
-    }
-
     private void consumeError(@NotNull final Exception error) {
-      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
-      for (final ArrayList<IndexedAsyncConsumer<F>> consumers : elementsConsumers.values()) {
-        for (final IndexedAsyncConsumer<F> consumer : consumers) {
-          safeConsumeError(consumer, error, LOGGER);
-        }
+      final ArrayList<AsyncConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
+      for (final AsyncConsumer<List<F>> elementsConsumer : elementsConsumers) {
+        safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
     }
@@ -395,17 +325,13 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       public void cancellableAccept(final int size, int index, final E element) throws Exception {
         final ElementsCache<F> elements = ImmaterialState.this.elements;
         elements.setSize(size);
-        final F mapped;
         if (!elements.has(index)) {
-          mapped = mapper.apply(index, element);
+          final F mapped = mapper.apply(index, element);
           elements.set(index, mapped);
-        } else {
-          mapped = elements.get(index);
         }
-        consumeElement(size, index, mapped);
-        while (elements.has(++index)) {
-          consumeElement(size, index, elements.get(index));
-        }
+        do {
+          ++index;
+        } while (elements.has(index));
         if (!elementsConsumers.isEmpty()) {
           this.index = index;
           taskID = getTaskID();
@@ -417,7 +343,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       public void cancellableComplete(final int size) throws Exception {
         final List<F> materialized = decorateFunction.apply(elements.toList());
         setState(new ListToListAsyncMaterializer<F>(materialized));
-        consumeComplete(size);
+        consumeElements(materialized);
       }
 
       @Override
@@ -444,8 +370,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
       @Override
       public int weight() {
-        final int weight = wrapped.weightElement();
-        return weight == Integer.MAX_VALUE ? weight : weight + 1;
+        return wrapped.weightElement();
       }
     }
 
@@ -580,6 +505,67 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
           setFailed(error);
           consumeError(error);
         }
+        consumer.error(error);
+      }
+
+      @Override
+      public void run() {
+        wrapped.materializeElement(index, this);
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElement();
+      }
+    }
+
+    private class MaterializingEachAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<E> implements Task {
+
+      private final IndexedAsyncConsumer<F> consumer;
+
+      private int index;
+      private String taskID;
+
+      private MaterializingEachAsyncConsumer(@NotNull final IndexedAsyncConsumer<F> consumer) {
+        this.consumer = consumer;
+      }
+
+      @Override
+      public void cancellableAccept(final int size, int index, final E element) throws Exception {
+        final ElementsCache<F> elements = ImmaterialState.this.elements;
+        elements.setSize(size);
+        final F mapped;
+        if (!elements.has(index)) {
+          mapped = mapper.apply(index, element);
+          elements.set(index, mapped);
+        } else {
+          mapped = elements.get(index);
+        }
+        final IndexedAsyncConsumer<F> consumer = this.consumer;
+        consumer.accept(size, index, mapped);
+        while (elements.has(++index)) {
+          consumer.accept(size, index, elements.get(index));
+        }
+        if (!elementsConsumers.isEmpty()) {
+          this.index = index;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      }
+
+      @Override
+      public void cancellableComplete(final int size) throws Exception {
+        consumer.complete(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) throws Exception {
         consumer.error(error);
       }
 

@@ -171,7 +171,7 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
               }
 
               @Override
-              public void error(@NotNull Exception error) throws Exception {
+              public void error(@NotNull final Exception error) throws Exception {
                 consumer.error(error);
               }
             });
@@ -287,43 +287,13 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
         if (wrappedSize >= 0) {
-          final int size = wrappedSize;
-          final long maxSize = this.maxSize;
-          final ElementsCache<L> elements = this.elements;
-          final Chunker<E, ? extends L> chunker = this.chunker;
-          final ListAsyncMaterializer<E> wrapped = this.wrapped;
-          for (int i = 0, n = 0; i < size; ++n) {
-            final int endIndex = (int) Math.min(size, i + maxSize);
-            if (!elements.has(n)) {
-              final L chunk = chunker.getChunk(wrapped, i, endIndex);
-              elements.set(n, chunk);
-            }
-            i = endIndex;
-          }
-          try {
-            final List<L> materialized = decorateFunction.apply(elements.toList());
-            setState(new ListToListAsyncMaterializer<L>(materialized));
-            consumeElements(materialized);
-          } catch (final Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-            }
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              setCancelled(exception);
-              consumeError(exception);
-            } else {
-              setFailed(e);
-              consumeError(e);
-            }
-          }
+          materializeElements();
         } else {
           wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
             @Override
             public void cancellableAccept(final Integer size) {
-              wrappedSize = size;
-              elements.setSize(safeSize(wrappedSize, maxSize));
-              materializeElements(consumer);
+              elements.setSize(safeSize(wrappedSize = size, maxSize));
+              materializeElements();
             }
 
             @Override
@@ -367,9 +337,9 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
           wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
             @Override
             public void cancellableAccept(final Integer size) {
-              wrappedSize = size;
-              elements.setSize(safeSize(wrappedSize, maxSize));
-              materializeHasElement(index, consumer);
+              elements.setSize(safeSize(wrappedSize = size, maxSize));
+              final int startIndex = IndexOverflowException.safeCast((long) index * maxSize);
+              safeConsume(consumer, startIndex < size, LOGGER);
             }
 
             @Override
@@ -389,9 +359,9 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
         wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
           public void cancellableAccept(final Integer size) {
-            wrappedSize = size;
-            elements.setSize(safeSize(wrappedSize, maxSize));
-            materializeSize(consumer);
+            final int knownSize = safeSize(wrappedSize = size, maxSize);
+            elements.setSize(knownSize);
+            safeConsume(consumer, knownSize, LOGGER);
           }
 
           @Override
@@ -446,6 +416,39 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
         safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
+    }
+
+    private void materializeElements() {
+      final int size = wrappedSize;
+      final long maxSize = this.maxSize;
+      final ElementsCache<L> elements = this.elements;
+      final Chunker<E, ? extends L> chunker = this.chunker;
+      final ListAsyncMaterializer<E> wrapped = this.wrapped;
+      for (int i = 0, n = 0; i < size; ++n) {
+        final int endIndex = (int) Math.min(size, i + maxSize);
+        if (!elements.has(n)) {
+          final L chunk = chunker.getChunk(wrapped, i, endIndex);
+          elements.set(n, chunk);
+        }
+        i = endIndex;
+      }
+      try {
+        final List<L> materialized = decorateFunction.apply(elements.toList());
+        setState(new ListToListAsyncMaterializer<L>(materialized));
+        consumeElements(materialized);
+      } catch (final Exception e) {
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+        final CancellationException exception = cancelException.get();
+        if (exception != null) {
+          setCancelled(exception);
+          consumeError(exception);
+        } else {
+          setFailed(e);
+          consumeError(e);
+        }
+      }
     }
   }
 }

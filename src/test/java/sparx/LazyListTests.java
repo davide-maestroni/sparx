@@ -125,6 +125,12 @@ public class LazyListTests {
       return i < 3;
     });
     assertEquals(List.of(0, 1, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).doWhile((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    }, (n, i) -> indexes.add(n));
+    assertEquals(List.of(0, 0, 1, 1, 2), indexes);
   }
 
   @Test

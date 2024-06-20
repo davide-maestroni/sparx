@@ -815,6 +815,7 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         return false;
       }
+      // TODO: forbid waiting in context
       final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
       context.scheduleAfter(new Task() {
         @Override

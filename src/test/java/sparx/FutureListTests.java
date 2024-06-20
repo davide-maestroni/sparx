@@ -28,6 +28,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.jetbrains.annotations.NotNull;
@@ -114,29 +115,10 @@ public class FutureListTests {
   }
 
   @Test
-  public void count() {
-    assertFalse(List.of().toFuture(context).count().isEmpty());
-    assertTrue(List.of().toFuture(context).count().notEmpty());
-    assertEquals(1, List.of().toFuture(context).count().size());
-    assertEquals(0, List.of().toFuture(context).count().first());
-    assertEquals(3, List.of(1, 2, 3).toFuture(context).count().first());
-    {
-      var itr = List.of(1, 2, 3).count().iterator();
-      assertTrue(itr.hasNext());
-      assertEquals(3, itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
-    assertEquals(3, List.of(1, null, 3).toFuture(context).count().first());
-    {
-      var itr = List.of(1, null, 3).count().iterator();
-      assertTrue(itr.hasNext());
-      assertEquals(3, itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
+  public void count() throws Exception {
+    test(List.of(0), List::of, future.List::count);
+    test(List.of(3), () -> List.of(1, 2, 3), future.List::count);
+    test(List.of(3), () -> List.of(1, null, 3), future.List::count);
 
     if (TEST_ASYNC_CANCEL) {
       // TODO
@@ -144,37 +126,38 @@ public class FutureListTests {
   }
 
   @Test
-  public void countWhere() {
-    assertFalse(List.of().toFuture(context).count(Objects::nonNull).isEmpty());
-    assertTrue(List.of().toFuture(context).count(Objects::nonNull).notEmpty());
-    assertEquals(1, List.of().toFuture(context).count(Objects::nonNull).size());
-    assertEquals(0, List.of().toFuture(context).count(Objects::nonNull).first());
-    assertEquals(2, List.of(1, 2, 3).toFuture(context).count(i -> i < 3).first());
-    {
-      var itr = List.of(1, 2, 3).count(i -> i < 3).iterator();
-      assertTrue(itr.hasNext());
-      assertEquals(2, itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
-    assertEquals(3, List.of(1, 2, 3).toFuture(context).count(i -> i > 0).first());
-    {
-      var itr = List.of(1, 2, 3).count(i -> i > 0).iterator();
-      assertTrue(itr.hasNext());
-      assertEquals(3, itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
+  public void countWhere() throws Exception {
+    test(List.of(0), List::of, ll -> ll.count(Objects::nonNull));
+    test(List.of(2), () -> List.of(1, 2, 3), ll -> ll.count(i -> i < 3));
+    test(List.of(3), () -> List.of(1, 2, 3), ll -> ll.count(i -> i > 0));
     var l = List.of(1, null, 3).toFuture(context).count(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
       // TODO
 //      var itr = l.iterator();
-//      assertThrows(NullPointerException.class, itr::hasNext);
+//      assertTrue(itr.hasNext());
 //      assertThrows(NullPointerException.class, itr::next);
     }
+    l = List.of(1, null, 3).toFuture(context).map(e -> e).count(i -> i > 0);
+    assertThrows(NullPointerException.class, l::first);
+    {
+      // TODO
+//      var itr = l.iterator();
+//      assertTrue(itr.hasNext());
+//      assertThrows(NullPointerException.class, itr::next);
+    }
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 2, 1).toFuture(context).count((n, i) -> {
+      indexes.add(n);
+      return i < 2;
+    }).first();
+    assertEquals(List.of(0, 1, 2, 3), indexes);
+    indexes.clear();
+    List.of(1, 2, 2, 1).toFuture(context).map(e -> e).count((n, i) -> {
+      indexes.add(n);
+      return i < 2;
+    }).first();
+    assertEquals(List.of(0, 1, 2, 3), indexes);
 
     if (TEST_ASYNC_CANCEL) {
       var f = List.of(1, 2, 3).toFuture(context).count(i -> {
@@ -194,18 +177,17 @@ public class FutureListTests {
   }
 
   @Test
-  public void diff() {
-    assertEquals(List.of(2, 4), List.of(1, 2, null, 4).toFuture(context).diff(List.of(1, null)));
-    assertEquals(List.of(2, null), List.of(1, 2, null, 4).toFuture(context).diff(List.of(1, 4)));
-    assertEquals(List.of(2, null), List.of(1, 2, null, 4).toFuture(context).diff(List.of(1, 3, 4)));
-    assertEquals(List.of(2, null, 4),
-        List.of(1, 2, null, 4).toFuture(context).diff(List.of(3, 1, 3)));
-    assertEquals(List.of(1, 2, 4),
-        List.of(1, 2, null, 4).toFuture(context).diff(List.of(null, null)));
-    assertEquals(List.of(), List.of(1, null).toFuture(context).diff(List.of(1, 2, null, 4)));
-
-    assertEquals(List.of(1, 2, null, 4), List.of(1, 2, null, 4).toFuture(context).diff(List.of()));
-    assertEquals(List.of(), List.of().toFuture(context).diff(List.of(1, 2, null, 4)));
+  public void diff() throws Exception {
+    test(List.of(2, 4), () -> List.of(1, 2, null, 4), ll -> ll.diff(List.of(1, null)));
+    test(List.of(2, null), () -> List.of(1, 2, null, 4), ll -> ll.diff(List.of(1, 4)));
+    test(List.of(2, null), () -> List.of(1, 2, null, 4), ll -> ll.diff(List.of(1, 3, 4)));
+    test(List.of(2, null, 4), () -> List.of(1, 2, null, 4), ll -> ll.diff(List.of(3, 1, 3)));
+    test(List.of(1, 2, 4), () -> List.of(1, 2, null, 4), ll -> ll.diff(List.of(null, null)));
+    test(List.of(1, 2, 4), () -> List.of(1, 1, 2, null, 4), ll -> ll.diff(List.of(null, null, 1)));
+    test(List.of(), () -> List.of(1, null), ll -> ll.diff(List.of(1, 2, null, 4)));
+    test(List.of(1, 2, null, 4), () -> List.of(1, 2, null, 4), ll -> ll.diff(List.of()));
+    test(List.of(1, 1, 2, null, 4), () -> List.of(1, 1, 2, null, 4), ll -> ll.diff(List.of()));
+    test(List.of(), List::of, ll -> ll.diff(List.of(1, 2, null, 4)));
 
     if (TEST_ASYNC_CANCEL) {
       var f = List.of(1, 2, 3).toFuture(context).none(i -> {
@@ -225,10 +207,16 @@ public class FutureListTests {
   }
 
   @Test
-  public void doFor() {
+  public void doFor() throws ExecutionException, InterruptedException {
     var list = new ArrayList<>();
     List.of(1, 2, 3).toFuture(context).doFor(e -> list.add(e));
     assertEquals(List.of(1, 2, 3), list);
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 2, 1).toFuture(context).doFor((n, i) -> indexes.add(n));
+    assertEquals(List.of(0, 1, 2, 3), indexes);
+    indexes.clear();
+    List.of(1, 2, 2, 1).toFuture(context).nonBlockingFor((n, i) -> indexes.add(n)).get();
+    assertEquals(List.of(0, 1, 2, 3), indexes);
 
     if (TEST_ASYNC_CANCEL) {
       var f = List.of(1, 2, 3).toFuture(context).nonBlockingFor(i -> Thread.sleep(60000));
@@ -245,7 +233,7 @@ public class FutureListTests {
   }
 
   @Test
-  public void doWhile() {
+  public void doWhile() throws ExecutionException, InterruptedException {
     var list = new ArrayList<>();
     List.of(1, 2, 3).toFuture(context).doWhile(e -> e < 3, list::add);
     assertEquals(List.of(1, 2), list);
@@ -255,6 +243,30 @@ public class FutureListTests {
       return e < 2;
     });
     assertEquals(List.of(1, 2), list);
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).doWhile((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    });
+    assertEquals(List.of(0, 1, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).nonBlockingWhile((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    }).get();
+    assertEquals(List.of(0, 1, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).doWhile((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    }, (n, i) -> indexes.add(n));
+    assertEquals(List.of(0, 0, 1, 1, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).nonBlockingWhile((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    }, (n, i) -> indexes.add(n)).get();
+    assertEquals(List.of(0, 0, 1, 1, 2), indexes);
 
     if (TEST_ASYNC_CANCEL) {
       var f = List.of(1, 2, 3).toFuture(context).nonBlockingWhile(i -> {
@@ -1630,7 +1642,14 @@ public class FutureListTests {
 
     test(List.of(), List::<Integer>of, ll -> ll.map(x -> x + 1));
     var indexes = new ArrayList<Integer>();
-    List.of(1, 2, 3, 4).map((n, i) -> {
+    List.of(1, 2, 3, 4).toFuture(context).map((n, i) -> {
+      indexes.add(n);
+      return i;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2, 3), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).map(e -> e).map((n, i) -> {
       indexes.add(n);
       return i;
     }).doFor(i -> {
@@ -1819,6 +1838,7 @@ public class FutureListTests {
     for (final E element : expected) {
       assertTrue(actualSupplier.get().contains(element));
     }
+    assertEquals(expected, actualSupplier.get().get());
     var lst = actualSupplier.get();
     for (final E element : expected) {
       assertTrue(lst.contains(element));
