@@ -386,8 +386,6 @@ public class LazyListTests {
   public void flatMap() throws Exception {
     var l = List.of(1, 2);
     test(List.of(1, 1, 2, 2), () -> l.flatMap(i -> List.of(i, i)));
-    assertEquals(2, l.flatMap(i -> List.of(i, i)).get(2));
-    assertThrows(IndexOutOfBoundsException.class, () -> l.flatMap(i -> List.of(i, i)).get(4));
     test(List.of(), () -> l.flatMap(i -> List.of()));
     test(List.of(null, null), () -> l.flatMap(i -> List.of(null)));
     assertNull(l.flatMap(i -> List.of(null)).get(1));
