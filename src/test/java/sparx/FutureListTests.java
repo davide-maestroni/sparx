@@ -160,7 +160,7 @@ public class FutureListTests {
     assertEquals(List.of(0, 1, 2, 3), indexes);
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).count(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).count(i -> {
         Thread.sleep(60000);
         return true;
       });
@@ -286,51 +286,16 @@ public class FutureListTests {
   }
 
   @Test
-  public void drop() {
-    var l = List.<Integer>of().toFuture(context).drop(1);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    l = List.<Integer>of().toFuture(context).drop(0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    l = List.<Integer>of().toFuture(context).drop(-1);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-
-    l = List.of(1, null, 3).toFuture(context).drop(1);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(2, l.size());
-    assertEquals(List.of(null, 3), l);
-    l = List.of(1, null, 3).toFuture(context).drop(2);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertEquals(List.of(3), l);
-    l = List.of(1, null, 3).toFuture(context).drop(3);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-    l = List.of(1, null, 3).toFuture(context).drop(4);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-    l = List.of(1, null, 3).toFuture(context).drop(0);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-    l = List.of(1, null, 3).toFuture(context).drop(-1);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
+  public void drop() throws Exception {
+    test(List.of(), List::<Integer>of, ll -> ll.drop(1));
+    test(List.of(), List::<Integer>of, ll -> ll.drop(0));
+    test(List.of(), List::<Integer>of, ll -> ll.drop(-1));
+    test(List.of(null, 3), () -> List.of(1, null, 3), ll -> ll.drop(1));
+    test(List.of(3), () -> List.of(1, null, 3), ll -> ll.drop(2));
+    test(List.of(), () -> List.of(1, null, 3), ll -> ll.drop(3));
+    test(List.of(), () -> List.of(1, null, 3), ll -> ll.drop(4));
+    test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.drop(0));
+    test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.drop(-1));
 
     if (TEST_ASYNC_CANCEL) {
       // TODO: uncomment when prepend is implemented
@@ -351,51 +316,16 @@ public class FutureListTests {
   }
 
   @Test
-  public void dropRight() {
-    var l = List.<Integer>of().toFuture(context).dropRight(1);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    l = List.<Integer>of().toFuture(context).dropRight(0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    l = List.<Integer>of().toFuture(context).dropRight(-1);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-
-    l = List.of(1, null, 3).toFuture(context).dropRight(1);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(2, l.size());
-    assertEquals(List.of(1, null), l);
-    l = List.of(1, null, 3).toFuture(context).dropRight(2);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertEquals(List.of(1), l);
-    l = List.of(1, null, 3).toFuture(context).dropRight(3);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-    l = List.of(1, null, 3).toFuture(context).dropRight(4);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-    l = List.of(1, null, 3).toFuture(context).dropRight(0);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-    l = List.of(1, null, 3).toFuture(context).dropRight(-1);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
+  public void dropRight() throws Exception {
+    test(List.of(), List::<Integer>of, ll -> ll.dropRight(1));
+    test(List.of(), List::<Integer>of, ll -> ll.dropRight(0));
+    test(List.of(), List::<Integer>of, ll -> ll.dropRight(-1));
+    test(List.of(1, null), () -> List.of(1, null, 3), ll -> ll.dropRight(1));
+    test(List.of(1), () -> List.of(1, null, 3), ll -> ll.dropRight(2));
+    test(List.of(), () -> List.of(1, null, 3), ll -> ll.dropRight(3));
+    test(List.of(), () -> List.of(1, null, 3), ll -> ll.dropRight(4));
+    test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropRight(0));
+    test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropRight(-1));
 
     if (TEST_ASYNC_CANCEL) {
       var f = List.of(1, 2, 3).toFuture(context).none(i -> {
@@ -415,39 +345,33 @@ public class FutureListTests {
   }
 
   @Test
-  public void dropRightWhile() {
-    var l = List.<Integer>of().toFuture(context).dropRightWhile(e -> e > 0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-
-    l = List.of(1, null, 3).toFuture(context).dropRightWhile(Objects::isNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-    l = List.of(1, null, 3).toFuture(context).dropRightWhile(Objects::nonNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(2, l.size());
-    assertEquals(List.of(1, null), l);
-    l = List.of(1, null, 3).toFuture(context).dropRightWhile(e -> e < 1);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-
-    l = List.of(1, 2, 3).toFuture(context).dropRightWhile(e -> e > 0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-
+  public void dropRightWhile() throws Exception {
+    test(List.of(), List::<Integer>of, ll -> ll.dropRightWhile(e -> e > 0));
+    test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropRightWhile(Objects::isNull));
+    test(List.of(1, null), () -> List.of(1, null, 3), ll -> ll.dropRightWhile(Objects::nonNull));
+    test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropRightWhile(e -> e < 1));
+    test(List.of(), () -> List.of(1, 2, 3), ll -> ll.dropRightWhile(e -> e > 0));
     assertThrows(NullPointerException.class,
-        () -> List.of(1, null, 3).dropRightWhile(e -> e > 0).size());
+        () -> List.of(1, null, 3).toFuture(context).dropRightWhile(e -> e > 0).size());
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).toFuture(context).map(e -> e).dropRightWhile(e -> e > 0).size());
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).dropRightWhile((n, i) -> {
+      indexes.add(n);
+      return i > 2;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(3, 2, 1), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).map(e -> e).dropRightWhile((n, i) -> {
+      indexes.add(n);
+      return i > 2;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(3, 2, 1), indexes);
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).dropRightWhile(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).dropRightWhile(i -> {
         Thread.sleep(60000);
         return true;
       });
@@ -464,39 +388,33 @@ public class FutureListTests {
   }
 
   @Test
-  public void dropWhile() {
-    var l = List.<Integer>of().toFuture(context).dropWhile(e -> e > 0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-
-    l = List.of(1, null, 3).toFuture(context).dropWhile(Objects::isNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-    l = List.of(1, null, 3).toFuture(context).dropWhile(Objects::nonNull);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(2, l.size());
-    assertEquals(List.of(null, 3), l);
-    l = List.of(1, null, 3).toFuture(context).dropWhile(e -> e < 1);
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(3, l.size());
-    assertEquals(List.of(1, null, 3), l);
-
-    l = List.of(1, 2, 3).toFuture(context).dropWhile(e -> e > 0);
-    assertTrue(l.isEmpty());
-    assertFalse(l.notEmpty());
-    assertEquals(0, l.size());
-    assertEquals(List.of(), l);
-
+  public void dropWhile() throws Exception {
+    test(List.of(), List::<Integer>of, ll -> ll.dropWhile(e -> e > 0));
+    test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropWhile(Objects::isNull));
+    test(List.of(null, 3), () -> List.of(1, null, 3), ll -> ll.dropWhile(Objects::nonNull));
+    test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropWhile(e -> e < 1));
+    test(List.of(), () -> List.of(1, 2, 3), ll -> ll.dropWhile(e -> e > 0));
     assertThrows(NullPointerException.class,
-        () -> List.of(1, null, 3).dropWhile(e -> e > 0).size());
+        () -> List.of(1, null, 3).toFuture(context).dropWhile(e -> e > 0).size());
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).toFuture(context).map(e -> e).dropWhile(e -> e > 0).size());
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).dropWhile((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).map(e -> e).dropWhile((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2), indexes);
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).dropWhile(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).dropWhile(i -> {
         Thread.sleep(60000);
         return true;
       });
@@ -513,30 +431,15 @@ public class FutureListTests {
   }
 
   @Test
-  public void each() {
-    assertFalse(List.of().toFuture(context).each(Objects::nonNull).isEmpty());
-    assertTrue(List.of().toFuture(context).each(Objects::nonNull).notEmpty());
-    assertEquals(1, List.of().toFuture(context).each(Objects::nonNull).size());
-    assertFalse(List.of().toFuture(context).each(Objects::nonNull).first());
-    assertFalse(List.of(1, 2, 3).toFuture(context).each(i -> i > 3).first());
-    {
-      var itr = List.of(1, 2, 3).toFuture(context).each(i -> i < 3).iterator();
-      assertTrue(itr.hasNext());
-      assertFalse(itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
-    assertTrue(List.of(1, 2, 3).toFuture(context).each(i -> i > 0).first());
-    {
-      var itr = List.of(1, 2, 3).toFuture(context).each(i -> i > 0).iterator();
-      assertTrue(itr.hasNext());
-      assertTrue(itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
+  public void each() throws Exception {
+    test(List.of(false), List::of, ll -> ll.each(Objects::nonNull));
+    test(List.of(false), () -> List.of(1, 2, 3), ll -> ll.each(i -> i > 3));
+    test(List.of(false), () -> List.of(1, 2, 3), ll -> ll.each(i -> i < 3));
+    test(List.of(true), () -> List.of(1, 2, 3), ll -> ll.each(i -> i > 0));
+    test(List.of(true), () -> List.of(1, 2, 3), ll -> ll.each(i -> i > 0));
     var l = List.of(1, null, 3).toFuture(context).each(i -> i > 0);
+    assertThrows(NullPointerException.class, l::first);
+    l = List.of(1, null, 3).toFuture(context).map(e -> e).each(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
       // TODO
@@ -544,9 +447,23 @@ public class FutureListTests {
 //      assertTrue(itr.hasNext());
 //      assertThrows(NullPointerException.class, itr::next);
     }
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).each((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).map(e -> e).each((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2), indexes);
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).each(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).each(i -> {
         Thread.sleep(60000);
         return true;
       });
@@ -563,60 +480,16 @@ public class FutureListTests {
   }
 
   @Test
-  public void endsWith() {
-    var l = List.<Integer>of().toFuture(context).endsWith(List.of());
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertTrue(l.first());
-
-    l = List.<Integer>of().toFuture(context).endsWith(List.of(1));
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertFalse(l.first());
-
-    l = List.of(1, null, 3).toFuture(context).endsWith(List.of());
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertTrue(l.first());
-
-    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(3));
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertTrue(l.first());
-
-    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(null));
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertFalse(l.first());
-
-    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(null, 3));
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertTrue(l.first());
-
-    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(1, null));
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertFalse(l.first());
-
-    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(1, null, 3));
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertTrue(l.first());
-
-    l = List.of(1, null, 3).toFuture(context).endsWith(List.of(null, null, 3));
-    assertFalse(l.isEmpty());
-    assertTrue(l.notEmpty());
-    assertEquals(1, l.size());
-    assertFalse(l.first());
+  public void endsWith() throws Exception {
+    test(List.of(true), List::<Integer>of, ll -> ll.endsWith(List.of()));
+    test(List.of(false), List::<Integer>of, ll -> ll.endsWith(List.of(1)));
+    test(List.of(true), () -> List.of(1, null, 3), ll -> ll.endsWith(List.of()));
+    test(List.of(true), () -> List.of(1, null, 3), ll -> ll.endsWith(List.of(3)));
+    test(List.of(false), () -> List.of(1, null, 3), ll -> ll.endsWith(List.of(null)));
+    test(List.of(true), () -> List.of(1, null, 3), ll -> ll.endsWith(List.of(null, 3)));
+    test(List.of(false), () -> List.of(1, null, 3), ll -> ll.endsWith(List.of(1, null)));
+    test(List.of(true), () -> List.of(1, null, 3), ll -> ll.endsWith(List.of(1, null, 3)));
+    test(List.of(false), () -> List.of(1, null, 3), ll -> ll.endsWith(List.of(null, null, 3)));
 
     if (TEST_ASYNC_CANCEL) {
       var f = List.of(1, 2, 3).toFuture(context).none(i -> {
@@ -636,30 +509,15 @@ public class FutureListTests {
   }
 
   @Test
-  public void exists() {
-    assertFalse(List.of().toFuture(context).exists(Objects::nonNull).isEmpty());
-    assertTrue(List.of().toFuture(context).exists(Objects::nonNull).notEmpty());
-    assertEquals(1, List.of().toFuture(context).exists(Objects::nonNull).size());
-    assertFalse(List.of().toFuture(context).exists(Objects::nonNull).first());
-    assertFalse(List.of(1, 2, 3).toFuture(context).exists(i -> i > 3).first());
-    {
-      var itr = List.of(1, 2, 3).toFuture(context).exists(i -> i > 3).iterator();
-      assertTrue(itr.hasNext());
-      assertFalse(itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
-    assertTrue(List.of(1, 2, 3).toFuture(context).exists(i -> i > 0).first());
-    {
-      var itr = List.of(1, 2, 3).toFuture(context).exists(i -> i > 0).iterator();
-      assertTrue(itr.hasNext());
-      assertTrue(itr.next());
-      assertThrows(UnsupportedOperationException.class, itr::remove);
-      assertFalse(itr.hasNext());
-      assertThrows(NoSuchElementException.class, itr::next);
-    }
+  public void exists() throws Exception {
+    test(List.of(false), List::of, ll -> ll.exists(Objects::nonNull));
+    test(List.of(false), () -> List.of(1, 2, 3), ll -> ll.exists(i -> i > 3));
+    test(List.of(false), () -> List.of(1, 2, 3), ll -> ll.exists(i -> i > 3));
+    test(List.of(true), () -> List.of(1, 2, 3), ll -> ll.exists(i -> i > 0));
+    test(List.of(true), () -> List.of(1, 2, 3), ll -> ll.exists(i -> i > 0));
     var l = List.of(1, null, 3).toFuture(context).exists(i -> i > 1);
+    assertThrows(NullPointerException.class, l::first);
+    List.of(1, null, 3).toFuture(context).map(e -> e).exists(i -> i > 1);
     assertThrows(NullPointerException.class, l::first);
     {
       // TODO
@@ -667,9 +525,21 @@ public class FutureListTests {
 //      assertThrows(NullPointerException.class, itr::hasNext);
 //      assertThrows(NullPointerException.class, itr::next);
     }
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).exists((n, i) -> {
+      indexes.add(n);
+      return i > 2;
+    }).first();
+    assertEquals(List.of(0, 1, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).map(e -> e).exists((n, i) -> {
+      indexes.add(n);
+      return i > 2;
+    }).first();
+    assertEquals(List.of(0, 1, 2), indexes);
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).exists(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).exists(i -> {
         Thread.sleep(60000);
         return false;
       });
@@ -686,20 +556,34 @@ public class FutureListTests {
   }
 
   @Test
-  public void filter() {
-    var l = List.of(1, 2, null, 4).toFuture(context);
-    assertFalse(l.filter(Objects::nonNull).isEmpty());
-    assertEquals(List.of(1, 2, 4), l.filter(Objects::nonNull));
-    assertEquals(List.of(1, 2), l.filter(Objects::nonNull).filter(i -> i < 3));
-    assertEquals(List.of(4), l.filter(Objects::nonNull).filter(i -> i > 3));
-    assertEquals(List.of(), l.filter(Objects::nonNull).filter(i -> i > 4));
-    assertThrows(NullPointerException.class, () -> l.filter(i -> i > 4).size());
-
-    assertTrue(List.of().toFuture(context).filter(Objects::isNull).isEmpty());
-    assertEquals(0, List.of().toFuture(context).filter(Objects::isNull).size());
+  public void filter() throws Exception {
+    var l = List.of(1, 2, null, 4);
+    test(List.of(null), () -> l, ll -> ll.filter(Objects::isNull));
+    test(List.of(1, 2, 4), () -> l, ll -> ll.filter(Objects::nonNull));
+    test(List.of(1, 2), () -> l, ll -> ll.filter(Objects::nonNull).filter(i -> i < 3));
+    test(List.of(4), () -> l, ll -> ll.filter(Objects::nonNull).filter(i -> i > 3));
+    test(List.of(), () -> l, ll -> ll.filter(Objects::nonNull).filter(i -> i > 4));
+    test(List.of(), List::of, ll -> ll.filter(Objects::isNull));
+    assertThrows(NullPointerException.class, () -> l.toFuture(context).filter(i -> i > 4).size());
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).map(e -> e).filter(i -> i > 4).size());
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).filter((n, i) -> {
+      indexes.add(n);
+      return i > 2;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2, 3), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).map(e -> e).filter((n, i) -> {
+      indexes.add(n);
+      return i > 2;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2, 3), indexes);
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).filter(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).filter(i -> {
         Thread.sleep(60000);
         return false;
       });
@@ -716,19 +600,26 @@ public class FutureListTests {
   }
 
   @Test
-  public void findAny() {
-    var l = List.of(1, 2, null, 4).toFuture(context);
-    assertFalse(l.findAny(Objects::isNull).isEmpty());
-    assertEquals(1, l.findAny(Objects::isNull).size());
-    assertEquals(List.of(null), l.findAny(Objects::isNull));
-    assertFalse(l.findAny(i -> i < 4).isEmpty());
-    assertEquals(1, l.findAny(i -> i < 4).size());
-
-    assertTrue(List.of().toFuture(context).findAny(Objects::isNull).isEmpty());
-    assertEquals(0, List.of().toFuture(context).findAny(Objects::isNull).size());
+  public void findAny() throws Exception {
+    var l = List.of(1, 2, null, 4);
+    test(List.of(null), () -> l, ll -> ll.findAny(Objects::isNull));
+    test(List.of(1), () -> l, ll -> ll.findAny(i -> i < 4));
+    test(List.of(), List::of, ll -> ll.findAny(Objects::isNull));
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).findAny((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }).first();
+    assertEquals(List.of(0, 1, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).map(e -> e).findAny((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }).first();
+    assertEquals(List.of(0, 1, 2), indexes);
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).findAny(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).findAny(i -> {
         Thread.sleep(60000);
         return false;
       });

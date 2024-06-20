@@ -1898,8 +1898,21 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<Boolean> includes(Object element) {
-      return null;
+    public @NotNull List<Boolean> includes(final Object element) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<Boolean>(context, cancelException,
+            lazyMaterializerExists(materializer, cancelException,
+                Sparx.<E>equalsElement(element)));
+      }
+      final ExecutionContext context = this.context;
+      return new List<Boolean>(context, cancelException,
+          new ExistsListAsyncMaterializer<E>(materializer, Sparx.<E>equalsElement(element),
+              false, context, cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
