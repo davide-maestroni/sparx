@@ -58,11 +58,9 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
   @Override
   public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
-    getState().materializeElements(new AsyncConsumer<List<F>>() {
+    super.materializeDone(new AsyncConsumer<List<F>>() {
       @Override
       public void accept(final List<F> elements) throws Exception {
-        materialize(elements);
-        setState(getState());
         consumer.accept(elements);
       }
 
@@ -78,6 +76,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
         }
       }
     });
+  }
+
+  @Override
+  protected void finalizeElements(final List<F> elements) {
+    materialize(elements);
   }
 
   protected abstract int knownSize(@NotNull List<F> elements);

@@ -991,8 +991,11 @@ public class FutureListTests {
     assertFalse(l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).isEmpty());
     assertThrows(NullPointerException.class,
         () -> l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).size());
-    assertEquals(1, l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(0));
-    assertEquals(2, l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(1));
+    // TODO: materializeUntil???
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(0));
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(1));
     assertThrows(NullPointerException.class,
         () -> l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(2));
     assertFalse(l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i))
@@ -1000,10 +1003,12 @@ public class FutureListTests {
     assertThrows(NullPointerException.class,
         () -> l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i))
             .size());
-    assertEquals(1,
-        l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(0));
-    assertEquals(2,
-        l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(1));
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i))
+            .get(0));
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i))
+            .get(1));
     assertThrows(NullPointerException.class,
         () -> l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i))
             .get(2));
@@ -1574,9 +1579,9 @@ public class FutureListTests {
     }
     var lst = actualSupplier.get();
     assertEquals(expected, lst.get());
-//    assertTrue(lst.isDone());
-//    assertFalse(lst.isCancelled());
-//    assertFalse(lst.isFailed());
+    assertTrue(lst.isDone());
+    assertFalse(lst.isCancelled());
+    assertFalse(lst.isFailed());
     lst = actualSupplier.get();
     for (final E element : expected) {
       assertTrue(lst.contains(element));

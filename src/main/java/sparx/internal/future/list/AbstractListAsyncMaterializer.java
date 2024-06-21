@@ -75,6 +75,7 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     state.materializeElements(new AsyncConsumer<List<E>>() {
       @Override
       public void accept(final List<E> elements) throws Exception {
+        finalizeElements(elements);
         setState(state, STATUS_DONE);
         consumer.accept(elements);
       }
@@ -145,6 +146,9 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   @Override
   public int weightSize() {
     return state.weightSize();
+  }
+
+  protected void finalizeElements(final List<E> elements) {
   }
 
   @NotNull
