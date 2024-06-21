@@ -1545,6 +1545,7 @@ public class FutureListTests {
     test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(context).map(e -> e)));
   }
 
+  // TODO: add args validation + isCancelled, isFailed
   private <E> void test(@NotNull final java.util.List<E> expected,
       @NotNull final Supplier<? extends future.List<? extends E>> actualSupplier) throws Exception {
     assertEquals(expected.isEmpty(), actualSupplier.get().isEmpty());
@@ -1571,8 +1572,12 @@ public class FutureListTests {
     for (final E element : expected) {
       assertTrue(actualSupplier.get().contains(element));
     }
-    assertEquals(expected, actualSupplier.get().get());
     var lst = actualSupplier.get();
+    assertEquals(expected, lst.get());
+//    assertTrue(lst.isDone());
+//    assertFalse(lst.isCancelled());
+//    assertFalse(lst.isFailed());
+    lst = actualSupplier.get();
     for (final E element : expected) {
       assertTrue(lst.contains(element));
     }

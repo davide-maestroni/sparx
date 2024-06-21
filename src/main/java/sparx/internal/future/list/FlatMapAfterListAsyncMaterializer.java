@@ -149,9 +149,10 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
             });
           } else {
             if (element == null) {
-              new MaterializingContainsNullAsyncConsumer(consumer).schedule();
+              new MaterializingContainsNullAsyncConsumer(materializer, consumer).schedule();
             } else {
-              new MaterializingContainsElementAsyncConsumer(element, consumer).schedule();
+              new MaterializingContainsElementAsyncConsumer(materializer, element,
+                  consumer).schedule();
             }
           }
         }
@@ -544,24 +545,39 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
     }
 
     private class MaterializingContainsElementAsyncConsumer extends
-        CancellableIndexedAsyncConsumer<E> implements Task {
+        CancellableMultiAsyncConsumer<Boolean, E> implements Task {
 
       private final AsyncConsumer<Boolean> consumer;
       private final Object element;
+      private final ListAsyncMaterializer<E> materializer;
 
       private int index;
       private String taskID;
 
-      private MaterializingContainsElementAsyncConsumer(@NotNull final Object element,
+      private MaterializingContainsElementAsyncConsumer(
+          @NotNull final ListAsyncMaterializer<E> materializer, @NotNull final Object element,
           @NotNull final AsyncConsumer<Boolean> consumer) {
+        this.materializer = materializer;
         this.element = element;
         this.consumer = consumer;
       }
 
       @Override
+      public void cancellableAccept(final Boolean contains) throws Exception {
+        if (contains) {
+          consumer.accept(true);
+        } else {
+          this.index = index + 1;
+          schedule();
+        }
+      }
+
+      @Override
       public void cancellableAccept(final int size, final int index, final E element)
           throws Exception {
-        if (index != numElements && this.element.equals(element)) {
+        if (index == numElements) {
+          materializer.materializeContains(this.element, this);
+        } else if (this.element.equals(element)) {
           consumer.accept(true);
         } else {
           this.index = index + 1;
@@ -601,22 +617,37 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
     }
 
     private class MaterializingContainsNullAsyncConsumer extends
-        CancellableIndexedAsyncConsumer<E> implements Task {
+        CancellableMultiAsyncConsumer<Boolean, E> implements Task {
 
       private final AsyncConsumer<Boolean> consumer;
+      private final ListAsyncMaterializer<E> materializer;
 
       private int index;
       private String taskID;
 
       private MaterializingContainsNullAsyncConsumer(
+          @NotNull final ListAsyncMaterializer<E> materializer,
           @NotNull final AsyncConsumer<Boolean> consumer) {
+        this.materializer = materializer;
         this.consumer = consumer;
+      }
+
+      @Override
+      public void cancellableAccept(final Boolean contains) throws Exception {
+        if (contains) {
+          consumer.accept(true);
+        } else {
+          this.index = index + 1;
+          schedule();
+        }
       }
 
       @Override
       public void cancellableAccept(final int size, final int index, final E element)
           throws Exception {
-        if (index != numElements && element == null) {
+        if (index == numElements) {
+          materializer.materializeContains(null, this);
+        } else if (element == null) {
           consumer.accept(true);
         } else {
           this.index = index + 1;

@@ -129,9 +129,9 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (element == null) {
-        materializeUntil(0, new MaterializingContainsNullAsyncConsumer(consumer));
+        materializeElement(0, new MaterializingContainsNullAsyncConsumer(consumer));
       } else {
-        materializeUntil(0, new MaterializingContainsElementAsyncConsumer(element, consumer));
+        materializeElement(0, new MaterializingContainsElementAsyncConsumer(element, consumer));
       }
     }
 
@@ -336,7 +336,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
           keysToRemove.add(key);
         }
       }
-      elementsConsumers.keySet().removeAll(keysToRemove);
+      this.elementsConsumers.keySet().removeAll(keysToRemove);
     }
 
     private void consumeError(@NotNull final Exception error) {
@@ -381,9 +381,9 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
         indexConsumers.add(consumer);
         if (needsRun) {
           if (elementsMaterializer != null) {
-            elementsMaterializer.materializeNext(new MaterializingElementAsyncConsumer(index));
+            elementsMaterializer.materializeNext(new MaterializingElementAsyncConsumer());
           } else {
-            wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer(index));
+            wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer());
           }
         }
       }
@@ -394,23 +394,21 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       private final MaterializingElementAsyncConsumer consumer;
 
-      private final int maxIndex;
       private String taskID;
 
-      private MaterializingAsyncConsumer(final int maxIndex) {
-        this.maxIndex = maxIndex;
-        consumer = new MaterializingElementAsyncConsumer(maxIndex, this);
+      private MaterializingAsyncConsumer() {
+        consumer = new MaterializingElementAsyncConsumer(this);
       }
 
-      private MaterializingAsyncConsumer(final int maxIndex,
+      private MaterializingAsyncConsumer(
           @NotNull final MaterializingElementAsyncConsumer consumer) {
-        this.maxIndex = maxIndex;
         this.consumer = consumer;
       }
 
       @Override
       public void cancellableAccept(final int size, final int index, final E element)
           throws Exception {
+        ++nextIndex;
         if (predicate.test(index, element)) {
           final IteratorAsyncMaterializer<E> materializer = mapper.apply(index, element);
           if (materializer.knownSize() == 0) {
@@ -423,9 +421,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
           final int elementIndex = elements.size();
           elements.add(element);
           consumeElement(elementIndex, element);
-          if (elements.size() > maxIndex) {
-            consumeComplete(elements.size());
-          } else {
+          if (!elementsConsumers.isEmpty()) {
             schedule();
           }
         }
@@ -467,7 +463,6 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
       }
 
       private void schedule() {
-        ++nextIndex;
         taskID = getTaskID();
         context.scheduleAfter(this);
       }
@@ -512,7 +507,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public void run() {
-        materializeUntil(index, this);
+        materializeElement(index, this);
       }
 
       @Override
@@ -563,7 +558,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public void run() {
-        materializeUntil(index, this);
+        materializeElement(index, this);
       }
 
       @Override
@@ -581,18 +576,15 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
         CancellableIndexedAsyncConsumer<E> implements Task {
 
       private final MaterializingAsyncConsumer consumer;
-      private final int maxIndex;
 
       private String taskID;
 
-      private MaterializingElementAsyncConsumer(final int maxIndex) {
-        this.maxIndex = maxIndex;
-        consumer = new MaterializingAsyncConsumer(maxIndex, this);
+      private MaterializingElementAsyncConsumer() {
+        consumer = new MaterializingAsyncConsumer(this);
       }
 
-      private MaterializingElementAsyncConsumer(final int maxIndex,
+      private MaterializingElementAsyncConsumer(
           @NotNull final MaterializingAsyncConsumer consumer) {
-        this.maxIndex = maxIndex;
         this.consumer = consumer;
       }
 
@@ -602,9 +594,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
         final int elementIndex = elements.size();
         elements.add(element);
         consumeElement(elementIndex, element);
-        if (elements.size() > maxIndex) {
-          consumeComplete(elements.size());
-        } else {
+        if (!elementsConsumers.isEmpty()) {
           taskID = getTaskID();
           context.scheduleAfter(this);
         }

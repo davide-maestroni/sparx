@@ -333,7 +333,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           keysToRemove.add(key);
         }
       }
-      elementsConsumers.keySet().removeAll(keysToRemove);
+      this.elementsConsumers.keySet().removeAll(keysToRemove);
     }
 
     private void consumeError(@NotNull final Exception error) {
