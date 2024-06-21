@@ -935,9 +935,9 @@ class future extends Sparx {
       try {
         nonBlockingFor(consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.toUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(e.getCause());
       } catch (final Exception e) {
-        throw UncheckedException.toUnchecked(e);
+        throw UncheckedException.throwUnchecked(e);
       }
     }
 
@@ -949,9 +949,9 @@ class future extends Sparx {
       try {
         nonBlockingFor(consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.toUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(e.getCause());
       } catch (final Exception e) {
-        throw UncheckedException.toUnchecked(e);
+        throw UncheckedException.throwUnchecked(e);
       }
     }
 
@@ -963,9 +963,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(predicate).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.toUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(e.getCause());
       } catch (final Exception e) {
-        throw UncheckedException.toUnchecked(e);
+        throw UncheckedException.throwUnchecked(e);
       }
     }
 
@@ -978,9 +978,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(condition, consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.toUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(e.getCause());
       } catch (final Exception e) {
-        throw UncheckedException.toUnchecked(e);
+        throw UncheckedException.throwUnchecked(e);
       }
     }
 
@@ -992,9 +992,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(predicate).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.toUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(e.getCause());
       } catch (final Exception e) {
-        throw UncheckedException.toUnchecked(e);
+        throw UncheckedException.throwUnchecked(e);
       }
     }
 
@@ -1007,9 +1007,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(condition, consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.toUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(e.getCause());
       } catch (final Exception e) {
-        throw UncheckedException.toUnchecked(e);
+        throw UncheckedException.throwUnchecked(e);
       }
     }
 
@@ -1906,13 +1906,12 @@ class future extends Sparx {
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
-            lazyMaterializerExists(materializer, cancelException,
-                Sparx.<E>equalsElement(element)));
+            lazyMaterializerExists(materializer, cancelException, Sparx.<E>equalsElement(element)));
       }
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
-          new ExistsListAsyncMaterializer<E>(materializer, Sparx.<E>equalsElement(element),
-              false, context, cancelException, List.<Boolean>decorateFunction()));
+          new ExistsListAsyncMaterializer<E>(materializer, Sparx.<E>equalsElement(element), false,
+              context, cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override

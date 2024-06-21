@@ -30,9 +30,14 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import sparx.lazy.List;
+import sparx.util.function.Consumer;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedConsumer;
+import sparx.util.function.IndexedPredicate;
+import sparx.util.function.Predicate;
 import sparx.util.function.Supplier;
 
+@SuppressWarnings("DataFlowIssue")
 public class LazyListTests {
 
   @Test
@@ -47,6 +52,7 @@ public class LazyListTests {
 
   @Test
   public void appendAll() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of().appendAll(null));
     test(List.of(1, 2, 3), () -> List.<Integer>of().appendAll(Arrays.asList(1, 2, 3)));
     test(List.of(1, null, 3), () -> List.<Integer>of().appendAll(List.of(1, null, 3)));
     test(List.of(1, 2, 3), () -> List.of(1).appendAll(new LinkedHashSet<>(List.of(2, 3))));
@@ -66,6 +72,10 @@ public class LazyListTests {
 
   @Test
   public void countWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).count((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).count((IndexedPredicate<? super Object>) null));
     test(List.of(0), () -> List.of().count(Objects::nonNull));
     test(List.of(2), () -> List.of(1, 2, 3).count(i -> i < 3));
     test(List.of(3), () -> List.of(1, 2, 3).count(i -> i > 0));
@@ -86,6 +96,7 @@ public class LazyListTests {
 
   @Test
   public void diff() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).diff(null));
     test(List.of(2, 4), () -> List.of(1, 2, null, 4).diff(List.of(1, null)));
     test(List.of(2, null), () -> List.of(1, 2, null, 4).diff(List.of(1, 4)));
     test(List.of(2, null), () -> List.of(1, 2, null, 4).diff(List.of(1, 3, 4)));
@@ -100,6 +111,10 @@ public class LazyListTests {
 
   @Test
   public void doFor() {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).doFor((Consumer<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).doFor((IndexedConsumer<? super Object>) null));
     var list = new ArrayList<>();
     List.of(1, 2, 3).doFor(e -> list.add(e));
     assertEquals(List.of(1, 2, 3), list);
@@ -110,6 +125,14 @@ public class LazyListTests {
 
   @Test
   public void doWhile() {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).doWhile((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).doWhile((IndexedPredicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).doWhile((Predicate<? super Object>) null, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).doWhile((IndexedPredicate<? super Object>) null, null));
     var list = new ArrayList<>();
     List.of(1, 2, 3).doWhile(e -> e < 3, list::add);
     assertEquals(List.of(1, 2), list);
@@ -161,6 +184,10 @@ public class LazyListTests {
 
   @Test
   public void dropRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).dropRightWhile((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).dropRightWhile((IndexedPredicate<? super Object>) null));
     test(List.of(), () -> List.<Integer>of().dropRightWhile(e -> e > 0));
     test(List.of(1, null, 3), () -> List.of(1, null, 3).dropRightWhile(Objects::isNull));
     test(List.of(1, null), () -> List.of(1, null, 3).dropRightWhile(Objects::nonNull));
@@ -179,6 +206,10 @@ public class LazyListTests {
 
   @Test
   public void dropWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).dropWhile((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).dropWhile((IndexedPredicate<? super Object>) null));
     test(List.of(), () -> List.<Integer>of().dropWhile(e -> e > 0));
     test(List.of(1, null, 3), () -> List.of(1, null, 3).dropWhile(Objects::isNull));
     test(List.of(null, 3), () -> List.of(1, null, 3).dropWhile(Objects::nonNull));
@@ -197,6 +228,10 @@ public class LazyListTests {
 
   @Test
   public void each() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).each((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).each((IndexedPredicate<? super Object>) null));
     test(List.of(false), () -> List.of().each(Objects::nonNull));
     test(List.of(false), () -> List.of(1, 2, 3).each(i -> i > 3));
     test(List.of(false), () -> List.of(1, 2, 3).each(i -> i < 3));

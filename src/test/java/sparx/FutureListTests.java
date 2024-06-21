@@ -38,9 +38,14 @@ import org.junit.jupiter.api.Test;
 import sparx.concurrent.ExecutorContext;
 import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
+import sparx.util.function.Consumer;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedConsumer;
+import sparx.util.function.IndexedPredicate;
+import sparx.util.function.Predicate;
 import sparx.util.function.Supplier;
 
+@SuppressWarnings("DataFlowIssue")
 public class FutureListTests {
 
   private static final boolean TEST_ASYNC_CANCEL = true;
@@ -87,6 +92,7 @@ public class FutureListTests {
 
   @Test
   public void appendAll() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of().toFuture(context).appendAll(null));
     test(List.of(1, 2, 3), List::<Integer>of, ll -> ll.appendAll(Arrays.asList(1, 2, 3)));
     test(List.of(1, null, 3), List::<Integer>of, ll -> ll.appendAll(List.of(1, null, 3)));
     test(List.of(1, 2, 3), () -> List.of(1),
@@ -127,6 +133,10 @@ public class FutureListTests {
 
   @Test
   public void countWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).count((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).count((IndexedPredicate<? super Object>) null));
     test(List.of(0), List::of, ll -> ll.count(Objects::nonNull));
     test(List.of(2), () -> List.of(1, 2, 3), ll -> ll.count(i -> i < 3));
     test(List.of(3), () -> List.of(1, 2, 3), ll -> ll.count(i -> i > 0));
@@ -178,6 +188,7 @@ public class FutureListTests {
 
   @Test
   public void diff() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).diff(null));
     test(List.of(2, 4), () -> List.of(1, 2, null, 4), ll -> ll.diff(List.of(1, null)));
     test(List.of(2, null), () -> List.of(1, 2, null, 4), ll -> ll.diff(List.of(1, 4)));
     test(List.of(2, null), () -> List.of(1, 2, null, 4), ll -> ll.diff(List.of(1, 3, 4)));
@@ -208,6 +219,10 @@ public class FutureListTests {
 
   @Test
   public void doFor() throws ExecutionException, InterruptedException {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).doFor((Consumer<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).doFor((IndexedConsumer<? super Object>) null));
     var list = new ArrayList<>();
     List.of(1, 2, 3).toFuture(context).doFor(e -> list.add(e));
     assertEquals(List.of(1, 2, 3), list);
@@ -234,6 +249,14 @@ public class FutureListTests {
 
   @Test
   public void doWhile() throws ExecutionException, InterruptedException {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).doWhile((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).doWhile((IndexedPredicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).doWhile((Predicate<? super Object>) null, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).doWhile((IndexedPredicate<? super Object>) null, null));
     var list = new ArrayList<>();
     List.of(1, 2, 3).toFuture(context).doWhile(e -> e < 3, list::add);
     assertEquals(List.of(1, 2), list);
@@ -346,6 +369,10 @@ public class FutureListTests {
 
   @Test
   public void dropRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).dropRightWhile((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).dropRightWhile((IndexedPredicate<? super Object>) null));
     test(List.of(), List::<Integer>of, ll -> ll.dropRightWhile(e -> e > 0));
     test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropRightWhile(Objects::isNull));
     test(List.of(1, null), () -> List.of(1, null, 3), ll -> ll.dropRightWhile(Objects::nonNull));
@@ -389,6 +416,10 @@ public class FutureListTests {
 
   @Test
   public void dropWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).dropWhile((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).dropWhile((IndexedPredicate<? super Object>) null));
     test(List.of(), List::<Integer>of, ll -> ll.dropWhile(e -> e > 0));
     test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropWhile(Objects::isNull));
     test(List.of(null, 3), () -> List.of(1, null, 3), ll -> ll.dropWhile(Objects::nonNull));
@@ -432,6 +463,10 @@ public class FutureListTests {
 
   @Test
   public void each() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).each((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).each((IndexedPredicate<? super Object>) null));
     test(List.of(false), List::of, ll -> ll.each(Objects::nonNull));
     test(List.of(false), () -> List.of(1, 2, 3), ll -> ll.each(i -> i > 3));
     test(List.of(false), () -> List.of(1, 2, 3), ll -> ll.each(i -> i < 3));
