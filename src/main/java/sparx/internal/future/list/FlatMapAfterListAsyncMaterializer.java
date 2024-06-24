@@ -185,10 +185,40 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
           if (numElements >= wrappedSize) {
             wrapped.materializeElement(index, consumer);
           } else if (elementsSize >= 0) {
+            final int originalIndex = index;
             if (index < SizeOverflowException.safeCast((long) numElements + elementsSize)) {
-              elementsMaterializer.materializeElement(index - numElements, consumer);
+              elementsMaterializer.materializeElement(index - numElements,
+                  new CancellableIndexedAsyncConsumer<E>() {
+                    @Override
+                    public void cancellableAccept(final int size, final int index, final E element)
+                        throws Exception {
+                      consumer.accept(safeSize(), originalIndex, element);
+                    }
+
+                    @Override
+                    public void error(@NotNull final Exception error) throws Exception {
+                      consumer.error(error);
+                    }
+                  });
             } else {
-              wrapped.materializeElement(index - elementsSize + 1, consumer);
+              wrapped.materializeElement(index - elementsSize + 1,
+                  new CancellableIndexedAsyncConsumer<E>() {
+                    @Override
+                    public void cancellableAccept(final int size, final int index, final E element)
+                        throws Exception {
+                      consumer.accept(safeSize(), originalIndex, element);
+                    }
+
+                    @Override
+                    public void cancellableComplete(final int size) throws Exception {
+                      consumer.complete(safeSize());
+                    }
+
+                    @Override
+                    public void error(@NotNull final Exception error) throws Exception {
+                      consumer.error(error);
+                    }
+                  });
             }
           } else {
             materialized(new AsyncConsumer<ListAsyncMaterializer<E>>() {

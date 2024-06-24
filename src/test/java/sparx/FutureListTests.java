@@ -1026,11 +1026,8 @@ public class FutureListTests {
     assertFalse(l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).isEmpty());
     assertThrows(NullPointerException.class,
         () -> l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).size());
-    // TODO: materializeUntil???
-    assertThrows(NullPointerException.class,
-        () -> l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(0));
-    assertThrows(NullPointerException.class,
-        () -> l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(1));
+    assertEquals(1, l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(0));
+    assertEquals(2, l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(1));
     assertThrows(NullPointerException.class,
         () -> l.toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(2));
     assertFalse(l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i))
@@ -1038,12 +1035,10 @@ public class FutureListTests {
     assertThrows(NullPointerException.class,
         () -> l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i))
             .size());
-    assertThrows(NullPointerException.class,
-        () -> l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i))
-            .get(0));
-    assertThrows(NullPointerException.class,
-        () -> l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i))
-            .get(1));
+    assertEquals(1,
+        l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(0));
+    assertEquals(2,
+        l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).get(1));
     assertThrows(NullPointerException.class,
         () -> l.toFuture(context).map(e -> e).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i))
             .get(2));
