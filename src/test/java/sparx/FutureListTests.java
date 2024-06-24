@@ -41,6 +41,7 @@ import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedConsumer;
+import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 import sparx.util.function.Predicate;
 import sparx.util.function.Supplier;
@@ -253,10 +254,15 @@ public class FutureListTests {
         () -> List.of(0).toFuture(context).doWhile((Predicate<? super Object>) null));
     assertThrows(NullPointerException.class,
         () -> List.of(0).toFuture(context).doWhile((IndexedPredicate<? super Object>) null));
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).doWhile(null, i -> {
+    }));
     assertThrows(NullPointerException.class,
-        () -> List.of(0).toFuture(context).doWhile((Predicate<? super Object>) null, null));
+        () -> List.of(0).toFuture(context).doWhile(i -> true, null));
     assertThrows(NullPointerException.class,
-        () -> List.of(0).toFuture(context).doWhile((IndexedPredicate<? super Object>) null, null));
+        () -> List.of(0).toFuture(context).doWhile(null, (n, i) -> {
+        }));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).doWhile((n, i) -> true, null));
     var list = new ArrayList<>();
     List.of(1, 2, 3).toFuture(context).doWhile(e -> e < 3, list::add);
     assertEquals(List.of(1, 2), list);
@@ -545,6 +551,10 @@ public class FutureListTests {
 
   @Test
   public void exists() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).exists((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).exists((IndexedPredicate<? super Object>) null));
     test(List.of(false), List::of, ll -> ll.exists(Objects::nonNull));
     test(List.of(false), () -> List.of(1, 2, 3), ll -> ll.exists(i -> i > 3));
     test(List.of(false), () -> List.of(1, 2, 3), ll -> ll.exists(i -> i > 3));
@@ -592,6 +602,10 @@ public class FutureListTests {
 
   @Test
   public void filter() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).filter((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).filter((IndexedPredicate<? super Object>) null));
     var l = List.of(1, 2, null, 4);
     test(List.of(null), () -> l, ll -> ll.filter(Objects::isNull));
     test(List.of(1, 2, 4), () -> l, ll -> ll.filter(Objects::nonNull));
@@ -636,6 +650,10 @@ public class FutureListTests {
 
   @Test
   public void findAny() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findAny((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findAny((IndexedPredicate<? super Object>) null));
     var l = List.of(1, 2, null, 4);
     test(List.of(null), () -> l, ll -> ll.findAny(Objects::isNull));
     test(List.of(1), () -> l, ll -> ll.findAny(i -> i < 4));
@@ -709,6 +727,8 @@ public class FutureListTests {
 
   @Test
   public void findIndexOfSlice() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findIndexOfSlice(null));
     var l = List.of(1, 2, null, 4);
     test(List.of(1), () -> l, ll -> ll.findIndexOfSlice(List.of(2, null)));
     test(List.of(2), () -> l, ll -> ll.findIndexOfSlice(List.of(null)));
@@ -737,6 +757,10 @@ public class FutureListTests {
 
   @Test
   public void findIndexWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findIndexWhere((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findIndexWhere((IndexedPredicate<? super Object>) null));
     var l = List.of(1, 2, null, 4);
     test(List.of(2), () -> l, ll -> ll.findIndexWhere(Objects::isNull));
     test(List.of(1), () -> l, ll -> ll.findIndexWhere(i -> i > 1));
@@ -781,6 +805,10 @@ public class FutureListTests {
 
   @Test
   public void findLast() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findLast((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findLast((IndexedPredicate<? super Object>) null));
     var l = List.of(1, 2, null, 4, 5);
     test(List.of(null), () -> l, ll -> ll.findLast(Objects::isNull));
     assertThrows(NullPointerException.class,
@@ -847,6 +875,8 @@ public class FutureListTests {
 
   @Test
   public void findLastIndexOfSlice() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findLastIndexOfSlice(null));
     var l = List.of(1, 2, null, 4);
     test(List.of(1), () -> l, ll -> ll.findLastIndexOfSlice(List.of(2, null)));
     test(List.of(2), () -> l, ll -> ll.findLastIndexOfSlice(List.of(null)));
@@ -876,6 +906,10 @@ public class FutureListTests {
 
   @Test
   public void findLastIndexWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findLastIndexWhere((Predicate<? super Object>) null));
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
+        .findLastIndexWhere((IndexedPredicate<? super Object>) null));
     var l = List.of(1, 2, null, 4);
     test(List.of(2), () -> l, ll -> ll.findLastIndexWhere(Objects::isNull));
     test(List.of(3), () -> l, ll -> ll.findLastIndexWhere(i -> i > 1));
@@ -920,6 +954,10 @@ public class FutureListTests {
 
   @Test
   public void flatMap() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
+        .flatMap((Function<? super Integer, ? extends Iterable<Object>>) null));
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
+        .flatMap((IndexedFunction<? super Integer, ? extends Iterable<Object>>) null));
     var l = List.of(1, 2);
     test(List.of(1, 1, 2, 2), () -> l, ll -> ll.flatMap(i -> List.of(i, i)));
     test(List.of(), () -> l, ll -> ll.flatMap(i -> List.of()));
@@ -964,6 +1002,10 @@ public class FutureListTests {
 
   @Test
   public void flatMapAfter() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
+        .flatMapAfter(0, (Function<? super Integer, ? extends Iterable<Integer>>) null));
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
+        .flatMapAfter(0, (IndexedFunction<? super Integer, ? extends Iterable<Integer>>) null));
     var l = List.of(1, 2);
     test(l, () -> l, ll -> ll.flatMapAfter(-1, i -> List.of(i, i)));
     assertThrows(IndexOutOfBoundsException.class,
@@ -1011,6 +1053,14 @@ public class FutureListTests {
 
   @Test
   public void flatMapFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapFirstWhere(i -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapFirstWhere(null, i -> List.of(i)));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapFirstWhere((i, n) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapFirstWhere(null, (n, i) -> List.of(i)));
     var l = List.of(1, 2, null, 4);
     test(l, () -> l, ll -> ll.flatMapFirstWhere(i -> false, i -> List.of(i, i)));
     test(List.of(1, 1, 2, null, 4), () -> l,
@@ -1085,6 +1135,14 @@ public class FutureListTests {
 
   @Test
   public void flatMapLastWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapLastWhere(i -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapLastWhere(null, i -> List.of(i)));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapLastWhere((i, n) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapLastWhere(null, (n, i) -> List.of(i)));
     var l = List.of(1, 2, null, 4);
     test(l, () -> l, ll -> ll.flatMapLastWhere(i -> false, i -> List.of(i, i)));
     test(List.of(1, 2, null, 4, 4), () -> l,
@@ -1157,6 +1215,14 @@ public class FutureListTests {
 
   @Test
   public void flatMapWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapWhere(i -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapWhere(null, i -> List.of(i)));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapWhere((i, n) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMapWhere(null, (n, i) -> List.of(i)));
     var l = List.of(1, null, null, 4);
     test(l, () -> l, ll -> ll.flatMapWhere(i -> false, i -> List.of(i, i)));
     test(List.of(1, 1, null, null, null, null, 4, 4), () -> l,
@@ -1240,6 +1306,7 @@ public class FutureListTests {
 
   @Test
   public void foldLeft() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).foldLeft(1, null));
     var l = List.of(1, 2, 3, 4, 5);
     test(List.of(16), () -> l, ll -> ll.foldLeft(1, Integer::sum));
     test(List.of(List.of(1, 2)), () -> List.of(1, 2),
@@ -1266,6 +1333,7 @@ public class FutureListTests {
 
   @Test
   public void foldRight() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).foldRight(1, null));
     var l = List.of(1, 2, 3, 4, 5);
     test(List.of(16), () -> l, ll -> ll.foldRight(1, Integer::sum));
     test(List.of(List.of(2, 1)), () -> List.of(1, 2),
@@ -1292,6 +1360,8 @@ public class FutureListTests {
 
   @Test
   public void group() throws Exception {
+    assertThrows(IllegalArgumentException.class, () -> List.of(0).toFuture(context).group(-1));
+    assertThrows(IllegalArgumentException.class, () -> List.of(0).toFuture(context).group(0));
     var l = List.of(1, 2, 3, 4, 5);
     test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)), () -> l,
         ll -> ll.group(1));
@@ -1319,6 +1389,8 @@ public class FutureListTests {
 
   @Test
   public void groupWithPadding() throws Exception {
+    assertThrows(IllegalArgumentException.class, () -> List.of(0).toFuture(context).group(-1, 0));
+    assertThrows(IllegalArgumentException.class, () -> List.of(0).toFuture(context).group(0, 0));
     var l = List.of(1, 2, 3, 4, 5);
     test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)), () -> l,
         ll -> ll.group(1, null));
@@ -1372,6 +1444,10 @@ public class FutureListTests {
 
   @Test
   public void map() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).map((Function<? super Integer, Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).map((IndexedFunction<? super Integer, Object>) null));
     var l = List.of(1, 2, 3);
     test(List.of(2, 3, 4), () -> l, ll -> ll.map(x -> x + 1));
 
@@ -1454,6 +1530,10 @@ public class FutureListTests {
 
   @Test
   public void none() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).none((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).none((IndexedPredicate<? super Integer>) null));
     test(List.of(true), List::of, ll -> ll.none(Objects::nonNull));
     test(List.of(false), () -> List.of(1, 2, 3), ll -> ll.none(i -> i < 3));
     test(List.of(true), () -> List.of(1, 2, 3), ll -> ll.none(i -> i < 0));
@@ -1498,6 +1578,10 @@ public class FutureListTests {
 
   @Test
   public void notAll() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).notAll((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).notAll((IndexedPredicate<? super Integer>) null));
     test(List.of(true), List::of, ll -> ll.notAll(Objects::isNull));
     test(List.of(true), () -> List.of(1, 2, 3), ll -> ll.notAll(i -> i > 3));
     test(List.of(false), () -> List.of(1, 2, 3), ll -> ll.notAll(i -> i > 0));
@@ -1542,6 +1626,7 @@ public class FutureListTests {
 
   @Test
   public void union() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).union(null));
     test(List.of(1, 2, null, 4), () -> List.of(1, 2, null, 4), ll -> ll.union(List.of(1, null)));
     test(List.of(1, 2, null, 4), () -> List.of(1, 2, null, 4), ll -> ll.union(List.of(1, 4)));
     test(List.of(1, 2, null, 4, 3), () -> List.of(1, 2, null, 4), ll -> ll.union(List.of(1, 3, 4)));
