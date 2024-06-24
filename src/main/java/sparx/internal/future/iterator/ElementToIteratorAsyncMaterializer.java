@@ -57,6 +57,16 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
   }
 
   @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    if (!consumed) {
+      if (!safeConsume(consumer, 1, 0, element, LOGGER)) {
+        return;
+      }
+    }
+    safeConsumeComplete(consumer, 1, LOGGER);
+  }
+
+  @Override
   public void materializeHasNext(@NotNull final AsyncConsumer<Boolean> consumer) {
     safeConsume(consumer, !consumed, LOGGER);
   }

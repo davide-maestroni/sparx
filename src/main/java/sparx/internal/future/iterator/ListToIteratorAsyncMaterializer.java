@@ -58,6 +58,18 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
   }
 
   @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    final List<E> elements = this.elements;
+    while (index < elements.size()) {
+      final int i = index++;
+      if (!safeConsume(consumer, elements.size(), i, elements.get(i), LOGGER)) {
+        return;
+      }
+    }
+    safeConsumeComplete(consumer, elements.size(), LOGGER);
+  }
+
+  @Override
   public void materializeHasNext(@NotNull final AsyncConsumer<Boolean> consumer) {
     safeConsume(consumer, index < elements.size(), LOGGER);
   }

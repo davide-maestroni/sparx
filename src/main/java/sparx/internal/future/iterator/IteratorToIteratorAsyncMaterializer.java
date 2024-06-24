@@ -58,6 +58,17 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
   }
 
   @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    final Iterator<E> elements = this.elements;
+    while (elements.hasNext()) {
+      if (!safeConsume(consumer, -1, index++, elements.next(), LOGGER)) {
+        return;
+      }
+    }
+    safeConsumeComplete(consumer, index, LOGGER);
+  }
+
+  @Override
   public void materializeHasNext(@NotNull final AsyncConsumer<Boolean> consumer) {
     safeConsume(consumer, elements.hasNext(), LOGGER);
   }

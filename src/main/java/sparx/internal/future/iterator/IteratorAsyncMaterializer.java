@@ -30,7 +30,7 @@ public interface IteratorAsyncMaterializer<E> {
 
   void materializeCancel(@NotNull CancellationException exception);
 
-  // TODO: materializeEach???
+  void materializeEach(@NotNull IndexedAsyncConsumer<E> consumer);
 
   void materializeHasNext(@NotNull AsyncConsumer<Boolean> consumer);
 

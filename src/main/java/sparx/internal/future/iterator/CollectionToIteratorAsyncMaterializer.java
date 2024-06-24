@@ -61,12 +61,25 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
   }
 
   @Override
+  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    final Collection<E> elements = this.elements;
+    final Iterator<E> iterator = this.iterator;
+    while (iterator.hasNext()) {
+      if (!safeConsume(consumer, elements.size(), index++, iterator.next(), LOGGER)) {
+        return;
+      }
+    }
+    safeConsumeComplete(consumer, elements.size(), LOGGER);
+  }
+
+  @Override
   public void materializeHasNext(@NotNull final AsyncConsumer<Boolean> consumer) {
     safeConsume(consumer, iterator.hasNext(), LOGGER);
   }
 
   @Override
   public void materializeNext(@NotNull final IndexedAsyncConsumer<E> consumer) {
+    final Iterator<E> iterator = this.iterator;
     if (iterator.hasNext()) {
       safeConsume(consumer, elements.size(), index++, iterator.next(), LOGGER);
     } else {

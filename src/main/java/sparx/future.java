@@ -105,9 +105,9 @@ class future extends Sparx {
     if (elements instanceof List) {
       final List<E> list = (List<E>) elements;
       if (context.equals(list.context) && taskID.equals(list.taskID)) {
-        return new ListAsyncMaterializerToIteratorAsyncMaterializer<E>(list.materializer);
+        return new ListAsyncMaterializerToIteratorAsyncMaterializer<E>(context, list.materializer);
       }
-      return new ListAsyncMaterializerToIteratorAsyncMaterializer<E>(
+      return new ListAsyncMaterializerToIteratorAsyncMaterializer<E>(context,
           new SwitchListAsyncMaterializer<E>(list.context, list.taskID, context, taskID,
               list.materializer));
     }
