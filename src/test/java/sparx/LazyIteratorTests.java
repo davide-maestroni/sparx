@@ -131,13 +131,13 @@ public class LazyIteratorTests {
 
   @Test
   public void countWhere() {
-    assertFalse(Iterator.of().count(Objects::nonNull).isEmpty());
-    assertTrue(Iterator.of().count(Objects::nonNull).notEmpty());
-    assertEquals(1, Iterator.of().count(Objects::nonNull).size());
-    assertEquals(0, Iterator.of().count(Objects::nonNull).first());
-    assertEquals(2, Iterator.of(1, 2, 3).count(i -> i < 3).first());
-    assertEquals(3, Iterator.of(1, 2, 3).count(i -> i > 0).first());
-    var itr = Iterator.of(1, null, 3).count(i -> i > 0);
+    assertFalse(Iterator.of().countWhere(Objects::nonNull).isEmpty());
+    assertTrue(Iterator.of().countWhere(Objects::nonNull).notEmpty());
+    assertEquals(1, Iterator.of().countWhere(Objects::nonNull).size());
+    assertEquals(0, Iterator.of().countWhere(Objects::nonNull).first());
+    assertEquals(2, Iterator.of(1, 2, 3).countWhere(i -> i < 3).first());
+    assertEquals(3, Iterator.of(1, 2, 3).countWhere(i -> i > 0).first());
+    var itr = Iterator.of(1, null, 3).countWhere(i -> i > 0);
     assertThrows(NullPointerException.class, itr::first);
   }
 
@@ -955,32 +955,36 @@ public class LazyIteratorTests {
   @Test
   public void groupWithPadding() {
     Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, 5);
-    assertThrows(IllegalArgumentException.class, () -> itr.get().group(0, null));
-    assertFalse(itr.get().group(1, null).isEmpty());
-    assertEquals(5, itr.get().group(1, null).size());
+    assertThrows(IllegalArgumentException.class, () -> itr.get().groupWithPadding(0, null));
+    assertFalse(itr.get().groupWithPadding(1, null).isEmpty());
+    assertEquals(5, itr.get().groupWithPadding(1, null).size());
     assertEquals(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)),
-        itr.get().group(1, null).toList().map(Iterator::toList));
-    assertEquals(List.of(3), itr.get().group(1, null).drop(2).first().toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().group(1, null).drop(5).first());
-    assertFalse(itr.get().group(2, null).isEmpty());
-    assertEquals(3, itr.get().group(2, null).size());
+        itr.get().groupWithPadding(1, null).toList().map(Iterator::toList));
+    assertEquals(List.of(3), itr.get().groupWithPadding(1, null).drop(2).first().toList());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().groupWithPadding(1, null).drop(5).first());
+    assertFalse(itr.get().groupWithPadding(2, null).isEmpty());
+    assertEquals(3, itr.get().groupWithPadding(2, null).size());
     assertEquals(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)),
-        itr.get().group(2, null).toList().map(Iterator::toList));
-    assertEquals(List.of(3, 4), itr.get().group(2, null).drop(1).first().toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().group(2, null).drop(3).first());
-    assertFalse(itr.get().group(3, -1).isEmpty());
-    assertEquals(2, itr.get().group(3, -1).size());
+        itr.get().groupWithPadding(2, null).toList().map(Iterator::toList));
+    assertEquals(List.of(3, 4), itr.get().groupWithPadding(2, null).drop(1).first().toList());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().groupWithPadding(2, null).drop(3).first());
+    assertFalse(itr.get().groupWithPadding(3, -1).isEmpty());
+    assertEquals(2, itr.get().groupWithPadding(3, -1).size());
     assertEquals(List.of(List.of(1, 2, 3), List.of(4, 5, -1)),
-        itr.get().group(3, -1).toList().map(Iterator::toList));
-    assertEquals(List.of(4, 5, -1), itr.get().group(3, -1).drop(1).first().toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().group(3, -1).drop(2).first());
-    assertFalse(itr.get().group(10, -1).isEmpty());
-    assertEquals(1, itr.get().group(10, -1).size());
+        itr.get().groupWithPadding(3, -1).toList().map(Iterator::toList));
+    assertEquals(List.of(4, 5, -1), itr.get().groupWithPadding(3, -1).drop(1).first().toList());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().groupWithPadding(3, -1).drop(2).first());
+    assertFalse(itr.get().groupWithPadding(10, -1).isEmpty());
+    assertEquals(1, itr.get().groupWithPadding(10, -1).size());
     assertEquals(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)),
-        itr.get().group(10, -1).toList().map(Iterator::toList));
+        itr.get().groupWithPadding(10, -1).toList().map(Iterator::toList));
     assertEquals(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1),
-        itr.get().group(10, -1).first().toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().group(10, -1).drop(1).first());
+        itr.get().groupWithPadding(10, -1).first().toList());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().groupWithPadding(10, -1).drop(1).first());
   }
 
   @Test

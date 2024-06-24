@@ -135,13 +135,13 @@ public class FutureListTests {
   @Test
   public void countWhere() throws Exception {
     assertThrows(NullPointerException.class,
-        () -> List.of(0).toFuture(context).count((Predicate<? super Object>) null));
+        () -> List.of(0).toFuture(context).countWhere((Predicate<? super Object>) null));
     assertThrows(NullPointerException.class,
-        () -> List.of(0).toFuture(context).count((IndexedPredicate<? super Object>) null));
-    test(List.of(0), List::of, ll -> ll.count(Objects::nonNull));
-    test(List.of(2), () -> List.of(1, 2, 3), ll -> ll.count(i -> i < 3));
-    test(List.of(3), () -> List.of(1, 2, 3), ll -> ll.count(i -> i > 0));
-    var l = List.of(1, null, 3).toFuture(context).count(i -> i > 0);
+        () -> List.of(0).toFuture(context).countWhere((IndexedPredicate<? super Object>) null));
+    test(List.of(0), List::of, ll -> ll.countWhere(Objects::nonNull));
+    test(List.of(2), () -> List.of(1, 2, 3), ll -> ll.countWhere(i -> i < 3));
+    test(List.of(3), () -> List.of(1, 2, 3), ll -> ll.countWhere(i -> i > 0));
+    var l = List.of(1, null, 3).toFuture(context).countWhere(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
       // TODO
@@ -149,7 +149,7 @@ public class FutureListTests {
 //      assertTrue(itr.hasNext());
 //      assertThrows(NullPointerException.class, itr::next);
     }
-    l = List.of(1, null, 3).toFuture(context).map(e -> e).count(i -> i > 0);
+    l = List.of(1, null, 3).toFuture(context).map(e -> e).countWhere(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
       // TODO
@@ -158,20 +158,20 @@ public class FutureListTests {
 //      assertThrows(NullPointerException.class, itr::next);
     }
     var indexes = new ArrayList<Integer>();
-    List.of(1, 2, 2, 1).toFuture(context).count((n, i) -> {
+    List.of(1, 2, 2, 1).toFuture(context).countWhere((n, i) -> {
       indexes.add(n);
       return i < 2;
     }).first();
     assertEquals(List.of(0, 1, 2, 3), indexes);
     indexes.clear();
-    List.of(1, 2, 2, 1).toFuture(context).map(e -> e).count((n, i) -> {
+    List.of(1, 2, 2, 1).toFuture(context).map(e -> e).countWhere((n, i) -> {
       indexes.add(n);
       return i < 2;
     }).first();
     assertEquals(List.of(0, 1, 2, 3), indexes);
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).count(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).countWhere(i -> {
         Thread.sleep(60000);
         return true;
       });
@@ -1389,14 +1389,18 @@ public class FutureListTests {
 
   @Test
   public void groupWithPadding() throws Exception {
-    assertThrows(IllegalArgumentException.class, () -> List.of(0).toFuture(context).group(-1, 0));
-    assertThrows(IllegalArgumentException.class, () -> List.of(0).toFuture(context).group(0, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).toFuture(context).groupWithPadding(-1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).toFuture(context).groupWithPadding(0, 0));
     var l = List.of(1, 2, 3, 4, 5);
     test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)), () -> l,
-        ll -> ll.group(1, null));
-    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)), () -> l, ll -> ll.group(2, null));
-    test(List.of(List.of(1, 2, 3), List.of(4, 5, -1)), () -> l, ll -> ll.group(3, -1));
-    test(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)), () -> l, ll -> ll.group(10, -1));
+        ll -> ll.groupWithPadding(1, null));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)), () -> l,
+        ll -> ll.groupWithPadding(2, null));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, -1)), () -> l, ll -> ll.groupWithPadding(3, -1));
+    test(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)), () -> l,
+        ll -> ll.groupWithPadding(10, -1));
 
     if (TEST_ASYNC_CANCEL) {
       // TODO

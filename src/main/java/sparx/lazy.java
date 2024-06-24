@@ -528,7 +528,8 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Integer> count(@NotNull final IndexedPredicate<? super E> predicate) {
+    public @NotNull Iterator<Integer> countWhere(
+        @NotNull final IndexedPredicate<? super E> predicate) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return Iterator.of(0);
@@ -538,7 +539,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Integer> count(@NotNull final Predicate<? super E> predicate) {
+    public @NotNull Iterator<Integer> countWhere(@NotNull final Predicate<? super E> predicate) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return Iterator.of(0);
@@ -1079,7 +1080,8 @@ public class lazy extends Sparx {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @NotNull Iterator<? extends Iterator<E>> group(final int size, final E padding) {
+    public @NotNull Iterator<? extends Iterator<E>> groupWithPadding(final int size,
+        final E padding) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return Iterator.of();
@@ -2444,7 +2446,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull List<Integer> count(@NotNull final IndexedPredicate<? super E> predicate) {
+    public @NotNull List<Integer> countWhere(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return ZERO_LIST;
@@ -2454,7 +2456,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull List<Integer> count(@NotNull final Predicate<? super E> predicate) {
+    public @NotNull List<Integer> countWhere(@NotNull final Predicate<? super E> predicate) {
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return ZERO_LIST;
@@ -3131,7 +3133,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull List<? extends List<E>> group(final int size, final E padding) {
+    public @NotNull List<? extends List<E>> groupWithPadding(final int size, final E padding) {
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return List.of();
@@ -4531,21 +4533,22 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull ListIterator<Integer> count(
+    public @NotNull ListIterator<Integer> countWhere(
         @NotNull final IndexedPredicate<? super E> predicate) {
       if (atEnd()) {
         return ZERO_ITERATOR;
       }
-      return new ListIterator<Integer>(List.<Integer>of(), currentRight().count(
+      return new ListIterator<Integer>(List.<Integer>of(), currentRight().countWhere(
           offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
     }
 
     @Override
-    public @NotNull ListIterator<Integer> count(@NotNull final Predicate<? super E> predicate) {
+    public @NotNull ListIterator<Integer> countWhere(
+        @NotNull final Predicate<? super E> predicate) {
       if (atEnd()) {
         return ZERO_ITERATOR;
       }
-      return new ListIterator<Integer>(List.<Integer>of(), currentRight().count(predicate));
+      return new ListIterator<Integer>(List.<Integer>of(), currentRight().countWhere(predicate));
     }
 
     @Override
@@ -5000,10 +5003,11 @@ public class lazy extends Sparx {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @NotNull ListIterator<? extends ListIterator<E>> group(final int size, final E padding) {
-      return new ListIterator<ListIterator<E>>(currentLeft().group(size, padding)
+    public @NotNull ListIterator<? extends ListIterator<E>> groupWithPadding(final int size,
+        final E padding) {
+      return new ListIterator<ListIterator<E>>(currentLeft().groupWithPadding(size, padding)
           .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
-          currentRight().group(size, padding)
+          currentRight().groupWithPadding(size, padding)
               .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
     }
 

@@ -416,7 +416,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> LazyListAsyncMaterializer<E, Integer> lazyMaterializerCount(
+    private static @NotNull <E> LazyListAsyncMaterializer<E, Integer> lazyMaterializerCountWhere(
         @NotNull final ListAsyncMaterializer<E> materializer,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final IndexedPredicate<? super E> predicate) {
@@ -424,7 +424,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).count(predicate);
+          return ((lazy.List<E>) elements).countWhere(predicate);
         }
       };
     }
@@ -867,7 +867,7 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<Integer> count(@NotNull final IndexedPredicate<? super E> predicate) {
+    public @NotNull List<Integer> countWhere(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
@@ -875,7 +875,7 @@ class future extends Sparx {
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
-            lazyMaterializerCount(materializer, cancelException,
+            lazyMaterializerCountWhere(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
       final ExecutionContext context = this.context;
@@ -886,7 +886,7 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<Integer> count(@NotNull final Predicate<? super E> predicate) {
+    public @NotNull List<Integer> countWhere(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
@@ -894,7 +894,7 @@ class future extends Sparx {
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
-            lazyMaterializerCount(materializer, cancelException,
+            lazyMaterializerCountWhere(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
       final ExecutionContext context = this.context;
@@ -1883,7 +1883,7 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<? extends List<E>> group(final int size, final E padding) {
+    public @NotNull List<? extends List<E>> groupWithPadding(final int size, final E padding) {
       final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
@@ -1915,12 +1915,12 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<Boolean> includesAll(@NotNull Iterable<?> elements) {
+    public @NotNull List<Boolean> includesAll(@NotNull final Iterable<?> elements) {
       return null;
     }
 
     @Override
-    public @NotNull List<Boolean> includesSlice(@NotNull Iterable<?> elements) {
+    public @NotNull List<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
       return null;
     }
 

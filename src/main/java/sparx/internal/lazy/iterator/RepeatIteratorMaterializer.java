@@ -16,7 +16,6 @@
 package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
-import sparx.util.Require;
 
 public class RepeatIteratorMaterializer<E> implements IteratorMaterializer<E> {
 

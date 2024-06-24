@@ -49,11 +49,11 @@ class itf {
 
     @Override
     @NotNull
-    Collection<Integer> count(@NotNull IndexedPredicate<? super E> predicate);
+    Collection<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Collection<Integer> count(@NotNull Predicate<? super E> predicate);
+    Collection<Integer> countWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -240,7 +240,7 @@ class itf {
 
     @Override
     @NotNull
-    Collection<? extends Sequence<E>> group(int size, E padding);
+    Collection<? extends Sequence<E>> groupWithPadding(int size, E padding);
 
     @Override
     @NotNull
@@ -541,11 +541,11 @@ class itf {
 
     @Override
     @NotNull
-    Iterator<Integer> count(@NotNull IndexedPredicate<? super E> predicate);
+    Iterator<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Iterator<Integer> count(@NotNull Predicate<? super E> predicate);
+    Iterator<Integer> countWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -728,7 +728,7 @@ class itf {
 
     @Override
     @NotNull
-    Iterator<? extends Iterator<E>> group(int size, E padding);
+    Iterator<? extends Iterator<E>> groupWithPadding(int size, E padding);
 
     @Override
     @NotNull
@@ -1055,11 +1055,11 @@ class itf {
 
     @Override
     @NotNull
-    List<Integer> count(@NotNull IndexedPredicate<? super E> predicate);
+    List<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    List<Integer> count(@NotNull Predicate<? super E> predicate);
+    List<Integer> countWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1242,7 +1242,7 @@ class itf {
 
     @Override
     @NotNull
-    List<? extends List<E>> group(int size, E padding);
+    List<? extends List<E>> groupWithPadding(int size, E padding);
 
     @Override
     @NotNull
@@ -1540,11 +1540,11 @@ class itf {
 
     @Override
     @NotNull
-    ListIterator<Integer> count(@NotNull IndexedPredicate<? super E> predicate);
+    ListIterator<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    ListIterator<Integer> count(@NotNull Predicate<? super E> predicate);
+    ListIterator<Integer> countWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -1727,7 +1727,7 @@ class itf {
 
     @Override
     @NotNull
-    ListIterator<? extends ListIterator<E>> group(int size, E padding);
+    ListIterator<? extends ListIterator<E>> groupWithPadding(int size, E padding);
 
     @Override
     @NotNull
@@ -2025,10 +2025,10 @@ class itf {
     Sequence<Integer> count();
 
     @NotNull
-    Sequence<Integer> count(@NotNull IndexedPredicate<? super E> predicate);
+    Sequence<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @NotNull
-    Sequence<Integer> count(@NotNull Predicate<? super E> predicate);
+    Sequence<Integer> countWhere(@NotNull Predicate<? super E> predicate);
 
     @NotNull
     Sequence<E> diff(@NotNull Iterable<?> elements);
@@ -2183,7 +2183,7 @@ class itf {
     Sequence<? extends Sequence<E>> group(int maxSize);
 
     @NotNull
-    Sequence<? extends Sequence<E>> group(int size, E padding);
+    Sequence<? extends Sequence<E>> groupWithPadding(int size, E padding);
 
     @NotNull
     Sequence<Boolean> includes(Object element);
@@ -2403,11 +2403,11 @@ class itf {
 
     @Override
     @NotNull
-    Set<Integer> count(@NotNull IndexedPredicate<? super E> predicate);
+    Set<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Set<Integer> count(@NotNull Predicate<? super E> predicate);
+    Set<Integer> countWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -2590,7 +2590,7 @@ class itf {
 
     @Override
     @NotNull
-    Set<? extends Set<E>> group(int size, E padding);
+    Set<? extends Set<E>> groupWithPadding(int size, E padding);
 
     @Override
     @NotNull
@@ -2860,11 +2860,11 @@ class itf {
 
     @Override
     @NotNull
-    Stream<Integer> count(@NotNull IndexedPredicate<? super E> predicate);
+    Stream<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Integer> count(@NotNull Predicate<? super E> predicate);
+    Stream<Integer> countWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
@@ -3047,7 +3047,7 @@ class itf {
 
     @Override
     @NotNull
-    Stream<? extends Stream<E>> group(int size, E padding);
+    Stream<? extends Stream<E>> groupWithPadding(int size, E padding);
 
     @Override
     @NotNull

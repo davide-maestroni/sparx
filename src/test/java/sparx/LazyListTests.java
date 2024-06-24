@@ -74,13 +74,13 @@ public class LazyListTests {
   @Test
   public void countWhere() throws Exception {
     assertThrows(NullPointerException.class,
-        () -> List.of(0).count((Predicate<? super Object>) null));
+        () -> List.of(0).countWhere((Predicate<? super Object>) null));
     assertThrows(NullPointerException.class,
-        () -> List.of(0).count((IndexedPredicate<? super Object>) null));
-    test(List.of(0), () -> List.of().count(Objects::nonNull));
-    test(List.of(2), () -> List.of(1, 2, 3).count(i -> i < 3));
-    test(List.of(3), () -> List.of(1, 2, 3).count(i -> i > 0));
-    var l = List.of(1, null, 3).count(i -> i > 0);
+        () -> List.of(0).countWhere((IndexedPredicate<? super Object>) null));
+    test(List.of(0), () -> List.of().countWhere(Objects::nonNull));
+    test(List.of(2), () -> List.of(1, 2, 3).countWhere(i -> i < 3));
+    test(List.of(3), () -> List.of(1, 2, 3).countWhere(i -> i > 0));
+    var l = List.of(1, null, 3).countWhere(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
       var itr = l.iterator();
@@ -88,7 +88,7 @@ public class LazyListTests {
       assertThrows(NullPointerException.class, itr::next);
     }
     var indexes = new ArrayList<Integer>();
-    List.of(1, 2, 2, 1).count((n, i) -> {
+    List.of(1, 2, 2, 1).countWhere((n, i) -> {
       indexes.add(n);
       return i < 2;
     }).first();
@@ -651,14 +651,15 @@ public class LazyListTests {
 
   @Test
   public void groupWithPadding() throws Exception {
-    assertThrows(IllegalArgumentException.class, () -> List.of(0).group(-1, 0));
-    assertThrows(IllegalArgumentException.class, () -> List.of(0).group(0, 0));
+    assertThrows(IllegalArgumentException.class, () -> List.of(0).groupWithPadding(-1, 0));
+    assertThrows(IllegalArgumentException.class, () -> List.of(0).groupWithPadding(0, 0));
     var l = List.of(1, 2, 3, 4, 5);
     test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)),
-        () -> l.group(1, null));
-    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)), () -> l.group(2, null));
-    test(List.of(List.of(1, 2, 3), List.of(4, 5, -1)), () -> l.group(3, -1));
-    test(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)), () -> l.group(10, -1));
+        () -> l.groupWithPadding(1, null));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)),
+        () -> l.groupWithPadding(2, null));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, -1)), () -> l.groupWithPadding(3, -1));
+    test(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)), () -> l.groupWithPadding(10, -1));
   }
 
   @Test

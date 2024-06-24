@@ -23,7 +23,8 @@ public interface ExecutionContext {
   @NotNull
   ExecutionContext fork();
 
-  @Nullable String currentTaskID();
+  @Nullable
+  String currentTaskID();
 
   boolean interruptTask(@NotNull String taskID);
 
