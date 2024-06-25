@@ -210,8 +210,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     public int weightElements() {
       final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightEmpty() + elementsMaterializer.weightEmpty()
-              + elementsMaterializer.weightElement());
+          (long) wrapped.weightElement() + elementsMaterializer.weightElement());
     }
 
     @Override
@@ -246,26 +245,24 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        elementsMaterializer.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
-          @Override
-          public void cancellableAccept(final Boolean empty) throws Exception {
-            if (empty) {
-              setState(0);
-            } else {
-              wrapped.materializeEmpty(new MaterializingAsyncConsumer());
+        final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
+        if (elementsMaterializer.knownSize() == 0) {
+          try {
+            setState(0);
+          } catch (final Exception e) {
+            if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
             }
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
             final CancellationException exception = cancelException.get();
             if (exception != null) {
               consumeState(setCancelled(exception));
             } else {
-              consumeState(setFailed(error));
+              consumeState(setFailed(e));
             }
           }
-        });
+        } else {
+          elementsMaterializer.materializeElement(0, new MaterializingAsyncConsumer());
+        }
       }
     }
 
@@ -282,7 +279,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     }
 
     private class MaterializingAsyncConsumer extends
-        CancellableMultiAsyncConsumer<Boolean, Object> implements Task {
+        CancellableIndexedAsyncConsumer<Object> implements Task {
 
       private Object element;
       private int elementsIndex;
@@ -290,16 +287,6 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       private boolean isWrapped;
       private String taskID;
       private int wrappedIndex;
-
-      @Override
-      public void cancellableAccept(final Boolean empty) throws Exception {
-        if (empty) {
-          setState();
-        } else {
-          isWrapped = false;
-          elementsMaterializer.materializeElement(elementsIndex, this);
-        }
-      }
 
       @Override
       public void cancellableAccept(final int size, final int index, final Object element) {

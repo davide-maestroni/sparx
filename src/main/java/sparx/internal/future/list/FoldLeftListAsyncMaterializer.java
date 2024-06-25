@@ -194,7 +194,7 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
 
     @Override
     public int weightElements() {
-      return wrapped.weightEmpty();
+      return wrapped.weightElement();
     }
 
     @Override
@@ -229,7 +229,7 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
       final ArrayList<StateConsumer<F>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeEmpty(new MaterializingAsyncConsumer());
+        new MaterializingAsyncConsumer().run();
       }
     }
 
@@ -238,22 +238,12 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
           decorateFunction.apply(Collections.singletonList(result)))));
     }
 
-    private class MaterializingAsyncConsumer extends
-        CancellableMultiAsyncConsumer<Boolean, E> implements Task {
+    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
+        Task {
 
       private F current = identity;
       private int index;
       private String taskID;
-
-      @Override
-      public void cancellableAccept(final Boolean empty) throws Exception {
-        if (empty) {
-          setState(identity);
-        } else {
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
 
       @Override
       public void cancellableAccept(final int size, final int index, final E element)

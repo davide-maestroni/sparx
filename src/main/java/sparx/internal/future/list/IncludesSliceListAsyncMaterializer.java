@@ -190,8 +190,7 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
     public int weightElements() {
       final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightEmpty() + elementsMaterializer.weightEmpty()
-              + elementsMaterializer.weightElement());
+          (long) wrapped.weightElement() + elementsMaterializer.weightElement());
     }
 
     @Override
@@ -226,26 +225,24 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        elementsMaterializer.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
-          @Override
-          public void cancellableAccept(final Boolean empty) throws Exception {
-            if (empty) {
-              setState(true);
-            } else {
-              new MaterializingAsyncConsumer().run();
+        final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
+        if (elementsMaterializer.knownSize() == 0) {
+          try {
+            setState(true);
+          } catch (final Exception e) {
+            if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
             }
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
             final CancellationException exception = cancelException.get();
             if (exception != null) {
               consumeState(setCancelled(exception));
             } else {
-              consumeState(setFailed(error));
+              consumeState(setFailed(e));
             }
           }
-        });
+        } else {
+          elementsMaterializer.materializeElement(0, new MaterializingAsyncConsumer());
+        }
       }
     }
 

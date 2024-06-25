@@ -206,7 +206,7 @@ public class FindIndexListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public int weightElements() {
-      return wrapped.weightEmpty();
+      return wrapped.weightElement();
     }
 
     @Override
@@ -241,7 +241,7 @@ public class FindIndexListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeEmpty(new MaterializingAsyncConsumer());
+        new MaterializingAsyncConsumer().run();
       }
     }
 
@@ -257,21 +257,11 @@ public class FindIndexListAsyncMaterializer<E> extends AbstractListAsyncMaterial
               decorateFunction.apply(Collections.singletonList(index)))));
     }
 
-    private class MaterializingAsyncConsumer extends
-        CancellableMultiAsyncConsumer<Boolean, E> implements Task {
+    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
+        Task {
 
       private int index;
       private String taskID;
-
-      @Override
-      public void cancellableAccept(final Boolean empty) throws Exception {
-        if (empty) {
-          setState();
-        } else {
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
 
       @Override
       public void cancellableAccept(final int size, final int index, final E element)
