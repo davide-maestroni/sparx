@@ -82,6 +82,7 @@ import sparx.internal.future.list.MapListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
+import sparx.util.DeadLockException;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
@@ -812,6 +813,7 @@ class future extends Sparx {
     public boolean cancel(final boolean mayInterruptIfRunning) {
       if (!materializer.isDone() && cancelException.compareAndSet(null,
           new CancellationException())) {
+        final ExecutionContext context = this.context;
         if (mayInterruptIfRunning) {
           context.interruptTask(taskID);
         }
@@ -842,31 +844,49 @@ class future extends Sparx {
 
     @Override
     public boolean contains(final Object o) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return false;
       }
-      // TODO: forbid waiting in context
       final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
-      context.scheduleAfter(new Task() {
-        @Override
-        public void run() {
-          try {
-            materializer.materializeContains(o, consumer);
-          } catch (final Exception e) {
-            consumer.error(e);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
+          @Override
+          public void accept(final java.util.List<E> elements) {
+            consumer.accept(elements.contains(o));
           }
-        }
 
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
+          @Override
+          public void error(@NotNull final Exception error) {
+            consumer.error(error);
+          }
+        });
+      } else {
+        context.scheduleAfter(new Task() {
+          @Override
+          public void run() {
+            try {
+              materializer.materializeContains(o, consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
 
-        @Override
-        public int weight() {
-          return materializer.weightContains();
-        }
-      });
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightContains();
+          }
+        });
+      }
       try {
         return consumer.get();
       } catch (final InterruptedException e) {
@@ -1543,30 +1563,49 @@ class future extends Sparx {
 
     @Override
     public E first() {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         throw new IndexOutOfBoundsException("0");
       }
       final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(0);
-      context.scheduleAfter(new Task() {
-        @Override
-        public void run() {
-          try {
-            materializer.materializeElement(0, consumer);
-          } catch (final Exception e) {
-            consumer.error(e);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
+          @Override
+          public void accept(final java.util.List<E> elements) {
+            consumer.accept(-1, 0, elements.get(0));
           }
-        }
 
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
+          @Override
+          public void error(@NotNull final Exception error) {
+            consumer.error(error);
+          }
+        });
+      } else {
+        context.scheduleAfter(new Task() {
+          @Override
+          public void run() {
+            try {
+              materializer.materializeElement(0, consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
 
-        @Override
-        public int weight() {
-          return materializer.weightElement();
-        }
-      });
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElement();
+          }
+        });
+      }
       try {
         return consumer.get();
       } catch (final InterruptedException e) {
@@ -1788,37 +1827,46 @@ class future extends Sparx {
 
     @Override
     public lazy.List<E> get() throws InterruptedException, ExecutionException {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return lazy.List.of();
       }
       final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
-      context.scheduleAfter(new Task() {
-        @Override
-        public void run() {
-          try {
-            materializer.materializeDone(consumer);
-          } catch (final Exception e) {
-            consumer.error(e);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(consumer);
+      } else {
+        context.scheduleAfter(new Task() {
+          @Override
+          public void run() {
+            try {
+              materializer.materializeDone(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
           }
-        }
 
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
 
-        @Override
-        public int weight() {
-          return materializer.weightElements();
-        }
-      });
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+        });
+      }
       try {
         return (lazy.List<E>) consumer.get();
       } catch (final InterruptedException e) {
         throw e;
       } catch (final Exception e) {
         if (isCancelled() && e instanceof CancellationException) {
-          throw (CancellationException) e;
+          throw (CancellationException) new CancellationException().initCause(e);
         }
         throw new ExecutionException(e);
       }
@@ -1830,26 +1878,45 @@ class future extends Sparx {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(index);
-      context.scheduleAfter(new Task() {
-        @Override
-        public void run() {
-          try {
-            materializer.materializeElement(index, consumer);
-          } catch (final Exception e) {
-            consumer.error(e);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
+          @Override
+          public void accept(final java.util.List<E> elements) {
+            consumer.accept(-1, index, elements.get(index));
           }
-        }
 
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
+          @Override
+          public void error(@NotNull final Exception error) {
+            consumer.error(error);
+          }
+        });
+      } else {
+        context.scheduleAfter(new Task() {
+          @Override
+          public void run() {
+            try {
+              materializer.materializeElement(index, consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
 
-        @Override
-        public int weight() {
-          return materializer.weightElement();
-        }
-      });
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElement();
+          }
+        });
+      }
       try {
         return consumer.get();
       } catch (final InterruptedException e) {
@@ -1860,37 +1927,46 @@ class future extends Sparx {
     @Override
     public lazy.List<E> get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return lazy.List.of();
       }
       final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
-      context.scheduleAfter(new Task() {
-        @Override
-        public void run() {
-          try {
-            materializer.materializeDone(consumer);
-          } catch (final Exception e) {
-            consumer.error(e);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(consumer);
+      } else {
+        context.scheduleAfter(new Task() {
+          @Override
+          public void run() {
+            try {
+              materializer.materializeDone(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
           }
-        }
 
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
 
-        @Override
-        public int weight() {
-          return materializer.weightElements();
-        }
-      });
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+        });
+      }
       try {
         return lazy.List.wrap(consumer.get(timeout, unit));
       } catch (final InterruptedException e) {
         throw e;
       } catch (final Exception e) {
         if (isCancelled() && e instanceof CancellationException) {
-          throw (CancellationException) e;
+          throw (CancellationException) new CancellationException().initCause(e);
         }
         throw new ExecutionException(e);
       }
@@ -1984,11 +2060,28 @@ class future extends Sparx {
 
     @Override
     public int indexOf(final Object o) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return -1;
       }
       final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>();
-      if (o == null) {
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
+          @Override
+          public void accept(final java.util.List<E> elements) {
+            consumer.accept(elements.indexOf(o));
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            consumer.error(error);
+          }
+        });
+      } else if (o == null) {
         context.scheduleAfter(new IndexOfNullAsyncConsumer(consumer));
       } else {
         context.scheduleAfter(new IndexOfElementAsyncConsumer(o, consumer));
@@ -2034,26 +2127,45 @@ class future extends Sparx {
     @Override
     public boolean isEmpty() {
       final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
-      context.scheduleAfter(new Task() {
-        @Override
-        public void run() {
-          try {
-            materializer.materializeEmpty(consumer);
-          } catch (final Exception e) {
-            consumer.error(e);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
+          @Override
+          public void accept(final java.util.List<E> elements) {
+            consumer.accept(elements.isEmpty());
           }
-        }
 
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
+          @Override
+          public void error(@NotNull final Exception error) {
+            consumer.error(error);
+          }
+        });
+      } else {
+        context.scheduleAfter(new Task() {
+          @Override
+          public void run() {
+            try {
+              materializer.materializeEmpty(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
 
-        @Override
-        public int weight() {
-          return materializer.weightEmpty();
-        }
-      });
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightEmpty();
+          }
+        });
+      }
       try {
         return consumer.get();
       } catch (final InterruptedException e) {
@@ -2069,42 +2181,62 @@ class future extends Sparx {
 
     @Override
     public E last() {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         throw new IndexOutOfBoundsException("-1");
       }
       final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(-1);
-      context.scheduleAfter(new Task() {
-        @Override
-        public void run() {
-          try {
-            materializer.materializeSize(new AsyncConsumer<Integer>() {
-              @Override
-              public void accept(final Integer size) {
-                materializer.materializeElement(size - 1, consumer);
-              }
-
-              @Override
-              public void error(@NotNull final Exception error) {
-                consumer.error(error);
-              }
-            });
-          } catch (final Exception e) {
-            consumer.error(e);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
+          @Override
+          public void accept(final java.util.List<E> elements) {
+            final int index = elements.size() - 1;
+            consumer.accept(-1, index, elements.get(index));
           }
-        }
 
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
+          @Override
+          public void error(@NotNull final Exception error) {
+            consumer.error(error);
+          }
+        });
+      } else {
+        context.scheduleAfter(new Task() {
+          @Override
+          public void run() {
+            try {
+              materializer.materializeSize(new AsyncConsumer<Integer>() {
+                @Override
+                public void accept(final Integer size) {
+                  materializer.materializeElement(size - 1, consumer);
+                }
 
-        @Override
-        public int weight() {
-          final ListAsyncMaterializer<E> materializer = List.this.materializer;
-          return (int) Math.min(Integer.MAX_VALUE,
-              (long) materializer.weightSize() + materializer.weightElement());
-        }
-      });
+                @Override
+                public void error(@NotNull final Exception error) {
+                  consumer.error(error);
+                }
+              });
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            final ListAsyncMaterializer<E> materializer = List.this.materializer;
+            return (int) Math.min(Integer.MAX_VALUE,
+                (long) materializer.weightSize() + materializer.weightElement());
+          }
+        });
+      }
       try {
         return consumer.get();
       } catch (final InterruptedException e) {
@@ -2114,12 +2246,29 @@ class future extends Sparx {
 
     @Override
     public int lastIndexOf(final Object o) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
         return -1;
       }
       final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>();
-      if (knownSize > 0) {
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
+          @Override
+          public void accept(final java.util.List<E> elements) {
+            consumer.accept(elements.lastIndexOf(o));
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            consumer.error(error);
+          }
+        });
+      } else if (knownSize > 0) {
         if (o == null) {
           context.scheduleAfter(new LastIndexOfNullAsyncConsumer(knownSize, consumer));
         } else {
@@ -2566,26 +2715,45 @@ class future extends Sparx {
     @Override
     public int size() {
       final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>();
-      context.scheduleAfter(new Task() {
-        @Override
-        public void run() {
-          try {
-            materializer.materializeSize(consumer);
-          } catch (final Exception e) {
-            consumer.error(e);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        final ListAsyncMaterializer<E> materializer = this.materializer;
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
+          @Override
+          public void accept(final java.util.List<E> elements) {
+            consumer.accept(elements.size());
           }
-        }
 
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
+          @Override
+          public void error(@NotNull final Exception error) {
+            consumer.error(error);
+          }
+        });
+      } else {
+        context.scheduleAfter(new Task() {
+          @Override
+          public void run() {
+            try {
+              materializer.materializeSize(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
 
-        @Override
-        public int weight() {
-          return materializer.weightSize();
-        }
-      });
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightSize();
+          }
+        });
+      }
       try {
         return consumer.get();
       } catch (final InterruptedException e) {

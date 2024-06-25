@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
+import sparx.util.DeadLockException;
 
 public class AsyncGetFuture<E> implements Future<Void> {
 
@@ -43,43 +44,47 @@ public class AsyncGetFuture<E> implements Future<Void> {
       @NotNull final ListAsyncMaterializer<E> materializer) {
     this.context = context;
     this.taskID = taskID;
-    context.scheduleAfter(new Task() {
-      @Override
-      public void run() {
-        materializer.materializeDone(new AsyncConsumer<List<E>>() {
-          @Override
-          public void accept(final List<E> elements) {
-            synchronized (status) {
-              if (isCancelled()) {
-                throw getCancelException();
-              }
-              status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-              status.notifyAll();
-            }
+    if (context.isCurrent()) {
+      if (!materializer.isDone()) {
+        throw new DeadLockException("cannot wait on the future own execution context");
+      }
+      materializer.materializeElements(new AsyncConsumer<List<E>>() {
+        @Override
+        public void accept(final java.util.List<E> elements) {
+          synchronized (status) {
+            status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+            status.notifyAll();
           }
+        }
 
-          @Override
-          public void error(@NotNull final Exception error) {
-            synchronized (status) {
-              if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-                AsyncGetFuture.this.error = error;
-              }
-              status.notifyAll();
+        @Override
+        public void error(@NotNull final Exception error) {
+          synchronized (status) {
+            if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+              AsyncGetFuture.this.error = error;
             }
+            status.notifyAll();
           }
-        });
-      }
+        }
+      });
+    } else {
+      context.scheduleAfter(new Task() {
+        @Override
+        public void run() {
+          materialize(materializer);
+        }
 
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
+        @Override
+        public @NotNull String taskID() {
+          return taskID;
+        }
 
-      @Override
-      public int weight() {
-        return materializer.weightElements();
-      }
-    });
+        @Override
+        public int weight() {
+          return materializer.weightElements();
+        }
+      });
+    }
   }
 
   @Override
@@ -106,6 +111,9 @@ public class AsyncGetFuture<E> implements Future<Void> {
 
   @Override
   public Void get() throws InterruptedException, ExecutionException {
+    if (context.isCurrent() && !isDone()) {
+      throw new DeadLockException("cannot wait on the future own execution context");
+    }
     synchronized (status) {
       while (!isDone()) {
         status.wait();
@@ -126,6 +134,9 @@ public class AsyncGetFuture<E> implements Future<Void> {
   @Override
   public Void get(final long timeout, @NotNull final TimeUnit unit)
       throws InterruptedException, ExecutionException, TimeoutException {
+    if (context.isCurrent() && !isDone()) {
+      throw new DeadLockException("cannot wait on the future own execution context");
+    }
     final long startTimeMillis = System.currentTimeMillis();
     synchronized (status) {
       long timeoutMillis = unit.toMillis(timeout);
@@ -153,5 +164,30 @@ public class AsyncGetFuture<E> implements Future<Void> {
   private @NotNull CancellationException getCancelException() {
     return error instanceof CancellationException ? (CancellationException) error
         : new CancellationException();
+  }
+
+  private void materialize(@NotNull final ListAsyncMaterializer<E> materializer) {
+    materializer.materializeDone(new AsyncConsumer<List<E>>() {
+      @Override
+      public void accept(final List<E> elements) {
+        synchronized (status) {
+          if (isCancelled()) {
+            throw getCancelException();
+          }
+          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+          status.notifyAll();
+        }
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        synchronized (status) {
+          if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+            AsyncGetFuture.this.error = error;
+          }
+          status.notifyAll();
+        }
+      }
+    });
   }
 }

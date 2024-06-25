@@ -15,6 +15,7 @@
  */
 package sparx.internal.future.list;
 
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -24,7 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
+import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.util.DeadLockException;
 import sparx.util.function.IndexedConsumer;
 
 public class AsyncForFuture<E> implements Future<Void> {
@@ -44,48 +47,51 @@ public class AsyncForFuture<E> implements Future<Void> {
       @NotNull final IndexedConsumer<? super E> consumer) {
     this.context = context;
     this.taskID = taskID;
-    context.scheduleAfter(new Task() {
-      @Override
-      public void run() {
-        materializer.materializeEach(new IndexedAsyncConsumer<E>() {
-          @Override
-          public void accept(final int size, final int index, final E element) throws Exception {
-            if (isCancelled()) {
-              throw getCancelException();
-            }
-            consumer.accept(index, element);
-          }
-
-          @Override
-          public void complete(final int size) {
-            synchronized (status) {
-              status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-              status.notifyAll();
-            }
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            synchronized (status) {
-              if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-                AsyncForFuture.this.error = error;
-              }
-              status.notifyAll();
-            }
-          }
-        });
+    if (context.isCurrent()) {
+      if (!materializer.isDone()) {
+        throw new DeadLockException("cannot wait on the future own execution context");
       }
+      materializer.materializeElements(new AsyncConsumer<List<E>>() {
+        @Override
+        public void accept(final java.util.List<E> elements) throws Exception {
+          int i = 0;
+          for (final E element : elements) {
+            consumer.accept(i++, element);
+          }
+          synchronized (status) {
+            status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+            status.notifyAll();
+          }
+        }
 
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
+        @Override
+        public void error(@NotNull final Exception error) {
+          synchronized (status) {
+            if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+              AsyncForFuture.this.error = error;
+            }
+            status.notifyAll();
+          }
+        }
+      });
+    } else {
+      context.scheduleAfter(new Task() {
+        @Override
+        public void run() {
+          materialize(materializer, consumer);
+        }
 
-      @Override
-      public int weight() {
-        return materializer.weightElements();
-      }
-    });
+        @Override
+        public @NotNull String taskID() {
+          return taskID;
+        }
+
+        @Override
+        public int weight() {
+          return materializer.weightElements();
+        }
+      });
+    }
   }
 
   @Override
@@ -112,6 +118,9 @@ public class AsyncForFuture<E> implements Future<Void> {
 
   @Override
   public Void get() throws InterruptedException, ExecutionException {
+    if (context.isCurrent() && !isDone()) {
+      throw new DeadLockException("cannot wait on the future own execution context");
+    }
     synchronized (status) {
       while (!isDone()) {
         status.wait();
@@ -132,6 +141,9 @@ public class AsyncForFuture<E> implements Future<Void> {
   @Override
   public Void get(final long timeout, @NotNull final TimeUnit unit)
       throws InterruptedException, ExecutionException, TimeoutException {
+    if (context.isCurrent() && !isDone()) {
+      throw new DeadLockException("cannot wait on the future own execution context");
+    }
     final long startTimeMillis = System.currentTimeMillis();
     synchronized (status) {
       long timeoutMillis = unit.toMillis(timeout);
@@ -159,5 +171,36 @@ public class AsyncForFuture<E> implements Future<Void> {
   private @NotNull CancellationException getCancelException() {
     return error instanceof CancellationException ? (CancellationException) error
         : new CancellationException();
+  }
+
+  private void materialize(@NotNull final ListAsyncMaterializer<E> materializer,
+      @NotNull final IndexedConsumer<? super E> consumer) {
+    materializer.materializeEach(new IndexedAsyncConsumer<E>() {
+      @Override
+      public void accept(final int size, final int index, final E element) throws Exception {
+        if (isCancelled()) {
+          throw getCancelException();
+        }
+        consumer.accept(index, element);
+      }
+
+      @Override
+      public void complete(final int size) {
+        synchronized (status) {
+          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+          status.notifyAll();
+        }
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        synchronized (status) {
+          if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+            AsyncForFuture.this.error = error;
+          }
+          status.notifyAll();
+        }
+      }
+    });
   }
 }
