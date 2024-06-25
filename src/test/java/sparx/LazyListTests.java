@@ -684,6 +684,7 @@ public class LazyListTests {
 
   @Test
   public void includesSlice() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).includesSlice(null));
     var l = List.of(1, 2, 3, null, 5);
     test(List.of(true), () -> l.includesSlice(List.of(3, null)));
     test(List.of(false), () -> l.includesSlice(List.of(null, 3)));

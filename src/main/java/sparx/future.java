@@ -75,6 +75,7 @@ import sparx.internal.future.list.FoldRightListAsyncMaterializer;
 import sparx.internal.future.list.GroupListAsyncMaterializer;
 import sparx.internal.future.list.GroupListAsyncMaterializer.Chunker;
 import sparx.internal.future.list.IncludesAllListAsyncMaterializer;
+import sparx.internal.future.list.IncludesSliceListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.internal.future.list.MapListAsyncMaterializer;
@@ -659,6 +660,20 @@ class future extends Sparx {
         protected @NotNull java.util.List<Boolean> transform(
             @NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).includesAll(otherElements);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, Boolean> lazyMaterializerIncludesSlice(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<?> elements) {
+      final Iterable<?> otherElements = elements;
+      return new LazyListAsyncMaterializer<E, Boolean>(materializer, cancelException, 1) {
+        @Override
+        protected @NotNull java.util.List<Boolean> transform(
+            @NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).includesSlice(otherElements);
         }
       };
     }
@@ -1950,8 +1965,21 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
-      // TODO: copy indexOfSlice
-      return null;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
+          taskID, Require.notNull(elements, "elements"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
+      }
+      if (materializer.isMaterializedAtOnce() && !isFuture(elements)) {
+        return new List<Boolean>(context, cancelException,
+            lazyMaterializerIncludesSlice(materializer, cancelException, elements));
+      }
+      final ExecutionContext context = this.context;
+      return new List<Boolean>(context, cancelException,
+          new IncludesSliceListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
+              cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override

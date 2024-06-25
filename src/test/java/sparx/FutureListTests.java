@@ -88,6 +88,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -118,6 +121,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -184,6 +190,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -215,6 +224,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -245,6 +257,8 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
     }
   }
 
@@ -311,6 +325,8 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
     }
   }
 
@@ -341,6 +357,9 @@ public class FutureListTests {
 //        f.cancel(true);
 //      });
 //      assertThrows(CancellationException.class, f::get);
+//      assertTrue(f.isDone());
+//      assertTrue(f.isCancelled());
+//      assertFalse(f.isFailed());
     }
   }
 
@@ -370,6 +389,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -417,6 +439,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -464,6 +489,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -517,6 +545,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -546,6 +577,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -597,6 +631,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -645,6 +682,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -685,6 +725,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -722,6 +765,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -752,6 +798,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -800,6 +849,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -845,6 +897,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -870,6 +925,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -901,6 +959,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -949,6 +1010,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -997,6 +1061,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1048,6 +1115,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1130,6 +1200,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1210,6 +1283,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1301,6 +1377,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1328,6 +1407,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1355,6 +1437,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1384,6 +1469,9 @@ public class FutureListTests {
 //        f.cancel(true);
 //      });
 //      assertThrows(CancellationException.class, f::get);
+//      assertTrue(f.isDone());
+//      assertTrue(f.isCancelled());
+//      assertFalse(f.isFailed());
     }
   }
 
@@ -1417,6 +1505,9 @@ public class FutureListTests {
 //        f.cancel(true);
 //      });
 //      assertThrows(CancellationException.class, f::get);
+//      assertTrue(f.isDone());
+//      assertTrue(f.isCancelled());
+//      assertFalse(f.isFailed());
     }
   }
 
@@ -1443,6 +1534,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1470,6 +1564,40 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void includesSlice() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).includesSlice(null));
+    var l = List.of(1, 2, 3, null, 5);
+    test(List.of(true), () -> l, ll -> ll.includesSlice(List.of(3, null)));
+    test(List.of(false), () -> l, ll -> ll.includesSlice(List.of(null, 3)));
+    test(List.of(true), () -> l, ll -> ll.includesSlice(List.of()));
+    test(List.of(false), List::of, ll -> ll.includesSlice(List.of(null, 1)));
+    test(List.of(true), List::of, ll -> ll.includesSlice(List.of()));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
+        Thread.sleep(60000);
+        return i;
+      }).includesSlice(List.of(1));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1518,6 +1646,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1556,6 +1687,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1604,6 +1738,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1652,6 +1789,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1685,6 +1825,9 @@ public class FutureListTests {
         f.cancel(true);
       });
       assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
