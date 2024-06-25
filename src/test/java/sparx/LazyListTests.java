@@ -673,6 +673,7 @@ public class LazyListTests {
 
   @Test
   public void includesAll() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).includesAll(null));
     var l = List.of(1, 2, 3, null, 5);
     test(List.of(true), () -> l.includesAll(List.of(null, 1)));
     test(List.of(false), () -> l.includesAll(List.of(0, 1)));

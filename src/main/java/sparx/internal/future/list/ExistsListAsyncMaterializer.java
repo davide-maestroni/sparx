@@ -194,7 +194,7 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public int weightElements() {
-      return wrapped.weightEmpty();
+      return wrapped.weightElement();
     }
 
     @Override
@@ -229,7 +229,7 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeEmpty(new MaterializingAsyncConsumer());
+        wrapped.materializeElement(0, new MaterializingAsyncConsumer());
       }
     }
 
@@ -239,21 +239,11 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
               decorateFunction.apply(Collections.singletonList(matches)))));
     }
 
-    private class MaterializingAsyncConsumer extends
-        CancellableMultiAsyncConsumer<Boolean, E> implements Task {
+    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
+        Task {
 
       private int index;
       private String taskID;
-
-      @Override
-      public void cancellableAccept(final Boolean empty) throws Exception {
-        if (empty) {
-          setState(defaultResult);
-        } else {
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
 
       @Override
       public void cancellableAccept(final int size, final int index, final E element)
@@ -269,7 +259,11 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
-        setState(false);
+        if (size == 0) {
+          setState(defaultResult);
+        } else {
+          setState(false);
+        }
       }
 
       @Override

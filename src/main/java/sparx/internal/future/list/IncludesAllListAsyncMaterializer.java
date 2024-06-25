@@ -21,6 +21,7 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,19 +33,19 @@ import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.util.function.Function;
-import sparx.util.function.IndexedPredicate;
 
-public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Boolean> {
+public class IncludesAllListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Boolean> {
 
-  private static final Logger LOGGER = Logger.getLogger(EachListAsyncMaterializer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(
+      IncludesAllListAsyncMaterializer.class.getName());
 
-  public EachListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
+  public IncludesAllListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, defaultResult, context, cancelException,
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
         decorateFunction));
   }
 
@@ -63,19 +64,17 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<Boolean>, List<Boolean>> decorateFunction;
-    private final boolean defaultResult;
-    private final IndexedPredicate<? super E> predicate;
+    private final ListAsyncMaterializer<Object> elementsMaterializer;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
+        @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
-      this.defaultResult = defaultResult;
+      this.elementsMaterializer = elementsMaterializer;
       this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
@@ -193,7 +192,7 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     @Override
     public int weightElements() {
-      return wrapped.weightElement();
+      return elementsMaterializer.weightElements();
     }
 
     @Override
@@ -228,26 +227,55 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeElement(0, new MaterializingAsyncConsumer());
+        elementsMaterializer.materializeElements(new CancellableAsyncConsumer<List<Object>>() {
+          @Override
+          public void cancellableAccept(final List<Object> elements) throws Exception {
+            if (elements.isEmpty()) {
+              setState(true);
+            } else {
+              wrapped.materializeElement(0,
+                  new MaterializingAsyncConsumer(new HashSet<Object>(elements)));
+            }
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            final CancellationException exception = cancelException.get();
+            if (exception != null) {
+              consumeState(setCancelled(exception));
+            } else {
+              consumeState(setFailed(error));
+            }
+          }
+        });
       }
     }
 
     private void setState(final boolean matches) throws Exception {
-      consumeState(EachListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<Boolean>(
-          decorateFunction.apply(Collections.singletonList(matches)))));
+      consumeState(IncludesAllListAsyncMaterializer.this.setState(
+          new ListToListAsyncMaterializer<Boolean>(
+              decorateFunction.apply(Collections.singletonList(matches)))));
     }
 
     private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
         Task {
 
+      private final HashSet<Object> elements;
+
       private int index;
       private String taskID;
+
+      private MaterializingAsyncConsumer(@NotNull final HashSet<Object> elements) {
+        this.elements = elements;
+      }
 
       @Override
       public void cancellableAccept(final int size, final int index, final E element)
           throws Exception {
-        if (!predicate.test(index, element)) {
-          setState(false);
+        final HashSet<Object> elements = this.elements;
+        elements.remove(element);
+        if (elements.isEmpty()) {
+          setState(true);
         } else {
           this.index = index + 1;
           taskID = getTaskID();
@@ -257,11 +285,7 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
-        if (size == 0) {
-          setState(defaultResult);
-        } else {
-          setState(true);
-        }
+        setState(false);
       }
 
       @Override
