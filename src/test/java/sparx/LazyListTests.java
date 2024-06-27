@@ -1007,6 +1007,7 @@ public class LazyListTests {
 
   @Test
   public void prependAll() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).prependAll(null));
     test(List.of(1, 2, 3), () -> List.<Integer>of().prependAll(Arrays.asList(1, 2, 3)));
     test(List.of(1, null, 3), () -> List.<Integer>of().prependAll(List.of(1, null, 3)));
     test(List.of(2, 3, 1), () -> List.of(1).prependAll(new LinkedHashSet<>(List.of(2, 3))));

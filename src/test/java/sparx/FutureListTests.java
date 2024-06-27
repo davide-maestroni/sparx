@@ -343,23 +343,22 @@ public class FutureListTests {
     test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.drop(-1));
 
     if (TEST_ASYNC_CANCEL) {
-      // TODO: uncomment when prepend is implemented
-//      var f = List.of(1, 2, 3).toFuture(context).all(i -> {
-//        Thread.sleep(60000);
-//        return true;
-//      }).prepend(false).drop(1);
-//      executor.submit(() -> {
-//        try {
-//          Thread.sleep(1000);
-//        } catch (final InterruptedException e) {
-//          throw UncheckedInterruptedException.toUnchecked(e);
-//        }
-//        f.cancel(true);
-//      });
-//      assertThrows(CancellationException.class, f::get);
-//      assertTrue(f.isDone());
-//      assertTrue(f.isCancelled());
-//      assertFalse(f.isFailed());
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
+        Thread.sleep(60000);
+        return i;
+      }).drop(1);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
     }
   }
 
@@ -1637,6 +1636,66 @@ public class FutureListTests {
         Thread.sleep(60000);
         return i;
       });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void prepend() throws Exception {
+    test(List.of(3, 2, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(2).prepend(3));
+    test(List.of(3, null, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(null).prepend(3));
+    test(List.of(3, 2, 1), () -> List.of(1), ll -> ll.prepend(2).prepend(3));
+    test(List.of(3, null, 1), () -> List.of(1), ll -> ll.prepend(null).prepend(3));
+    test(List.of(3, 1, 2), () -> List.of(1, 2), ll -> ll.prepend(3));
+    test(List.of(3, 1, null), () -> List.of(1, null), ll -> ll.prepend(3));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).map(i -> {
+        Thread.sleep(60000);
+        return i;
+      }).prepend(0);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void prependAll() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).prependAll(null));
+    test(List.of(1, 2, 3), List::<Integer>of, ll -> ll.prependAll(Arrays.asList(1, 2, 3)));
+    test(List.of(1, null, 3), List::<Integer>of, ll -> ll.prependAll(List.of(1, null, 3)));
+    test(List.of(2, 3, 1), () -> List.of(1),
+        ll -> ll.prependAll(new LinkedHashSet<>(List.of(2, 3))));
+    test(List.of(null, 3, 1), () -> List.of(1), ll -> ll.prependAll(List.of(null, 3)));
+    test(List.of(3, 1, 2), () -> List.of(1, 2), ll -> ll.prependAll(Set.of(3)));
+    test(List.of(3, 1, null), () -> List.of(1, null), ll -> ll.prependAll(Set.of(3)));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).map(i -> {
+        Thread.sleep(60000);
+        return i;
+      }).prependAll(List.of(0));
       executor.submit(() -> {
         try {
           Thread.sleep(1000);

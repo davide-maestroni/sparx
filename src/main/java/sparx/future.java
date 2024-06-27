@@ -79,6 +79,8 @@ import sparx.internal.future.list.IncludesSliceListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.internal.future.list.MapListAsyncMaterializer;
+import sparx.internal.future.list.PrependAllListAsyncMaterializer;
+import sparx.internal.future.list.PrependListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
@@ -161,6 +163,19 @@ class future extends Sparx {
     };
     private static final ElementToListAsyncMaterializer<Boolean> FALSE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
         lazy.List.of(false));
+    private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> PREPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {
+      @Override
+      public java.util.List<?> apply(final java.util.List<?> firstParam,
+          final java.util.List<?> secondParam) {
+        return lazy.List.wrap(firstParam).prependAll(secondParam).materialized();
+      }
+    };
+    private static final BinaryFunction<? extends java.util.List<?>, ?, ? extends java.util.List<?>> PREPEND_FUNCTION = new BinaryFunction<java.util.List<?>, Object, java.util.List<?>>() {
+      @Override
+      public java.util.List<?> apply(final java.util.List<?> firstParam, final Object secondParam) {
+        return lazy.List.wrap(firstParam).prepend(secondParam).materialized();
+      }
+    };
     private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
         lazy.List.of(true));
     private static final ElementToListAsyncMaterializer<Integer> ZERO_MATERIALIZER = new ElementToListAsyncMaterializer<Integer>(
@@ -718,6 +733,35 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerPrepend(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException, final E element) {
+      final int knownSize = materializer.knownSize();
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException,
+          knownSize > 0 ? SizeOverflowException.safeCast(knownSize + 1) : -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).prepend(element);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerPrependAll(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<? extends E> elements, final int elementsKnownSize) {
+      final int knownSize = materializer.knownSize();
+      final Iterable<? extends E> appended = elements;
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException,
+          knownSize > 0 && elementsKnownSize > 0 ? SizeOverflowException.safeCast(
+              knownSize + elementsKnownSize) : -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).prependAll(appended);
+        }
+      };
+    }
+
     private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerSlice(
         @NotNull final ListAsyncMaterializer<E> materializer,
         @NotNull final AtomicReference<CancellationException> cancelException, final int start,
@@ -754,6 +798,16 @@ class future extends Sparx {
           return ((lazy.List<E>) elements).union(otherElements);
         }
       };
+    }
+
+    @SuppressWarnings("unchecked")
+    private static @NotNull <E> BinaryFunction<java.util.List<E>, java.util.List<E>, java.util.List<E>> prependAllFunction() {
+      return (BinaryFunction<java.util.List<E>, java.util.List<E>, java.util.List<E>>) PREPEND_ALL_FUNCTION;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static @NotNull <E> BinaryFunction<java.util.List<E>, E, java.util.List<E>> prependFunction() {
+      return (BinaryFunction<java.util.List<E>, E, java.util.List<E>>) PREPEND_FUNCTION;
     }
 
     @Override
@@ -856,6 +910,7 @@ class future extends Sparx {
         }
         materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
           @Override
+          @SuppressWarnings("SuspiciousMethodCalls")
           public void accept(final java.util.List<E> elements) {
             consumer.accept(elements.contains(o));
           }
@@ -2072,6 +2127,7 @@ class future extends Sparx {
         }
         materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
           @Override
+          @SuppressWarnings("SuspiciousMethodCalls")
           public void accept(final java.util.List<E> elements) {
             consumer.accept(elements.indexOf(o));
           }
@@ -2560,13 +2616,45 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> prepend(E element) {
-      return null;
+    public @NotNull List<E> prepend(final E element) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final long knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException,
+            new ElementToListAsyncMaterializer<E>(lazy.List.of(element)));
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerPrepend(materializer, cancelException, element));
+      }
+      return new List<E>(context, cancelException,
+          new PrependListAsyncMaterializer<E>(materializer, element, cancelException,
+              List.<E>prependFunction()));
     }
 
     @Override
-    public @NotNull List<E> prependAll(@NotNull Iterable<? extends E> elements) {
-      return null;
+    public @NotNull List<E> prependAll(@NotNull final Iterable<? extends E> elements) {
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(context, taskID,
+          Require.notNull(elements, "elements"));
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final int elementsKnownSize = elementsMaterializer.knownSize();
+      if (elementsKnownSize == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      final long knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException, elementsMaterializer);
+      }
+      if (materializer.isMaterializedAtOnce() && !isFuture(elements)) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerPrependAll(materializer, cancelException, elements, elementsKnownSize));
+      }
+      return new List<E>(context, cancelException,
+          new PrependAllListAsyncMaterializer<E>(materializer, elementsMaterializer,
+              cancelException, List.<E>prependAllFunction()));
     }
 
     @Override
