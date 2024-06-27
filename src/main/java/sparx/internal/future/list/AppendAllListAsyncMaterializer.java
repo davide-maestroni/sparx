@@ -314,6 +314,8 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         safeConsume(consumer, false, LOGGER);
       } else if (index < wrappedSize || index < safeSize(wrappedSize, elementsSize)) {
         safeConsume(consumer, true, LOGGER);
+      } else if (wrappedSize >= 0 && elementsSize >= 0) {
+        safeConsume(consumer, false, LOGGER);
       } else {
         materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
           @Override

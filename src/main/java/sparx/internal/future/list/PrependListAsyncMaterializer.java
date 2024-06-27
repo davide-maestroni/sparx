@@ -229,8 +229,10 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (index < 0) {
         safeConsume(consumer, false, LOGGER);
-      } else if (index == 0) {
+      } else if (index == 0 || index < wrappedSize) {
         safeConsume(consumer, true, LOGGER);
+      } else if (wrappedSize >= 0) {
+        safeConsume(consumer, false, LOGGER);
       } else {
         materializeElement(IndexOverflowException.safeCast((long) index + 1),
             new CancellableIndexedAsyncConsumer<E>() {

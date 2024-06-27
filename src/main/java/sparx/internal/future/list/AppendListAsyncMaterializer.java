@@ -231,6 +231,8 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         safeConsume(consumer, false, LOGGER);
       } else if (index < wrappedSize || index < safeSize(wrappedSize)) {
         safeConsume(consumer, true, LOGGER);
+      } else if (wrappedSize >= 0) {
+        safeConsume(consumer, false, LOGGER);
       } else {
         materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
           @Override

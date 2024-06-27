@@ -1601,6 +1601,41 @@ public class FutureListTests {
   }
 
   @Test
+  public void insertAfter() throws Exception {
+    var l = List.of(1, 2, 3);
+    test(l, () -> l, ll -> ll.insertAfter(5, null));
+    test(List.of(1, 2, 3, null), () -> l, ll -> ll.insertAfter(3, null));
+    test(List.of(1, 2, null, 3), () -> l, ll -> ll.insertAfter(2, null));
+    test(List.of(1, null, 2, 3), () -> l, ll -> ll.insertAfter(1, null));
+    test(List.of(null, 1, 2, 3), () -> l, ll -> ll.insertAfter(0, null));
+    test(l, () -> l, ll -> ll.insertAfter(-7, null));
+    test(List.of(), List::of, ll -> ll.insertAfter(5, null));
+    test(List.of(null), List::of, ll -> ll.insertAfter(0, null));
+    Iterable<Object> iterable = () -> List.of().iterator();
+    test(List.of(), () -> List.wrap(iterable), ll -> ll.insertAfter(5, null));
+    test(List.of(null), () -> List.wrap(iterable), ll -> ll.insertAfter(0, null));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
+        Thread.sleep(60000);
+        return i;
+      }).insertAfter(1, 2);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void map() throws Exception {
     assertThrows(NullPointerException.class,
         () -> List.of(0).toFuture(context).map((Function<? super Integer, Object>) null));
@@ -1926,6 +1961,8 @@ public class FutureListTests {
       assertTrue(actualSupplier.get().contains(element));
     }
     var lst = actualSupplier.get();
+    assertFalse(lst.isCancelled());
+    assertFalse(lst.isFailed());
     assertEquals(expected, lst.get());
     assertTrue(lst.isDone());
     assertFalse(lst.isCancelled());
