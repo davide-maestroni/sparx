@@ -133,7 +133,18 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           if (contains) {
             consumer.accept(true);
           } else {
-            elementsMaterializer.materializeContains(element, consumer);
+            elementsMaterializer.materializeContains(element,
+                new CancellableAsyncConsumer<Boolean>() {
+                  @Override
+                  public void cancellableAccept(final Boolean contains) throws Exception {
+                    consumer.accept(contains);
+                  }
+
+                  @Override
+                  public void error(@NotNull final Exception error) throws Exception {
+                    consumer.error(error);
+                  }
+                });
           }
         }
 
@@ -296,7 +307,17 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           if (!empty) {
             consumer.accept(false);
           } else {
-            elementsMaterializer.materializeEmpty(consumer);
+            elementsMaterializer.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
+              @Override
+              public void cancellableAccept(final Boolean empty) throws Exception {
+                consumer.accept(empty);
+              }
+
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                consumer.error(error);
+              }
+            });
           }
         }
 
