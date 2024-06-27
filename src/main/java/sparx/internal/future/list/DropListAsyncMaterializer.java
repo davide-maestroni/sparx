@@ -221,16 +221,10 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       } else if (index < safeSize(wrappedSize)) {
         safeConsume(consumer, true, LOGGER);
       } else {
-        materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
+        wrapped.materializeHasElement(safeIndex(index), new CancellableAsyncConsumer<Boolean>() {
           @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            consumer.accept(true);
-          }
-
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            consumer.accept(false);
+          public void cancellableAccept(final Boolean hasElement) throws Exception {
+            consumer.accept(hasElement);
           }
 
           @Override

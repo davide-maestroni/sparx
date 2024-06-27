@@ -1636,6 +1636,41 @@ public class FutureListTests {
   }
 
   @Test
+  public void insertAllAfter() throws Exception {
+    var l = List.of(1, 2, 3);
+    test(l, () -> l, ll -> ll.insertAllAfter(5, List.of(null, 5)));
+    test(List.of(1, 2, 3, null, 5), () -> l, ll -> ll.insertAllAfter(3, List.of(null, 5)));
+    test(List.of(1, 2, null, 5, 3), () -> l, ll -> ll.insertAllAfter(2, List.of(null, 5)));
+    test(List.of(1, null, 5, 2, 3), () -> l, ll -> ll.insertAllAfter(1, List.of(null, 5)));
+    test(List.of(null, 5, 1, 2, 3), () -> l, ll -> ll.insertAllAfter(0, List.of(null, 5)));
+    test(l, () -> l, ll -> ll.insertAllAfter(-7, List.of(null, 5)));
+    test(List.of(), List::of, ll -> ll.insertAllAfter(5, List.of(null, 5)));
+    test(List.of(null, 5), List::of, ll -> ll.insertAllAfter(0, List.of(null, 5)));
+    Iterable<Object> iterable = () -> List.of().iterator();
+    test(List.of(), () -> List.wrap(iterable), ll -> ll.insertAllAfter(5, List.of(null, 5)));
+    test(List.of(null, 5), () -> List.wrap(iterable), ll -> ll.insertAllAfter(0, List.of(null, 5)));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
+        Thread.sleep(60000);
+        return i;
+      }).insertAllAfter(1, List.of(2));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void map() throws Exception {
     assertThrows(NullPointerException.class,
         () -> List.of(0).toFuture(context).map((Function<? super Integer, Object>) null));

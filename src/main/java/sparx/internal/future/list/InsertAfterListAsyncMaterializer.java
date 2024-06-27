@@ -16,6 +16,7 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.AsyncConsumers.safeConsume;
+import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
@@ -221,8 +222,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
           if (index < size) {
             safeConsume(consumer, size, index, element, LOGGER);
           } else {
-            safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)),
-                LOGGER);
+            safeConsumeComplete(consumer, size, LOGGER);
           }
         } else {
           wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {

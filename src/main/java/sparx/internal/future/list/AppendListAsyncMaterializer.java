@@ -234,16 +234,22 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       } else if (wrappedSize >= 0) {
         safeConsume(consumer, false, LOGGER);
       } else {
-        materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
+        wrapped.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
               throws Exception {
+            wrappedSize = Math.max(wrappedSize, size);
             consumer.accept(true);
           }
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            consumer.accept(false);
+            wrappedSize = size;
+            if (size == index) {
+              consumer.accept(true);
+            } else {
+              consumer.accept(false);
+            }
           }
 
           @Override

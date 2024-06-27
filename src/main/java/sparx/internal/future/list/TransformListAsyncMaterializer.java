@@ -209,12 +209,17 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      materialized(new StateConsumer<F>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
-          state.materializeSize(consumer);
-        }
-      });
+      final int knownSize = TransformListAsyncMaterializer.this.knownSize;
+      if (knownSize >= 0) {
+        safeConsume(consumer, knownSize, LOGGER);
+      } else {
+        materialized(new StateConsumer<F>() {
+          @Override
+          public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+            state.materializeSize(consumer);
+          }
+        });
+      }
     }
 
     @Override
