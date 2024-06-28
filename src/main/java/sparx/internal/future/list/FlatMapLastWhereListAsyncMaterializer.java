@@ -186,16 +186,8 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
                 return;
               }
             } catch (final Exception e) {
-              if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-              }
-              final CancellationException exception = cancelException.get();
-              if (exception != null) {
-                consumeState(setCancelled(exception));
-              } else {
-                consumeState(setFailed(e));
-              }
-              return;
+              setError(e);
+              throw e;
             }
             consumer.accept(false);
           }
@@ -265,7 +257,8 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
 
     @Override
     public int weightEmpty() {
-      return wrapped.weightElement();
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightSize() + wrapped.weightElement());
     }
 
     @Override
@@ -292,30 +285,34 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
     }
 
     private void materialized(@NotNull final StateConsumer<E> consumer) {
-      if (wrappedSize < 0) {
-        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
-          @Override
-          public void cancellableAccept(final Integer size) {
-            wrappedSize = size;
-            materialized(consumer);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              consumer.accept(setCancelled(exception));
-            } else {
-              consumer.accept(setFailed(error));
+      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
+      stateConsumers.add(consumer);
+      if (stateConsumers.size() == 1) {
+        if (wrappedSize < 0) {
+          wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+            @Override
+            public void cancellableAccept(final Integer size) {
+              wrappedSize = size;
+              wrapped.materializeElement(size - 1, new MaterializingAsyncConsumer());
             }
-          }
-        });
-      } else {
-        final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
-        stateConsumers.add(consumer);
-        if (stateConsumers.size() == 1) {
+
+            @Override
+            public void error(@NotNull final Exception error) {
+              setError(error);
+            }
+          });
+        } else {
           wrapped.materializeElement(wrappedSize - 1, new MaterializingAsyncConsumer());
         }
+      }
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        consumeState(setCancelled(exception));
+      } else {
+        consumeState(setFailed(error));
       }
     }
 
@@ -345,12 +342,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          consumeState(setCancelled(exception));
-        } else {
-          consumeState(setFailed(error));
-        }
+        setError(error);
       }
 
       @Override
@@ -365,7 +357,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return wrapped.weightElement(); // TODO
       }
     }
   }

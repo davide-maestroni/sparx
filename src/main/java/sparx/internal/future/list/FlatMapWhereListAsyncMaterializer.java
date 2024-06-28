@@ -65,9 +65,9 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
+    private final ArrayList<E> elements = new ArrayList<E>();
     private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
         2);
-    private final ArrayList<E> elements = new ArrayList<E>();
     private final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<E>> mapper;
     private final IndexedPredicate<? super E> predicate;
     private final ListAsyncMaterializer<E> wrapped;
@@ -389,6 +389,17 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
       }
     }
 
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setCancelled(exception);
+        consumeError(exception);
+      } else {
+        setFailed(error);
+        consumeError(error);
+      }
+    }
+
     private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
         Task {
 
@@ -436,14 +447,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          setCancelled(exception);
-          consumeError(exception);
-        } else {
-          setFailed(error);
-          consumeError(error);
-        }
+        setError(error);
       }
 
       @Override
@@ -458,8 +462,9 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public int weight() {
-        final int weight = wrapped.weightElement();
-        return weight == Integer.MAX_VALUE ? weight : weight + 1;
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightElement() + (elementsMaterializer != null
+                ? elementsMaterializer.weightNext() : 0));
       }
 
       private void schedule() {
@@ -517,7 +522,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return weightElement();
       }
     }
 
@@ -568,7 +573,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return weightElement();
       }
     }
 
@@ -607,14 +612,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          setCancelled(exception);
-          consumeError(exception);
-        } else {
-          setFailed(error);
-          consumeError(error);
-        }
+        setError(error);
       }
 
       @Override

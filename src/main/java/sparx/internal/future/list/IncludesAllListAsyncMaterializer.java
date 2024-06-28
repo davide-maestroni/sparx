@@ -233,21 +233,24 @@ public class IncludesAllListAsyncMaterializer<E> extends AbstractListAsyncMateri
             if (elements.isEmpty()) {
               setState(true);
             } else {
-              wrapped.materializeElement(0,
-                  new MaterializingAsyncConsumer(new HashSet<Object>(elements)));
+              new MaterializingAsyncConsumer(new HashSet<Object>(elements)).run();
             }
           }
 
           @Override
           public void error(@NotNull final Exception error) {
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              consumeState(setCancelled(exception));
-            } else {
-              consumeState(setFailed(error));
-            }
+            setError(error);
           }
         });
+      }
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        consumeState(setCancelled(exception));
+      } else {
+        consumeState(setFailed(error));
       }
     }
 
@@ -290,12 +293,7 @@ public class IncludesAllListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          consumeState(setCancelled(exception));
-        } else {
-          consumeState(setFailed(error));
-        }
+        setError(error);
       }
 
       @Override

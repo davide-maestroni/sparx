@@ -47,13 +47,6 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     setState(new ImmaterialState(wrapped, elementsMaterializer, cancelException, appendFunction));
   }
 
-  private static int safeIndex(final int wrappedSize, final int elementsIndex) {
-    if (wrappedSize >= 0) {
-      return IndexOverflowException.safeCast((long) wrappedSize + elementsIndex);
-    }
-    return -1;
-  }
-
   private static int safeSize(final int wrappedSize, final int elementsSize) {
     if (wrappedSize >= 0) {
       if (elementsSize > 0) {
@@ -78,8 +71,8 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     private final ListAsyncMaterializer<E> elementsMaterializer;
     private final ListAsyncMaterializer<E> wrapped;
 
-    private int elementsSize = -1;
-    private int wrappedSize = -1;
+    private int elementsSize;
+    private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
@@ -89,6 +82,8 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       this.elementsMaterializer = elementsMaterializer;
       this.cancelException = cancelException;
       this.appendFunction = appendFunction;
+      wrappedSize = wrapped.knownSize();
+      elementsSize = elementsMaterializer.knownSize();
     }
 
     @Override
@@ -179,8 +174,8 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
                 throws Exception {
               final int knownSize = safeSize(wrappedSize,
                   elementsSize = Math.max(elementsSize, size));
-              final int knownIndex = safeIndex(wrappedSize, index);
-              consumer.accept(knownSize, knownIndex, element);
+              consumer.accept(knownSize,
+                  IndexOverflowException.safeCast((long) wrappedSize + index), element);
             }
 
             @Override
@@ -272,28 +267,14 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
               @Override
               public void error(@NotNull final Exception error) {
-                final CancellationException exception = cancelException.get();
-                if (exception != null) {
-                  setCancelled(exception);
-                  consumeError(exception);
-                } else {
-                  setFailed(error);
-                  consumeError(error);
-                }
+                setError(error);
               }
             });
           }
 
           @Override
           public void error(@NotNull final Exception error) {
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              setCancelled(exception);
-              consumeError(exception);
-            } else {
-              setFailed(error);
-              consumeError(error);
-            }
+            setError(error);
           }
         });
       }
@@ -301,31 +282,53 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      wrapped.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
-        @Override
-        public void cancellableAccept(final Boolean empty) throws Exception {
-          if (!empty) {
-            consumer.accept(false);
-          } else {
-            elementsMaterializer.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
-              @Override
-              public void cancellableAccept(final Boolean empty) throws Exception {
-                consumer.accept(empty);
-              }
+      if (wrappedSize == 0) {
+        if (elementsSize >= 0) {
+          safeConsume(consumer, elementsSize == 0, LOGGER);
+        } else {
+          elementsMaterializer.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
+            @Override
+            public void cancellableAccept(final Boolean empty) throws Exception {
+              consumer.accept(empty);
+            }
 
-              @Override
-              public void error(@NotNull final Exception error) throws Exception {
-                consumer.error(error);
-              }
-            });
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
+        }
+      } else if (wrappedSize > 0 || elementsSize > 0) {
+        safeConsume(consumer, false, LOGGER);
+      } else {
+        wrapped.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
+          @Override
+          public void cancellableAccept(final Boolean empty) throws Exception {
+            if (!empty) {
+              consumer.accept(false);
+            } else if (elementsSize == 0) {
+              consumer.accept(true);
+            } else {
+              elementsMaterializer.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
+                @Override
+                public void cancellableAccept(final Boolean empty) throws Exception {
+                  consumer.accept(empty);
+                }
+
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  consumer.error(error);
+                }
+              });
+            }
           }
-        }
 
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override
@@ -335,8 +338,23 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         safeConsume(consumer, false, LOGGER);
       } else if (index < wrappedSize || index < safeSize(wrappedSize, elementsSize)) {
         safeConsume(consumer, true, LOGGER);
-      } else if (wrappedSize >= 0 && elementsSize >= 0) {
-        safeConsume(consumer, false, LOGGER);
+      } else if (wrappedSize >= 0) {
+        if (elementsSize >= 0) {
+          safeConsume(consumer, false, LOGGER);
+        } else {
+          elementsMaterializer.materializeHasElement(index - wrappedSize,
+              new CancellableAsyncConsumer<Boolean>() {
+                @Override
+                public void cancellableAccept(final Boolean hasElement) throws Exception {
+                  consumer.accept(hasElement);
+                }
+
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  consumer.error(error);
+                }
+              });
+        }
       } else {
         wrapped.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
           @Override
@@ -347,20 +365,24 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           }
 
           @Override
-          public void cancellableComplete(final int size) {
+          public void cancellableComplete(final int size) throws Exception {
             wrappedSize = size;
-            elementsMaterializer.materializeHasElement(index - size,
-                new CancellableAsyncConsumer<Boolean>() {
-                  @Override
-                  public void cancellableAccept(final Boolean hasElement) throws Exception {
-                    consumer.accept(hasElement);
-                  }
+            if (index < safeSize(wrappedSize, elementsSize)) {
+              consumer.accept(false);
+            } else {
+              elementsMaterializer.materializeHasElement(index - size,
+                  new CancellableAsyncConsumer<Boolean>() {
+                    @Override
+                    public void cancellableAccept(final Boolean hasElement) throws Exception {
+                      consumer.accept(hasElement);
+                    }
 
-                  @Override
-                  public void error(@NotNull final Exception error) throws Exception {
-                    consumer.error(error);
-                  }
-                });
+                    @Override
+                    public void error(@NotNull final Exception error) throws Exception {
+                      consumer.error(error);
+                    }
+                  });
+            }
           }
 
           @Override
@@ -439,7 +461,8 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public int weightElement() {
-      return Math.max(wrapped.weightElement(), elementsMaterializer.weightElement());
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightElement() + elementsMaterializer.weightElement());
     }
 
     @Override
@@ -449,14 +472,15 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
-    public int weightHasElement() {
-      return weightElement();
-    }
-
-    @Override
     public int weightEmpty() {
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightEmpty() + elementsMaterializer.weightEmpty());
+    }
+
+    @Override
+    public int weightHasElement() {
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightElement() + elementsMaterializer.weightHasElement());
     }
 
     @Override
@@ -479,6 +503,17 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setCancelled(exception);
+        consumeError(exception);
+      } else {
+        setFailed(error);
+        consumeError(error);
+      }
     }
   }
 }

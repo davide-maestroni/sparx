@@ -233,16 +233,20 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
             if (e instanceof InterruptedException) {
               Thread.currentThread().interrupt();
             }
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              consumeState(setCancelled(exception));
-            } else {
-              consumeState(setFailed(e));
-            }
+            setError(e);
           }
         } else {
           elementsMaterializer.materializeElement(0, new MaterializingAsyncConsumer());
         }
+      }
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        consumeState(setCancelled(exception));
+      } else {
+        consumeState(setFailed(error));
       }
     }
 
@@ -288,12 +292,7 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          consumeState(setCancelled(exception));
-        } else {
-          consumeState(setFailed(error));
-        }
+        setError(error);
       }
 
       @Override

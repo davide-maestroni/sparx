@@ -228,7 +228,7 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeElement(0, new MaterializingAsyncConsumer());
+        new MaterializingAsyncConsumer().run();
       }
     }
 
@@ -257,11 +257,7 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
-        if (size == 0) {
-          setState(defaultResult);
-        } else {
-          setState(true);
-        }
+        setState(size != 0 || defaultResult);
       }
 
       @Override

@@ -60,9 +60,9 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
+    private final ArrayList<E> elements = new ArrayList<E>();
     private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
         2);
-    private final ArrayList<E> elements = new ArrayList<E>();
     private final ListAsyncMaterializer<?> elementsMaterializer;
     private final ListAsyncMaterializer<E> wrapped;
 
@@ -385,7 +385,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
                         bag.put(element, count + 1);
                       }
                     }
-                    wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer());
+                    new MaterializingAsyncConsumer().run();
                   }
 
                   @Override
@@ -394,7 +394,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
                   }
                 });
           } else {
-            wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer());
+            new MaterializingAsyncConsumer().run();
           }
         }
       }
@@ -512,7 +512,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return weightElements();
       }
     }
 
@@ -563,7 +563,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return weightElements();
       }
     }
   }

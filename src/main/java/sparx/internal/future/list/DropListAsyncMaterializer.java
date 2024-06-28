@@ -16,6 +16,7 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.AsyncConsumers.safeConsume;
+import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
@@ -73,7 +74,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     private final int maxElements;
     private final ListAsyncMaterializer<E> wrapped;
 
-    private int wrappedSize = -1;
+    private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int maxElements,
         @NotNull final ExecutionContext context,
@@ -84,6 +85,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
+      wrappedSize = wrapped.knownSize();
     }
 
     @Override
@@ -145,6 +147,8 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
         safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+      } else if (wrappedSize >= 0 && index >= safeSize(wrappedSize)) {
+        safeConsumeComplete(consumer, safeSize(wrappedSize), LOGGER);
       } else {
         final int originalIndex = index;
         wrapped.materializeElement(safeIndex(index), new CancellableIndexedAsyncConsumer<E>() {
@@ -182,14 +186,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
             if (e instanceof InterruptedException) {
               Thread.currentThread().interrupt();
             }
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              setCancelled(exception);
-              consumeError(exception);
-            } else {
-              setFailed(e);
-              consumeError(e);
-            }
+            setError(e);
           }
         } else {
           wrapped.materializeElement(maxElements, new MaterializingAsyncConsumer());
@@ -199,18 +196,22 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
-        @Override
-        public void cancellableAccept(final Integer size) throws Exception {
-          wrappedSize = size;
-          consumer.accept(size <= maxElements);
-        }
+      if (wrappedSize >= 0) {
+        safeConsume(consumer, safeSize(wrappedSize) == 0, LOGGER);
+      } else {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) throws Exception {
+            wrappedSize = size;
+            consumer.accept(size <= maxElements);
+          }
 
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override
@@ -256,7 +257,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     @Override
     public int weightContains() {
-      return weightElements();
+      return wrapped.weightElement();
     }
 
     @Override
@@ -271,12 +272,12 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     @Override
     public int weightHasElement() {
-      return weightElement();
+      return wrapped.weightHasElement();
     }
 
     @Override
     public int weightEmpty() {
-      return weightSize();
+      return wrapped.weightSize();
     }
 
     @Override
@@ -319,6 +320,16 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       return -1;
     }
 
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setCancelled(exception);
+        consumeError(exception);
+      } else {
+        setFailed(error);
+        consumeError(error);
+      }
+    }
     private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
         Task {
 
@@ -344,14 +355,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          setCancelled(exception);
-          consumeError(exception);
-        } else {
-          setFailed(error);
-          consumeError(error);
-        }
+        setError(error);
       }
 
       @Override

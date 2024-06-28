@@ -225,7 +225,7 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeElement(0, new MaterializingAsyncConsumer());
+        new MaterializingAsyncConsumer().run();
       }
     }
 

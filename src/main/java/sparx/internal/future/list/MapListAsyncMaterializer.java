@@ -315,6 +315,17 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       return taskID != null ? taskID : "";
     }
 
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setCancelled(exception);
+        consumeError(exception);
+      } else {
+        setFailed(error);
+        consumeError(error);
+      }
+    }
+
     private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
         Task {
 
@@ -348,14 +359,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          setCancelled(exception);
-          consumeError(exception);
-        } else {
-          setFailed(error);
-          consumeError(error);
-        }
+        setError(error);
       }
 
       @Override
@@ -423,14 +427,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
       @Override
       public void error(@NotNull final Exception error) throws Exception {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          setCancelled(exception);
-          consumeError(exception);
-        } else {
-          setFailed(error);
-          consumeError(error);
-        }
+        setError(error);
         consumer.error(error);
       }
 
@@ -497,14 +494,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
       @Override
       public void error(@NotNull final Exception error) throws Exception {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          setCancelled(exception);
-          consumeError(exception);
-        } else {
-          setFailed(error);
-          consumeError(error);
-        }
+        setError(error);
         consumer.error(error);
       }
 

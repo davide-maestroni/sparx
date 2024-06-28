@@ -193,24 +193,16 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
             if (testedIndex < index) {
               try {
                 if (predicate.test(index, element)) {
-                  consumeState(setState(
+                  final ListAsyncMaterializer<E> state = setState(
                       new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status,
-                          context, cancelException, decorateFunction)));
-                  getState().materializeEmpty(consumer);
+                          context, cancelException, decorateFunction));
+                  consumeState(state);
+                  state.materializeEmpty(consumer);
                   return;
                 }
               } catch (final Exception e) {
-                if (e instanceof InterruptedException) {
-                  Thread.currentThread().interrupt();
-                }
-                final CancellationException exception = cancelException.get();
-                if (exception != null) {
-                  consumeState(setCancelled(exception));
-                } else {
-                  consumeState(setFailed(e));
-                }
-                safeConsumeError(consumer, e, LOGGER);
-                return;
+                setError(e);
+                throw e;
               }
             }
             consumer.accept(false);
@@ -254,12 +246,12 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
     @Override
     public int weightContains() {
-      return weightElements();
+      return wrapped.weightElement();
     }
 
     @Override
     public int weightElement() {
-      return weightElements();
+      return wrapped.weightElement();
     }
 
     @Override
@@ -269,17 +261,17 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
     @Override
     public int weightEmpty() {
-      return weightElements();
+      return wrapped.weightElement();
     }
 
     @Override
     public int weightHasElement() {
-      return weightElements();
+      return wrapped.weightElement();
     }
 
     @Override
     public int weightSize() {
-      return weightElements();
+      return wrapped.weightElement();
     }
 
     private void consumeState(@NotNull final ListAsyncMaterializer<E> state) {
@@ -300,6 +292,15 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
         wrapped.materializeElement(testedIndex + 1, new MaterializingAsyncConsumer());
+      }
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        consumeState(setCancelled(exception));
+      } else {
+        consumeState(setFailed(error));
       }
     }
 
@@ -335,12 +336,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          consumeState(setCancelled(exception));
-        } else {
-          consumeState(setFailed(error));
-        }
+        setError(error);
       }
 
       @Override
@@ -393,17 +389,8 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
               return;
             }
           } catch (final Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-            }
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              consumeState(setCancelled(exception));
-            } else {
-              consumeState(setFailed(e));
-            }
-            safeConsumeError(consumer, e, LOGGER);
-            return;
+            setError(e);
+            throw e;
           }
           testedIndex = index;
         }
@@ -439,7 +426,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return wrapped.weightElement(); // TODO
       }
     }
 
@@ -475,17 +462,8 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
               return;
             }
           } catch (final Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-            }
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              consumeState(setCancelled(exception));
-            } else {
-              consumeState(setFailed(e));
-            }
-            safeConsumeError(consumer, e, LOGGER);
-            return;
+            setError(e);
+            throw e;
           }
           testedIndex = index;
         }
@@ -521,7 +499,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return wrapped.weightElement(); // TODO
       }
     }
 
@@ -553,17 +531,8 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
               return;
             }
           } catch (final Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-            }
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              consumeState(setCancelled(exception));
-            } else {
-              consumeState(setFailed(e));
-            }
-            safeConsumeError(consumer, e, LOGGER);
-            return;
+            setError(e);
+            throw e;
           }
           testedIndex = index;
         }
@@ -598,7 +567,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return wrapped.weightElement(); // TODO
       }
     }
 
@@ -630,17 +599,8 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
               return;
             }
           } catch (final Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-            }
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              consumeState(setCancelled(exception));
-            } else {
-              consumeState(setFailed(e));
-            }
-            safeConsumeError(consumer, e, LOGGER);
-            return;
+            setError(e);
+            throw e;
           }
           testedIndex = index;
         }
@@ -674,7 +634,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return wrapped.weightElement(); // TODO
       }
     }
   }

@@ -67,7 +67,7 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
     private final BinaryFunction<List<E>, E, List<E>> prependFunction;
     private final ListAsyncMaterializer<E> wrapped;
 
-    private int wrappedSize = -1;
+    private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final E element,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -76,6 +76,7 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
       this.element = element;
       this.cancelException = cancelException;
       this.prependFunction = prependFunction;
+      wrappedSize = wrapped.knownSize();
     }
 
     @Override

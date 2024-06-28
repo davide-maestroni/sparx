@@ -208,9 +208,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
     @Override
     public int weightElements() {
-      final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightElement() + elementsMaterializer.weightElement());
+      return elementsMaterializer.weightElement();
     }
 
     @Override
@@ -253,16 +251,20 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
             if (e instanceof InterruptedException) {
               Thread.currentThread().interrupt();
             }
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              consumeState(setCancelled(exception));
-            } else {
-              consumeState(setFailed(e));
-            }
+            setError(e);
           }
         } else {
           elementsMaterializer.materializeElement(0, new MaterializingAsyncConsumer());
         }
+      }
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        consumeState(setCancelled(exception));
+      } else {
+        consumeState(setFailed(error));
       }
     }
 
@@ -318,12 +320,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          consumeState(setCancelled(exception));
-        } else {
-          consumeState(setFailed(error));
-        }
+        setError(error);
       }
 
       @Override

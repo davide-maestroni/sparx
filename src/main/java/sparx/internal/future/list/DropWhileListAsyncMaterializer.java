@@ -50,6 +50,11 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     return -1;
   }
 
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return true;
+  }
+
   private interface StateConsumer<E> {
 
     void accept(@NotNull ListAsyncMaterializer<E> state);
@@ -93,7 +98,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return false;
+      return true;
     }
 
     @Override
@@ -236,7 +241,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeElement(0, new MaterializingAsyncConsumer());
+        new MaterializingAsyncConsumer().run();
       }
     }
 

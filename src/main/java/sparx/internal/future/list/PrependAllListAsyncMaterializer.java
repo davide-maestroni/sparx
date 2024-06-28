@@ -78,8 +78,8 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
     private final ListAsyncMaterializer<E> wrapped;
     private final BinaryFunction<List<E>, List<E>, List<E>> prependFunction;
 
-    private int elementsSize = -1;
-    private int wrappedSize = -1;
+    private int elementsSize;
+    private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
@@ -89,6 +89,8 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
       this.elementsMaterializer = elementsMaterializer;
       this.cancelException = cancelException;
       this.prependFunction = prependFunction;
+      wrappedSize = wrapped.knownSize();
+      elementsSize = elementsMaterializer.knownSize();
     }
 
     @Override
@@ -272,28 +274,14 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
               @Override
               public void error(@NotNull final Exception error) {
-                final CancellationException exception = cancelException.get();
-                if (exception != null) {
-                  setCancelled(exception);
-                  consumeError(exception);
-                } else {
-                  setFailed(error);
-                  consumeError(error);
-                }
+                setError(error);
               }
             });
           }
 
           @Override
           public void error(@NotNull final Exception error) {
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              setCancelled(exception);
-              consumeError(exception);
-            } else {
-              setFailed(error);
-              consumeError(error);
-            }
+            setError(error);
           }
         });
       }
@@ -478,6 +466,17 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
         safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setCancelled(exception);
+        consumeError(exception);
+      } else {
+        setFailed(error);
+        consumeError(error);
+      }
     }
   }
 }

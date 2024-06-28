@@ -134,14 +134,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
           @Override
           public void error(@NotNull final Exception error) throws Exception {
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              setCancelled(exception);
-              consumer.error(exception);
-            } else {
-              setFailed(error);
-              consumer.error(error);
-            }
+            consumer.error(error);
           }
         });
       } else {
@@ -177,14 +170,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
           @Override
           public void error(@NotNull final Exception error) throws Exception {
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              setCancelled(exception);
-              consumer.error(exception);
-            } else {
-              setFailed(error);
-              consumer.error(error);
-            }
+            consumer.error(error);
           }
         });
       }
@@ -212,14 +198,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
             @Override
             public void error(@NotNull final Exception error) throws Exception {
-              final CancellationException exception = cancelException.get();
-              if (exception != null) {
-                setCancelled(exception);
-                consumer.error(exception);
-              } else {
-                setFailed(error);
-                consumer.error(error);
-              }
+              consumer.error(error);
             }
           });
         } else {
@@ -265,35 +244,34 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
             if (e instanceof InterruptedException) {
               Thread.currentThread().interrupt();
             }
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              setCancelled(exception);
-              consumeError(exception);
-            } else {
-              setFailed(e);
-              consumeError(e);
-            }
+            setError(e);
           }
-        } else {
+        } else if (wrappedSize < 0) {
           wrapped.materializeSize(new MaterializingAsyncConsumer());
+        } else {
+          wrapped.materializeElement(0, new MaterializingAsyncConsumer());
         }
       }
     }
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
-        @Override
-        public void cancellableAccept(final Integer size) throws Exception {
-          wrappedSize = size;
-          consumer.accept(size <= maxElements);
-        }
+      if (wrappedSize >= 0) {
+        safeConsume(consumer, wrappedSize <= maxElements, LOGGER);
+      } else {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) throws Exception {
+            wrappedSize = size;
+            consumer.accept(size <= maxElements);
+          }
 
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override
@@ -313,15 +291,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
           @Override
           public void error(@NotNull final Exception error) throws Exception {
-            // TODO: all or none
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              setCancelled(exception);
-              consumer.error(exception);
-            } else {
-              setFailed(error);
-              consumer.error(error);
-            }
+            consumer.error(error);
           }
         });
       } else {
@@ -351,12 +321,14 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public int weightContains() {
-      return weightElements();
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightSize() + wrapped.weightElement());
     }
 
     @Override
     public int weightElement() {
-      return weightElements();
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightSize() + wrapped.weightElement());
     }
 
     @Override
@@ -366,12 +338,12 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public int weightEmpty() {
-      return weightSize();
+      return wrapped.weightSize();
     }
 
     @Override
     public int weightHasElement() {
-      return weightElements();
+      return wrapped.weightSize();
     }
 
     @Override
@@ -398,6 +370,17 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     private @NotNull String getTaskID() {
       final String taskID = context.currentTaskID();
       return taskID != null ? taskID : "";
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setCancelled(exception);
+        consumeError(exception);
+      } else {
+        setFailed(error);
+        consumeError(error);
+      }
     }
 
     private class MaterializingAsyncConsumer extends
@@ -445,14 +428,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          setCancelled(exception);
-          consumeError(exception);
-        } else {
-          setFailed(error);
-          consumeError(error);
-        }
+        setError(error);
       }
 
       @Override

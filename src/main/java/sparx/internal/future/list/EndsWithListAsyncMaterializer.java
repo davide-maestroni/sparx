@@ -251,7 +251,7 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
                 @Override
                 public void error(@NotNull final Exception error) {
-                  setState(error);
+                  setError(error);
                 }
               });
             }
@@ -259,9 +259,18 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
           @Override
           public void error(@NotNull final Exception error) {
-            setState(error);
+            setError(error);
           }
         });
+      }
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        consumeState(setCancelled(exception));
+      } else {
+        consumeState(setFailed(error));
       }
     }
 
@@ -269,15 +278,6 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       consumeState(EndsWithListAsyncMaterializer.this.setState(
           new ListToListAsyncMaterializer<Boolean>(
               decorateFunction.apply(Collections.singletonList(endsWith)))));
-    }
-
-    private void setState(@NotNull final Exception error) {
-      final CancellationException exception = cancelException.get();
-      if (exception != null) {
-        consumeState(setCancelled(exception));
-      } else {
-        consumeState(setFailed(error));
-      }
     }
 
     private class MaterializingAsyncConsumer extends
@@ -319,7 +319,7 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
       @Override
       public void error(@NotNull final Exception error) {
-        setState(error);
+        setError(error);
       }
 
       @Override

@@ -399,7 +399,7 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
 
     @Override
     public int weightSize() {
-      return knownSize >= 0 ? 1 : wrapped.weightSize();
+      return wrappedSize >= 0 ? 1 : wrapped.weightSize();
     }
 
     private void consumeElements(@NotNull final List<L> elements) {

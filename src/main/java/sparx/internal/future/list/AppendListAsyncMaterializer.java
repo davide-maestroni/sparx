@@ -66,7 +66,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         2);
     private final ListAsyncMaterializer<E> wrapped;
 
-    private int wrappedSize = -1;
+    private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final E element,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -75,6 +75,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       this.element = element;
       this.cancelException = cancelException;
       this.appendFunction = appendFunction;
+      wrappedSize = wrapped.knownSize();
     }
 
     @Override
@@ -245,11 +246,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           @Override
           public void cancellableComplete(final int size) throws Exception {
             wrappedSize = size;
-            if (size == index) {
-              consumer.accept(true);
-            } else {
-              consumer.accept(false);
-            }
+            consumer.accept(size == index);
           }
 
           @Override
@@ -295,13 +292,13 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
-    public int weightHasElement() {
-      return weightElement();
+    public int weightEmpty() {
+      return 1;
     }
 
     @Override
-    public int weightEmpty() {
-      return 1;
+    public int weightHasElement() {
+      return wrapped.weightElement();
     }
 
     @Override

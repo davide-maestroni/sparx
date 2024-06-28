@@ -254,14 +254,18 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
 
           @Override
           public void error(@NotNull final Exception error) {
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              consumeState(setCancelled(exception));
-            } else {
-              consumeState(setFailed(error));
-            }
+            setError(error);
           }
         });
+      }
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        consumeState(setCancelled(exception));
+      } else {
+        consumeState(setFailed(error));
       }
     }
 
@@ -336,12 +340,7 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          consumeState(setCancelled(exception));
-        } else {
-          consumeState(setFailed(error));
-        }
+        setError(error);
       }
 
       @Override

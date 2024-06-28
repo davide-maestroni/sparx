@@ -377,7 +377,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         }
         indexConsumers.add(consumer);
         if (needsRun) {
-          wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer());
+          new MaterializingAsyncConsumer().run();
         }
       }
     }

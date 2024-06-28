@@ -229,7 +229,7 @@ public class ExistsListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeElement(0, new MaterializingAsyncConsumer());
+        new MaterializingAsyncConsumer().run();
       }
     }
 

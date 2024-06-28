@@ -50,6 +50,11 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     return -1;
   }
 
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return true;
+  }
+
   private interface StateConsumer<E> {
 
     void accept(@NotNull ListAsyncMaterializer<E> state);
@@ -96,7 +101,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return false;
+      return true;
     }
 
     @Override
@@ -237,30 +242,34 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     }
 
     private void materialized(@NotNull final StateConsumer<E> consumer) {
-      if (wrappedSize < 0) {
-        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
-          @Override
-          public void cancellableAccept(final Integer size) {
-            wrappedSize = size;
-            materialized(consumer);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              consumer.accept(setCancelled(exception));
-            } else {
-              consumer.accept(setFailed(error));
+      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
+      stateConsumers.add(consumer);
+      if (stateConsumers.size() == 1) {
+        if (wrappedSize < 0) {
+          wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+            @Override
+            public void cancellableAccept(final Integer size) {
+              wrappedSize = size;
+              wrapped.materializeElement(size - 1, new MaterializingAsyncConsumer());
             }
-          }
-        });
-      } else {
-        final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
-        stateConsumers.add(consumer);
-        if (stateConsumers.size() == 1) {
+
+            @Override
+            public void error(@NotNull final Exception error) {
+              setError(error);
+            }
+          });
+        } else {
           wrapped.materializeElement(wrappedSize - 1, new MaterializingAsyncConsumer());
         }
+      }
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        consumeState(setCancelled(exception));
+      } else {
+        consumeState(setFailed(error));
       }
     }
 
@@ -296,12 +305,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
       @Override
       public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          consumeState(setCancelled(exception));
-        } else {
-          consumeState(setFailed(error));
-        }
+        setError(error);
       }
 
       @Override

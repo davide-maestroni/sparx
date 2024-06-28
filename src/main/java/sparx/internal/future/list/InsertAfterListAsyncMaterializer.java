@@ -74,7 +74,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
     private final int numElements;
     private final ListAsyncMaterializer<E> wrapped;
 
-    private int wrappedSize = -1;
+    private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int numElements,
         final E element, @NotNull final AtomicReference<CancellationException> cancelException,
@@ -84,6 +84,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
       this.element = element;
       this.cancelException = cancelException;
       this.insertFunction = insertFunction;
+      wrappedSize = wrapped.knownSize();
     }
 
     @Override

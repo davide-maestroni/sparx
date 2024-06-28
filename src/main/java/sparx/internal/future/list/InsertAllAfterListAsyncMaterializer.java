@@ -80,8 +80,8 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
     private final int numElements;
     private final ListAsyncMaterializer<E> wrapped;
 
-    private int elementsSize = -1;
-    private int wrappedSize = -1;
+    private int elementsSize;
+    private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int numElements,
         @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
@@ -94,6 +94,8 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
       this.context = context;
       this.cancelException = cancelException;
       this.insertAllFunction = insertAllFunction;
+      wrappedSize = wrapped.knownSize();
+      elementsSize = elementsMaterializer.knownSize();
     }
 
     @Override
@@ -314,28 +316,14 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
 
               @Override
               public void error(@NotNull final Exception error) {
-                final CancellationException exception = cancelException.get();
-                if (exception != null) {
-                  setCancelled(exception);
-                  consumeError(exception);
-                } else {
-                  setFailed(error);
-                  consumeError(error);
-                }
+                setError(error);
               }
             });
           }
 
           @Override
           public void error(@NotNull final Exception error) {
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              setCancelled(exception);
-              consumeError(exception);
-            } else {
-              setFailed(error);
-              consumeError(error);
-            }
+            setError(error);
           }
         });
       }
@@ -536,6 +524,17 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
       return taskID != null ? taskID : "";
     }
 
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setCancelled(exception);
+        consumeError(exception);
+      } else {
+        setFailed(error);
+        consumeError(error);
+      }
+    }
+
     private class MaterializingEachAsyncConsumer extends
         CancellableIndexedAsyncConsumer<E> implements Task {
 
@@ -610,7 +609,7 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
 
       @Override
       public int weight() {
-        return isWrapped ? wrapped.weightElement() : elementsMaterializer.weightElement();
+        return Math.max(wrapped.weightElement(), elementsMaterializer.weightElement());
       }
     }
   }

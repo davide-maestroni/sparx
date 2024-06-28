@@ -147,7 +147,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return wrapped.isDone() ? 1 : wrapped.weightElements();
+        return wrapped.weightElements();
       }
     });
   }
@@ -225,7 +225,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return wrapped.isDone() ? 1 : wrapped.weightElements();
+        return wrapped.weightElements();
       }
     });
   }
@@ -251,7 +251,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return wrapped.weightEmpty();
       }
     });
   }
@@ -278,7 +278,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return wrapped.weightHasElement();
       }
     });
   }
