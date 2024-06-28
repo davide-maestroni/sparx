@@ -120,18 +120,23 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
       if (elements.size() <= index) {
         final AtomicInteger modCount = this.modCount;
         final int expectedCount = modCount.incrementAndGet();
-        final Iterator<E> iterator = this.iterator;
-        do {
-          if (!iterator.hasNext()) {
-            throw new IndexOutOfBoundsException(Integer.toString(index));
+        try {
+          final Iterator<E> iterator = this.iterator;
+          do {
+            if (!iterator.hasNext()) {
+              throw new IndexOutOfBoundsException(Integer.toString(index));
+            }
+            elements.add(iterator.next());
+          } while (elements.size() <= index);
+          if (expectedCount != modCount.get()) {
+            throw new ConcurrentModificationException();
           }
-          elements.add(iterator.next());
-        } while (elements.size() <= index);
-        if (expectedCount != modCount.get()) {
-          throw new ConcurrentModificationException();
-        }
-        if (!iterator.hasNext()) {
-          state = new ListToListMaterializer<E>(elements);
+          if (!iterator.hasNext()) {
+            state = new ListToListMaterializer<E>(elements);
+          }
+        } catch (final RuntimeException e) {
+          state = new FailedListMaterializer<E>(e);
+          throw e;
         }
       }
       return elements.get(index);

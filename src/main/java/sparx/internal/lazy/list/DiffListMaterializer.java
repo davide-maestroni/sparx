@@ -192,6 +192,7 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
           }
         }
       } catch (final Exception e) {
+        state = new FailedListMaterializer<E>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }

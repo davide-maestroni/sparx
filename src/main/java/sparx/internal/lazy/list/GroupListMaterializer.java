@@ -149,6 +149,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
         }
         return element;
       } catch (final Exception e) {
+        state = new FailedListMaterializer<L>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }

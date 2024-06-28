@@ -354,6 +354,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
           return wrapped;
         }
       } catch (final Exception e) {
+        state = new FailedListMaterializer<E>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }
@@ -384,6 +385,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
         pos = i;
         return -1;
       } catch (final Exception e) {
+        state = new FailedListMaterializer<E>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }

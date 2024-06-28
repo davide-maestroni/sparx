@@ -210,6 +210,7 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
           }
         }
       } catch (final Exception e) {
+        state = new FailedListMaterializer<E>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }
@@ -293,6 +294,7 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
           }
         }
       } catch (final Exception e) {
+        state = new FailedListMaterializer<E>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }

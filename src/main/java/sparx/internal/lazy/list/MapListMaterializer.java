@@ -105,6 +105,7 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
         }
         return element;
       } catch (final Exception e) {
+        state = new FailedListMaterializer<F>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }
@@ -114,13 +115,9 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
       final int size = super.materializeElements();
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
-      try {
-        state = new ListToListMaterializer<F>(elementsCache.toList());
-        if (expectedCount != modCount.get()) {
-          throw new ConcurrentModificationException();
-        }
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+      state = new ListToListMaterializer<F>(elementsCache.toList());
+      if (expectedCount != modCount.get()) {
+        throw new ConcurrentModificationException();
       }
       return size;
     }

@@ -112,6 +112,7 @@ public class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
             state = new ListToListMaterializer<E>(elements);
           }
         } catch (final Exception e) {
+          state = new FailedListMaterializer<E>(e);
           throw UncheckedException.throwUnchecked(e);
         }
       }

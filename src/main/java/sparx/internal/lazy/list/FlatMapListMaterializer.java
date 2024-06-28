@@ -165,6 +165,7 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
           }
         }
       } catch (final Exception e) {
+        state = new FailedListMaterializer<F>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }

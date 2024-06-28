@@ -86,18 +86,24 @@ public class IteratorToListMaterializer<E> implements ListMaterializer<E> {
       if (elements.size() <= index) {
         final AtomicInteger modCount = this.modCount;
         final int expectedCount = modCount.incrementAndGet();
-        final Iterator<E> iterator = this.iterator;
-        do {
-          if (!iterator.hasNext()) {
-            return false;
+        try {
+          final Iterator<E> iterator = this.iterator;
+          do {
+            if (!iterator.hasNext()) {
+              return false;
+            }
+            elements.add(iterator.next());
+          } while (elements.size() <= index);
+
+          if (expectedCount != modCount.get()) {
+            throw new ConcurrentModificationException();
           }
-          elements.add(iterator.next());
-        } while (elements.size() <= index);
-        if (expectedCount != modCount.get()) {
-          throw new ConcurrentModificationException();
-        }
-        if (!iterator.hasNext()) {
-          state = new ListToListMaterializer<E>(elements);
+          if (!iterator.hasNext()) {
+            state = new ListToListMaterializer<E>(elements);
+          }
+        } catch (final RuntimeException e) {
+          state = new FailedListMaterializer<E>(e);
+          throw e;
         }
       }
       return true;
@@ -114,18 +120,24 @@ public class IteratorToListMaterializer<E> implements ListMaterializer<E> {
       if (elements.size() <= index) {
         final AtomicInteger modCount = this.modCount;
         final int expectedCount = modCount.incrementAndGet();
-        final Iterator<E> iterator = this.iterator;
-        do {
-          if (!iterator.hasNext()) {
-            throw new IndexOutOfBoundsException(Integer.toString(index));
+        try {
+          final Iterator<E> iterator = this.iterator;
+          do {
+            if (!iterator.hasNext()) {
+              throw new IndexOutOfBoundsException(Integer.toString(index));
+            }
+            elements.add(iterator.next());
+          } while (elements.size() <= index);
+
+          if (expectedCount != modCount.get()) {
+            throw new ConcurrentModificationException();
           }
-          elements.add(iterator.next());
-        } while (elements.size() <= index);
-        if (expectedCount != modCount.get()) {
-          throw new ConcurrentModificationException();
-        }
-        if (!iterator.hasNext()) {
-          state = new ListToListMaterializer<E>(elements);
+          if (!iterator.hasNext()) {
+            state = new ListToListMaterializer<E>(elements);
+          }
+        } catch (final RuntimeException e) {
+          state = new FailedListMaterializer<E>(e);
+          throw e;
         }
       }
       return elements.get(index);
@@ -154,15 +166,20 @@ public class IteratorToListMaterializer<E> implements ListMaterializer<E> {
       final ArrayList<E> elements = this.elements;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
-      final Iterator<E> iterator = this.iterator;
-      while (iterator.hasNext()) {
-        elements.add(iterator.next());
+      try {
+        final Iterator<E> iterator = this.iterator;
+        while (iterator.hasNext()) {
+          elements.add(iterator.next());
+        }
+        if (expectedCount != modCount.get()) {
+          throw new ConcurrentModificationException();
+        }
+        state = new ListToListMaterializer<E>(elements);
+        return elements.size();
+      } catch (final RuntimeException e) {
+        state = new FailedListMaterializer<E>(e);
+        throw e;
       }
-      if (expectedCount != modCount.get()) {
-        throw new ConcurrentModificationException();
-      }
-      state = new ListToListMaterializer<E>(elements);
-      return elements.size();
     }
   }
 }

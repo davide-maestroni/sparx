@@ -191,6 +191,7 @@ public class IntersectListMaterializer<E> implements ListMaterializer<E> {
           }
         }
       } catch (final Exception e) {
+        state = new FailedListMaterializer<E>(e);
         throw UncheckedException.throwUnchecked(e);
       }
     }
