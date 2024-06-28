@@ -294,7 +294,23 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      safeConsume(consumer, false, LOGGER);
+      if (wrappedSize == 0) {
+        safeConsume(consumer, numElements != 0, LOGGER);
+      } else if (wrappedSize > 0) {
+        safeConsume(consumer, false, LOGGER);
+      } else {
+        wrapped.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
+          @Override
+          public void cancellableAccept(final Boolean empty) throws Exception {
+            consumer.accept(empty);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override
@@ -365,7 +381,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     @Override
     public int weightEmpty() {
-      return 1;
+      return wrapped.weightEmpty();
     }
 
     @Override

@@ -331,33 +331,51 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      wrapped.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
-        @Override
-        public void cancellableAccept(final Boolean empty) throws Exception {
-          if (!empty) {
-            consumer.accept(false);
-          } else if (numElements == 0) {
-            elementsMaterializer.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
-              @Override
-              public void cancellableAccept(final Boolean empty) throws Exception {
-                consumer.accept(empty);
-              }
+      if (wrappedSize == 0) {
+        if (numElements == 0) {
+          elementsMaterializer.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
+            @Override
+            public void cancellableAccept(final Boolean empty) throws Exception {
+              consumer.accept(empty);
+            }
 
-              @Override
-              public void error(@NotNull final Exception error) throws Exception {
-                consumer.error(error);
-              }
-            });
-          } else {
-            consumer.accept(true);
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
+        } else {
+          safeConsume(consumer, true, LOGGER);
+        }
+      } else if (wrappedSize > 0) {
+        safeConsume(consumer, false, LOGGER);
+      } else {
+        wrapped.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
+          @Override
+          public void cancellableAccept(final Boolean empty) throws Exception {
+            if (!empty) {
+              consumer.accept(false);
+            } else {
+              elementsMaterializer.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
+                @Override
+                public void cancellableAccept(final Boolean empty) throws Exception {
+                  consumer.accept(empty);
+                }
+
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  consumer.error(error);
+                }
+              });
+            }
           }
-        }
 
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override
