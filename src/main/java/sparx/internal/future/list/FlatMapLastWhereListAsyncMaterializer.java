@@ -357,7 +357,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
 
       @Override
       public int weight() {
-        return wrapped.weightElement(); // TODO
+        return wrapped.weightElement();
       }
     }
   }

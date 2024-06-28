@@ -426,7 +426,9 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public int weight() {
-        return wrapped.weightElement(); // TODO
+        final ListAsyncMaterializer<E> wrapped = ImmaterialState.this.wrapped;
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightElement() + wrapped.weightContains());
       }
     }
 
@@ -499,7 +501,9 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public int weight() {
-        return wrapped.weightElement(); // TODO
+        final ListAsyncMaterializer<E> wrapped = ImmaterialState.this.wrapped;
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightElement() + wrapped.weightContains());
       }
     }
 
@@ -567,7 +571,8 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public int weight() {
-        return wrapped.weightElement(); // TODO
+        final long weight = wrapped.weightElement();
+        return (int) Math.min(Integer.MAX_VALUE, weight << 1);
       }
     }
 
@@ -634,7 +639,9 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public int weight() {
-        return wrapped.weightElement(); // TODO
+        final ListAsyncMaterializer<E> wrapped = ImmaterialState.this.wrapped;
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightElement() + wrapped.weightHasElement());
       }
     }
   }

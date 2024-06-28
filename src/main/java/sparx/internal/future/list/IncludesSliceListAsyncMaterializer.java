@@ -188,7 +188,6 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
 
     @Override
     public int weightElements() {
-      final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightElement() + elementsMaterializer.weightElement());
     }
