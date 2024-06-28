@@ -234,17 +234,11 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
       } else if (wrappedSize >= 0) {
         safeConsume(consumer, false, LOGGER);
       } else {
-        materializeElement(IndexOverflowException.safeCast((long) index + 1),
-            new CancellableIndexedAsyncConsumer<E>() {
+        wrapped.materializeHasElement(IndexOverflowException.safeCast((long) index + 1),
+            new CancellableAsyncConsumer<Boolean>() {
               @Override
-              public void cancellableAccept(final int size, final int index, final E element)
-                  throws Exception {
-                consumer.accept(true);
-              }
-
-              @Override
-              public void cancellableComplete(final int size) throws Exception {
-                consumer.accept(false);
+              public void cancellableAccept(final Boolean hasElement) throws Exception {
+                consumer.accept(hasElement);
               }
 
               @Override

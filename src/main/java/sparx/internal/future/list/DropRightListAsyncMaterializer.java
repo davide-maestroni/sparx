@@ -222,30 +222,31 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
               }
             }
           });
-        }
-        final int maxIndex = wrappedSize - maxElements - 1;
-        if (maxIndex < 0) {
-          safeConsumeComplete(consumer, 0, LOGGER);
-        } else if (index > maxIndex) {
-          safeConsumeComplete(consumer, maxIndex + 1, LOGGER);
         } else {
-          wrapped.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
-            @Override
-            public void cancellableAccept(final int size, final int index, final E element)
-                throws Exception {
-              consumer.accept(maxIndex + 1, index, element);
-            }
+          final int maxIndex = wrappedSize - maxElements - 1;
+          if (maxIndex < 0) {
+            safeConsumeComplete(consumer, 0, LOGGER);
+          } else if (index > maxIndex) {
+            safeConsumeComplete(consumer, maxIndex + 1, LOGGER);
+          } else {
+            wrapped.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
+              @Override
+              public void cancellableAccept(final int size, final int index, final E element)
+                  throws Exception {
+                consumer.accept(maxIndex + 1, index, element);
+              }
 
-            @Override
-            public void cancellableComplete(final int size) throws Exception {
-              consumer.complete(maxIndex + 1);
-            }
+              @Override
+              public void cancellableComplete(final int size) throws Exception {
+                consumer.complete(maxIndex + 1);
+              }
 
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                consumer.error(error);
+              }
+            });
+          }
         }
       }
     }
@@ -302,24 +303,30 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         safeConsume(consumer, false, LOGGER);
       } else if (index < Math.max(0, wrappedSize - maxElements)) {
         safeConsume(consumer, true, LOGGER);
-      } else {
-        materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
+      } else if (wrappedSize < 0) {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            consumer.accept(true);
-          }
-
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            consumer.accept(false);
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            materializeHasElement(index, consumer);
           }
 
           @Override
           public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
+            // TODO: all or none
+            final CancellationException exception = cancelException.get();
+            if (exception != null) {
+              setCancelled(exception);
+              consumer.error(exception);
+            } else {
+              setFailed(error);
+              consumer.error(error);
+            }
           }
         });
+      } else {
+        final int maxIndex = wrappedSize - maxElements - 1;
+        safeConsume(consumer, maxIndex >= 0 && index <= maxIndex, LOGGER);
       }
     }
 

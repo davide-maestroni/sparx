@@ -306,16 +306,11 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
       } else if (wrappedSize >= 0) {
         safeConsume(consumer, false, LOGGER);
       } else {
-        materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            consumer.accept(true);
-          }
-
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            consumer.accept(false);
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            materializeHasElement(index, consumer);
           }
 
           @Override
@@ -364,7 +359,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     @Override
     public int weightHasElement() {
-      return weightElement();
+      return wrapped.weightSize();
     }
 
     @Override

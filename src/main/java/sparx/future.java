@@ -349,6 +349,17 @@ class future extends Sparx {
         }
         return new ListToListAsyncMaterializer<E>(lazy.List.wrap(list));
       }
+      if (elements instanceof java.util.Collection) {
+        final java.util.Collection<E> collection = (java.util.Collection<E>) elements;
+        final int size = collection.size();
+        if (size == 0) {
+          return EmptyListAsyncMaterializer.instance();
+        }
+        if (size == 1) {
+          return new ElementToListAsyncMaterializer<E>(lazy.List.wrap(collection));
+        }
+        return new ListToListAsyncMaterializer<E>(lazy.List.wrap(collection));
+      }
       // TODO: future.Iterator
       final ArrayList<E> list = new ArrayList<E>();
       for (final E element : elements) {
@@ -361,7 +372,7 @@ class future extends Sparx {
       if (size == 1) {
         return new ElementToListAsyncMaterializer<E>(lazy.List.wrap(list));
       }
-      return new ListToListAsyncMaterializer<E>(list);
+      return new ListToListAsyncMaterializer<E>(lazy.List.wrap(list));
     }
 
     private static @NotNull <E, F> IndexedFunction<E, IteratorAsyncMaterializer<F>> getElementToIteratorMaterializer(

@@ -31,6 +31,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.util.IndexOverflowException;
 import sparx.util.function.Function;
 
 public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
@@ -377,25 +378,26 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
           safeConsumeComplete(consumer, knownSize, LOGGER);
         } else {
           final int originalIndex = index;
-          wrapped.materializeElement(index + start, new CancellableIndexedAsyncConsumer<E>() {
-            @Override
-            public void cancellableAccept(final int size, final int index, final E element)
-                throws Exception {
-              wrappedSize = Math.max(size, wrappedSize);
-              consumer.accept(safeSize(size), originalIndex, element);
-            }
+          wrapped.materializeElement(IndexOverflowException.safeCast((long) index + start),
+              new CancellableIndexedAsyncConsumer<E>() {
+                @Override
+                public void cancellableAccept(final int size, final int index, final E element)
+                    throws Exception {
+                  wrappedSize = Math.max(size, wrappedSize);
+                  consumer.accept(safeSize(size), originalIndex, element);
+                }
 
-            @Override
-            public void cancellableComplete(final int size) throws Exception {
-              wrappedSize = size;
-              consumer.complete(safeSize(size));
-            }
+                @Override
+                public void cancellableComplete(final int size) throws Exception {
+                  wrappedSize = size;
+                  consumer.complete(safeSize(size));
+                }
 
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  consumer.error(error);
+                }
+              });
         }
       }
     }
@@ -436,23 +438,22 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
       if (index < 0) {
         safeConsume(consumer, false, LOGGER);
       } else {
-        materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
-          @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            consumer.accept(true);
-          }
+        if (index >= knownSize()) {
+          safeConsume(consumer, false, LOGGER);
+        } else {
+          wrapped.materializeHasElement(IndexOverflowException.safeCast((long) index + start),
+              new CancellableAsyncConsumer<Boolean>() {
+                @Override
+                public void cancellableAccept(final Boolean hasElement) throws Exception {
+                  consumer.accept(hasElement);
+                }
 
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            consumer.accept(false);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  consumer.error(error);
+                }
+              });
+        }
       }
     }
 
@@ -499,7 +500,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
     @Override
     public int weightHasElement() {
-      return weightElement();
+      return wrapped.weightHasElement();
     }
 
     @Override
