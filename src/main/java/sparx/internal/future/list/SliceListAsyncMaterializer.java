@@ -46,7 +46,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     if (start >= 0 && end >= 0) {
       setState(
           new MaterialState(wrapped, start, Math.max(0, end - start), wrapped.knownSize(), context,
-              decorateFunction));
+              cancelException, decorateFunction));
     } else {
       setState(
           new ImmaterialState(wrapped, start, end, context, cancelException, decorateFunction));
@@ -281,7 +281,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
         } else {
           consumer.accept(setState(
               new MaterialState(wrapped, materializedStart, materializedLength, wrappedSize,
-                  context, decorateFunction)));
+                  context, cancelException, decorateFunction)));
         }
       } else {
         consumer.accept(getState());
@@ -291,6 +291,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
   private class MaterialState implements ListAsyncMaterializer<E> {
 
+    private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
@@ -304,12 +305,14 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
     public MaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int start,
         final int length, final int wrappedSize, @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.start = start;
       this.wrappedSize = wrappedSize;
       this.length = length;
       this.context = context;
+      this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
       knownSize = safeSize(wrappedSize);
     }
@@ -437,23 +440,21 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (index < 0) {
         safeConsume(consumer, false, LOGGER);
+      } else if (index >= knownSize()) {
+        safeConsume(consumer, false, LOGGER);
       } else {
-        if (index >= knownSize()) {
-          safeConsume(consumer, false, LOGGER);
-        } else {
-          wrapped.materializeHasElement(IndexOverflowException.safeCast((long) index + start),
-              new CancellableAsyncConsumer<Boolean>() {
-                @Override
-                public void cancellableAccept(final Boolean hasElement) throws Exception {
-                  consumer.accept(hasElement);
-                }
+        wrapped.materializeHasElement(IndexOverflowException.safeCast((long) index + start),
+            new CancellableAsyncConsumer<Boolean>() {
+              @Override
+              public void cancellableAccept(final Boolean hasElement) throws Exception {
+                consumer.accept(hasElement);
+              }
 
-                @Override
-                public void error(@NotNull final Exception error) throws Exception {
-                  consumer.error(error);
-                }
-              });
-        }
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                consumer.error(error);
+              }
+            });
       }
     }
 
@@ -574,7 +575,14 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
       @Override
       public void error(@NotNull final Exception error) {
-        consumeError(error);
+        final CancellationException exception = cancelException.get();
+        if (exception != null) {
+          setCancelled(exception);
+          consumeError(exception);
+        } else {
+          setFailed(error);
+          consumeError(error);
+        }
       }
 
       @Override

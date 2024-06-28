@@ -19,6 +19,7 @@ import static sparx.internal.future.AsyncConsumers.safeConsume;
 import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -97,6 +98,7 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
   private class ImmaterialState implements ListAsyncMaterializer<F> {
 
     private final AtomicReference<CancellationException> cancelException;
+    private final ArrayList<StateConsumer<F>> stateConsumers = new ArrayList<StateConsumer<F>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
@@ -252,23 +254,35 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       return 1;
     }
 
-    private void materialized(@NotNull final StateConsumer<F> consumer) {
-      wrapped.materializeElements(new AsyncConsumer<List<E>>() {
-        @Override
-        public void accept(final List<E> elements) {
-          consumer.accept(setState(new TransformState(transform(elements), cancelException)));
-        }
+    private void consumeState(@NotNull final ListAsyncMaterializer<F> state) {
+      final ArrayList<StateConsumer<F>> stateConsumers = this.stateConsumers;
+      for (final StateConsumer<F> stateConsumer : stateConsumers) {
+        stateConsumer.accept(state);
+      }
+      stateConsumers.clear();
+    }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          final CancellationException exception = cancelException.get();
-          if (exception != null) {
-            consumer.accept(setCancelled(exception));
-          } else {
-            consumer.accept(setFailed(error));
+    private void materialized(@NotNull final StateConsumer<F> consumer) {
+      final ArrayList<StateConsumer<F>> stateConsumers = this.stateConsumers;
+      stateConsumers.add(consumer);
+      if (stateConsumers.size() == 1) {
+        wrapped.materializeElements(new AsyncConsumer<List<E>>() {
+          @Override
+          public void accept(final List<E> elements) {
+            consumeState(setState(new TransformState(transform(elements), cancelException)));
           }
-        }
-      });
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            final CancellationException exception = cancelException.get();
+            if (exception != null) {
+              consumeState(setCancelled(exception));
+            } else {
+              consumeState(setFailed(error));
+            }
+          }
+        });
+      }
     }
   }
 

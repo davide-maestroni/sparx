@@ -286,7 +286,7 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
 
     @Override
     public int weightHasElement() {
-      return weightElement();
+      return wrapped.weightHasElement();
     }
 
     @Override

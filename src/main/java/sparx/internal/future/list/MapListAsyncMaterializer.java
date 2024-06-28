@@ -59,9 +59,9 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<F>, List<F>> decorateFunction;
+    private final ElementsCache<F> elements = new ElementsCache<F>(knownSize);
     private final ArrayList<AsyncConsumer<List<F>>> elementsConsumers = new ArrayList<AsyncConsumer<List<F>>>(
         2);
-    private final ElementsCache<F> elements = new ElementsCache<F>(knownSize);
     private final IndexedFunction<? super E, ? extends F> mapper;
     private final ListAsyncMaterializer<E> wrapped;
 
@@ -99,7 +99,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
     @Override
     public int knownSize() {
-      return -1;
+      return knownSize;
     }
 
     @Override
@@ -163,7 +163,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       } else {
         final ElementsCache<F> elements = this.elements;
         if (elements.has(index)) {
-          safeConsume(consumer, -1, index, elements.get(index), LOGGER);
+          safeConsume(consumer, knownSize, index, elements.get(index), LOGGER);
         } else {
           wrapped.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
             @Override
@@ -173,7 +173,12 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
               elements.setSize(size);
               final F mapped;
               if (!elements.has(index)) {
-                mapped = mapper.apply(index, element);
+                try {
+                  mapped = mapper.apply(index, element);
+                } catch (final Exception e) {
+                  setError(e);
+                  throw e;
+                }
                 elements.set(index, mapped);
               } else {
                 mapped = elements.get(index);
@@ -201,6 +206,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       final ArrayList<AsyncConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
+        final ElementsCache<F> elements = this.elements;
         int i = 0;
         while (elements.has(i)) {
           ++i;
@@ -266,7 +272,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
     @Override
     public int weightContains() {
-      return weightElement();
+      return wrapped.weightElement();
     }
 
     @Override
@@ -276,7 +282,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
     @Override
     public int weightElements() {
-      return weightElement();
+      return wrapped.weightElement();
     }
 
     @Override
@@ -399,7 +405,12 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
         elements.setSize(size);
         final F mapped;
         if (!elements.has(index)) {
-          mapped = mapper.apply(index, element);
+          try {
+            mapped = mapper.apply(index, element);
+          } catch (final Exception e) {
+            setError(e);
+            throw e;
+          }
           elements.set(index, mapped);
         } else {
           mapped = elements.get(index);
@@ -427,7 +438,6 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
       @Override
       public void error(@NotNull final Exception error) throws Exception {
-        setError(error);
         consumer.error(error);
       }
 
@@ -466,7 +476,12 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
         elements.setSize(size);
         final F mapped;
         if (!elements.has(index)) {
-          mapped = mapper.apply(index, element);
+          try {
+            mapped = mapper.apply(index, element);
+          } catch (final Exception e) {
+            setError(e);
+            throw e;
+          }
           elements.set(index, mapped);
         } else {
           mapped = elements.get(index);
@@ -494,7 +509,6 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
       @Override
       public void error(@NotNull final Exception error) throws Exception {
-        setError(error);
         consumer.error(error);
       }
 
@@ -532,7 +546,12 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
         elements.setSize(size);
         final F mapped;
         if (!elements.has(index)) {
-          mapped = mapper.apply(index, element);
+          try {
+            mapped = mapper.apply(index, element);
+          } catch (final Exception e) {
+            setError(e);
+            throw e;
+          }
           elements.set(index, mapped);
         } else {
           mapped = elements.get(index);

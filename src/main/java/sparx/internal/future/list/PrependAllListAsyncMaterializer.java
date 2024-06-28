@@ -47,13 +47,6 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
     setState(new ImmaterialState(wrapped, elementsMaterializer, cancelException, prependFunction));
   }
 
-  private static int safeIndex(final int wrappedSize, final int elementsIndex) {
-    if (wrappedSize >= 0) {
-      return IndexOverflowException.safeCast((long) wrappedSize + elementsIndex);
-    }
-    return -1;
-  }
-
   private static int safeSize(final int wrappedSize, final int elementsSize) {
     if (wrappedSize >= 0) {
       if (elementsSize > 0) {
@@ -169,8 +162,7 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
         public void cancellableAccept(final int size, final int index, final E element)
             throws Exception {
           final int knownSize = safeSize(wrappedSize, elementsSize = Math.max(elementsSize, size));
-          final int knownIndex = safeIndex(wrappedSize, index);
-          consumer.accept(knownSize, knownIndex, element);
+          consumer.accept(knownSize, index, element);
         }
 
         @Override
@@ -182,7 +174,8 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
                 throws Exception {
               final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size),
                   elementsSize);
-              consumer.accept(knownSize, index, element);
+              consumer.accept(knownSize,
+                  IndexOverflowException.safeCast((long) elementsSize + index), element);
             }
 
             @Override
@@ -426,7 +419,8 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     @Override
     public int weightElement() {
-      return Math.max(wrapped.weightElement(), elementsMaterializer.weightElement());
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightElement() + elementsMaterializer.weightElement());
     }
 
     @Override
@@ -436,14 +430,15 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
-    public int weightHasElement() {
-      return weightElement();
-    }
-
-    @Override
     public int weightEmpty() {
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightEmpty() + elementsMaterializer.weightEmpty());
+    }
+
+    @Override
+    public int weightHasElement() {
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightHasElement() + elementsMaterializer.weightElement());
     }
 
     @Override
