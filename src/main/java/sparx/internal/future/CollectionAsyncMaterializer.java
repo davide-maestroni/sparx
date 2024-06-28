@@ -42,6 +42,8 @@ public interface CollectionAsyncMaterializer<E> {
 
   int weightContains();
 
+  // TODO: weightEach???
+
   int weightEmpty();
 
   int weightSize();

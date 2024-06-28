@@ -118,9 +118,9 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (element == null) {
-        materializeUntil(0, new MaterializingContainsNullAsyncConsumer(consumer));
+        new MaterializingContainsNullAsyncConsumer(consumer).run();
       } else {
-        materializeUntil(0, new MaterializingContainsElementAsyncConsumer(element, consumer));
+        new MaterializingContainsElementAsyncConsumer(element, consumer).run();
       }
     }
 

@@ -134,10 +134,9 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (element == null) {
-        wrapped.materializeElement(0, new MaterializingContainsNullAsyncConsumer(consumer));
+        new MaterializingContainsNullAsyncConsumer(consumer).run();
       } else {
-        wrapped.materializeElement(0,
-            new MaterializingContainsElementAsyncConsumer(element, consumer));
+        new MaterializingContainsElementAsyncConsumer(element, consumer).run();
       }
     }
 
@@ -148,7 +147,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      wrapped.materializeElement(0, new MaterializingEachAsyncConsumer(consumer));
+      new MaterializingEachAsyncConsumer(consumer).run();
     }
 
     @Override

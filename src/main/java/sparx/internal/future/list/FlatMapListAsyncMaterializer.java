@@ -123,9 +123,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (element == null) {
-        materializeElement(0, new MaterializingContainsNullAsyncConsumer(consumer));
+        new MaterializingContainsNullAsyncConsumer(consumer).run();
       } else {
-        materializeElement(0, new MaterializingContainsElementAsyncConsumer(element, consumer));
+        new MaterializingContainsElementAsyncConsumer(element, consumer).run();
       }
     }
 
@@ -375,9 +375,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
         indexConsumers.add(consumer);
         if (needsRun) {
           if (elementsMaterializer != null) {
-            elementsMaterializer.materializeNext(new MaterializingElementAsyncConsumer());
+            new MaterializingElementAsyncConsumer().run();
           } else {
-            wrapped.materializeElement(nextIndex, new MaterializingAsyncConsumer());
+            new MaterializingAsyncConsumer().run();
           }
         }
       }

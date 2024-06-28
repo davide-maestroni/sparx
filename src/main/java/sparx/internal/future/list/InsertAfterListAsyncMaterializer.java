@@ -375,13 +375,13 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
-    public int weightHasElement() {
-      return wrapped.weightSize();
+    public int weightEmpty() {
+      return wrapped.weightEmpty();
     }
 
     @Override
-    public int weightEmpty() {
-      return wrapped.weightEmpty();
+    public int weightHasElement() {
+      return wrapped.weightSize();
     }
 
     @Override

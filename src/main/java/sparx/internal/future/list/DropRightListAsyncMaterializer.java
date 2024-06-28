@@ -178,7 +178,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       if (maxIndex < 0) {
         safeConsumeComplete(consumer, 0, LOGGER);
       } else {
-        wrapped.materializeElement(0, new MaterializingEachAsyncConsumer(consumer));
+        new MaterializingEachAsyncConsumer(consumer).run();
       }
     }
 

@@ -484,6 +484,7 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     @Override
     public int weightContains() {
+      final ListAsyncMaterializer<E> wrapped = this.wrapped;
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightSize() + wrapped.weightContains()
               + elementsMaterializer.weightContains());
@@ -491,9 +492,10 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     @Override
     public int weightElement() {
+      final ListAsyncMaterializer<E> wrapped = this.wrapped;
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + wrapped.weightContains()
-              + elementsMaterializer.weightContains());
+          (long) wrapped.weightSize() + wrapped.weightElement()
+              + elementsMaterializer.weightElement());
     }
 
     @Override
@@ -510,6 +512,7 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     @Override
     public int weightHasElement() {
+      final ListAsyncMaterializer<E> wrapped = this.wrapped;
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightSize() + Math.max(wrapped.weightHasElement(),
               elementsMaterializer.weightElement()));
