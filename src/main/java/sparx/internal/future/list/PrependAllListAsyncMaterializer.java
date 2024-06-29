@@ -37,6 +37,7 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
       PrependAllListAsyncMaterializer.class.getName());
 
   private final int knownSize;
+  private final boolean isMaterializedAtOnce;
 
   public PrependAllListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
@@ -44,6 +45,8 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
       @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize(), elementsMaterializer.knownSize());
+    isMaterializedAtOnce =
+        wrapped.isMaterializedAtOnce() && elementsMaterializer.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, elementsMaterializer, cancelException, prependFunction));
   }
 
@@ -60,6 +63,11 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
   @Override
   public int knownSize() {
     return knownSize;
+  }
+
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   private class ImmaterialState implements ListAsyncMaterializer<E> {
@@ -103,7 +111,7 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return false;
+      return wrapped.isMaterializedAtOnce() && elementsMaterializer.isMaterializedAtOnce();
     }
 
     @Override

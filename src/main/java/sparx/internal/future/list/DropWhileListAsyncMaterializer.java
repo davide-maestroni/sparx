@@ -37,17 +37,25 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   private static final Logger LOGGER = Logger.getLogger(
       DropWhileListAsyncMaterializer.class.getName());
 
+  private final boolean isMaterializedAtOnce;
+
   public DropWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
+    isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
 
   @Override
   public int knownSize() {
     return -1;
+  }
+
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   private interface StateConsumer<E> {
@@ -93,7 +101,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return false;
+      return wrapped.isMaterializedAtOnce();
     }
 
     @Override

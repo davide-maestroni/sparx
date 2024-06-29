@@ -38,11 +38,14 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
   private static final Logger LOGGER = Logger.getLogger(SliceListAsyncMaterializer.class.getName());
 
+  private final boolean isMaterializedAtOnce;
+
   public SliceListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final int start, final int end, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
+    isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     if (start >= 0 && end >= 0) {
       setState(
           new MaterialState(wrapped, start, Math.max(0, end - start), wrapped.knownSize(), context,
@@ -56,6 +59,11 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
   @Override
   public int knownSize() {
     return -1;
+  }
+
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   private interface StateConsumer<E> {
@@ -104,7 +112,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return false;
+      return wrapped.isMaterializedAtOnce();
     }
 
     @Override
@@ -334,7 +342,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return false;
+      return wrapped.isMaterializedAtOnce();
     }
 
     @Override

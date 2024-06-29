@@ -36,12 +36,14 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       AppendListAsyncMaterializer.class.getName());
 
   private final int knownSize;
+  private final boolean isMaterializedAtOnce;
 
   public AppendListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final E element, @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, E, List<E>> appendFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize());
+    isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, element, cancelException, appendFunction));
   }
 
@@ -55,6 +57,11 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   @Override
   public int knownSize() {
     return knownSize;
+  }
+
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   private class ImmaterialState implements ListAsyncMaterializer<E> {
@@ -95,7 +102,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return false;
+      return wrapped.isMaterializedAtOnce();
     }
 
     @Override
