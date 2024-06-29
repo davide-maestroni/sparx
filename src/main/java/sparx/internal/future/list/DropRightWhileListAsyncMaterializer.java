@@ -50,11 +50,6 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     return -1;
   }
 
-  @Override
-  public boolean isMaterializedAtOnce() {
-    return true;
-  }
-
   private interface StateConsumer<E> {
 
     void accept(@NotNull ListAsyncMaterializer<E> state);
@@ -101,7 +96,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return true;
+      return false;
     }
 
     @Override

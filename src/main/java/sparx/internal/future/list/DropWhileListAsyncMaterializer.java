@@ -50,11 +50,6 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     return -1;
   }
 
-  @Override
-  public boolean isMaterializedAtOnce() {
-    return true;
-  }
-
   private interface StateConsumer<E> {
 
     void accept(@NotNull ListAsyncMaterializer<E> state);
@@ -98,7 +93,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return true;
+      return false;
     }
 
     @Override
