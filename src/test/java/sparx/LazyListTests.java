@@ -895,6 +895,7 @@ public class LazyListTests {
 
   @Test
   public void max() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).max(null));
     var l = List.of(1, 4, 2, 3);
     test(List.of(4), () -> l.max(Integer::compareTo));
 
@@ -909,6 +910,7 @@ public class LazyListTests {
 
   @Test
   public void min() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).min(null));
     var l = List.of(1, 4, 2, 3);
     test(List.of(1), () -> l.min(Integer::compareTo));
 

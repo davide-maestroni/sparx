@@ -2015,6 +2015,74 @@ public class FutureListTests {
   }
 
   @Test
+  public void max() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).max(null));
+    var l = List.of(1, 4, 2, 3);
+    test(List.of(4), () -> l, ll -> ll.max(Integer::compareTo));
+
+    assertFalse(List.of(1, null).toFuture(context).max(Integer::compareTo).isEmpty());
+    assertTrue(List.of(1, null).toFuture(context).max(Integer::compareTo).notEmpty());
+    assertEquals(1, List.of(1, null).toFuture(context).max(Integer::compareTo).size());
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null).toFuture(context).max(Integer::compareTo).first());
+
+    test(List.of(), List::<Integer>of, ll -> ll.max(Integer::compareTo));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
+        Thread.sleep(60000);
+        return i;
+      }).max(Integer::compare);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void min() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).min(null));
+    var l = List.of(1, 4, 2, 3);
+    test(List.of(1), () -> l, ll -> ll.min(Integer::compareTo));
+
+    assertFalse(List.of(1, null).toFuture(context).min(Integer::compareTo).isEmpty());
+    assertTrue(List.of(1, null).toFuture(context).min(Integer::compareTo).notEmpty());
+    assertEquals(1, List.of(1, null).toFuture(context).min(Integer::compareTo).size());
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null).toFuture(context).min(Integer::compareTo).first());
+
+    test(List.of(), List::<Integer>of, ll -> ll.min(Integer::compareTo));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
+        Thread.sleep(60000);
+        return i;
+      }).min(Integer::compare);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void prepend() throws Exception {
     test(List.of(3, 2, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(2).prepend(3));
     test(List.of(3, null, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(null).prepend(3));

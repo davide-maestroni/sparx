@@ -86,6 +86,7 @@ import sparx.internal.future.list.MapFirstWhereListAsyncMaterializer;
 import sparx.internal.future.list.MapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.MapListAsyncMaterializer;
 import sparx.internal.future.list.MapWhereListAsyncMaterializer;
+import sparx.internal.future.list.MaxListAsyncMaterializer;
 import sparx.internal.future.list.PrependAllListAsyncMaterializer;
 import sparx.internal.future.list.PrependListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
@@ -869,6 +870,18 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).mapWhere(predicate, mapper);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerMax(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Comparator<? super E> comparator) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).max(comparator);
         }
       };
     }
@@ -2853,13 +2866,39 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> max(@NotNull Comparator<? super E> comparator) {
-      return null;
+    public @NotNull List<E> max(@NotNull final Comparator<? super E> comparator) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMax(materializer, cancelException,
+                Require.notNull(comparator, "comparator")));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MaxListAsyncMaterializer<E>(materializer, Require.notNull(comparator, "comparator"),
+              context, cancelException, List.<E>decorateFunction()));
     }
 
     @Override
-    public @NotNull List<E> min(@NotNull Comparator<? super E> comparator) {
-      return null;
+    public @NotNull List<E> min(@NotNull final Comparator<? super E> comparator) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMax(materializer, cancelException,
+                reversed(Require.notNull(comparator, "comparator"))));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException, new MaxListAsyncMaterializer<E>(materializer,
+          reversed(Require.notNull(comparator, "comparator")), context, cancelException,
+          List.<E>decorateFunction()));
     }
 
     @Override
