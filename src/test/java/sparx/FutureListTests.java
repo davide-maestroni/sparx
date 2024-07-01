@@ -1817,6 +1817,72 @@ public class FutureListTests {
   }
 
   @Test
+  public void mapFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).mapFirstWhere(i -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).mapFirstWhere(null, i -> i));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).mapFirstWhere((i, n) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).mapFirstWhere(null, (n, i) -> i));
+    var l = List.of(1, 2, null, 4);
+    test(l, () -> l, ll -> ll.mapFirstWhere(i -> false, i -> i + 1));
+    test(List.of(2, 2, null, 4), () -> l, ll -> ll.mapFirstWhere(i -> true, i -> i + 1));
+    test(List.of(1, 2, 3, 4), () -> l, ll -> ll.mapFirstWhere(Objects::isNull, i -> 3));
+    test(List.of(2, 2, null, 4), () -> l, ll -> ll.mapFirstWhere(i -> i == 1, i -> i + 1));
+
+    assertFalse(l.toFuture(context).mapFirstWhere(i -> i > 2, i -> 1).isEmpty());
+    assertEquals(4, l.toFuture(context).mapFirstWhere(i -> i > 2, i -> 1).size());
+    assertEquals(1, l.toFuture(context).mapFirstWhere(i -> i > 2, i -> 1).get(0));
+    assertEquals(2, l.toFuture(context).mapFirstWhere(i -> i > 2, i -> 1).get(1));
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).mapFirstWhere(i -> i > 2, i -> 1).get(2));
+
+    test(List.of(), List::<Integer>of, ll -> ll.mapFirstWhere(i -> false, i -> i + 1));
+    test(List.of(), List::<Integer>of, ll -> ll.mapFirstWhere(i -> true, i -> i + 1));
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).mapFirstWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }, (n, i) -> {
+      indexes.add(n);
+      return i;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).map(i -> i).mapFirstWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }, (n, i) -> {
+      indexes.add(n);
+      return i;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2, 2), indexes);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).mapFirstWhere(i -> true, i -> {
+        Thread.sleep(60000);
+        return i;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void prepend() throws Exception {
     test(List.of(3, 2, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(2).prepend(3));
     test(List.of(3, null, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(null).prepend(3));

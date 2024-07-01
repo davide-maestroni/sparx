@@ -798,6 +798,10 @@ public class LazyListTests {
 
   @Test
   public void mapFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).mapFirstWhere(i -> false, null));
+    assertThrows(NullPointerException.class, () -> List.of(0).mapFirstWhere(null, i -> i));
+    assertThrows(NullPointerException.class, () -> List.of(0).mapFirstWhere((i, n) -> false, null));
+    assertThrows(NullPointerException.class, () -> List.of(0).mapFirstWhere(null, (n, i) -> i));
     var l = List.of(1, 2, null, 4);
     test(l, () -> l.mapFirstWhere(i -> false, i -> i + 1));
     test(List.of(2, 2, null, 4), () -> l.mapFirstWhere(i -> true, i -> i + 1));
