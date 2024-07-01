@@ -85,6 +85,7 @@ import sparx.internal.future.list.MapAfterListAsyncMaterializer;
 import sparx.internal.future.list.MapFirstWhereListAsyncMaterializer;
 import sparx.internal.future.list.MapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.MapListAsyncMaterializer;
+import sparx.internal.future.list.MapWhereListAsyncMaterializer;
 import sparx.internal.future.list.PrependAllListAsyncMaterializer;
 import sparx.internal.future.list.PrependListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
@@ -854,6 +855,20 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).mapLastWhere(predicate, mapper);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerMapWhere(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException,
+          materializer.knownSize()) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).mapWhere(predicate, mapper);
         }
       };
     }
@@ -2796,15 +2811,45 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> mapWhere(@NotNull IndexedPredicate<? super E> predicate,
-        @NotNull IndexedFunction<? super E, ? extends E> mapper) {
-      return null;
+    public @NotNull List<E> mapWhere(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapWhere(materializer, cancelException,
+                Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapWhereListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"), context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
-    public @NotNull List<E> mapWhere(@NotNull Predicate<? super E> predicate,
-        @NotNull Function<? super E, ? extends E> mapper) {
-      return null;
+    public @NotNull List<E> mapWhere(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends E> mapper) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapWhere(materializer, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate")),
+                toIndexedFunction(Require.notNull(mapper, "mapper"))));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapWhereListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              toIndexedFunction(Require.notNull(mapper, "mapper")), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
