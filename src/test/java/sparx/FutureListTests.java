@@ -77,10 +77,10 @@ public class FutureListTests {
     test(List.of(1, null, 3), () -> List.of(1, null), ll -> ll.append(3));
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).none(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
-        return true;
-      }).append(true);
+        return i;
+      }).append(4);
       executor.submit(() -> {
         try {
           Thread.sleep(1000);
@@ -110,10 +110,10 @@ public class FutureListTests {
     test(List.of(1, null), () -> List.of(1, null), ll -> ll.appendAll(Set.of()));
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).none(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
-        return true;
-      }).appendAll(List.of(true, false));
+        return i;
+      }).appendAll(List.of(4, 5));
       executor.submit(() -> {
         try {
           Thread.sleep(1000);
@@ -213,9 +213,9 @@ public class FutureListTests {
     test(List.of(), List::of, ll -> ll.diff(List.of(1, 2, null, 4)));
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).none(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
-        return true;
+        return i;
       }).diff(List.of(false, null));
       executor.submit(() -> {
         try {
@@ -377,10 +377,10 @@ public class FutureListTests {
     test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropRight(-1));
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).none(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
-        return true;
-      }).append(false).dropRight(1);
+        return i;
+      }).dropRight(1);
       executor.submit(() -> {
         try {
           Thread.sleep(1000);
@@ -565,9 +565,9 @@ public class FutureListTests {
     test(List.of(false), () -> List.of(1, null, 3), ll -> ll.endsWith(List.of(null, null, 3)));
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).none(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
-        return true;
+        return i;
       }).endsWith(List.of(false));
       executor.submit(() -> {
         try {
@@ -753,9 +753,9 @@ public class FutureListTests {
     assertEquals(List.of(0, 1, 2), indexes);
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).none(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
-        return true;
+        return i;
       }).findIndexOf(false);
       executor.submit(() -> {
         try {
@@ -786,9 +786,9 @@ public class FutureListTests {
     test(List.of(0), List::of, ll -> ll.findIndexOfSlice(List.of()));
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).none(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
-        return true;
+        return i;
       }).findIndexOfSlice(List.of(false));
       executor.submit(() -> {
         try {
@@ -913,9 +913,9 @@ public class FutureListTests {
     test(List.of(), List::of, ll -> ll.findLastIndexOf(null));
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).none(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
-        return true;
+        return i;
       }).findLastIndexOf(false);
       executor.submit(() -> {
         try {
@@ -947,9 +947,9 @@ public class FutureListTests {
     test(List.of(0), List::of, ll -> ll.findLastIndexOfSlice(List.of()));
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).none(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
-        return true;
+        return i;
       }).findLastIndexOfSlice(List.of(false));
       executor.submit(() -> {
         try {
@@ -1760,6 +1760,63 @@ public class FutureListTests {
   }
 
   @Test
+  public void mapAfter() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).mapAfter(0, (Function<? super Integer, Integer>) null));
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
+        .mapAfter(0, (IndexedFunction<? super Integer, Integer>) null));
+    var l = List.of(1, 2, 3);
+    test(List.of(1, 2, 3), () -> l, ll -> ll.mapAfter(-1, x -> x + 1));
+    test(List.of(2, 2, 3), () -> l, ll -> ll.mapAfter(0, x -> x + 1));
+    test(List.of(1, 3, 3), () -> l, ll -> ll.mapAfter(1, x -> x + 1));
+    test(List.of(1, 2, 4), () -> l, ll -> ll.mapAfter(2, x -> x + 1));
+    test(List.of(1, 2, 3), () -> l, ll -> ll.mapAfter(3, x -> x + 1));
+    test(List.of(1, 2, 3, null), () -> l, ll -> ll.append(null).mapAfter(-1, x -> x + 1));
+    test(List.of(1, 3, 3, null), () -> l, ll -> ll.append(null).mapAfter(1, x -> x + 1));
+
+    assertFalse(l.toFuture(context).append(null).mapAfter(3, x -> x + 1).isEmpty());
+    assertEquals(4, l.toFuture(context).append(null).mapAfter(3, x -> x + 1).size());
+    assertEquals(2, l.toFuture(context).append(null).mapAfter(3, x -> x + 1).get(1));
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).append(null).mapAfter(3, x -> x + 1).get(3));
+
+    test(List.of(), List::<Integer>of, ll -> ll.mapAfter(0, x -> x + 1));
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).mapAfter(2, (n, i) -> {
+      indexes.add(n);
+      return i;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).map(i -> i).mapAfter(2, (n, i) -> {
+      indexes.add(n);
+      return i;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(2), indexes);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).mapAfter(0, i -> {
+        Thread.sleep(60000);
+        return i;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void prepend() throws Exception {
     test(List.of(3, 2, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(2).prepend(3));
     test(List.of(3, null, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(null).prepend(3));
@@ -1769,7 +1826,7 @@ public class FutureListTests {
     test(List.of(3, 1, null), () -> List.of(1, null), ll -> ll.prepend(3));
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).map(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
         return i;
       }).prepend(0);
@@ -1800,7 +1857,7 @@ public class FutureListTests {
     test(List.of(3, 1, null), () -> List.of(1, null), ll -> ll.prependAll(Set.of(3)));
 
     if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).map(i -> {
+      var f = List.of(1, 2, 3).toFuture(context).map(i -> {
         Thread.sleep(60000);
         return i;
       }).prependAll(List.of(0));

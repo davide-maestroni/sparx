@@ -215,12 +215,14 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
             materialized(new AsyncConsumer<ListAsyncMaterializer<E>>() {
               @Override
               public void accept(final ListAsyncMaterializer<E> materializer) {
+                final int originalIndex = index;
                 materializer.materializeElement(index - numElements,
                     new CancellableIndexedAsyncConsumer<E>() {
                       @Override
                       public void cancellableAccept(final int size, final int index,
                           final E element) throws Exception {
-                        consumer.accept(safeSize(), index + numElements, element);
+                        elementsSize = Math.max(elementsSize, size);
+                        consumer.accept(safeSize(), originalIndex, element);
                       }
 
                       @Override
@@ -261,11 +263,13 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
               throws Exception {
+            wrappedSize = Math.max(wrappedSize, size);
             consumer.accept(safeSize(), index, element);
           }
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
+            wrappedSize = size;
             consumer.complete(size);
           }
 

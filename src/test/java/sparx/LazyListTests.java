@@ -768,6 +768,10 @@ public class LazyListTests {
 
   @Test
   public void mapAfter() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).mapAfter(0, (Function<? super Integer, Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).mapAfter(0, (IndexedFunction<? super Integer, Integer>) null));
     var l = List.of(1, 2, 3);
     test(List.of(1, 2, 3), () -> l.mapAfter(-1, x -> x + 1));
     test(List.of(2, 2, 3), () -> l.mapAfter(0, x -> x + 1));

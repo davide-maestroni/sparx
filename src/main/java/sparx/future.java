@@ -81,6 +81,7 @@ import sparx.internal.future.list.InsertAllAfterListAsyncMaterializer;
 import sparx.internal.future.list.IntersectListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
+import sparx.internal.future.list.MapAfterListAsyncMaterializer;
 import sparx.internal.future.list.MapListAsyncMaterializer;
 import sparx.internal.future.list.PrependAllListAsyncMaterializer;
 import sparx.internal.future.list.PrependListAsyncMaterializer;
@@ -192,6 +193,13 @@ class future extends Sparx {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Object secondParam) {
         return lazy.List.wrap(firstParam).prepend(secondParam).materialized();
+      }
+    };
+    private static final TernaryFunction<? extends java.util.List<?>, Integer, ?, ? extends java.util.List<?>> REPLACE_AFTER_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, Object, java.util.List<?>>() {
+      @Override
+      public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
+          final Object thirdParam) {
+        return lazy.List.wrap(firstParam).replaceAfter(secondParam, thirdParam);
       }
     };
     private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
@@ -807,6 +815,19 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerMapAfter(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        final int numElements, @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException,
+          materializer.knownSize()) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).mapAfter(numElements, mapper);
+        }
+      };
+    }
+
     private static @NotNull <E> LazyListAsyncMaterializer<E, Boolean> lazyMaterializerNone(
         @NotNull final ListAsyncMaterializer<E> materializer,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -908,6 +929,11 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     private static @NotNull <E> BinaryFunction<java.util.List<E>, E, java.util.List<E>> prependFunction() {
       return (BinaryFunction<java.util.List<E>, E, java.util.List<E>>) PREPEND_FUNCTION;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static @NotNull <E> TernaryFunction<java.util.List<E>, Integer, E, java.util.List<E>> replaceAfterFunction() {
+      return (TernaryFunction<java.util.List<E>, Integer, E, java.util.List<E>>) REPLACE_AFTER_FUNCTION;
     }
 
     @Override
@@ -2607,15 +2633,51 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> mapAfter(int numElements,
-        @NotNull Function<? super E, ? extends E> mapper) {
-      return null;
+    public @NotNull List<E> mapAfter(final int numElements,
+        @NotNull final Function<? super E, ? extends E> mapper) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapAfter(materializer, cancelException, numElements,
+                toIndexedFunction(Require.notNull(mapper, "mapper"))));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapAfterListAsyncMaterializer<E>(materializer, numElements,
+              toIndexedFunction(Require.notNull(mapper, "mapper")), context, cancelException,
+              List.<E>replaceAfterFunction()));
     }
 
     @Override
-    public @NotNull List<E> mapAfter(int numElements,
-        @NotNull IndexedFunction<? super E, ? extends E> mapper) {
-      return null;
+    public @NotNull List<E> mapAfter(final int numElements,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapAfter(materializer, cancelException, numElements,
+                Require.notNull(mapper, "mapper")));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapAfterListAsyncMaterializer<E>(materializer, numElements,
+              Require.notNull(mapper, "mapper"), context, cancelException,
+              List.<E>replaceAfterFunction()));
     }
 
     @Override
