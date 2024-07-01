@@ -711,6 +711,7 @@ public class LazyListTests {
 
   @Test
   public void insertAllAfter() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).insertAllAfter(0, null));
     var l = List.of(1, 2, 3);
     test(l, () -> l.insertAllAfter(5, List.of(null, 5)));
     test(List.of(1, 2, 3, null, 5), () -> l.insertAllAfter(3, List.of(null, 5)));
@@ -727,6 +728,7 @@ public class LazyListTests {
 
   @Test
   public void intersect() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).intersect(null));
     test(List.of(1, null), () -> List.of(1, 2, null, 4).intersect(List.of(1, null)));
     test(List.of(1, 4), () -> List.of(1, 2, null, 4).intersect(List.of(1, 4)));
     test(List.of(1, 4), () -> List.of(1, 2, null, 4).intersect(List.of(1, 3, 4)));

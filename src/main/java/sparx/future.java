@@ -78,6 +78,7 @@ import sparx.internal.future.list.IncludesAllListAsyncMaterializer;
 import sparx.internal.future.list.IncludesSliceListAsyncMaterializer;
 import sparx.internal.future.list.InsertAfterListAsyncMaterializer;
 import sparx.internal.future.list.InsertAllAfterListAsyncMaterializer;
+import sparx.internal.future.list.IntersectListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.internal.future.list.MapListAsyncMaterializer;
@@ -780,6 +781,19 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerIntersect(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<?> elements) {
+      final Iterable<?> otherElements = elements;
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).intersect(otherElements);
+        }
+      };
+    }
+
     private static @NotNull <E, F> LazyListAsyncMaterializer<E, F> lazyMaterializerMap(
         @NotNull final ListAsyncMaterializer<E> materializer,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -1037,7 +1051,6 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<Integer> count() {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final int knownSize = materializer.knownSize();
@@ -1825,12 +1838,12 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> flatMapFirstWhere(@NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<E>(context, cancelException, materializer);
       }
+      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FlatMapFirstWhereListAsyncMaterializer<E>(materializer,
               Require.notNull(predicate, "predicate"),
@@ -1841,12 +1854,12 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> flatMapFirstWhere(@NotNull final Predicate<? super E> predicate,
         @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<E>(context, cancelException, materializer);
       }
+      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FlatMapFirstWhereListAsyncMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")),
@@ -1857,12 +1870,12 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> flatMapLastWhere(@NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<E>(context, cancelException, materializer);
       }
+      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FlatMapLastWhereListAsyncMaterializer<E>(materializer,
               Require.notNull(predicate, "predicate"),
@@ -1873,12 +1886,12 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> flatMapLastWhere(@NotNull final Predicate<? super E> predicate,
         @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<E>(context, cancelException, materializer);
       }
+      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FlatMapLastWhereListAsyncMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")),
@@ -1889,12 +1902,12 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> flatMapWhere(@NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<E>(context, cancelException, materializer);
       }
+      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FlatMapWhereListAsyncMaterializer<E>(materializer,
               Require.notNull(predicate, "predicate"),
@@ -1905,12 +1918,12 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> flatMapWhere(@NotNull final Predicate<? super E> predicate,
         @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<E>(context, cancelException, materializer);
       }
+      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FlatMapWhereListAsyncMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")),
@@ -1927,7 +1940,6 @@ class future extends Sparx {
     @Override
     public @NotNull <F> List<F> foldLeft(final F identity,
         @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
@@ -1939,6 +1951,7 @@ class future extends Sparx {
             lazyMaterializerFoldLeft(materializer, cancelException, identity,
                 Require.notNull(operation, "operation")));
       }
+      final ExecutionContext context = this.context;
       return new List<F>(context, cancelException,
           new FoldLeftListAsyncMaterializer<E, F>(materializer, identity,
               Require.notNull(operation, "operation"), context, cancelException,
@@ -1948,7 +1961,6 @@ class future extends Sparx {
     @Override
     public @NotNull <F> List<F> foldRight(final F identity,
         @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
@@ -1960,6 +1972,7 @@ class future extends Sparx {
             lazyMaterializerFoldRight(materializer, cancelException, identity,
                 Require.notNull(operation, "operation")));
       }
+      final ExecutionContext context = this.context;
       return new List<F>(context, cancelException,
           new FoldRightListAsyncMaterializer<E, F>(materializer, identity,
               Require.notNull(operation, "operation"), context, cancelException,
@@ -2115,13 +2128,13 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<? extends List<E>> group(final int maxSize) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<List<E>>(context, cancelException,
             EmptyListAsyncMaterializer.<List<E>>instance());
       }
+      final ExecutionContext context = this.context;
       return new List<List<E>>(context, cancelException,
           new GroupListAsyncMaterializer<E, List<E>>(materializer,
               Require.positive(maxSize, "maxSize"),
@@ -2131,13 +2144,13 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<? extends List<E>> groupWithPadding(final int size, final E padding) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<List<E>>(context, cancelException,
             EmptyListAsyncMaterializer.<List<E>>instance());
       }
+      final ExecutionContext context = this.context;
       return new List<List<E>>(context, cancelException,
           new GroupListAsyncMaterializer<E, List<E>>(materializer, size,
               List.getChunker(context, taskID, cancelException, Require.positive(size, "size"),
@@ -2265,7 +2278,6 @@ class future extends Sparx {
             new AppendListAsyncMaterializer<E>(materializer, element, cancelException,
                 List.<E>appendFunction()));
       }
-      final ExecutionContext context = this.context;
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerInsertAfter(materializer, cancelException, numElements, element));
@@ -2321,8 +2333,26 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> intersect(@NotNull Iterable<?> elements) {
-      return null;
+    public @NotNull List<E> intersect(@NotNull final Iterable<?> elements) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<?> elementsMaterializer = getElementsMaterializer(context, taskID,
+          Require.notNull(elements, "elements"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+      }
+      if (materializer.isMaterializedAtOnce() && !isFuture(elements)) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerIntersect(materializer, cancelException,
+                Require.notNull(elements, "elements")));
+      }
+      return new List<E>(context, cancelException,
+          new IntersectListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
