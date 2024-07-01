@@ -170,39 +170,9 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      if (wrappedSize == 0) {
-        safeConsume(consumer, true, LOGGER);
-      } else if (wrappedSize > 0) {
-        wrapped.materializeElement(wrappedSize - 1, new CancellableIndexedAsyncConsumer<E>() {
-          @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            try {
-              if (predicate.test(index, element)) {
-                consumeState(setState(
-                    new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status,
-                        context, cancelException, decorateFunction)));
-                getState().materializeEmpty(consumer);
-                return;
-              }
-            } catch (final Exception e) {
-              setError(e);
-              throw e;
-            }
-            consumer.accept(false);
-          }
-
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            consumer.accept(true);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
-      } else {
+      if (wrappedSize > 1) {
+        safeConsume(consumer, false, LOGGER);
+      } else if (wrappedSize < 0) {
         wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
           public void cancellableAccept(final Integer size) {
@@ -213,6 +183,13 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           @Override
           public void error(@NotNull final Exception error) throws Exception {
             consumer.error(error);
+          }
+        });
+      } else {
+        materialized(new StateConsumer<E>() {
+          @Override
+          public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+            state.materializeEmpty(consumer);
           }
         });
       }
@@ -245,20 +222,30 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + wrapped.weightElement());
+      if (stateConsumers.isEmpty()) {
+        if (wrappedSize < 0) {
+          return (int) Math.min(Integer.MAX_VALUE,
+              (long) wrapped.weightSize() + wrapped.weightElement());
+        }
+        return wrapped.weightElement();
+      }
+      return 1;
     }
 
     @Override
     public int weightEmpty() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + wrapped.weightElement());
+      return wrappedSize <= 1 ? weightElements() : 1;
     }
 
     @Override

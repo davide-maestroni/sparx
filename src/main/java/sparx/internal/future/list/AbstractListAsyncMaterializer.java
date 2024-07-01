@@ -124,6 +124,11 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
+  public int weightEach() {
+    return state.weightEach();
+  }
+
+  @Override
   public int weightElement() {
     return state.weightElement();
   }

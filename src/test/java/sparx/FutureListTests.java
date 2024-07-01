@@ -53,11 +53,13 @@ public class FutureListTests {
 
   private ExecutorContext context;
   private ExecutorService executor;
+  private ExecutorContext throughputContext;
 
   @BeforeEach
   public void setUp() {
     executor = Executors.newCachedThreadPool();
     context = ExecutorContext.of(executor);
+    throughputContext = ExecutorContext.of(executor, 2);
   }
 
   @AfterEach

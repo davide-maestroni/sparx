@@ -43,6 +43,6 @@ public interface ExecutionContext {
     @NotNull
     String taskID();
 
-    int weight(); // TODO: conditional??
+    int weight();
   }
 }

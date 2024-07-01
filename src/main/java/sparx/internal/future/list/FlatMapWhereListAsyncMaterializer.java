@@ -278,13 +278,18 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return wrapped.weightElement();
+      return elementsConsumers.isEmpty() ? wrapped.weightElement() : 1;
     }
 
     @Override
@@ -462,9 +467,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public int weight() {
-        return (int) Math.min(Integer.MAX_VALUE,
-            (long) wrapped.weightElement() + (elementsMaterializer != null
-                ? elementsMaterializer.weightNext() : 0));
+        return wrapped.weightElement();
       }
 
       private void schedule() {

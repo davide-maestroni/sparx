@@ -321,33 +321,58 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public int weightContains() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + wrapped.weightElement());
+      if (wrappedSize < 0) {
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightSize() + wrapped.weightElement());
+      }
+      return wrapped.weightElement();
+    }
+
+    @Override
+    public int weightEach() {
+      if (wrappedSize < 0) {
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightSize() + wrapped.weightElement());
+      }
+      return wrapped.weightElement();
     }
 
     @Override
     public int weightElement() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + wrapped.weightElement());
+      if (wrappedSize < 0) {
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightSize() + wrapped.weightElement());
+      }
+      return wrapped.weightElement();
     }
 
     @Override
     public int weightElements() {
-      return Math.max(wrapped.weightSize(), wrapped.weightElement());
+      return elementsConsumers.isEmpty() ? wrappedSize < 0 ? wrapped.weightSize()
+          : wrapped.weightElement() : 1;
     }
 
     @Override
     public int weightEmpty() {
+      if (wrappedSize >= 0) {
+        return 1;
+      }
       return wrapped.weightSize();
     }
 
     @Override
     public int weightHasElement() {
+      if (wrappedSize >= 0) {
+        return 1;
+      }
       return wrapped.weightSize();
     }
 
     @Override
     public int weightSize() {
+      if (wrappedSize >= 0) {
+        return 1;
+      }
       return wrapped.weightSize();
     }
 

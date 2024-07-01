@@ -200,13 +200,21 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return wrapped.weightSize();
+      if (stateConsumers.isEmpty()) {
+        return wrapped.weightSize();
+      }
+      return 1;
     }
 
     @Override

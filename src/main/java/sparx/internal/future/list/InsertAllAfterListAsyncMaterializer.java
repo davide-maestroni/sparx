@@ -486,26 +486,40 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
     public int weightContains() {
       final ListAsyncMaterializer<E> wrapped = this.wrapped;
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + wrapped.weightContains()
+          (long) (wrappedSize < 0 ? wrapped.weightSize() : 1) + wrapped.weightContains()
               + elementsMaterializer.weightContains());
+    }
+
+    @Override
+    public int weightEach() {
+      return numElements != 0 ? wrapped.weightElement() : elementsMaterializer.weightElement();
     }
 
     @Override
     public int weightElement() {
       final ListAsyncMaterializer<E> wrapped = this.wrapped;
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + wrapped.weightElement()
+          (long) (wrappedSize < 0 ? wrapped.weightSize() : 1) + wrapped.weightElement()
               + elementsMaterializer.weightElement());
     }
 
     @Override
     public int weightElements() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightElements() + elementsMaterializer.weightElements());
+      if (elementsConsumers.isEmpty()) {
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightElements() + elementsMaterializer.weightElements());
+      }
+      return 1;
     }
 
     @Override
     public int weightEmpty() {
+      if (wrappedSize == 0) {
+        return numElements == 0 ? elementsMaterializer.weightEmpty() : 1;
+      }
+      if (wrappedSize > 0) {
+        return 1;
+      }
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightEmpty() + elementsMaterializer.weightEmpty());
     }
@@ -514,14 +528,20 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
     public int weightHasElement() {
       final ListAsyncMaterializer<E> wrapped = this.wrapped;
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + Math.max(wrapped.weightHasElement(),
+          (long) (wrappedSize < 0 ? wrapped.weightSize() : 1) + Math.max(wrapped.weightHasElement(),
               elementsMaterializer.weightElement()));
     }
 
     @Override
     public int weightSize() {
+      if (wrappedSize >= 0) {
+        if (numElements > wrappedSize) {
+          return 1;
+        }
+        return elementsSize < 1 ? elementsMaterializer.weightSize() : 1;
+      }
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + elementsMaterializer.weightSize());
+          (long) wrapped.weightSize() + (elementsSize < 1 ? elementsMaterializer.weightSize() : 1));
     }
 
     private void consumeElements(@NotNull final List<E> elements) {
@@ -630,7 +650,7 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
 
       @Override
       public int weight() {
-        return Math.max(wrapped.weightElement(), elementsMaterializer.weightElement());
+        return isWrapped ? wrapped.weightElement() : elementsMaterializer.weightElement();
       }
     }
   }

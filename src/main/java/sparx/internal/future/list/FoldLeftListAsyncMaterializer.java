@@ -188,13 +188,18 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return wrapped.weightElement();
+      return stateConsumers.isEmpty() ? wrapped.weightElement() : 1;
     }
 
     @Override

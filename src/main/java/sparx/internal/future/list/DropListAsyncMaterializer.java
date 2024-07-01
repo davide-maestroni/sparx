@@ -261,13 +261,18 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     }
 
     @Override
+    public int weightEach() {
+      return wrapped.weightElement();
+    }
+
+    @Override
     public int weightElement() {
       return wrapped.weightElement();
     }
 
     @Override
     public int weightElements() {
-      return wrapped.weightElements();
+      return elementsConsumers.isEmpty() ? wrapped.weightElements() : 1;
     }
 
     @Override
@@ -330,6 +335,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         consumeError(error);
       }
     }
+
     private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
         Task {
 

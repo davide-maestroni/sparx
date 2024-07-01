@@ -206,14 +206,25 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + wrapped.weightElement());
+      if (stateConsumers.isEmpty()) {
+        if (wrappedSize < 0) {
+          return (int) Math.min(Integer.MAX_VALUE,
+              (long) wrapped.weightSize() + wrapped.weightElement());
+        }
+        return wrapped.weightElement();
+      }
+      return 1;
     }
 
     @Override

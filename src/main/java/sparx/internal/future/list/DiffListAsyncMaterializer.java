@@ -267,14 +267,25 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightElement() + elementsMaterializer.weightElements());
+      if (elementsConsumers.isEmpty()) {
+        if (elementsBag == null) {
+          return (int) Math.min(Integer.MAX_VALUE,
+              (long) wrapped.weightElement() + elementsMaterializer.weightElements());
+        }
+        return wrapped.weightElement();
+      }
+      return 1;
     }
 
     @Override

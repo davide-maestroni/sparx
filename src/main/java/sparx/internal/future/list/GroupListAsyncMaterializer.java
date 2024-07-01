@@ -374,22 +374,25 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
 
     @Override
     public int weightContains() {
-      return weightSize();
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
+    }
+
+    @Override
+    public int weightEach() {
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
     }
 
     @Override
     public int weightElement() {
-      return weightSize();
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
     }
 
     @Override
     public int weightElements() {
-      return weightSize();
-    }
-
-    @Override
-    public int weightHasElement() {
-      return weightSize();
+      if (elementsConsumers.isEmpty()) {
+        return wrappedSize < 0 ? wrapped.weightSize() : 1;
+      }
+      return 1;
     }
 
     @Override
@@ -398,8 +401,13 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
     }
 
     @Override
+    public int weightHasElement() {
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
+    }
+
+    @Override
     public int weightSize() {
-      return wrappedSize >= 0 ? 1 : wrapped.weightSize();
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
     }
 
     private void consumeElements(@NotNull final List<L> elements) {

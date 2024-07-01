@@ -77,7 +77,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   @Override
   public void materializeCancel(@NotNull final CancellationException exception) {
-    fromContext.scheduleAfter(new Task() {
+    fromContext.scheduleBefore(new Task() {
       @Override
       public void run() {
         try {
@@ -173,7 +173,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
       @Override
       public int weight() {
-        return wrapped.weightElements();
+        return wrapped.weightEach();
       }
     });
   }
@@ -311,31 +311,36 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   @Override
   public int weightContains() {
-    return wrapped.weightContains();
+    return 1;
+  }
+
+  @Override
+  public int weightEach() {
+    return 1;
   }
 
   @Override
   public int weightElement() {
-    return wrapped.weightElement();
+    return 1;
   }
 
   @Override
   public int weightElements() {
-    return wrapped.weightElements();
+    return 1;
   }
 
   @Override
   public int weightEmpty() {
-    return wrapped.weightEmpty();
+    return 1;
   }
 
   @Override
   public int weightHasElement() {
-    return wrapped.weightHasElement();
+    return 1;
   }
 
   @Override
   public int weightSize() {
-    return wrapped.weightSize();
+    return 1;
   }
 }

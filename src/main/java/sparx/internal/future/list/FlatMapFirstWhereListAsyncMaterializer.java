@@ -249,18 +249,23 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return wrapped.weightElement();
     }
 
     @Override
     public int weightElements() {
-      return wrapped.weightElement();
+      return stateConsumers.isEmpty() ? wrapped.weightElement() : 1;
     }
 
     @Override
     public int weightEmpty() {
-      return wrapped.weightElement();
+      return testedIndex < 0 ? wrapped.weightElement() : 1;
     }
 
     @Override

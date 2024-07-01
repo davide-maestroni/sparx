@@ -226,32 +226,37 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
     @Override
     public int weightContains() {
-      return 1;
+      return weightElements();
+    }
+
+    @Override
+    public int weightEach() {
+      return weightElements();
     }
 
     @Override
     public int weightElement() {
-      return 1;
+      return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return 1;
+      return stateConsumers.isEmpty() ? wrapped.weightElements() : 1;
     }
 
     @Override
     public int weightEmpty() {
-      return 1;
+      return weightElements();
     }
 
     @Override
     public int weightHasElement() {
-      return 1;
+      return weightElements();
     }
 
     @Override
     public int weightSize() {
-      return 1;
+      return weightElements();
     }
 
     private void consumeState(@NotNull final ListAsyncMaterializer<F> state) {
@@ -418,13 +423,18 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
+    public int weightEach() {
+      return elements.size();
+    }
+
+    @Override
     public int weightElement() {
       return 1;
     }
 
     @Override
     public int weightElements() {
-      return 1;
+      return elements.size();
     }
 
     @Override

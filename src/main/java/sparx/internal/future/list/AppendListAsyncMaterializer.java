@@ -289,13 +289,18 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
+    public int weightEach() {
+      return wrapped.weightEach();
+    }
+
+    @Override
     public int weightElement() {
       return wrapped.weightElement();
     }
 
     @Override
     public int weightElements() {
-      return wrapped.weightElements();
+      return elementsConsumers.isEmpty() ? wrapped.weightElements() : 1;
     }
 
     @Override
@@ -305,11 +310,17 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public int weightHasElement() {
+      if (wrappedSize >= 0) {
+        return 1;
+      }
       return wrapped.weightElement();
     }
 
     @Override
     public int weightSize() {
+      if (wrappedSize >= 0) {
+        return 1;
+      }
       return wrapped.weightSize();
     }
 

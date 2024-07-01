@@ -202,16 +202,24 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + elementsMaterializer.weightSize()
-              + elementsMaterializer.weightElement());
+      if (stateConsumers.isEmpty()) {
+        final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightSize() + elementsMaterializer.weightSize()
+                + elementsMaterializer.weightElement());
+      }
+      return 1;
     }
 
     @Override

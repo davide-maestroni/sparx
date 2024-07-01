@@ -202,13 +202,20 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return elementsMaterializer.weightElement();
+      final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
+      return stateConsumers.isEmpty() && elementsMaterializer.knownSize() != 0
+          ? elementsMaterializer.weightElement() : 1;
     }
 
     @Override

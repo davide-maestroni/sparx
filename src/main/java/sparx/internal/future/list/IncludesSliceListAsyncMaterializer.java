@@ -182,14 +182,22 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightElement() + elementsMaterializer.weightElement());
+      if (stateConsumers.isEmpty()) {
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightElement() + elementsMaterializer.weightElement());
+      }
+      return 1;
     }
 
     @Override

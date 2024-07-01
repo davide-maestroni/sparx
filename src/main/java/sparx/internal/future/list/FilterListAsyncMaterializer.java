@@ -60,9 +60,9 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
+    private final ArrayList<E> elements = new ArrayList<E>();
     private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
         2);
-    private final ArrayList<E> elements = new ArrayList<E>();
     private final IndexedPredicate<? super E> predicate;
     private final ListAsyncMaterializer<E> wrapped;
 
@@ -271,6 +271,11 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public int weightContains() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightEach() {
       return weightElements();
     }
 

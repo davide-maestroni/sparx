@@ -468,6 +468,12 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
+    public int weightEach() {
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightEach() + elementsMaterializer.weightEach());
+    }
+
+    @Override
     public int weightElement() {
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightElement() + elementsMaterializer.weightElement());
@@ -475,24 +481,54 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     @Override
     public int weightElements() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightElements() + elementsMaterializer.weightElements());
+      if (elementsConsumers.isEmpty()) {
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightElements() + elementsMaterializer.weightElements());
+      }
+      return 1;
     }
 
     @Override
     public int weightEmpty() {
+      if (wrappedSize > 0 || elementsSize > 0) {
+        return 1;
+      }
+      if (wrappedSize == 0 && elementsSize < 0) {
+        return elementsMaterializer.weightEmpty();
+      }
+      if (wrappedSize < 0 && elementsSize == 0) {
+        return wrapped.weightEmpty();
+      }
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightEmpty() + elementsMaterializer.weightEmpty());
     }
 
     @Override
     public int weightHasElement() {
+      if (wrappedSize >= 0 && elementsSize >= 0) {
+        return 1;
+      }
+      if (wrappedSize >= 0) {
+        return elementsMaterializer.weightHasElement();
+      }
+      if (elementsSize >= 0) {
+        return wrapped.weightElement();
+      }
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightElement() + elementsMaterializer.weightHasElement());
     }
 
     @Override
     public int weightSize() {
+      if (wrappedSize >= 0 && elementsSize >= 0) {
+        return 1;
+      }
+      if (wrappedSize >= 0) {
+        return elementsMaterializer.weightSize();
+      }
+      if (elementsSize >= 0) {
+        return wrapped.weightSize();
+      }
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightSize() + elementsMaterializer.weightSize());
     }

@@ -276,13 +276,18 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
     }
 
     @Override
+    public int weightEach() {
+      return wrapped.weightElement();
+    }
+
+    @Override
     public int weightElement() {
       return wrapped.weightElement();
     }
 
     @Override
     public int weightElements() {
-      return wrapped.weightElement();
+      return elementsConsumers.isEmpty() ? wrapped.weightElement() : 1;
     }
 
     @Override

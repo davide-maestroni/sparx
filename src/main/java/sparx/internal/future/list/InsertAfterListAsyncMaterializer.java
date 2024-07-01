@@ -364,6 +364,11 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
+    public int weightEach() {
+      return wrapped.weightEach();
+    }
+
+    @Override
     public int weightElement() {
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightElement() + wrapped.weightSize());
@@ -371,7 +376,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     @Override
     public int weightElements() {
-      return wrapped.weightElements();
+      return elementsConsumers.isEmpty() ? wrapped.weightElements() : 1;
     }
 
     @Override

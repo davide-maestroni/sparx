@@ -186,12 +186,20 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
+      if (!stateConsumers.isEmpty()) {
+        return 1;
+      }
       final ListAsyncMaterializer<Object> elementsMaterializer = this.elementsMaterializer;
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightSize() + elementsMaterializer.weightSize()

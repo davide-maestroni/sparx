@@ -213,6 +213,11 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     }
 
     @Override
+    public int weightEach() {
+      return weightElements();
+    }
+
+    @Override
     public int weightElement() {
       return weightElements();
     }
@@ -493,13 +498,18 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     }
 
     @Override
+    public int weightEach() {
+      return wrapped.weightElement();
+    }
+
+    @Override
     public int weightElement() {
       return wrapped.weightElement();
     }
 
     @Override
     public int weightElements() {
-      return wrapped.weightElement();
+      return elementsConsumers.isEmpty() ? wrapped.weightElement() : 1;
     }
 
     @Override

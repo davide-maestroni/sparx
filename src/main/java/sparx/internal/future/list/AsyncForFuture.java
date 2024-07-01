@@ -88,7 +88,7 @@ public class AsyncForFuture<E> implements Future<Void> {
 
         @Override
         public int weight() {
-          return materializer.weightElements();
+          return materializer.weightEach();
         }
       });
     }
