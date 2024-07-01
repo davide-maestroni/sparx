@@ -199,11 +199,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
             if (testedIndex < index) {
               try {
                 if (predicate.test(index, element)) {
-                  final ListAsyncMaterializer<E> state = setState(
-                      new MapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                          cancelException, replaceFunction));
-                  consumeState(state);
-                  state.materializeEmpty(consumer);
+                  setState(index).materializeEmpty(consumer);
                   return;
                 }
               } catch (final Exception e) {
@@ -315,6 +311,22 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
       }
     }
 
+    private @NotNull ListAsyncMaterializer<E> setState(final int index) {
+      final ListAsyncMaterializer<E> state = MapFirstWhereListAsyncMaterializer.this.setState(
+          new MapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
+              cancelException, replaceFunction));
+      consumeState(state);
+      return state;
+    }
+
+    private @NotNull ListAsyncMaterializer<E> setState(
+        @NotNull final ListAsyncMaterializer<E> newState) {
+      final ListAsyncMaterializer<E> state = MapFirstWhereListAsyncMaterializer.this.setState(
+          newState);
+      consumeState(state);
+      return state;
+    }
+
     private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
         Task {
 
@@ -326,9 +338,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
           throws Exception {
         if (testedIndex < index) {
           if (predicate.test(index, element)) {
-            consumeState(setState(
-                new MapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                    cancelException, replaceFunction)));
+            setState(index);
             return;
           }
           testedIndex = index;
@@ -388,10 +398,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
         if (testedIndex < index) {
           try {
             if (predicate.test(index, element)) {
-              final ListAsyncMaterializer<E> state = setState(
-                  new MapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                      cancelException, replaceFunction));
-              consumeState(state);
+              final ListAsyncMaterializer<E> state = setState(index);
               if (index == 0) {
                 state.materializeContains(this.element, consumer);
               } else {
@@ -465,10 +472,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
         if (testedIndex < index) {
           try {
             if (predicate.test(index, element)) {
-              final ListAsyncMaterializer<E> state = setState(
-                  new MapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                      cancelException, replaceFunction));
-              consumeState(state);
+              final ListAsyncMaterializer<E> state = setState(index);
               if (index == 0) {
                 state.materializeContains(null, consumer);
               } else {
@@ -542,11 +546,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
         if (testedIndex < index) {
           try {
             if (predicate.test(index, element)) {
-              final ListAsyncMaterializer<E> state = setState(
-                  new MapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                      cancelException, replaceFunction));
-              consumeState(state);
-              state.materializeElement(this.index, consumer);
+              setState(index).materializeElement(this.index, consumer);
               return;
             }
           } catch (final Exception e) {
@@ -611,11 +611,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
         if (testedIndex < index) {
           try {
             if (predicate.test(index, element)) {
-              final ListAsyncMaterializer<E> state = setState(
-                  new MapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                      cancelException, replaceFunction));
-              consumeState(state);
-              state.materializeHasElement(this.index, consumer);
+              setState(index).materializeHasElement(this.index, consumer);
               return;
             }
           } catch (final Exception e) {

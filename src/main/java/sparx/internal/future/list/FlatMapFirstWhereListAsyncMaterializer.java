@@ -192,11 +192,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
             if (testedIndex < index) {
               try {
                 if (predicate.test(index, element)) {
-                  final ListAsyncMaterializer<E> state = setState(
-                      new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status,
-                          context, cancelException, decorateFunction));
-                  consumeState(state);
-                  state.materializeEmpty(consumer);
+                  setState(index).materializeEmpty(consumer);
                   return;
                 }
               } catch (final Exception e) {
@@ -308,6 +304,22 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
       }
     }
 
+    private @NotNull ListAsyncMaterializer<E> setState(final int index) {
+      final ListAsyncMaterializer<E> state = FlatMapFirstWhereListAsyncMaterializer.this.setState(
+          new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
+              cancelException, decorateFunction));
+      consumeState(state);
+      return state;
+    }
+
+    private @NotNull ListAsyncMaterializer<E> setState(
+        @NotNull final ListAsyncMaterializer<E> newState) {
+      final ListAsyncMaterializer<E> state = FlatMapFirstWhereListAsyncMaterializer.this.setState(
+          newState);
+      consumeState(state);
+      return state;
+    }
+
     private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
         Task {
 
@@ -319,9 +331,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
           throws Exception {
         if (testedIndex < index) {
           if (predicate.test(index, element)) {
-            consumeState(setState(
-                new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                    cancelException, decorateFunction)));
+            setState(index);
             return;
           }
           testedIndex = index;
@@ -380,10 +390,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         if (testedIndex < index) {
           try {
             if (predicate.test(index, element)) {
-              final ListAsyncMaterializer<E> state = setState(
-                  new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                      cancelException, decorateFunction));
-              consumeState(state);
+              final ListAsyncMaterializer<E> state = setState(index);
               if (index == 0) {
                 state.materializeContains(this.element, consumer);
               } else {
@@ -455,10 +462,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         if (testedIndex < index) {
           try {
             if (predicate.test(index, element)) {
-              final ListAsyncMaterializer<E> state = setState(
-                  new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                      cancelException, decorateFunction));
-              consumeState(state);
+              final ListAsyncMaterializer<E> state = setState(index);
               if (index == 0) {
                 state.materializeContains(null, consumer);
               } else {
@@ -531,11 +535,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         if (testedIndex < index) {
           try {
             if (predicate.test(index, element)) {
-              final ListAsyncMaterializer<E> state = setState(
-                  new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                      cancelException, decorateFunction));
-              consumeState(state);
-              state.materializeElement(this.index, consumer);
+              setState(index).materializeElement(this.index, consumer);
               return;
             }
           } catch (final Exception e) {
@@ -600,11 +600,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         if (testedIndex < index) {
           try {
             if (predicate.test(index, element)) {
-              final ListAsyncMaterializer<E> state = setState(
-                  new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                      cancelException, decorateFunction));
-              consumeState(state);
-              state.materializeHasElement(this.index, consumer);
+              setState(index).materializeHasElement(this.index, consumer);
               return;
             }
           } catch (final Exception e) {

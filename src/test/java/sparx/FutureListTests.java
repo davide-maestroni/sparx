@@ -1883,6 +1883,70 @@ public class FutureListTests {
   }
 
   @Test
+  public void mapLastWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).mapLastWhere(i -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).mapLastWhere(null, i -> i));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).mapLastWhere((i, n) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).mapLastWhere(null, (n, i) -> i));
+    var l = List.of(1, 2, null, 4);
+    test(l, () -> l, ll -> ll.mapLastWhere(i -> false, i -> i + 1));
+    test(List.of(1, 2, null, 5), () -> l, ll -> ll.mapLastWhere(i -> true, i -> i + 1));
+    test(List.of(1, 2, 3, 4), () -> l, ll -> ll.mapLastWhere(Objects::isNull, i -> 3));
+    test(List.of(1, 2, null, 5), () -> l, ll -> ll.mapLastWhere(i -> i == 4, i -> i + 1));
+
+    assertFalse(l.toFuture(context).mapLastWhere(i -> i < 2, i -> 1).isEmpty());
+    assertEquals(4, l.toFuture(context).mapLastWhere(i -> i < 2, i -> 1).size());
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).mapLastWhere(i -> i < 2, i -> 1).get(0));
+
+    test(List.of(), List::<Integer>of, ll -> ll.mapLastWhere(i -> false, i -> i + 1));
+    test(List.of(), List::<Integer>of, ll -> ll.mapLastWhere(i -> true, i -> i + 1));
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).mapLastWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }, (n, i) -> {
+      indexes.add(n);
+      return i;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(3, 2, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).map(i -> i).mapLastWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }, (n, i) -> {
+      indexes.add(n);
+      return i;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(3, 2, 2), indexes);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).map(e -> e).mapLastWhere(i -> true, i -> {
+        Thread.sleep(60000);
+        return i;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void prepend() throws Exception {
     test(List.of(3, 2, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(2).prepend(3));
     test(List.of(3, null, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(null).prepend(3));
