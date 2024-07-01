@@ -1968,6 +1968,9 @@ public class FutureListTests {
       throws Exception {
     test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(context)));
     test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(context).map(e -> e)));
+    test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(throughputContext)));
+    test(expected,
+        () -> actualTransformer.apply(baseSupplier.get().toFuture(throughputContext).map(e -> e)));
   }
 
   // TODO: add args validation + isCancelled, isFailed

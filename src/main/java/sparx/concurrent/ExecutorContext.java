@@ -448,8 +448,11 @@ public class ExecutorContext implements ExecutionContext {
           workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
           if (status == PAUSING) {
             status = PAUSED;
+          } else if (beforeQueue.isEmpty() && afterQueue.isEmpty()) {
+            // move to IDLE
+            status = IDLE;
           } else {
-            hasNext = !beforeQueue.isEmpty() || !afterQueue.isEmpty();
+            hasNext = true;
           }
         }
         if (hasNext) {
@@ -522,18 +525,21 @@ public class ExecutorContext implements ExecutionContext {
         }
       }
 
-      boolean hasNext;
       synchronized (lock) {
+        runningTask = null;
+        runningThread = null;
         workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
         if (status == PAUSING) {
           status = PAUSED;
           return;
         }
-        hasNext = !beforeQueue.isEmpty() || !afterQueue.isEmpty();
+        if (beforeQueue.isEmpty() && afterQueue.isEmpty()) {
+          // move to IDLE
+          status = IDLE;
+          return;
+        }
       }
-      if (hasNext) {
-        executor.execute(this);
-      }
+      executor.execute(this);
     }
   }
 
@@ -608,18 +614,21 @@ public class ExecutorContext implements ExecutionContext {
         }
       }
 
-      boolean hasNext;
       synchronized (lock) {
+        runningTask = null;
+        runningThread = null;
         workerAlert.notify(WorkerAlert.WAIT_STOP, currentThread);
         if (status == PAUSING) {
           status = PAUSED;
           return;
         }
-        hasNext = !beforeQueue.isEmpty() || !afterQueue.isEmpty();
+        if (beforeQueue.isEmpty() && afterQueue.isEmpty()) {
+          // move to IDLE
+          status = IDLE;
+          return;
+        }
       }
-      if (hasNext) {
-        executor.execute(this);
-      }
+      executor.execute(this);
     }
   }
 }
