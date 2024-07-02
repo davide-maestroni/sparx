@@ -224,7 +224,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
     @Override
     public int weightElements() {
-      return wrapped.weightSize();
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
     }
 
     @Override
@@ -389,8 +389,8 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
       if (index < 0) {
         safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else {
-        final int knownSize = knownSize();
-        if (index >= knownSize) {
+        final int knownSize = safeSize(wrappedSize);
+        if (knownSize >= 0 && index >= knownSize) {
           safeConsumeComplete(consumer, knownSize, LOGGER);
         } else {
           final int originalIndex = index;
@@ -400,7 +400,11 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
                 public void cancellableAccept(final int size, final int index, final E element)
                     throws Exception {
                   wrappedSize = Math.max(size, wrappedSize);
-                  consumer.accept(safeSize(size), originalIndex, element);
+                  if (originalIndex < length) {
+                    consumer.accept(safeSize(wrappedSize), originalIndex, element);
+                  } else {
+                    consumer.complete(length);
+                  }
                 }
 
                 @Override
@@ -451,23 +455,26 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     @Override
     public void materializeHasElement(final int index,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (index >= knownSize()) {
+      if (index < 0 || index >= length) {
         safeConsume(consumer, false, LOGGER);
       } else {
-        wrapped.materializeHasElement(IndexOverflowException.safeCast((long) index + start),
-            new CancellableAsyncConsumer<Boolean>() {
-              @Override
-              public void cancellableAccept(final Boolean hasElement) throws Exception {
-                consumer.accept(hasElement);
-              }
+        final int knownSize = safeSize(wrappedSize);
+        if (knownSize >= 0 && index >= knownSize) {
+          safeConsume(consumer, false, LOGGER);
+        } else {
+          wrapped.materializeHasElement(IndexOverflowException.safeCast((long) index + start),
+              new CancellableAsyncConsumer<Boolean>() {
+                @Override
+                public void cancellableAccept(final Boolean hasElement) throws Exception {
+                  consumer.accept(hasElement);
+                }
 
-              @Override
-              public void error(@NotNull final Exception error) throws Exception {
-                consumer.error(error);
-              }
-            });
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  consumer.error(error);
+                }
+              });
+        }
       }
     }
 
@@ -514,7 +521,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
     @Override
     public int weightEmpty() {
-      return wrapped.weightSize();
+      return safeSize(wrappedSize) < 0 ? wrapped.weightSize() : 1;
     }
 
     @Override
@@ -524,7 +531,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
     @Override
     public int weightSize() {
-      return wrapped.weightSize();
+      return safeSize(wrappedSize) < 0 ? wrapped.weightSize() : 1;
     }
 
     private void consumeElements(@NotNull final List<E> elements) {
@@ -562,7 +569,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
         Task {
 
       private final ArrayList<E> elements = new ArrayList<E>();
-      private final int end = start + length;
+      private final int end = start + length - 1;
 
       private int index = start;
       private String taskID;
@@ -624,7 +631,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
       private final AsyncConsumer<Boolean> consumer;
       private final Object element;
-      private final int end = start + length;
+      private final int end = start + length - 1;
 
       private int index = start;
       private String taskID;
@@ -681,7 +688,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
         CancellableIndexedAsyncConsumer<E> implements Task {
 
       private final AsyncConsumer<Boolean> consumer;
-      private final int end = start + length;
+      private final int end = start + length - 1;
 
       private int index = start;
       private String taskID;
@@ -737,7 +744,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
         CancellableIndexedAsyncConsumer<E> implements Task {
 
       private final IndexedAsyncConsumer<E> consumer;
-      private final int end = start + length;
+      private final int end = start + length - 1;
 
       private int index = start;
       private String taskID;
@@ -752,7 +759,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
         wrappedSize = Math.max(size, wrappedSize);
         consumer.accept(safeSize(size), index - start, element);
         if (index == end) {
-          consumer.complete(index - start + 1);
+          consumer.complete(index - start);
         } else {
           this.index = index + 1;
           taskID = getTaskID();

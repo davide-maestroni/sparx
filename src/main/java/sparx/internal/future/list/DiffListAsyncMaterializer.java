@@ -481,6 +481,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       private final Object element;
 
       private int index;
+      private int lastIndex;
       private String taskID;
 
       private MaterializingContainsElementAsyncConsumer(@NotNull final Object element,
@@ -492,18 +493,23 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void cancellableAccept(final int size, final int index, final E element)
           throws Exception {
-        if (this.element.equals(element)) {
-          consumer.accept(true);
-        } else {
-          this.index = index + 1;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
+        lastIndex = index;
+        if (this.index == index) {
+          if (this.element.equals(element)) {
+            consumer.accept(true);
+          } else {
+            this.index = index + 1;
+            taskID = getTaskID();
+            context.scheduleAfter(this);
+          }
         }
       }
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
-        consumer.accept(false);
+        if (lastIndex >= size) {
+          consumer.accept(false);
+        }
       }
 
       @Override
@@ -533,6 +539,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       private final AsyncConsumer<Boolean> consumer;
 
       private int index;
+      private int lastIndex;
       private String taskID;
 
       private MaterializingContainsNullAsyncConsumer(
@@ -543,18 +550,23 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void cancellableAccept(final int size, final int index, final E element)
           throws Exception {
-        if (element == null) {
-          consumer.accept(true);
-        } else {
-          this.index = index + 1;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
+        lastIndex = index;
+        if (this.index == index) {
+          if (element == null) {
+            consumer.accept(true);
+          } else {
+            this.index = index + 1;
+            taskID = getTaskID();
+            context.scheduleAfter(this);
+          }
         }
       }
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
-        consumer.accept(false);
+        if (lastIndex >= size) {
+          consumer.accept(false);
+        }
       }
 
       @Override

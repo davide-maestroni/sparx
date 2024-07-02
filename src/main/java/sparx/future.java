@@ -1452,7 +1452,7 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new EachListAsyncMaterializer<E>(materializer,
-              toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), false, context,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), false, context,
               cancelException, List.<Boolean>decorateFunction()));
     }
 
@@ -3023,12 +3023,14 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> orElse(@NotNull Iterable<E> elements) {
+    public @NotNull List<E> orElse(@NotNull final Iterable<E> elements) {
+      // TODO: materializeUntil, setState(wrapped), symmetricDiff, test => isMaterializedOnce
       return null;
     }
 
     @Override
-    public @NotNull List<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier) {
+    public @NotNull List<E> orElseGet(
+        @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
       return null;
     }
 
