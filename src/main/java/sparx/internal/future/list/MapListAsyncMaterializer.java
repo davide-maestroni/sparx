@@ -566,11 +566,9 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
         while (elements.has(++index)) {
           consumer.accept(size, index, elements.get(index));
         }
-        if (!elementsConsumers.isEmpty()) {
-          this.index = index;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
+        this.index = index;
+        taskID = getTaskID();
+        context.scheduleAfter(this);
       }
 
       @Override

@@ -588,7 +588,7 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           throws Exception {
         consumer.accept(maxIndex + 1, index, element);
         if (index < maxIndex) {
-          this.index = index - 1;
+          this.index = index + 1;
           taskID = getTaskID();
           context.scheduleAfter(this);
         } else {
