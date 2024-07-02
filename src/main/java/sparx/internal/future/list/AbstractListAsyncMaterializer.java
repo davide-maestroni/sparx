@@ -15,14 +15,23 @@
  */
 package sparx.internal.future.list;
 
+import static sparx.internal.future.AsyncConsumers.safeConsume;
+import static sparx.internal.future.AsyncConsumers.safeConsumeError;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 
 abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+
+  private static final Logger LOGGER = Logger.getLogger(
+      AbstractListAsyncMaterializer.class.getName());
 
   static final int STATUS_CANCELLED = 3;
   static final int STATUS_FAILED = 2;
@@ -271,6 +280,261 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
     }
 
     public void cancellableComplete(final int size) throws Exception {
+    }
+  }
+
+  protected class WrappingState implements ListAsyncMaterializer<E> {
+
+    private final AtomicReference<CancellationException> cancelException;
+    private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
+        2);
+    private final int knownSize;
+    private final ListAsyncMaterializer<E> wrapped;
+
+    private int wrappedSize;
+
+    protected WrappingState(@NotNull final ListAsyncMaterializer<E> wrapped,
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      this.wrapped = wrapped;
+      this.cancelException = cancelException;
+      wrappedSize = knownSize = wrapped.knownSize();
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return false;
+    }
+
+    @Override
+    public boolean isDone() {
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return false;
+    }
+
+    @Override
+    public boolean isMaterializedAtOnce() {
+      return wrapped.isMaterializedAtOnce();
+    }
+
+    @Override
+    public int knownSize() {
+      return knownSize;
+    }
+
+    @Override
+    public void materializeCancel(@NotNull final CancellationException exception) {
+      wrapped.materializeCancel(exception);
+      setCancelled(exception);
+      final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
+      for (final AsyncConsumer<List<E>> consumer : elementsConsumers) {
+        safeConsumeError(consumer, exception, LOGGER);
+      }
+      elementsConsumers.clear();
+    }
+
+    @Override
+    public void materializeContains(final Object element,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      wrapped.materializeContains(element, new CancellableAsyncConsumer<Boolean>() {
+        @Override
+        public void cancellableAccept(final Boolean contains) throws Exception {
+          consumer.accept(contains);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
+        }
+      });
+    }
+
+    @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
+    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+      wrapped.materializeEach(new CancellableIndexedAsyncConsumer<E>() {
+        @Override
+        public void cancellableAccept(final int size, final int index, final E element)
+            throws Exception {
+          wrappedSize = Math.max(wrappedSize, size);
+          consumer.accept(size, index, element);
+        }
+
+        @Override
+        public void cancellableComplete(final int size) throws Exception {
+          wrappedSize = size;
+          consumer.complete(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
+        }
+      });
+    }
+
+    @Override
+    public void materializeElement(final int index,
+        @NotNull final IndexedAsyncConsumer<E> consumer) {
+      if (index < 0) {
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+      } else {
+        wrapped.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
+          @Override
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
+            wrappedSize = Math.max(wrappedSize, size);
+            consumer.accept(size, index, element);
+          }
+
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            wrappedSize = size;
+            consumer.complete(size);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
+    public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+      final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
+      elementsConsumers.add(consumer);
+      if (elementsConsumers.size() == 1) {
+        wrapped.materializeElements(new CancellableAsyncConsumer<List<E>>() {
+          @Override
+          public void cancellableAccept(final List<E> elements) {
+            setState(new ListToListAsyncMaterializer<E>(elements));
+            for (final AsyncConsumer<List<E>> consumer : elementsConsumers) {
+              safeConsume(consumer, elements, LOGGER);
+            }
+            elementsConsumers.clear();
+          }
+
+          @Override
+          public void error(@NotNull Exception error) {
+            final CancellationException exception = cancelException.get();
+            if (exception != null) {
+              setCancelled(exception);
+              error = exception;
+            } else {
+              setFailed(error);
+            }
+            for (final AsyncConsumer<List<E>> consumer : elementsConsumers) {
+              safeConsumeError(consumer, error, LOGGER);
+            }
+            elementsConsumers.clear();
+          }
+        });
+      }
+    }
+
+    @Override
+    public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
+      if (wrappedSize >= 0) {
+        safeConsume(consumer, wrappedSize == 0, LOGGER);
+      } else {
+        wrapped.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
+          @Override
+          public void cancellableAccept(final Boolean empty) throws Exception {
+            consumer.accept(empty);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
+    public void materializeHasElement(final int index,
+        @NotNull final AsyncConsumer<Boolean> consumer) {
+      if (index < 0) {
+        safeConsume(consumer, false, LOGGER);
+      } else if (wrappedSize >= 0) {
+        safeConsume(consumer, index < wrappedSize, LOGGER);
+      } else {
+        wrapped.materializeHasElement(index, new CancellableAsyncConsumer<Boolean>() {
+          @Override
+          public void cancellableAccept(final Boolean hasElement) throws Exception {
+            consumer.accept(hasElement);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
+    public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
+      if (wrappedSize >= 0) {
+        safeConsume(consumer, wrappedSize, LOGGER);
+      } else {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) throws Exception {
+            wrappedSize = size;
+            consumer.accept(size);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
+    public int weightContains() {
+      return wrapped.weightContains();
+    }
+
+    @Override
+    public int weightEach() {
+      return wrapped.weightEach();
+    }
+
+    @Override
+    public int weightElement() {
+      return wrapped.weightElement();
+    }
+
+    @Override
+    public int weightElements() {
+      return elementsConsumers.isEmpty() ? wrapped.weightElements() : 1;
+    }
+
+    @Override
+    public int weightEmpty() {
+      return wrappedSize < 0 ? wrapped.weightEmpty() : 1;
+    }
+
+    @Override
+    public int weightHasElement() {
+      return wrappedSize < 0 ? wrapped.weightHasElement() : 1;
+    }
+
+    @Override
+    public int weightSize() {
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
     }
   }
 }

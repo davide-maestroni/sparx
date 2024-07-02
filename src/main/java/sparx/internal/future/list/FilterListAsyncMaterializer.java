@@ -115,7 +115,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     @Override
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
+      materializeUntil(Integer.MAX_VALUE, true, new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E element) {
         }
@@ -139,7 +139,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materializeUntil(Integer.MAX_VALUE, consumer);
+      materializeUntil(Integer.MAX_VALUE, false, consumer);
     }
 
     @Override
@@ -152,19 +152,22 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         if (elements.size() > index) {
           safeConsume(consumer, -1, index, elements.get(index), LOGGER);
         } else {
-          final int originalIndex = index;
-          materializeUntil(index, new IndexedAsyncConsumer<E>() {
+          materializeUntil(index, true, new IndexedAsyncConsumer<E>() {
+            private E lastElement;
+            private int lastIndex = -1;
+
             @Override
-            public void accept(final int size, final int index, final E element) throws Exception {
-              if (originalIndex == index) {
-                consumer.accept(size, index, element);
-              }
+            public void accept(final int size, final int index, final E element) {
+              lastIndex = index;
+              lastElement = element;
             }
 
             @Override
             public void complete(final int size) throws Exception {
-              if (originalIndex >= size) {
+              if (lastIndex < index) {
                 consumer.complete(size);
+              } else {
+                consumer.accept(-1, lastIndex, lastElement);
               }
             }
 
@@ -179,7 +182,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-      materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
+      materializeUntil(Integer.MAX_VALUE, true, new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E element) {
         }
@@ -198,7 +201,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      materializeUntil(0, new IndexedAsyncConsumer<E>() {
+      materializeUntil(0, true, new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E element) {
         }
@@ -225,20 +228,17 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         if (elements.size() > index) {
           safeConsume(consumer, true, LOGGER);
         } else {
-          final int originalIndex = index;
-          materializeUntil(index, new IndexedAsyncConsumer<E>() {
+          materializeUntil(index, true, new IndexedAsyncConsumer<E>() {
+            private int lastIndex = -1;
+
             @Override
-            public void accept(final int size, final int index, final E element) throws Exception {
-              if (originalIndex == index) {
-                consumer.accept(true);
-              }
+            public void accept(final int size, final int index, final E element) {
+              lastIndex = index;
             }
 
             @Override
             public void complete(final int size) throws Exception {
-              if (originalIndex >= size) {
-                consumer.accept(false);
-              }
+              consumer.accept(lastIndex == index);
             }
 
             @Override
@@ -252,7 +252,7 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
+      materializeUntil(Integer.MAX_VALUE, true, new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E element) {
         }
@@ -356,22 +356,36 @@ public class FilterListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       return taskID != null ? taskID : "";
     }
 
-    private void materializeUntil(final int index,
+    private void materializeUntil(final int index, final boolean skipPrevious,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       final ArrayList<E> elements = this.elements;
       if (elements.size() > index) {
         final int size = index + 1;
-        for (int i = 0; i < size; ++i) {
-          if (!safeConsume(consumer, -1, i, elements.get(i), LOGGER)) {
+        if (skipPrevious) {
+          if (!safeConsume(consumer, -1, index, elements.get(index), LOGGER)) {
             return;
+          }
+        } else {
+          for (int i = 0; i < size; ++i) {
+            if (!safeConsume(consumer, -1, i, elements.get(i), LOGGER)) {
+              return;
+            }
           }
         }
         safeConsumeComplete(consumer, size, LOGGER);
       } else {
         final int size = elements.size();
-        for (int i = 0; i < size; ++i) {
-          if (!safeConsume(consumer, -1, i, elements.get(i), LOGGER)) {
+        if (skipPrevious) {
+          final int lastIndex = size - 1;
+          if (lastIndex >= 0 && !safeConsume(consumer, -1, lastIndex, elements.get(lastIndex),
+              LOGGER)) {
             return;
+          }
+        } else {
+          for (int i = 0; i < size; ++i) {
+            if (!safeConsume(consumer, -1, i, elements.get(i), LOGGER)) {
+              return;
+            }
           }
         }
         final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;

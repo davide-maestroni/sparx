@@ -599,8 +599,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(wrapped);
-            consumer.accept(wrapped);
+            consumer.accept(setState(new WrappingState(wrapped, cancelException)));
           }
 
           @Override

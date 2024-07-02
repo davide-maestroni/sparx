@@ -322,7 +322,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
             taskID = getTaskID();
             context.scheduleAfter(this);
           } else {
-            consumeState(setState(wrapped));
+            consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
           }
         }
       }

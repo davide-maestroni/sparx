@@ -345,7 +345,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public void cancellableComplete(final int size) {
-        consumeState(setState(wrapped));
+        consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
       }
 
       @Override
@@ -416,7 +416,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
-        consumeState(setState(wrapped));
+        consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
         consumer.accept(false);
       }
 
@@ -488,7 +488,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
-        consumeState(setState(wrapped));
+        consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
         consumer.accept(false);
       }
 
@@ -554,7 +554,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
-        consumeState(setState(wrapped));
+        consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
         consumer.complete(size);
       }
 
@@ -619,7 +619,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
 
       @Override
       public void cancellableComplete(final int size) {
-        consumeState(setState(wrapped));
+        consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
       }
 
       @Override

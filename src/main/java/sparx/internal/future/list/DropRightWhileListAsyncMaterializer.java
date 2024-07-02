@@ -308,7 +308,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
         } else {
           final int maxElements = wrappedSize - index - 1;
           if (maxElements == 0) {
-            consumeState(setState(wrapped));
+            consumeState(setState(new WrappingState(wrapped, cancelException)));
           } else {
             consumeState(setState(
                 new DropRightListAsyncMaterializer<E>(wrapped, maxElements, status, context,

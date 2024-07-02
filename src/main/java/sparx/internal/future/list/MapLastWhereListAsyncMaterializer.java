@@ -325,7 +325,7 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
           taskID = getTaskID();
           context.scheduleAfter(this);
         } else {
-          consumeState(setState(wrapped));
+          consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
         }
       }
 
