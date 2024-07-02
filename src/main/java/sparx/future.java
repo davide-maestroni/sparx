@@ -3024,7 +3024,7 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> orElse(@NotNull final Iterable<E> elements) {
+    public @NotNull List<E> orElse(@NotNull final Iterable<? extends E> elements) {
       return null;
     }
 

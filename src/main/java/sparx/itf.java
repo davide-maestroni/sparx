@@ -331,7 +331,7 @@ class itf {
 
     @Override
     @NotNull
-    Collection<E> orElse(@NotNull Iterable<E> elements);
+    Collection<E> orElse(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -838,7 +838,7 @@ class itf {
 
     @Override
     @NotNull
-    Iterator<E> orElse(@NotNull Iterable<E> elements);
+    Iterator<E> orElse(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -1346,7 +1346,7 @@ class itf {
 
     @Override
     @NotNull
-    List<E> orElse(@NotNull Iterable<E> elements);
+    List<E> orElse(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -1844,7 +1844,7 @@ class itf {
 
     @Override
     @NotNull
-    ListIterator<E> orElse(@NotNull Iterable<E> elements);
+    ListIterator<E> orElse(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -2258,7 +2258,7 @@ class itf {
     boolean notEmpty();
 
     @NotNull
-    Sequence<E> orElse(@NotNull Iterable<E> elements);
+    Sequence<E> orElse(@NotNull Iterable<? extends E> elements);
 
     @NotNull
     Sequence<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
@@ -2680,7 +2680,7 @@ class itf {
 
     @Override
     @NotNull
-    Set<E> orElse(@NotNull Iterable<E> elements);
+    Set<E> orElse(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -3153,7 +3153,7 @@ class itf {
 
     @Override
     @NotNull
-    Stream<E> orElse(@NotNull Iterable<E> elements);
+    Stream<E> orElse(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
