@@ -96,6 +96,7 @@ import sparx.internal.lazy.iterator.SliceIteratorMaterializer;
 import sparx.internal.lazy.iterator.SlidingWindowIteratorMaterializer;
 import sparx.internal.lazy.iterator.StartsWithIteratorMaterializer;
 import sparx.internal.lazy.iterator.SwitchExceptionallyIteratorMaterializer;
+import sparx.internal.lazy.iterator.SymmetricDiffIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeRightIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeRightWhileIteratorMaterializer;
@@ -171,6 +172,7 @@ import sparx.internal.lazy.list.SingleMapWhereListMaterializer;
 import sparx.internal.lazy.list.SliceListMaterializer;
 import sparx.internal.lazy.list.SortedListMaterializer;
 import sparx.internal.lazy.list.StartsWithListMaterializer;
+import sparx.internal.lazy.list.SymmetricDiffListMaterializer;
 import sparx.internal.lazy.list.TakeListMaterializer;
 import sparx.internal.lazy.list.TakeRightListMaterializer;
 import sparx.internal.lazy.list.TakeRightWhileListMaterializer;
@@ -1972,19 +1974,13 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return Iterator.wrap(elements);
       }
-      final ListMaterializer<E> elementsMaterializer = List.getElementsMaterializer(
+      final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
           Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
-      final IteratorToListMaterializer<E> listMaterializer = new IteratorToListMaterializer<E>(
-          this);
-      final DiffListMaterializer<E> left = new DiffListMaterializer<E>(listMaterializer,
-          elementsMaterializer);
-      final DiffListMaterializer<E> right = new DiffListMaterializer<E>(elementsMaterializer,
-          listMaterializer);
-      return new Iterator<E>(new ListMaterializerToIteratorMaterializer<E>(
-          new AppendAllListMaterializer<E>(left, right)));
+      return new Iterator<E>(
+          new SymmetricDiffIteratorMaterializer<E>(materializer, elementsMaterializer));
     }
 
     @Override
@@ -4041,11 +4037,7 @@ public class lazy extends Sparx {
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
-      final DiffListMaterializer<E> left = new DiffListMaterializer<E>(materializer,
-          elementsMaterializer);
-      final DiffListMaterializer<E> right = new DiffListMaterializer<E>(elementsMaterializer,
-          materializer);
-      return new List<E>(new AppendAllListMaterializer<E>(left, right));
+      return new List<E>(new SymmetricDiffListMaterializer<E>(materializer, elementsMaterializer));
     }
 
     @Override

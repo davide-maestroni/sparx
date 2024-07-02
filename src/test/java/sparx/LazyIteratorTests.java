@@ -2919,6 +2919,11 @@ public class LazyIteratorTests {
   }
 
   @Test
+  public void symmetricDiff() {
+    // TODO
+  }
+
+  @Test
   public void take() {
     Supplier<Iterator<Integer>> itr = () -> Iterator.<Integer>of().take(1);
     assertTrue(itr.get().isEmpty());

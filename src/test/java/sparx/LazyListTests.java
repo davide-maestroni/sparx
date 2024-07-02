@@ -1399,6 +1399,22 @@ public class LazyListTests {
   }
 
   @Test
+  public void symmetricDiff() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).symmetricDiff(null));
+    test(List.of(2, 4), () -> List.of(1, 2, null, 4).symmetricDiff(List.of(1, null)));
+    test(List.of(2, null), () -> List.of(1, 2, null, 4).symmetricDiff(List.of(1, 4)));
+    test(List.of(2, null, 3), () -> List.of(1, 2, null, 4).symmetricDiff(List.of(1, 3, 4)));
+    test(List.of(2, null, 4, 3, 3), () -> List.of(1, 2, null, 4).symmetricDiff(List.of(3, 1, 3)));
+    test(List.of(1, 2, 4, null), () -> List.of(1, 2, null, 4).symmetricDiff(List.of(null, null)));
+    test(List.of(1, 2, 4, null),
+        () -> List.of(1, 1, 2, null, 4).symmetricDiff(List.of(null, null, 1)));
+    test(List.of(), () -> List.of(1, null).symmetricDiff(List.of(1, null)));
+    test(List.of(1, 2, null, 4), () -> List.of(1, 2, null, 4).symmetricDiff(List.of()));
+    test(List.of(1, 1, 2, null, 4), () -> List.of(1, 1, 2, null, 4).symmetricDiff(List.of()));
+    test(List.of(1, 2, null, 4), () -> List.of().symmetricDiff(List.of(1, 2, null, 4)));
+  }
+
+  @Test
   public void take() throws Exception {
     test(List.of(), () -> List.<Integer>of().take(1));
     test(List.of(), () -> List.<Integer>of().take(0));

@@ -91,6 +91,7 @@ import sparx.internal.future.list.PrependAllListAsyncMaterializer;
 import sparx.internal.future.list.PrependListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
+import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
 import sparx.util.DeadLockException;
 import sparx.util.Require;
@@ -3024,7 +3025,6 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> orElse(@NotNull final Iterable<E> elements) {
-      // TODO: materializeUntil, setState(wrapped), symmetricDiff, test => isMaterializedOnce
       return null;
     }
 
@@ -3338,13 +3338,13 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> symmetricDiff(@NotNull final Iterable<? extends E> elements) {
-      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<E>(context, cancelException,
             getElementsMaterializer(context, taskID, Require.notNull(elements, "elements")));
       }
+      final ExecutionContext context = this.context;
       final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(context, taskID,
           Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
@@ -3355,13 +3355,9 @@ class future extends Sparx {
             lazyMaterializerSymmetricDiff(materializer, cancelException,
                 Require.notNull(elements, "elements")));
       }
-      final DiffListAsyncMaterializer<E> left = new DiffListAsyncMaterializer<E>(materializer,
-          elementsMaterializer, context, cancelException, List.<E>decorateFunction());
-      final DiffListAsyncMaterializer<E> right = new DiffListAsyncMaterializer<E>(
-          elementsMaterializer, materializer, context, cancelException, List.<E>decorateFunction());
       return new List<E>(context, cancelException,
-          new AppendAllListAsyncMaterializer<E>(left, right, cancelException,
-              List.<E>appendAllFunction()));
+          new SymmetricDiffListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     public @NotNull List<E> switchTo(@NotNull final ExecutionContext context) {

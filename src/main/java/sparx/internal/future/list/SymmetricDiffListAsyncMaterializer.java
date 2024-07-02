@@ -36,11 +36,12 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.util.function.Function;
 
-public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
-  private static final Logger LOGGER = Logger.getLogger(DiffListAsyncMaterializer.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(
+      SymmetricDiffListAsyncMaterializer.class.getName());
 
-  public DiffListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+  public SymmetricDiffListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
@@ -67,6 +68,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     private final ListAsyncMaterializer<E> wrapped;
 
     private HashMap<Object, Integer> elementsBag;
+    private boolean isWrapped = true;
     private int nextIndex;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
@@ -433,13 +435,25 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Override
       public void cancellableAccept(final int size, final int index, final E element) {
         nextIndex = index + 1;
-        final HashMap<Object, Integer> elementsBag = ImmaterialState.this.elementsBag;
+        final HashMap<Object, Integer> elementsBag = SymmetricDiffListAsyncMaterializer.ImmaterialState.this.elementsBag;
         final Integer count = elementsBag.get(element);
-        if (count == null) {
+        if (isWrapped) {
+          if (count == null) {
+            final int wrappedIndex = elements.size();
+            elements.add(element);
+            consumeElement(wrappedIndex, element);
+          } else {
+            final int decCount = count - 1;
+            if (decCount == 0) {
+              elementsBag.remove(element);
+            } else {
+              elementsBag.put(element, decCount);
+            }
+          }
+        } else if (count != null) {
           final int wrappedIndex = elements.size();
           elements.add(element);
           consumeElement(wrappedIndex, element);
-        } else {
           final int decCount = count - 1;
           if (decCount == 0) {
             elementsBag.remove(element);
@@ -455,9 +469,16 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public void cancellableComplete(final int size) throws Exception {
-        final List<E> materialized = decorateFunction.apply(elements);
-        setState(new ListToListAsyncMaterializer<E>(materialized));
-        consumeComplete(elements.size());
+        if (isWrapped) {
+          nextIndex = 0;
+          isWrapped = false;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        } else {
+          final List<E> materialized = decorateFunction.apply(elements);
+          setState(new ListToListAsyncMaterializer<E>(materialized));
+          consumeComplete(elements.size());
+        }
       }
 
       @Override
@@ -473,8 +494,13 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       }
 
       @Override
+      @SuppressWarnings("unchecked")
       public void run() {
-        wrapped.materializeElement(nextIndex, this);
+        if (isWrapped) {
+          wrapped.materializeElement(nextIndex, this);
+        } else {
+          ((ListAsyncMaterializer<E>) elementsMaterializer).materializeElement(nextIndex, this);
+        }
       }
 
       @Override
@@ -484,7 +510,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        return isWrapped ? wrapped.weightElement() : elementsMaterializer.weightElement();
       }
     }
 
