@@ -42,7 +42,7 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
       SymmetricDiffListAsyncMaterializer.class.getName());
 
   public SymmetricDiffListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
+      @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
@@ -64,15 +64,15 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
     private final ArrayList<E> elements = new ArrayList<E>();
     private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
         2);
-    private final ListAsyncMaterializer<?> elementsMaterializer;
+    private final ListAsyncMaterializer<E> elementsMaterializer;
     private final ListAsyncMaterializer<E> wrapped;
 
-    private HashMap<Object, Integer> elementsBag;
+    private HashMap<E, Integer> elementsBag;
     private boolean isWrapped = true;
     private int nextIndex;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
+        @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
@@ -357,7 +357,6 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
       return taskID != null ? taskID : "";
     }
 
-    @SuppressWarnings("unchecked")
     private void materializeUntil(final int index, final boolean skipPrevious,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       final ArrayList<E> elements = this.elements;
@@ -399,27 +398,26 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
         indexConsumers.add(consumer);
         if (needsRun) {
           if (elementsBag == null) {
-            ((ListAsyncMaterializer<Object>) elementsMaterializer).materializeElements(
-                new CancellableAsyncConsumer<List<Object>>() {
-                  @Override
-                  public void cancellableAccept(final List<Object> elements) {
-                    final HashMap<Object, Integer> bag = elementsBag = new HashMap<Object, Integer>();
-                    for (final Object element : elements) {
-                      final Integer count = bag.get(element);
-                      if (count == null) {
-                        bag.put(element, 1);
-                      } else {
-                        bag.put(element, count + 1);
-                      }
-                    }
-                    new MaterializingAsyncConsumer().run();
+            elementsMaterializer.materializeElements(new CancellableAsyncConsumer<List<E>>() {
+              @Override
+              public void cancellableAccept(final List<E> elements) {
+                final HashMap<E, Integer> bag = elementsBag = new HashMap<E, Integer>();
+                for (final E element : elements) {
+                  final Integer count = bag.get(element);
+                  if (count == null) {
+                    bag.put(element, 1);
+                  } else {
+                    bag.put(element, count + 1);
                   }
+                }
+                new MaterializingAsyncConsumer().run();
+              }
 
-                  @Override
-                  public void error(@NotNull final Exception error) {
-                    consumeError(error);
-                  }
-                });
+              @Override
+              public void error(@NotNull final Exception error) {
+                consumeError(error);
+              }
+            });
           } else {
             new MaterializingAsyncConsumer().run();
           }
@@ -435,7 +433,7 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
       @Override
       public void cancellableAccept(final int size, final int index, final E element) {
         nextIndex = index + 1;
-        final HashMap<Object, Integer> elementsBag = SymmetricDiffListAsyncMaterializer.ImmaterialState.this.elementsBag;
+        final HashMap<E, Integer> elementsBag = SymmetricDiffListAsyncMaterializer.ImmaterialState.this.elementsBag;
         final Integer count = elementsBag.get(element);
         if (isWrapped) {
           if (count == null) {
@@ -494,12 +492,11 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
       }
 
       @Override
-      @SuppressWarnings("unchecked")
       public void run() {
         if (isWrapped) {
           wrapped.materializeElement(nextIndex, this);
         } else {
-          ((ListAsyncMaterializer<E>) elementsMaterializer).materializeElement(nextIndex, this);
+          elementsMaterializer.materializeElement(nextIndex, this);
         }
       }
 

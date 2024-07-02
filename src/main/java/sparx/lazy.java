@@ -1841,6 +1841,11 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public int size() {
+      return materializer.materializeSkip(Integer.MAX_VALUE);
+    }
+
+    @Override
     public @NotNull Iterator<E> slice(final int start) {
       return slice(start, Integer.MAX_VALUE);
     }
@@ -1974,18 +1979,13 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return Iterator.wrap(elements);
       }
-      final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
+      final ListMaterializer<E> elementsMaterializer = List.getElementsMaterializer(
           Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
         return this;
       }
       return new Iterator<E>(
           new SymmetricDiffIteratorMaterializer<E>(materializer, elementsMaterializer));
-    }
-
-    @Override
-    public int size() {
-      return materializer.materializeSkip(Integer.MAX_VALUE);
     }
 
     @Override

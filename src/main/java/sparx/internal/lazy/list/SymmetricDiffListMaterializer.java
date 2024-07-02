@@ -28,7 +28,7 @@ public class SymmetricDiffListMaterializer<E> implements ListMaterializer<E> {
   private volatile ListMaterializer<E> state;
 
   public SymmetricDiffListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final ListMaterializer<?> elementsMaterializer) {
+      @NotNull final ListMaterializer<E> elementsMaterializer) {
     state = new ImmaterialState(wrapped, elementsMaterializer);
   }
 
@@ -75,16 +75,16 @@ public class SymmetricDiffListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState extends AbstractListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
-    private final ListMaterializer<?> elementsMaterializer;
+    private final ListMaterializer<E> elementsMaterializer;
     private final AtomicInteger modCount = new AtomicInteger();
     private final ListMaterializer<E> wrapped;
 
-    private HashMap<Object, Integer> elementsBag;
+    private HashMap<E, Integer> elementsBag;
     private boolean isWrapped = true;
     private int pos;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final ListMaterializer<?> elementsMaterializer) {
+        @NotNull final ListMaterializer<E> elementsMaterializer) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
     }
@@ -127,15 +127,15 @@ public class SymmetricDiffListMaterializer<E> implements ListMaterializer<E> {
       return materializeUntil(Integer.MAX_VALUE);
     }
 
-    private @NotNull HashMap<Object, Integer> fillElementsBag() {
+    private @NotNull HashMap<E, Integer> fillElementsBag() {
       if (elementsBag == null) {
         final AtomicInteger modCount = this.modCount;
         final int expectedCount = modCount.incrementAndGet();
-        final HashMap<Object, Integer> bag = elementsBag = new HashMap<Object, Integer>();
-        final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
+        final HashMap<E, Integer> bag = elementsBag = new HashMap<E, Integer>();
+        final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
         int i = 0;
         while (elementsMaterializer.canMaterializeElement(i)) {
-          final Object element = elementsMaterializer.materializeElement(i++);
+          final E element = elementsMaterializer.materializeElement(i++);
           final Integer count = bag.get(element);
           if (count == null) {
             bag.put(element, 1);
@@ -150,16 +150,14 @@ public class SymmetricDiffListMaterializer<E> implements ListMaterializer<E> {
       return elementsBag;
     }
 
-    @SuppressWarnings("unchecked")
     private int materializeUntil(final int index) {
       final ArrayList<E> elements = this.elements;
       int currSize = elements.size();
       if (currSize > index) {
         return currSize;
       }
-      ListMaterializer<E> materializer =
-          isWrapped ? wrapped : (ListMaterializer<E>) elementsMaterializer;
-      final HashMap<Object, Integer> elementsBag = fillElementsBag();
+      ListMaterializer<E> materializer = isWrapped ? wrapped : elementsMaterializer;
+      final HashMap<E, Integer> elementsBag = fillElementsBag();
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
@@ -204,9 +202,9 @@ public class SymmetricDiffListMaterializer<E> implements ListMaterializer<E> {
             }
             ++i;
           } else if (isWrapped) {
-            isWrapped = false;
             i = 0;
-            materializer = (ListMaterializer<E>) elementsMaterializer;
+            isWrapped = false;
+            materializer = elementsMaterializer;
           } else {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();

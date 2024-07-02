@@ -31,11 +31,13 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
 import sparx.util.SizeOverflowException;
 
+@SuppressWarnings("DataFlowIssue")
 public class LazyIteratorTests {
 
   @Test
@@ -2919,8 +2921,22 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void symmetricDiff() {
-    // TODO
+  public void symmetricDiff() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).symmetricDiff(null));
+    test(List.of(2, 4), () -> Iterator.of(1, 2, null, 4).symmetricDiff(List.of(1, null)));
+    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4).symmetricDiff(List.of(1, 4)));
+    test(List.of(2, null, 3), () -> Iterator.of(1, 2, null, 4).symmetricDiff(List.of(1, 3, 4)));
+    test(List.of(2, null, 4, 3, 3),
+        () -> Iterator.of(1, 2, null, 4).symmetricDiff(List.of(3, 1, 3)));
+    test(List.of(1, 2, 4, null),
+        () -> Iterator.of(1, 2, null, 4).symmetricDiff(List.of(null, null)));
+    test(List.of(1, 2, 4, null),
+        () -> Iterator.of(1, 1, 2, null, 4).symmetricDiff(List.of(null, null, 1)));
+    test(List.of(), () -> Iterator.of(1, null).symmetricDiff(List.of(1, null)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).symmetricDiff(List.of()));
+    test(List.of(1, 1, 2, null, 4), () -> Iterator.of(1, 1, 2, null, 4).symmetricDiff(List.of()));
+    test(List.of(1, 2, null, 4), () -> Iterator.of().symmetricDiff(List.of(1, 2, null, 4)));
+
   }
 
   @Test
@@ -3104,5 +3120,25 @@ public class LazyIteratorTests {
 
     assertEquals(List.of(1, 2, null, 4), Iterator.of(1, 2, null, 4).union(Iterator.of()).toList());
     assertEquals(List.of(1, 2, null, 4), Iterator.of().union(Iterator.of(1, 2, null, 4)).toList());
+  }
+
+  private <E> void test(@NotNull final java.util.List<E> expected,
+      @NotNull final sparx.util.function.Supplier<? extends Iterator<? extends E>> actualSupplier)
+      throws Exception {
+    assertEquals(expected.isEmpty(), actualSupplier.get().isEmpty());
+    assertEquals(!expected.isEmpty(), actualSupplier.get().notEmpty());
+    assertEquals(expected.size(), actualSupplier.get().size());
+    assertEquals(expected, actualSupplier.get().toList());
+    assertThrows(IndexOutOfBoundsException.class, () -> actualSupplier.get().toList().get(-1));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> actualSupplier.get().toList().get(expected.size()));
+    var itr = actualSupplier.get();
+    for (E element : expected) {
+      assertTrue(itr.hasNext());
+      assertEquals(element, itr.next());
+      assertThrows(UnsupportedOperationException.class, itr::remove);
+    }
+    assertFalse(itr.hasNext());
+    assertThrows(NoSuchElementException.class, itr::next);
   }
 }

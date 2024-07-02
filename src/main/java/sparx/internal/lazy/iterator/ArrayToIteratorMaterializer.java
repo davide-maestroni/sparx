@@ -15,6 +15,7 @@
  */
 package sparx.internal.lazy.iterator;
 
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 
 public class ArrayToIteratorMaterializer<E> implements IteratorMaterializer<E> {
@@ -39,7 +40,11 @@ public class ArrayToIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   @Override
   public E materializeNext() {
-    return elements[pos++];
+    try {
+      return elements[pos++];
+    } catch (final ArrayIndexOutOfBoundsException e) {
+      throw new NoSuchElementException(Integer.toString(pos - 1));
+    }
   }
 
   @Override

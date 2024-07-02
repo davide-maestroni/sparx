@@ -18,21 +18,24 @@ package sparx.internal.lazy.iterator;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.internal.lazy.list.ListMaterializer;
 
 public class SymmetricDiffIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
-  private final IteratorMaterializer<?> elementsMaterializer;
+  private final IteratorMaterializer<E> elements;
+  private final ListMaterializer<E> elementsMaterializer;
   private final IteratorMaterializer<E> wrapped;
 
-  private HashMap<Object, Integer> elementsBag;
+  private HashMap<E, Integer> elementsBag;
   private boolean hasNext;
   private boolean isWrapped = true;
   private E next;
 
   public SymmetricDiffIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      @NotNull final IteratorMaterializer<?> elementsMaterializer) {
+      @NotNull final ListMaterializer<E> elementsMaterializer) {
     this.wrapped = wrapped;
     this.elementsMaterializer = elementsMaterializer;
+    elements = new ListMaterializerToIteratorMaterializer<E>(elementsMaterializer);
   }
 
   @Override
@@ -41,14 +44,12 @@ public class SymmetricDiffIteratorMaterializer<E> extends AbstractIteratorMateri
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public boolean materializeHasNext() {
     if (hasNext) {
       return true;
     }
-    final HashMap<Object, Integer> elementsBag = fillElementsBag();
-    IteratorMaterializer<E> materializer =
-        isWrapped ? wrapped : (IteratorMaterializer<E>) elementsMaterializer;
+    final HashMap<E, Integer> elementsBag = fillElementsBag();
+    IteratorMaterializer<E> materializer = isWrapped ? wrapped : elements;
     while (true) {
       while (materializer.materializeHasNext()) {
         final E element = materializer.materializeNext();
@@ -81,7 +82,7 @@ public class SymmetricDiffIteratorMaterializer<E> extends AbstractIteratorMateri
       }
       if (isWrapped) {
         isWrapped = false;
-        materializer = (IteratorMaterializer<E>) elementsMaterializer;
+        materializer = elements;
       } else {
         break;
       }
@@ -100,12 +101,13 @@ public class SymmetricDiffIteratorMaterializer<E> extends AbstractIteratorMateri
     return next;
   }
 
-  private @NotNull HashMap<Object, Integer> fillElementsBag() {
+  private @NotNull HashMap<E, Integer> fillElementsBag() {
     if (elementsBag == null) {
-      final HashMap<Object, Integer> bag = elementsBag = new HashMap<Object, Integer>();
-      final IteratorMaterializer<?> elementsMaterializer = this.elementsMaterializer;
-      while (elementsMaterializer.materializeHasNext()) {
-        final Object element = elementsMaterializer.materializeNext();
+      final HashMap<E, Integer> bag = elementsBag = new HashMap<E, Integer>();
+      final ListMaterializer<E> elementsMaterializer = this.elementsMaterializer;
+      int i = 0;
+      while (elementsMaterializer.canMaterializeElement(i)) {
+        final E element = elementsMaterializer.materializeElement(i++);
         final Integer count = bag.get(element);
         if (count == null) {
           bag.put(element, 1);
