@@ -45,6 +45,8 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
   private static final Logger LOGGER = Logger.getLogger(
       MapFirstWhereListAsyncMaterializer.class.getName());
 
+  private final int knownSize;
+
   public MapFirstWhereListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final IndexedFunction<? super E, ? extends E> mapper,
@@ -52,6 +54,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> replaceFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
+    knownSize = wrapped.knownSize();
     setState(
         new ImmaterialState(wrapped, predicate, mapper, context, cancelException, replaceFunction));
   }
@@ -77,6 +80,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
     private final ListAsyncMaterializer<E> wrapped;
 
     private int testedIndex = -1;
+    private int wrappedSize = knownSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
@@ -158,11 +162,13 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
               throws Exception {
+            wrappedSize = Math.max(wrappedSize, size);
             consumer.accept(-1, index, element);
           }
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
+            wrappedSize = size;
             consumer.complete(size);
           }
 
@@ -191,28 +197,13 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
       if (testedIndex >= 0) {
         safeConsume(consumer, false, LOGGER);
+      } else if (wrappedSize >= 0) {
+        safeConsume(consumer, wrappedSize == 0, LOGGER);
       } else {
-        wrapped.materializeElement(0, new CancellableIndexedAsyncConsumer<E>() {
+        wrapped.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
           @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            if (testedIndex < index) {
-              try {
-                if (predicate.test(index, element)) {
-                  setState(index).materializeEmpty(consumer);
-                  return;
-                }
-              } catch (final Exception e) {
-                setError(e);
-                throw e;
-              }
-            }
-            consumer.accept(false);
-          }
-
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            consumer.accept(true);
+          public void cancellableAccept(final Boolean empty) throws Exception {
+            consumer.accept(empty);
           }
 
           @Override
@@ -238,12 +229,22 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
 
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      materialized(new StateConsumer<E>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-          state.materializeSize(consumer);
-        }
-      });
+      if (wrappedSize >= 0) {
+        safeConsume(consumer, wrappedSize, LOGGER);
+      } else {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) throws Exception {
+            wrappedSize = size;
+            consumer.accept(size);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override
@@ -268,7 +269,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
 
     @Override
     public int weightEmpty() {
-      return testedIndex < 0 ? wrapped.weightElement() : 1;
+      return testedIndex < 0 && wrappedSize < 0 ? wrapped.weightEmpty() : 1;
     }
 
     @Override
@@ -278,7 +279,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
 
     @Override
     public int weightSize() {
-      return wrapped.weightElement();
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
     }
 
     private void consumeState(@NotNull final ListAsyncMaterializer<E> state) {

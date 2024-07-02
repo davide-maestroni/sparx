@@ -38,6 +38,8 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
   private static final Logger LOGGER = Logger.getLogger(
       MapLastWhereListAsyncMaterializer.class.getName());
 
+  private final int knownSize;
+
   public MapLastWhereListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final IndexedFunction<? super E, ? extends E> mapper,
@@ -45,13 +47,14 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> replaceFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
+    knownSize = wrapped.knownSize();
     setState(
         new ImmaterialState(wrapped, predicate, mapper, context, cancelException, replaceFunction));
   }
 
   @Override
   public int knownSize() {
-    return -1;
+    return knownSize;
   }
 
   private interface StateConsumer<E> {
@@ -69,7 +72,7 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
-    private int wrappedSize;
+    private int wrappedSize = knownSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
@@ -83,7 +86,6 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
       this.context = context;
       this.cancelException = cancelException;
       this.replaceFunction = replaceFunction;
-      wrappedSize = wrapped.knownSize();
     }
 
     @Override
@@ -170,26 +172,18 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      if (wrappedSize > 1) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (wrappedSize < 0) {
-        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+      if (wrappedSize >= 0) {
+        safeConsume(consumer, wrappedSize == 0, LOGGER);
+      } else {
+        wrapped.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
           @Override
-          public void cancellableAccept(final Integer size) {
-            wrappedSize = size;
-            materializeEmpty(consumer);
+          public void cancellableAccept(final Boolean empty) throws Exception {
+            consumer.accept(empty);
           }
 
           @Override
           public void error(@NotNull final Exception error) throws Exception {
             consumer.error(error);
-          }
-        });
-      } else {
-        materialized(new StateConsumer<E>() {
-          @Override
-          public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-            state.materializeEmpty(consumer);
           }
         });
       }
@@ -208,12 +202,22 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      materialized(new StateConsumer<E>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-          state.materializeSize(consumer);
-        }
-      });
+      if (wrappedSize >= 0) {
+        safeConsume(consumer, wrappedSize, LOGGER);
+      } else {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) throws Exception {
+            wrappedSize = size;
+            consumer.accept(size);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override
@@ -245,7 +249,7 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     @Override
     public int weightEmpty() {
-      return wrappedSize <= 1 ? weightElements() : 1;
+      return wrappedSize < 0 ? wrapped.weightEmpty() : 1;
     }
 
     @Override
@@ -255,7 +259,7 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     @Override
     public int weightSize() {
-      return weightElements();
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
     }
 
     private void consumeState(@NotNull final ListAsyncMaterializer<E> state) {
@@ -316,14 +320,12 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
           consumeState(setState(
               new MapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
                   cancelException, replaceFunction)));
+        } else if (index > 0) {
+          this.index = index - 1;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
         } else {
-          if (index > 0) {
-            this.index = index - 1;
-            taskID = getTaskID();
-            context.scheduleAfter(this);
-          } else {
-            consumeState(setState(wrapped));
-          }
+          consumeState(setState(wrapped));
         }
       }
 

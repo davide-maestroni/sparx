@@ -241,26 +241,24 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
         }
       } else {
         final int originalIndex = index;
-        wrapped.materializeElement(IndexOverflowException.safeCast((long) index + 1),
-            new CancellableIndexedAsyncConsumer<E>() {
-              @Override
-              public void cancellableAccept(final int size, final int index, final E element)
-                  throws Exception {
-                final int knownSize = safeSize(numElements,
-                    wrappedSize = Math.max(wrappedSize, size));
-                consumer.accept(knownSize, originalIndex, element);
-              }
+        wrapped.materializeElement(index - 1, new CancellableIndexedAsyncConsumer<E>() {
+          @Override
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
+            final int knownSize = safeSize(numElements, wrappedSize = Math.max(wrappedSize, size));
+            consumer.accept(knownSize, originalIndex, element);
+          }
 
-              @Override
-              public void cancellableComplete(final int size) throws Exception {
-                consumer.complete(safeSize(numElements, wrappedSize = size));
-              }
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            consumer.complete(safeSize(numElements, wrappedSize = size));
+          }
 
-              @Override
-              public void error(@NotNull final Exception error) throws Exception {
-                consumer.error(error);
-              }
-            });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       }
     }
 

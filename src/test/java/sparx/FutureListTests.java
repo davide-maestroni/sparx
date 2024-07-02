@@ -2326,10 +2326,11 @@ public class FutureListTests {
       @NotNull final Function<future.List<E>, future.List<? extends F>> actualTransformer)
       throws Exception {
     test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(context)));
-    test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(context).map(e -> e)));
+    test(expected, () -> actualTransformer.apply(
+        baseSupplier.get().toFuture(context).flatMapWhere(e -> false, e -> List.of())));
     test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(throughputContext)));
-    test(expected,
-        () -> actualTransformer.apply(baseSupplier.get().toFuture(throughputContext).map(e -> e)));
+    test(expected, () -> actualTransformer.apply(
+        baseSupplier.get().toFuture(throughputContext).flatMapWhere(e -> false, e -> List.of())));
   }
 
   // TODO: add args validation + isCancelled, isFailed

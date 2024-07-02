@@ -177,7 +177,7 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
         safeConsume(consumer, safeSize(wrappedSize), 0, element, LOGGER);
       } else {
         final int originalIndex = index;
-        wrapped.materializeElement(IndexOverflowException.safeCast((long) index + 1),
+        wrapped.materializeElement(index - 1,
             new CancellableIndexedAsyncConsumer<E>() {
               @Override
               public void cancellableAccept(final int size, final int index, final E element)
@@ -242,7 +242,7 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
       } else if (wrappedSize >= 0) {
         safeConsume(consumer, false, LOGGER);
       } else {
-        wrapped.materializeHasElement(IndexOverflowException.safeCast((long) index + 1),
+        wrapped.materializeHasElement(index - 1,
             new CancellableAsyncConsumer<Boolean>() {
               @Override
               public void cancellableAccept(final Boolean hasElement) throws Exception {
@@ -303,18 +303,12 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
 
     @Override
     public int weightHasElement() {
-      if (wrappedSize >= 0) {
-        return 1;
-      }
-      return wrapped.weightHasElement();
+      return wrappedSize < 0 ? wrapped.weightHasElement() : 1;
     }
 
     @Override
     public int weightSize() {
-      if (wrappedSize >= 0) {
-        return 1;
-      }
-      return wrapped.weightSize();
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
     }
 
     private void consumeElements(@NotNull final List<E> elements) {

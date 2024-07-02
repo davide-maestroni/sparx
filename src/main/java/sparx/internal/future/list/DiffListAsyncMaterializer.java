@@ -318,7 +318,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       final HashSet<Integer> keysToRemove = new HashSet<Integer>();
       for (final Entry<Integer, ArrayList<IndexedAsyncConsumer<E>>> entry : elementsConsumers.entrySet()) {
         final int key = entry.getKey();
-        if (key < index) {
+        if (index < key) {
           final Iterator<IndexedAsyncConsumer<E>> consumers = entry.getValue().iterator();
           while (consumers.hasNext()) {
             if (!safeConsume(consumers.next(), -1, index, element, LOGGER)) {
@@ -328,7 +328,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
           if (entry.getValue().isEmpty()) {
             keysToRemove.add(key);
           }
-        } else if (key == index) {
+        } else if (index == key) {
           for (final IndexedAsyncConsumer<E> consumer : entry.getValue()) {
             if (safeConsume(consumer, -1, index, element, LOGGER)) {
               safeConsumeComplete(consumer, index + 1, LOGGER);

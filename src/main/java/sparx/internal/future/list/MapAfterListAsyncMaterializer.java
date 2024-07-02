@@ -56,9 +56,9 @@ public class MapAfterListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> replaceFunction) {
     super(status);
+    knownSize = wrapped.knownSize();
     setState(new ImmaterialState(wrapped, numElements, mapper, context, cancelException,
         replaceFunction));
-    knownSize = wrapped.knownSize();
   }
 
   @Override
