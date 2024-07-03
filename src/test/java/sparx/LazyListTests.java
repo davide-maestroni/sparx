@@ -1180,6 +1180,10 @@ public class LazyListTests {
 
   @Test
   public void removeWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).removeWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).removeWhere((Predicate<? super Integer>) null));
     var l = List.of(1, 2, null, 4);
     test(List.of(1, 2, null, 4), () -> l.removeWhere(i -> false));
     test(List.of(), () -> l.removeWhere(i -> true));
@@ -1237,6 +1241,10 @@ public class LazyListTests {
 
   @Test
   public void replaceFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).replaceFirstWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).replaceFirstWhere((Predicate<? super Integer>) null, 0));
     var l = List.of(1, 2, null, 4);
     test(l, () -> l.replaceFirstWhere(i -> false, 4));
     test(List.of(4, 2, null, 4), () -> l.replaceFirstWhere(i -> true, 4));
@@ -1277,6 +1285,10 @@ public class LazyListTests {
 
   @Test
   public void replaceLastWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).replaceLastWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).replaceLastWhere((Predicate<? super Integer>) null, 0));
     var l = List.of(1, 2, null, 4);
     test(l, () -> l.replaceLastWhere(i -> false, 5));
     test(List.of(1, 2, null, 5), () -> l.replaceLastWhere(i -> true, 5));
@@ -1324,6 +1336,10 @@ public class LazyListTests {
 
   @Test
   public void replaceWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).replaceWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).replaceWhere((Predicate<? super Integer>) null, 0));
     var l = List.of(1, 2, 3, 4);
     test(l, () -> l.replaceWhere(i -> false, 5));
     test(List.of(5, 5, 5, 5), () -> l.replaceWhere(i -> true, 5));

@@ -87,7 +87,6 @@ import sparx.internal.future.list.MapAfterListAsyncMaterializer;
 import sparx.internal.future.list.MapFirstWhereListAsyncMaterializer;
 import sparx.internal.future.list.MapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.MapListAsyncMaterializer;
-import sparx.internal.future.list.MapWhereListAsyncMaterializer;
 import sparx.internal.future.list.MaxListAsyncMaterializer;
 import sparx.internal.future.list.OrElseListAsyncMaterializer;
 import sparx.internal.future.list.PrependAllListAsyncMaterializer;
@@ -98,6 +97,7 @@ import sparx.internal.future.list.RemoveAfterListAsyncMaterializer;
 import sparx.internal.future.list.RemoveFirstWhereListAsyncMaterializer;
 import sparx.internal.future.list.RemoveLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.RemoveSliceListAsyncMaterializer;
+import sparx.internal.future.list.RemoveWhereListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
@@ -877,20 +877,6 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerMapWhere(
-        @NotNull final ListAsyncMaterializer<E> materializer,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException,
-          materializer.knownSize()) {
-        @Override
-        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).mapWhere(predicate, mapper);
-        }
-      };
-    }
-
     private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerMax(
         @NotNull final ListAsyncMaterializer<E> materializer,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -1041,6 +1027,18 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).removeSlice(start, end);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerRemoveWhere(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).removeWhere(predicate);
         }
       };
     }
@@ -2941,14 +2939,15 @@ class future extends Sparx {
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
-            lazyMaterializerMapWhere(materializer, cancelException,
-                Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
+            lazyMaterializerMap(materializer, cancelException,
+                filteredMapper(Require.notNull(predicate, "predicate"),
+                    Require.notNull(mapper, "mapper"))));
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, cancelException,
-          new MapWhereListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"), context,
-              cancelException, List.<E>decorateFunction()));
+      return new List<E>(context, cancelException, new MapListAsyncMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"),
+              Require.notNull(mapper, "mapper")), context, cancelException,
+          List.<E>decorateFunction()));
     }
 
     @Override
@@ -2961,16 +2960,15 @@ class future extends Sparx {
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
-            lazyMaterializerMapWhere(materializer, cancelException,
-                toIndexedPredicate(Require.notNull(predicate, "predicate")),
-                toIndexedFunction(Require.notNull(mapper, "mapper"))));
+            lazyMaterializerMap(materializer, cancelException,
+                filteredMapper(Require.notNull(predicate, "predicate"),
+                    Require.notNull(mapper, "mapper"))));
       }
       final ExecutionContext context = this.context;
-      return new List<E>(context, cancelException,
-          new MapWhereListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")),
-              toIndexedFunction(Require.notNull(mapper, "mapper")), context, cancelException,
-              List.<E>decorateFunction()));
+      return new List<E>(context, cancelException, new MapListAsyncMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"),
+              Require.notNull(mapper, "mapper")), context, cancelException,
+          List.<E>decorateFunction()));
     }
 
     @Override
@@ -3304,8 +3302,20 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> removeEach(E element) {
-      return null;
+    public @NotNull List<E> removeEach(final E element) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerRemoveWhere(materializer, cancelException, equalsElement(element)));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new RemoveWhereListAsyncMaterializer<E>(materializer, equalsElement(element), context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -3466,56 +3476,203 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> removeWhere(@NotNull final IndexedPredicate<? super E> predicate) {
-      return null;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerRemoveWhere(materializer, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new RemoveWhereListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> removeWhere(@NotNull final Predicate<? super E> predicate) {
-      return null;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerRemoveWhere(materializer, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new RemoveWhereListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
-    public @NotNull List<E> replaceAfter(int numElements, E replacement) {
-      return null;
+    public @NotNull List<E> replaceAfter(final int numElements, final E replacement) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapAfter(materializer, cancelException, numElements,
+                replacementMapper(replacement)));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapAfterListAsyncMaterializer<E>(materializer, numElements,
+              replacementMapper(replacement), context, cancelException,
+              List.<E>replaceAfterFunction()));
     }
 
     @Override
-    public @NotNull List<E> replaceEach(E element, E replacement) {
-      return null;
+    public @NotNull List<E> replaceEach(final E element, final E replacement) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMap(materializer, cancelException,
+                filteredMapper(equalsElement(element), replacementMapper(replacement))));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException, new MapListAsyncMaterializer<E, E>(materializer,
+          filteredMapper(equalsElement(element), replacementMapper(replacement)), context,
+          cancelException, List.<E>decorateFunction()));
     }
 
     @Override
-    public @NotNull List<E> replaceFirst(E element, E replacement) {
-      return null;
+    public @NotNull List<E> replaceFirst(final E element, final E replacement) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapFirstWhere(materializer, cancelException, equalsElement(element),
+                replacementMapper(replacement)));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapFirstWhereListAsyncMaterializer<E>(materializer, equalsElement(element),
+              replacementMapper(replacement), context, cancelException,
+              List.<E>replaceAfterFunction()));
     }
 
     @Override
-    public @NotNull List<E> replaceFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
-        E replacement) {
-      return null;
+    public @NotNull List<E> replaceFirstWhere(@NotNull final IndexedPredicate<? super E> predicate,
+        final E replacement) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapFirstWhere(materializer, cancelException,
+                Require.notNull(predicate, "predicate"), replacementMapper(replacement)));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapFirstWhereListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), replacementMapper(replacement), context,
+              cancelException, List.<E>replaceAfterFunction()));
     }
 
     @Override
-    public @NotNull List<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate,
-        E replacement) {
-      return null;
+    public @NotNull List<E> replaceFirstWhere(@NotNull final Predicate<? super E> predicate,
+        final E replacement) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapFirstWhere(materializer, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate")),
+                replacementMapper(replacement)));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapFirstWhereListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              replacementMapper(replacement), context, cancelException,
+              List.<E>replaceAfterFunction()));
     }
 
     @Override
-    public @NotNull List<E> replaceLast(E element, E replacement) {
-      return null;
+    public @NotNull List<E> replaceLast(final E element, final E replacement) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapLastWhere(materializer, cancelException, equalsElement(element),
+                replacementMapper(replacement)));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapLastWhereListAsyncMaterializer<E>(materializer, equalsElement(element),
+              replacementMapper(replacement), context, cancelException,
+              List.<E>insertAfterFunction()));
     }
 
     @Override
-    public @NotNull List<E> replaceLastWhere(@NotNull IndexedPredicate<? super E> predicate,
-        E replacement) {
-      return null;
+    public @NotNull List<E> replaceLastWhere(@NotNull final IndexedPredicate<? super E> predicate,
+        final E replacement) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapLastWhere(materializer, cancelException,
+                Require.notNull(predicate, "predicate"), replacementMapper(replacement)));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapLastWhereListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), replacementMapper(replacement), context,
+              cancelException, List.<E>insertAfterFunction()));
     }
 
     @Override
-    public @NotNull List<E> replaceLastWhere(@NotNull Predicate<? super E> predicate,
-        E replacement) {
-      return null;
+    public @NotNull List<E> replaceLastWhere(@NotNull final Predicate<? super E> predicate,
+        final E replacement) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMapLastWhere(materializer, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate")),
+                replacementMapper(replacement)));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new MapLastWhereListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              replacementMapper(replacement), context, cancelException,
+              List.<E>insertAfterFunction()));
     }
 
     @Override
@@ -3524,14 +3681,43 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> replaceWhere(@NotNull IndexedPredicate<? super E> predicate,
-        E replacement) {
-      return null;
+    public @NotNull List<E> replaceWhere(@NotNull final IndexedPredicate<? super E> predicate,
+        final E replacement) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMap(materializer, cancelException,
+                filteredMapper(Require.notNull(predicate, "predicate"),
+                    replacementMapper(replacement))));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException, new MapListAsyncMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"), replacementMapper(replacement)),
+          context, cancelException, List.<E>decorateFunction()));
     }
 
     @Override
-    public @NotNull List<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement) {
-      return null;
+    public @NotNull List<E> replaceWhere(@NotNull final Predicate<? super E> predicate,
+        final E replacement) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerMap(materializer, cancelException,
+                filteredMapper(Require.notNull(predicate, "predicate"),
+                    replacementMapper(replacement))));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException, new MapListAsyncMaterializer<E, E>(materializer,
+          filteredMapper(Require.notNull(predicate, "predicate"), replacementMapper(replacement)),
+          context, cancelException, List.<E>decorateFunction()));
     }
 
     @Override

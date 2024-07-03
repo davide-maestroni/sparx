@@ -73,6 +73,48 @@ class Sparx {
     };
   }
 
+  static @NotNull <E> IndexedFunction<E, E> filteredMapper(
+      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+    return new IndexedFunction<E, E>() {
+      @Override
+      public E apply(final int index, final E element) throws Exception {
+        if (predicate.test(index, element)) {
+          return mapper.apply(index, element);
+        }
+        return element;
+      }
+    };
+  }
+
+  static @NotNull <E> IndexedFunction<E, E> filteredMapper(
+      @NotNull final Predicate<? super E> predicate,
+      @NotNull final Function<? super E, ? extends E> mapper) {
+    return new IndexedFunction<E, E>() {
+      @Override
+      public E apply(final int index, final E element) throws Exception {
+        if (predicate.test(element)) {
+          return mapper.apply(element);
+        }
+        return element;
+      }
+    };
+  }
+
+  static @NotNull <E> IndexedFunction<E, E> filteredMapper(
+      @NotNull final Predicate<? super E> predicate,
+      @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+    return new IndexedFunction<E, E>() {
+      @Override
+      public E apply(final int index, final E element) throws Exception {
+        if (predicate.test(element)) {
+          return mapper.apply(index, element);
+        }
+        return element;
+      }
+    };
+  }
+
   static @NotNull <P> IndexedPredicate<P> negated(@NotNull final IndexedPredicate<P> predicate) {
     return new IndexedPredicate<P>() {
       @Override

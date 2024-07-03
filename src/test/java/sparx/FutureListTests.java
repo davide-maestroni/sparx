@@ -2425,6 +2425,35 @@ public class FutureListTests {
   }
 
   @Test
+  public void removeEach() throws Exception {
+    var l = List.of(1, 2, null, 4, 2);
+    test(List.of(2, null, 4, 2), () -> l, ll -> ll.removeEach(1));
+    test(List.of(1, 2, 4, 2), () -> l, ll -> ll.removeEach(null));
+    test(List.of(1, null, 4), () -> l, ll -> ll.removeEach(2));
+    test(l, () -> l, ll -> ll.removeEach(0));
+    test(List.of(), List::of, ll -> ll.removeEach(1));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).removeEach(0);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void removeFirst() throws Exception {
     var l = List.of(1, 2, null, 4, 2);
     test(List.of(2, null, 4, 2), () -> l, ll -> ll.removeFirst(1));
@@ -2630,6 +2659,400 @@ public class FutureListTests {
         Thread.sleep(60000);
         return List.of(i);
       }).removeSlice(0, -1);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void removeWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).removeWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).removeWhere((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .removeWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .removeWhere((Predicate<? super Integer>) null));
+    var l = List.of(1, 2, null, 4);
+    test(List.of(1, 2, null, 4), () -> l, ll -> ll.removeWhere(i -> false));
+    test(List.of(), () -> l, ll -> ll.removeWhere(i -> true));
+    test(List.of(1, 2, 4), () -> l, ll -> ll.removeWhere(Objects::isNull));
+    test(List.of(null), () -> l, ll -> ll.removeWhere(Objects::nonNull));
+    test(List.of(), List::of, ll -> ll.removeWhere(i -> false));
+
+    assertFalse(l.toFuture(context).flatMap(e -> List.of(e)).removeWhere(i -> i < 2).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).flatMap(e -> List.of(e)).removeWhere(i -> i < 2).size());
+    assertEquals(2, l.toFuture(context).flatMap(e -> List.of(e)).removeWhere(i -> i < 2).get(0));
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).flatMap(e -> List.of(e)).removeWhere(i -> i < 2).get(1));
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).removeWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2, 3), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).flatMap(e -> List.of(e)).removeWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2, 3), indexes);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).removeWhere(i -> {
+        Thread.sleep(60000);
+        return false;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void replaceAfter() throws Exception {
+    var l = List.of(1, 2, null);
+    test(List.of(1, 2, null), () -> l, ll -> ll.replaceAfter(-1, 4));
+    test(List.of(4, 2, null), () -> l, ll -> ll.replaceAfter(0, 4));
+    test(List.of(1, 4, null), () -> l, ll -> ll.replaceAfter(1, 4));
+    test(List.of(1, 2, 4), () -> l, ll -> ll.replaceAfter(2, 4));
+    test(List.of(1, 2, null), () -> l, ll -> ll.replaceAfter(3, 4));
+    test(List.of(), List::<Integer>of, ll -> ll.replaceAfter(0, 4));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).replaceAfter(0, -1);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void replaceEach() throws Exception {
+    var l = List.of(1, 2, null);
+    test(List.of(1, 2, null), () -> l, ll -> ll.replaceEach(-1, 4));
+    test(List.of(1, 2, null), () -> l, ll -> ll.replaceEach(0, 4));
+    test(List.of(4, 2, null), () -> l, ll -> ll.replaceEach(1, 4));
+    test(List.of(1, 4, null), () -> l, ll -> ll.replaceEach(2, 4));
+    test(List.of(1, 2, 4), () -> l, ll -> ll.replaceEach(null, 4));
+    test(List.of(4, 2, null, 4), () -> l, ll -> ll.append(1).replaceEach(1, 4));
+    test(List.of(), List::<Integer>of, ll -> ll.replaceEach(0, 4));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).replaceEach(0, -1);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void replaceFirst() throws Exception {
+    var l = List.of(1, 2, null);
+    test(List.of(1, 2, null), () -> l, ll -> ll.replaceFirst(-1, 4));
+    test(List.of(1, 2, null), () -> l, ll -> ll.replaceFirst(0, 4));
+    test(List.of(4, 2, null), () -> l, ll -> ll.replaceFirst(1, 4));
+    test(List.of(1, 4, null), () -> l, ll -> ll.replaceFirst(2, 4));
+    test(List.of(1, 2, 4), () -> l, ll -> ll.replaceFirst(null, 4));
+    test(List.of(4, 2, null, 1), () -> l, ll -> ll.append(1).replaceFirst(1, 4));
+    test(List.of(), List::<Integer>of, ll -> ll.replaceFirst(0, 4));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).replaceFirst(0, -1);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void replaceFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
+        .replaceFirstWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).replaceFirstWhere((Predicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceFirstWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceFirstWhere((Predicate<? super Integer>) null, 0));
+    var l = List.of(1, 2, null, 4);
+    test(l, () -> l, ll -> ll.replaceFirstWhere(i -> false, 4));
+    test(List.of(4, 2, null, 4), () -> l, ll -> ll.replaceFirstWhere(i -> true, 4));
+    test(List.of(1, 2, 3, 4), () -> l, ll -> ll.replaceFirstWhere(Objects::isNull, 3));
+    test(List.of(2, 2, null, 4), () -> l, ll -> ll.replaceFirstWhere(i -> i == 1, 2));
+    assertEquals(2,
+        l.toFuture(context).flatMap(e -> List.of(e)).replaceFirstWhere(i -> i == 1, 2).get(1));
+    assertNull(
+        l.toFuture(context).flatMap(e -> List.of(e)).replaceFirstWhere(i -> i == 1, 2).get(2));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.toFuture(context).flatMap(e -> List.of(e)).replaceFirstWhere(i -> i == 1, 2)
+            .get(5));
+
+    assertFalse(
+        l.toFuture(context).flatMap(e -> List.of(e)).replaceFirstWhere(i -> i > 2, 1).isEmpty());
+    assertEquals(4,
+        l.toFuture(context).flatMap(e -> List.of(e)).replaceFirstWhere(i -> i > 2, 1).size());
+    assertEquals(1,
+        l.toFuture(context).flatMap(e -> List.of(e)).replaceFirstWhere(i -> i > 2, 1).get(0));
+    assertEquals(2,
+        l.toFuture(context).flatMap(e -> List.of(e)).replaceFirstWhere(i -> i > 2, 1).get(1));
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).flatMap(e -> List.of(e)).replaceFirstWhere(i -> i > 2, 1).get(2));
+
+    test(List.of(), List::<Integer>of, ll -> ll.replaceFirstWhere(i -> false, 4));
+    test(List.of(), List::<Integer>of, ll -> ll.replaceFirstWhere(i -> true, 4));
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).replaceFirstWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }, 0).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).flatMap(e -> List.of(e)).replaceFirstWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }, 0).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2), indexes);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).replaceFirstWhere(i -> {
+        Thread.sleep(60000);
+        return false;
+      }, 0);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void replaceLast() throws Exception {
+    var l = List.of(1, 2, null);
+    test(List.of(1, 2, null), () -> l, ll -> ll.replaceLast(-1, 4));
+    test(List.of(1, 2, null), () -> l, ll -> ll.replaceLast(0, 4));
+    test(List.of(4, 2, null), () -> l, ll -> ll.replaceLast(1, 4));
+    test(List.of(1, 4, null), () -> l, ll -> ll.replaceLast(2, 4));
+    test(List.of(1, 2, 4), () -> l, ll -> ll.replaceLast(null, 4));
+    test(List.of(1, 2, null, 4), () -> l, ll -> ll.append(1).replaceLast(1, 4));
+    test(List.of(), List::<Integer>of, ll -> ll.replaceLast(0, 4));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).replaceLast(0, -1);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void replaceLastWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
+        .replaceLastWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).replaceLastWhere((Predicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceLastWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceLastWhere((Predicate<? super Integer>) null, 0));
+    var l = List.of(1, 2, null, 4);
+    test(l, () -> l, ll -> ll.replaceLastWhere(i -> false, 5));
+    test(List.of(1, 2, null, 5), () -> l, ll -> ll.replaceLastWhere(i -> true, 5));
+    test(List.of(1, 2, 3, 4), () -> l, ll -> ll.replaceLastWhere(Objects::isNull, 3));
+    test(List.of(1, 2, null, 5), () -> l, ll -> ll.replaceLastWhere(i -> i == 4, 5));
+
+    assertFalse(
+        l.toFuture(context).flatMap(e -> List.of(e)).replaceLastWhere(i -> i < 2, 1).isEmpty());
+    assertEquals(4,
+        l.toFuture(context).flatMap(e -> List.of(e)).replaceLastWhere(i -> i < 2, 1).size());
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).flatMap(e -> List.of(e)).replaceLastWhere(i -> i < 2, 1).get(0));
+
+    test(List.of(), List::<Integer>of, ll -> ll.replaceLastWhere(i -> false, 5));
+    test(List.of(), List::<Integer>of, ll -> ll.replaceLastWhere(i -> true, 5));
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).replaceLastWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }, 0).doFor(i -> {
+    });
+    assertEquals(List.of(3, 2), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).flatMap(e -> List.of(e)).replaceLastWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }, 0).doFor(i -> {
+    });
+    assertEquals(List.of(3, 2), indexes);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).replaceLastWhere(i -> {
+        Thread.sleep(60000);
+        return false;
+      }, 0);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void replaceWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
+        .replaceWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).replaceWhere((Predicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceWhere((Predicate<? super Integer>) null, 0));
+    var l = List.of(1, 2, 3, 4);
+    test(l, () -> l, ll -> ll.replaceWhere(i -> false, 5));
+    test(List.of(5, 5, 5, 5), () -> l, ll -> ll.replaceWhere(i -> true, 5));
+    test(List.of(1, 3, 3, 4), () -> l, ll -> ll.replaceWhere(i -> i == 2, 3));
+
+    assertFalse(
+        l.toFuture(context).flatMap(e -> List.of(e)).append(null).replaceWhere(i -> i == 4, 5)
+            .isEmpty());
+    assertEquals(5,
+        l.toFuture(context).flatMap(e -> List.of(e)).append(null).replaceWhere(i -> i == 4, 5)
+            .size());
+    assertEquals(2,
+        l.toFuture(context).flatMap(e -> List.of(e)).append(null).replaceWhere(i -> i == 4, 5)
+            .get(1));
+    assertEquals(3,
+        l.toFuture(context).flatMap(e -> List.of(e)).append(null).replaceWhere(i -> i == 4, 5)
+            .get(2));
+    assertEquals(5,
+        l.toFuture(context).flatMap(e -> List.of(e)).append(null).replaceWhere(i -> i == 4, 5)
+            .get(3));
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).flatMap(e -> List.of(e)).append(null).replaceWhere(i -> i == 4, 5)
+            .get(4));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> l.toFuture(context).flatMap(e -> List.of(e)).append(null).replaceWhere(i -> i == 4, 5)
+            .get(5));
+
+    test(List.of(), List::<Integer>of, ll -> ll.replaceWhere(i -> false, 5));
+    test(List.of(), List::<Integer>of, ll -> ll.replaceWhere(i -> true, 5));
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).toFuture(context).replaceWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }, 0).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2, 3), indexes);
+    indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).flatMap(e -> List.of(e)).replaceWhere((n, i) -> {
+      indexes.add(n);
+      return i == 3;
+    }, 0).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2, 3), indexes);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).replaceWhere(i -> {
+        Thread.sleep(60000);
+        return false;
+      }, 0);
       executor.submit(() -> {
         try {
           Thread.sleep(1000);
