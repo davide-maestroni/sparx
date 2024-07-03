@@ -1042,6 +1042,7 @@ public class LazyListTests {
 
   @Test
   public void reduceLeft() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).reduceLeft(null));
     var l = List.of(1, 2, 3, 4, 5);
     test(List.of(15), () -> l.reduceLeft(Integer::sum));
     assertThrows(NullPointerException.class, () -> l.append(null).reduceLeft(Integer::sum).first());

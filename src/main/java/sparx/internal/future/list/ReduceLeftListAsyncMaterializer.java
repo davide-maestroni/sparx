@@ -32,17 +32,17 @@ import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Function;
 
-public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMaterializer<F> {
+public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      FoldLeftListAsyncMaterializer.class.getName());
+      ReduceLeftListAsyncMaterializer.class.getName());
 
-  public FoldLeftListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      final F identity, @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation,
+  public ReduceLeftListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<F>, List<F>> decorateFunction) {
+      @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, identity, operation, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, operation, cancelException, decorateFunction));
   }
 
   @Override
@@ -55,21 +55,19 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     void accept(@NotNull ListAsyncMaterializer<E> state);
   }
 
-  private class ImmaterialState implements ListAsyncMaterializer<F> {
+  private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final Function<List<F>, List<F>> decorateFunction;
-    private final F identity;
-    private final BinaryFunction<? super F, ? super E, ? extends F> operation;
-    private final ArrayList<StateConsumer<F>> stateConsumers = new ArrayList<StateConsumer<F>>(2);
+    private final Function<List<E>, List<E>> decorateFunction;
+    private final BinaryFunction<? super E, ? super E, ? extends E> operation;
+    private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final F identity,
-        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation,
+    private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
         @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<F>, List<F>> decorateFunction) {
+        @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
-      this.identity = identity;
       this.operation = operation;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
@@ -109,24 +107,24 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     @Override
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      materialized(new StateConsumer<F>() {
+      materialized(new StateConsumer<E>() {
         @Override
-        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
           state.materializeContains(element, consumer);
         }
       });
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
+    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
       safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<F> consumer) {
-      materialized(new StateConsumer<F>() {
+    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+      materialized(new StateConsumer<E>() {
         @Override
-        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
           state.materializeEach(consumer);
         }
       });
@@ -134,15 +132,15 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
 
     @Override
     public void materializeElement(final int index,
-        @NotNull final IndexedAsyncConsumer<F> consumer) {
+        @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
         safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
       } else if (index > 1) {
         safeConsumeComplete(consumer, 1, LOGGER);
       } else {
-        materialized(new StateConsumer<F>() {
+        materialized(new StateConsumer<E>() {
           @Override
-          public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+          public void accept(@NotNull final ListAsyncMaterializer<E> state) {
             state.materializeElement(index, consumer);
           }
         });
@@ -150,10 +148,10 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     }
 
     @Override
-    public void materializeElements(@NotNull final AsyncConsumer<List<F>> consumer) {
-      materialized(new StateConsumer<F>() {
+    public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+      materialized(new StateConsumer<E>() {
         @Override
-        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
           state.materializeElements(consumer);
         }
       });
@@ -210,30 +208,38 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
       return 1;
     }
 
-    private void consumeState(@NotNull final ListAsyncMaterializer<F> state) {
-      final ArrayList<StateConsumer<F>> stateConsumers = this.stateConsumers;
-      for (final StateConsumer<F> stateConsumer : stateConsumers) {
+    private void consumeState(@NotNull final ListAsyncMaterializer<E> state) {
+      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
+      for (final StateConsumer<E> stateConsumer : stateConsumers) {
         stateConsumer.accept(state);
       }
       stateConsumers.clear();
     }
 
-    private void materialized(@NotNull final StateConsumer<F> consumer) {
-      final ArrayList<StateConsumer<F>> stateConsumers = this.stateConsumers;
+    private void materialized(@NotNull final StateConsumer<E> consumer) {
+      final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
         wrapped.materializeEach(new CancellableIndexedAsyncConsumer<E>() {
-          private F current = identity;
+          private E current;
 
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
               throws Exception {
-            current = operation.apply(current, element);
+            if (index > 0) {
+              current = operation.apply(current, element);
+            } else {
+              current = element;
+            }
           }
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(current);
+            if (size > 0) {
+              setState(current);
+            } else {
+              setState();
+            }
           }
 
           @Override
@@ -249,8 +255,13 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
       }
     }
 
-    private void setState(final F result) throws Exception {
-      consumeState(FoldLeftListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<F>(
+    private void setState() throws Exception {
+      consumeState(ReduceLeftListAsyncMaterializer.this.setState(
+          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
+    }
+
+    private void setState(final E result) throws Exception {
+      consumeState(ReduceLeftListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<E>(
           decorateFunction.apply(Collections.singletonList(result)))));
     }
   }

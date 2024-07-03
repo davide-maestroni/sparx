@@ -1499,8 +1499,9 @@ public class lazy extends Sparx {
     public @NotNull Iterator<E> reduceLeft(
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       final IteratorMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return Iterator.of();
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return this;
       }
       return new Iterator<E>(new ReduceLeftIteratorMaterializer<E>(materializer,
           Require.notNull(operation, "operation")));
@@ -3598,7 +3599,8 @@ public class lazy extends Sparx {
     public @NotNull List<E> reduceLeft(
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       final ListMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
         return this;
       }
       return new List<E>(

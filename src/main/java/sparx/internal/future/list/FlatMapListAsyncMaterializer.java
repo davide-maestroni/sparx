@@ -316,7 +316,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       final HashSet<Integer> keysToRemove = new HashSet<Integer>();
       for (final Entry<Integer, ArrayList<IndexedAsyncConsumer<F>>> entry : elementsConsumers.entrySet()) {
         final int key = entry.getKey();
-        if (key < index) {
+        if (index < key) {
           final Iterator<IndexedAsyncConsumer<F>> consumers = entry.getValue().iterator();
           while (consumers.hasNext()) {
             if (!safeConsume(consumers.next(), -1, index, element, LOGGER)) {
@@ -326,7 +326,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
           if (entry.getValue().isEmpty()) {
             keysToRemove.add(key);
           }
-        } else if (key == index) {
+        } else if (index == key) {
           for (final IndexedAsyncConsumer<F> consumer : entry.getValue()) {
             if (safeConsume(consumer, -1, index, element, LOGGER)) {
               safeConsumeComplete(consumer, index + 1, LOGGER);
