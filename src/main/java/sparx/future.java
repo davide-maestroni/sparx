@@ -3630,7 +3630,7 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new MapLastWhereListAsyncMaterializer<E>(materializer, equalsElement(element),
               replacementMapper(replacement), context, cancelException,
-              List.<E>insertAfterFunction()));
+              List.<E>replaceAfterFunction()));
     }
 
     @Override
@@ -3650,7 +3650,7 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new MapLastWhereListAsyncMaterializer<E>(materializer,
               Require.notNull(predicate, "predicate"), replacementMapper(replacement), context,
-              cancelException, List.<E>insertAfterFunction()));
+              cancelException, List.<E>replaceAfterFunction()));
     }
 
     @Override
@@ -3672,7 +3672,7 @@ class future extends Sparx {
           new MapLastWhereListAsyncMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")),
               replacementMapper(replacement), context, cancelException,
-              List.<E>insertAfterFunction()));
+              List.<E>replaceAfterFunction()));
     }
 
     @Override
