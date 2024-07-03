@@ -2364,6 +2364,8 @@ class itf {
     @NotNull
     Sequence<E> take(int maxElements);
 
+    // TODO: takeAfter == slice(numElements, numElements + 1) (positive???)
+
     @NotNull
     Sequence<E> takeRight(int maxElements);
 

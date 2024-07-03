@@ -96,6 +96,8 @@ import sparx.internal.future.list.ReduceLeftListAsyncMaterializer;
 import sparx.internal.future.list.ReduceRightListAsyncMaterializer;
 import sparx.internal.future.list.RemoveAfterListAsyncMaterializer;
 import sparx.internal.future.list.RemoveFirstWhereListAsyncMaterializer;
+import sparx.internal.future.list.RemoveLastWhereListAsyncMaterializer;
+import sparx.internal.future.list.RemoveSliceListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
@@ -1015,6 +1017,30 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).removeFirstWhere(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerRemoveLastWhere(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).removeLastWhere(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerRemoveSlice(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException, final int start,
+        final int end) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).removeSlice(start, end);
         }
       };
     }
@@ -3339,32 +3365,112 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> removeLast(E element) {
+    public @NotNull List<E> removeLast(final E element) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerRemoveLastWhere(materializer, cancelException, equalsElement(element)));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new RemoveLastWhereListAsyncMaterializer<E>(materializer, equalsElement(element), context,
+              cancelException, List.<E>removeAfterFunction()));
+    }
+
+    @Override
+    public @NotNull List<E> removeLastWhere(@NotNull final IndexedPredicate<? super E> predicate) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerRemoveLastWhere(materializer, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new RemoveLastWhereListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException,
+              List.<E>removeAfterFunction()));
+    }
+
+    @Override
+    public @NotNull List<E> removeLastWhere(@NotNull final Predicate<? super E> predicate) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerRemoveLastWhere(materializer, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new RemoveLastWhereListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              List.<E>removeAfterFunction()));
+    }
+
+    @Override
+    public @NotNull List<E> removeSlice(final int start, final int end) {
+      if (end <= start && start >= 0 && end >= 0) {
+        return this;
+      }
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (knownSize > 0) {
+        final int knownStart;
+        if (start < 0) {
+          knownStart = Math.max(0, knownSize + start);
+        } else {
+          knownStart = Math.min(knownSize, start);
+        }
+        final int knownEnd;
+        if (end < 0) {
+          knownEnd = Math.max(0, knownSize + end);
+        } else {
+          knownEnd = Math.min(knownSize, end);
+        }
+        if (knownStart == knownSize || knownStart >= knownEnd) {
+          return new List<E>(context, cancelException, materializer);
+        }
+        final int knownLength = knownEnd - knownStart;
+        if (knownLength == 1) {
+          return removeAfter(knownStart);
+        }
+        if (knownLength == knownSize) {
+          return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        }
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerRemoveSlice(materializer, cancelException, start, end));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new RemoveSliceListAsyncMaterializer<E>(materializer, start, end, context,
+              cancelException, List.<E>decorateFunction()));
+    }
+
+    @Override
+    public @NotNull List<E> removeWhere(@NotNull final IndexedPredicate<? super E> predicate) {
       return null;
     }
 
     @Override
-    public @NotNull List<E> removeLastWhere(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
-    }
-
-    @Override
-    public @NotNull List<E> removeLastWhere(@NotNull Predicate<? super E> predicate) {
-      return null;
-    }
-
-    @Override
-    public @NotNull List<E> removeSlice(int start, int end) {
-      return null;
-    }
-
-    @Override
-    public @NotNull List<E> removeWhere(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
-    }
-
-    @Override
-    public @NotNull List<E> removeWhere(@NotNull Predicate<? super E> predicate) {
+    public @NotNull List<E> removeWhere(@NotNull final Predicate<? super E> predicate) {
       return null;
     }
 
@@ -3520,7 +3626,7 @@ class future extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart >= knownEnd) {
+        if (knownStart == knownSize || knownStart >= knownEnd) {
           return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
         }
       }

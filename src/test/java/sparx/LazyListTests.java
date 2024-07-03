@@ -1132,13 +1132,17 @@ public class LazyListTests {
 
   @Test
   public void removeLastWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).removeLastWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).removeLastWhere((Predicate<? super Integer>) null));
     var l = List.of(1, 2, null, 4, 2);
     test(List.of(1, 2, 4, 2), () -> l.removeLastWhere(Objects::isNull));
     test(List.of(1, 2, null, 4), () -> l.removeLastWhere(i -> i == 2));
     test(List.of(1, 2, null, 2), () -> l.removeLastWhere(i -> i > 2));
     test(l, () -> l.removeLastWhere(i -> false));
 
-    assertThrows(NullPointerException.class, () -> l.removeLastWhere(i -> i > 4).isEmpty());
+    assertFalse(l.removeLastWhere(i -> i > 4).isEmpty());
     assertThrows(NullPointerException.class, () -> l.removeLastWhere(i -> i > 4).size());
     assertThrows(NullPointerException.class, () -> l.removeLastWhere(i -> i > 4).get(1));
 

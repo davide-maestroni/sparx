@@ -89,7 +89,9 @@ public class RemoveLastWhereListMaterializer<E> extends AbstractListMaterializer
 
   @Override
   public boolean materializeEmpty() {
-    return wrapped.materializeEmpty() || materializeSize() == 0;
+    final ListMaterializer<E> wrapped = this.wrapped;
+    return wrapped.materializeEmpty() || (wrapped.materializeSize() == 1
+        && state.materialized() == 0);
   }
 
   @Override

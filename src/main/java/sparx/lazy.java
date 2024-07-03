@@ -1635,8 +1635,15 @@ public class lazy extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart >= knownEnd) {
+        if (knownStart == knownSize || knownStart >= knownEnd) {
           return this;
+        }
+        final int knownLength = knownEnd - knownStart;
+        if (knownLength == 1) {
+          return removeAfter(knownStart);
+        }
+        if (knownLength == knownSize) {
+          return Iterator.of();
         }
       }
       return new Iterator<E>(new RemoveSliceIteratorMaterializer<E>(materializer, start, end));
@@ -1881,7 +1888,7 @@ public class lazy extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart >= knownEnd) {
+        if (knownStart == knownSize || knownStart >= knownEnd) {
           return Iterator.of();
         }
       }
@@ -3728,8 +3735,15 @@ public class lazy extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart >= knownEnd) {
+        if (knownStart == knownSize || knownStart >= knownEnd) {
           return this;
+        }
+        final int knownLength = knownEnd - knownStart;
+        if (knownLength == 1) {
+          return removeAfter(knownStart);
+        }
+        if (knownLength == knownSize) {
+          return List.of();
         }
       }
       return new List<E>(new RemoveSliceListMaterializer<E>(materializer, start, end));
@@ -4006,7 +4020,7 @@ public class lazy extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart >= knownEnd) {
+        if (knownStart == knownSize || knownStart >= knownEnd) {
           return List.of();
         }
       }
