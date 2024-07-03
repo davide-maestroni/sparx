@@ -971,6 +971,8 @@ public class LazyListTests {
 
   @Test
   public void orElse() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of().orElse(null));
+    assertThrows(NullPointerException.class, () -> List.of(0).findIndexOf(0).orElse(null));
     test(List.of(1), () -> List.of(1).orElse(List.of(2)));
     test(List.of(1), () -> List.of(1).orElse(List.of()));
     test(List.of(2), () -> List.of().orElse(List.of(2)));
@@ -979,6 +981,8 @@ public class LazyListTests {
 
   @Test
   public void orElseGet() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of().orElseGet(null));
+    assertThrows(NullPointerException.class, () -> List.of(0).findIndexOf(0).orElse(null));
     Supplier<List<Integer>> supplier = () -> List.of(2);
     test(List.of(1), () -> List.of(1).orElseGet(supplier));
     test(List.of(1), () -> List.of(1).orElseGet(List::of));

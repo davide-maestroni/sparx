@@ -2194,6 +2194,80 @@ public class FutureListTests {
   }
 
   @Test
+  public void orElse() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of().toFuture(context).orElse(null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findIndexOf(0).orElse(null));
+    test(List.of(1), () -> List.of(1), ll -> ll.orElse(List.of(2)));
+    test(List.of(1), () -> List.of(1), ll -> ll.orElse(List.of()));
+    test(List.of(2), List::of, ll -> ll.orElse(List.of(2)));
+    test(List.of(), List::of, ll -> ll.orElse(List.of()));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).orElse(List.of(1));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
+  public void orElseGet() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of().toFuture(context).orElseGet(null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).findIndexOf(0).orElseGet(null));
+    Supplier<List<Integer>> supplier = () -> List.of(2);
+    test(List.of(1), () -> List.of(1), ll -> ll.orElseGet(supplier));
+    test(List.of(1), () -> List.of(1), ll -> ll.orElseGet(List::of));
+    test(List.of(2), List::of, ll -> ll.orElseGet(supplier));
+    test(List.of(), List::of, ll -> ll.orElseGet(List::of));
+
+    Supplier<List<Integer>> throwing = () -> {
+      throw new IllegalStateException();
+    };
+    test(List.of(1), () -> List.of(1), ll -> ll.orElseGet(throwing));
+    assertThrows(IllegalStateException.class,
+        () -> List.of().toFuture(context).flatMap(e -> List.of(e)).orElseGet(throwing).isEmpty());
+    assertThrows(IllegalStateException.class,
+        () -> List.of().toFuture(context).flatMap(e -> List.of(e)).orElseGet(throwing).notEmpty());
+    assertThrows(IllegalStateException.class,
+        () -> List.of().toFuture(context).flatMap(e -> List.of(e)).orElseGet(throwing).size());
+    assertThrows(IllegalStateException.class,
+        () -> List.of().toFuture(context).flatMap(e -> List.of(e)).orElseGet(throwing).first());
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).orElseGet(() -> List.of(1));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void prepend() throws Exception {
     test(List.of(3, 2, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(2).prepend(3));
     test(List.of(3, null, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(null).prepend(3));

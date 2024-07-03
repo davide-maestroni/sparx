@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,6 +43,7 @@ import sparx.internal.future.iterator.IteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ListAsyncMaterializerToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ListToIteratorAsyncMaterializer;
+import sparx.internal.future.list.AbstractListAsyncMaterializer;
 import sparx.internal.future.list.AppendAllListAsyncMaterializer;
 import sparx.internal.future.list.AppendListAsyncMaterializer;
 import sparx.internal.future.list.AsyncForFuture;
@@ -87,6 +89,7 @@ import sparx.internal.future.list.MapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.MapListAsyncMaterializer;
 import sparx.internal.future.list.MapWhereListAsyncMaterializer;
 import sparx.internal.future.list.MaxListAsyncMaterializer;
+import sparx.internal.future.list.OrElseListAsyncMaterializer;
 import sparx.internal.future.list.PrependAllListAsyncMaterializer;
 import sparx.internal.future.list.PrependListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
@@ -909,6 +912,35 @@ class future extends Sparx {
         protected @NotNull java.util.List<Boolean> transform(
             @NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).notAll(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerOrElse(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<? extends E> elements) {
+      final Iterable<? extends E> otherElements = elements;
+      final int knownSize = materializer.knownSize();
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException,
+          knownSize > 0 ? knownSize : -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).orElse(otherElements);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerOrElseGet(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+      final int knownSize = materializer.knownSize();
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException,
+          knownSize > 0 ? knownSize : -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).orElseGet(supplier);
         }
       };
     }
@@ -2881,7 +2913,7 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new MaxListAsyncMaterializer<E>(materializer, Require.notNull(comparator, "comparator"),
-              context, cancelException, List.<E>decorateFunction()));
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -2898,7 +2930,7 @@ class future extends Sparx {
       }
       final ExecutionContext context = this.context;
       return new List<E>(context, cancelException, new MaxListAsyncMaterializer<E>(materializer,
-          reversed(Require.notNull(comparator, "comparator")), context, cancelException,
+          reversed(Require.notNull(comparator, "comparator")), cancelException,
           List.<E>decorateFunction()));
     }
 
@@ -3025,13 +3057,51 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> orElse(@NotNull final Iterable<? extends E> elements) {
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException,
+            getElementsMaterializer(context, taskID, Require.notNull(elements, "elements")));
+      }
+      if (knownSize > 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerOrElse(materializer, cancelException,
+                Require.notNull(elements, "elements")));
+      }
+      return new List<E>(context, cancelException, new OrElseListAsyncMaterializer<E>(materializer,
+          getElementsMaterializer(context, taskID, Require.notNull(elements, "elements")),
+          cancelException));
     }
 
     @Override
     public @NotNull List<E> orElseGet(
         @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
-      return null;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        final ExecutionContext context = this.context;
+        return new List<E>(context, cancelException,
+            new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier"), context, taskID,
+                cancelException));
+      }
+      if (knownSize > 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerOrElseGet(materializer, cancelException,
+                Require.notNull(supplier, "supplier")));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException, new OrElseListAsyncMaterializer<E>(materializer,
+          new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier"), context, taskID,
+              cancelException), cancelException));
     }
 
     @Override
@@ -3441,6 +3511,170 @@ class future extends Sparx {
       @SuppressWarnings("unchecked")
       protected void materialize(@NotNull java.util.List<F> elements) {
         ((lazy.List<E>) elements).materialized();
+      }
+    }
+
+
+    private static class SuppliedMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+
+      private static final Logger LOGGER = Logger.getLogger(SuppliedMaterializer.class.getName());
+
+      public SuppliedMaterializer(@NotNull final Supplier<? extends Iterable<? extends E>> supplier,
+          @NotNull final ExecutionContext context, @NotNull final String taskID,
+          @NotNull final AtomicReference<CancellationException> cancelException) {
+        super(new AtomicInteger(STATUS_RUNNING));
+        setState(new ImmaterialState(supplier, context, taskID, cancelException));
+      }
+
+      @Override
+      public int knownSize() {
+        return -1;
+      }
+
+      private class ImmaterialState implements ListAsyncMaterializer<E> {
+
+        private final AtomicReference<CancellationException> cancelException;
+        private final ExecutionContext context;
+        private final Supplier<? extends Iterable<? extends E>> supplier;
+        private final String taskID;
+
+        private ImmaterialState(@NotNull final Supplier<? extends Iterable<? extends E>> supplier,
+            @NotNull final ExecutionContext context, @NotNull final String taskID,
+            @NotNull final AtomicReference<CancellationException> cancelException) {
+          this.supplier = supplier;
+          this.context = context;
+          this.taskID = taskID;
+          this.cancelException = cancelException;
+        }
+
+        @Override
+        public boolean isCancelled() {
+          return false;
+        }
+
+        @Override
+        public boolean isDone() {
+          return false;
+        }
+
+        @Override
+        public boolean isFailed() {
+          return false;
+        }
+
+        @Override
+        public boolean isMaterializedAtOnce() {
+          return false;
+        }
+
+        @Override
+        public int knownSize() {
+          return -1;
+        }
+
+        @Override
+        public void materializeCancel(@NotNull final CancellationException exception) {
+          setCancelled(exception);
+        }
+
+        @Override
+        public void materializeContains(final Object element,
+            @NotNull final AsyncConsumer<Boolean> consumer) {
+          materialized().materializeContains(element, consumer);
+        }
+
+        @Override
+        public void materializeDone(@NotNull final AsyncConsumer<java.util.List<E>> consumer) {
+          safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+        }
+
+        @Override
+        public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
+          materialized().materializeEach(consumer);
+        }
+
+        @Override
+        public void materializeElement(final int index,
+            @NotNull final IndexedAsyncConsumer<E> consumer) {
+          if (index < 0) {
+            safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)),
+                LOGGER);
+          } else {
+            materialized().materializeElement(index, consumer);
+          }
+        }
+
+        @Override
+        public void materializeElements(@NotNull final AsyncConsumer<java.util.List<E>> consumer) {
+          materialized().materializeElements(consumer);
+        }
+
+        @Override
+        public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
+          materialized().materializeEmpty(consumer);
+        }
+
+        @Override
+        public void materializeHasElement(final int index,
+            @NotNull final AsyncConsumer<Boolean> consumer) {
+          materialized().materializeHasElement(index, consumer);
+        }
+
+        @Override
+        public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
+          materialized().materializeSize(consumer);
+        }
+
+        @Override
+        public int weightContains() {
+          return weightElements();
+        }
+
+        @Override
+        public int weightEach() {
+          return weightElements();
+        }
+
+        @Override
+        public int weightElement() {
+          return weightElements();
+        }
+
+        @Override
+        public int weightElements() {
+          return 1;
+        }
+
+        @Override
+        public int weightEmpty() {
+          return weightElements();
+        }
+
+        @Override
+        public int weightHasElement() {
+          return weightElements();
+        }
+
+        @Override
+        public int weightSize() {
+          return weightElements();
+        }
+
+        private @NotNull ListAsyncMaterializer<E> materialized() {
+          try {
+            return getElementsMaterializer(context, taskID, supplier.get());
+          } catch (final Exception e) {
+            if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
+            }
+            final CancellationException exception = cancelException.get();
+            if (exception != null) {
+              return setCancelled(exception);
+            } else {
+              return setFailed(e);
+            }
+          }
+        }
       }
     }
 

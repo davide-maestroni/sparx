@@ -28,22 +28,22 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 
-abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
+public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       AbstractListAsyncMaterializer.class.getName());
 
-  static final int STATUS_CANCELLED = 3;
-  static final int STATUS_FAILED = 2;
-  static final int STATUS_DONE = 1;
-  static final int STATUS_RUNNING = 0;
+  protected static final int STATUS_CANCELLED = 3;
+  protected static final int STATUS_FAILED = 2;
+  protected static final int STATUS_DONE = 1;
+  protected static final int STATUS_RUNNING = 0;
 
   final AtomicInteger status;
 
   private CancellationException cancelException;
   private ListAsyncMaterializer<E> state;
 
-  AbstractListAsyncMaterializer(@NotNull final AtomicInteger status) {
+  public AbstractListAsyncMaterializer(@NotNull final AtomicInteger status) {
     this.status = status;
   }
 
@@ -166,22 +166,22 @@ abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @NotNull
-  final ListAsyncMaterializer<E> getState() {
+  protected final ListAsyncMaterializer<E> getState() {
     return state;
   }
 
   @NotNull
-  final ListAsyncMaterializer<E> setCancelled(@NotNull final CancellationException exception) {
+  protected final ListAsyncMaterializer<E> setCancelled(@NotNull final CancellationException exception) {
     return setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
   }
 
   @NotNull
-  final ListAsyncMaterializer<E> setFailed(@NotNull final Exception error) {
+  protected final ListAsyncMaterializer<E> setFailed(@NotNull final Exception error) {
     return setState(new FailedListAsyncMaterializer<E>(error), STATUS_FAILED);
   }
 
   @NotNull
-  final ListAsyncMaterializer<E> setState(@NotNull final ListAsyncMaterializer<E> newState) {
+  protected final ListAsyncMaterializer<E> setState(@NotNull final ListAsyncMaterializer<E> newState) {
     return setState(newState, STATUS_RUNNING);
   }
 

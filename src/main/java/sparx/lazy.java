@@ -1414,13 +1414,16 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<E> orElse(@NotNull final Iterable<? extends E> elements) {
-      final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
       final IteratorMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return new Iterator<E>(elementsMaterializer);
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new Iterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
       }
-      return new Iterator<E>(new OrElseIteratorMaterializer<E>(materializer, elementsMaterializer));
+      if (knownSize > 0) {
+        return this;
+      }
+      return new Iterator<E>(new OrElseIteratorMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -3528,21 +3531,28 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<E> orElse(@NotNull final Iterable<? extends E> elements) {
-      final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
       final ListMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return new List<E>(elementsMaterializer);
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
       }
-      return new List<E>(new OrElseListMaterializer<E>(materializer, elementsMaterializer));
+      if (knownSize > 0) {
+        return this;
+      }
+      return new List<E>(new OrElseListMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
     public @NotNull List<E> orElseGet(
         @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
       final ListMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
         return new List<E>(new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier")));
+      }
+      if (knownSize > 0) {
+        return this;
       }
       return new List<E>(new OrElseListMaterializer<E>(materializer,
           new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier"))));
