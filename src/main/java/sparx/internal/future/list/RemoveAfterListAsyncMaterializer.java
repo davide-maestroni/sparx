@@ -16,7 +16,6 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.AsyncConsumers.safeConsume;
-import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
@@ -26,33 +25,34 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.util.IndexOverflowException;
-import sparx.util.SizeOverflowException;
-import sparx.util.function.TernaryFunction;
+import sparx.util.function.BinaryFunction;
 
-public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
+public class RemoveAfterListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      InsertAfterListAsyncMaterializer.class.getName());
+      RemoveAfterListAsyncMaterializer.class.getName());
 
   private final int knownSize;
 
   // numElements: positive
-  public InsertAfterListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      final int numElements, final E element,
+  public RemoveAfterListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      final int numElements, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> insertFunction) {
+      @NotNull final BinaryFunction<List<E>, Integer, List<E>> removeFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(numElements, wrapped.knownSize());
-    setState(new ImmaterialState(wrapped, numElements, element, cancelException, insertFunction));
+    setState(new ImmaterialState(wrapped, numElements, context, cancelException, removeFunction));
   }
 
   private static int safeSize(final int numElements, final int wrappedSize) {
     if (wrappedSize >= 0) {
-      if (numElements <= wrappedSize) {
-        return SizeOverflowException.safeCast((long) wrappedSize + 1);
+      if (numElements < wrappedSize) {
+        return wrappedSize - 1;
       }
       return wrappedSize;
     }
@@ -67,23 +67,24 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final E element;
+    private final ExecutionContext context;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
-    private final TernaryFunction<List<E>, Integer, E, List<E>> insertFunction;
     private final int numElements;
+    private final BinaryFunction<List<E>, Integer, List<E>> removeFunction;
     private final ListAsyncMaterializer<E> wrapped;
 
     private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int numElements,
-        final E element, @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> insertFunction) {
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final BinaryFunction<List<E>, Integer, List<E>> removeFunction) {
       this.wrapped = wrapped;
       this.numElements = numElements;
-      this.element = element;
+      this.context = context;
       this.cancelException = cancelException;
-      this.insertFunction = insertFunction;
+      this.removeFunction = removeFunction;
       wrappedSize = wrapped.knownSize();
     }
 
@@ -122,40 +123,11 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
     @Override
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      wrapped.materializeContains(element, new CancellableAsyncConsumer<Boolean>() {
-        @Override
-        public void cancellableAccept(final Boolean contains) throws Exception {
-          if (contains) {
-            consumer.accept(true);
-          } else {
-            if (wrappedSize >= 0) {
-              final E inserted = ImmaterialState.this.element;
-              consumer.accept(numElements <= wrappedSize && (element == inserted || (element != null
-                  && element.equals(inserted))));
-            } else {
-              wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
-                @Override
-                public void cancellableAccept(final Integer size) throws Exception {
-                  wrappedSize = size;
-                  final E inserted = ImmaterialState.this.element;
-                  consumer.accept(numElements <= size && (element == inserted || (element != null
-                      && element.equals(inserted))));
-                }
-
-                @Override
-                public void error(@NotNull final Exception error) throws Exception {
-                  consumer.error(error);
-                }
-              });
-            }
-          }
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+      if (element == null) {
+        new MaterializingContainsNullAsyncConsumer(consumer).run();
+      } else {
+        new MaterializingContainsElementAsyncConsumer(element, consumer).run();
+      }
     }
 
     @Override
@@ -172,11 +144,8 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
           final int knownSize = safeSize(numElements, wrappedSize = Math.max(wrappedSize, size));
           if (index < numElements) {
             consumer.accept(knownSize, index, element);
-          } else {
-            if (index == numElements) {
-              consumer.accept(knownSize, index, element);
-            }
-            consumer.accept(knownSize, IndexOverflowException.safeCast((long) index + 1), element);
+          } else if (index > numElements) {
+            consumer.accept(knownSize, index - 1, element);
           }
         }
 
@@ -217,48 +186,28 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
             consumer.error(error);
           }
         });
-      } else if (index == numElements) {
-        if (wrappedSize >= 0) {
-          final int size = safeSize(numElements, wrappedSize);
-          if (index < size) {
-            safeConsume(consumer, size, index, element, LOGGER);
-          } else {
-            safeConsumeComplete(consumer, size, LOGGER);
-          }
-        } else {
-          wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
-            @Override
-            public void cancellableAccept(final Integer size) {
-              wrappedSize = size;
-              materializeElement(index, consumer);
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
-        }
       } else {
         final int originalIndex = index;
-        wrapped.materializeElement(index - 1, new CancellableIndexedAsyncConsumer<E>() {
-          @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            final int knownSize = safeSize(numElements, wrappedSize = Math.max(wrappedSize, size));
-            consumer.accept(knownSize, originalIndex, element);
-          }
+        wrapped.materializeElement(IndexOverflowException.safeCast((long) index + 1),
+            new CancellableIndexedAsyncConsumer<E>() {
+              @Override
+              public void cancellableAccept(final int size, final int index, final E element)
+                  throws Exception {
+                final int knownSize = safeSize(numElements,
+                    wrappedSize = Math.max(wrappedSize, size));
+                consumer.accept(knownSize, originalIndex, element);
+              }
 
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            consumer.complete(safeSize(numElements, wrappedSize = size));
-          }
+              @Override
+              public void cancellableComplete(final int size) throws Exception {
+                consumer.complete(safeSize(numElements, wrappedSize = size));
+              }
 
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                consumer.error(error);
+              }
+            });
       }
     }
 
@@ -270,7 +219,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
         wrapped.materializeElements(new CancellableAsyncConsumer<List<E>>() {
           @Override
           public void cancellableAccept(final List<E> elements) throws Exception {
-            final List<E> materialized = insertFunction.apply(elements, numElements, element);
+            final List<E> materialized = removeFunction.apply(elements, numElements);
             setState(new ListToListAsyncMaterializer<E>(materialized));
             consumeElements(materialized);
           }
@@ -292,16 +241,28 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      if (wrappedSize == 0) {
-        safeConsume(consumer, numElements != 0, LOGGER);
+      if (wrappedSize == 0 || (wrappedSize == 1 && numElements == 0)) {
+        safeConsume(consumer, true, LOGGER);
       } else if (wrappedSize > 0) {
         safeConsume(consumer, false, LOGGER);
-      } else {
+      } else if (numElements == 0) {
         wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
           public void cancellableAccept(final Integer size) throws Exception {
             wrappedSize = size;
-            consumer.accept(size == 0 && numElements != 0);
+            consumer.accept(size <= 1);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      } else {
+        wrapped.materializeEmpty(new CancellableAsyncConsumer<Boolean>() {
+          @Override
+          public void cancellableAccept(final Boolean empty) throws Exception {
+            consumer.accept(empty);
           }
 
           @Override
@@ -357,8 +318,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     @Override
     public int weightContains() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightContains() + wrapped.weightSize());
+      return wrapped.weightElement();
     }
 
     @Override
@@ -368,10 +328,6 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     @Override
     public int weightElement() {
-      if (wrappedSize < 0) {
-        return (int) Math.min(Integer.MAX_VALUE,
-            (long) wrapped.weightElement() + wrapped.weightSize());
-      }
       return wrapped.weightElement();
     }
 
@@ -382,7 +338,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     @Override
     public int weightEmpty() {
-      return wrapped.weightSize();
+      return wrappedSize < 0 ? numElements > 0 ? wrapped.weightEmpty() : wrapped.weightSize() : 1;
     }
 
     @Override
@@ -409,6 +365,115 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
         safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
+    }
+
+    private @NotNull String getTaskID() {
+      final String taskID = context.currentTaskID();
+      return taskID != null ? taskID : "";
+    }
+
+    private class MaterializingContainsElementAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<E> implements Task {
+
+      private final AsyncConsumer<Boolean> consumer;
+      private final Object element;
+
+      private int index;
+      private String taskID;
+
+      private MaterializingContainsElementAsyncConsumer(@NotNull final Object element,
+          @NotNull final AsyncConsumer<Boolean> consumer) {
+        this.element = element;
+        this.consumer = consumer;
+      }
+
+      @Override
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        if (index != numElements && this.element.equals(element)) {
+          consumer.accept(true);
+        } else {
+          this.index = index + 1;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      }
+
+      @Override
+      public void cancellableComplete(final int size) throws Exception {
+        consumer.accept(false);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) throws Exception {
+        consumer.error(error);
+      }
+
+      @Override
+      public void run() {
+        wrapped.materializeElement(index, this);
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElement();
+      }
+    }
+
+    private class MaterializingContainsNullAsyncConsumer extends
+        CancellableIndexedAsyncConsumer<E> implements Task {
+
+      private final AsyncConsumer<Boolean> consumer;
+
+      private int index;
+      private String taskID;
+
+      private MaterializingContainsNullAsyncConsumer(
+          @NotNull final AsyncConsumer<Boolean> consumer) {
+        this.consumer = consumer;
+      }
+
+      @Override
+      public void cancellableAccept(final int size, final int index, final E element)
+          throws Exception {
+        if (index != numElements && element == null) {
+          consumer.accept(true);
+        } else {
+          this.index = index + 1;
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      }
+
+      @Override
+      public void cancellableComplete(final int size) throws Exception {
+        consumer.accept(false);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) throws Exception {
+        consumer.error(error);
+      }
+
+      @Override
+      public void run() {
+        wrapped.materializeElement(index, this);
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElement();
+      }
     }
   }
 }

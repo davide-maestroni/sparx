@@ -94,6 +94,7 @@ import sparx.internal.future.list.PrependAllListAsyncMaterializer;
 import sparx.internal.future.list.PrependListAsyncMaterializer;
 import sparx.internal.future.list.ReduceLeftListAsyncMaterializer;
 import sparx.internal.future.list.ReduceRightListAsyncMaterializer;
+import sparx.internal.future.list.RemoveAfterListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
@@ -182,14 +183,14 @@ class future extends Sparx {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
           final Object thirdParam) {
-        return lazy.List.wrap(firstParam).insertAfter(secondParam, thirdParam);
+        return lazy.List.wrap(firstParam).insertAfter(secondParam, thirdParam).materialized();
       }
     };
     private static final TernaryFunction<? extends java.util.List<?>, Integer, ? extends java.util.List<?>, ? extends java.util.List<?>> INSERT_ALL_AFTER_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, java.util.List<?>, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
           final java.util.List<?> thirdParam) {
-        return lazy.List.wrap(firstParam).insertAllAfter(secondParam, thirdParam);
+        return lazy.List.wrap(firstParam).insertAllAfter(secondParam, thirdParam).materialized();
       }
     };
     private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> PREPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {
@@ -205,11 +206,18 @@ class future extends Sparx {
         return lazy.List.wrap(firstParam).prepend(secondParam).materialized();
       }
     };
+    private static final BinaryFunction<? extends java.util.List<?>, Integer, ? extends java.util.List<?>> REMOVE_FUNCTION = new BinaryFunction<java.util.List<?>, Integer, java.util.List<?>>() {
+      @Override
+      public java.util.List<?> apply(final java.util.List<?> firstParam,
+          final Integer secondParam) {
+        return lazy.List.wrap(firstParam).removeAfter(secondParam).materialized();
+      }
+    };
     private static final TernaryFunction<? extends java.util.List<?>, Integer, ?, ? extends java.util.List<?>> REPLACE_AFTER_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, Object, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
           final Object thirdParam) {
-        return lazy.List.wrap(firstParam).replaceAfter(secondParam, thirdParam);
+        return lazy.List.wrap(firstParam).replaceAfter(secondParam, thirdParam).materialized();
       }
     };
     private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
@@ -1032,6 +1040,11 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     private static @NotNull <E> BinaryFunction<java.util.List<E>, E, java.util.List<E>> prependFunction() {
       return (BinaryFunction<java.util.List<E>, E, java.util.List<E>>) PREPEND_FUNCTION;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static @NotNull <E> BinaryFunction<java.util.List<E>, Integer, java.util.List<E>> removeFunction() {
+      return (BinaryFunction<java.util.List<E>, Integer, java.util.List<E>>) REMOVE_FUNCTION;
     }
 
     @SuppressWarnings("unchecked")
@@ -3216,8 +3229,23 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> removeAfter(int numElements) {
-      return null;
+    public @NotNull List<E> removeAfter(final int numElements) {
+      if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        return this;
+      }
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (numElements == 0 && knownSize == 1) {
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new RemoveAfterListAsyncMaterializer<E>(materializer, numElements, context,
+              cancelException, List.<E>removeFunction()));
     }
 
     @Override

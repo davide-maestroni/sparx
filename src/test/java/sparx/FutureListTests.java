@@ -2334,6 +2334,37 @@ public class FutureListTests {
   }
 
   @Test
+  public void removeAfter() throws Exception {
+    var l = List.of(1, 2, 3);
+    test(List.of(1, 2, 3), () -> l, ll -> ll.removeAfter(5));
+    test(List.of(1, 2, 3), () -> l, ll -> ll.removeAfter(3));
+    test(List.of(1, 2), () -> l, ll -> ll.removeAfter(2));
+    test(List.of(1, 3), () -> l, ll -> ll.removeAfter(1));
+    test(List.of(2, 3), () -> l, ll -> ll.removeAfter(0));
+    test(List.of(1, 2, 3), () -> l, ll -> ll.removeAfter(-7));
+    test(List.of(), List::of, ll -> ll.removeAfter(5));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).removeAfter(0);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void prepend() throws Exception {
     test(List.of(3, 2, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(2).prepend(3));
     test(List.of(3, null, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(null).prepend(3));
