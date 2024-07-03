@@ -93,6 +93,7 @@ import sparx.internal.future.list.OrElseListAsyncMaterializer;
 import sparx.internal.future.list.PrependAllListAsyncMaterializer;
 import sparx.internal.future.list.PrependListAsyncMaterializer;
 import sparx.internal.future.list.ReduceLeftListAsyncMaterializer;
+import sparx.internal.future.list.ReduceRightListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
@@ -969,6 +970,18 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).reduceLeft(operation);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerReduceRight(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).reduceRight(operation);
         }
       };
     }
@@ -3181,7 +3194,25 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> reduceRight(
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
-      return null;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+      }
+      if (knownSize == 1) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerReduceRight(materializer, cancelException,
+                Require.notNull(operation, "operation")));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new ReduceRightListAsyncMaterializer<E>(materializer,
+              Require.notNull(operation, "operation"), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override

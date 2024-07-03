@@ -2301,6 +2301,39 @@ public class FutureListTests {
   }
 
   @Test
+  public void reduceRight() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).toFuture(context).reduceRight(null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).toFuture(context).findIndexOf(0).reduceRight(null));
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(15), () -> l, ll -> ll.reduceRight(Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> l.toFuture(context).flatMap(e -> List.of(e)).prepend(null).reduceRight(Integer::sum)
+            .first());
+    test(List.of(), List::<Integer>of, ll -> ll.reduceRight(Integer::sum));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).reduceRight((n, i) -> {
+        Thread.sleep(60000);
+        return i;
+      });
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void prepend() throws Exception {
     test(List.of(3, 2, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(2).prepend(3));
     test(List.of(3, null, 1), List::<Integer>of, ll -> ll.prepend(1).prepend(null).prepend(3));
