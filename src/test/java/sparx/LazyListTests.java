@@ -1095,6 +1095,10 @@ public class LazyListTests {
 
   @Test
   public void removeFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).removeFirstWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).removeFirstWhere((Predicate<? super Integer>) null));
     var l = List.of(1, 2, null, 4, 2);
     test(List.of(2, null, 4, 2), () -> l.removeFirstWhere(i -> i == 1));
     test(List.of(1, 2, 4, 2), () -> l.removeFirstWhere(Objects::isNull));
@@ -1102,7 +1106,7 @@ public class LazyListTests {
     test(List.of(1, null, 4, 2), () -> l.removeFirstWhere(i -> i > 1));
     test(l, () -> l.removeFirstWhere(i -> false));
 
-    assertThrows(NullPointerException.class, () -> l.removeFirstWhere(i -> i > 2).isEmpty());
+    assertFalse(l.removeFirstWhere(i -> i > 2).isEmpty());
     assertThrows(NullPointerException.class, () -> l.removeFirstWhere(i -> i > 2).size());
     assertEquals(2, l.removeFirstWhere(i -> i > 2).get(1));
 

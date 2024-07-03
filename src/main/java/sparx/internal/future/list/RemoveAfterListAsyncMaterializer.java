@@ -44,7 +44,16 @@ public class RemoveAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
       final int numElements, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, Integer, List<E>> removeFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    this(wrapped, numElements, new AtomicInteger(STATUS_RUNNING), context, cancelException,
+        removeFunction);
+  }
+
+  RemoveAfterListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      final int numElements, @NotNull final AtomicInteger status,
+      @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
+      @NotNull final BinaryFunction<List<E>, Integer, List<E>> removeFunction) {
+    super(status);
     knownSize = safeSize(numElements, wrapped.knownSize());
     setState(new ImmaterialState(wrapped, numElements, context, cancelException, removeFunction));
   }

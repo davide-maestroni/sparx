@@ -89,7 +89,9 @@ public class RemoveFirstWhereListMaterializer<E> extends AbstractListMaterialize
 
   @Override
   public boolean materializeEmpty() {
-    return wrapped.materializeEmpty() || materializeSize() == 0;
+    final ListMaterializer<E> wrapped = this.wrapped;
+    return wrapped.materializeEmpty() || (state.materializeUntil(0) == 0
+        && wrapped.materializeSize() == 1);
   }
 
   @Override
