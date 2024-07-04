@@ -347,10 +347,11 @@ public class lazy extends Sparx {
     }
 
     public static @NotNull <E> Iterator<E> times(final int count, final E element) {
-      if (Require.notNegative(count, "count") == 0) {
+      if (count == 0) {
         return Iterator.of();
       }
-      return new Iterator<E>(new RepeatIteratorMaterializer<E>(count, element));
+      return new Iterator<E>(
+          new RepeatIteratorMaterializer<E>(Require.notNegative(count, "count"), element));
     }
 
     public static @NotNull <E> Iterator<E> wrap(@NotNull final Iterable<? extends E> elements) {
@@ -1777,7 +1778,7 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<E> resizeTo(final int numElements, final E padding) {
-      if (Require.notNegative(numElements, "numElements") == 0) {
+      if (numElements == 0) {
         return Iterator.of();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
@@ -1790,12 +1791,15 @@ public class lazy extends Sparx {
           return this;
         }
         if (knownSize > numElements) {
-          return new Iterator<E>(new TakeIteratorMaterializer<E>(materializer, numElements));
+          return new Iterator<E>(new TakeIteratorMaterializer<E>(materializer,
+              Require.notNegative(numElements, "numElements")));
         }
         return new Iterator<E>(new AppendAllIteratorMaterializer<E>(materializer,
-            new RepeatIteratorMaterializer<E>(numElements - knownSize, padding)));
+            new RepeatIteratorMaterializer<E>(
+                Require.notNegative(numElements, "numElements") - knownSize, padding)));
       }
-      return new Iterator<E>(new ResizeIteratorMaterializer<E>(materializer, numElements, padding));
+      return new Iterator<E>(new ResizeIteratorMaterializer<E>(materializer,
+          Require.notNegative(numElements, "numElements"), padding));
     }
 
     @Override
@@ -2286,10 +2290,11 @@ public class lazy extends Sparx {
     }
 
     public static @NotNull <E> List<E> times(final int count, final E element) {
-      if (Require.notNegative(count, "count") == 0) {
+      if (count == 0) {
         return List.of();
       }
-      return new List<E>(new RepeatListMaterializer<E>(count, element));
+      return new List<E>(
+          new RepeatListMaterializer<E>(Require.notNegative(count, "count"), element));
     }
 
     public static @NotNull <E> List<E> wrap(@NotNull final Iterable<? extends E> elements) {
@@ -3918,7 +3923,7 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<E> resizeTo(final int numElements, final E padding) {
-      if (Require.notNegative(numElements, "numElements") == 0) {
+      if (numElements == 0) {
         return List.of();
       }
       final ListMaterializer<E> materializer = this.materializer;
@@ -3931,12 +3936,15 @@ public class lazy extends Sparx {
           return this;
         }
         if (knownSize > numElements) {
-          return new List<E>(new TakeListMaterializer<E>(materializer, numElements));
+          return new List<E>(new TakeListMaterializer<E>(materializer,
+              Require.notNegative(numElements, "numElements")));
         }
         return new List<E>(new AppendAllListMaterializer<E>(materializer,
-            new RepeatListMaterializer<E>(numElements - knownSize, padding)));
+            new RepeatListMaterializer<E>(
+                Require.notNegative(numElements, "numElements") - knownSize, padding)));
       }
-      return new List<E>(new ResizeListMaterializer<E>(materializer, numElements, padding));
+      return new List<E>(new ResizeListMaterializer<E>(materializer,
+          Require.notNegative(numElements, "numElements"), padding));
     }
 
     @Override
@@ -4421,7 +4429,7 @@ public class lazy extends Sparx {
     }
 
     public static @NotNull <E> ListIterator<E> times(final int count, final E element) {
-      if (Require.notNegative(count, "count") == 0) {
+      if (count == 0) {
         return ListIterator.of();
       }
       return new ListIterator<E>(List.<E>of(), List.times(count, element));

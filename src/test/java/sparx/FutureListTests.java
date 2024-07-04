@@ -3193,6 +3193,38 @@ public class FutureListTests {
   }
 
   @Test
+  public void take() throws Exception {
+    test(List.of(), List::<Integer>of, ll -> ll.take(1));
+    test(List.of(), List::<Integer>of, ll -> ll.take(0));
+    test(List.of(), List::<Integer>of, ll -> ll.take(-1));
+    test(List.of(1), () -> List.of(1, null, 3), ll -> ll.take(1));
+    test(List.of(1, null), () -> List.of(1, null, 3), ll -> ll.take(2));
+    test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.take(3));
+    test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.take(4));
+    test(List.of(), () -> List.of(1, null, 3), ll -> ll.take(0));
+    test(List.of(), () -> List.of(1, null, 3), ll -> ll.take(-1));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).take(1);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void union() throws Exception {
     assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).union(null));
     test(List.of(1, 2, null, 4), () -> List.of(1, 2, null, 4), ll -> ll.union(List.of(1, null)));
