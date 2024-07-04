@@ -2993,6 +2993,49 @@ public class FutureListTests {
   }
 
   @Test
+  public void replaceSlice() throws Exception {
+    var l = List.of(1, 2, null, 4);
+    test(List.of(1, 5, 2, null, 4), () -> l, ll -> ll.replaceSlice(1, 1, List.of(5)));
+    test(List.of(1, 5, 2, null, 4), () -> l, ll -> ll.replaceSlice(1, 0, List.of(5)));
+    test(List.of(1, 5, 2, null, 4), () -> l, ll -> ll.replaceSlice(1, -3, List.of(5)));
+    test(List.of(1, 5, 2, null, 4), () -> l, ll -> ll.replaceSlice(1, -4, List.of(5)));
+    test(List.of(1, 5, 2, null, 4), () -> l, ll -> ll.replaceSlice(1, -5, List.of(5)));
+    test(List.of(1, 2, null, 5, 4), () -> l, ll -> ll.replaceSlice(-1, 1, List.of(5)));
+    test(List.of(1, 2, null, 5, 4), () -> l, ll -> ll.replaceSlice(-1, 3, List.of(5)));
+    test(List.of(1, 2, null, 5, 4), () -> l, ll -> ll.replaceSlice(-1, -1, List.of(5)));
+    test(List.of(1, 2, null, 5, 4), () -> l, ll -> ll.replaceSlice(-1, -4, List.of(5)));
+    test(List.of(1, 5, 4), () -> l, ll -> ll.replaceSlice(1, -1, List.of(5)));
+    test(List.of(1, 5, null, 4), () -> l, ll -> ll.replaceSlice(1, -2, List.of(5)));
+    test(List.of(1, 5, 4), () -> l, ll -> ll.replaceSlice(1, 3, List.of(5)));
+    test(List.of(1, 5, null, 4), () -> l, ll -> ll.replaceSlice(1, 2, List.of(5)));
+    test(List.of(1, 2, null, 5), () -> l, ll -> ll.replaceSlice(-1, 4, List.of(5)));
+    test(List.of(1, 2, 5, 4), () -> l, ll -> ll.replaceSlice(-2, -1, List.of(5)));
+    test(List.of(5), () -> l, ll -> ll.replaceSlice(0, Integer.MAX_VALUE, List.of(5)));
+    test(List.of(), () -> l, ll -> ll.replaceSlice(0, Integer.MAX_VALUE, List.of()));
+    test(List.of(5), List::of, ll -> ll.replaceSlice(0, 0, List.of(5)));
+    test(List.of(5), List::of, ll -> ll.replaceSlice(1, -1, List.of(5)));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).replaceSlice(0, -1, List.of());
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void replaceWhere() throws Exception {
     assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
         .replaceWhere((IndexedPredicate<? super Integer>) null, 0));

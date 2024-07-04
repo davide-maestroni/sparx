@@ -25,8 +25,23 @@ public class ReplaceSliceIteratorMaterializer<E> extends AbstractIteratorMateria
 
   public ReplaceSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int start, final int end, @NotNull final IteratorMaterializer<E> elementsMaterializer) {
-    if (start >= 0 && end >= 0) {
-      state = new MaterialState(wrapped, start, Math.max(0, end - start), elementsMaterializer);
+    final int knownSize = wrapped.knownSize();
+    if (knownSize >= 0) {
+      int materializedStart = start;
+      if (materializedStart < 0) {
+        materializedStart = Math.max(0, knownSize + materializedStart);
+      } else {
+        materializedStart = Math.min(knownSize, materializedStart);
+      }
+      int materializedEnd = end;
+      if (materializedEnd < 0) {
+        materializedEnd = Math.max(0, knownSize + materializedEnd);
+      } else {
+        materializedEnd = Math.min(knownSize, materializedEnd);
+      }
+      final int materializedLength = Math.max(0, materializedEnd - materializedStart);
+      state = new MaterialState(wrapped, materializedStart, materializedLength,
+          elementsMaterializer);
     } else {
       state = new ImmaterialState(wrapped, start, end, elementsMaterializer);
     }
@@ -78,21 +93,19 @@ public class ReplaceSliceIteratorMaterializer<E> extends AbstractIteratorMateria
         final int wrappedSize = elements.size();
         int materializedStart = start;
         if (materializedStart < 0) {
-          materializedStart = wrappedSize + materializedStart;
+          materializedStart = Math.max(0, wrappedSize + materializedStart);
+        } else {
+          materializedStart = Math.min(wrappedSize, materializedStart);
         }
         int materializedEnd = end;
         if (materializedEnd < 0) {
-          materializedEnd = wrappedSize + materializedEnd;
-        }
-        final int materializedLength;
-        if (materializedStart >= 0 && materializedEnd >= 0) {
-          materializedLength = Math.max(0, materializedEnd - materializedStart);
+          materializedEnd = Math.max(0, wrappedSize + materializedEnd);
         } else {
-          materializedLength = 0;
+          materializedEnd = Math.min(wrappedSize, materializedEnd);
         }
+        final int materializedLength = Math.max(0, materializedEnd - materializedStart);
         return (state = new MaterialState(new DequeueToIteratorMaterializer<E>(elements),
-            Math.max(0, materializedStart), materializedLength,
-            elementsMaterializer)).materializeHasNext();
+            materializedStart, materializedLength, elementsMaterializer)).materializeHasNext();
       }
       state = EmptyIteratorMaterializer.instance();
       return false;

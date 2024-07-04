@@ -1572,7 +1572,7 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<E> removeSlice(final int start, final int end) {
-      if (end <= start && start >= 0 && end >= 0) {
+      if (end >= 0 && start >= end) {
         return this;
       }
       final IteratorMaterializer<E> materializer = this.materializer;
@@ -1593,7 +1593,7 @@ public class lazy extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart == knownSize || knownStart >= knownEnd) {
+        if (knownStart >= knownEnd) {
           return this;
         }
         final int knownLength = knownEnd - knownStart;
@@ -1721,15 +1721,9 @@ public class lazy extends Sparx {
     @Override
     public @NotNull Iterator<E> replaceSlice(final int start, final int end,
         @NotNull final Iterable<? extends E> patch) {
-      if (start >= 0 && start == end) {
-        return insertAllAfter(start, patch);
-      }
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
-      if (knownSize == 0) {
-        return this;
-      }
-      if (knownSize > 0) {
+      if (knownSize >= 0) {
         final int knownStart;
         if (start < 0) {
           knownStart = Math.max(0, knownSize + start);
@@ -1745,9 +1739,18 @@ public class lazy extends Sparx {
         if (knownStart >= knownEnd) {
           return insertAllAfter(knownStart, patch);
         }
+        final int knownLength = knownEnd - knownStart;
+        if (knownLength == knownSize) {
+          return new Iterator<E>(getElementsMaterializer(Require.notNull(patch, "patch")));
+        }
       }
-      return new Iterator<E>(new ReplaceSliceIteratorMaterializer<E>(materializer, start, end,
-          getElementsMaterializer(Require.notNull(patch, "patch"))));
+      final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
+          Require.notNull(patch, "patch"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return new Iterator<E>(new RemoveSliceIteratorMaterializer<E>(materializer, start, end));
+      }
+      return new Iterator<E>(
+          new ReplaceSliceIteratorMaterializer<E>(materializer, start, end, elementsMaterializer));
     }
 
     @Override
@@ -1846,7 +1849,7 @@ public class lazy extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart == knownSize || knownStart >= knownEnd) {
+        if (knownStart >= knownEnd) {
           return Iterator.of();
         }
       }
@@ -3672,7 +3675,7 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<E> removeSlice(final int start, final int end) {
-      if (end <= start && start >= 0 && end >= 0) {
+      if (end >= 0 && start >= end) {
         return this;
       }
       final ListMaterializer<E> materializer = this.materializer;
@@ -3693,7 +3696,7 @@ public class lazy extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart == knownSize || knownStart >= knownEnd) {
+        if (knownStart >= knownEnd) {
           return this;
         }
         final int knownLength = knownEnd - knownStart;
@@ -3859,15 +3862,9 @@ public class lazy extends Sparx {
     @Override
     public @NotNull List<E> replaceSlice(final int start, final int end,
         @NotNull final Iterable<? extends E> patch) {
-      if (start >= 0 && start == end) {
-        return insertAllAfter(start, patch);
-      }
       final ListMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
-      if (knownSize == 0) {
-        return this;
-      }
-      if (knownSize > 0) {
+      if (knownSize >= 0) {
         final int knownStart;
         if (start < 0) {
           knownStart = Math.max(0, knownSize + start);
@@ -3883,9 +3880,18 @@ public class lazy extends Sparx {
         if (knownStart >= knownEnd) {
           return insertAllAfter(knownStart, patch);
         }
+        final int knownLength = knownEnd - knownStart;
+        if (knownLength == knownSize) {
+          return new List<E>(getElementsMaterializer(Require.notNull(patch, "patch")));
+        }
       }
-      return new List<E>(new ReplaceSliceListMaterializer<E>(materializer, start, end,
-          getElementsMaterializer(Require.notNull(patch, "patch"))));
+      final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
+          Require.notNull(patch, "patch"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return new List<E>(new RemoveSliceListMaterializer<E>(materializer, start, end));
+      }
+      return new List<E>(
+          new ReplaceSliceListMaterializer<E>(materializer, start, end, elementsMaterializer));
     }
 
     @Override
@@ -3978,7 +3984,7 @@ public class lazy extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart == knownSize || knownStart >= knownEnd) {
+        if (knownStart >= knownEnd) {
           return List.of();
         }
       }

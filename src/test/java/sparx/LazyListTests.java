@@ -1331,7 +1331,7 @@ public class LazyListTests {
     test(List.of(5), () -> l.replaceSlice(0, Integer.MAX_VALUE, List.of(5)));
     test(List.of(), () -> l.replaceSlice(0, Integer.MAX_VALUE, List.of()));
     test(List.of(5), () -> List.of().replaceSlice(0, 0, List.of(5)));
-    test(List.of(), () -> List.of().replaceSlice(1, -1, List.of(5)));
+    test(List.of(5), () -> List.of().replaceSlice(1, -1, List.of(5)));
   }
 
   @Test

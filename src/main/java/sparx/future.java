@@ -98,6 +98,7 @@ import sparx.internal.future.list.RemoveFirstWhereListAsyncMaterializer;
 import sparx.internal.future.list.RemoveLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.RemoveSliceListAsyncMaterializer;
 import sparx.internal.future.list.RemoveWhereListAsyncMaterializer;
+import sparx.internal.future.list.ReplaceSliceListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
@@ -1039,6 +1040,18 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).removeWhere(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerReplaceSlice(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException, final int start,
+        final int end, @NotNull final Iterable<? extends E> patch) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).replaceSlice(start, end, patch);
         }
       };
     }
@@ -3431,7 +3444,7 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> removeSlice(final int start, final int end) {
-      if (end <= start && start >= 0 && end >= 0) {
+      if (end >= 0 && start >= end) {
         return this;
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
@@ -3453,7 +3466,7 @@ class future extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart == knownSize || knownStart >= knownEnd) {
+        if (knownStart >= knownEnd) {
           return new List<E>(context, cancelException, materializer);
         }
         final int knownLength = knownEnd - knownStart;
@@ -3676,8 +3689,46 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> replaceSlice(int start, int end, @NotNull Iterable<? extends E> patch) {
-      return null;
+    public @NotNull List<E> replaceSlice(final int start, final int end,
+        @NotNull final Iterable<? extends E> patch) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize >= 0) {
+        final int knownStart;
+        if (start < 0) {
+          knownStart = Math.max(0, knownSize + start);
+        } else {
+          knownStart = Math.min(knownSize, start);
+        }
+        final int knownEnd;
+        if (end < 0) {
+          knownEnd = Math.max(0, knownSize + end);
+        } else {
+          knownEnd = Math.min(knownSize, end);
+        }
+        if (knownStart >= knownEnd) {
+          return insertAllAfter(knownStart, patch);
+        }
+        final int knownLength = knownEnd - knownStart;
+        if (knownLength == knownSize) {
+          return new List<E>(context, cancelException,
+              getElementsMaterializer(context, taskID, Require.notNull(patch, "patch")));
+        }
+      }
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final ListAsyncMaterializer<E> elementsMaterializer = getElementsMaterializer(context, taskID,
+          Require.notNull(patch, "patch"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return removeSlice(start, end);
+      }
+      if (materializer.isMaterializedAtOnce() && !isFuture(patch)) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerReplaceSlice(materializer, cancelException, start, end, patch));
+      }
+      return new List<E>(context, cancelException,
+          new ReplaceSliceListAsyncMaterializer<E>(materializer, start, end, elementsMaterializer,
+              context, cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -3812,7 +3863,7 @@ class future extends Sparx {
         } else {
           knownEnd = Math.min(knownSize, end);
         }
-        if (knownStart == knownSize || knownStart >= knownEnd) {
+        if (knownStart >= knownEnd) {
           return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
         }
       }

@@ -2345,14 +2345,11 @@ public class LazyIteratorTests {
     assertEquals(1, Iterator.of().replaceSlice(0, 0, List.of(5)).size());
     assertEquals(List.of(5), Iterator.of().replaceSlice(0, 0, List.of(5)).toList());
     assertEquals(5, Iterator.of().replaceSlice(0, 0, List.of(5)).first());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.of().replaceSlice(1, -1, List.of(5)).first());
 
-    assertTrue(Iterator.of().replaceSlice(1, -1, List.of(5)).isEmpty());
-    assertEquals(0, Iterator.of().replaceSlice(1, -1, List.of(5)).size());
-    assertEquals(List.of(), Iterator.of().replaceSlice(1, -1, List.of(5)).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.of().replaceSlice(1, -1, List.of(5)).first());
+    assertFalse(Iterator.of().replaceSlice(1, -1, List.of(5)).isEmpty());
+    assertEquals(1, Iterator.of().replaceSlice(1, -1, List.of(5)).size());
+    assertEquals(List.of(5), Iterator.of().replaceSlice(1, -1, List.of(5)).toList());
+    assertEquals(5, Iterator.of().replaceSlice(1, -1, List.of(5)).first());
   }
 
   @Test

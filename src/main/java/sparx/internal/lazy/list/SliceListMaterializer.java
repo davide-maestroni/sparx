@@ -29,8 +29,22 @@ public class SliceListMaterializer<E> extends AbstractListMaterializer<E> implem
   public SliceListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int start,
       final int end) {
     this.wrapped = wrapped;
-    if (start >= 0 && end >= 0) {
-      state = new MaterialState(start, Math.max(0, end - start));
+    final int knownSize = wrapped.knownSize();
+    if (knownSize >= 0) {
+      int materializedStart = start;
+      if (materializedStart < 0) {
+        materializedStart = Math.max(0, knownSize + materializedStart);
+      } else {
+        materializedStart = Math.min(knownSize, materializedStart);
+      }
+      int materializedEnd = end;
+      if (materializedEnd < 0) {
+        materializedEnd = Math.max(0, knownSize + materializedEnd);
+      } else {
+        materializedEnd = Math.min(knownSize, materializedEnd);
+      }
+      final int materializedLength = Math.max(0, materializedEnd - materializedStart);
+      state = new MaterialState(materializedStart, materializedLength);
     } else {
       state = new ImmaterialState(start, end);
     }
@@ -52,11 +66,9 @@ public class SliceListMaterializer<E> extends AbstractListMaterializer<E> implem
       if (knownSize == 0) {
         return 0;
       }
-      final State state = this.state;
-      final int knownStart = state.knownStart();
       final int knownLength = state.knownLength();
-      if (knownStart >= 0 && knownLength >= 0) {
-        return Math.min(knownLength, knownSize - knownStart);
+      if (knownLength >= 0) {
+        return knownLength;
       }
     }
     return -1;
@@ -100,8 +112,6 @@ public class SliceListMaterializer<E> extends AbstractListMaterializer<E> implem
 
     int knownLength();
 
-    int knownStart();
-
     int materializedLength();
 
     int materializedStart();
@@ -120,11 +130,6 @@ public class SliceListMaterializer<E> extends AbstractListMaterializer<E> implem
     @Override
     public int knownLength() {
       return length;
-    }
-
-    @Override
-    public int knownStart() {
-      return start;
     }
 
     @Override
@@ -154,11 +159,6 @@ public class SliceListMaterializer<E> extends AbstractListMaterializer<E> implem
     }
 
     @Override
-    public int knownStart() {
-      return start;
-    }
-
-    @Override
     public int materializedLength() {
       return materialized().materializedLength();
     }
@@ -172,18 +172,17 @@ public class SliceListMaterializer<E> extends AbstractListMaterializer<E> implem
       final int wrappedSize = wrapped.materializeSize();
       int materializedStart = start;
       if (materializedStart < 0) {
-        materializedStart = wrappedSize + materializedStart;
+        materializedStart = Math.max(0, wrappedSize + materializedStart);
+      } else {
+        materializedStart = Math.min(wrappedSize, materializedStart);
       }
       int materializedEnd = end;
       if (materializedEnd < 0) {
-        materializedEnd = wrappedSize + materializedEnd;
-      }
-      final int materializedLength;
-      if (materializedStart >= 0 && materializedEnd >= 0) {
-        materializedLength = Math.max(0, materializedEnd - materializedStart);
+        materializedEnd = Math.max(0, wrappedSize + materializedEnd);
       } else {
-        materializedLength = 0;
+        materializedEnd = Math.min(wrappedSize, materializedEnd);
       }
+      final int materializedLength = Math.max(0, materializedEnd - materializedStart);
       return state = new MaterialState(Math.max(0, materializedStart), materializedLength);
     }
   }

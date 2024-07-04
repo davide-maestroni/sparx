@@ -31,8 +31,22 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
       final int end, @NotNull final ListMaterializer<E> elementsMaterializer) {
     this.wrapped = wrapped;
     this.elementsMaterializer = elementsMaterializer;
-    if (start >= 0 && end >= 0) {
-      state = new MaterialState(start, Math.max(0, end - start));
+    final int knownSize = wrapped.knownSize();
+    if (knownSize >= 0) {
+      int materializedStart = start;
+      if (materializedStart < 0) {
+        materializedStart = Math.max(0, knownSize + materializedStart);
+      } else {
+        materializedStart = Math.min(knownSize, materializedStart);
+      }
+      int materializedEnd = end;
+      if (materializedEnd < 0) {
+        materializedEnd = Math.max(0, knownSize + materializedEnd);
+      } else {
+        materializedEnd = Math.min(knownSize, materializedEnd);
+      }
+      final int materializedLength = Math.max(0, materializedEnd - materializedStart);
+      state = new MaterialState(materializedStart, materializedLength);
     } else {
       state = new ImmaterialState(start, end);
     }
@@ -62,14 +76,9 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
     if (knownSize >= 0) {
       final int elementsSize = elementsMaterializer.knownSize();
       if (elementsSize >= 0) {
-        final State state = this.state;
-        final int knownStart = state.knownStart();
         final int knownLength = state.knownLength();
-        if (knownStart >= 0 && knownLength >= 0) {
-          final long size = Math.max(knownStart, knownSize - knownLength);
-          if (size > knownSize) {
-            return knownSize;
-          }
+        if (knownLength >= 0) {
+          final long size = knownSize - knownLength;
           return SizeOverflowException.safeCast(size + elementsSize);
         }
       }
@@ -83,7 +92,7 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
     final int start = state.materializedStart();
     int i = 0;
     if (element == null) {
-      while (wrapped.canMaterializeElement(i)) {
+      do {
         if (start == i) {
           if (elementsMaterializer.materializeContains(null)) {
             return true;
@@ -91,16 +100,16 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
           final int length = state.materializedLength();
           if (length > 0) {
             i += length;
-            continue;
           }
+        } else {
+          if (wrapped.materializeElement(i) == null) {
+            return true;
+          }
+          ++i;
         }
-        if (wrapped.materializeElement(i) == null) {
-          return true;
-        }
-        ++i;
-      }
+      } while (wrapped.canMaterializeElement(i));
     } else {
-      while (wrapped.canMaterializeElement(i)) {
+      do {
         if (start == i) {
           if (elementsMaterializer.materializeContains(element)) {
             return true;
@@ -108,14 +117,14 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
           final int length = state.materializedLength();
           if (length > 0) {
             i += length;
-            continue;
           }
+        } else {
+          if (element.equals(wrapped.materializeElement(i))) {
+            return true;
+          }
+          ++i;
         }
-        if (element.equals(wrapped.materializeElement(i))) {
-          return true;
-        }
-        ++i;
-      }
+      } while (wrapped.canMaterializeElement(i));
     }
     return false;
   }
@@ -178,8 +187,6 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
 
     int knownLength();
 
-    int knownStart();
-
     int materializedLength();
 
     int materializedStart();
@@ -198,11 +205,6 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public int knownLength() {
       return length;
-    }
-
-    @Override
-    public int knownStart() {
-      return start;
     }
 
     @Override
@@ -232,11 +234,6 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public int knownStart() {
-      return start;
-    }
-
-    @Override
     public int materializedLength() {
       return materialized().materializedLength();
     }
@@ -250,18 +247,17 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
       final int wrappedSize = wrapped.materializeSize();
       int materializedStart = start;
       if (materializedStart < 0) {
-        materializedStart = wrappedSize + materializedStart;
+        materializedStart = Math.max(0, wrappedSize + materializedStart);
+      } else {
+        materializedStart = Math.min(wrappedSize, materializedStart);
       }
       int materializedEnd = end;
       if (materializedEnd < 0) {
-        materializedEnd = wrappedSize + materializedEnd;
-      }
-      final int materializedLength;
-      if (materializedStart >= 0 && materializedEnd >= 0) {
-        materializedLength = Math.max(0, materializedEnd - materializedStart);
+        materializedEnd = Math.max(0, wrappedSize + materializedEnd);
       } else {
-        materializedLength = 0;
+        materializedEnd = Math.min(wrappedSize, materializedEnd);
       }
+      final int materializedLength = Math.max(0, materializedEnd - materializedStart);
       return state = new MaterialState(Math.max(0, materializedStart), materializedLength);
     }
   }
