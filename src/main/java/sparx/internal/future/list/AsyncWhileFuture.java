@@ -26,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
-import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.DeadLockException;
 import sparx.util.function.IndexedConsumer;
 import sparx.util.function.IndexedPredicate;
@@ -81,28 +81,28 @@ public class AsyncWhileFuture<E> implements Future<Void> {
       context.scheduleAfter(new Task() {
         @Override
         public void run() {
-          materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
-            @Override
-            public void accept(final int size, final int index, final E element) throws Exception {
-              if (isCancelled()) {
-                throw getCancelException();
-              }
-              if (predicate.test(index, element)) {
-                materializer.materializeElement(index + 1, this);
-              } else {
-                synchronized (status) {
-                  status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-                  status.notifyAll();
-                }
-              }
-            }
-
+          materializer.materializeNextWhile(0, new IndexedAsyncPredicate<E>() {
             @Override
             public void complete(final int size) {
               synchronized (status) {
                 status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
                 status.notifyAll();
               }
+            }
+
+            @Override
+            public boolean test(final int size, final int index, final E element) throws Exception {
+              if (isCancelled()) {
+                throw getCancelException();
+              }
+              if (predicate.test(index, element)) {
+                return true;
+              }
+              synchronized (status) {
+                status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+                status.notifyAll();
+              }
+              return false;
             }
 
             @Override
@@ -124,7 +124,7 @@ public class AsyncWhileFuture<E> implements Future<Void> {
 
         @Override
         public int weight() {
-          return materializer.weightElement();
+          return materializer.weightNextWhile();
         }
       });
     }
@@ -171,29 +171,29 @@ public class AsyncWhileFuture<E> implements Future<Void> {
       context.scheduleAfter(new Task() {
         @Override
         public void run() {
-          materializer.materializeElement(0, new IndexedAsyncConsumer<E>() {
-            @Override
-            public void accept(final int size, final int index, final E element) throws Exception {
-              if (isCancelled()) {
-                throw getCancelException();
-              }
-              if (condition.test(index, element)) {
-                consumer.accept(index, element);
-                materializer.materializeElement(index + 1, this);
-              } else {
-                synchronized (status) {
-                  status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-                  status.notifyAll();
-                }
-              }
-            }
-
+          materializer.materializeNextWhile(0, new IndexedAsyncPredicate<E>() {
             @Override
             public void complete(final int size) {
               synchronized (status) {
                 status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
                 status.notifyAll();
               }
+            }
+
+            @Override
+            public boolean test(final int size, final int index, final E element) throws Exception {
+              if (isCancelled()) {
+                throw getCancelException();
+              }
+              if (condition.test(index, element)) {
+                consumer.accept(index, element);
+                return true;
+              }
+              synchronized (status) {
+                status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+                status.notifyAll();
+              }
+              return false;
             }
 
             @Override

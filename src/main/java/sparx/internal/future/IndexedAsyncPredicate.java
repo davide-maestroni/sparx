@@ -15,32 +15,13 @@
  */
 package sparx.internal.future;
 
-import java.util.concurrent.CancellationException;
 import org.jetbrains.annotations.NotNull;
 
-public interface CollectionAsyncMaterializer<E> {
+public interface IndexedAsyncPredicate<P> {
 
-  boolean isCancelled();
+  void complete(int size) throws Exception;
 
-  boolean isDone();
+  void error(@NotNull Exception error) throws Exception;
 
-  boolean isFailed();
-
-  boolean isMaterializedAtOnce();
-
-  int knownSize();
-
-  void materializeCancel(@NotNull CancellationException exception);
-
-  void materializeContains(Object element, @NotNull AsyncConsumer<Boolean> consumer);
-
-  void materializeEmpty(@NotNull AsyncConsumer<Boolean> consumer);
-
-  void materializeSize(@NotNull AsyncConsumer<Integer> consumer);
-
-  int weightContains();
-
-  int weightEmpty();
-
-  int weightSize();
+  boolean test(int size, int index, P param) throws Exception;
 }

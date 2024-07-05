@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
@@ -97,11 +98,6 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   }
 
   @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    state.materializeEach(consumer);
-  }
-
-  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     state.materializeElement(index, consumer);
   }
@@ -123,6 +119,18 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   }
 
   @Override
+  public void materializeNextWhile(final int index,
+      @NotNull final IndexedAsyncPredicate<E> predicate) {
+    state.materializeNextWhile(index, predicate);
+  }
+
+  @Override
+  public void materializePrevWhile(final int index,
+      @NotNull final IndexedAsyncPredicate<E> predicate) {
+    state.materializePrevWhile(index, predicate);
+  }
+
+  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     state.materializeSize(consumer);
   }
@@ -130,11 +138,6 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   @Override
   public int weightContains() {
     return state.weightContains();
-  }
-
-  @Override
-  public int weightEach() {
-    return state.weightEach();
   }
 
   @Override
@@ -158,6 +161,16 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   }
 
   @Override
+  public int weightNextWhile() {
+    return state.weightNextWhile();
+  }
+
+  @Override
+  public int weightPrevWhile() {
+    return state.weightPrevWhile();
+  }
+
+  @Override
   public int weightSize() {
     return state.weightSize();
   }
@@ -171,7 +184,8 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   }
 
   @NotNull
-  protected final ListAsyncMaterializer<E> setCancelled(@NotNull final CancellationException exception) {
+  protected final ListAsyncMaterializer<E> setCancelled(
+      @NotNull final CancellationException exception) {
     return setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
   }
 
@@ -181,7 +195,8 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   }
 
   @NotNull
-  protected final ListAsyncMaterializer<E> setState(@NotNull final ListAsyncMaterializer<E> newState) {
+  protected final ListAsyncMaterializer<E> setState(
+      @NotNull final ListAsyncMaterializer<E> newState) {
     return setState(newState, STATUS_RUNNING);
   }
 
@@ -236,6 +251,38 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
 
     public void cancellableComplete(final int size) throws Exception {
+    }
+  }
+
+  protected abstract class CancellableIndexedAsyncPredicate<P> implements IndexedAsyncPredicate<P> {
+
+    @Override
+    public void complete(final int size) throws Exception {
+      final CancellationException cancelException = AbstractListAsyncMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+      } else {
+        cancellableComplete(size);
+      }
+    }
+
+    @Override
+    public boolean test(final int size, final int index, final P param) throws Exception {
+      final CancellationException cancelException = AbstractListAsyncMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+        return false;
+      } else {
+        return cancellableTest(size, index, param);
+      }
+    }
+
+    public void cancellableComplete(final int size) throws Exception {
+    }
+
+    public boolean cancellableTest(final int size, final int index, final P param)
+        throws Exception {
+      return false;
     }
   }
 
@@ -358,29 +405,6 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      wrapped.materializeEach(new CancellableIndexedAsyncConsumer<E>() {
-        @Override
-        public void cancellableAccept(final int size, final int index, final E element)
-            throws Exception {
-          wrappedSize = Math.max(wrappedSize, size);
-          consumer.accept(size, index, element);
-        }
-
-        @Override
-        public void cancellableComplete(final int size) throws Exception {
-          wrappedSize = size;
-          consumer.complete(size);
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -483,6 +507,54 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      wrapped.materializeNextWhile(index, new CancellableIndexedAsyncPredicate<E>() {
+        @Override
+        public void cancellableComplete(final int size) throws Exception {
+          wrappedSize = size;
+          predicate.complete(size);
+        }
+
+        @Override
+        public boolean cancellableTest(final int size, final int index, final E element)
+            throws Exception {
+          wrappedSize = Math.max(wrappedSize, size);
+          return predicate.test(size, index, element);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          predicate.error(error);
+        }
+      });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      wrapped.materializePrevWhile(index, new CancellableIndexedAsyncPredicate<E>() {
+        @Override
+        public void cancellableComplete(final int size) throws Exception {
+          wrappedSize = size;
+          predicate.complete(size);
+        }
+
+        @Override
+        public boolean cancellableTest(final int size, final int index, final E element)
+            throws Exception {
+          wrappedSize = Math.max(wrappedSize, size);
+          return predicate.test(size, index, element);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          predicate.error(error);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       if (wrappedSize >= 0) {
         safeConsume(consumer, wrappedSize, LOGGER);
@@ -508,11 +580,6 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
 
     @Override
-    public int weightEach() {
-      return wrapped.weightEach();
-    }
-
-    @Override
     public int weightElement() {
       return wrapped.weightElement();
     }
@@ -535,6 +602,16 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     @Override
     public int weightSize() {
       return wrappedSize < 0 ? wrapped.weightSize() : 1;
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return wrapped.weightNextWhile();
+    }
+
+    @Override
+    public int weightPrevWhile() {
+      return wrapped.weightPrevWhile();
     }
   }
 }

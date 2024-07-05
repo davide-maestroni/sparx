@@ -31,6 +31,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
@@ -126,16 +127,6 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<Integer> consumer) {
-      materialized(new StateConsumer() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
-          state.materializeEach(consumer);
-        }
-      });
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Integer> consumer) {
       if (index < 0) {
@@ -174,17 +165,34 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<Integer> predicate) {
+      materialized(new StateConsumer() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
+          state.materializeNextWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<Integer> predicate) {
+      materialized(new StateConsumer() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<Integer> state) {
+          state.materializePrevWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 1, LOGGER);
     }
 
     @Override
     public int weightContains() {
-      return weightElements();
-    }
-
-    @Override
-    public int weightEach() {
       return weightElements();
     }
 
@@ -206,6 +214,16 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
     @Override
     public int weightEmpty() {
       return 1;
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightPrevWhile() {
+      return weightElements();
     }
 
     @Override

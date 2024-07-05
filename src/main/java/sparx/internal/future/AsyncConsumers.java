@@ -24,6 +24,18 @@ public class AsyncConsumers {
   private AsyncConsumers() {
   }
 
+  public static <T> void safeConsume(@NotNull final AsyncConsumer<T> consumer, final T value,
+      @NotNull final Logger logger) {
+    try {
+      consumer.accept(value);
+    } catch (final Exception error) {
+      if (error instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      safeConsumeError(consumer, error, logger);
+    }
+  }
+
   public static <T> boolean safeConsume(@NotNull final IndexedAsyncConsumer<T> consumer,
       final int size, final int index, final T value, @NotNull final Logger logger) {
     try {
@@ -38,15 +50,16 @@ public class AsyncConsumers {
     return true;
   }
 
-  public static <T> void safeConsume(@NotNull final AsyncConsumer<T> consumer, final T value,
-      @NotNull final Logger logger) {
+  public static <T> boolean safeConsume(@NotNull final IndexedAsyncPredicate<T> predicate,
+      final int size, final int index, final T value, @NotNull final Logger logger) {
     try {
-      consumer.accept(value);
+      return predicate.test(size, index, value);
     } catch (final Exception error) {
       if (error instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
-      safeConsumeError(consumer, error, logger);
+      safeConsumeError(predicate, error, logger);
+      return false;
     }
   }
 
@@ -59,6 +72,18 @@ public class AsyncConsumers {
         Thread.currentThread().interrupt();
       }
       safeConsumeError(consumer, error, logger);
+    }
+  }
+
+  public static void safeConsumeComplete(@NotNull final IndexedAsyncPredicate<?> predicate,
+      final int size, @NotNull final Logger logger) {
+    try {
+      predicate.complete(size);
+    } catch (final Exception error) {
+      if (error instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      safeConsumeError(predicate, error, logger);
     }
   }
 
@@ -78,6 +103,18 @@ public class AsyncConsumers {
       @NotNull final Exception error, @NotNull final Logger logger) {
     try {
       consumer.error(error);
+    } catch (final Exception e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      logger.log(Level.SEVERE, "Ignored exception", e);
+    }
+  }
+
+  public static void safeConsumeError(@NotNull final IndexedAsyncPredicate<?> predicate,
+      @NotNull final Exception error, @NotNull final Logger logger) {
+    try {
+      predicate.error(error);
     } catch (final Exception e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt();

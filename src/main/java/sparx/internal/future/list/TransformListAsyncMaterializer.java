@@ -29,6 +29,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public abstract class TransformListAsyncMaterializer<E, F> extends
     AbstractListAsyncMaterializer<F> {
@@ -154,16 +155,6 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<F> consumer) {
-      materialized(new StateConsumer<F>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
-          state.materializeEach(consumer);
-        }
-      });
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<F> consumer) {
       if (index < 0) {
@@ -210,6 +201,28 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<F> predicate) {
+      materialized(new StateConsumer<F>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+          state.materializeNextWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<F> predicate) {
+      materialized(new StateConsumer<F>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+          state.materializePrevWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       final int knownSize = TransformListAsyncMaterializer.this.knownSize;
       if (knownSize >= 0) {
@@ -230,11 +243,6 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
-    public int weightEach() {
-      return weightElements();
-    }
-
-    @Override
     public int weightElement() {
       return weightElements();
     }
@@ -251,6 +259,16 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
 
     @Override
     public int weightHasElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightPrevWhile() {
       return weightElements();
     }
 
@@ -349,21 +367,6 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<F> consumer) {
-      int i = 0;
-      try {
-        for (final F element : elements) {
-          if (!safeConsume(consumer, -1, i++, element, LOGGER)) {
-            break;
-          }
-        }
-        safeConsumeComplete(consumer, i, LOGGER);
-      } catch (final Exception error) {
-        consumeError(consumer, error);
-      }
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<F> consumer) {
       try {
@@ -409,6 +412,38 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
+    public void materializeNextWhile(final int index, @NotNull IndexedAsyncPredicate<F> predicate) {
+      try {
+        final int size = elements.size();
+        for (int i = index; i < size; ++i) {
+          final F element = elements.get(i);
+          if (!predicate.test(-1, i, element)) {
+            return;
+          }
+        }
+        safeConsumeComplete(predicate, size, LOGGER);
+      } catch (final Exception error) {
+        consumeError(predicate, error);
+      }
+    }
+
+    @Override
+    public void materializePrevWhile(final int index, @NotNull IndexedAsyncPredicate<F> predicate) {
+      try {
+        final int size = elements.size();
+        for (int i = Math.min(index, size - 1); i > 0; --i) {
+          final F element = elements.get(i);
+          if (!predicate.test(-1, i, element)) {
+            return;
+          }
+        }
+        safeConsumeComplete(predicate, size, LOGGER);
+      } catch (final Exception error) {
+        consumeError(predicate, error);
+      }
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       try {
         safeConsume(consumer, elements.size(), LOGGER);
@@ -420,11 +455,6 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     @Override
     public int weightContains() {
       return 1;
-    }
-
-    @Override
-    public int weightEach() {
-      return elements.size();
     }
 
     @Override
@@ -445,6 +475,16 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     @Override
     public int weightHasElement() {
       return 1;
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return elements.size();
+    }
+
+    @Override
+    public int weightPrevWhile() {
+      return elements.size();
     }
 
     @Override
@@ -501,6 +541,35 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
         setFailed(error);
         try {
           consumer.error(error);
+        } catch (final Exception e) {
+          if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
+          LOGGER.log(Level.SEVERE, "Ignored exception", e);
+        }
+      }
+    }
+
+    private void consumeError(@NotNull final IndexedAsyncPredicate<?> predicate,
+        @NotNull final Exception error) {
+      if (error instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setCancelled(exception);
+        try {
+          predicate.error(exception);
+        } catch (final Exception e) {
+          if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
+          LOGGER.log(Level.SEVERE, "Ignored exception", e);
+        }
+      } else {
+        setFailed(error);
+        try {
+          predicate.error(error);
         } catch (final Exception e) {
           if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();

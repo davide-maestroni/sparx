@@ -71,7 +71,28 @@ public class AsyncGetFuture<E> implements Future<Void> {
       context.scheduleAfter(new Task() {
         @Override
         public void run() {
-          materialize(materializer);
+          materializer.materializeDone(new AsyncConsumer<List<E>>() {
+            @Override
+            public void accept(final List<E> elements) {
+              synchronized (status) {
+                if (isCancelled()) {
+                  throw getCancelException();
+                }
+                status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+                status.notifyAll();
+              }
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) {
+              synchronized (status) {
+                if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+                  AsyncGetFuture.this.error = error;
+                }
+                status.notifyAll();
+              }
+            }
+          });
         }
 
         @Override
@@ -164,30 +185,5 @@ public class AsyncGetFuture<E> implements Future<Void> {
   private @NotNull CancellationException getCancelException() {
     return error instanceof CancellationException ? (CancellationException) error
         : new CancellationException();
-  }
-
-  private void materialize(@NotNull final ListAsyncMaterializer<E> materializer) {
-    materializer.materializeDone(new AsyncConsumer<List<E>>() {
-      @Override
-      public void accept(final List<E> elements) {
-        synchronized (status) {
-          if (isCancelled()) {
-            throw getCancelException();
-          }
-          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-          status.notifyAll();
-        }
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) {
-        synchronized (status) {
-          if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-            AsyncGetFuture.this.error = error;
-          }
-          status.notifyAll();
-        }
-      }
-    });
   }
 }

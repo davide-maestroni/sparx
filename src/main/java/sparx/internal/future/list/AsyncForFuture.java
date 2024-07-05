@@ -26,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
-import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.DeadLockException;
 import sparx.util.function.IndexedConsumer;
 
@@ -78,7 +78,34 @@ public class AsyncForFuture<E> implements Future<Void> {
       context.scheduleAfter(new Task() {
         @Override
         public void run() {
-          materialize(materializer, consumer);
+          materializer.materializeNextWhile(0, new IndexedAsyncPredicate<E>() {
+            @Override
+            public void complete(final int size) {
+              synchronized (status) {
+                status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+                status.notifyAll();
+              }
+            }
+
+            @Override
+            public boolean test(final int size, final int index, final E element) throws Exception {
+              if (isCancelled()) {
+                throw getCancelException();
+              }
+              consumer.accept(index, element);
+              return true;
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) {
+              synchronized (status) {
+                if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+                  AsyncForFuture.this.error = error;
+                }
+                status.notifyAll();
+              }
+            }
+          });
         }
 
         @Override
@@ -88,7 +115,7 @@ public class AsyncForFuture<E> implements Future<Void> {
 
         @Override
         public int weight() {
-          return materializer.weightEach();
+          return materializer.weightNextWhile();
         }
       });
     }
@@ -171,36 +198,5 @@ public class AsyncForFuture<E> implements Future<Void> {
   private @NotNull CancellationException getCancelException() {
     return error instanceof CancellationException ? (CancellationException) error
         : new CancellationException();
-  }
-
-  private void materialize(@NotNull final ListAsyncMaterializer<E> materializer,
-      @NotNull final IndexedConsumer<? super E> consumer) {
-    materializer.materializeEach(new IndexedAsyncConsumer<E>() {
-      @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (isCancelled()) {
-          throw getCancelException();
-        }
-        consumer.accept(index, element);
-      }
-
-      @Override
-      public void complete(final int size) {
-        synchronized (status) {
-          status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-          status.notifyAll();
-        }
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) {
-        synchronized (status) {
-          if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-            AsyncForFuture.this.error = error;
-          }
-          status.notifyAll();
-        }
-      }
-    });
   }
 }

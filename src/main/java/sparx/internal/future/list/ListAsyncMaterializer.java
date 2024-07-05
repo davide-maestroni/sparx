@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.CollectionAsyncMaterializer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public interface ListAsyncMaterializer<E> extends CollectionAsyncMaterializer<E> {
 
@@ -31,9 +32,17 @@ public interface ListAsyncMaterializer<E> extends CollectionAsyncMaterializer<E>
 
   void materializeHasElement(int index, @NotNull AsyncConsumer<Boolean> consumer);
 
+  void materializeNextWhile(int index, @NotNull IndexedAsyncPredicate<E> predicate);
+
+  void materializePrevWhile(int index, @NotNull IndexedAsyncPredicate<E> predicate);
+
   int weightElement();
 
   int weightElements();
 
   int weightHasElement();
+
+  int weightNextWhile();
+
+  int weightPrevWhile();
 }

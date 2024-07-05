@@ -37,6 +37,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.internal.future.iterator.CollectionToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorAsyncMaterializer;
@@ -1346,8 +1347,8 @@ class future extends Sparx {
                 Require.notNull(elements, "elements")));
       }
       return new List<E>(context, cancelException,
-          new DiffListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException, List.<E>decorateFunction()));
+          new DiffListAsyncMaterializer<E>(materializer, elementsMaterializer, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
@@ -2455,9 +2456,9 @@ class future extends Sparx {
           }
         });
       } else if (o == null) {
-        context.scheduleAfter(new IndexOfNullAsyncConsumer(consumer));
+        context.scheduleAfter(new IndexOfNullAsyncPredicate(consumer));
       } else {
-        context.scheduleAfter(new IndexOfElementAsyncConsumer(o, consumer));
+        context.scheduleAfter(new IndexOfElementAsyncPredicate(o, consumer));
       }
       try {
         return consumer.get();
@@ -2733,43 +2734,10 @@ class future extends Sparx {
             consumer.error(error);
           }
         });
-      } else if (knownSize > 0) {
-        if (o == null) {
-          context.scheduleAfter(new LastIndexOfNullAsyncConsumer(knownSize, consumer));
-        } else {
-          context.scheduleAfter(new LastIndexOfElementAsyncConsumer(o, knownSize, consumer));
-        }
+      } else if (o == null) {
+        context.scheduleAfter(new LastIndexOfNullAsyncPredicate(knownSize, consumer));
       } else {
-        context.scheduleAfter(new Task() {
-          @Override
-          public void run() {
-            materializer.materializeSize(new AsyncConsumer<Integer>() {
-              @Override
-              public void accept(final Integer size) {
-                if (o == null) {
-                  context.scheduleAfter(new LastIndexOfNullAsyncConsumer(size, consumer));
-                } else {
-                  context.scheduleAfter(new LastIndexOfElementAsyncConsumer(o, size, consumer));
-                }
-              }
-
-              @Override
-              public void error(@NotNull final Exception error) {
-                consumer.error(error);
-              }
-            });
-          }
-
-          @Override
-          public @NotNull String taskID() {
-            return taskID;
-          }
-
-          @Override
-          public int weight() {
-            return materializer.weightSize();
-          }
-        });
+        context.scheduleAfter(new LastIndexOfElementAsyncPredicate(o, knownSize, consumer));
       }
       try {
         return consumer.get();
@@ -4020,9 +3988,8 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new AppendAllListAsyncMaterializer<E>(materializer,
-              new DiffListAsyncMaterializer<E>(elementsMaterializer, materializer, context,
-                  cancelException, List.<E>decorateFunction()), cancelException,
-              List.<E>appendAllFunction()));
+              new DiffListAsyncMaterializer<E>(elementsMaterializer, materializer, cancelException,
+                  List.<E>decorateFunction()), cancelException, List.<E>appendAllFunction()));
     }
 
     private static abstract class LazyListAsyncMaterializer<E, F> extends
@@ -4122,11 +4089,6 @@ class future extends Sparx {
         }
 
         @Override
-        public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-          materialized().materializeEach(consumer);
-        }
-
-        @Override
         public void materializeElement(final int index,
             @NotNull final IndexedAsyncConsumer<E> consumer) {
           if (index < 0) {
@@ -4154,17 +4116,24 @@ class future extends Sparx {
         }
 
         @Override
+        public void materializeNextWhile(final int index,
+            @NotNull final IndexedAsyncPredicate<E> predicate) {
+          materialized().materializeNextWhile(index, predicate);
+        }
+
+        @Override
+        public void materializePrevWhile(final int index,
+            @NotNull final IndexedAsyncPredicate<E> predicate) {
+          materialized().materializePrevWhile(index, predicate);
+        }
+
+        @Override
         public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
           materialized().materializeSize(consumer);
         }
 
         @Override
         public int weightContains() {
-          return weightElements();
-        }
-
-        @Override
-        public int weightEach() {
           return weightElements();
         }
 
@@ -4185,6 +4154,16 @@ class future extends Sparx {
 
         @Override
         public int weightHasElement() {
+          return weightElements();
+        }
+
+        @Override
+        public int weightNextWhile() {
+          return weightElements();
+        }
+
+        @Override
+        public int weightPrevWhile() {
           return weightElements();
         }
 
@@ -4211,30 +4190,18 @@ class future extends Sparx {
       }
     }
 
-    private class IndexOfElementAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class IndexOfElementAsyncPredicate implements IndexedAsyncPredicate<E>, Task {
 
       private final AsyncConsumer<Integer> consumer;
       private final Object element;
 
-      private int index;
-
-      private IndexOfElementAsyncConsumer(@NotNull final Object element,
+      private IndexOfElementAsyncPredicate(@NotNull final Object element,
           @NotNull final AsyncConsumer<Integer> consumer) {
         this.element = element;
         this.consumer = consumer;
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (this.element.equals(element)) {
-          consumer.accept(index);
-        } else {
-          this.index = index + 1;
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
       public void complete(final int size) throws Exception {
         consumer.accept(-1);
       }
@@ -4246,7 +4213,7 @@ class future extends Sparx {
 
       @Override
       public void run() {
-        materializer.materializeElement(index, this);
+        materializer.materializeNextWhile(0, this);
       }
 
       @Override
@@ -4255,32 +4222,29 @@ class future extends Sparx {
       }
 
       @Override
+      public boolean test(final int size, final int index, final E element) throws Exception {
+        if (this.element.equals(element)) {
+          consumer.accept(index);
+          return false;
+        }
+        return true;
+      }
+
+      @Override
       public int weight() {
-        return materializer.weightElement();
+        return materializer.weightNextWhile();
       }
     }
 
-    private class IndexOfNullAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class IndexOfNullAsyncPredicate implements IndexedAsyncPredicate<E>, Task {
 
       private final AsyncConsumer<Integer> consumer;
 
-      private int index;
-
-      private IndexOfNullAsyncConsumer(@NotNull final AsyncConsumer<Integer> consumer) {
+      private IndexOfNullAsyncPredicate(@NotNull final AsyncConsumer<Integer> consumer) {
         this.consumer = consumer;
       }
 
       @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (element == null) {
-          consumer.accept(index);
-        } else {
-          this.index = index + 1;
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
       public void complete(final int size) throws Exception {
         consumer.accept(-1);
       }
@@ -4292,7 +4256,7 @@ class future extends Sparx {
 
       @Override
       public void run() {
-        materializer.materializeElement(index, this);
+        materializer.materializeNextWhile(0, this);
       }
 
       @Override
@@ -4301,33 +4265,31 @@ class future extends Sparx {
       }
 
       @Override
+      public boolean test(final int size, final int index, final E element) throws Exception {
+        if (element == null) {
+          consumer.accept(index);
+          return false;
+        }
+        return true;
+      }
+
+      @Override
       public int weight() {
-        return materializer.weightElement();
+        return materializer.weightNextWhile();
       }
     }
 
-    private class LastIndexOfElementAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class LastIndexOfElementAsyncPredicate implements IndexedAsyncPredicate<E>, Task {
 
       private final AsyncConsumer<Integer> consumer;
       private final Object element;
+      private final int index;
 
-      private int index;
-
-      private LastIndexOfElementAsyncConsumer(@NotNull final Object element, final int size,
+      private LastIndexOfElementAsyncPredicate(@NotNull final Object element, final int size,
           @NotNull final AsyncConsumer<Integer> consumer) {
         this.element = element;
         this.consumer = consumer;
-        index = size - 1;
-      }
-
-      @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (this.element.equals(element)) {
-          consumer.accept(index);
-        } else {
-          this.index = index - 1;
-          context.scheduleAfter(this);
-        }
+        this.index = size < 0 ? Integer.MAX_VALUE : size - 1;
       }
 
       @Override
@@ -4342,7 +4304,7 @@ class future extends Sparx {
 
       @Override
       public void run() {
-        materializer.materializeElement(index, this);
+        materializer.materializePrevWhile(index, this);
       }
 
       @Override
@@ -4351,31 +4313,29 @@ class future extends Sparx {
       }
 
       @Override
+      public boolean test(final int size, final int index, final E element) throws Exception {
+        if (this.element.equals(element)) {
+          consumer.accept(index);
+          return false;
+        }
+        return true;
+      }
+
+      @Override
       public int weight() {
-        return materializer.weightElement();
+        return materializer.weightPrevWhile();
       }
     }
 
-    private class LastIndexOfNullAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
+    private class LastIndexOfNullAsyncPredicate implements IndexedAsyncPredicate<E>, Task {
 
       private final AsyncConsumer<Integer> consumer;
+      private final int index;
 
-      private int index;
-
-      private LastIndexOfNullAsyncConsumer(final int size,
+      private LastIndexOfNullAsyncPredicate(final int size,
           @NotNull final AsyncConsumer<Integer> consumer) {
         this.consumer = consumer;
-        index = size - 1;
-      }
-
-      @Override
-      public void accept(final int size, final int index, final E element) throws Exception {
-        if (element == null) {
-          consumer.accept(index);
-        } else {
-          this.index = index - 1;
-          context.scheduleAfter(this);
-        }
+        index = size < 0 ? Integer.MAX_VALUE : size - 1;
       }
 
       @Override
@@ -4390,7 +4350,7 @@ class future extends Sparx {
 
       @Override
       public void run() {
-        materializer.materializeElement(index, this);
+        materializer.materializePrevWhile(index, this);
       }
 
       @Override
@@ -4399,8 +4359,17 @@ class future extends Sparx {
       }
 
       @Override
+      public boolean test(final int size, final int index, final E element) throws Exception {
+        if (element == null) {
+          consumer.accept(index);
+          return false;
+        }
+        return true;
+      }
+
+      @Override
       public int weight() {
-        return materializer.weightElement();
+        return materializer.weightPrevWhile();
       }
     }
   }
@@ -4538,11 +4507,6 @@ class future extends Sparx {
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      safeConsumeComplete(consumer, 0, LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -4569,17 +4533,24 @@ class future extends Sparx {
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      safeConsumeComplete(predicate, 0, LOGGER);
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      safeConsumeComplete(predicate, 0, LOGGER);
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 0, LOGGER);
     }
 
     @Override
     public int weightContains() {
-      return 1;
-    }
-
-    @Override
-    public int weightEach() {
       return 1;
     }
 
@@ -4600,6 +4571,16 @@ class future extends Sparx {
 
     @Override
     public int weightHasElement() {
+      return 1;
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return 1;
+    }
+
+    @Override
+    public int weightPrevWhile() {
       return 1;
     }
 
