@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
@@ -83,13 +84,6 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   }
 
   @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    if (safeConsume(consumer, 1, 0, elements.get(0), LOGGER)) {
-      safeConsumeComplete(consumer, 1, LOGGER);
-    }
-  }
-
-  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     if (index < 0) {
       safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
@@ -117,17 +111,32 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   }
 
   @Override
+  public void materializeNextWhile(final int index,
+      @NotNull final IndexedAsyncPredicate<E> predicate) {
+    if (index == 0) {
+      if (safeConsume(predicate, 1, 0, elements.get(0), LOGGER)) {
+        safeConsumeComplete(predicate, 1, LOGGER);
+      }
+    } else {
+      safeConsumeComplete(predicate, 1, LOGGER);
+    }
+  }
+
+  @Override
+  public void materializePrevWhile(final int index,
+      @NotNull final IndexedAsyncPredicate<E> predicate) {
+    if (safeConsume(predicate, 1, 0, elements.get(0), LOGGER)) {
+      safeConsumeComplete(predicate, 1, LOGGER);
+    }
+  }
+
+  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     safeConsume(consumer, 1, LOGGER);
   }
 
   @Override
   public int weightContains() {
-    return 1;
-  }
-
-  @Override
-  public int weightEach() {
     return 1;
   }
 
@@ -148,6 +157,16 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
 
   @Override
   public int weightHasElement() {
+    return 1;
+  }
+
+  @Override
+  public int weightNextWhile() {
+    return 1;
+  }
+
+  @Override
+  public int weightPrevWhile() {
     return 1;
   }
 

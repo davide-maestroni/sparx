@@ -277,7 +277,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
                 new CancellableIndexedAsyncPredicate<E>() {
                   @Override
                   public void cancellableComplete(final int size) throws Exception {
-                    final int knownSize = safeSize(wrappedSize = size);
+                    final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size));
                     predicate.complete(knownSize);
                   }
 
@@ -298,7 +298,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           wrapped.materializePrevWhile(index, new CancellableIndexedAsyncPredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {
-              final int knownSize = safeSize(wrappedSize = size);
+              final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size));
               predicate.complete(knownSize);
             }
 

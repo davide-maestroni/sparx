@@ -281,16 +281,14 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       materializeUntil(i, new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E element) throws Exception {
-          if (predicate.test(size, index, element)) {
-            int i = index;
-            while (i < elements.size()) {
-              if (!predicate.test(-1, i, elements.get(i))) {
-                return;
-              }
-              ++i;
+          int i = index;
+          while (i < elements.size()) {
+            if (!predicate.test(size, i, elements.get(i))) {
+              return;
             }
-            materializeUntil(i, this);
+            ++i;
           }
+          materializeUntil(i, this);
         }
 
         @Override
@@ -308,36 +306,32 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     @Override
     public void materializePrevWhile(final int index,
         @NotNull final IndexedAsyncPredicate<E> predicate) {
-      if (index < elements.size()) {
-        int i = index;
-        do {
+      final int size = elements.size();
+      if (index < size) {
+        for (int i = index; i >= 0; --i) {
           if (!safeConsume(predicate, -1, i, elements.get(i), LOGGER)) {
             return;
           }
-          --i;
-        } while (i >= 0);
+        }
+        safeConsumeComplete(predicate, -1, LOGGER);
       } else {
         materializeUntil(index, new IndexedAsyncConsumer<E>() {
           @Override
           public void accept(final int size, final int index, final E element) throws Exception {
-            int i = index;
-            while (i >= 0) {
+            for (int i = index; i >= 0; --i) {
               if (!predicate.test(size, i, elements.get(i))) {
                 return;
               }
-              --i;
             }
             predicate.complete(size);
           }
 
           @Override
           public void complete(final int size) throws Exception {
-            int i = size - 1;
-            while (i >= 0) {
+            for (int i = index; i >= 0; --i) {
               if (!predicate.test(size, i, elements.get(i))) {
                 return;
               }
-              --i;
             }
             predicate.complete(size);
           }
@@ -384,9 +378,9 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       if (elementsConsumers.isEmpty()) {
         if (elementsBag == null) {
           return (int) Math.min(Integer.MAX_VALUE,
-              (long) wrapped.weightElement() + elementsMaterializer.weightElements());
+              (long) wrapped.weightNextWhile() + elementsMaterializer.weightElements());
         }
-        return wrapped.weightElement();
+        return wrapped.weightNextWhile();
       }
       return 1;
     }

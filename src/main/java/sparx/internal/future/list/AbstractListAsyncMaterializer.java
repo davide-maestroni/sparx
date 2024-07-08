@@ -536,7 +536,7 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
       wrapped.materializePrevWhile(index, new CancellableIndexedAsyncPredicate<E>() {
         @Override
         public void cancellableComplete(final int size) throws Exception {
-          wrappedSize = size;
+          wrappedSize = Math.max(wrappedSize, size);
           predicate.complete(size);
         }
 

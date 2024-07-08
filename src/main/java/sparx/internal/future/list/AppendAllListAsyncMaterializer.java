@@ -447,7 +447,8 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
                   wrapped.materializePrevWhile(index, new CancellableIndexedAsyncPredicate<E>() {
                     @Override
                     public void cancellableComplete(final int size) throws Exception {
-                      final int knownSize = safeSize(wrappedSize = size, elementsSize);
+                      final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size),
+                          elementsSize);
                       predicate.complete(knownSize);
                     }
 
@@ -484,7 +485,8 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           wrapped.materializePrevWhile(index, new CancellableIndexedAsyncPredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {
-              final int knownSize = safeSize(wrappedSize = size, elementsSize);
+              final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size),
+                  elementsSize);
               predicate.complete(knownSize);
             }
 
@@ -630,21 +632,6 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
-    public int weightSize() {
-      if (wrappedSize >= 0 && elementsSize >= 0) {
-        return 1;
-      }
-      if (wrappedSize >= 0) {
-        return elementsMaterializer.weightSize();
-      }
-      if (elementsSize >= 0) {
-        return wrapped.weightSize();
-      }
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSize() + elementsMaterializer.weightSize());
-    }
-
-    @Override
     public int weightNextWhile() {
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightNextWhile() + elementsMaterializer.weightNextWhile());
@@ -659,6 +646,21 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightSize() + wrapped.weightPrevWhile()
               + elementsMaterializer.weightPrevWhile());
+    }
+
+    @Override
+    public int weightSize() {
+      if (wrappedSize >= 0 && elementsSize >= 0) {
+        return 1;
+      }
+      if (wrappedSize >= 0) {
+        return elementsMaterializer.weightSize();
+      }
+      if (elementsSize >= 0) {
+        return wrapped.weightSize();
+      }
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightSize() + elementsMaterializer.weightSize());
     }
 
     private void consumeElements(@NotNull final List<E> elements) {

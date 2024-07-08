@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
@@ -79,20 +80,6 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    final List<E> elements = this.elements;
-    final int size = elements.size();
-    int i = 0;
-    while (i < size) {
-      if (!safeConsume(consumer, size, i, elements.get(i), LOGGER)) {
-        return;
-      }
-      ++i;
-    }
-    safeConsumeComplete(consumer, size, LOGGER);
-  }
-
-  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     final List<E> elements = this.elements;
     if (index < 0) {
@@ -124,6 +111,33 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public void materializeNextWhile(final int index,
+      @NotNull final IndexedAsyncPredicate<E> predicate) {
+    final List<E> elements = this.elements;
+    final int size = elements.size();
+    for (int i = index; i < size; ++i) {
+      if (!safeConsume(predicate, size, i, elements.get(i), LOGGER)) {
+        return;
+      }
+    }
+    safeConsumeComplete(predicate, size, LOGGER);
+  }
+
+  @Override
+  public void materializePrevWhile(final int index,
+      @NotNull final IndexedAsyncPredicate<E> predicate) {
+    final List<E> elements = this.elements;
+    final int size = elements.size();
+    for (int i = Math.min(index, size - 1); i >= 0; --i) {
+      final E element = elements.get(i);
+      if (!safeConsume(predicate, size, i, element, LOGGER)) {
+        return;
+      }
+    }
+    safeConsumeComplete(predicate, size, LOGGER);
+  }
+
+  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     safeConsume(consumer, elements.size(), LOGGER);
   }
@@ -131,11 +145,6 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public int weightContains() {
     return 1;
-  }
-
-  @Override
-  public int weightEach() {
-    return elements.size();
   }
 
   @Override
@@ -156,6 +165,16 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public int weightHasElement() {
     return 1;
+  }
+
+  @Override
+  public int weightNextWhile() {
+    return elements.size();
+  }
+
+  @Override
+  public int weightPrevWhile() {
+    return elements.size();
   }
 
   @Override

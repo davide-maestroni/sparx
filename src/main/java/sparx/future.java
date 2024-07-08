@@ -1302,10 +1302,9 @@ class future extends Sparx {
             lazyMaterializerCountWhere(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
-      final ExecutionContext context = this.context;
       return new List<Integer>(context, cancelException,
           new CountWhereListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
+              Require.notNull(predicate, "predicate"), cancelException,
               List.<Integer>decorateFunction()));
     }
 
@@ -1321,10 +1320,9 @@ class future extends Sparx {
             lazyMaterializerCountWhere(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
-      final ExecutionContext context = this.context;
       return new List<Integer>(context, cancelException,
           new CountWhereListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), cancelException,
               List.<Integer>decorateFunction()));
     }
 
@@ -1452,9 +1450,8 @@ class future extends Sparx {
         return new List<E>(context, cancelException,
             lazyMaterializerDrop(materializer, cancelException, maxElements));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
-          new DropListAsyncMaterializer<E>(materializer, maxElements, context, cancelException,
+          new DropListAsyncMaterializer<E>(materializer, maxElements, cancelException,
               List.<E>decorateFunction()));
     }
 
@@ -1473,9 +1470,8 @@ class future extends Sparx {
         return new List<E>(context, cancelException,
             lazyMaterializerDropRight(materializer, cancelException, maxElements));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
-          new DropRightListAsyncMaterializer<E>(materializer, maxElements, context, cancelException,
+          new DropRightListAsyncMaterializer<E>(materializer, maxElements, cancelException,
               List.<E>decorateFunction()));
     }
 
@@ -1491,10 +1487,9 @@ class future extends Sparx {
             lazyMaterializerDropRightWhile(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new DropRightWhileListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
+              Require.notNull(predicate, "predicate"), cancelException,
               List.<E>decorateFunction()));
     }
 
@@ -1510,10 +1505,9 @@ class future extends Sparx {
             lazyMaterializerDropRightWhile(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new DropRightWhileListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), cancelException,
               List.<E>decorateFunction()));
     }
 
@@ -1529,10 +1523,9 @@ class future extends Sparx {
             lazyMaterializerDropWhile(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new DropWhileListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
+              Require.notNull(predicate, "predicate"), cancelException,
               List.<E>decorateFunction()));
     }
 
@@ -1548,10 +1541,9 @@ class future extends Sparx {
             lazyMaterializerDropWhile(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new DropWhileListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), cancelException,
               List.<E>decorateFunction()));
     }
 
@@ -1570,7 +1562,7 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new EachListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              false, context, cancelException, List.<Boolean>decorateFunction()));
+              false, cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
@@ -1588,8 +1580,8 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new EachListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), false, context,
-              cancelException, List.<Boolean>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), false, cancelException,
+              List.<Boolean>decorateFunction()));
     }
 
     @Override
@@ -1626,10 +1618,9 @@ class future extends Sparx {
             lazyMaterializerExists(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
-      final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              false, context, cancelException, List.<Boolean>decorateFunction()));
+              false, cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
@@ -1644,11 +1635,10 @@ class future extends Sparx {
             lazyMaterializerExists(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
-      final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), false, context,
-              cancelException, List.<Boolean>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), false, cancelException,
+              List.<Boolean>decorateFunction()));
     }
 
     @Override
@@ -1663,10 +1653,9 @@ class future extends Sparx {
             lazyMaterializerFilter(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FilterListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              context, cancelException, List.<E>decorateFunction()));
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -1681,9 +1670,8 @@ class future extends Sparx {
             lazyMaterializerFilter(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException, new FilterListAsyncMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), cancelException,
           List.<E>decorateFunction()));
     }
 
@@ -1709,10 +1697,9 @@ class future extends Sparx {
             lazyMaterializerFindFirst(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FindFirstListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
+              Require.notNull(predicate, "predicate"), cancelException,
               List.<E>decorateFunction()));
     }
 
@@ -1728,10 +1715,9 @@ class future extends Sparx {
             lazyMaterializerFindFirst(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FindFirstListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), cancelException,
               List.<E>decorateFunction()));
     }
 
@@ -2387,10 +2373,9 @@ class future extends Sparx {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerExists(materializer, cancelException, Sparx.<E>equalsElement(element)));
       }
-      final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer, Sparx.<E>equalsElement(element), false,
-              context, cancelException, List.<Boolean>decorateFunction()));
+              cancelException, List.<Boolean>decorateFunction()));
     }
 
     @Override
@@ -3063,7 +3048,7 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new EachListAsyncMaterializer<E>(materializer,
-              negated(Require.notNull(predicate, "predicate")), true, context, cancelException,
+              negated(Require.notNull(predicate, "predicate")), true, cancelException,
               List.<Boolean>decorateFunction()));
     }
 
@@ -3082,7 +3067,7 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new EachListAsyncMaterializer<E>(materializer,
-              toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), true, context,
+              toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), true,
               cancelException, List.<Boolean>decorateFunction()));
     }
 
@@ -3098,10 +3083,9 @@ class future extends Sparx {
             lazyMaterializerNotExists(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
-      final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer,
-              negated(Require.notNull(predicate, "predicate")), true, context, cancelException,
+              negated(Require.notNull(predicate, "predicate")), true, cancelException,
               List.<Boolean>decorateFunction()));
     }
 
@@ -3117,10 +3101,9 @@ class future extends Sparx {
             lazyMaterializerNotExists(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
-      final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer,
-              toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), true, context,
+              toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), true,
               cancelException, List.<Boolean>decorateFunction()));
     }
 

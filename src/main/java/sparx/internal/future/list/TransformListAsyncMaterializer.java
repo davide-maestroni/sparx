@@ -414,10 +414,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     @Override
     public void materializeNextWhile(final int index, @NotNull IndexedAsyncPredicate<F> predicate) {
       try {
+        final List<F> elements = this.elements;
         final int size = elements.size();
         for (int i = index; i < size; ++i) {
           final F element = elements.get(i);
-          if (!predicate.test(-1, i, element)) {
+          if (!predicate.test(size, i, element)) {
             return;
           }
         }
@@ -430,10 +431,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     @Override
     public void materializePrevWhile(final int index, @NotNull IndexedAsyncPredicate<F> predicate) {
       try {
+        final List<F> elements = this.elements;
         final int size = elements.size();
-        for (int i = Math.min(index, size - 1); i > 0; --i) {
+        for (int i = Math.min(index, size - 1); i >= 0; --i) {
           final F element = elements.get(i);
-          if (!predicate.test(-1, i, element)) {
+          if (!predicate.test(size, i, element)) {
             return;
           }
         }

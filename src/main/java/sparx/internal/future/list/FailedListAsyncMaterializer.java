@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
@@ -76,11 +77,6 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    safeConsumeError(consumer, error, LOGGER);
-  }
-
-  @Override
   public void materializeElement(final int ignored,
       @NotNull final IndexedAsyncConsumer<E> consumer) {
     safeConsumeError(consumer, error, LOGGER);
@@ -103,17 +99,24 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public void materializeNextWhile(final int index,
+      @NotNull final IndexedAsyncPredicate<E> predicate) {
+    safeConsumeError(predicate, error, LOGGER);
+  }
+
+  @Override
+  public void materializePrevWhile(final int index,
+      @NotNull final IndexedAsyncPredicate<E> predicate) {
+    safeConsumeError(predicate, error, LOGGER);
+  }
+
+  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     safeConsumeError(consumer, error, LOGGER);
   }
 
   @Override
   public int weightContains() {
-    return 1;
-  }
-
-  @Override
-  public int weightEach() {
     return 1;
   }
 
@@ -134,6 +137,16 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   @Override
   public int weightHasElement() {
+    return 1;
+  }
+
+  @Override
+  public int weightNextWhile() {
+    return 1;
+  }
+
+  @Override
+  public int weightPrevWhile() {
     return 1;
   }
 
