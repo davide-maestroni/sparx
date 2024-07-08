@@ -1733,9 +1733,8 @@ class future extends Sparx {
         return new List<Integer>(context, cancelException,
             lazyMaterializerFindIndexWhere(materializer, cancelException, equalsElement(element)));
       }
-      final ExecutionContext context = this.context;
       return new List<Integer>(context, cancelException,
-          new FindIndexListAsyncMaterializer<E>(materializer, equalsElement(element), context,
+          new FindIndexListAsyncMaterializer<E>(materializer, equalsElement(element),
               cancelException, List.<Integer>decorateFunction()));
     }
 
@@ -1772,10 +1771,9 @@ class future extends Sparx {
             lazyMaterializerFindIndexWhere(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
-      final ExecutionContext context = this.context;
       return new List<Integer>(context, cancelException,
           new FindIndexListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
+              Require.notNull(predicate, "predicate"), cancelException,
               List.<Integer>decorateFunction()));
     }
 
@@ -1792,10 +1790,9 @@ class future extends Sparx {
             lazyMaterializerFindIndexWhere(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
-      final ExecutionContext context = this.context;
       return new List<Integer>(context, cancelException,
           new FindIndexListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), cancelException,
               List.<Integer>decorateFunction()));
     }
 
@@ -1850,9 +1847,8 @@ class future extends Sparx {
             lazyMaterializerFindLastIndexWhere(materializer, cancelException,
                 equalsElement(element)));
       }
-      final ExecutionContext context = this.context;
       return new List<Integer>(context, cancelException,
-          new FindLastIndexListAsyncMaterializer<E>(materializer, equalsElement(element), context,
+          new FindLastIndexListAsyncMaterializer<E>(materializer, equalsElement(element),
               cancelException, List.<Integer>decorateFunction()));
     }
 
@@ -1893,10 +1889,9 @@ class future extends Sparx {
             lazyMaterializerFindLastIndexWhere(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
-      final ExecutionContext context = this.context;
       return new List<Integer>(context, cancelException,
           new FindLastIndexListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
+              Require.notNull(predicate, "predicate"), cancelException,
               List.<Integer>decorateFunction()));
     }
 
@@ -1914,10 +1909,9 @@ class future extends Sparx {
             lazyMaterializerFindLastIndexWhere(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
-      final ExecutionContext context = this.context;
       return new List<Integer>(context, cancelException,
           new FindLastIndexListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), cancelException,
               List.<Integer>decorateFunction()));
     }
 

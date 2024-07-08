@@ -154,7 +154,7 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   @Override
   public int weightElements() {
-    return elements.size();
+    return 1;
   }
 
   @Override
