@@ -24,10 +24,9 @@ import java.util.Iterator;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.ExecutionContext;
-import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.internal.future.list.ListAsyncMaterializer;
 
 public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
@@ -36,17 +35,15 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
   private static final Logger LOGGER = Logger.getLogger(
       ListAsyncMaterializerToIteratorAsyncMaterializer.class.getName());
 
-  private final ExecutionContext context;
-  private final ArrayList<IndexedAsyncConsumer<E>> elementsConsumers = new ArrayList<IndexedAsyncConsumer<E>>(
+  private final ArrayList<IndexedAsyncPredicate<E>> elementsPredicates = new ArrayList<IndexedAsyncPredicate<E>>(
       2);
   private final ListAsyncMaterializer<E> materializer;
 
   private CancellationException cancelException;
   private int index;
 
-  public ListAsyncMaterializerToIteratorAsyncMaterializer(@NotNull final ExecutionContext context,
+  public ListAsyncMaterializerToIteratorAsyncMaterializer(
       @NotNull final ListAsyncMaterializer<E> materializer) {
-    this.context = context;
     this.materializer = materializer;
   }
 
@@ -72,15 +69,6 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
   }
 
   @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    final ArrayList<IndexedAsyncConsumer<E>> elementsConsumers = this.elementsConsumers;
-    elementsConsumers.add(consumer);
-    if (elementsConsumers.size() == 1) {
-      materializer.materializeElement(index, new MaterializingAsyncConsumer());
-    }
-  }
-
-  @Override
   public void materializeHasNext(@NotNull final AsyncConsumer<Boolean> consumer) {
     materializer.materializeHasElement(index, consumer);
   }
@@ -103,6 +91,48 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
         consumer.error(error);
       }
     });
+  }
+
+  @Override
+  public void materializeNextWhile(@NotNull final IndexedAsyncPredicate<E> predicate) {
+    final ArrayList<IndexedAsyncPredicate<E>> elementsPredicates = this.elementsPredicates;
+    elementsPredicates.add(predicate);
+    if (elementsPredicates.size() == 1) {
+      materializer.materializeNextWhile(index, new IndexedAsyncPredicate<E>() {
+        @Override
+        public void complete(final int size) {
+          for (final IndexedAsyncPredicate<E> predicate : elementsPredicates) {
+            safeConsumeComplete(predicate, size, LOGGER);
+          }
+          elementsPredicates.clear();
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          final Exception exception;
+          if (cancelException != null) {
+            exception = cancelException;
+          } else {
+            exception = error;
+          }
+          for (final IndexedAsyncPredicate<E> predicate : elementsPredicates) {
+            safeConsumeError(predicate, exception, LOGGER);
+          }
+          elementsPredicates.clear();
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) {
+          final Iterator<IndexedAsyncPredicate<E>> iterator = elementsPredicates.iterator();
+          while (iterator.hasNext()) {
+            if (!safeConsume(iterator.next(), -1, index, element, LOGGER)) {
+              iterator.remove();
+            }
+          }
+          return !elementsPredicates.isEmpty();
+        }
+      });
+    }
   }
 
   @Override
@@ -137,72 +167,12 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
   }
 
   @Override
+  public int weightNextWhile() {
+    return materializer.weightNextWhile();
+  }
+
+  @Override
   public int weightSkip(final int count) {
     return materializer.weightSize();
-  }
-
-  private @NotNull String getTaskID() {
-    final String taskID = context.currentTaskID();
-    return taskID != null ? taskID : "";
-  }
-
-  private class MaterializingAsyncConsumer implements IndexedAsyncConsumer<E>, Task {
-
-    private String taskID;
-
-    @Override
-    public void accept(final int size, final int index, final E element) {
-      ListAsyncMaterializerToIteratorAsyncMaterializer.this.index = index + 1;
-      final ArrayList<IndexedAsyncConsumer<E>> elementsConsumers = ListAsyncMaterializerToIteratorAsyncMaterializer.this.elementsConsumers;
-      final Iterator<IndexedAsyncConsumer<E>> iterator = elementsConsumers.iterator();
-      while (iterator.hasNext()) {
-        if (!safeConsume(iterator.next(), -1, index, element, LOGGER)) {
-          iterator.remove();
-        }
-      }
-      if (!elementsConsumers.isEmpty()) {
-        taskID = getTaskID();
-        context.scheduleAfter(this);
-      }
-    }
-
-    @Override
-    public void complete(final int size) {
-      final ArrayList<IndexedAsyncConsumer<E>> elementsConsumers = ListAsyncMaterializerToIteratorAsyncMaterializer.this.elementsConsumers;
-      for (final IndexedAsyncConsumer<E> consumer : elementsConsumers) {
-        safeConsumeComplete(consumer, size, LOGGER);
-      }
-      elementsConsumers.clear();
-    }
-
-    @Override
-    public void error(@NotNull final Exception error) {
-      final Exception exception;
-      if (cancelException != null) {
-        exception = cancelException;
-      } else {
-        exception = error;
-      }
-      final ArrayList<IndexedAsyncConsumer<E>> elementsConsumers = ListAsyncMaterializerToIteratorAsyncMaterializer.this.elementsConsumers;
-      for (final IndexedAsyncConsumer<E> consumer : elementsConsumers) {
-        safeConsumeError(consumer, exception, LOGGER);
-      }
-      elementsConsumers.clear();
-    }
-
-    @Override
-    public void run() {
-      materializer.materializeElement(index, this);
-    }
-
-    @Override
-    public @NotNull String taskID() {
-      return taskID;
-    }
-
-    @Override
-    public int weight() {
-      return materializer.weightElement();
-    }
   }
 }

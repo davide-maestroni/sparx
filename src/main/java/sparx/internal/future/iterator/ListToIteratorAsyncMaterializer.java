@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterializer<E> {
 
@@ -58,18 +59,6 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
   }
 
   @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    final List<E> elements = this.elements;
-    while (index < elements.size()) {
-      final int i = index++;
-      if (!safeConsume(consumer, elements.size(), i, elements.get(i), LOGGER)) {
-        return;
-      }
-    }
-    safeConsumeComplete(consumer, elements.size(), LOGGER);
-  }
-
-  @Override
   public void materializeHasNext(@NotNull final AsyncConsumer<Boolean> consumer) {
     safeConsume(consumer, index < elements.size(), LOGGER);
   }
@@ -83,6 +72,18 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
     } else {
       safeConsumeComplete(consumer, elements.size(), LOGGER);
     }
+  }
+
+  @Override
+  public void materializeNextWhile(@NotNull final IndexedAsyncPredicate<E> predicate) {
+    final List<E> elements = this.elements;
+    while (index < elements.size()) {
+      final int i = index++;
+      if (!safeConsume(predicate, elements.size(), i, elements.get(i), LOGGER)) {
+        return;
+      }
+    }
+    safeConsumeComplete(predicate, elements.size(), LOGGER);
   }
 
   @Override
@@ -104,6 +105,11 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
   @Override
   public int weightNext() {
     return 1;
+  }
+
+  @Override
+  public int weightNextWhile() {
+    return elements.size() - index;
   }
 
   @Override

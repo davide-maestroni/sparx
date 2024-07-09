@@ -19,6 +19,7 @@ import java.util.concurrent.CancellationException;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public interface IteratorAsyncMaterializer<E> {
 
@@ -30,17 +31,19 @@ public interface IteratorAsyncMaterializer<E> {
 
   void materializeCancel(@NotNull CancellationException exception);
 
-  void materializeEach(@NotNull IndexedAsyncConsumer<E> consumer);
-
   void materializeHasNext(@NotNull AsyncConsumer<Boolean> consumer);
 
   void materializeNext(@NotNull IndexedAsyncConsumer<E> consumer);
+
+  void materializeNextWhile(@NotNull IndexedAsyncPredicate<E> predicate);
 
   void materializeSkip(int count, @NotNull AsyncConsumer<Integer> consumer);
 
   int weightHasNext();
 
   int weightNext();
+
+  int weightNextWhile();
 
   int weightSkip(int count);
 }

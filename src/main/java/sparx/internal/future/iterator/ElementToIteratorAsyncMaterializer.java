@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterializer<E> {
 
@@ -57,16 +58,6 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
   }
 
   @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    if (!consumed) {
-      if (!safeConsume(consumer, 1, 0, element, LOGGER)) {
-        return;
-      }
-    }
-    safeConsumeComplete(consumer, 1, LOGGER);
-  }
-
-  @Override
   public void materializeHasNext(@NotNull final AsyncConsumer<Boolean> consumer) {
     safeConsume(consumer, !consumed, LOGGER);
   }
@@ -79,6 +70,16 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
       consumed = true;
       safeConsume(consumer, 1, 0, element, LOGGER);
     }
+  }
+
+  @Override
+  public void materializeNextWhile(@NotNull final IndexedAsyncPredicate<E> predicate) {
+    if (!consumed) {
+      if (!safeConsume(predicate, 1, 0, element, LOGGER)) {
+        return;
+      }
+    }
+    safeConsumeComplete(predicate, 0, LOGGER);
   }
 
   @Override
@@ -99,6 +100,11 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
   @Override
   public int weightNext() {
     return 1;
+  }
+
+  @Override
+  public int weightNextWhile() {
+    return consumed ? 1 : 2;
   }
 
   @Override
