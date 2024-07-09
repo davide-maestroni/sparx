@@ -26,8 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.internal.util.ElementsCache;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
@@ -42,11 +44,13 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
 
   public GroupListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final int maxSize, @NotNull final Chunker<E, ? extends L> chunker,
+      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<L>, List<L>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize(), maxSize);
-    setState(new ImmaterialState(wrapped, maxSize, chunker, cancelException, decorateFunction));
+    setState(
+        new ImmaterialState(wrapped, maxSize, chunker, context, cancelException, decorateFunction));
   }
 
   private static int safeSize(final int wrappedSize, final int maxSize) {
@@ -76,6 +80,7 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
 
     private final AtomicReference<CancellationException> cancelException;
     private final Chunker<E, ? extends L> chunker;
+    private final ExecutionContext context;
     private final Function<List<L>, List<L>> decorateFunction;
     private final ElementsCache<L> elements = new ElementsCache<L>(knownSize);
     private final ArrayList<AsyncConsumer<List<L>>> elementsConsumers = new ArrayList<AsyncConsumer<List<L>>>(
@@ -86,12 +91,13 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
     private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int maxSize,
-        @NotNull final Chunker<E, ? extends L> chunker,
+        @NotNull final Chunker<E, ? extends L> chunker, @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<L>, List<L>> decorateFunction) {
       this.wrapped = wrapped;
       this.maxSize = maxSize;
       this.chunker = chunker;
+      this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
@@ -195,46 +201,6 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
     @Override
     public void materializeDone(@NotNull final AsyncConsumer<List<L>> consumer) {
       safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<L> consumer) {
-      if (wrappedSize >= 0) {
-        final int size = wrappedSize;
-        final long maxSize = this.maxSize;
-        final int elementsSize = safeSize(size, this.maxSize);
-        final ElementsCache<L> elements = this.elements;
-        final Chunker<E, ? extends L> chunker = this.chunker;
-        final ListAsyncMaterializer<E> wrapped = this.wrapped;
-        for (int i = 0, n = 0; i < size; ++n) {
-          final int endIndex = (int) Math.min(size, i + maxSize);
-          if (!elements.has(n)) {
-            final L chunk = chunker.getChunk(wrapped, i, endIndex);
-            elements.set(n, chunk);
-            if (!safeConsume(consumer, elementsSize, n, chunk, LOGGER)) {
-              return;
-            }
-          } else if (!safeConsume(consumer, elementsSize, n, elements.get(n), LOGGER)) {
-            return;
-          }
-          i = endIndex;
-        }
-        safeConsumeComplete(consumer, elementsSize, LOGGER);
-      } else {
-        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
-          @Override
-          public void cancellableAccept(final Integer size) {
-            wrappedSize = size;
-            elements.setSize(safeSize(wrappedSize, maxSize));
-            materializeEach(consumer);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
-      }
     }
 
     @Override
@@ -352,6 +318,92 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<L> predicate) {
+      if (wrappedSize >= 0) {
+        final int size = wrappedSize;
+        final long maxSize = this.maxSize;
+        final int elementsSize = safeSize(size, this.maxSize);
+        final ElementsCache<L> elements = this.elements;
+        final Chunker<E, ? extends L> chunker = this.chunker;
+        final ListAsyncMaterializer<E> wrapped = this.wrapped;
+        final int startIndex = IndexOverflowException.safeCast(
+            Math.min(index, elementsSize) * maxSize);
+        for (int i = startIndex, n = index; i < size; ++n) {
+          final int endIndex = (int) Math.min(size, i + maxSize);
+          if (!elements.has(n)) {
+            final L chunk = chunker.getChunk(wrapped, i, endIndex);
+            elements.set(n, chunk);
+            if (!safeConsume(predicate, elementsSize, n, chunk, LOGGER)) {
+              return;
+            }
+          } else if (!safeConsume(predicate, elementsSize, n, elements.get(n), LOGGER)) {
+            return;
+          }
+          i = endIndex;
+        }
+        safeConsumeComplete(predicate, elementsSize, LOGGER);
+      } else {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            elements.setSize(safeSize(wrappedSize, maxSize));
+            materializeNextWhile(index, predicate);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            predicate.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<L> predicate) {
+      if (wrappedSize >= 0) {
+        final int size = wrappedSize;
+        final long maxSize = this.maxSize;
+        final int elementsSize = safeSize(size, this.maxSize);
+        final ElementsCache<L> elements = this.elements;
+        final Chunker<E, ? extends L> chunker = this.chunker;
+        final ListAsyncMaterializer<E> wrapped = this.wrapped;
+        final int startIndex = IndexOverflowException.safeCast(
+            Math.min(index, elementsSize - 1) * maxSize);
+        for (int i = startIndex, n = index; i >= 0; --n) {
+          final int endIndex = (int) Math.min(size, i + maxSize);
+          if (!elements.has(n)) {
+            final L chunk = chunker.getChunk(wrapped, i, endIndex);
+            elements.set(n, chunk);
+            if (!safeConsume(predicate, elementsSize, n, chunk, LOGGER)) {
+              return;
+            }
+          } else if (!safeConsume(predicate, elementsSize, n, elements.get(n), LOGGER)) {
+            return;
+          }
+          i = (int) (i - maxSize);
+        }
+        safeConsumeComplete(predicate, elementsSize, LOGGER);
+      } else {
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            elements.setSize(safeSize(wrappedSize, maxSize));
+            materializePrevWhile(index, predicate);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            predicate.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       if (wrappedSize >= 0) {
         safeConsume(consumer, safeSize(wrappedSize, maxSize), LOGGER);
@@ -378,11 +430,6 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
     }
 
     @Override
-    public int weightEach() {
-      return wrappedSize < 0 ? wrapped.weightSize() : 1;
-    }
-
-    @Override
     public int weightElement() {
       return wrappedSize < 0 ? wrapped.weightSize() : 1;
     }
@@ -402,6 +449,16 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
 
     @Override
     public int weightHasElement() {
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return wrappedSize < 0 ? wrapped.weightSize() : 1;
+    }
+
+    @Override
+    public int weightPrevWhile() {
       return wrappedSize < 0 ? wrapped.weightSize() : 1;
     }
 
@@ -442,7 +499,7 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
       }
       try {
         final List<L> materialized = decorateFunction.apply(elements.toList());
-        setState(new ListToListAsyncMaterializer<L>(materialized));
+        setState(new ListToListAsyncMaterializer<L>(materialized, context));
         consumeElements(materialized);
       } catch (final Exception e) {
         if (e instanceof InterruptedException) {

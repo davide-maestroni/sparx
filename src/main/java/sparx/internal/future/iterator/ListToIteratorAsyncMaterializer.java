@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -31,12 +33,15 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
   private static final Logger LOGGER = Logger.getLogger(
       ListToIteratorAsyncMaterializer.class.getName());
 
+  private final ExecutionContext context;
   private final List<E> elements;
 
   private int index;
 
-  public ListToIteratorAsyncMaterializer(@NotNull final List<E> elements) {
+  public ListToIteratorAsyncMaterializer(@NotNull final List<E> elements,
+      @NotNull final ExecutionContext context) {
     this.elements = elements;
+    this.context = context;
   }
 
   @Override
@@ -76,14 +81,19 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
 
   @Override
   public void materializeNextWhile(@NotNull final IndexedAsyncPredicate<E> predicate) {
-    final List<E> elements = this.elements;
-    while (index < elements.size()) {
-      final int i = index++;
-      if (!safeConsume(predicate, elements.size(), i, elements.get(i), LOGGER)) {
-        return;
+    final int throughput = context.minThroughput();
+    if (throughput < Integer.MAX_VALUE) {
+      new NextTask(predicate, throughput).run();
+    } else {
+      final List<E> elements = this.elements;
+      while (index < elements.size()) {
+        final int i = index++;
+        if (!safeConsume(predicate, elements.size() - i, i, elements.get(i), LOGGER)) {
+          return;
+        }
       }
+      safeConsumeComplete(predicate, 0, LOGGER);
     }
-    safeConsumeComplete(predicate, elements.size(), LOGGER);
   }
 
   @Override
@@ -115,5 +125,55 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
   @Override
   public int weightSkip(int count) {
     return 1;
+  }
+
+  private @NotNull String getTaskID() {
+    final String taskID = context.currentTaskID();
+    return taskID != null ? taskID : "";
+  }
+
+  private class NextTask implements Task {
+
+    private final IndexedAsyncPredicate<E> predicate;
+    private final int throughput;
+
+    private String taskID;
+
+    private NextTask(@NotNull final IndexedAsyncPredicate<E> predicate, final int throughput) {
+      this.predicate = predicate;
+      this.throughput = throughput;
+    }
+
+    @Override
+    public void run() {
+      final int throughput = this.throughput;
+      final IndexedAsyncPredicate<E> predicate = this.predicate;
+      final List<E> elements = ListToIteratorAsyncMaterializer.this.elements;
+      final int size = elements.size();
+      int i = index;
+      for (int n = 0; n < throughput && i < size; ++n, ++i) {
+        if (!safeConsume(predicate, size - i, i, elements.get(i), LOGGER)) {
+          return;
+        }
+      }
+      if (i == size) {
+        safeConsumeComplete(predicate, 0, LOGGER);
+      } else {
+        index = i;
+        taskID = getTaskID();
+        context.scheduleAfter(this);
+      }
+    }
+
+    @Override
+    public @NotNull
+    final String taskID() {
+      return taskID;
+    }
+
+    @Override
+    public int weight() {
+      return Math.min(throughput, elements.size() - index);
+    }
   }
 }

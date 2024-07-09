@@ -144,16 +144,17 @@ class future extends Sparx {
       if (list.size() == 1) {
         return new ElementToIteratorAsyncMaterializer<E>(list.get(0));
       }
-      return new ListToIteratorAsyncMaterializer<E>(list);
+      return new ListToIteratorAsyncMaterializer<E>(list, context);
     }
     if (elements instanceof Collection) {
-      return new CollectionToIteratorAsyncMaterializer<E>((Collection<E>) elements);
+      return new CollectionToIteratorAsyncMaterializer<E>((Collection<E>) elements, context);
     }
     // TODO: future.Iterator
     if (elements instanceof java.util.Iterator) {
-      return new IteratorToIteratorAsyncMaterializer<E>((java.util.Iterator<E>) elements);
+      return new IteratorToIteratorAsyncMaterializer<E>((java.util.Iterator<E>) elements, context);
     }
-    return new IteratorToIteratorAsyncMaterializer<E>((java.util.Iterator<E>) elements.iterator());
+    return new IteratorToIteratorAsyncMaterializer<E>((java.util.Iterator<E>) elements.iterator(),
+        context);
   }
 
   private static boolean isFuture(final Iterable<?> elements) {
@@ -2183,7 +2184,7 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<F>(context, cancelException,
           new FoldRightListAsyncMaterializer<E, F>(materializer, identity,
-              Require.notNull(operation, "operation"), context, cancelException,
+              Require.notNull(operation, "operation"), cancelException,
               List.<F>decorateFunction()));
     }
 
@@ -2346,7 +2347,7 @@ class future extends Sparx {
       return new List<List<E>>(context, cancelException,
           new GroupListAsyncMaterializer<E, List<E>>(materializer,
               Require.positive(maxSize, "maxSize"),
-              List.<E>getChunker(context, taskID, cancelException), cancelException,
+              List.<E>getChunker(context, taskID, cancelException), context, cancelException,
               List.<List<E>>decorateFunction()));
     }
 
@@ -2362,7 +2363,7 @@ class future extends Sparx {
       return new List<List<E>>(context, cancelException,
           new GroupListAsyncMaterializer<E, List<E>>(materializer, size,
               List.getChunker(context, taskID, cancelException, Require.positive(size, "size"),
-                  padding), cancelException, List.<List<E>>decorateFunction()));
+                  padding), context, cancelException, List.<List<E>>decorateFunction()));
     }
 
     @Override

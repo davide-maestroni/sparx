@@ -27,10 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.ExecutionContext;
-import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Function;
 
@@ -41,12 +40,10 @@ public class FoldRightListAsyncMaterializer<E, F> extends AbstractListAsyncMater
 
   public FoldRightListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final F identity, @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation,
-      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<F>, List<F>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, identity, operation, context, cancelException,
-        decorateFunction));
+    setState(new ImmaterialState(wrapped, identity, operation, cancelException, decorateFunction));
   }
 
   @Override
@@ -62,7 +59,6 @@ public class FoldRightListAsyncMaterializer<E, F> extends AbstractListAsyncMater
   private class ImmaterialState implements ListAsyncMaterializer<F> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final ExecutionContext context;
     private final Function<List<F>, List<F>> decorateFunction;
     private final F identity;
     private final BinaryFunction<? super E, ? super F, ? extends F> operation;
@@ -71,13 +67,11 @@ public class FoldRightListAsyncMaterializer<E, F> extends AbstractListAsyncMater
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final F identity,
         @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation,
-        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<F>, List<F>> decorateFunction) {
       this.wrapped = wrapped;
       this.identity = identity;
       this.operation = operation;
-      this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
     }
@@ -130,16 +124,6 @@ public class FoldRightListAsyncMaterializer<E, F> extends AbstractListAsyncMater
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<F> consumer) {
-      materialized(new StateConsumer<F>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
-          state.materializeEach(consumer);
-        }
-      });
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<F> consumer) {
       if (index < 0) {
@@ -178,17 +162,34 @@ public class FoldRightListAsyncMaterializer<E, F> extends AbstractListAsyncMater
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<F> predicate) {
+      materialized(new StateConsumer<F>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+          state.materializeNextWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<F> predicate) {
+      materialized(new StateConsumer<F>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+          state.materializePrevWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 1, LOGGER);
     }
 
     @Override
     public int weightContains() {
-      return weightElements();
-    }
-
-    @Override
-    public int weightEach() {
       return weightElements();
     }
 
@@ -213,6 +214,16 @@ public class FoldRightListAsyncMaterializer<E, F> extends AbstractListAsyncMater
     }
 
     @Override
+    public int weightNextWhile() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightPrevWhile() {
+      return weightElements();
+    }
+
+    @Override
     public int weightSize() {
       return 1;
     }
@@ -225,79 +236,60 @@ public class FoldRightListAsyncMaterializer<E, F> extends AbstractListAsyncMater
       stateConsumers.clear();
     }
 
-    private @NotNull String getTaskID() {
-      final String taskID = context.currentTaskID();
-      return taskID != null ? taskID : "";
-    }
-
     private void materialized(@NotNull final StateConsumer<F> consumer) {
       final ArrayList<StateConsumer<F>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeSize(new MaterializingAsyncConsumer());
+        wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) {
+            wrapped.materializePrevWhile(size - 1, new CancellableIndexedAsyncPredicate<E>() {
+              private F current = identity;
+
+              @Override
+              public void cancellableComplete(final int size) throws Exception {
+                setState(identity);
+              }
+
+              @Override
+              public boolean cancellableTest(final int size, final int index, final E element)
+                  throws Exception {
+                current = operation.apply(element, current);
+                if (index == 0) {
+                  setState(current);
+                  return false;
+                }
+                return true;
+              }
+
+              @Override
+              public void error(@NotNull final Exception error) {
+                setError(error);
+              }
+            });
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            setError(error);
+          }
+        });
+      }
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        consumeState(setCancelled(exception));
+      } else {
+        consumeState(setFailed(error));
       }
     }
 
     private void setState(final F result) throws Exception {
-      consumeState(FoldRightListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<F>(
-          decorateFunction.apply(Collections.singletonList(result)))));
-    }
-
-    private class MaterializingAsyncConsumer extends
-        CancellableMultiAsyncConsumer<Integer, E> implements Task {
-
-      private F current = identity;
-      private int index;
-      private String taskID;
-
-      @Override
-      public void cancellableAccept(final Integer size) throws Exception {
-        if (size == 0) {
-          setState(identity);
-        } else {
-          index = size - 1;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        current = operation.apply(element, current);
-        if (index == 0) {
-          setState(current);
-        } else {
-          this.index = index - 1;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) {
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          consumeState(setCancelled(exception));
-        } else {
-          consumeState(setFailed(error));
-        }
-      }
-
-      @Override
-      public void run() {
-        wrapped.materializeElement(index, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return wrapped.weightElement();
-      }
+      consumeState(FoldRightListAsyncMaterializer.this.setState(
+          new ElementToListAsyncMaterializer<F>(
+              decorateFunction.apply(Collections.singletonList(result)))));
     }
   }
 }

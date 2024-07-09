@@ -23,6 +23,8 @@ import java.util.Iterator;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -32,13 +34,16 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
   private static final Logger LOGGER = Logger.getLogger(
       CollectionToIteratorAsyncMaterializer.class.getName());
 
+  private final ExecutionContext context;
   private final Collection<E> elements;
   private final Iterator<E> iterator;
 
   private int index;
 
-  public CollectionToIteratorAsyncMaterializer(@NotNull final Collection<E> elements) {
+  public CollectionToIteratorAsyncMaterializer(@NotNull final Collection<E> elements,
+      @NotNull final ExecutionContext context) {
     this.elements = elements;
+    this.context = context;
     iterator = elements.iterator();
   }
 
@@ -78,14 +83,19 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
 
   @Override
   public void materializeNextWhile(@NotNull final IndexedAsyncPredicate<E> predicate) {
-    final Collection<E> elements = this.elements;
-    final Iterator<E> iterator = this.iterator;
-    while (iterator.hasNext()) {
-      if (!safeConsume(predicate, elements.size(), index++, iterator.next(), LOGGER)) {
-        return;
+    final int throughput = context.minThroughput();
+    if (throughput < Integer.MAX_VALUE) {
+      new NextTask(predicate, throughput).run();
+    } else {
+      final Collection<E> elements = this.elements;
+      final Iterator<E> iterator = this.iterator;
+      while (iterator.hasNext()) {
+        if (!safeConsume(predicate, elements.size() - index, index++, iterator.next(), LOGGER)) {
+          return;
+        }
       }
+      safeConsumeComplete(predicate, elements.size() - index, LOGGER);
     }
-    safeConsumeComplete(predicate, elements.size() - index, LOGGER);
   }
 
   @Override
@@ -122,5 +132,59 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
   @Override
   public int weightSkip(final int count) {
     return Math.max(1, count);
+  }
+
+  private @NotNull String getTaskID() {
+    final String taskID = context.currentTaskID();
+    return taskID != null ? taskID : "";
+  }
+
+  private class NextTask implements Task {
+
+    private final IndexedAsyncPredicate<E> predicate;
+    private final int throughput;
+
+    private String taskID;
+
+    private NextTask(@NotNull final IndexedAsyncPredicate<E> predicate, final int throughput) {
+      this.predicate = predicate;
+      this.throughput = throughput;
+    }
+
+    @Override
+    public void run() {
+      final int throughput = this.throughput;
+      final IndexedAsyncPredicate<E> predicate = this.predicate;
+      final Collection<E> elements = CollectionToIteratorAsyncMaterializer.this.elements;
+      final int size = elements.size();
+      int i = 0;
+      final Iterator<E> iterator = CollectionToIteratorAsyncMaterializer.this.iterator;
+      while (i < index && iterator.hasNext()) {
+        iterator.next();
+      }
+      for (int n = 0; n < throughput && iterator.hasNext(); ++n, ++i) {
+        if (!safeConsume(predicate, size - i, i, iterator.next(), LOGGER)) {
+          return;
+        }
+      }
+      if (!iterator.hasNext()) {
+        safeConsumeComplete(predicate, 0, LOGGER);
+      } else {
+        index = i;
+        taskID = getTaskID();
+        context.scheduleAfter(this);
+      }
+    }
+
+    @Override
+    public @NotNull
+    final String taskID() {
+      return taskID;
+    }
+
+    @Override
+    public int weight() {
+      return Math.min(throughput, elements.size() - index);
+    }
   }
 }

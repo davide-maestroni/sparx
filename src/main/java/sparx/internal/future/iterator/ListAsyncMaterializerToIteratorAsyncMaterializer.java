@@ -102,7 +102,7 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
         @Override
         public void complete(final int size) {
           for (final IndexedAsyncPredicate<E> predicate : elementsPredicates) {
-            safeConsumeComplete(predicate, size, LOGGER);
+            safeConsumeComplete(predicate, 0, LOGGER);
           }
           elementsPredicates.clear();
         }
@@ -125,7 +125,8 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
         public boolean test(final int size, final int index, final E element) {
           final Iterator<IndexedAsyncPredicate<E>> iterator = elementsPredicates.iterator();
           while (iterator.hasNext()) {
-            if (!safeConsume(iterator.next(), -1, index, element, LOGGER)) {
+            if (!safeConsume(iterator.next(), size >= 0 ? size - index : -1, index, element,
+                LOGGER)) {
               iterator.remove();
             }
           }

@@ -29,6 +29,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Function;
 
@@ -123,16 +124,6 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<F> consumer) {
-      materialized(new StateConsumer<F>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
-          state.materializeEach(consumer);
-        }
-      });
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<F> consumer) {
       if (index < 0) {
@@ -171,6 +162,28 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<F> predicate) {
+      materialized(new StateConsumer<F>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+          state.materializeNextWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<F> predicate) {
+      materialized(new StateConsumer<F>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<F> state) {
+          state.materializePrevWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       safeConsume(consumer, 1, LOGGER);
     }
@@ -181,18 +194,13 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     }
 
     @Override
-    public int weightEach() {
-      return weightElements();
-    }
-
-    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return stateConsumers.isEmpty() ? wrapped.weightEach() : 1;
+      return stateConsumers.isEmpty() ? wrapped.weightNextWhile() : 1;
     }
 
     @Override
@@ -203,6 +211,16 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     @Override
     public int weightHasElement() {
       return 1;
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightPrevWhile() {
+      return weightElements();
     }
 
     @Override
@@ -222,18 +240,19 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
       final ArrayList<StateConsumer<F>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeEach(new CancellableIndexedAsyncConsumer<E>() {
+        wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           private F current = identity;
-
-          @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            current = operation.apply(current, element);
-          }
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
             setState(current);
+          }
+
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            current = operation.apply(current, element);
+            return true;
           }
 
           @Override
@@ -250,8 +269,9 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     }
 
     private void setState(final F result) throws Exception {
-      consumeState(FoldLeftListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<F>(
-          decorateFunction.apply(Collections.singletonList(result)))));
+      consumeState(FoldLeftListAsyncMaterializer.this.setState(
+          new ElementToListAsyncMaterializer<F>(
+              decorateFunction.apply(Collections.singletonList(result)))));
     }
   }
 }
