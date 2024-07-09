@@ -302,7 +302,7 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
     private void setState(final boolean endsWith) throws Exception {
       consumeState(EndsWithListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<Boolean>(
+          new ElementToListAsyncMaterializer<Boolean>(
               decorateFunction.apply(Collections.singletonList(endsWith)))));
     }
 

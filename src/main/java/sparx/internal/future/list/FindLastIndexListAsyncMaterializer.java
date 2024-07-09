@@ -288,13 +288,13 @@ public class FindLastIndexListAsyncMaterializer<E> extends AbstractListAsyncMate
 
     private void setState() throws Exception {
       consumeState(FindLastIndexListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<Integer>(
+          new EmptyListAsyncMaterializer<Integer>(
               decorateFunction.apply(Collections.<Integer>emptyList()))));
     }
 
     private void setState(final int index) throws Exception {
       consumeState(FindLastIndexListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<Integer>(
+          new ElementToListAsyncMaterializer<Integer>(
               decorateFunction.apply(Collections.singletonList(index)))));
     }
   }

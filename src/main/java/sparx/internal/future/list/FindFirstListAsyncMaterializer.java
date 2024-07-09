@@ -285,12 +285,13 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     private void setState() throws Exception {
       consumeState(FindFirstListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
+          new EmptyListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
     }
 
     private void setState(final E element) throws Exception {
-      consumeState(FindFirstListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<E>(
-          decorateFunction.apply(Collections.singletonList(element)))));
+      consumeState(FindFirstListAsyncMaterializer.this.setState(
+          new ElementToListAsyncMaterializer<E>(
+              decorateFunction.apply(Collections.singletonList(element)))));
     }
   }
 }

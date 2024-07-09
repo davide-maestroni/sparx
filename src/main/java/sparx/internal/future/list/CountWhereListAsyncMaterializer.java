@@ -270,7 +270,7 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     private void setState(final int size) throws Exception {
       consumeState(CountWhereListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<Integer>(
+          new ElementToListAsyncMaterializer<Integer>(
               decorateFunction.apply(Collections.singletonList(size)))));
     }
   }

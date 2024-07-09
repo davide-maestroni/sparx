@@ -297,13 +297,13 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
 
     private void setState() throws Exception {
       consumeState(FindLastIndexOfSliceListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<Integer>(
+          new EmptyListAsyncMaterializer<Integer>(
               decorateFunction.apply(Collections.<Integer>emptyList()))));
     }
 
     private void setState(final int index) throws Exception {
       consumeState(FindLastIndexOfSliceListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<Integer>(
+          new ElementToListAsyncMaterializer<Integer>(
               decorateFunction.apply(Collections.singletonList(index)))));
     }
 

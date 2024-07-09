@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -38,10 +39,12 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
   public DiffListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
+      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, elementsMaterializer, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
+        decorateFunction));
   }
 
   @Override
@@ -52,6 +55,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
+    private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<E> elements = new ArrayList<E>();
     private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>(
@@ -64,10 +68,12 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
+        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
+      this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
     }
@@ -488,7 +494,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         @Override
         public void cancellableComplete(final int size) throws Exception {
           final List<E> materialized = decorateFunction.apply(elements);
-          setState(new ListToListAsyncMaterializer<E>(materialized));
+          setState(new ListToListAsyncMaterializer<E>(materialized, context));
           consumeComplete(elements.size());
         }
 

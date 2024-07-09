@@ -292,12 +292,13 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
 
     private void setState() throws Exception {
       consumeState(FindLastListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
+          new EmptyListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
     }
 
     private void setState(final E element) throws Exception {
-      consumeState(FindLastListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<E>(
-          decorateFunction.apply(Collections.singletonList(element)))));
+      consumeState(FindLastListAsyncMaterializer.this.setState(
+          new ElementToListAsyncMaterializer<E>(
+              decorateFunction.apply(Collections.singletonList(element)))));
     }
   }
 }

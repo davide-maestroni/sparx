@@ -23,19 +23,25 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
+import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
+import sparx.util.annotation.NotNegative;
 
 public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       ListToListAsyncMaterializer.class.getName());
 
+  private final ExecutionContext context;
   private final List<E> elements;
 
-  public ListToListAsyncMaterializer(@NotNull final List<E> elements) {
+  public ListToListAsyncMaterializer(@NotNull final List<E> elements,
+      @NotNull final ExecutionContext context) {
     this.elements = elements;
+    this.context = context;
   }
 
   @Override
@@ -111,30 +117,40 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public void materializeNextWhile(final int index,
+  public void materializeNextWhile(@NotNegative final int index,
       @NotNull final IndexedAsyncPredicate<E> predicate) {
-    final List<E> elements = this.elements;
-    final int size = elements.size();
-    for (int i = index; i < size; ++i) {
-      if (!safeConsume(predicate, size, i, elements.get(i), LOGGER)) {
-        return;
+    final int throughput = context.minThroughput();
+    if (throughput < Integer.MAX_VALUE) {
+      new NextTask(predicate, index, throughput).run();
+    } else {
+      final List<E> elements = this.elements;
+      final int size = elements.size();
+      for (int i = index; i < size; ++i) {
+        if (!safeConsume(predicate, size, i, elements.get(i), LOGGER)) {
+          return;
+        }
       }
+      safeConsumeComplete(predicate, size, LOGGER);
     }
-    safeConsumeComplete(predicate, size, LOGGER);
   }
 
   @Override
-  public void materializePrevWhile(final int index,
+  public void materializePrevWhile(@NotNegative final int index,
       @NotNull final IndexedAsyncPredicate<E> predicate) {
     final List<E> elements = this.elements;
     final int size = elements.size();
-    for (int i = Math.min(index, size - 1); i >= 0; --i) {
-      final E element = elements.get(i);
-      if (!safeConsume(predicate, size, i, element, LOGGER)) {
-        return;
+    final int throughput = context.minThroughput();
+    if (throughput < Integer.MAX_VALUE) {
+      new PrevTask(predicate, Math.min(index, size - 1), throughput).run();
+    } else {
+      for (int i = Math.min(index, size - 1); i >= 0; --i) {
+        final E element = elements.get(i);
+        if (!safeConsume(predicate, size, i, element, LOGGER)) {
+          return;
+        }
       }
+      safeConsumeComplete(predicate, size, LOGGER);
     }
-    safeConsumeComplete(predicate, size, LOGGER);
   }
 
   @Override
@@ -169,16 +185,117 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
 
   @Override
   public int weightNextWhile() {
-    return elements.size();
+    return Math.min(context.minThroughput(), elements.size());
   }
 
   @Override
   public int weightPrevWhile() {
-    return elements.size();
+    return Math.min(context.minThroughput(), elements.size());
   }
 
   @Override
   public int weightSize() {
     return 1;
+  }
+
+  private @NotNull String getTaskID() {
+    final String taskID = context.currentTaskID();
+    return taskID != null ? taskID : "";
+  }
+
+  private class NextTask implements Task {
+
+    private final IndexedAsyncPredicate<E> predicate;
+    private final int throughput;
+
+    private int index;
+    private String taskID;
+
+    private NextTask(@NotNull final IndexedAsyncPredicate<E> predicate, final int index,
+        final int throughput) {
+      this.predicate = predicate;
+      this.index = index;
+      this.throughput = throughput;
+    }
+
+    @Override
+    public void run() {
+      final int throughput = this.throughput;
+      final IndexedAsyncPredicate<E> predicate = this.predicate;
+      final List<E> elements = ListToListAsyncMaterializer.this.elements;
+      final int size = elements.size();
+      int i = index;
+      for (int n = 0; n < throughput && i < size; ++n, ++i) {
+        if (!safeConsume(predicate, size, i, elements.get(i), LOGGER)) {
+          return;
+        }
+      }
+      if (i == size) {
+        safeConsumeComplete(predicate, size, LOGGER);
+      } else {
+        index = i;
+        taskID = getTaskID();
+        context.scheduleAfter(this);
+      }
+    }
+
+    @Override
+    public @NotNull
+    final String taskID() {
+      return taskID;
+    }
+
+    @Override
+    public int weight() {
+      return Math.min(throughput, elements.size() - index);
+    }
+  }
+
+  private class PrevTask implements Task {
+
+    private final IndexedAsyncPredicate<E> predicate;
+    private final int throughput;
+
+    private int index;
+    private String taskID;
+
+    private PrevTask(@NotNull final IndexedAsyncPredicate<E> predicate, final int index,
+        final int throughput) {
+      this.predicate = predicate;
+      this.index = index;
+      this.throughput = throughput;
+    }
+
+    @Override
+    public void run() {
+      final int throughput = this.throughput;
+      final IndexedAsyncPredicate<E> predicate = this.predicate;
+      final List<E> elements = ListToListAsyncMaterializer.this.elements;
+      final int size = elements.size();
+      int i = index;
+      for (int n = 0; n < throughput && i >= 0; ++n, --i) {
+        if (!safeConsume(predicate, size, i, elements.get(i), LOGGER)) {
+          return;
+        }
+      }
+      if (i < 0) {
+        safeConsumeComplete(predicate, size, LOGGER);
+      } else {
+        index = i;
+        taskID = getTaskID();
+        context.scheduleAfter(this);
+      }
+    }
+
+    @Override
+    public @NotNull
+    final String taskID() {
+      return taskID;
+    }
+
+    @Override
+    public int weight() {
+      return Math.min(throughput, index + 1);
+    }
   }
 }

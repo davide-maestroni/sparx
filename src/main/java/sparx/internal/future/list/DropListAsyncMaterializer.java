@@ -27,10 +27,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.IndexOverflowException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.Function;
 
 public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
@@ -39,22 +41,23 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
   private final int knownSize;
 
-  // maxElements: positive
   public DropListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      final int maxElements, @NotNull final AtomicReference<CancellationException> cancelException,
+      @Positive final int maxElements, @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    this(wrapped, maxElements, new AtomicInteger(STATUS_RUNNING), cancelException,
+    this(wrapped, maxElements, new AtomicInteger(STATUS_RUNNING), context, cancelException,
         decorateFunction);
   }
 
-  DropListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped, final int maxElements,
-      @NotNull final AtomicInteger status,
+  DropListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      @Positive final int maxElements, @NotNull final AtomicInteger status,
+      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(status);
     final int wrappedSize = wrapped.knownSize();
     knownSize = wrappedSize >= 0 ? Math.max(0, wrappedSize - maxElements) : -1;
-    setState(new ImmaterialState(wrapped, maxElements, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, maxElements, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -65,6 +68,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
+    private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
@@ -73,11 +77,13 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     private int wrappedSize;
 
-    public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int maxElements,
+    public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
+        @Positive final int maxElements, @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.maxElements = maxElements;
+      this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
@@ -213,7 +219,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         if (wrappedSize >= 0 && wrappedSize <= maxElements) {
           try {
             final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-            setState(new ListToListAsyncMaterializer<E>(materialized));
+            setState(new EmptyListAsyncMaterializer<E>(materialized));
             consumeElements(materialized);
           } catch (final Exception e) {
             if (e instanceof InterruptedException) {
@@ -228,7 +234,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
             @Override
             public void cancellableComplete(final int size) throws Exception {
               final List<E> materialized = decorateFunction.apply(elements);
-              setState(new ListToListAsyncMaterializer<E>(materialized));
+              setState(new ListToListAsyncMaterializer<E>(materialized, context));
               consumeElements(materialized);
             }
 

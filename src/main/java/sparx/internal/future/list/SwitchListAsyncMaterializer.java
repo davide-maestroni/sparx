@@ -46,7 +46,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
     this.fromContext = fromContext;
     this.fromTaskID = fromTaskID;
     this.toContext = toContext;
-    this.toTaskID = toTaskID;
+    this.toTaskID = toTaskID; // TODO: compute
     this.wrapped = wrapped;
   }
 

@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -333,6 +334,7 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   protected class WrappingState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
+    private final ExecutionContext context;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
     private final int knownSize;
@@ -341,8 +343,10 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     private int wrappedSize;
 
     protected WrappingState(@NotNull final ListAsyncMaterializer<E> wrapped,
+        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
+      this.context = context;
       this.cancelException = cancelException;
       wrappedSize = knownSize = wrapped.knownSize();
     }
@@ -440,7 +444,7 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
         wrapped.materializeElements(new CancellableAsyncConsumer<List<E>>() {
           @Override
           public void cancellableAccept(final List<E> elements) {
-            setState(new ListToListAsyncMaterializer<E>(elements));
+            setState(new ListToListAsyncMaterializer<E>(elements, context));
             for (final AsyncConsumer<List<E>> consumer : elementsConsumers) {
               safeConsume(consumer, elements, LOGGER);
             }

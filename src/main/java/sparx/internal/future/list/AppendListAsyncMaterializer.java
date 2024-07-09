@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -40,12 +41,13 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   private final boolean isMaterializedAtOnce;
 
   public AppendListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      final E element, @NotNull final AtomicReference<CancellationException> cancelException,
+      final E element, @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, E, List<E>> appendFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize());
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
-    setState(new ImmaterialState(wrapped, element, cancelException, appendFunction));
+    setState(new ImmaterialState(wrapped, element, context, cancelException, appendFunction));
   }
 
   private static int safeSize(final int wrappedSize) {
@@ -69,6 +71,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     private final BinaryFunction<List<E>, E, List<E>> appendFunction;
     private final AtomicReference<CancellationException> cancelException;
+    private final ExecutionContext context;
     private final E element;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
@@ -77,10 +80,12 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     private int wrappedSize;
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final E element,
+        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final BinaryFunction<List<E>, E, List<E>> appendFunction) {
       this.wrapped = wrapped;
       this.element = element;
+      this.context = context;
       this.cancelException = cancelException;
       this.appendFunction = appendFunction;
       wrappedSize = wrapped.knownSize();
@@ -185,7 +190,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           @Override
           public void cancellableAccept(final List<E> elements) throws Exception {
             final List<E> materialized = appendFunction.apply(elements, element);
-            setState(new ListToListAsyncMaterializer<E>(materialized));
+            setState(new ListToListAsyncMaterializer<E>(materialized, context));
             consumeElements(materialized);
           }
 

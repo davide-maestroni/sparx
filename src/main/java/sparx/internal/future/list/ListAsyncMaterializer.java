@@ -21,6 +21,7 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.CollectionAsyncMaterializer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
+import sparx.util.annotation.NotNegative;
 
 public interface ListAsyncMaterializer<E> extends CollectionAsyncMaterializer<E> {
 
@@ -32,9 +33,9 @@ public interface ListAsyncMaterializer<E> extends CollectionAsyncMaterializer<E>
 
   void materializeHasElement(int index, @NotNull AsyncConsumer<Boolean> consumer);
 
-  void materializeNextWhile(int index, @NotNull IndexedAsyncPredicate<E> predicate);
+  void materializeNextWhile(@NotNegative int index, @NotNull IndexedAsyncPredicate<E> predicate);
 
-  void materializePrevWhile(int index, @NotNull IndexedAsyncPredicate<E> predicate);
+  void materializePrevWhile(@NotNegative int index, @NotNull IndexedAsyncPredicate<E> predicate);
 
   int weightElement();
 

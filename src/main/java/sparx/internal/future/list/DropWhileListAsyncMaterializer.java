@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -39,12 +40,12 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   private final boolean isMaterializedAtOnce;
 
   public DropWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
-    setState(new ImmaterialState(wrapped, predicate, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -65,6 +66,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
+    private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
     private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
@@ -72,10 +74,12 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.predicate = predicate;
+      this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
     }
@@ -261,7 +265,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           @Override
           public void cancellableComplete(final int size) throws Exception {
             final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-            consumeState(setState(new ListToListAsyncMaterializer<E>(materialized)));
+            consumeState(setState(new EmptyListAsyncMaterializer<E>(materialized)));
           }
 
           @Override
@@ -271,11 +275,11 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
               return true;
             } else {
               if (index == 0) {
-                consumeState(setState(new WrappingState(wrapped, cancelException)));
+                consumeState(setState(new WrappingState(wrapped, context, cancelException)));
               } else {
                 consumeState(setState(
-                    new DropListAsyncMaterializer<E>(wrapped, index, status, cancelException,
-                        decorateFunction)));
+                    new DropListAsyncMaterializer<E>(wrapped, index, status, context,
+                        cancelException, decorateFunction)));
               }
             }
             return false;
