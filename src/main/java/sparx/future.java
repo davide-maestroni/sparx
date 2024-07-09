@@ -2395,9 +2395,8 @@ class future extends Sparx {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerIncludesAll(materializer, cancelException, elements));
       }
-      final ExecutionContext context = this.context;
       return new List<Boolean>(context, cancelException,
-          new IncludesAllListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
+          new IncludesAllListAsyncMaterializer<E>(materializer, elementsMaterializer,
               cancelException, List.<Boolean>decorateFunction()));
     }
 
