@@ -2490,8 +2490,9 @@ class future extends Sparx {
         return new List<E>(context, cancelException,
             lazyMaterializerInsertAfter(materializer, cancelException, numElements, element));
       }
+      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
-          new InsertAfterListAsyncMaterializer<E>(materializer, numElements, element,
+          new InsertAfterListAsyncMaterializer<E>(materializer, numElements, element, context,
               cancelException, List.<E>insertAfterFunction()));
     }
 
