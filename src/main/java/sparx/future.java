@@ -2972,7 +2972,7 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new MaxListAsyncMaterializer<E>(materializer, Require.notNull(comparator, "comparator"),
-              cancelException, List.<E>decorateFunction()));
+              context, cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -2989,7 +2989,7 @@ class future extends Sparx {
       }
       final ExecutionContext context = this.context;
       return new List<E>(context, cancelException, new MaxListAsyncMaterializer<E>(materializer,
-          reversed(Require.notNull(comparator, "comparator")), cancelException,
+          reversed(Require.notNull(comparator, "comparator")), context, cancelException,
           List.<E>decorateFunction()));
     }
 
@@ -3131,7 +3131,7 @@ class future extends Sparx {
                 Require.notNull(elements, "elements")));
       }
       return new List<E>(context, cancelException, new OrElseListAsyncMaterializer<E>(materializer,
-          getElementsMaterializer(context, taskID, Require.notNull(elements, "elements")),
+          getElementsMaterializer(context, taskID, Require.notNull(elements, "elements")), context,
           cancelException));
     }
 
@@ -3153,7 +3153,7 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<E>(context, cancelException, new OrElseListAsyncMaterializer<E>(materializer,
           new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier"), context, taskID,
-              cancelException), cancelException));
+              cancelException), context, cancelException));
     }
 
     @Override

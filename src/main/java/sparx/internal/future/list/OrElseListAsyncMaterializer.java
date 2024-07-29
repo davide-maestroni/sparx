@@ -24,8 +24,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
@@ -37,6 +39,7 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
   public OrElseListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
+      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(new AtomicInteger(STATUS_RUNNING));
     final int knownSize = wrapped.knownSize();
@@ -44,7 +47,7 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     isMaterializedAtOnce = knownSize == 0 ? elementsMaterializer.isMaterializedAtOnce()
         : knownSize > 0 ? wrapped.isMaterializedAtOnce()
             : wrapped.isMaterializedAtOnce() && elementsMaterializer.isMaterializedAtOnce();
-    setState(new ImmaterialState(wrapped, elementsMaterializer, cancelException));
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException));
   }
 
   @Override
@@ -65,15 +68,18 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
+    private final ExecutionContext context;
     private final ListAsyncMaterializer<E> elementsMaterializer;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
+        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
+      this.context = context;
       this.cancelException = cancelException;
     }
 
@@ -129,16 +135,6 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materialized(new StateConsumer<E>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-          state.materializeEach(consumer);
-        }
-      });
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -185,6 +181,28 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+          state.materializeNextWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+          state.materializePrevWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -200,18 +218,13 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
-    public int weightEach() {
-      return weightElements();
-    }
-
-    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return stateConsumers.isEmpty() ? wrapped.weightEmpty() : 1;
+      return stateConsumers.isEmpty() ? wrapped.weightNextWhile() : 1;
     }
 
     @Override
@@ -221,6 +234,16 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     @Override
     public int weightHasElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightPrevWhile() {
       return weightElements();
     }
 
@@ -245,9 +268,10 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           @Override
           public void cancellableAccept(final Boolean empty) {
             if (empty) {
-              consumeState(setState(new WrappingState(elementsMaterializer, cancelException)));
+              consumeState(
+                  setState(new WrappingState(elementsMaterializer, context, cancelException)));
             } else {
-              consumeState(setState(new WrappingState(wrapped, cancelException)));
+              consumeState(setState(new WrappingState(wrapped, context, cancelException)));
             }
           }
 

@@ -26,8 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.function.Function;
 
 public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
@@ -35,11 +37,11 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
   private static final Logger LOGGER = Logger.getLogger(MaxListAsyncMaterializer.class.getName());
 
   public MaxListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final Comparator<? super E> comparator,
+      @NotNull final Comparator<? super E> comparator, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, comparator, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, comparator, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -61,16 +63,18 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
 
     private final AtomicReference<CancellationException> cancelException;
     private final Comparator<? super E> comparator;
+    private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final Comparator<? super E> comparator,
+        @NotNull final Comparator<? super E> comparator, @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.comparator = comparator;
+      this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
     }
@@ -123,16 +127,6 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materialized(new StateConsumer<E>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-          state.materializeEach(consumer);
-        }
-      });
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -179,6 +173,28 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+          state.materializeNextWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+          state.materializePrevWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -194,18 +210,13 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
     }
 
     @Override
-    public int weightEach() {
-      return weightElements();
-    }
-
-    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return stateConsumers.isEmpty() ? wrapped.weightEach() : 1;
+      return stateConsumers.isEmpty() ? wrapped.weightNextWhile() : 1;
     }
 
     @Override
@@ -215,6 +226,16 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
 
     @Override
     public int weightHasElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightPrevWhile() {
       return weightElements();
     }
 
@@ -235,15 +256,8 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
       final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeEach(new CancellableIndexedAsyncConsumer<E>() {
+        wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           private E max;
-
-          @Override
-          public void cancellableAccept(final int size, final int index, final E element) {
-            if (index == 0 || comparator.compare(element, max) > 0) {
-              max = element;
-            }
-          }
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
@@ -252,6 +266,14 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
             } else {
               setState(max);
             }
+          }
+
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element) {
+            if (index == 0 || comparator.compare(element, max) > 0) {
+              max = element;
+            }
+            return true;
           }
 
           @Override
@@ -269,12 +291,13 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
 
     private void setState() throws Exception {
       consumeState(MaxListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
+          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()),
+              context)));
     }
 
     private void setState(final E element) throws Exception {
       consumeState(MaxListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<E>(
-          decorateFunction.apply(Collections.singletonList(element)))));
+          decorateFunction.apply(Collections.singletonList(element)), context)));
     }
   }
 }

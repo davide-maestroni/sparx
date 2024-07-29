@@ -32,6 +32,7 @@ import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.TernaryFunction;
 
 public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
@@ -41,9 +42,8 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
   private final int knownSize;
 
-  // numElements: positive
   public InsertAfterListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      final int numElements, final E element, @NotNull final ExecutionContext context,
+      @Positive final int numElements, final E element, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> insertFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
