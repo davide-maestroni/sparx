@@ -25,8 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
 import sparx.util.function.BinaryFunction;
@@ -41,13 +43,15 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
   public PrependAllListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
+      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize(), elementsMaterializer.knownSize());
     isMaterializedAtOnce =
         wrapped.isMaterializedAtOnce() && elementsMaterializer.isMaterializedAtOnce();
-    setState(new ImmaterialState(wrapped, elementsMaterializer, cancelException, prependFunction));
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
+        prependFunction));
   }
 
   private static int safeSize(final int wrappedSize, final int elementsSize) {
@@ -73,6 +77,7 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
+    private final ExecutionContext context;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
     private final ListAsyncMaterializer<E> elementsMaterializer;
@@ -84,10 +89,12 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
+        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
+      this.context = context;
       this.cancelException = cancelException;
       this.prependFunction = prependFunction;
       wrappedSize = wrapped.knownSize();
@@ -164,49 +171,6 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      elementsMaterializer.materializeEach(new CancellableIndexedAsyncConsumer<E>() {
-        @Override
-        public void cancellableAccept(final int size, final int index, final E element)
-            throws Exception {
-          final int knownSize = safeSize(wrappedSize, elementsSize = Math.max(elementsSize, size));
-          consumer.accept(knownSize, index, element);
-        }
-
-        @Override
-        public void cancellableComplete(final int size) {
-          elementsSize = size;
-          wrapped.materializeEach(new CancellableIndexedAsyncConsumer<E>() {
-            @Override
-            public void cancellableAccept(final int size, final int index, final E element)
-                throws Exception {
-              final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size),
-                  elementsSize);
-              consumer.accept(knownSize,
-                  IndexOverflowException.safeCast((long) elementsSize + index), element);
-            }
-
-            @Override
-            public void cancellableComplete(final int size) throws Exception {
-              final int knownSize = safeSize(wrappedSize = size, elementsSize);
-              consumer.complete(knownSize);
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -269,7 +233,7 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
               @Override
               public void cancellableAccept(final List<E> elements) throws Exception {
                 final List<E> materialized = prependFunction.apply(wrappedElements, elements);
-                setState(new ListToListAsyncMaterializer<E>(materialized));
+                setState(new ListToListAsyncMaterializer<E>(materialized, context));
                 consumeElements(materialized);
               }
 
@@ -401,6 +365,135 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      elementsMaterializer.materializeNextWhile(index, new CancellableIndexedAsyncPredicate<E>() {
+        @Override
+        public void cancellableComplete(final int size) {
+          elementsSize = size;
+          wrapped.materializeNextWhile(Math.max(0, index - size),
+              new CancellableIndexedAsyncPredicate<E>() {
+                @Override
+                public void cancellableComplete(final int size) throws Exception {
+                  final int knownSize = safeSize(wrappedSize = size, elementsSize);
+                  predicate.complete(knownSize);
+                }
+
+                @Override
+                public boolean cancellableTest(final int size, final int index, final E element)
+                    throws Exception {
+                  final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size),
+                      elementsSize);
+                  return predicate.test(knownSize,
+                      IndexOverflowException.safeCast((long) elementsSize + index), element);
+                }
+
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  predicate.error(error);
+                }
+              });
+        }
+
+        @Override
+        public boolean cancellableTest(final int size, final int index, final E element)
+            throws Exception {
+          final int knownSize = safeSize(wrappedSize, elementsSize = Math.max(elementsSize, size));
+          return predicate.test(knownSize, index, element);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          predicate.error(error);
+        }
+      });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      if (elementsSize >= 0) {
+        if (index < elementsSize) {
+          elementsMaterializer.materializePrevWhile(index,
+              new CancellableIndexedAsyncPredicate<E>() {
+                @Override
+                public void cancellableComplete(final int size) throws Exception {
+                  final int knownSize = safeSize(wrappedSize, elementsSize);
+                  predicate.complete(knownSize);
+                }
+
+                @Override
+                public boolean cancellableTest(final int size, final int index, final E element)
+                    throws Exception {
+                  final int knownSize = safeSize(wrappedSize, elementsSize);
+                  return predicate.test(knownSize, index, element);
+                }
+
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  predicate.error(error);
+                }
+              });
+        } else {
+          wrapped.materializePrevWhile(Math.max(0, index - elementsSize),
+              new CancellableIndexedAsyncPredicate<E>() {
+                @Override
+                public void cancellableComplete(final int size) {
+                  wrappedSize = Math.max(wrappedSize, size);
+                  elementsMaterializer.materializePrevWhile(elementsSize - 1,
+                      new CancellableIndexedAsyncPredicate<E>() {
+                        @Override
+                        public void cancellableComplete(final int size) throws Exception {
+                          final int knownSize = safeSize(wrappedSize, elementsSize);
+                          predicate.complete(knownSize);
+                        }
+
+                        @Override
+                        public boolean cancellableTest(final int size, final int index,
+                            final E element) throws Exception {
+                          final int knownSize = safeSize(wrappedSize, elementsSize);
+                          return predicate.test(knownSize, index, element);
+                        }
+
+                        @Override
+                        public void error(@NotNull final Exception error) throws Exception {
+                          predicate.error(error);
+                        }
+                      });
+                }
+
+                @Override
+                public boolean cancellableTest(final int size, final int index, final E element)
+                    throws Exception {
+                  final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size),
+                      elementsSize);
+                  return predicate.test(knownSize,
+                      IndexOverflowException.safeCast((long) elementsSize + index), element);
+                }
+
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  predicate.error(error);
+                }
+              });
+        }
+      } else {
+        elementsMaterializer.materializeSize(new CancellableAsyncConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) {
+            elementsSize = size;
+            materializePrevWhile(index, predicate);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            predicate.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       if (wrappedSize >= 0) {
         if (elementsSize >= 0) {
@@ -467,12 +560,6 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
-    public int weightEach() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightEach() + elementsMaterializer.weightEach());
-    }
-
-    @Override
     public int weightElement() {
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightElement() + elementsMaterializer.weightElement());
@@ -515,6 +602,24 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
       }
       return (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightHasElement() + elementsMaterializer.weightElement());
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightNextWhile() + elementsMaterializer.weightNextWhile());
+    }
+
+    @Override
+    public int weightPrevWhile() {
+      if (elementsSize >= 0) {
+        final ListAsyncMaterializer<E> elementsMaterializer = this.elementsMaterializer;
+        return (int) Math.min(Integer.MAX_VALUE,
+            (long) wrapped.weightPrevWhile() + elementsMaterializer.weightSize()
+                + elementsMaterializer.weightPrevWhile());
+      }
+      return (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightPrevWhile() + elementsMaterializer.weightPrevWhile());
     }
 
     @Override

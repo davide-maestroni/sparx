@@ -25,8 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Function;
 
@@ -37,10 +39,11 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
   public ReduceLeftListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
+      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, operation, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, operation, context, cancelException, decorateFunction));
   }
 
   @Override
@@ -61,6 +64,7 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
+    private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
     private final BinaryFunction<? super E, ? super E, ? extends E> operation;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
@@ -68,10 +72,12 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
+        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.operation = operation;
+      this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
     }
@@ -124,16 +130,6 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materialized(new StateConsumer<E>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-          state.materializeEach(consumer);
-        }
-      });
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -180,6 +176,28 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+          state.materializePrevWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+          state.materializeNextWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -195,18 +213,13 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
-    public int weightEach() {
-      return weightElements();
-    }
-
-    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      return stateConsumers.isEmpty() ? wrapped.weightEach() : 1;
+      return stateConsumers.isEmpty() ? wrapped.weightNextWhile() : 1;
     }
 
     @Override
@@ -216,6 +229,16 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     @Override
     public int weightHasElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightPrevWhile() {
       return weightElements();
     }
 
@@ -236,18 +259,8 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
       final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeEach(new CancellableIndexedAsyncConsumer<E>() {
+        wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           private E current;
-
-          @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            if (index > 0) {
-              current = operation.apply(current, element);
-            } else {
-              current = element;
-            }
-          }
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
@@ -256,6 +269,17 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
             } else {
               setState();
             }
+          }
+
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            if (index > 0) {
+              current = operation.apply(current, element);
+            } else {
+              current = element;
+            }
+            return true;
           }
 
           @Override
@@ -273,12 +297,13 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     private void setState() throws Exception {
       consumeState(ReduceLeftListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
+          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()),
+              context)));
     }
 
     private void setState(final E result) throws Exception {
       consumeState(ReduceLeftListAsyncMaterializer.this.setState(new ListToListAsyncMaterializer<E>(
-          decorateFunction.apply(Collections.singletonList(result)))));
+          decorateFunction.apply(Collections.singletonList(result)), context)));
     }
   }
 }
