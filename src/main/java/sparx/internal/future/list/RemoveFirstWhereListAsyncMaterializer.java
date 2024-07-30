@@ -26,9 +26,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
-import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
@@ -120,25 +120,96 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (element == null) {
-        new MaterializingContainsNullAsyncConsumer(consumer).run();
+        wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            consumer.accept(false);
+          }
+
+          @Override
+          @SuppressWarnings("unchecked")
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            if (testedIndex < index) {
+              try {
+                if (predicate.test(index, element)) {
+                  final ListAsyncMaterializer<E> state = setState(index);
+                  if (index == 0) {
+                    state.materializeContains(null, consumer);
+                  } else {
+                    new DropListAsyncMaterializer<E>(state, index, context, cancelException,
+                        (Function<List<E>, List<E>>) DUMMY_DECORATE_FUNCTION).materializeContains(
+                        null, consumer);
+                  }
+                  return false;
+                }
+              } catch (final Exception e) {
+                setError(e);
+                throw e;
+              }
+              testedIndex = index;
+            }
+            if (element == null) {
+              consumer.accept(true);
+              return false;
+            }
+            return true;
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       } else {
-        new MaterializingContainsElementAsyncConsumer(element, consumer).run();
+        final Object other = element;
+        wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            consumer.accept(false);
+          }
+
+          @Override
+          @SuppressWarnings("unchecked")
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            if (testedIndex < index) {
+              try {
+                if (predicate.test(index, element)) {
+                  final ListAsyncMaterializer<E> state = setState(index);
+                  if (index == 0) {
+                    state.materializeContains(null, consumer);
+                  } else {
+                    new DropListAsyncMaterializer<E>(state, index, context, cancelException,
+                        (Function<List<E>, List<E>>) DUMMY_DECORATE_FUNCTION).materializeContains(
+                        null, consumer);
+                  }
+                  return false;
+                }
+              } catch (final Exception e) {
+                setError(e);
+                throw e;
+              }
+              testedIndex = index;
+            }
+            if (other.equals(element)) {
+              consumer.accept(true);
+              return false;
+            }
+            return true;
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       }
     }
 
     @Override
     public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
       safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materialized(new StateConsumer<E>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-          state.materializeEach(consumer);
-        }
-      });
     }
 
     @Override
@@ -165,8 +236,41 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           }
         });
       } else {
-        wrapped.materializeElement(testedIndex + 1,
-            new MaterializingElementAsyncConsumer(index, consumer));
+        final int originalIndex = index;
+        wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            consumer.complete(size);
+          }
+
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            if (testedIndex < index) {
+              try {
+                if (predicate.test(index, element)) {
+                  final ListAsyncMaterializer<E> state = setState(index);
+                  state.materializeElement(originalIndex, consumer);
+                  return false;
+                }
+              } catch (final Exception e) {
+                setError(e);
+                throw e;
+              }
+              testedIndex = index;
+            }
+            if (originalIndex == index) {
+              consumer.accept(-1, index, element);
+              return false;
+            }
+            return true;
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       }
     }
 
@@ -224,8 +328,112 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
       } else if (index <= testedIndex) {
         safeConsume(consumer, true, LOGGER);
       } else {
-        wrapped.materializeElement(testedIndex + 1,
-            new MaterializingHasElementAsyncConsumer(index, consumer));
+        final int originalIndex = index;
+        wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            consumer.accept(false);
+          }
+
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            if (testedIndex < index) {
+              try {
+                if (predicate.test(index, element)) {
+                  final ListAsyncMaterializer<E> state = setState(index);
+                  state.materializeHasElement(originalIndex, consumer);
+                  return false;
+                }
+              } catch (final Exception e) {
+                setError(e);
+                throw e;
+              }
+              testedIndex = index;
+            }
+            if (originalIndex == index) {
+              consumer.accept(true);
+              return false;
+            }
+            return true;
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      final int originalIndex = index;
+      wrapped.materializeNextWhile(Math.min(index, testedIndex + 1),
+          new CancellableIndexedAsyncPredicate<E>() {
+            @Override
+            public void cancellableComplete(final int size) throws Exception {
+              predicate.complete(size);
+            }
+
+            @Override
+            public boolean cancellableTest(final int size, final int index, final E element)
+                throws Exception {
+              if (testedIndex < index) {
+                try {
+                  if (ImmaterialState.this.predicate.test(index, element)) {
+                    final ListAsyncMaterializer<E> state = setState(index);
+                    state.materializeNextWhile(index, predicate);
+                    return false;
+                  }
+                } catch (final Exception e) {
+                  setError(e);
+                  throw e;
+                }
+                testedIndex = index;
+              }
+              if (originalIndex <= index) {
+                return predicate.test(-1, index, element);
+              }
+              return true;
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              predicate.error(error);
+            }
+          });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      if (index <= testedIndex) {
+        wrapped.materializePrevWhile(index, new CancellableIndexedAsyncPredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            predicate.complete(-1);
+          }
+
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            return predicate.test(-1, index, element);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            predicate.error(error);
+          }
+        });
+      } else {
+        materialized(new StateConsumer<E>() {
+          @Override
+          public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+            state.materializePrevWhile(index, predicate);
+          }
+        });
       }
     }
 
@@ -241,22 +449,18 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
 
     @Override
     public int weightContains() {
-      return wrapped.weightElement();
-    }
-
-    @Override
-    public int weightEach() {
-      return weightElements();
+      return wrapped.weightNextWhile();
     }
 
     @Override
     public int weightElement() {
-      return wrapped.weightElement();
+      final ListAsyncMaterializer<E> wrapped = this.wrapped;
+      return Math.max(wrapped.weightElement(), wrapped.weightNextWhile());
     }
 
     @Override
     public int weightElements() {
-      return stateConsumers.isEmpty() ? wrapped.weightElement() : 1;
+      return stateConsumers.isEmpty() ? wrapped.weightNextWhile() : 1;
     }
 
     @Override
@@ -266,12 +470,22 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
 
     @Override
     public int weightHasElement() {
-      return wrapped.weightElement();
+      return wrapped.weightNextWhile();
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return wrapped.weightNextWhile();
+    }
+
+    @Override
+    public int weightPrevWhile() {
+      return Math.max(wrapped.weightPrevWhile(), weightElements());
     }
 
     @Override
     public int weightSize() {
-      return wrapped.weightElement();
+      return weightElements();
     }
 
     private void consumeState(@NotNull final ListAsyncMaterializer<E> state) {
@@ -282,16 +496,34 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
       stateConsumers.clear();
     }
 
-    private @NotNull String getTaskID() {
-      final String taskID = context.currentTaskID();
-      return taskID != null ? taskID : "";
-    }
-
     private void materialized(@NotNull final StateConsumer<E> consumer) {
       final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeElement(testedIndex + 1, new MaterializingAsyncConsumer());
+        wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) {
+            setState(new WrappingState(wrapped, context, cancelException));
+          }
+
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            if (testedIndex < index) {
+              if (predicate.test(index, element)) {
+                setState(index);
+                return false;
+              }
+              testedIndex = index;
+            }
+            return true;
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            setError(error);
+          }
+        });
       }
     }
 
@@ -312,341 +544,10 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
       return state;
     }
 
-    private @NotNull ListAsyncMaterializer<E> setState(
-        @NotNull final ListAsyncMaterializer<E> newState) {
+    private void setState(@NotNull final ListAsyncMaterializer<E> newState) {
       final ListAsyncMaterializer<E> state = RemoveFirstWhereListAsyncMaterializer.this.setState(
           newState);
       consumeState(state);
-      return state;
-    }
-
-    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
-        Task {
-
-      private int index;
-      private String taskID;
-
-      @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        if (testedIndex < index) {
-          if (predicate.test(index, element)) {
-            setState(index);
-            return;
-          }
-          testedIndex = index;
-        }
-        if (!stateConsumers.isEmpty()) {
-          this.index = index + 1;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void cancellableComplete(final int size) {
-        consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) {
-        setError(error);
-      }
-
-      @Override
-      public void run() {
-        wrapped.materializeElement(index, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return wrapped.weightElement();
-      }
-    }
-
-    private class MaterializingContainsElementAsyncConsumer extends
-        CancellableIndexedAsyncConsumer<E> implements Task {
-
-      private final AsyncConsumer<Boolean> consumer;
-      private final Object element;
-
-      private int index;
-      private String taskID;
-
-      private MaterializingContainsElementAsyncConsumer(@NotNull final Object element,
-          @NotNull final AsyncConsumer<Boolean> consumer) {
-        this.element = element;
-        this.consumer = consumer;
-      }
-
-      @Override
-      @SuppressWarnings("unchecked")
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        if (testedIndex < index) {
-          try {
-            if (predicate.test(index, element)) {
-              final ListAsyncMaterializer<E> state = setState(index);
-              if (index == 0) {
-                state.materializeContains(this.element, consumer);
-              } else {
-                new DropListAsyncMaterializer<E>(state, index, context, cancelException,
-                    (Function<List<E>, List<E>>) DUMMY_DECORATE_FUNCTION).materializeContains(
-                    this.element, consumer);
-              }
-              return;
-            }
-          } catch (final Exception e) {
-            setError(e);
-            throw e;
-          }
-          testedIndex = index;
-        }
-        if (this.element.equals(element)) {
-          consumer.accept(true);
-        } else {
-          this.index = index + 1;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void cancellableComplete(final int size) throws Exception {
-        consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
-        consumer.accept(false);
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) throws Exception {
-        consumer.error(error);
-      }
-
-      @Override
-      public void run() {
-        wrapped.materializeElement(index, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        final ListAsyncMaterializer<E> wrapped = RemoveFirstWhereListAsyncMaterializer.ImmaterialState.this.wrapped;
-        return (int) Math.min(Integer.MAX_VALUE,
-            (long) wrapped.weightElement() + wrapped.weightContains());
-      }
-    }
-
-    private class MaterializingContainsNullAsyncConsumer extends
-        CancellableIndexedAsyncConsumer<E> implements Task {
-
-      private final AsyncConsumer<Boolean> consumer;
-
-      private int index;
-      private String taskID;
-
-      private MaterializingContainsNullAsyncConsumer(
-          @NotNull final AsyncConsumer<Boolean> consumer) {
-        this.consumer = consumer;
-      }
-
-      @Override
-      @SuppressWarnings("unchecked")
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        if (testedIndex < index) {
-          try {
-            if (predicate.test(index, element)) {
-              final ListAsyncMaterializer<E> state = setState(index);
-              if (index == 0) {
-                state.materializeContains(null, consumer);
-              } else {
-                new DropListAsyncMaterializer<E>(state, index, context, cancelException,
-                    (Function<List<E>, List<E>>) DUMMY_DECORATE_FUNCTION).materializeContains(null,
-                    consumer);
-              }
-              return;
-            }
-          } catch (final Exception e) {
-            setError(e);
-            throw e;
-          }
-          testedIndex = index;
-        }
-        if (element == null) {
-          consumer.accept(true);
-        } else {
-          this.index = index + 1;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void cancellableComplete(final int size) throws Exception {
-        consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
-        consumer.accept(false);
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) throws Exception {
-        consumer.error(error);
-      }
-
-      @Override
-      public void run() {
-        wrapped.materializeElement(index, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        final ListAsyncMaterializer<E> wrapped = RemoveFirstWhereListAsyncMaterializer.ImmaterialState.this.wrapped;
-        return (int) Math.min(Integer.MAX_VALUE,
-            (long) wrapped.weightElement() + wrapped.weightContains());
-      }
-    }
-
-    private class MaterializingElementAsyncConsumer extends
-        CancellableIndexedAsyncConsumer<E> implements Task {
-
-      private final IndexedAsyncConsumer<E> consumer;
-      private final int index;
-
-      private String taskID;
-
-      private MaterializingElementAsyncConsumer(final int index,
-          @NotNull final IndexedAsyncConsumer<E> consumer) {
-        this.index = index;
-        this.consumer = consumer;
-      }
-
-      @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        if (testedIndex < index) {
-          try {
-            if (predicate.test(index, element)) {
-              setState(index).materializeElement(this.index, consumer);
-              return;
-            }
-          } catch (final Exception e) {
-            setError(e);
-            throw e;
-          }
-          testedIndex = index;
-        }
-        if (this.index == index) {
-          consumer.accept(-1, index, element);
-        } else {
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void cancellableComplete(final int size) throws Exception {
-        consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
-        consumer.complete(size);
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) throws Exception {
-        consumer.error(error);
-      }
-
-      @Override
-      public void run() {
-        wrapped.materializeElement(testedIndex + 1, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        final long weight = wrapped.weightElement();
-        return (int) Math.min(Integer.MAX_VALUE, weight << 1);
-      }
-    }
-
-    private class MaterializingHasElementAsyncConsumer extends
-        CancellableIndexedAsyncConsumer<E> implements Task {
-
-      private final AsyncConsumer<Boolean> consumer;
-      private final int index;
-
-      private String taskID;
-
-      private MaterializingHasElementAsyncConsumer(final int index,
-          @NotNull final AsyncConsumer<Boolean> consumer) {
-        this.index = index;
-        this.consumer = consumer;
-      }
-
-      @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        if (testedIndex < index) {
-          try {
-            if (predicate.test(index, element)) {
-              setState(index).materializeHasElement(this.index, consumer);
-              return;
-            }
-          } catch (final Exception e) {
-            setError(e);
-            throw e;
-          }
-          testedIndex = index;
-        }
-        if (this.index == index) {
-          consumer.accept(true);
-        } else {
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void cancellableComplete(final int size) {
-        consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) throws Exception {
-        consumer.error(error);
-      }
-
-      @Override
-      public void run() {
-        wrapped.materializeElement(testedIndex + 1, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        final ListAsyncMaterializer<E> wrapped = RemoveFirstWhereListAsyncMaterializer.ImmaterialState.this.wrapped;
-        return (int) Math.min(Integer.MAX_VALUE,
-            (long) wrapped.weightElement() + wrapped.weightHasElement());
-      }
     }
   }
 }

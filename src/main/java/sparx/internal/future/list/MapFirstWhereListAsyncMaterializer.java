@@ -472,8 +472,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
 
     @Override
     public int weightPrevWhile() {
-      final ListAsyncMaterializer<E> wrapped = this.wrapped;
-      return Math.max(wrapped.weightPrevWhile(), wrapped.weightNextWhile());
+      return Math.max(wrapped.weightPrevWhile(), weightElements());
     }
 
     @Override

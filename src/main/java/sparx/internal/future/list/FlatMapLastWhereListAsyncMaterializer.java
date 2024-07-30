@@ -287,7 +287,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
       wrapped.materializePrevWhile(wrappedSize - 1, new CancellableIndexedAsyncPredicate<E>() {
         @Override
         public void cancellableComplete(final int size) {
-          consumeState(setState(setState(new WrappingState(wrapped, context, cancelException))));
+          consumeState(setState(new WrappingState(wrapped, context, cancelException)));
         }
 
         @Override
@@ -300,7 +300,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           } else if (index > 0) {
             return true;
           } else {
-            consumeState(setState(setState(new WrappingState(wrapped, context, cancelException))));
+            consumeState(setState(new WrappingState(wrapped, context, cancelException)));
           }
           return false;
         }

@@ -291,7 +291,7 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
           @Override
           public void cancellableComplete(final int size) {
             wrappedSize = Math.max(wrappedSize, size);
-            consumeState(setState(setState(new WrappingState(wrapped, context, cancelException))));
+            consumeState(setState(new WrappingState(wrapped, context, cancelException)));
           }
 
           @Override
