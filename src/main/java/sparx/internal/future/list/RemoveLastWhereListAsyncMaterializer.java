@@ -26,9 +26,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
-import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.IndexedPredicate;
 
@@ -64,8 +64,6 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
-    private int wrappedSize;
-
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final ExecutionContext context,
@@ -76,7 +74,6 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
       this.context = context;
       this.cancelException = cancelException;
       this.removeFunction = removeFunction;
-      wrappedSize = wrapped.knownSize();
     }
 
     @Override
@@ -127,16 +124,6 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
     }
 
     @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materialized(new StateConsumer<E>() {
-        @Override
-        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-          state.materializeEach(consumer);
-        }
-      });
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -163,14 +150,23 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      if (wrappedSize > 1) {
+      final int knownSize = wrapped.knownSize();
+      if (knownSize > 1) {
         safeConsume(consumer, false, LOGGER);
-      } else if (wrappedSize < 0) {
+      } else if (knownSize < 0) {
         wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void cancellableAccept(final Integer size) {
-            wrappedSize = size;
-            materializeEmpty(consumer);
+          public void cancellableAccept(final Integer size) throws Exception {
+            if (size > 1) {
+              consumer.accept(false);
+            } else {
+              materialized(new StateConsumer<E>() {
+                @Override
+                public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+                  state.materializeEmpty(consumer);
+                }
+              });
+            }
           }
 
           @Override
@@ -200,6 +196,28 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+          state.materializeNextWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListAsyncMaterializer<E> state) {
+          state.materializePrevWhile(index, predicate);
+        }
+      });
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -215,34 +233,32 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
     }
 
     @Override
-    public int weightEach() {
-      return weightElements();
-    }
-
-    @Override
     public int weightElement() {
       return weightElements();
     }
 
     @Override
     public int weightElements() {
-      if (stateConsumers.isEmpty()) {
-        if (wrappedSize < 0) {
-          return (int) Math.min(Integer.MAX_VALUE,
-              (long) wrapped.weightSize() + wrapped.weightElement());
-        }
-        return wrapped.weightElement();
-      }
-      return 1;
+      return stateConsumers.isEmpty() ? wrapped.weightPrevWhile() : 1;
     }
 
     @Override
     public int weightEmpty() {
-      return wrappedSize <= 1 ? weightElements() : 1;
+      return wrapped.knownSize() <= 1 ? weightElements() : 1;
     }
 
     @Override
     public int weightHasElement() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightNextWhile() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightPrevWhile() {
       return weightElements();
     }
 
@@ -259,31 +275,33 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
       stateConsumers.clear();
     }
 
-    private @NotNull String getTaskID() {
-      final String taskID = context.currentTaskID();
-      return taskID != null ? taskID : "";
-    }
-
     private void materialized(@NotNull final StateConsumer<E> consumer) {
       final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        if (wrappedSize < 0) {
-          wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
-            @Override
-            public void cancellableAccept(final Integer size) {
-              wrappedSize = size;
-              wrapped.materializeElement(size - 1, new MaterializingAsyncConsumer());
-            }
+        wrapped.materializePrevWhile(Integer.MAX_VALUE, new CancellableIndexedAsyncPredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) {
+            consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+          }
 
-            @Override
-            public void error(@NotNull final Exception error) {
-              setError(error);
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            if (predicate.test(index, element)) {
+              consumeState(setState(
+                  new RemoveAfterListAsyncMaterializer<E>(wrapped, index, status, context,
+                      cancelException, removeFunction)));
+              return false;
             }
-          });
-        } else {
-          wrapped.materializeElement(wrappedSize - 1, new MaterializingAsyncConsumer());
-        }
+            return true;
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            setError(error);
+          }
+        });
       }
     }
 
@@ -293,51 +311,6 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
         consumeState(setCancelled(exception));
       } else {
         consumeState(setFailed(error));
-      }
-    }
-
-    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
-        Task {
-
-      private int index;
-      private String taskID;
-
-      @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        if (predicate.test(index, element)) {
-          consumeState(setState(
-              new RemoveAfterListAsyncMaterializer<E>(wrapped, index, status, context,
-                  cancelException, removeFunction)));
-        } else {
-          if (index > 0) {
-            this.index = index - 1;
-            taskID = getTaskID();
-            context.scheduleAfter(this);
-          } else {
-            consumeState(setState(setState(new WrappingState(wrapped, cancelException))));
-          }
-        }
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) {
-        setError(error);
-      }
-
-      @Override
-      public void run() {
-        wrapped.materializeElement(index, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return wrapped.weightElement();
       }
     }
   }
