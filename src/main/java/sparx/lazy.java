@@ -2398,7 +2398,8 @@ public class lazy extends Sparx {
 
     public @NotNull future.List<E> asFuture(@NotNull final ExecutionContext context) {
       return new future.List<E>(Require.notNull(context, "context"),
-          new AtomicReference<CancellationException>(), new ListToListAsyncMaterializer<E>(this));
+          new AtomicReference<CancellationException>(),
+          new ListToListAsyncMaterializer<E>(this, context));
     }
 
     @Override
@@ -4107,7 +4108,7 @@ public class lazy extends Sparx {
     public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext context) {
       return new future.List<E>(Require.notNull(context, "context"),
           new AtomicReference<CancellationException>(),
-          new ListToListAsyncMaterializer<E>(materialized()));
+          new ListToListAsyncMaterializer<E>(materialized(), context));
     }
 
     @Override

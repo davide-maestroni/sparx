@@ -28,6 +28,7 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.ContextAsyncConsumer;
 import sparx.internal.future.ContextIndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 
 public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
@@ -37,16 +38,14 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   private final ExecutionContext fromContext;
   private final String fromTaskID;
   private final ExecutionContext toContext;
-  private final String toTaskID;
   private final ListAsyncMaterializer<E> wrapped;
 
   public SwitchListAsyncMaterializer(@NotNull final ExecutionContext fromContext,
       @NotNull final String fromTaskID, @NotNull final ExecutionContext toContext,
-      @NotNull final String toTaskID, @NotNull final ListAsyncMaterializer<E> wrapped) {
+      @NotNull final ListAsyncMaterializer<E> wrapped) {
     this.fromContext = fromContext;
     this.fromTaskID = fromTaskID;
     this.toContext = toContext;
-    this.toTaskID = toTaskID; // TODO: compute
     this.wrapped = wrapped;
   }
 
@@ -103,7 +102,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     final ContextAsyncConsumer<Boolean> switchConsumer = new ContextAsyncConsumer<Boolean>(
-        toContext, toTaskID, consumer, LOGGER);
+        toContext, getTaskID(), consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
       public void run() {
@@ -129,7 +128,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
     final ContextAsyncConsumer<List<E>> switchConsumer = new ContextAsyncConsumer<List<E>>(
-        toContext, toTaskID, consumer, LOGGER);
+        toContext, getTaskID(), consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
       public void run() {
@@ -153,35 +152,9 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    final ContextIndexedAsyncConsumer<E> switchConsumer = new ContextIndexedAsyncConsumer<E>(
-        toContext, toTaskID, consumer, LOGGER);
-    fromContext.scheduleAfter(new Task() {
-      @Override
-      public void run() {
-        try {
-          wrapped.materializeEach(switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, e, LOGGER);
-        }
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return fromTaskID;
-      }
-
-      @Override
-      public int weight() {
-        return wrapped.weightEach();
-      }
-    });
-  }
-
-  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     final ContextIndexedAsyncConsumer<E> switchConsumer = new ContextIndexedAsyncConsumer<E>(
-        toContext, toTaskID, consumer, LOGGER);
+        toContext, getTaskID(), consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
       public void run() {
@@ -207,7 +180,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
     final ContextAsyncConsumer<List<E>> switchConsumer = new ContextAsyncConsumer<List<E>>(
-        toContext, toTaskID, consumer, LOGGER);
+        toContext, getTaskID(), consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
       public void run() {
@@ -233,7 +206,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   @Override
   public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
     final ContextAsyncConsumer<Boolean> switchConsumer = new ContextAsyncConsumer<Boolean>(
-        toContext, toTaskID, consumer, LOGGER);
+        toContext, getTaskID(), consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
       public void run() {
@@ -260,7 +233,7 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   public void materializeHasElement(final int index,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     final ContextAsyncConsumer<Boolean> switchConsumer = new ContextAsyncConsumer<Boolean>(
-        toContext, toTaskID, consumer, LOGGER);
+        toContext, getTaskID(), consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
       public void run() {
@@ -284,9 +257,65 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public void materializeNextWhile(final int index,
+      @NotNull final IndexedAsyncPredicate<E> predicate) {
+    final NextIndexedAsyncConsumer nextConsumer = new NextIndexedAsyncConsumer(toContext,
+        getTaskID(), predicate, LOGGER);
+    final ContextIndexedAsyncConsumer<E> switchConsumer = nextConsumer.switchConsumer();
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeElement(index, switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElement();
+      }
+    });
+  }
+
+  @Override
+  public void materializePrevWhile(final int index,
+      @NotNull final IndexedAsyncPredicate<E> predicate) {
+    final PrevIndexedAsyncConsumer nextConsumer = new PrevIndexedAsyncConsumer(toContext,
+        getTaskID(), predicate, LOGGER);
+    final ContextIndexedAsyncConsumer<E> switchConsumer = nextConsumer.switchConsumer();
+    fromContext.scheduleAfter(new Task() {
+      @Override
+      public void run() {
+        try {
+          wrapped.materializeElement(index, switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElement();
+      }
+    });
+  }
+
+  @Override
   public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
     final ContextAsyncConsumer<Integer> switchConsumer = new ContextAsyncConsumer<Integer>(
-        toContext, toTaskID, consumer, LOGGER);
+        toContext, getTaskID(), consumer, LOGGER);
     fromContext.scheduleAfter(new Task() {
       @Override
       public void run() {
@@ -315,11 +344,6 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public int weightEach() {
-    return 1;
-  }
-
-  @Override
   public int weightElement() {
     return 1;
   }
@@ -340,7 +364,151 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public int weightNextWhile() {
+    return 1;
+  }
+
+  @Override
+  public int weightPrevWhile() {
+    return 1;
+  }
+
+  @Override
   public int weightSize() {
     return 1;
+  }
+
+  private @NotNull String getTaskID() {
+    final String taskID = toContext.currentTaskID();
+    return taskID != null ? taskID : "";
+  }
+
+  private class NextIndexedAsyncConsumer implements IndexedAsyncConsumer<E> {
+
+    private final ContextIndexedAsyncConsumer<E> switchConsumer;
+    private final IndexedAsyncPredicate<E> predicate;
+
+    public NextIndexedAsyncConsumer(@NotNull final ExecutionContext context,
+        @NotNull final String taskID, @NotNull final IndexedAsyncPredicate<E> predicate,
+        @NotNull final Logger logger) {
+      this.predicate = predicate;
+      switchConsumer = new ContextIndexedAsyncConsumer<E>(context, taskID, this, logger);
+    }
+
+    @Override
+    public void accept(final int size, final int index, final E element) throws Exception {
+      if (predicate.test(size, index, element)) {
+        fromContext.scheduleAfter(new Task() {
+          @Override
+          public void run() {
+            try {
+              wrapped.materializeElement(index + 1, switchConsumer);
+            } catch (final Exception e) {
+              safeConsumeError(switchConsumer, e, LOGGER);
+            }
+          }
+
+          @Override
+          public @NotNull String taskID() {
+            return fromTaskID;
+          }
+
+          @Override
+          public int weight() {
+            return wrapped.weightElement();
+          }
+        });
+      }
+    }
+
+    @Override
+    public void complete(final int size) throws Exception {
+      predicate.complete(size);
+    }
+
+    @Override
+    public void error(@NotNull final Exception error) throws Exception {
+      predicate.error(error);
+    }
+
+    private @NotNull ContextIndexedAsyncConsumer<E> switchConsumer() {
+      return switchConsumer;
+    }
+  }
+
+  private class PrevIndexedAsyncConsumer implements IndexedAsyncConsumer<E> {
+
+    private final ContextIndexedAsyncConsumer<E> switchConsumer;
+    private final IndexedAsyncPredicate<E> predicate;
+
+    public PrevIndexedAsyncConsumer(@NotNull final ExecutionContext context,
+        @NotNull final String taskID, @NotNull final IndexedAsyncPredicate<E> predicate,
+        @NotNull final Logger logger) {
+      this.predicate = predicate;
+      switchConsumer = new ContextIndexedAsyncConsumer<E>(context, taskID, this, logger);
+    }
+
+    @Override
+    public void accept(final int size, final int index, final E element) throws Exception {
+      if (predicate.test(size, index, element)) {
+        if (index == 0) {
+          predicate.complete(size);
+        } else {
+          fromContext.scheduleAfter(new Task() {
+            @Override
+            public void run() {
+              try {
+                wrapped.materializeElement(index - 1, switchConsumer);
+              } catch (final Exception e) {
+                safeConsumeError(switchConsumer, e, LOGGER);
+              }
+            }
+
+            @Override
+            public @NotNull String taskID() {
+              return fromTaskID;
+            }
+
+            @Override
+            public int weight() {
+              return wrapped.weightElement();
+            }
+          });
+        }
+      }
+    }
+
+    @Override
+    public void complete(final int size) {
+      fromContext.scheduleAfter(new Task() {
+        @Override
+        public void run() {
+          try {
+            wrapped.materializeElement(size - 1, switchConsumer);
+          } catch (final Exception e) {
+            safeConsumeError(switchConsumer, e, LOGGER);
+          }
+        }
+
+        @Override
+        public @NotNull String taskID() {
+          return fromTaskID;
+        }
+
+        @Override
+        public int weight() {
+          return wrapped.weightElement();
+        }
+      });
+    }
+
+    @Override
+    public void error(@NotNull final Exception error) throws Exception {
+      predicate.error(error);
+    }
+
+    private @NotNull ContextIndexedAsyncConsumer<E> switchConsumer() {
+      return switchConsumer;
+    }
   }
 }

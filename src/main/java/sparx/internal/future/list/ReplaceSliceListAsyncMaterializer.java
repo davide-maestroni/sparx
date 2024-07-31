@@ -67,8 +67,12 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
       final int elementsSize = elementsMaterializer.knownSize();
       this.knownSize = elementsSize >= 0 ? SizeOverflowException.safeCast(
           (long) knownSize - materializedLength + elementsSize) : -1;
-      setState(new MaterialState(wrapped, materializedStart, materializedLength, knownSize,
-          elementsMaterializer, context, cancelException, decorateFunction));
+      if (materializedLength == 0) {
+        setState(new WrappingState(wrapped, context, cancelException));
+      } else {
+        setState(new MaterialState(wrapped, materializedStart, materializedLength, knownSize,
+            elementsMaterializer, context, cancelException, decorateFunction));
+      }
     } else {
       this.knownSize = -1;
       setState(

@@ -63,8 +63,13 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
       }
       final int materializedLength = Math.max(0, materializedEnd - materializedStart);
       this.knownSize = knownSize - materializedLength;
-      setState(new MaterialState(wrapped, materializedStart, materializedLength, knownSize, context,
-          cancelException, decorateFunction));
+      if (materializedLength == 0) {
+        setState(new WrappingState(wrapped, context, cancelException));
+      } else {
+        setState(
+            new MaterialState(wrapped, materializedStart, materializedLength, knownSize, context,
+                cancelException, decorateFunction));
+      }
     } else {
       this.knownSize = -1;
       setState(
