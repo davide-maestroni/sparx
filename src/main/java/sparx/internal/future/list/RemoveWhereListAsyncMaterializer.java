@@ -21,19 +21,16 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
-import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
@@ -113,52 +110,68 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
+    @SuppressWarnings("SuspiciousMethodCalls")
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (element == null) {
-        new MaterializingContainsNullAsyncConsumer(consumer).run();
-      } else {
-        new MaterializingContainsElementAsyncConsumer(element, consumer).run();
-      }
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
-    public void materializeEach(@NotNull final IndexedAsyncConsumer<E> consumer) {
-      materializeUntil(Integer.MAX_VALUE, false, consumer);
-    }
-
-    @Override
-    public void materializeElement(final int index,
-        @NotNull final IndexedAsyncConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        final ArrayList<E> elements = this.elements;
-        if (elements.size() > index) {
-          safeConsume(consumer, -1, index, elements.get(index), LOGGER);
+        if (elements.contains(null)) {
+          safeConsume(consumer, true, LOGGER);
         } else {
-          materializeUntil(index, true, new IndexedAsyncConsumer<E>() {
-            private E lastElement;
-            private int lastIndex = -1;
-
+          materializeUntil(elements.size(), new IndexedAsyncConsumer<E>() {
             @Override
-            public void accept(final int size, final int index, final E element) {
-              lastIndex = index;
-              lastElement = element;
+            public void accept(final int size, final int index, final E element) throws Exception {
+              if (element == null) {
+                consumer.accept(true);
+              } else {
+                int i = index;
+                while (i < elements.size()) {
+                  if (elements.get(i) == null) {
+                    consumer.accept(true);
+                    return;
+                  }
+                  ++i;
+                }
+                materializeUntil(i, this);
+              }
             }
 
             @Override
             public void complete(final int size) throws Exception {
-              if (lastIndex < index) {
-                consumer.complete(size);
+              consumer.accept(false);
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
+        }
+      } else {
+        if (elements.contains(element)) {
+          safeConsume(consumer, true, LOGGER);
+        } else {
+          final Object other = element;
+          materializeUntil(elements.size(), new IndexedAsyncConsumer<E>() {
+            @Override
+            public void accept(final int size, final int index, final E element) throws Exception {
+              if (other.equals(element)) {
+                consumer.accept(true);
               } else {
-                consumer.accept(-1, lastIndex, lastElement);
+                int i = index;
+                while (i < elements.size()) {
+                  if (other.equals(elements.get(i))) {
+                    consumer.accept(true);
+                    return;
+                  }
+                  ++i;
+                }
+                materializeUntil(i, this);
               }
+            }
+
+            @Override
+            public void complete(final int size) throws Exception {
+              consumer.accept(false);
             }
 
             @Override
@@ -171,8 +184,28 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
+    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
+      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
+    }
+
+    @Override
+    public void materializeElement(final int index,
+        @NotNull final IndexedAsyncConsumer<E> consumer) {
+      if (index < 0) {
+        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+      } else {
+        final ArrayList<E> elements = this.elements;
+        if (elements.size() > index) {
+          safeConsume(consumer, -1, index, elements.get(index), LOGGER);
+        } else {
+          materializeUntil(index, consumer);
+        }
+      }
+    }
+
+    @Override
     public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-      materializeUntil(Integer.MAX_VALUE, true, new IndexedAsyncConsumer<E>() {
+      materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E element) {
         }
@@ -191,14 +224,15 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     @Override
     public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      materializeUntil(0, true, new IndexedAsyncConsumer<E>() {
+      materializeUntil(0, new IndexedAsyncConsumer<E>() {
         @Override
-        public void accept(final int size, final int index, final E element) {
+        public void accept(final int size, final int index, final E element) throws Exception {
+          consumer.accept(false);
         }
 
         @Override
         public void complete(final int size) throws Exception {
-          consumer.accept(size == 0);
+          consumer.accept(true);
         }
 
         @Override
@@ -218,17 +252,15 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
         if (elements.size() > index) {
           safeConsume(consumer, true, LOGGER);
         } else {
-          materializeUntil(index, true, new IndexedAsyncConsumer<E>() {
-            private int lastIndex = -1;
-
+          materializeUntil(index, new IndexedAsyncConsumer<E>() {
             @Override
-            public void accept(final int size, final int index, final E element) {
-              lastIndex = index;
+            public void accept(final int size, final int index, final E element) throws Exception {
+              consumer.accept(true);
             }
 
             @Override
             public void complete(final int size) throws Exception {
-              consumer.accept(lastIndex == index);
+              consumer.accept(false);
             }
 
             @Override
@@ -241,8 +273,84 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
+    public void materializeNextWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      int i = index;
+      while (i < elements.size()) {
+        if (!safeConsume(predicate, -1, i, elements.get(i), LOGGER)) {
+          return;
+        }
+        ++i;
+      }
+      materializeUntil(i, new IndexedAsyncConsumer<E>() {
+        @Override
+        public void accept(final int size, final int index, final E element) throws Exception {
+          int i = index;
+          while (i < elements.size()) {
+            if (!predicate.test(size, i, elements.get(i))) {
+              return;
+            }
+            ++i;
+          }
+          materializeUntil(i, this);
+        }
+
+        @Override
+        public void complete(final int size) throws Exception {
+          predicate.complete(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          predicate.error(error);
+        }
+      });
+    }
+
+    @Override
+    public void materializePrevWhile(final int index,
+        @NotNull final IndexedAsyncPredicate<E> predicate) {
+      final int size = elements.size();
+      if (index < size) {
+        for (int i = index; i >= 0; --i) {
+          if (!safeConsume(predicate, -1, i, elements.get(i), LOGGER)) {
+            return;
+          }
+        }
+        safeConsumeComplete(predicate, -1, LOGGER);
+      } else {
+        materializeUntil(index, new IndexedAsyncConsumer<E>() {
+          @Override
+          public void accept(final int size, final int index, final E element) throws Exception {
+            for (int i = index; i >= 0; --i) {
+              if (!predicate.test(size, i, elements.get(i))) {
+                return;
+              }
+            }
+            predicate.complete(size);
+          }
+
+          @Override
+          public void complete(final int size) throws Exception {
+            for (int i = index; i >= 0; --i) {
+              if (!predicate.test(size, i, elements.get(i))) {
+                return;
+              }
+            }
+            predicate.complete(size);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            predicate.error(error);
+          }
+        });
+      }
+    }
+
+    @Override
     public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      materializeUntil(Integer.MAX_VALUE, true, new IndexedAsyncConsumer<E>() {
+      materializeUntil(Integer.MAX_VALUE, new IndexedAsyncConsumer<E>() {
         @Override
         public void accept(final int size, final int index, final E element) {
         }
@@ -261,11 +369,6 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     @Override
     public int weightContains() {
-      return weightElements();
-    }
-
-    @Override
-    public int weightEach() {
       return weightElements();
     }
 
@@ -290,6 +393,16 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
+    public int weightNextWhile() {
+      return weightElements();
+    }
+
+    @Override
+    public int weightPrevWhile() {
+      return weightElements();
+    }
+
+    @Override
     public int weightSize() {
       return weightElements();
     }
@@ -305,30 +418,12 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     private void consumeElement(final int index, final E element) {
-      @SuppressWarnings("unchecked") final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = (HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>>) this.elementsConsumers.clone();
-      final HashSet<Integer> keysToRemove = new HashSet<Integer>();
-      for (final Entry<Integer, ArrayList<IndexedAsyncConsumer<E>>> entry : elementsConsumers.entrySet()) {
-        final int key = entry.getKey();
-        if (index < key) {
-          final Iterator<IndexedAsyncConsumer<E>> consumers = entry.getValue().iterator();
-          while (consumers.hasNext()) {
-            if (!safeConsume(consumers.next(), -1, index, element, LOGGER)) {
-              consumers.remove();
-            }
-          }
-          if (entry.getValue().isEmpty()) {
-            keysToRemove.add(key);
-          }
-        } else if (index == key) {
-          for (final IndexedAsyncConsumer<E> consumer : entry.getValue()) {
-            if (safeConsume(consumer, -1, index, element, LOGGER)) {
-              safeConsumeComplete(consumer, index + 1, LOGGER);
-            }
-          }
-          keysToRemove.add(key);
+      final ArrayList<IndexedAsyncConsumer<E>> consumers = elementsConsumers.remove(index);
+      if (consumers != null) {
+        for (final IndexedAsyncConsumer<E> consumer : consumers) {
+          safeConsume(consumer, -1, index, element, LOGGER);
         }
       }
-      this.elementsConsumers.keySet().removeAll(keysToRemove);
     }
 
     private void consumeError(@NotNull final Exception error) {
@@ -341,43 +436,12 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
       elementsConsumers.clear();
     }
 
-    private @NotNull String getTaskID() {
-      final String taskID = context.currentTaskID();
-      return taskID != null ? taskID : "";
-    }
-
-    private void materializeUntil(final int index, final boolean skipPrevious,
+    private void materializeUntil(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       final ArrayList<E> elements = this.elements;
       if (elements.size() > index) {
-        final int size = index + 1;
-        if (skipPrevious) {
-          if (!safeConsume(consumer, -1, index, elements.get(index), LOGGER)) {
-            return;
-          }
-        } else {
-          for (int i = 0; i < size; ++i) {
-            if (!safeConsume(consumer, -1, i, elements.get(i), LOGGER)) {
-              return;
-            }
-          }
-        }
-        safeConsumeComplete(consumer, size, LOGGER);
+        safeConsume(consumer, -1, index, elements.get(index), LOGGER);
       } else {
-        final int size = elements.size();
-        if (skipPrevious) {
-          final int lastIndex = size - 1;
-          if (lastIndex >= 0 && !safeConsume(consumer, -1, lastIndex, elements.get(lastIndex),
-              LOGGER)) {
-            return;
-          }
-        } else {
-          for (int i = 0; i < size; ++i) {
-            if (!safeConsume(consumer, -1, i, elements.get(i), LOGGER)) {
-              return;
-            }
-          }
-        }
         final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
         final boolean needsRun = elementsConsumers.isEmpty();
         ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
@@ -386,172 +450,40 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
         }
         indexConsumers.add(consumer);
         if (needsRun) {
-          new MaterializingAsyncConsumer().run();
+          wrapped.materializeNextWhile(nextIndex, new CancellableIndexedAsyncPredicate<E>() {
+            @Override
+            public void cancellableComplete(final int size) throws Exception {
+              final List<E> materialized = decorateFunction.apply(elements);
+              setState(new ListToListAsyncMaterializer<E>(materialized, context));
+              consumeComplete(elements.size());
+            }
+
+            @Override
+            public boolean cancellableTest(final int size, final int index, final E element)
+                throws Exception {
+              ++nextIndex;
+              if (!predicate.test(index, element)) {
+                final ArrayList<E> elements = ImmaterialState.this.elements;
+                final int elementIndex = elements.size();
+                elements.add(element);
+                consumeElement(elementIndex, element);
+              }
+              return !elementsConsumers.isEmpty();
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) {
+              final CancellationException exception = cancelException.get();
+              if (exception != null) {
+                setCancelled(exception);
+                consumeError(exception);
+              } else {
+                setFailed(error);
+                consumeError(error);
+              }
+            }
+          });
         }
-      }
-    }
-
-    private void setError(@NotNull final Exception error) {
-      final CancellationException exception = cancelException.get();
-      if (exception != null) {
-        setCancelled(exception);
-        consumeError(exception);
-      } else {
-        setFailed(error);
-        consumeError(error);
-      }
-    }
-
-    private class MaterializingAsyncConsumer extends CancellableIndexedAsyncConsumer<E> implements
-        Task {
-
-      private String taskID;
-
-      @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        ++nextIndex;
-        if (!predicate.test(index, element)) {
-          final ArrayList<E> elements = ImmaterialState.this.elements;
-          final int elementIndex = elements.size();
-          elements.add(element);
-          consumeElement(elementIndex, element);
-        }
-        if (!elementsConsumers.isEmpty()) {
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void cancellableComplete(final int size) throws Exception {
-        final List<E> materialized = decorateFunction.apply(elements);
-        setState(new ListToListAsyncMaterializer<E>(materialized));
-        consumeComplete(elements.size());
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) {
-        setError(error);
-      }
-
-      @Override
-      public void run() {
-        wrapped.materializeElement(nextIndex, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return wrapped.weightElement();
-      }
-    }
-
-    private class MaterializingContainsElementAsyncConsumer extends
-        CancellableIndexedAsyncConsumer<E> implements Task {
-
-      private final AsyncConsumer<Boolean> consumer;
-      private final Object element;
-
-      private int index;
-      private String taskID;
-
-      private MaterializingContainsElementAsyncConsumer(@NotNull final Object element,
-          @NotNull final AsyncConsumer<Boolean> consumer) {
-        this.element = element;
-        this.consumer = consumer;
-      }
-
-      @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        if (this.element.equals(element)) {
-          consumer.accept(true);
-        } else {
-          this.index = index + 1;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void cancellableComplete(final int size) throws Exception {
-        consumer.accept(false);
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) throws Exception {
-        consumer.error(error);
-      }
-
-      @Override
-      public void run() {
-        materializeElement(index, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return weightElement();
-      }
-    }
-
-    private class MaterializingContainsNullAsyncConsumer extends
-        CancellableIndexedAsyncConsumer<E> implements Task {
-
-      private final AsyncConsumer<Boolean> consumer;
-
-      private int index;
-      private String taskID;
-
-      private MaterializingContainsNullAsyncConsumer(
-          @NotNull final AsyncConsumer<Boolean> consumer) {
-        this.consumer = consumer;
-      }
-
-      @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        if (element == null) {
-          consumer.accept(true);
-        } else {
-          this.index = index + 1;
-          taskID = getTaskID();
-          context.scheduleAfter(this);
-        }
-      }
-
-      @Override
-      public void cancellableComplete(final int size) throws Exception {
-        consumer.accept(false);
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) throws Exception {
-        consumer.error(error);
-      }
-
-      @Override
-      public void run() {
-        materializeElement(index, this);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return weightElement();
       }
     }
   }
