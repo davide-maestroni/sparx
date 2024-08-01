@@ -133,7 +133,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
                   }
                   ++i;
                 }
-                materializeUntil(i, this);
+                addElementConsumer(i, this);
               }
             }
 
@@ -167,7 +167,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
                   }
                   ++i;
                 }
-                materializeUntil(i, this);
+                addElementConsumer(i, this);
               }
             }
 
@@ -294,7 +294,7 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
             }
             ++i;
           }
-          materializeUntil(i, this);
+          addElementConsumer(i, this);
         }
 
         @Override
@@ -416,6 +416,18 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       return weightElements();
     }
 
+    private boolean addElementConsumer(final int index,
+        @NotNull final IndexedAsyncConsumer<E> consumer) {
+      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
+      final boolean isFirst = elementsConsumers.isEmpty();
+      ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
+      if (indexConsumers == null) {
+        elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<E>>(2));
+      }
+      indexConsumers.add(consumer);
+      return isFirst;
+    }
+
     private void consumeComplete(final int size) {
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
@@ -451,40 +463,31 @@ public class DiffListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       final ArrayList<E> elements = this.elements;
       if (elements.size() > index) {
         safeConsume(consumer, -1, index, elements.get(index), LOGGER);
-      } else {
-        final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
-        final boolean needsRun = elementsConsumers.isEmpty();
-        ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
-        if (indexConsumers == null) {
-          elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<E>>(2));
-        }
-        indexConsumers.add(consumer);
-        if (needsRun) {
-          if (elementsBag == null) {
-            ((ListAsyncMaterializer<Object>) elementsMaterializer).materializeElements(
-                new CancellableAsyncConsumer<List<Object>>() {
-                  @Override
-                  public void cancellableAccept(final List<Object> elements) {
-                    final HashMap<Object, Integer> bag = elementsBag = new HashMap<Object, Integer>();
-                    for (final Object element : elements) {
-                      final Integer count = bag.get(element);
-                      if (count == null) {
-                        bag.put(element, 1);
-                      } else {
-                        bag.put(element, count + 1);
-                      }
+      } else if (addElementConsumer(index, consumer)) {
+        if (elementsBag == null) {
+          ((ListAsyncMaterializer<Object>) elementsMaterializer).materializeElements(
+              new CancellableAsyncConsumer<List<Object>>() {
+                @Override
+                public void cancellableAccept(final List<Object> elements) {
+                  final HashMap<Object, Integer> bag = elementsBag = new HashMap<Object, Integer>();
+                  for (final Object element : elements) {
+                    final Integer count = bag.get(element);
+                    if (count == null) {
+                      bag.put(element, 1);
+                    } else {
+                      bag.put(element, count + 1);
                     }
-                    materializeUntilConsumed();
                   }
+                  materializeUntilConsumed();
+                }
 
-                  @Override
-                  public void error(@NotNull final Exception error) {
-                    consumeError(error);
-                  }
-                });
-          } else {
-            materializeUntilConsumed();
-          }
+                @Override
+                public void error(@NotNull final Exception error) {
+                  consumeError(error);
+                }
+              });
+        } else {
+          materializeUntilConsumed();
         }
       }
     }

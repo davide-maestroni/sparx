@@ -65,7 +65,7 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
   @Override
   public void materializeNext(@NotNull final IndexedAsyncConsumer<E> consumer) {
     if (consumed) {
-      safeConsumeComplete(consumer, 1, LOGGER);
+      safeConsumeComplete(consumer, 0, LOGGER);
     } else {
       consumed = true;
       safeConsume(consumer, 1, 0, element, LOGGER);
@@ -75,6 +75,7 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
   @Override
   public void materializeNextWhile(@NotNull final IndexedAsyncPredicate<E> predicate) {
     if (!consumed) {
+      consumed = true;
       if (!safeConsume(predicate, 1, 0, element, LOGGER)) {
         return;
       }

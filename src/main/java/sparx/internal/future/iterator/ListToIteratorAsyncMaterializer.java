@@ -73,9 +73,9 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
     final List<E> elements = this.elements;
     if (index < elements.size()) {
       final int i = index++;
-      safeConsume(consumer, elements.size(), i, elements.get(i), LOGGER);
+      safeConsume(consumer, elements.size() - i, i, elements.get(i), LOGGER);
     } else {
-      safeConsumeComplete(consumer, elements.size(), LOGGER);
+      safeConsumeComplete(consumer, 0, LOGGER);
     }
   }
 
@@ -150,16 +150,15 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
       final IndexedAsyncPredicate<E> predicate = this.predicate;
       final List<E> elements = ListToIteratorAsyncMaterializer.this.elements;
       final int size = elements.size();
-      int i = index;
-      for (int n = 0; n < throughput && i < size; ++n, ++i) {
+      for (int n = 0; n < throughput && index < size; ++n) {
+        final int i = index++;
         if (!safeConsume(predicate, size - i, i, elements.get(i), LOGGER)) {
           return;
         }
       }
-      if (i == size) {
+      if (index == size) {
         safeConsumeComplete(predicate, 0, LOGGER);
       } else {
-        index = i;
         taskID = getTaskID();
         context.scheduleAfter(this);
       }

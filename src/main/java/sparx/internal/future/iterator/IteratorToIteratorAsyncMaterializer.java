@@ -73,7 +73,7 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
     if (elements.hasNext()) {
       safeConsume(consumer, -1, index++, elements.next(), LOGGER);
     } else {
-      safeConsumeComplete(consumer, index, LOGGER);
+      safeConsumeComplete(consumer, 0, LOGGER);
     }
   }
 
@@ -81,7 +81,7 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
   public void materializeNextWhile(@NotNull final IndexedAsyncPredicate<E> predicate) {
     final int throughput = context.minThroughput();
     if (throughput < Integer.MAX_VALUE) {
-      new NextTask(predicate, index, throughput).run();
+      new NextTask(predicate, throughput).run();
     } else {
       final Iterator<E> elements = this.elements;
       while (elements.hasNext()) {
@@ -139,13 +139,10 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
     private final IndexedAsyncPredicate<E> predicate;
     private final int throughput;
 
-    private int index;
     private String taskID;
 
-    private NextTask(@NotNull final IndexedAsyncPredicate<E> predicate, final int index,
-        final int throughput) {
+    private NextTask(@NotNull final IndexedAsyncPredicate<E> predicate, final int throughput) {
       this.predicate = predicate;
-      this.index = index;
       this.throughput = throughput;
     }
 
@@ -153,20 +150,15 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
     public void run() {
       final int throughput = this.throughput;
       final IndexedAsyncPredicate<E> predicate = this.predicate;
-      int i = 0;
       final Iterator<E> iterator = elements;
-      while (i < index && iterator.hasNext()) {
-        iterator.next();
-      }
-      for (int n = 0; n < throughput && iterator.hasNext(); ++n, ++i) {
-        if (!safeConsume(predicate, -1, i, iterator.next(), LOGGER)) {
+      for (int n = 0; n < throughput && iterator.hasNext(); ++n) {
+        if (!safeConsume(predicate, -1, index++, iterator.next(), LOGGER)) {
           return;
         }
       }
       if (!iterator.hasNext()) {
         safeConsumeComplete(predicate, 0, LOGGER);
       } else {
-        index = i;
         taskID = getTaskID();
         context.scheduleAfter(this);
       }

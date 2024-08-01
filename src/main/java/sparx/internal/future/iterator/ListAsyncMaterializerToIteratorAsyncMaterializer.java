@@ -123,6 +123,7 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
 
         @Override
         public boolean test(final int size, final int index, final E element) {
+          ListAsyncMaterializerToIteratorAsyncMaterializer.this.index = index;
           final Iterator<IndexedAsyncPredicate<E>> iterator = elementsPredicates.iterator();
           while (iterator.hasNext()) {
             if (!safeConsume(iterator.next(), size >= 0 ? size - index : -1, index, element,

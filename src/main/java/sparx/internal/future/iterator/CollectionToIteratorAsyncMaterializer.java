@@ -75,9 +75,10 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
   public void materializeNext(@NotNull final IndexedAsyncConsumer<E> consumer) {
     final Iterator<E> iterator = this.iterator;
     if (iterator.hasNext()) {
-      safeConsume(consumer, elements.size(), index++, iterator.next(), LOGGER);
+      final int i = index++;
+      safeConsume(consumer, elements.size() - i, i, iterator.next(), LOGGER);
     } else {
-      safeConsumeComplete(consumer, elements.size(), LOGGER);
+      safeConsumeComplete(consumer, 0, LOGGER);
     }
   }
 
@@ -90,11 +91,12 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
       final Collection<E> elements = this.elements;
       final Iterator<E> iterator = this.iterator;
       while (iterator.hasNext()) {
-        if (!safeConsume(predicate, elements.size() - index, index++, iterator.next(), LOGGER)) {
+        final int i = index++;
+        if (!safeConsume(predicate, elements.size() - i, i, iterator.next(), LOGGER)) {
           return;
         }
       }
-      safeConsumeComplete(predicate, elements.size() - index, LOGGER);
+      safeConsumeComplete(predicate, 0, LOGGER);
     }
   }
 
@@ -126,7 +128,7 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
 
   @Override
   public int weightNextWhile() {
-    return elements.size() - index;
+    return Math.min(context.minThroughput(), elements.size() - index);
   }
 
   @Override
@@ -156,13 +158,10 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
       final int throughput = this.throughput;
       final IndexedAsyncPredicate<E> predicate = this.predicate;
       final Collection<E> elements = CollectionToIteratorAsyncMaterializer.this.elements;
-      final int size = elements.size();
-      int i = 0;
       final Iterator<E> iterator = CollectionToIteratorAsyncMaterializer.this.iterator;
-      while (i < index && iterator.hasNext()) {
-        iterator.next();
-      }
-      for (int n = 0; n < throughput && iterator.hasNext(); ++n, ++i) {
+      final int size = elements.size();
+      for (int n = 0; n < throughput && iterator.hasNext(); ++n) {
+        final int i = index++;
         if (!safeConsume(predicate, size - i, i, iterator.next(), LOGGER)) {
           return;
         }
@@ -170,7 +169,6 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
       if (!iterator.hasNext()) {
         safeConsumeComplete(predicate, 0, LOGGER);
       } else {
-        index = i;
         taskID = getTaskID();
         context.scheduleAfter(this);
       }

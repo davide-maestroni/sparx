@@ -139,7 +139,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
                   }
                   ++i;
                 }
-                materializeUntil(i, this);
+                addElementConsumer(i, this);
               }
             }
 
@@ -173,7 +173,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
                   }
                   ++i;
                 }
-                materializeUntil(i, this);
+                addElementConsumer(i, this);
               }
             }
 
@@ -300,7 +300,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
             }
             ++i;
           }
-          materializeUntil(i, this);
+          addElementConsumer(i, this);
         }
 
         @Override
@@ -416,6 +416,18 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       return weightElements();
     }
 
+    private boolean addElementConsumer(final int index,
+        @NotNull final IndexedAsyncConsumer<F> consumer) {
+      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
+      final boolean isFirst = elementsConsumers.isEmpty();
+      ArrayList<IndexedAsyncConsumer<F>> indexConsumers = elementsConsumers.get(index);
+      if (indexConsumers == null) {
+        elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<F>>(2));
+      }
+      indexConsumers.add(consumer);
+      return isFirst;
+    }
+
     private void consumeComplete(final int size) {
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<F>> consumers : elementsConsumers.values()) {
@@ -455,17 +467,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
       final ArrayList<F> elements = this.elements;
       if (elements.size() > index) {
         safeConsume(consumer, -1, index, elements.get(index), LOGGER);
-      } else {
-        final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = this.elementsConsumers;
-        final boolean needsRun = elementsConsumers.isEmpty();
-        ArrayList<IndexedAsyncConsumer<F>> indexConsumers = elementsConsumers.get(index);
-        if (indexConsumers == null) {
-          elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<F>>(2));
-        }
-        indexConsumers.add(consumer);
-        if (needsRun) {
-          new MaterializingAsyncConsumer().run();
-        }
+      } else if (addElementConsumer(index, consumer)) {
+        new MaterializingAsyncConsumer().run();
       }
     }
 
@@ -547,7 +550,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends AbstractListAsyncMateria
 
       @Override
       public int weight() {
-        return wrapped.weightElement();
+        final IteratorAsyncMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
+        return elementsMaterializer != null ? elementsMaterializer.weightNextWhile()
+            : wrapped.weightElement();
       }
 
       private void schedule() {
