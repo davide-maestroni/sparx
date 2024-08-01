@@ -346,7 +346,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
 
           @Override
           public void complete(final int size) throws Exception {
-            for (int i = index; i >= 0; --i) {
+            for (int i = elements.size() - 1; i >= 0; --i) {
               if (!predicate.test(size, i, elements.get(i))) {
                 return;
               }
