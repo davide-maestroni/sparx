@@ -145,7 +145,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
                   }
                   ++i;
                 }
-                materializeUntil(i, this);
+                addElementConsumer(i, this);
               }
             }
 
@@ -179,7 +179,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
                   }
                   ++i;
                 }
-                materializeUntil(i, this);
+                addElementConsumer(i, this);
               }
             }
 
@@ -306,7 +306,7 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
             }
             ++i;
           }
-          materializeUntil(i, this);
+          addElementConsumer(i, this);
         }
 
         @Override
@@ -422,6 +422,18 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
       return weightElements();
     }
 
+    private boolean addElementConsumer(final int index,
+        @NotNull final IndexedAsyncConsumer<E> consumer) {
+      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
+      final boolean isFirst = elementsConsumers.isEmpty();
+      ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
+      if (indexConsumers == null) {
+        elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<E>>(2));
+      }
+      indexConsumers.add(consumer);
+      return isFirst;
+    }
+
     private void consumeComplete(final int size) {
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
@@ -461,17 +473,8 @@ public class FlatMapWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
       final ArrayList<E> elements = this.elements;
       if (elements.size() > index) {
         safeConsume(consumer, -1, index, elements.get(index), LOGGER);
-      } else {
-        final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
-        final boolean needsRun = elementsConsumers.isEmpty();
-        ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
-        if (indexConsumers == null) {
-          elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<E>>(2));
-        }
-        indexConsumers.add(consumer);
-        if (needsRun) {
-          new ImmaterialState.MaterializingAsyncConsumer().run();
-        }
+      } else if (addElementConsumer(index, consumer)) {
+        new MaterializingAsyncConsumer().run();
       }
     }
 

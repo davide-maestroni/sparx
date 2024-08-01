@@ -140,7 +140,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
               consumer.accept(true);
               return false;
             }
-            return false;
+            return true;
           }
 
           @Override
@@ -165,7 +165,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
               consumer.accept(true);
               return false;
             }
-            return false;
+            return true;
           }
 
           @Override
