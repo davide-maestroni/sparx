@@ -182,7 +182,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
                   } else {
                     new DropListAsyncMaterializer<E>(state, index, context, cancelException,
                         (Function<List<E>, List<E>>) DUMMY_DECORATE_FUNCTION).materializeContains(
-                        null, consumer);
+                        other, consumer);
                   }
                   return false;
                 }

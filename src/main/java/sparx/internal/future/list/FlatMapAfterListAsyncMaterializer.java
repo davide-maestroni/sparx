@@ -301,9 +301,10 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
                 public void cancellableAccept(final List<E> mappedElements) throws Exception {
                   elementsSize = mappedElements.size();
                   final ArrayList<E> elements = new ArrayList<E>(safeSize());
-                  elements.addAll(wrappedElements.subList(0, numElements));
+                  elements.addAll(wrappedElements.subList(0, Math.min(numElements, wrappedSize)));
                   elements.addAll(mappedElements);
-                  elements.addAll(wrappedElements.subList(numElements + 1, wrappedSize));
+                  elements.addAll(
+                      wrappedElements.subList(Math.min(numElements + 1, wrappedSize), wrappedSize));
                   final List<E> materialized = decorateFunction.apply(elements);
                   setState(new ListToListAsyncMaterializer<E>(materialized, context));
                   consumeElements(materialized);
@@ -877,13 +878,14 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       private int index;
       private int wrappedIndex;
-      private boolean isWrapped = true;
+      private boolean isWrapped;
       private String taskID;
 
       private MaterializingNextAsyncPredicate(@NotNull final IndexedAsyncPredicate<E> predicate,
           final int index) {
         this.predicate = predicate;
         this.index = wrappedIndex = index;
+        isWrapped = index <= numElements;
       }
 
       @Override
@@ -926,7 +928,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public void run() {
-        if (index <= numElements) {
+        if (isWrapped) {
           wrapped.materializeNextWhile(wrappedIndex, this);
         } else {
           materialized(new AsyncConsumer<ListAsyncMaterializer<E>>() {
@@ -968,13 +970,14 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       private int index;
       private int wrappedIndex;
-      private boolean isWrapped = true;
+      private boolean isWrapped;
       private String taskID;
 
       private MaterializingPrevAsyncPredicate(@NotNull final IndexedAsyncPredicate<E> predicate,
           final int index) {
         this.predicate = predicate;
         this.index = wrappedIndex = index;
+        isWrapped = index <= numElements;
       }
 
       @Override
@@ -1021,7 +1024,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
       @Override
       public void run() {
-        if (index <= numElements) {
+        if (isWrapped) {
           wrapped.materializePrevWhile(wrappedIndex, this);
         } else {
           materialized(new AsyncConsumer<ListAsyncMaterializer<E>>() {

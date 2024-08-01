@@ -136,7 +136,10 @@ public class TakeListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
               consumer.accept(true);
               return false;
             }
-            return index < last;
+            if (index == last) {
+              consumer.accept(false);
+            }
+            return true;
           }
 
           @Override
@@ -146,7 +149,7 @@ public class TakeListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         });
       } else {
         final Object other = element;
-        wrapped.materializeNextWhile(maxElements, new CancellableIndexedAsyncPredicate<E>() {
+        wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
             wrappedSize = size;
@@ -161,7 +164,10 @@ public class TakeListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
               consumer.accept(true);
               return false;
             }
-            return index < last;
+            if (index == last) {
+              consumer.accept(false);
+            }
+            return true;
           }
 
           @Override
@@ -245,6 +251,7 @@ public class TakeListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
             wrappedSize = Math.max(wrappedSize, size);
+            elements.add(element);
             if (index == last) {
               cancellableComplete(wrappedSize);
               return false;

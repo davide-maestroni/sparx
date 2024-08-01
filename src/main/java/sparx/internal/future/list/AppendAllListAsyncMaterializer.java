@@ -56,7 +56,7 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   }
 
   private static int safeSize(final int wrappedSize, final int elementsSize) {
-    if (wrappedSize >= 0) {
+    if (wrappedSize >= 0 && elementsSize >= 0) {
       if (elementsSize > 0) {
         return SizeOverflowException.safeCast((long) wrappedSize + elementsSize);
       }

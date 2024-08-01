@@ -3278,7 +3278,7 @@ public class lazy extends Sparx {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       final int knownSize = materializer.knownSize();
-      if (knownSize >= 0 && index >= knownSize) {
+      if (knownSize >= 0 && index > knownSize) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       return new ListIterator<E>(List.<E>of(), this, index);

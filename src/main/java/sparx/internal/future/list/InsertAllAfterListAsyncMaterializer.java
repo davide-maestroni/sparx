@@ -292,9 +292,9 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
 
                   @Override
                   public void cancellableComplete(final int size) {
-                    final int wrappedIndex = index - elementsSize;
+                    final int wrappedIndex = originalIndex - elementsSize;
                     final int knownSize = safeSize(numElements, wrappedSize, elementsSize = size);
-                    if (wrappedIndex < knownSize) {
+                    if (knownSize < 0 || wrappedIndex < knownSize) {
                       wrapped.materializeElement(wrappedIndex,
                           new CancellableIndexedAsyncConsumer<E>() {
                             @Override

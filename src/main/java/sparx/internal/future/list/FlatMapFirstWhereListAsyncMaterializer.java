@@ -180,7 +180,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
                     state.materializeContains(other, consumer);
                   } else {
                     new DropListAsyncMaterializer<E>(state, index, context, cancelException,
-                        decorateFunction).materializeContains(null, consumer);
+                        decorateFunction).materializeContains(other, consumer);
                   }
                   return false;
                 }
@@ -368,7 +368,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
     public void materializeNextWhile(final int index,
         @NotNull final IndexedAsyncPredicate<E> predicate) {
       final int startIndex = index;
-      wrapped.materializeNextWhile(Math.min(startIndex, testedIndex),
+      wrapped.materializeNextWhile(Math.min(startIndex, testedIndex + 1),
           new CancellableIndexedAsyncPredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {

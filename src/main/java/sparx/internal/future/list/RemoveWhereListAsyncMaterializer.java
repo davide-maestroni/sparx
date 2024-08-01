@@ -131,7 +131,7 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
                   }
                   ++i;
                 }
-                materializeUntil(i, this);
+                addElementConsumer(i, this);
               }
             }
 
@@ -165,7 +165,7 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
                   }
                   ++i;
                 }
-                materializeUntil(i, this);
+                addElementConsumer(i, this);
               }
             }
 
@@ -292,7 +292,7 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
             }
             ++i;
           }
-          materializeUntil(i, this);
+          addElementConsumer(i, this);
         }
 
         @Override
@@ -407,6 +407,18 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
       return weightElements();
     }
 
+    private boolean addElementConsumer(final int index,
+        @NotNull final IndexedAsyncConsumer<E> consumer) {
+      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
+      final boolean isFirst = elementsConsumers.isEmpty();
+      ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
+      if (indexConsumers == null) {
+        elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<E>>(2));
+      }
+      indexConsumers.add(consumer);
+      return isFirst;
+    }
+
     private void consumeComplete(final int size) {
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
@@ -441,49 +453,40 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
       final ArrayList<E> elements = this.elements;
       if (elements.size() > index) {
         safeConsume(consumer, -1, index, elements.get(index), LOGGER);
-      } else {
-        final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
-        final boolean needsRun = elementsConsumers.isEmpty();
-        ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
-        if (indexConsumers == null) {
-          elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<E>>(2));
-        }
-        indexConsumers.add(consumer);
-        if (needsRun) {
-          wrapped.materializeNextWhile(nextIndex, new CancellableIndexedAsyncPredicate<E>() {
-            @Override
-            public void cancellableComplete(final int size) throws Exception {
-              final List<E> materialized = decorateFunction.apply(elements);
-              setState(new ListToListAsyncMaterializer<E>(materialized, context));
-              consumeComplete(elements.size());
-            }
+      } else if (addElementConsumer(index, consumer)) {
+        wrapped.materializeNextWhile(nextIndex, new CancellableIndexedAsyncPredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            final List<E> materialized = decorateFunction.apply(elements);
+            setState(new ListToListAsyncMaterializer<E>(materialized, context));
+            consumeComplete(elements.size());
+          }
 
-            @Override
-            public boolean cancellableTest(final int size, final int index, final E element)
-                throws Exception {
-              ++nextIndex;
-              if (!predicate.test(index, element)) {
-                final ArrayList<E> elements = ImmaterialState.this.elements;
-                final int elementIndex = elements.size();
-                elements.add(element);
-                consumeElement(elementIndex, element);
-              }
-              return !elementsConsumers.isEmpty();
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            ++nextIndex;
+            if (!predicate.test(index, element)) {
+              final ArrayList<E> elements = ImmaterialState.this.elements;
+              final int elementIndex = elements.size();
+              elements.add(element);
+              consumeElement(elementIndex, element);
             }
+            return !elementsConsumers.isEmpty();
+          }
 
-            @Override
-            public void error(@NotNull final Exception error) {
-              final CancellationException exception = cancelException.get();
-              if (exception != null) {
-                setCancelled(exception);
-                consumeError(exception);
-              } else {
-                setFailed(error);
-                consumeError(error);
-              }
+          @Override
+          public void error(@NotNull final Exception error) {
+            final CancellationException exception = cancelException.get();
+            if (exception != null) {
+              setCancelled(exception);
+              consumeError(exception);
+            } else {
+              setFailed(error);
+              consumeError(error);
             }
-          });
-        }
+          }
+        });
       }
     }
   }

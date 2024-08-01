@@ -127,10 +127,12 @@ class future extends Sparx {
   // TODO: move to future.Iterator
   @SuppressWarnings("unchecked")
   private static @NotNull <E> IteratorAsyncMaterializer<E> getElementsMaterializer(
-      @NotNull final ExecutionContext context, @NotNull final String taskID,
-      @NotNull final Iterable<? extends E> elements) {
+      @NotNull final ExecutionContext context, @NotNull final Iterable<? extends E> elements) {
     if (elements instanceof List) {
       final List<E> list = (List<E>) elements;
+      if (context.equals(list.context)) {
+        return new ListAsyncMaterializerToIteratorAsyncMaterializer<E>(list.materializer);
+      }
       return new ListAsyncMaterializerToIteratorAsyncMaterializer<E>(
           new SwitchListAsyncMaterializer<E>(list.context, list.taskID, context,
               list.materializer));
@@ -340,6 +342,9 @@ class future extends Sparx {
         @NotNull final ExecutionContext context, @NotNull final Iterable<? extends E> elements) {
       if (elements instanceof List) {
         final List<E> list = (List<E>) elements;
+        if (context == list.context) {
+          return list.materializer;
+        }
         return new SwitchListAsyncMaterializer<E>(list.context, list.taskID, context,
             list.materializer);
       }
@@ -398,7 +403,7 @@ class future extends Sparx {
         @Override
         public IteratorAsyncMaterializer<F> apply(final int index, final E element)
             throws Exception {
-          return future.getElementsMaterializer(context, taskID, mapper.apply(element));
+          return future.getElementsMaterializer(context, mapper.apply(element));
         }
       };
     }
@@ -410,7 +415,7 @@ class future extends Sparx {
         @Override
         public IteratorAsyncMaterializer<F> apply(final int index, final E element)
             throws Exception {
-          return future.getElementsMaterializer(context, taskID, mapper.apply(index, element));
+          return future.getElementsMaterializer(context, mapper.apply(index, element));
         }
       };
     }

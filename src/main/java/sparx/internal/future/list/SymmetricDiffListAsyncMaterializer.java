@@ -135,7 +135,7 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
                   }
                   ++i;
                 }
-                materializeUntil(i, this);
+                addElementConsumer(i, this);
               }
             }
 
@@ -169,7 +169,7 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
                   }
                   ++i;
                 }
-                materializeUntil(i, this);
+                addElementConsumer(i, this);
               }
             }
 
@@ -296,7 +296,7 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
             }
             ++i;
           }
-          materializeUntil(i, this);
+          addElementConsumer(i, this);
         }
 
         @Override
@@ -418,6 +418,18 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
       return weightElements();
     }
 
+    private boolean addElementConsumer(final int index,
+        @NotNull final IndexedAsyncConsumer<E> consumer) {
+      final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
+      final boolean isFirst = elementsConsumers.isEmpty();
+      ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
+      if (indexConsumers == null) {
+        elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<E>>(2));
+      }
+      indexConsumers.add(consumer);
+      return isFirst;
+    }
+
     private void consumeComplete(final int size) {
       final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
       for (final ArrayList<IndexedAsyncConsumer<E>> consumers : elementsConsumers.values()) {
@@ -452,39 +464,30 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
       final ArrayList<E> elements = this.elements;
       if (elements.size() > index) {
         safeConsume(consumer, -1, index, elements.get(index), LOGGER);
-      } else {
-        final HashMap<Integer, ArrayList<IndexedAsyncConsumer<E>>> elementsConsumers = this.elementsConsumers;
-        final boolean needsRun = elementsConsumers.isEmpty();
-        ArrayList<IndexedAsyncConsumer<E>> indexConsumers = elementsConsumers.get(index);
-        if (indexConsumers == null) {
-          elementsConsumers.put(index, indexConsumers = new ArrayList<IndexedAsyncConsumer<E>>(2));
-        }
-        indexConsumers.add(consumer);
-        if (needsRun) {
-          if (elementsBag == null) {
-            elementsMaterializer.materializeElements(new CancellableAsyncConsumer<List<E>>() {
-              @Override
-              public void cancellableAccept(final List<E> elements) {
-                final HashMap<E, Integer> bag = elementsBag = new HashMap<E, Integer>();
-                for (final E element : elements) {
-                  final Integer count = bag.get(element);
-                  if (count == null) {
-                    bag.put(element, 1);
-                  } else {
-                    bag.put(element, count + 1);
-                  }
+      } else if (addElementConsumer(index, consumer)) {
+        if (elementsBag == null) {
+          elementsMaterializer.materializeElements(new CancellableAsyncConsumer<List<E>>() {
+            @Override
+            public void cancellableAccept(final List<E> elements) {
+              final HashMap<E, Integer> bag = elementsBag = new HashMap<E, Integer>();
+              for (final E element : elements) {
+                final Integer count = bag.get(element);
+                if (count == null) {
+                  bag.put(element, 1);
+                } else {
+                  bag.put(element, count + 1);
                 }
-                materializeUntilConsumed();
               }
+              materializeUntilConsumed();
+            }
 
-              @Override
-              public void error(@NotNull final Exception error) {
-                consumeError(error);
-              }
-            });
-          } else {
-            materializeUntilConsumed();
-          }
+            @Override
+            public void error(@NotNull final Exception error) {
+              consumeError(error);
+            }
+          });
+        } else {
+          materializeUntilConsumed();
         }
       }
     }
@@ -546,14 +549,16 @@ public class SymmetricDiffListAsyncMaterializer<E> extends AbstractListAsyncMate
                 nextIndex = index + 1;
                 final HashMap<E, Integer> elementsBag = ImmaterialState.this.elementsBag;
                 final Integer count = elementsBag.get(element);
-                final int wrappedIndex = elements.size();
-                elements.add(element);
-                consumeElement(wrappedIndex, element);
-                final int decCount = count - 1;
-                if (decCount == 0) {
-                  elementsBag.remove(element);
-                } else {
-                  elementsBag.put(element, decCount);
+                if (count != null) {
+                  final int decCount = count - 1;
+                  if (decCount == 0) {
+                    elementsBag.remove(element);
+                  } else {
+                    elementsBag.put(element, decCount);
+                  }
+                  final int wrappedIndex = elements.size();
+                  elements.add(element);
+                  consumeElement(wrappedIndex, element);
                 }
                 return !elementsConsumers.isEmpty();
               }
