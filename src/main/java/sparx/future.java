@@ -108,6 +108,7 @@ import sparx.internal.future.list.StartsWithListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
 import sparx.internal.future.list.TakeListAsyncMaterializer;
+import sparx.internal.future.list.TakeRightListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
 import sparx.util.DeadLockException;
 import sparx.util.Require;
@@ -1135,6 +1136,20 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).take(maxElements);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerTakeRight(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        final int maxElements) {
+      final int knownSize = materializer.knownSize();
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException,
+          knownSize >= 0 ? Math.min(knownSize, maxElements) : -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).takeRight(maxElements);
         }
       };
     }
@@ -4035,8 +4050,23 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> takeRight(int maxElements) {
-      return null;
+    public @NotNull List<E> takeRight(final int maxElements) {
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (maxElements <= 0) {
+        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+      }
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerTakeRight(materializer, cancelException, maxElements));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new TakeRightListAsyncMaterializer<E>(materializer, maxElements, context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
