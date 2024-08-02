@@ -3212,6 +3212,32 @@ public class FutureListTests {
   }
 
   @Test
+  public void sorted() throws Exception {
+    var l = List.of(1, 2, 3, 2, 1);
+    test(List.of(1, 1, 2, 2, 3), () -> l, ll -> ll.sorted(Integer::compare));
+    test(List.of(), List::<Integer>of, ll -> ll.sorted(Integer::compare));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).sorted(Integer::compare);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void symmetricDiff() throws Exception {
     assertThrows(NullPointerException.class,
         () -> List.of(0).toFuture(context).symmetricDiff(null));

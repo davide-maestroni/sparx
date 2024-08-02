@@ -1409,6 +1409,13 @@ public class LazyListTests {
   }
 
   @Test
+  public void sorted() throws Exception {
+    var l = List.of(1, 2, 3, 2, 1);
+    test(List.of(1, 1, 2, 2, 3), () -> l.sorted(Integer::compare));
+    test(List.of(), () -> List.<Integer>of().sorted(Integer::compare));
+  }
+
+  @Test
   public void startsWith() throws Exception {
     test(List.of(true), () -> List.<Integer>of().startsWith(List.of()));
     test(List.of(false), () -> List.<Integer>of().startsWith(List.of(1)));
@@ -1419,13 +1426,6 @@ public class LazyListTests {
     test(List.of(false), () -> List.of(1, null, 3).startsWith(List.of(null, 3)));
     test(List.of(true), () -> List.of(1, null, 3).startsWith(List.of(1, null, 3)));
     test(List.of(false), () -> List.of(1, null, 3).startsWith(List.of(null, null, 3)));
-  }
-
-  @Test
-  public void sorted() throws Exception {
-    var l = List.of(1, 2, 3, 2, 1);
-    test(List.of(1, 1, 2, 2, 3), () -> l.sorted(Integer::compare));
-    test(List.of(), () -> List.<Integer>of().sorted(Integer::compare));
   }
 
   @Test

@@ -232,7 +232,6 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
       final ArrayList<StateConsumer> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        final ListAsyncMaterializer<E> wrapped = this.wrapped;
         wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
           public void cancellableAccept(final Integer size) throws Exception {

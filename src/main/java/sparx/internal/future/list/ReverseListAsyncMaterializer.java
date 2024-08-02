@@ -194,17 +194,21 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
     @Override
     public void materializeHasElement(final int index,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      wrapped.materializeHasElement(index, new CancellableAsyncConsumer<Boolean>() {
-        @Override
-        public void cancellableAccept(final Boolean hasElement) throws Exception {
-          consumer.accept(hasElement);
-        }
+      if (index < 0) {
+        safeConsume(consumer, false, LOGGER);
+      } else {
+        wrapped.materializeHasElement(index, new CancellableAsyncConsumer<Boolean>() {
+          @Override
+          public void cancellableAccept(final Boolean hasElement) throws Exception {
+            consumer.accept(hasElement);
+          }
 
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override

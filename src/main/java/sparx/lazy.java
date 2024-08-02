@@ -3998,6 +3998,17 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull List<E> sorted(@NotNull final Comparator<? super E> comparator) {
+      final ListMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return this;
+      }
+      return new List<E>(
+          new SortedListMaterializer<E>(materializer, Require.notNull(comparator, "comparator")));
+    }
+
+    @Override
     public @NotNull List<Boolean> startsWith(@NotNull final Iterable<?> elements) {
       final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
           Require.notNull(elements, "elements"));
@@ -4010,17 +4021,6 @@ public class lazy extends Sparx {
       }
       return new List<Boolean>(
           new StartsWithListMaterializer<E>(materializer, elementsMaterializer));
-    }
-
-    @Override
-    public @NotNull List<E> sorted(@NotNull final Comparator<? super E> comparator) {
-      final ListMaterializer<E> materializer = this.materializer;
-      final int knownSize = materializer.knownSize();
-      if (knownSize == 0 || knownSize == 1) {
-        return this;
-      }
-      return new List<E>(
-          new SortedListMaterializer<E>(materializer, Require.notNull(comparator, "comparator")));
     }
 
     @Override
