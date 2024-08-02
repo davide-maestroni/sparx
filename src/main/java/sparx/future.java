@@ -4124,13 +4124,13 @@ class future extends Sparx {
 
       @Override
       @SuppressWarnings("unchecked")
-      protected int knownSize(@NotNull java.util.List<F> elements) {
+      protected int knownSize(@NotNull final java.util.List<F> elements) {
         return ((lazy.List<E>) elements).knownSize();
       }
 
       @Override
       @SuppressWarnings("unchecked")
-      protected void materialize(@NotNull java.util.List<F> elements) {
+      protected void materialize(@NotNull final java.util.List<F> elements) {
         ((lazy.List<E>) elements).materialized();
       }
     }
