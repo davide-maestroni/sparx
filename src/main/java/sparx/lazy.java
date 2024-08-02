@@ -1778,6 +1778,7 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<E> resizeTo(final int numElements, final E padding) {
+      Require.notNegative(numElements, "numElements");
       if (numElements == 0) {
         return Iterator.of();
       }
@@ -1791,15 +1792,12 @@ public class lazy extends Sparx {
           return this;
         }
         if (knownSize > numElements) {
-          return new Iterator<E>(new TakeIteratorMaterializer<E>(materializer,
-              Require.notNegative(numElements, "numElements")));
+          return new Iterator<E>(new TakeIteratorMaterializer<E>(materializer, numElements));
         }
         return new Iterator<E>(new AppendAllIteratorMaterializer<E>(materializer,
-            new RepeatIteratorMaterializer<E>(
-                Require.notNegative(numElements, "numElements") - knownSize, padding)));
+            new RepeatIteratorMaterializer<E>(numElements - knownSize, padding)));
       }
-      return new Iterator<E>(new ResizeIteratorMaterializer<E>(materializer,
-          Require.notNegative(numElements, "numElements"), padding));
+      return new Iterator<E>(new ResizeIteratorMaterializer<E>(materializer, numElements, padding));
     }
 
     @Override
@@ -3924,6 +3922,7 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<E> resizeTo(final int numElements, final E padding) {
+      Require.notNegative(numElements, "numElements");
       if (numElements == 0) {
         return List.of();
       }
@@ -3937,21 +3936,19 @@ public class lazy extends Sparx {
           return this;
         }
         if (knownSize > numElements) {
-          return new List<E>(new TakeListMaterializer<E>(materializer,
-              Require.notNegative(numElements, "numElements")));
+          return new List<E>(new TakeListMaterializer<E>(materializer, numElements));
         }
         return new List<E>(new AppendAllListMaterializer<E>(materializer,
-            new RepeatListMaterializer<E>(
-                Require.notNegative(numElements, "numElements") - knownSize, padding)));
+            new RepeatListMaterializer<E>(numElements - knownSize, padding)));
       }
-      return new List<E>(new ResizeListMaterializer<E>(materializer,
-          Require.notNegative(numElements, "numElements"), padding));
+      return new List<E>(new ResizeListMaterializer<E>(materializer, numElements, padding));
     }
 
     @Override
     public @NotNull List<E> reverse() {
       final ListMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
         return this;
       }
       return new List<E>(new ReverseListMaterializer<E>(materializer));
@@ -5651,6 +5648,7 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull ListIterator<E> resizeTo(final int numElements, final E padding) {
+      Require.notNegative(numElements, "numElements");
       if (atEnd()) {
         return new ListIterator<E>(left.appendAll(right), List.times(numElements, padding));
       }

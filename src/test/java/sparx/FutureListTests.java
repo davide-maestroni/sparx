@@ -3112,6 +3112,38 @@ public class FutureListTests {
   }
 
   @Test
+  public void resizeTo() throws Exception {
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(1, 2, null, 4).toFuture(context).resizeTo(-1, 5));
+    test(List.of(), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(0, 5));
+    test(List.of(1), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(1, 5));
+    test(List.of(1, 2), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(2, 5));
+    test(List.of(1, 2, null), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(3, 5));
+    test(List.of(1, 2, null, 4), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(4, 5));
+    test(List.of(1, 2, null, 4, 5), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(5, 5));
+    test(List.of(1, 2, null, 4, 5, 5), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(6, 5));
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).resizeTo(1, null);
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void slice() throws Exception {
     var l = List.of(1, 2, null, 4);
     test(List.of(), () -> l, ll -> ll.slice(1, 1));

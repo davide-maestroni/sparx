@@ -100,6 +100,7 @@ import sparx.internal.future.list.RemoveLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.RemoveSliceListAsyncMaterializer;
 import sparx.internal.future.list.RemoveWhereListAsyncMaterializer;
 import sparx.internal.future.list.ReplaceSliceListAsyncMaterializer;
+import sparx.internal.future.list.ResizeListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
@@ -224,6 +225,13 @@ class future extends Sparx {
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
           final Object thirdParam) {
         return lazy.List.wrap(firstParam).replaceAfter(secondParam, thirdParam).materialized();
+      }
+    };
+    private static final TernaryFunction<? extends java.util.List<?>, Integer, ?, ? extends java.util.List<?>> RESIZE_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, Object, java.util.List<?>>() {
+      @Override
+      public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
+          final Object thirdParam) {
+        return lazy.List.wrap(firstParam).resizeTo(secondParam, thirdParam).materialized();
       }
     };
     private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
@@ -1116,6 +1124,11 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     private static @NotNull <E> TernaryFunction<java.util.List<E>, Integer, E, java.util.List<E>> replaceAfterFunction() {
       return (TernaryFunction<java.util.List<E>, Integer, E, java.util.List<E>>) REPLACE_AFTER_FUNCTION;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static @NotNull <E> TernaryFunction<java.util.List<E>, Integer, E, java.util.List<E>> resizeFunction() {
+      return (TernaryFunction<java.util.List<E>, Integer, E, java.util.List<E>>) RESIZE_FUNCTION;
     }
 
     @Override
@@ -3734,6 +3747,7 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> resizeTo(final int numElements, final E padding) {
+      Require.notNegative(numElements, "numElements");
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (numElements == 0) {
         return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
@@ -3751,15 +3765,22 @@ class future extends Sparx {
         if (knownSize > numElements) {
           return take(numElements);
         }
-        return appendAll(
-            lazy.List.times(Require.notNegative(numElements, "numElements") - knownSize, padding));
+        return appendAll(lazy.List.times(numElements - knownSize, padding));
       }
       final ExecutionContext context = this.context;
-      return null;
+      return new List<E>(context, cancelException,
+          new ResizeListAsyncMaterializer<E>(materializer, numElements, padding, context,
+              cancelException, List.<E>resizeFunction(), List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> reverse() {
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return new List<E>(context, cancelException, materializer);
+      }
       return null;
     }
 
@@ -3992,7 +4013,6 @@ class future extends Sparx {
         ((lazy.List<E>) elements).materialized();
       }
     }
-
 
     private static class SuppliedMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
