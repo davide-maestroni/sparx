@@ -1417,6 +1417,7 @@ public class LazyListTests {
 
   @Test
   public void startsWith() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).startsWith(null));
     test(List.of(true), () -> List.<Integer>of().startsWith(List.of()));
     test(List.of(false), () -> List.<Integer>of().startsWith(List.of(1)));
     test(List.of(true), () -> List.of(1, null, 3).startsWith(List.of()));

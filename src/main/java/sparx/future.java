@@ -104,6 +104,7 @@ import sparx.internal.future.list.ResizeListAsyncMaterializer;
 import sparx.internal.future.list.ReverseListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SortedListAsyncMaterializer;
+import sparx.internal.future.list.StartsWithListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
 import sparx.internal.future.list.TakeListAsyncMaterializer;
@@ -413,7 +414,7 @@ class future extends Sparx {
     }
 
     private static @NotNull <E, F> IndexedFunction<E, IteratorAsyncMaterializer<F>> getElementToIteratorMaterializer(
-        @NotNull final ExecutionContext context, @NotNull final String taskID,
+        @NotNull final ExecutionContext context,
         @NotNull final Function<? super E, ? extends Iterable<? extends F>> mapper) {
       return new IndexedFunction<E, IteratorAsyncMaterializer<F>>() {
         @Override
@@ -425,7 +426,7 @@ class future extends Sparx {
     }
 
     private static @NotNull <E, F> IndexedFunction<E, IteratorAsyncMaterializer<F>> getElementToIteratorMaterializer(
-        @NotNull final ExecutionContext context, @NotNull final String taskID,
+        @NotNull final ExecutionContext context,
         @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends F>> mapper) {
       return new IndexedFunction<E, IteratorAsyncMaterializer<F>>() {
         @Override
@@ -2039,8 +2040,8 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<F>(context, cancelException,
           new FlatMapListAsyncMaterializer<E, F>(materializer,
-              getElementToIteratorMaterializer(context, taskID, Require.notNull(mapper, "mapper")),
-              context, cancelException, List.<F>decorateFunction()));
+              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
+              cancelException, List.<F>decorateFunction()));
     }
 
     @Override
@@ -2054,8 +2055,8 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new List<F>(context, cancelException,
           new FlatMapListAsyncMaterializer<E, F>(materializer,
-              getElementToIteratorMaterializer(context, taskID, Require.notNull(mapper, "mapper")),
-              context, cancelException, List.<F>decorateFunction()));
+              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
+              cancelException, List.<F>decorateFunction()));
     }
 
     @Override
@@ -2172,8 +2173,8 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new FlatMapWhereListAsyncMaterializer<E>(materializer,
               Require.notNull(predicate, "predicate"),
-              getElementToIteratorMaterializer(context, taskID, Require.notNull(mapper, "mapper")),
-              context, cancelException, List.<E>decorateFunction()));
+              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -2188,8 +2189,8 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new FlatMapWhereListAsyncMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")),
-              getElementToIteratorMaterializer(context, taskID, Require.notNull(mapper, "mapper")),
-              context, cancelException, List.<E>decorateFunction()));
+              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -3962,8 +3963,8 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> startsWith(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
-      final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
+      final IteratorAsyncMaterializer<Object> elementsMaterializer = future.getElementsMaterializer(
+          context, Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
         return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
       }
@@ -3972,7 +3973,9 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
       }
-      return null;
+      return new List<Boolean>(context, cancelException,
+          new StartsWithListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
+              cancelException, List.<Boolean>decorateFunction()));
     }
 
     // TODO: stopCancelPropagation + switchMap, mergeMap, concatMap(==flatMap) + flatMapAll(?)
