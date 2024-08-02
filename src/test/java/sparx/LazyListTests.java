@@ -1367,14 +1367,6 @@ public class LazyListTests {
   }
 
   @Test
-  public void reverse() throws Exception {
-    var l = List.of(1, 2, null, 4);
-    test(List.of(4, null, 2, 1), l::reverse);
-    test(l, () -> l.reverse().reverse());
-    test(List.of(), () -> List.<Integer>of().reverse());
-  }
-
-  @Test
   public void resizeTo() throws Exception {
     assertThrows(IllegalArgumentException.class, () -> List.of(1, 2, null, 4).resizeTo(-1, 5));
     test(List.of(), () -> List.of(1, 2, null, 4).resizeTo(0, 5));
@@ -1384,6 +1376,14 @@ public class LazyListTests {
     test(List.of(1, 2, null, 4), () -> List.of(1, 2, null, 4).resizeTo(4, 5));
     test(List.of(1, 2, null, 4, 5), () -> List.of(1, 2, null, 4).resizeTo(5, 5));
     test(List.of(1, 2, null, 4, 5, 5), () -> List.of(1, 2, null, 4).resizeTo(6, 5));
+  }
+
+  @Test
+  public void reverse() throws Exception {
+    var l = List.of(1, 2, null, 4);
+    test(List.of(4, null, 2, 1), l::reverse);
+    test(l, () -> l.reverse().reverse());
+    test(List.of(), () -> List.<Integer>of().reverse());
   }
 
   @Test

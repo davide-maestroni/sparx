@@ -101,6 +101,7 @@ import sparx.internal.future.list.RemoveSliceListAsyncMaterializer;
 import sparx.internal.future.list.RemoveWhereListAsyncMaterializer;
 import sparx.internal.future.list.ReplaceSliceListAsyncMaterializer;
 import sparx.internal.future.list.ResizeListAsyncMaterializer;
+import sparx.internal.future.list.ReverseListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
@@ -180,7 +181,7 @@ class future extends Sparx {
     };
     private static final Function<? extends java.util.List<?>, ? extends java.util.List<?>> DECORATE_FUNCTION = new Function<java.util.List<?>, java.util.List<?>>() {
       @Override
-      public java.util.List<?> apply(java.util.List<?> param) {
+      public java.util.List<?> apply(final java.util.List<?> param) {
         return lazy.List.wrap(param).materialized();
       }
     };
@@ -232,6 +233,12 @@ class future extends Sparx {
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
           final Object thirdParam) {
         return lazy.List.wrap(firstParam).resizeTo(secondParam, thirdParam).materialized();
+      }
+    };
+    private static final Function<? extends java.util.List<?>, ? extends java.util.List<?>> REVERSE_FUNCTION = new Function<java.util.List<?>, java.util.List<?>>() {
+      @Override
+      public java.util.List<?> apply(final java.util.List<?> param) {
+        return lazy.List.wrap(param).reverse().materialized();
       }
     };
     private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
@@ -1054,6 +1061,30 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerResizeTo(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        final int numElements, final E padding) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, numElements) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).resizeTo(numElements, padding);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerReverse(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException,
+          materializer.knownSize()) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).reverse();
+        }
+      };
+    }
+
     private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerSlice(
         @NotNull final ListAsyncMaterializer<E> materializer,
         @NotNull final AtomicReference<CancellationException> cancelException, final int start,
@@ -1129,6 +1160,11 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     private static @NotNull <E> TernaryFunction<java.util.List<E>, Integer, E, java.util.List<E>> resizeFunction() {
       return (TernaryFunction<java.util.List<E>, Integer, E, java.util.List<E>>) RESIZE_FUNCTION;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static @NotNull <E> Function<java.util.List<E>, java.util.List<E>> reverseFunction() {
+      return (Function<java.util.List<E>, java.util.List<E>>) REVERSE_FUNCTION;
     }
 
     @Override
@@ -3767,6 +3803,10 @@ class future extends Sparx {
         }
         return appendAll(lazy.List.times(numElements - knownSize, padding));
       }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerResizeTo(materializer, cancelException, numElements, padding));
+      }
       final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new ResizeListAsyncMaterializer<E>(materializer, numElements, padding, context,
@@ -3781,7 +3821,14 @@ class future extends Sparx {
       if (knownSize == 0 || knownSize == 1) {
         return new List<E>(context, cancelException, materializer);
       }
-      return null;
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerReverse(materializer, cancelException));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new ReverseListAsyncMaterializer<E>(materializer, context, cancelException,
+              List.<E>reverseFunction()));
     }
 
     @Override

@@ -147,6 +147,7 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
+      setCancelled(exception);
     }
 
     @Override

@@ -3144,6 +3144,33 @@ public class FutureListTests {
   }
 
   @Test
+  public void reverse() throws Exception {
+    var l = List.of(1, 2, null, 4);
+    test(List.of(4, null, 2, 1), () -> l, future.List::reverse);
+    test(l, () -> l, ll -> ll.reverse().reverse());
+    test(List.of(), List::<Integer>of, future.List::reverse);
+
+    if (TEST_ASYNC_CANCEL) {
+      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }).reverse();
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
+  }
+
+  @Test
   public void slice() throws Exception {
     var l = List.of(1, 2, null, 4);
     test(List.of(), () -> l, ll -> ll.slice(1, 1));

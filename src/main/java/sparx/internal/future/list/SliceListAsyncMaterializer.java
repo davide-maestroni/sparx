@@ -150,6 +150,7 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
       wrapped.materializeCancel(exception);
+      setCancelled(exception);
     }
 
     @Override
