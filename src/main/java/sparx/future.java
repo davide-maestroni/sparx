@@ -4229,7 +4229,7 @@ class future extends Sparx {
           @NotNull final ExecutionContext context, @NotNull final String taskID,
           @NotNull final AtomicReference<CancellationException> cancelException) {
         super(new AtomicInteger(STATUS_RUNNING));
-        setState(new ImmaterialState(supplier, context, taskID, cancelException));
+        setState(new ImmaterialState(supplier, context, cancelException));
       }
 
       @Override
@@ -4242,14 +4242,12 @@ class future extends Sparx {
         private final AtomicReference<CancellationException> cancelException;
         private final ExecutionContext context;
         private final Supplier<? extends Iterable<? extends E>> supplier;
-        private final String taskID;
 
         private ImmaterialState(@NotNull final Supplier<? extends Iterable<? extends E>> supplier,
-            @NotNull final ExecutionContext context, @NotNull final String taskID,
+            @NotNull final ExecutionContext context,
             @NotNull final AtomicReference<CancellationException> cancelException) {
           this.supplier = supplier;
           this.context = context;
-          this.taskID = taskID;
           this.cancelException = cancelException;
         }
 
