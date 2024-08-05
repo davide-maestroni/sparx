@@ -39,6 +39,7 @@ import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.internal.future.iterator.CollectionToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorAsyncMaterializer;
+import sparx.internal.future.iterator.EmptyIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ListAsyncMaterializerToIteratorAsyncMaterializer;
@@ -144,8 +145,10 @@ class future extends Sparx {
               list.materializer));
     }
     if (elements instanceof java.util.List) {
-      // TODO: empty
       final java.util.List<E> list = (java.util.List<E>) elements;
+      if (list.isEmpty()) {
+        return EmptyIteratorAsyncMaterializer.instance();
+      }
       if (list.size() == 1) {
         return new ElementToIteratorAsyncMaterializer<E>(list.get(0));
       }
