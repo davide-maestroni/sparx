@@ -263,8 +263,8 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
             }
 
             @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
+            public void error(@NotNull final Exception error) {
+              setError(error);
             }
           });
         }
@@ -505,14 +505,18 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
         if (e instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
-        final CancellationException exception = cancelException.get();
-        if (exception != null) {
-          setCancelled(exception);
-          consumeError(exception);
-        } else {
-          setFailed(e);
-          consumeError(e);
-        }
+        setError(e);
+      }
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setCancelled(exception);
+        consumeError(exception);
+      } else {
+        setFailed(error);
+        consumeError(error);
       }
     }
   }
