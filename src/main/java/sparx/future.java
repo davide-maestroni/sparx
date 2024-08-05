@@ -4615,6 +4615,7 @@ class future extends Sparx {
           }
         }
       }
+      final Exception error = this.error;
       if (error != null) {
         throw UncheckedException.throwUnchecked(error);
       }
@@ -4638,6 +4639,7 @@ class future extends Sparx {
           }
         }
       }
+      final Exception error = this.error;
       if (error != null) {
         throw UncheckedException.throwUnchecked(error);
       }
@@ -4695,6 +4697,7 @@ class future extends Sparx {
           }
         }
       }
+      final Exception error = this.error;
       if (error != null) {
         throw UncheckedException.throwUnchecked(error);
       }

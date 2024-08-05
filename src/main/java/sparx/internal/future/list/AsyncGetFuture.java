@@ -154,9 +154,7 @@ public class AsyncGetFuture<E> implements Future<Void> {
         throw getCancelException();
       }
       final Exception error = this.error;
-      if (error instanceof InterruptedException) {
-        throw (InterruptedException) error;
-      } else if (error != null) {
+      if (error != null) {
         throw new ExecutionException(error);
       }
     }
@@ -191,9 +189,7 @@ public class AsyncGetFuture<E> implements Future<Void> {
         throw getCancelException();
       }
       final Exception error = this.error;
-      if (error instanceof InterruptedException) {
-        throw (InterruptedException) error;
-      } else if (error != null) {
+      if (error != null) {
         throw new ExecutionException(error);
       }
     }
