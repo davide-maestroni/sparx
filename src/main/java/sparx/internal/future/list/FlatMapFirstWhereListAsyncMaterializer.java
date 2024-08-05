@@ -301,6 +301,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
                 setError(e);
                 throw e;
               }
+              testedIndex = index;
             }
             consumer.accept(false);
           }

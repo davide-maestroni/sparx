@@ -135,6 +135,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
           @Override
           public void cancellableComplete(final int size) throws Exception {
             wrappedSize = size;
+            setState(new WrappingState(wrapped, context, cancelException));
             consumer.accept(false);
           }
 
@@ -180,6 +181,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
           @Override
           public void cancellableComplete(final int size) throws Exception {
             wrappedSize = size;
+            setState(new WrappingState(wrapped, context, cancelException));
             consumer.accept(false);
           }
 
@@ -257,6 +259,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
+            setState(new WrappingState(wrapped, context, cancelException));
             consumer.complete(wrappedSize = size);
           }
 
@@ -355,6 +358,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
           new CancellableIndexedAsyncPredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {
+              setState(new WrappingState(wrapped, context, cancelException));
               predicate.complete(wrappedSize = size);
             }
 
@@ -502,9 +506,12 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
             wrappedSize = Math.max(wrappedSize, size);
-            if (predicate.test(index, element)) {
-              consumeState(setState(index));
-              return false;
+            if (testedIndex < index) {
+              if (predicate.test(index, element)) {
+                setState(index);
+                return false;
+              }
+              testedIndex = index;
             }
             return true;
           }

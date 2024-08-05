@@ -28,9 +28,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,24 +76,7 @@ public class FutureListTests {
     test(List.of(1, 2, 3), () -> List.of(1, 2), ll -> ll.append(3));
     test(List.of(1, null, 3), () -> List.of(1, null), ll -> ll.append(3));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).append(4);
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.append(4));
   }
 
   @Test
@@ -109,24 +92,7 @@ public class FutureListTests {
     test(List.of(1, null), () -> List.of(1, null), ll -> ll.appendAll(List.of()));
     test(List.of(1, null), () -> List.of(1, null), ll -> ll.appendAll(Set.of()));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).appendAll(List.of(4, 5));
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.appendAll(List.of(4, 5)));
   }
 
   @Test
@@ -135,9 +101,7 @@ public class FutureListTests {
     test(List.of(3), () -> List.of(1, 2, 3), future.List::count);
     test(List.of(3), () -> List.of(1, null, 3), future.List::count);
 
-    if (TEST_ASYNC_CANCEL) {
-      // TODO
-    }
+    testCancel(future.List::count);
   }
 
   @Test
@@ -178,24 +142,7 @@ public class FutureListTests {
     }).first();
     assertEquals(List.of(0, 1, 2, 3), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).countWhere(i -> {
-        Thread.sleep(60000);
-        return true;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.countWhere(e -> true));
   }
 
   @Test
@@ -212,28 +159,11 @@ public class FutureListTests {
     test(List.of(1, 1, 2, null, 4), () -> List.of(1, 1, 2, null, 4), ll -> ll.diff(List.of()));
     test(List.of(), List::of, ll -> ll.diff(List.of(1, 2, null, 4)));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).diff(List.of(false, null));
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.diff(List.of(false, null)));
   }
 
   @Test
-  public void doFor() throws ExecutionException, InterruptedException {
+  public void doFor() throws Exception {
     assertThrows(NullPointerException.class,
         () -> List.of(0).toFuture(context).doFor((Consumer<? super Object>) null));
     assertThrows(NullPointerException.class,
@@ -248,24 +178,12 @@ public class FutureListTests {
     List.of(1, 2, 2, 1).toFuture(context).nonBlockingFor((n, i) -> indexes.add(n)).get();
     assertEquals(List.of(0, 1, 2, 3), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).nonBlockingFor(i -> Thread.sleep(60000));
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-    }
+    testCancel(f -> f.nonBlockingFor(e -> {
+    }));
   }
 
   @Test
-  public void doWhile() throws ExecutionException, InterruptedException {
+  public void doWhile() throws Exception {
     assertThrows(NullPointerException.class,
         () -> List.of(0).toFuture(context).doWhile((Predicate<? super Object>) null));
     assertThrows(NullPointerException.class,
@@ -313,23 +231,7 @@ public class FutureListTests {
     }, (n, i) -> indexes.add(n)).get();
     assertEquals(List.of(0, 0, 1, 1, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).nonBlockingWhile(i -> {
-        Thread.sleep(60000);
-        return true;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-    }
+    testCancel(f -> f.nonBlockingWhile(e -> true));
   }
 
   @Test
@@ -344,24 +246,7 @@ public class FutureListTests {
     test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.drop(0));
     test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.drop(-1));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).drop(1);
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.drop(1));
   }
 
   @Test
@@ -376,24 +261,7 @@ public class FutureListTests {
     test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropRight(0));
     test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.dropRight(-1));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).dropRight(1);
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.dropRight(1));
   }
 
   @Test
@@ -427,24 +295,7 @@ public class FutureListTests {
     });
     assertEquals(List.of(3, 2, 1), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).dropRightWhile(i -> {
-        Thread.sleep(60000);
-        return true;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.dropRightWhile(e -> false));
   }
 
   @Test
@@ -478,24 +329,7 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).dropWhile(i -> {
-        Thread.sleep(60000);
-        return true;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.dropWhile(e -> false));
   }
 
   @Test
@@ -3498,8 +3332,7 @@ public class FutureListTests {
     assertThrows(NoSuchElementException.class, itr::next);
   }
 
-  private void testCancel(
-      @NotNull final Function<future.List<Object>, future.List<?>> actualTransformer)
+  private void testCancel(@NotNull final Function<future.List<Object>, Future<?>> actualTransformer)
       throws Exception {
     if (TEST_ASYNC_CANCEL) {
       var f = actualTransformer.apply(List.of(1, 2, 3).toFuture(context).flatMap(i -> {
@@ -3517,7 +3350,9 @@ public class FutureListTests {
       assertThrows(CancellationException.class, f::get);
       assertTrue(f.isDone());
       assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
+      if (f instanceof future.List) {
+        assertFalse(((future.List<?>) f).isFailed());
+      }
     }
   }
 }
