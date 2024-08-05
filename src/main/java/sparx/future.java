@@ -109,6 +109,8 @@ import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
 import sparx.internal.future.list.TakeListAsyncMaterializer;
 import sparx.internal.future.list.TakeRightListAsyncMaterializer;
+import sparx.internal.future.list.TakeRightWhileListAsyncMaterializer;
+import sparx.internal.future.list.TakeWhileListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
 import sparx.util.DeadLockException;
 import sparx.util.Require;
@@ -1150,6 +1152,30 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).takeRight(maxElements);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerTakeRightWhile(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).takeRightWhile(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListAsyncMaterializer<E, E> lazyMaterializerTakeWhile(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).takeWhile(predicate);
         }
       };
     }
@@ -4070,23 +4096,79 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> takeRightWhile(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+    public @NotNull List<E> takeRightWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerTakeRightWhile(materializer, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new TakeRightWhileListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull List<E> takeRightWhile(@NotNull Predicate<? super E> predicate) {
-      return null;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerTakeRightWhile(materializer, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new TakeRightWhileListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
-    public @NotNull List<E> takeWhile(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+    public @NotNull List<E> takeWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerTakeWhile(materializer, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new TakeWhileListAsyncMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override
-    public @NotNull List<E> takeWhile(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull List<E> takeWhile(@NotNull final Predicate<? super E> predicate) {
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerTakeWhile(materializer, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      final ExecutionContext context = this.context;
+      return new List<E>(context, cancelException,
+          new TakeWhileListAsyncMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override

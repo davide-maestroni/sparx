@@ -3354,24 +3354,69 @@ public class FutureListTests {
     test(List.of(), () -> List.of(1, null, 3), ll -> ll.takeRight(0));
     test(List.of(), () -> List.of(1, null, 3), ll -> ll.takeRight(-1));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).takeRight(1);
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.takeRight(1));
+  }
+
+  @Test
+  public void takeRightWhile() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context)
+        .takeRightWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).takeRightWhile((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .takeRightWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .takeRightWhile((Predicate<? super Integer>) null));
+    test(List.of(), List::<Integer>of, ll -> ll.takeRightWhile(e -> e > 0));
+    test(List.of(), () -> List.of(1, null, 3), ll -> ll.takeRightWhile(Objects::isNull));
+    test(List.of(3), () -> List.of(1, null, 3), ll -> ll.takeRightWhile(Objects::nonNull));
+    test(List.of(), () -> List.of(1, null, 3), ll -> ll.takeRightWhile(e -> e < 1));
+    test(List.of(1, 2, 3), () -> List.of(1, 2, 3), ll -> ll.takeRightWhile(e -> e > 0));
+
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).takeRightWhile(e -> e > 0).size());
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).takeRightWhile((n, i) -> {
+      indexes.add(n);
+      return i > 3;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(3, 2), indexes);
+
+    testCancel(f -> f.takeRightWhile(e -> true));
+  }
+
+  @Test
+  public void takeWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).takeWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).takeWhile((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .takeWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .takeWhile((Predicate<? super Integer>) null));
+    test(List.of(), List::<Integer>of, ll -> ll.takeWhile(e -> e > 0));
+    test(List.of(), () -> List.of(1, null, 3), ll -> ll.takeWhile(Objects::isNull));
+    test(List.of(1), () -> List.of(1, null, 3), ll -> ll.takeWhile(Objects::nonNull));
+    test(List.of(), () -> List.of(1, null, 3), ll -> ll.takeWhile(e -> e < 1));
+    test(List.of(1, 2, 3), () -> List.of(1, 2, 3), ll -> ll.takeWhile(e -> e > 0));
+
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).takeWhile(e -> e > 0).size());
+    var indexes = new ArrayList<Integer>();
+    List.of(1, 2, 3, 4).takeWhile((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    }).doFor(i -> {
+    });
+    assertEquals(List.of(0, 1, 2), indexes);
+
+    testCancel(f -> f.takeWhile(e -> true));
   }
 
   @Test
@@ -3390,24 +3435,7 @@ public class FutureListTests {
     test(List.of(1, 2, null, 4), () -> List.of(1, 2, null, 4), ll -> ll.union(List.of()));
     test(List.of(1, 2, null, 4), List::of, ll -> ll.union(List.of(1, 2, null, 4)));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).union(List.of(1));
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.union(List.of(1)));
   }
 
   private <E, F> void test(@NotNull final java.util.List<F> expected,
@@ -3468,5 +3496,28 @@ public class FutureListTests {
     }
     assertFalse(itr.hasNext());
     assertThrows(NoSuchElementException.class, itr::next);
+  }
+
+  private void testCancel(
+      @NotNull final Function<future.List<Object>, future.List<?>> actualTransformer)
+      throws Exception {
+    if (TEST_ASYNC_CANCEL) {
+      var f = actualTransformer.apply(List.of(1, 2, 3).toFuture(context).flatMap(i -> {
+        Thread.sleep(60000);
+        return List.of(i);
+      }));
+      executor.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException e) {
+          throw UncheckedInterruptedException.toUnchecked(e);
+        }
+        f.cancel(true);
+      });
+      assertThrows(CancellationException.class, f::get);
+      assertTrue(f.isDone());
+      assertTrue(f.isCancelled());
+      assertFalse(f.isFailed());
+    }
   }
 }

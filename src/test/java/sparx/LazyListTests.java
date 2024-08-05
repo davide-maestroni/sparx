@@ -1473,6 +1473,10 @@ public class LazyListTests {
 
   @Test
   public void takeRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).takeRightWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).takeRightWhile((Predicate<? super Integer>) null));
     test(List.of(), () -> List.<Integer>of().takeRightWhile(e -> e > 0));
     test(List.of(), () -> List.of(1, null, 3).takeRightWhile(Objects::isNull));
     test(List.of(3), () -> List.of(1, null, 3).takeRightWhile(Objects::nonNull));
@@ -1492,6 +1496,10 @@ public class LazyListTests {
 
   @Test
   public void takeWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).takeWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).takeWhile((Predicate<? super Integer>) null));
     test(List.of(), () -> List.<Integer>of().takeWhile(e -> e > 0));
     test(List.of(), () -> List.of(1, null, 3).takeWhile(Objects::isNull));
     test(List.of(1), () -> List.of(1, null, 3).takeWhile(Objects::nonNull));

@@ -44,7 +44,16 @@ public class TakeListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @Positive final int maxElements, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    this(wrapped, maxElements, new AtomicInteger(STATUS_RUNNING), context, cancelException,
+        decorateFunction);
+  }
+
+  TakeListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      @Positive final int maxElements, @NotNull final AtomicInteger status,
+      @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
+      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+    super(status);
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     knownSize = Math.min(wrapped.knownSize(), maxElements);
     setState(new ImmaterialState(wrapped, maxElements, context, cancelException, decorateFunction));
