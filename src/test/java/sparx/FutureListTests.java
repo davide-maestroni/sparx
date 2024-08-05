@@ -368,24 +368,7 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).each(i -> {
-        Thread.sleep(60000);
-        return true;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.each(e -> true));
   }
 
   @Test
@@ -400,24 +383,7 @@ public class FutureListTests {
     test(List.of(true), () -> List.of(1, null, 3), ll -> ll.endsWith(List.of(1, null, 3)));
     test(List.of(false), () -> List.of(1, null, 3), ll -> ll.endsWith(List.of(null, null, 3)));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).endsWith(List.of(false));
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.endsWith(List.of(false)));
   }
 
   @Test
@@ -454,24 +420,7 @@ public class FutureListTests {
     }).first();
     assertEquals(List.of(0, 1, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).exists(i -> {
-        Thread.sleep(60000);
-        return false;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.exists(e -> false));
   }
 
   @Test
@@ -505,24 +454,7 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2, 3), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).filter(i -> {
-        Thread.sleep(60000);
-        return false;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.filter(e -> true));
   }
 
   @Test
@@ -548,24 +480,7 @@ public class FutureListTests {
     }).first();
     assertEquals(List.of(0, 1, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).findAny(i -> {
-        Thread.sleep(60000);
-        return false;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.findAny(e -> false));
   }
 
   @Test
@@ -588,24 +503,7 @@ public class FutureListTests {
     }).first();
     assertEquals(List.of(0, 1, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).findIndexOf(false);
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.findIndexOf(false));
   }
 
   @Test
@@ -621,24 +519,7 @@ public class FutureListTests {
     test(List.of(), List::of, ll -> ll.findIndexOfSlice(List.of(null)));
     test(List.of(0), List::of, ll -> ll.findIndexOfSlice(List.of()));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).findIndexOfSlice(List.of(false));
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.findIndexOfSlice(List.of(false)));
   }
 
   @Test
@@ -672,24 +553,7 @@ public class FutureListTests {
     }).first();
     assertEquals(List.of(0, 1, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).findIndexWhere(i -> {
-        Thread.sleep(60000);
-        return false;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.findIndexWhere(e -> false));
   }
 
   @Test
@@ -720,24 +584,7 @@ public class FutureListTests {
     }).first();
     assertEquals(List.of(3, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).findLast(i -> {
-        Thread.sleep(60000);
-        return false;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.findLast(e -> false));
   }
 
   @Test
@@ -748,24 +595,7 @@ public class FutureListTests {
     test(List.of(), () -> l, ll -> ll.findLastIndexOf(3));
     test(List.of(), List::of, ll -> ll.findLastIndexOf(null));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).findLastIndexOf(false);
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.findLastIndexOf(false));
   }
 
   @Test
@@ -782,24 +612,7 @@ public class FutureListTests {
     test(List.of(), List::of, ll -> ll.findLastIndexOfSlice(List.of(null)));
     test(List.of(0), List::of, ll -> ll.findLastIndexOfSlice(List.of()));
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      }).findLastIndexOfSlice(List.of(false));
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.findLastIndexOfSlice(List.of(false)));
   }
 
   @Test
@@ -834,24 +647,7 @@ public class FutureListTests {
     }).first();
     assertEquals(List.of(3, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).findLastIndexWhere(i -> {
-        Thread.sleep(60000);
-        return false;
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.findLastIndexWhere(e -> false));
   }
 
   @Test
@@ -885,24 +681,7 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2, 3), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).flatMap(i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.flatMap(e -> List.of(e)));
   }
 
   @Test
@@ -940,24 +719,7 @@ public class FutureListTests {
     });
     assertEquals(List.of(1), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).flatMapAfter(0, i -> {
-        Thread.sleep(60000);
-        return List.of(i);
-      });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.flatMapAfter(0, e -> List.of(e)));
   }
 
   @Test
@@ -1023,25 +785,7 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e))
-          .flatMapFirstWhere(i -> true, i -> {
-            Thread.sleep(60000);
-            return List.of(i);
-          });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.flatMapFirstWhere(e -> true, List::of));
   }
 
   @Test
@@ -1104,25 +848,7 @@ public class FutureListTests {
     });
     assertEquals(List.of(3, 2, 2), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e))
-          .flatMapLastWhere(i -> true, i -> {
-            Thread.sleep(60000);
-            return List.of(i);
-          });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.flatMapLastWhere(e -> true, List::of));
   }
 
   @Test
@@ -1204,25 +930,7 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2, 2, 3), indexes);
 
-    if (TEST_ASYNC_CANCEL) {
-      var f = List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e))
-          .flatMapWhere(i -> true, i -> {
-            Thread.sleep(60000);
-            return List.of(i);
-          });
-      executor.submit(() -> {
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          throw UncheckedInterruptedException.toUnchecked(e);
-        }
-        f.cancel(true);
-      });
-      assertThrows(CancellationException.class, f::get);
-      assertTrue(f.isDone());
-      assertTrue(f.isCancelled());
-      assertFalse(f.isFailed());
-    }
+    testCancel(f -> f.flatMapWhere(e -> true, List::of));
   }
 
   @Test
