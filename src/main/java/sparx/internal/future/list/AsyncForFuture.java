@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
@@ -36,6 +37,7 @@ public class AsyncForFuture<E> implements Future<Void> {
   private static final int STATUS_DONE = 1;
   private static final int STATUS_RUNNING = 0;
 
+  private final AtomicReference<CancellationException> cancelException;
   private final ExecutionContext context;
   private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
   private final String taskID;
@@ -43,10 +45,12 @@ public class AsyncForFuture<E> implements Future<Void> {
   private volatile Exception error;
 
   public AsyncForFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
+      @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final ListAsyncMaterializer<E> materializer,
       @NotNull final IndexedConsumer<? super E> consumer) {
     this.context = context;
     this.taskID = taskID;
+    this.cancelException = cancelException;
     if (context.isCurrent()) {
       if (!materializer.isDone()) {
         throw new DeadLockException("cannot wait on the future own execution context");
@@ -58,19 +62,19 @@ public class AsyncForFuture<E> implements Future<Void> {
           for (final E element : elements) {
             consumer.accept(i++, element);
           }
-          synchronized (status) {
+          synchronized (cancelException) {
             status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-            status.notifyAll();
+            cancelException.notifyAll();
           }
         }
 
         @Override
         public void error(@NotNull final Exception error) {
-          synchronized (status) {
+          synchronized (cancelException) {
             if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
               AsyncForFuture.this.error = error;
             }
-            status.notifyAll();
+            cancelException.notifyAll();
           }
         }
       });
@@ -81,9 +85,9 @@ public class AsyncForFuture<E> implements Future<Void> {
           materializer.materializeNextWhile(0, new IndexedAsyncPredicate<E>() {
             @Override
             public void complete(final int size) {
-              synchronized (status) {
+              synchronized (cancelException) {
                 status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-                status.notifyAll();
+                cancelException.notifyAll();
               }
             }
 
@@ -98,11 +102,11 @@ public class AsyncForFuture<E> implements Future<Void> {
 
             @Override
             public void error(@NotNull final Exception error) {
-              synchronized (status) {
+              synchronized (cancelException) {
                 if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
                   AsyncForFuture.this.error = error;
                 }
-                status.notifyAll();
+                cancelException.notifyAll();
               }
             }
           });
@@ -128,6 +132,9 @@ public class AsyncForFuture<E> implements Future<Void> {
       if (mayInterruptIfRunning) {
         context.interruptTask(taskID);
       }
+      synchronized (cancelException) {
+        cancelException.notifyAll();
+      }
       return true;
     }
     return false;
@@ -148,9 +155,13 @@ public class AsyncForFuture<E> implements Future<Void> {
     if (context.isCurrent() && !isDone()) {
       throw new DeadLockException("cannot wait on the future own execution context");
     }
-    synchronized (status) {
+    synchronized (cancelException) {
       while (!isDone()) {
-        status.wait();
+        cancelException.wait();
+        final CancellationException exception = cancelException.get();
+        if (exception != null) {
+          throw new ExecutionException(exception);
+        }
       }
       if (isCancelled()) {
         throw getCancelException();
@@ -168,15 +179,22 @@ public class AsyncForFuture<E> implements Future<Void> {
   @Override
   public Void get(final long timeout, @NotNull final TimeUnit unit)
       throws InterruptedException, ExecutionException, TimeoutException {
+    if (timeout <= 0) {
+      return get();
+    }
     if (context.isCurrent() && !isDone()) {
       throw new DeadLockException("cannot wait on the future own execution context");
     }
     final long startTimeMillis = System.currentTimeMillis();
-    synchronized (status) {
+    synchronized (cancelException) {
       long timeoutMillis = unit.toMillis(timeout);
       while (!isDone() && timeoutMillis > 0) {
-        status.wait(timeoutMillis);
+        cancelException.wait(timeoutMillis);
         timeoutMillis -= System.currentTimeMillis() - startTimeMillis;
+        final CancellationException exception = cancelException.get();
+        if (exception != null) {
+          throw new ExecutionException(exception);
+        }
       }
       final int statusCode = status.get();
       if (statusCode == STATUS_RUNNING) {
@@ -196,7 +214,8 @@ public class AsyncForFuture<E> implements Future<Void> {
   }
 
   private @NotNull CancellationException getCancelException() {
-    return error instanceof CancellationException ? (CancellationException) error
+    return error instanceof CancellationException
+        ? (CancellationException) new CancellationException().initCause(error)
         : new CancellationException();
   }
 }

@@ -25,7 +25,6 @@ import java.util.Comparator;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1316,7 +1315,7 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         return false;
       }
-      final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
+      final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>(cancelException);
       final ExecutionContext context = this.context;
       if (context.isCurrent()) {
         if (!materializer.isDone()) {
@@ -2024,7 +2023,8 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         throw new IndexOutOfBoundsException("0");
       }
-      final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(0);
+      final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(cancelException,
+          0);
       final ExecutionContext context = this.context;
       if (context.isCurrent()) {
         if (!materializer.isDone()) {
@@ -2287,7 +2287,8 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         return lazy.List.of();
       }
-      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
+      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
+          cancelException);
       final ExecutionContext context = this.context;
       if (context.isCurrent()) {
         if (!materializer.isDone()) {
@@ -2333,7 +2334,8 @@ class future extends Sparx {
       if (index < 0) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
-      final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(index);
+      final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(cancelException,
+          index);
       final ExecutionContext context = this.context;
       if (context.isCurrent()) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
@@ -2387,7 +2389,8 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         return lazy.List.of();
       }
-      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>();
+      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
+          cancelException);
       final ExecutionContext context = this.context;
       if (context.isCurrent()) {
         if (!materializer.isDone()) {
@@ -2518,7 +2521,7 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         return -1;
       }
-      final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>();
+      final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>(cancelException);
       final ExecutionContext context = this.context;
       if (context.isCurrent()) {
         if (!materializer.isDone()) {
@@ -2677,7 +2680,7 @@ class future extends Sparx {
 
     @Override
     public boolean isEmpty() {
-      final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>();
+      final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>(cancelException);
       final ExecutionContext context = this.context;
       if (context.isCurrent()) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
@@ -2736,7 +2739,8 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         throw new IndexOutOfBoundsException("-1");
       }
-      final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(-1);
+      final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(cancelException,
+          -1);
       final ExecutionContext context = this.context;
       if (context.isCurrent()) {
         if (!materializer.isDone()) {
@@ -2802,7 +2806,7 @@ class future extends Sparx {
       if (knownSize == 0) {
         return -1;
       }
-      final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>();
+      final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>(cancelException);
       final ExecutionContext context = this.context;
       if (context.isCurrent()) {
         if (!materializer.isDone()) {
@@ -3091,45 +3095,45 @@ class future extends Sparx {
 
     @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
-      return new AsyncForFuture<E>(context, taskID, materializer,
+      return new AsyncForFuture<E>(context, taskID, cancelException, materializer,
           toIndexedConsumer(Require.notNull(consumer, "consumer")));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
-      return new AsyncForFuture<E>(context, taskID, materializer,
+      return new AsyncForFuture<E>(context, taskID, cancelException, materializer,
           Require.notNull(consumer, "consumer"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingGet() {
-      return new AsyncGetFuture<E>(context, taskID, materializer);
+      return new AsyncGetFuture<E>(context, taskID, cancelException, materializer);
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(
         @NotNull final IndexedPredicate<? super E> predicate) {
-      return new AsyncWhileFuture<E>(context, taskID, materializer,
+      return new AsyncWhileFuture<E>(context, taskID, cancelException, materializer,
           Require.notNull(predicate, "predicate"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
         @NotNull final IndexedConsumer<? super E> consumer) {
-      return new AsyncWhileFuture<E>(context, taskID, materializer,
+      return new AsyncWhileFuture<E>(context, taskID, cancelException, materializer,
           Require.notNull(condition, "condition"), Require.notNull(consumer, "consumer"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
-      return new AsyncWhileFuture<E>(context, taskID, materializer,
+      return new AsyncWhileFuture<E>(context, taskID, cancelException, materializer,
           toIndexedPredicate(Require.notNull(predicate, "predicate")));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
         @NotNull final Consumer<? super E> consumer) {
-      return new AsyncWhileFuture<E>(context, taskID, materializer,
+      return new AsyncWhileFuture<E>(context, taskID, cancelException, materializer,
           toIndexedPredicate(Require.notNull(condition, "condition")),
           toIndexedConsumer(Require.notNull(consumer, "consumer")));
     }
@@ -3889,7 +3893,7 @@ class future extends Sparx {
 
     @Override
     public int size() {
-      final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>();
+      final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>(cancelException);
       final ExecutionContext context = this.context;
       if (context.isCurrent()) {
         final ListAsyncMaterializer<E> materializer = this.materializer;
@@ -4576,13 +4580,17 @@ class future extends Sparx {
     }
   }
 
-  private static class BlockingConsumer<P> extends Semaphore implements AsyncConsumer<P> {
+  private static class BlockingConsumer<P> implements AsyncConsumer<P> {
+
+    private final AtomicReference<CancellationException> cancelException;
 
     private Exception error;
+    private boolean isDone;
     private P param;
 
-    private BlockingConsumer() {
-      super(0);
+    private BlockingConsumer(
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      this.cancelException = cancelException;
     }
 
     @Override
@@ -4598,7 +4606,15 @@ class future extends Sparx {
     }
 
     private P get() throws InterruptedException {
-      acquire();
+      synchronized (cancelException) {
+        while (!isDone) {
+          cancelException.wait();
+          final CancellationException exception = cancelException.get();
+          if (exception != null) {
+            throw (CancellationException) new CancellationException().initCause(exception);
+          }
+        }
+      }
       if (error != null) {
         throw UncheckedException.throwUnchecked(error);
       }
@@ -4607,26 +4623,47 @@ class future extends Sparx {
 
     private P get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, TimeoutException {
-      if (!tryAcquire(1, timeout, unit)) {
-        throw new TimeoutException();
+      final long startTimeMillis = System.currentTimeMillis();
+      long timeoutMillis = unit.toMillis(timeout);
+      synchronized (cancelException) {
+        while (!isDone) {
+          cancelException.wait(timeoutMillis);
+          timeoutMillis -= System.currentTimeMillis() - startTimeMillis;
+          final CancellationException exception = cancelException.get();
+          if (exception != null) {
+            throw (CancellationException) new CancellationException().initCause(exception);
+          }
+          if (timeoutMillis <= 0) {
+            throw new TimeoutException();
+          }
+        }
       }
       if (error != null) {
         throw UncheckedException.throwUnchecked(error);
       }
       return param;
     }
+
+    private void release() {
+      synchronized (cancelException) {
+        isDone = true;
+        cancelException.notifyAll();
+      }
+    }
   }
 
-  private static class BlockingElementConsumer<P> extends Semaphore implements
-      IndexedAsyncConsumer<P> {
+  private static class BlockingElementConsumer<P> implements IndexedAsyncConsumer<P> {
 
+    private final AtomicReference<CancellationException> cancelException;
     private final int index;
 
     private Exception error;
+    private boolean isDone;
     private P param;
 
-    private BlockingElementConsumer(final int index) {
-      super(0);
+    private BlockingElementConsumer(
+        @NotNull final AtomicReference<CancellationException> cancelException, final int index) {
+      this.cancelException = cancelException;
       this.index = index;
     }
 
@@ -4649,11 +4686,26 @@ class future extends Sparx {
     }
 
     private P get() throws InterruptedException {
-      acquire();
+      synchronized (cancelException) {
+        while (!isDone) {
+          cancelException.wait();
+          final CancellationException exception = cancelException.get();
+          if (exception != null) {
+            throw (CancellationException) new CancellationException().initCause(exception);
+          }
+        }
+      }
       if (error != null) {
         throw UncheckedException.throwUnchecked(error);
       }
       return param;
+    }
+
+    private void release() {
+      synchronized (cancelException) {
+        isDone = true;
+        cancelException.notifyAll();
+      }
     }
   }
 
