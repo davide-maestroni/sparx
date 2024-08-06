@@ -5670,7 +5670,7 @@ public class lazy extends Sparx {
 
     @Override
     public int size() {
-      return left.size() + right.size();
+      return right.size();
     }
 
     @Override

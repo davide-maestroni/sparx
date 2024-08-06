@@ -24,11 +24,10 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.internal.lazy.list.EmptyListMaterializer;
 
 public class EmptyIteratorAsyncMaterializer<E> implements IteratorAsyncMaterializer<E> {
 
-  private static final EmptyListMaterializer<?> INSTANCE = new EmptyListMaterializer<Object>();
+  private static final EmptyIteratorAsyncMaterializer<?> INSTANCE = new EmptyIteratorAsyncMaterializer<Object>();
   private static final Logger LOGGER = Logger.getLogger(
       EmptyIteratorAsyncMaterializer.class.getName());
 

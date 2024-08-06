@@ -1307,6 +1307,9 @@ class future extends Sparx {
             return 1;
           }
         });
+        synchronized (cancelException) {
+          cancelException.notifyAll();
+        }
         return true;
       }
       return false;
@@ -2673,7 +2676,7 @@ class future extends Sparx {
 
     @Override
     public boolean isDone() {
-      return materializer.isDone();
+      return materializer.isDone() || cancelException.get() != null;
     }
 
     @Override
