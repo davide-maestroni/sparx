@@ -2508,6 +2508,194 @@ public class FutureListTests {
     assertEquals(expected.size(), atSize.get());
     assertNull(atError.get());
 
-    // TODO: contains, hasElement, next, prev, elements
+    var atHasElement = new AtomicBoolean();
+    factory.apply(trampoline).materializeHasElement(Integer.MIN_VALUE, new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean hasElement) {
+        atHasElement.set(hasElement);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atHasElement.get());
+    assertNull(atError.get());
+    atHasElement.set(false);
+    factory.apply(trampoline).materializeHasElement(-1, new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean hasElement) {
+        atHasElement.set(hasElement);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atHasElement.get());
+    assertNull(atError.get());
+    atHasElement.set(false);
+    for (int i = 0; i < expected.size(); i++) {
+      factory.apply(trampoline).materializeHasElement(i, new AsyncConsumer<>() {
+        @Override
+        public void accept(final Boolean hasElement) {
+          atHasElement.set(hasElement);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+      });
+      assertTrue(atHasElement.get());
+      assertNull(atError.get());
+      atHasElement.set(false);
+    }
+    factory.apply(trampoline).materializeHasElement(expected.size(), new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean hasElement) {
+        atHasElement.set(hasElement);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atHasElement.get());
+    assertNull(atError.get());
+    atHasElement.set(false);
+    factory.apply(trampoline).materializeHasElement(Integer.MAX_VALUE, new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean hasElement) {
+        atHasElement.set(hasElement);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atHasElement.get());
+    assertNull(atError.get());
+    atHasElement.set(false);
+
+    materializer = factory.apply(trampoline);
+    materializer.materializeHasElement(Integer.MIN_VALUE, new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean hasElement) {
+        atHasElement.set(hasElement);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atHasElement.get());
+    assertNull(atError.get());
+    atHasElement.set(false);
+    materializer.materializeHasElement(-1, new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean hasElement) {
+        atHasElement.set(hasElement);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atHasElement.get());
+    assertNull(atError.get());
+    atHasElement.set(false);
+    for (int i = 0; i < expected.size(); i++) {
+      materializer.materializeHasElement(i, new AsyncConsumer<>() {
+        @Override
+        public void accept(final Boolean hasElement) {
+          atHasElement.set(hasElement);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+      });
+      assertTrue(atHasElement.get());
+      assertNull(atError.get());
+      atHasElement.set(false);
+    }
+    materializer.materializeHasElement(expected.size(), new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean hasElement) {
+        atHasElement.set(hasElement);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atHasElement.get());
+    assertNull(atError.get());
+    atHasElement.set(false);
+    materializer.materializeHasElement(Integer.MAX_VALUE, new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean hasElement) {
+        atHasElement.set(hasElement);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atHasElement.get());
+    assertNull(atError.get());
+    atHasElement.set(false);
+
+    var atContains = new AtomicBoolean();
+    for (final E e : expected) {
+      atContains.set(false);
+      factory.apply(trampoline).materializeContains(e, new AsyncConsumer<>() {
+        @Override
+        public void accept(final Boolean contains) {
+          atContains.set(contains);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+      });
+      assertTrue(atContains.get());
+      assertNull(atError.get());
+    }
+
+    materializer = factory.apply(trampoline);
+    for (final E e : expected) {
+      atContains.set(false);
+      materializer.materializeContains(e, new AsyncConsumer<>() {
+        @Override
+        public void accept(final Boolean contains) {
+          atContains.set(contains);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+      });
+      assertTrue(atContains.get());
+      assertNull(atError.get());
+    }
+
+    for (int i = 0; i < expected.size(); i++) {
+      // TODO: next
+    }
+
+    // TODO: prev, elements
   }
 }
