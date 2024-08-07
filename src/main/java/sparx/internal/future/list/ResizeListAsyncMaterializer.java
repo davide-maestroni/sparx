@@ -108,6 +108,11 @@ public class ResizeListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return numElements;
     }

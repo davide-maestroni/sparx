@@ -100,6 +100,11 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return knownSize;
     }

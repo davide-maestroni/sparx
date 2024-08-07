@@ -123,6 +123,11 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return knownSize;
     }
@@ -370,7 +375,7 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           public void cancellableComplete(final int size) throws Exception {
             wrappedSize = size;
             if (index < safeSize(wrappedSize, elementsSize)) {
-              consumer.accept(false);
+              consumer.accept(true);
             } else {
               elementsMaterializer.materializeHasElement(index - size,
                   new CancellableAsyncConsumer<Boolean>() {

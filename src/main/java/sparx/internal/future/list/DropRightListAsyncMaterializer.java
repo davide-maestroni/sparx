@@ -110,6 +110,11 @@ public class DropRightListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return knownSize;
     }

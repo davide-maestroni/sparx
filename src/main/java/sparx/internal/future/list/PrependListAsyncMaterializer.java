@@ -113,6 +113,11 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return knownSize;
     }

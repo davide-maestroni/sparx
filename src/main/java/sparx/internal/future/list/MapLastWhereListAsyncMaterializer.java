@@ -109,6 +109,11 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }

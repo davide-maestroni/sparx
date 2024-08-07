@@ -65,6 +65,11 @@ public class ListToListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public boolean isSucceeded() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return elements.size();
   }

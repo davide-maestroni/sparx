@@ -124,6 +124,11 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return knownSize;
     }

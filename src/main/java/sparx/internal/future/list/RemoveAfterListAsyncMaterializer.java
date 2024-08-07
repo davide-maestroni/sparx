@@ -118,6 +118,11 @@ public class RemoveAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return knownSize;
     }
@@ -312,7 +317,7 @@ public class RemoveAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (index < 0) {
         safeConsume(consumer, false, LOGGER);
-      } else if (index < wrappedSize || index < safeSize(numElements, wrappedSize)) {
+      } else if (index < safeSize(numElements, wrappedSize)) {
         safeConsume(consumer, true, LOGGER);
       } else if (wrappedSize >= 0) {
         safeConsume(consumer, false, LOGGER);

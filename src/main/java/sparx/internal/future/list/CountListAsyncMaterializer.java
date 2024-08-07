@@ -89,6 +89,11 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return 1;
     }

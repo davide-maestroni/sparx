@@ -117,6 +117,11 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }

@@ -104,6 +104,11 @@ public class SortedListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return wrappedSize;
     }

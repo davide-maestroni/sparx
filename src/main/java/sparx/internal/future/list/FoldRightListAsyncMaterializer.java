@@ -97,6 +97,11 @@ public class FoldRightListAsyncMaterializer<E, F> extends AbstractListAsyncMater
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return 1;
     }

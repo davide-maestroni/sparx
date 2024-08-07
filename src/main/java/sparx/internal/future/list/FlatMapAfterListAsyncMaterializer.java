@@ -117,6 +117,11 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }
@@ -189,7 +194,8 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
                     }
                   });
             } else {
-              wrapped.materializeElement(index - elementsSize + 1,
+              wrapped.materializeElement(
+                  IndexOverflowException.safeCast((long) index - elementsSize + 1),
                   new CancellableIndexedAsyncConsumer<E>() {
                     @Override
                     public void cancellableAccept(final int size, final int index, final E element)
@@ -408,7 +414,8 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
                     }
                   });
             } else {
-              wrapped.materializeHasElement(index - elementsSize + 1,
+              wrapped.materializeHasElement(
+                  IndexOverflowException.safeCast((long) index - elementsSize + 1),
                   new CancellableAsyncConsumer<Boolean>() {
                     @Override
                     public void cancellableAccept(final Boolean hasElement) throws Exception {
@@ -425,11 +432,19 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
             materialized(new AsyncConsumer<ListAsyncMaterializer<E>>() {
               @Override
               public void accept(final ListAsyncMaterializer<E> materializer) {
-                materializer.materializeHasElement(index - numElements,
-                    new CancellableAsyncConsumer<Boolean>() {
+                materializer.materializeElement(index - numElements,
+                    new CancellableIndexedAsyncConsumer<E>() {
                       @Override
-                      public void cancellableAccept(final Boolean hasElement) throws Exception {
-                        consumer.accept(hasElement);
+                      public void cancellableAccept(final int size, final int index,
+                          final E element) throws Exception {
+                        elementsSize = Math.max(elementsSize, size);
+                        consumer.accept(true);
+                      }
+
+                      @Override
+                      public void cancellableComplete(final int size) {
+                        elementsSize = size;
+                        materializeHasElement(index, consumer);
                       }
 
                       @Override

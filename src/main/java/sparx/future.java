@@ -22,6 +22,7 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -113,6 +114,7 @@ import sparx.internal.future.list.TakeRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.TakeWhileListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
 import sparx.util.DeadLockException;
+import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
@@ -282,6 +284,16 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     private static @NotNull <E> Function<java.util.List<E>, java.util.List<E>> decorateFunction() {
       return (Function<java.util.List<E>, java.util.List<E>>) DECORATE_FUNCTION;
+    }
+
+    private static @NotNull <T> List<T> emptyList(@NotNull final ExecutionContext context) {
+      return new List<T>(context, new AtomicReference<CancellationException>(),
+          EmptyListAsyncMaterializer.<T>instance());
+    }
+
+    private static @NotNull List<Boolean> falseList(@NotNull final ExecutionContext context) {
+      return new List<Boolean>(context, new AtomicReference<CancellationException>(),
+          FALSE_MATERIALIZER);
     }
 
     private static @NotNull <E> Chunker<E, List<E>> getChunker(
@@ -1225,6 +1237,16 @@ class future extends Sparx {
       return (Function<java.util.List<E>, java.util.List<E>>) REVERSE_FUNCTION;
     }
 
+    private static @NotNull List<Boolean> trueList(@NotNull final ExecutionContext context) {
+      return new List<Boolean>(context, new AtomicReference<CancellationException>(),
+          TRUE_MATERIALIZER);
+    }
+
+    private static @NotNull List<Integer> zeroList(@NotNull final ExecutionContext context) {
+      return new List<Integer>(context, new AtomicReference<CancellationException>(),
+          ZERO_MATERIALIZER);
+    }
+
     @Override
     public @NotNull List<E> append(final E element) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
@@ -1371,11 +1393,11 @@ class future extends Sparx {
     @Override
     public @NotNull List<Integer> count() {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
-        return new List<Integer>(context, cancelException, ZERO_MATERIALIZER);
+        return zeroList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (knownSize > 0) {
         return new List<Integer>(context, cancelException,
             new ElementToListAsyncMaterializer<Integer>(lazy.List.of(knownSize)));
@@ -1392,10 +1414,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Integer> countWhere(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, cancelException, ZERO_MATERIALIZER);
+        return zeroList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
             lazyMaterializerCountWhere(materializer, cancelException,
@@ -1410,10 +1432,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Integer> countWhere(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, cancelException, ZERO_MATERIALIZER);
+        return zeroList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
             lazyMaterializerCountWhere(materializer, cancelException,
@@ -1538,14 +1560,15 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> drop(final int maxElements) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final int knownSize = materializer.knownSize();
       if (maxElements <= 0 || knownSize == 0) {
+        final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
         return new List<E>(context, cancelException, materializer);
       }
       if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerDrop(materializer, cancelException, maxElements));
@@ -1559,14 +1582,15 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> dropRight(final int maxElements) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final int knownSize = materializer.knownSize();
       if (maxElements <= 0 || knownSize == 0) {
+        final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
         return new List<E>(context, cancelException, materializer);
       }
       if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerDropRight(materializer, cancelException, maxElements));
@@ -1656,10 +1680,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> each(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
+        return falseList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerEach(materializer, cancelException,
@@ -1674,10 +1698,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> each(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
+        return falseList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerEach(materializer, cancelException,
@@ -1695,14 +1719,14 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
           Require.notNull(elements, "elements"));
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (elementsMaterializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
+        return trueList(context);
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
+        return falseList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && !isFuture(elements)) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerEndsWith(materializer, cancelException, elements));
@@ -1715,10 +1739,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> exists(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
+        return falseList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerExists(materializer, cancelException,
@@ -1732,10 +1756,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
+        return falseList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerExists(materializer, cancelException,
@@ -1832,11 +1856,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Integer> findIndexOf(final Object element) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, cancelException,
-            EmptyListAsyncMaterializer.<Integer>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
             lazyMaterializerFindIndexWhere(materializer, cancelException, equalsElement(element)));
@@ -1852,10 +1875,10 @@ class future extends Sparx {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
           Require.notNull(elements, "elements"));
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (elementsMaterializer.knownSize() == 0) {
-        return new List<Integer>(context, cancelException, ZERO_MATERIALIZER);
+        return zeroList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && !isFuture(elements)) {
         return new List<Integer>(context, cancelException,
             lazyMaterializerFindIndexOfSlice(materializer, cancelException, elements));
@@ -1869,11 +1892,10 @@ class future extends Sparx {
     public @NotNull List<Integer> findIndexWhere(
         @NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, cancelException,
-            EmptyListAsyncMaterializer.<Integer>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
             lazyMaterializerFindIndexWhere(materializer, cancelException,
@@ -1888,11 +1910,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Integer> findIndexWhere(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, cancelException,
-            EmptyListAsyncMaterializer.<Integer>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
             lazyMaterializerFindIndexWhere(materializer, cancelException,
@@ -1907,10 +1928,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> findLast(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerFindLast(materializer, cancelException,
@@ -1926,10 +1947,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> findLast(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerFindLast(materializer, cancelException,
@@ -1945,11 +1966,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Integer> findLastIndexOf(final Object element) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, cancelException,
-            EmptyListAsyncMaterializer.<Integer>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
             lazyMaterializerFindLastIndexWhere(materializer, cancelException,
@@ -1987,11 +2007,10 @@ class future extends Sparx {
     public @NotNull List<Integer> findLastIndexWhere(
         @NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, cancelException,
-            EmptyListAsyncMaterializer.<Integer>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
             lazyMaterializerFindLastIndexWhere(materializer, cancelException,
@@ -2007,11 +2026,10 @@ class future extends Sparx {
     public @NotNull List<Integer> findLastIndexWhere(
         @NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Integer>(context, cancelException,
-            EmptyListAsyncMaterializer.<Integer>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
             lazyMaterializerFindLastIndexWhere(materializer, cancelException,
@@ -2080,11 +2098,11 @@ class future extends Sparx {
     public @NotNull <F> List<F> flatMap(
         @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<F>(context, cancelException, EmptyListAsyncMaterializer.<F>instance());
+        return emptyList(context);
       }
       final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<F>(context, cancelException,
           new FlatMapListAsyncMaterializer<E, F>(materializer,
               getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
@@ -2095,11 +2113,11 @@ class future extends Sparx {
     public @NotNull <F> List<F> flatMap(
         @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<F>(context, cancelException, EmptyListAsyncMaterializer.<F>instance());
+        return emptyList(context);
       }
       final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<F>(context, cancelException,
           new FlatMapListAsyncMaterializer<E, F>(materializer,
               getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
@@ -2440,12 +2458,11 @@ class future extends Sparx {
     @Override
     public @NotNull List<? extends List<E>> group(final int maxSize) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<List<E>>(context, cancelException,
-            EmptyListAsyncMaterializer.<List<E>>instance());
+        return emptyList(context);
       }
       final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<List<E>>(context, cancelException,
           new GroupListAsyncMaterializer<E, List<E>>(materializer,
               Require.positive(maxSize, "maxSize"),
@@ -2456,12 +2473,11 @@ class future extends Sparx {
     @Override
     public @NotNull List<? extends List<E>> groupWithPadding(final int size, final E padding) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<List<E>>(context, cancelException,
-            EmptyListAsyncMaterializer.<List<E>>instance());
+        return emptyList(context);
       }
       final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<List<E>>(context, cancelException,
           new GroupListAsyncMaterializer<E, List<E>>(materializer, size,
               List.getChunker(context, taskID, cancelException, Require.positive(size, "size"),
@@ -2471,10 +2487,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> includes(final Object element) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
+        return falseList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerExists(materializer, cancelException, Sparx.<E>equalsElement(element)));
@@ -2489,10 +2505,10 @@ class future extends Sparx {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
           Require.notNull(elements, "elements"));
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (elementsMaterializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
+        return trueList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && !isFuture(elements)) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerIncludesAll(materializer, cancelException, elements));
@@ -2507,10 +2523,10 @@ class future extends Sparx {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final ListAsyncMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
           Require.notNull(elements, "elements"));
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (elementsMaterializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
+        return trueList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && !isFuture(elements)) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerIncludesSlice(materializer, cancelException, elements));
@@ -2655,10 +2671,10 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       final ListAsyncMaterializer<?> elementsMaterializer = getElementsMaterializer(context,
           Require.notNull(elements, "elements"));
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (elementsMaterializer.knownSize() == 0) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && !isFuture(elements)) {
         return new List<E>(context, cancelException,
             lazyMaterializerIntersect(materializer, cancelException,
@@ -2682,6 +2698,11 @@ class future extends Sparx {
     @Override
     public boolean isFailed() {
       return materializer.isFailed();
+    }
+
+    @Override
+    public boolean isSucceeded() {
+      return materializer.isSucceeded();
     }
 
     @Override
@@ -2843,24 +2864,31 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull lazy.ListIterator<E> listIterator() {
-      // TODO: future.ListIterator
-      return lazy.ListIterator.wrap(this);
+    public @NotNull ListIterator<E> listIterator() {
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context), this);
     }
 
     @Override
-    public @NotNull lazy.ListIterator<E> listIterator(final int index) {
-      // TODO: future.ListIterator
-      return lazy.ListIterator.wrap(this);
+    public @NotNull ListIterator<E> listIterator(final int index) {
+      if (index < 0 || index == Integer.MAX_VALUE) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      final int knownSize = materializer.knownSize();
+      if (knownSize >= 0 && index > knownSize) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context), this, index);
     }
 
     @Override
     public @NotNull <F> List<F> map(@NotNull final Function<? super E, F> mapper) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<F>(context, cancelException, EmptyListAsyncMaterializer.<F>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<F>(context, cancelException,
             lazyMaterializerMap(materializer, cancelException,
@@ -2875,10 +2903,10 @@ class future extends Sparx {
     @Override
     public @NotNull <F> List<F> map(@NotNull final IndexedFunction<? super E, F> mapper) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<F>(context, cancelException, EmptyListAsyncMaterializer.<F>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<F>(context, cancelException,
             lazyMaterializerMap(materializer, cancelException, Require.notNull(mapper, "mapper")));
@@ -2893,14 +2921,15 @@ class future extends Sparx {
     public @NotNull List<E> mapAfter(final int numElements,
         @NotNull final Function<? super E, ? extends E> mapper) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
         return new List<E>(context, cancelException, materializer);
       }
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerMapAfter(materializer, cancelException, numElements,
@@ -2917,14 +2946,15 @@ class future extends Sparx {
     public @NotNull List<E> mapAfter(final int numElements,
         @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
         return new List<E>(context, cancelException, materializer);
       }
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerMapAfter(materializer, cancelException, numElements,
@@ -3147,10 +3177,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> none(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
+        return trueList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerNone(materializer, cancelException,
@@ -3166,10 +3196,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> none(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
+        return trueList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerNone(materializer, cancelException,
@@ -3185,10 +3215,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> notAll(@NotNull final IndexedPredicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
+        return trueList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerNotExists(materializer, cancelException,
@@ -3203,10 +3233,10 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> notAll(@NotNull final Predicate<? super E> predicate) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
+        return trueList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
             lazyMaterializerNotExists(materializer, cancelException,
@@ -3269,7 +3299,7 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> plusAll(@NotNull final Iterable<E> elements) {
+    public @NotNull List<E> plusAll(@NotNull final Iterable<? extends E> elements) {
       return appendAll(elements);
     }
 
@@ -3370,14 +3400,15 @@ class future extends Sparx {
         return this;
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
+        final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
         return new List<E>(context, cancelException, materializer);
       }
       if (numElements == 0 && knownSize == 1) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerRemoveAfter(materializer, cancelException, numElements));
@@ -3522,9 +3553,9 @@ class future extends Sparx {
         return this;
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
+        final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
         return new List<E>(context, cancelException, materializer);
       }
       if (knownSize > 0) {
@@ -3541,6 +3572,7 @@ class future extends Sparx {
           knownEnd = Math.min(knownSize, end);
         }
         if (knownStart >= knownEnd) {
+          final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
           return new List<E>(context, cancelException, materializer);
         }
         final int knownLength = knownEnd - knownStart;
@@ -3548,9 +3580,10 @@ class future extends Sparx {
           return removeAfter(knownStart);
         }
         if (knownLength == knownSize) {
-          return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+          return emptyList(context);
         }
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerRemoveSlice(materializer, cancelException, start, end));
@@ -3602,14 +3635,15 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> replaceAfter(final int numElements, final E replacement) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
         return new List<E>(context, cancelException, materializer);
       }
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerMapAfter(materializer, cancelException, numElements,
@@ -3850,18 +3884,19 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> resizeTo(final int numElements, final E padding) {
       Require.notNegative(numElements, "numElements");
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (numElements == 0) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
       if (knownSize >= 0) {
         if (knownSize == 0) {
+          final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
           return new List<E>(context, cancelException,
               new ListToListAsyncMaterializer<E>(lazy.List.times(numElements, padding), context));
         }
         if (knownSize == numElements) {
+          final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
           return new List<E>(context, cancelException, materializer);
         }
         if (knownSize > numElements) {
@@ -3869,6 +3904,7 @@ class future extends Sparx {
         }
         return appendAll(lazy.List.times(numElements - knownSize, padding));
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerResizeTo(materializer, cancelException, numElements, padding));
@@ -3956,13 +3992,13 @@ class future extends Sparx {
       if (end == Integer.MAX_VALUE && start >= 0) {
         return drop(start);
       }
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if ((start == end) || (end >= 0 && start >= end)) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
+        final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
         return new List<E>(context, cancelException, materializer);
       }
       if (knownSize > 0) {
@@ -3979,9 +4015,10 @@ class future extends Sparx {
           knownEnd = Math.min(knownSize, end);
         }
         if (knownStart >= knownEnd) {
-          return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+          return emptyList(context);
         }
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
             lazyMaterializerSlice(materializer, cancelException, start, end));
@@ -4017,13 +4054,13 @@ class future extends Sparx {
       final IteratorAsyncMaterializer<Object> elementsMaterializer = future.getElementsMaterializer(
           context, Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, TRUE_MATERIALIZER);
+        return trueList(context);
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new List<Boolean>(context, cancelException, FALSE_MATERIALIZER);
+        return falseList(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<Boolean>(context, cancelException,
           new StartsWithListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
               cancelException, List.<Boolean>decorateFunction()));
@@ -4067,11 +4104,11 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> take(final int maxElements) {
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (maxElements <= 0) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<E>(context, cancelException, materializer);
       }
@@ -4087,11 +4124,11 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> takeRight(final int maxElements) {
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (maxElements <= 0) {
-        return new List<E>(context, cancelException, EmptyListAsyncMaterializer.<E>instance());
+        return emptyList(context);
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<E>(context, cancelException, materializer);
       }
@@ -4274,6 +4311,11 @@ class future extends Sparx {
 
         @Override
         public boolean isMaterializedAtOnce() {
+          return false;
+        }
+
+        @Override
+        public boolean isSucceeded() {
           return false;
         }
 
@@ -4584,6 +4626,1681 @@ class future extends Sparx {
     }
   }
 
+  public static class ListIterator<E> implements itf.Future<E, lazy.ListIterator<E>>,
+      itf.ListIterator<E> {
+
+    private static final Function<Integer, Integer> INDEX_IDENTITY = new Function<Integer, Integer>() {
+      @Override
+      public Integer apply(final Integer param) {
+        return param;
+      }
+    };
+    private static final Function<? extends List<?>, ? extends ListIterator<?>> LIST_TO_ITERATOR = new Function<List<?>, ListIterator<?>>() {
+      @Override
+      public ListIterator<?> apply(final List<?> param) {
+        return param.listIterator();
+      }
+    };
+
+    private final ExecutionContext context;
+    private final List<E> left;
+    private final List<E> right;
+    private final Object posMutex = new Object();
+
+    private int pos;
+
+    ListIterator(@NotNull final ExecutionContext context, @NotNull final List<E> left,
+        @NotNull final List<E> right) {
+      this.context = context;
+      this.left = left;
+      this.right = right;
+    }
+
+    ListIterator(@NotNull final ExecutionContext context, @NotNull final List<E> left,
+        @NotNull final List<E> right, final int pos) {
+      this(context, left, right);
+      this.pos = pos;
+    }
+
+    private static @NotNull <E> IndexedConsumer<E> offsetConsumer(final long offset,
+        @NotNull final IndexedConsumer<E> consumer) {
+      if (offset == 0) {
+        return consumer;
+      }
+      return new IndexedConsumer<E>() {
+        @Override
+        public void accept(int index, E param) throws Exception {
+          consumer.accept(IndexOverflowException.safeCast(offset + index), param);
+        }
+      };
+    }
+
+    private static @NotNull <E, F> IndexedFunction<E, F> offsetFunction(final long offset,
+        @NotNull final IndexedFunction<E, F> function) {
+      if (offset == 0) {
+        return function;
+      }
+      return new IndexedFunction<E, F>() {
+        @Override
+        public F apply(final int index, final E param) throws Exception {
+          return function.apply(IndexOverflowException.safeCast(offset + index), param);
+        }
+      };
+    }
+
+    private static @NotNull <E> IndexedPredicate<E> offsetPredicate(final long offset,
+        @NotNull final IndexedPredicate<E> predicate) {
+      if (offset == 0) {
+        return predicate;
+      }
+      return new IndexedPredicate<E>() {
+        @Override
+        public boolean test(final int index, final E param) throws Exception {
+          return predicate.test(IndexOverflowException.safeCast(offset + index), param);
+        }
+      };
+    }
+
+    private static @NotNull Function<Integer, Integer> offsetMapper(final long offset) {
+      if (offset == 0) {
+        return INDEX_IDENTITY;
+      }
+      return new Function<Integer, Integer>() {
+        @Override
+        public Integer apply(final Integer param) {
+          return IndexOverflowException.safeCast(offset + param);
+        }
+      };
+    }
+
+    @Override
+    public void add(final E e) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T> T apply(@NotNull Function<? super itf.Sequence<E>, T> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull ListIterator<E> append(final E element) {
+      return new ListIterator<E>(context, left, right.append(element), safePos());
+    }
+
+    @Override
+    public @NotNull ListIterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
+      return new ListIterator<E>(context, left, right.appendAll(elements), safePos());
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull <F> ListIterator<F> as() {
+      return (ListIterator<F>) this;
+    }
+
+    @Override
+    public boolean cancel(final boolean mayInterruptIfRunning) {
+      return false;
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> count() {
+      if (atEnd()) {
+        return zeroIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().count());
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> countWhere(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return zeroIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().countWhere(
+              offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> countWhere(
+        @NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return zeroIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().countWhere(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> diff(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      final List<?> elementsList = new List<Object>(context,
+          new AtomicReference<CancellationException>(),
+          List.getElementsMaterializer(context, Require.notNull(elements, "elements")));
+      final List<E> left = currentLeft();
+      return new ListIterator<E>(context, left.diff(elementsList),
+          currentRight().diff(elementsList.diff(left)));
+    }
+
+    @Override
+    public void doFor(@NotNull final Consumer<? super E> consumer) {
+      if (!atEnd()) {
+        currentRight().doFor(consumer);
+      }
+    }
+
+    @Override
+    public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
+      if (!atEnd()) {
+        currentRight().doFor(offsetConsumer(nextIndex(), Require.notNull(consumer, "consumer")));
+      }
+    }
+
+    @Override
+    public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+      if (!atEnd()) {
+        currentRight().doWhile(
+            offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")));
+      }
+    }
+
+    @Override
+    public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull final IndexedConsumer<? super E> consumer) {
+      if (!atEnd()) {
+        final int offset = nextIndex();
+        currentRight().doWhile(offsetPredicate(offset, Require.notNull(condition, "condition")),
+            offsetConsumer(offset, Require.notNull(consumer, "consumer")));
+      }
+    }
+
+    @Override
+    public void doWhile(@NotNull final Predicate<? super E> predicate) {
+      if (!atEnd()) {
+        currentRight().doWhile(predicate);
+      }
+    }
+
+    @Override
+    public void doWhile(@NotNull final Predicate<? super E> condition,
+        @NotNull final Consumer<? super E> consumer) {
+      if (!atEnd()) {
+        currentRight().doWhile(condition, consumer);
+      }
+    }
+
+    @Override
+    public @NotNull ListIterator<E> drop(final int maxElements) {
+      if (maxElements <= 0 || atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().drop(maxElements));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> dropRight(final int maxElements) {
+      if (maxElements <= 0 || atEnd()) {
+        return copyIterator();
+      }
+      final int pos = safePos();
+      final List<E> right = this.right;
+      final int knownSize = right.materializer.knownSize();
+      if (knownSize >= 0 && knownSize - Math.max(0, pos) >= maxElements) {
+        new ListIterator<E>(context, left, right.dropRight(maxElements), pos);
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().dropRight(maxElements));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> dropRightWhile(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().dropRightWhile(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> dropRightWhile(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().dropRightWhile(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> dropWhile(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().dropWhile(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().dropWhile(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> each(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return falseIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().each(
+              offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> each(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return falseIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().each(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().endsWith(elements));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> exists(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return falseIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().exists(
+              offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return falseIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().exists(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft().filter(predicate),
+          currentRight().filter(offsetPredicate(nextIndex(), predicate)));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> filter(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft().filter(predicate),
+          currentRight().filter(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> findAny(@NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context), currentRight().findAny(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> findAny(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().findAny(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> findFirst(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context), currentRight().findFirst(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> findFirst(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().findFirst(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> findIndexOf(final Object element) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().findIndexOf(element).map(offsetMapper(nextIndex())));
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().findIndexOfSlice(elements).map(offsetMapper(nextIndex())));
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> findIndexWhere(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().findIndexWhere(
+                  offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")))
+              .map(offsetMapper(nextIndex())));
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> findIndexWhere(
+        @NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().findIndexWhere(predicate).map(offsetMapper(nextIndex())));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> findLast(@NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context), currentRight().findLast(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> findLast(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().findLast(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> findLastIndexOf(final Object element) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().findLastIndexOf(element).map(offsetMapper(nextIndex())));
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> findLastIndexOfSlice(
+        @NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().findLastIndexOfSlice(elements).map(offsetMapper(nextIndex())));
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> findLastIndexWhere(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().findLastIndexWhere(
+                  offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")))
+              .map(offsetMapper(nextIndex())));
+    }
+
+    @Override
+    public @NotNull ListIterator<Integer> findLastIndexWhere(
+        @NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
+          currentRight().findLastIndexWhere(predicate).map(offsetMapper(nextIndex())));
+    }
+
+    @Override
+    public E first() {
+      final int pos = safePos();
+      if (pos >= 0) {
+        return right.get(pos);
+      }
+      final List<E> left = this.left;
+      return left.get(left.size() + pos);
+    }
+
+    @Override
+    public @NotNull <F> ListIterator<F> flatMap(
+        @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
+      return new ListIterator<F>(context, currentLeft().flatMap(mapper),
+          currentRight().flatMap(mapper));
+    }
+
+    @Override
+    public @NotNull <F> ListIterator<F> flatMap(
+        @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
+      return new ListIterator<F>(context, currentLeft().flatMap(mapper),
+          currentRight().flatMap(offsetFunction(nextIndex(), mapper)));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> flatMapAfter(final int numElements,
+        @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
+        return this;
+      }
+      final int pos = safePos();
+      if (pos >= 0) {
+        return new ListIterator<E>(context, left,
+            right.flatMapAfter(SizeOverflowException.safeCast((long) numElements + pos), mapper));
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().flatMapAfter(numElements, mapper));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> flatMapAfter(final int numElements,
+        @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+      if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
+        return this;
+      }
+      final int pos = safePos();
+      if (pos >= 0) {
+        return new ListIterator<E>(context, left,
+            right.flatMapAfter(SizeOverflowException.safeCast((long) numElements + pos),
+                offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().flatMapAfter(numElements,
+          offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> flatMapFirstWhere(
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+      if (atEnd()) {
+        return this;
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().flatMapFirstWhere(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")),
+          offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> flatMapFirstWhere(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      if (atEnd()) {
+        return this;
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().flatMapFirstWhere(predicate, mapper));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> flatMapLastWhere(
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+      if (atEnd()) {
+        return this;
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().flatMapLastWhere(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")),
+          offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> flatMapLastWhere(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      if (atEnd()) {
+        return this;
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().flatMapLastWhere(predicate, mapper));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> flatMapWhere(
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+      if (atEnd()) {
+        return this;
+      }
+      return new ListIterator<E>(context, currentLeft().flatMapWhere(predicate, mapper),
+          currentRight().flatMapWhere(
+              offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")),
+              offsetFunction(nextIndex(), mapper)));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> flatMapWhere(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      if (atEnd()) {
+        return this;
+      }
+      return new ListIterator<E>(context, currentLeft().flatMapWhere(predicate, mapper),
+          currentRight().flatMapWhere(predicate, mapper));
+    }
+
+    @Override
+    public @NotNull <F> ListIterator<F> fold(final F identity,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      if (atEnd()) {
+        return elementIterator(identity);
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<F>(context, List.<F>emptyList(context),
+          currentRight().fold(identity, operation));
+    }
+
+    @Override
+    public @NotNull <F> ListIterator<F> foldLeft(final F identity,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      if (atEnd()) {
+        return elementIterator(identity);
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<F>(context, List.<F>emptyList(context),
+          currentRight().foldLeft(identity, operation));
+    }
+
+    @Override
+    public @NotNull <F> ListIterator<F> foldRight(final F identity,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      if (atEnd()) {
+        return elementIterator(identity);
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<F>(context, List.<F>emptyList(context),
+          currentRight().foldRight(identity, operation));
+    }
+
+    @Override
+    public lazy.ListIterator<E> get() throws InterruptedException, ExecutionException {
+      final int pos = safePos();
+      return new lazy.ListIterator<E>(left.get(), right.get(), pos);
+    }
+
+    @Override
+    public lazy.ListIterator<E> get(final long timeout, @NotNull final TimeUnit unit)
+        throws InterruptedException, ExecutionException, TimeoutException {
+      final long startTimeMillis = System.currentTimeMillis();
+      final int pos = safePos();
+      long timeoutMillis = unit.toMillis(timeout);
+      final lazy.List<E> leftList = left.get(timeoutMillis, TimeUnit.MILLISECONDS);
+      timeoutMillis -= startTimeMillis - System.currentTimeMillis();
+      if (timeoutMillis <= 0) {
+        throw new TimeoutException();
+      }
+      final lazy.List<E> rightList = right.get(timeoutMillis, TimeUnit.MILLISECONDS);
+      return new lazy.ListIterator<E>(leftList, rightList, pos);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull ListIterator<? extends ListIterator<E>> group(final int maxSize) {
+      return new ListIterator<ListIterator<E>>(context,
+          currentLeft().group(maxSize).map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
+          currentRight().group(maxSize).map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull ListIterator<? extends ListIterator<E>> groupWithPadding(final int size,
+        final E padding) {
+      return new ListIterator<ListIterator<E>>(context,
+          currentLeft().groupWithPadding(size, padding)
+              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
+          currentRight().groupWithPadding(size, padding)
+              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
+    }
+
+    @Override
+    public boolean hasNext() {
+      final int pos = safePos();
+      if (pos >= 0) {
+        final AtomicReference<CancellationException> cancelException = right.cancelException;
+        final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>(cancelException);
+        final ExecutionContext context = this.context;
+        final ListAsyncMaterializer<E> materializer = right.materializer;
+        if (context.isCurrent()) {
+          if (!materializer.isDone()) {
+            throw new DeadLockException("cannot wait on the future own execution context");
+          }
+          materializer.materializeElements(new AsyncConsumer<java.util.List<E>>() {
+            @Override
+            public void accept(final java.util.List<E> elements) {
+              consumer.accept(pos < elements.size());
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) {
+              consumer.error(error);
+            }
+          });
+        } else {
+          final String taskID = right.taskID;
+          context.scheduleAfter(new Task() {
+            @Override
+            public void run() {
+              try {
+                materializer.materializeHasElement(pos, consumer);
+              } catch (final Exception e) {
+                consumer.error(e);
+              }
+            }
+
+            @Override
+            public @NotNull String taskID() {
+              return taskID;
+            }
+
+            @Override
+            public int weight() {
+              return materializer.weightHasElement();
+            }
+          });
+        }
+        try {
+          return consumer.get();
+        } catch (final InterruptedException e) {
+          throw UncheckedException.toUnchecked(e);
+        }
+      }
+      return true;
+    }
+
+    @Override
+    public boolean hasPrevious() {
+      final int pos = safePos();
+      if (pos == 0) {
+        return !left.isEmpty();
+      }
+      if (pos < 0) {
+        return left.size() + pos >= 0;
+      }
+      return true;
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> includes(final Object element) {
+      if (atEnd()) {
+        return falseIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().includes(element));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> includesAll(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().includesAll(elements));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().includesSlice(elements));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> insert(final E element) {
+      final int pos = this.pos;
+      if (pos >= 0) {
+        return new ListIterator<E>(context, left, right.insertAfter(pos, element), pos);
+      }
+      return new ListIterator<E>(context, left.insertAfter(nextIndex(), element), right, pos);
+    }
+
+    @Override
+    public @NotNull ListIterator<E> insertAfter(final int numElements, final E element) {
+      if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
+        return this;
+      }
+      final int pos = safePos();
+      if (pos >= 0) {
+        return new ListIterator<E>(context, left,
+            right.insertAfter(SizeOverflowException.safeCast((long) numElements + pos), element));
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().insertAfter(numElements, element));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> insertAll(@NotNull final Iterable<? extends E> elements) {
+      final int pos = safePos();
+      if (pos >= 0) {
+        return new ListIterator<E>(context, left, right.insertAllAfter(pos, elements), pos);
+      }
+      return new ListIterator<E>(context, left.insertAllAfter(nextIndex(), elements), right, pos);
+    }
+
+    @Override
+    public @NotNull ListIterator<E> insertAllAfter(final int numElements,
+        @NotNull final Iterable<? extends E> elements) {
+      if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
+        return this;
+      }
+      final int pos = safePos();
+      if (pos >= 0) {
+        return new ListIterator<E>(context, left,
+            right.insertAllAfter(SizeOverflowException.safeCast((long) numElements + pos),
+                elements));
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().insertAllAfter(numElements, elements));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> intersect(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      final List<?> elementsList = new List<Object>(context,
+          new AtomicReference<CancellationException>(),
+          List.getElementsMaterializer(context, Require.notNull(elements, "elements")));
+      final List<E> left = currentLeft();
+      return new ListIterator<E>(context, left.intersect(elementsList),
+          currentRight().intersect(elementsList.diff(left)));
+    }
+
+    @Override
+    public boolean isDone() {
+      return left.isDone() && right.isDone();
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return left.isCancelled() && right.isCancelled();
+    }
+
+    @Override
+    public boolean isFailed() {
+      return left.isFailed() || right.isFailed() || (left.isCancelled() && right.isDone()) || (
+          right.isCancelled() && left.isDone());
+    }
+
+    @Override
+    public boolean isSucceeded() {
+      return left.isSucceeded() && right.isSucceeded();
+    }
+
+    @Override
+    public @NotNull lazy.Iterator<E> iterator() {
+      // TODO: future.Iterator
+      if (atEnd()) {
+        return lazy.Iterator.of();
+      }
+      return currentRight().iterator();
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return left.isEmpty() && right.isEmpty();
+    }
+
+    @Override
+    public E last() {
+      final List<E> right = this.right;
+      return right.isEmpty() ? left.last() : right.last();
+    }
+
+    @Override
+    public @NotNull <F> ListIterator<F> map(@NotNull final Function<? super E, F> mapper) {
+      return new ListIterator<F>(context, currentLeft().map(mapper), currentRight().map(mapper));
+    }
+
+    @Override
+    public @NotNull <F> ListIterator<F> map(@NotNull final IndexedFunction<? super E, F> mapper) {
+      return new ListIterator<F>(context, currentLeft().map(mapper),
+          currentRight().map(offsetFunction(nextIndex(), mapper)));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> mapAfter(final int numElements,
+        @NotNull final Function<? super E, ? extends E> mapper) {
+      if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().mapAfter(numElements, mapper));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> mapAfter(final int numElements,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().mapAfter(numElements,
+          offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> mapFirstWhere(
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().mapFirstWhere(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")),
+          offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> mapFirstWhere(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends E> mapper) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().mapFirstWhere(predicate, mapper));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> mapLastWhere(
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().mapLastWhere(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")),
+          offsetFunction(nextIndex(), Require.notNull(mapper, "mapper"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> mapLastWhere(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends E> mapper) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().mapLastWhere(predicate, mapper));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> mapWhere(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      final List<E> left = this.left;
+      final int offset = left.size();
+      return new ListIterator<E>(context, left.mapWhere(predicate, mapper),
+          right.mapWhere(offsetPredicate(offset, predicate), offsetFunction(offset, mapper)), pos);
+    }
+
+    @Override
+    public @NotNull ListIterator<E> mapWhere(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends E> mapper) {
+      return new ListIterator<E>(context, left.mapWhere(predicate, mapper),
+          right.mapWhere(predicate, mapper), safePos());
+    }
+
+    @Override
+    public @NotNull ListIterator<E> max(@NotNull final Comparator<? super E> comparator) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().max(comparator));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> min(@NotNull final Comparator<? super E> comparator) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().min(comparator));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> moveBy(final int maxElements) {
+      if (maxElements == 0) {
+        return this;
+      }
+      final long pos = safePos();
+      final long newPos = pos + maxElements;
+      if (newPos >= Integer.MAX_VALUE || newPos <= Integer.MIN_VALUE) {
+        throw new IndexOverflowException(newPos);
+      }
+      if ((newPos >= 0 && newPos < pos) || (newPos <= 0 && newPos > pos)) {
+        return new ListIterator<E>(context, left, right, (int) newPos);
+      }
+      if (newPos >= 0) {
+        final int knownSize = right.materializer.knownSize();
+        if (newPos <= knownSize) {
+          return new ListIterator<E>(context, left, right, (int) newPos);
+        }
+      } else {
+        final int knownSize = left.materializer.knownSize();
+        if (-newPos <= knownSize) {
+          return new ListIterator<E>(context, left, right, (int) newPos);
+        }
+      }
+      final List<E> newLeft;
+      if (newPos == 0) {
+        newLeft = left;
+      } else if (newPos > 0) {
+        newLeft = left.appendAll(right.take((int) newPos));
+      } else {
+        final int knownSize = left.materializer.knownSize();
+        if (knownSize >= 0) {
+          newLeft = left.take((int) (knownSize + newPos));
+        } else {
+          newLeft = left.dropRight((int) -newPos);
+        }
+      }
+      final List<E> newRight;
+      if (newPos == 0) {
+        newRight = right;
+      } else if (newPos > 0) {
+        newRight = right.drop((int) newPos);
+      } else {
+        final int knownSize = left.materializer.knownSize();
+        if (knownSize >= 0) {
+          newRight = left.drop((int) (knownSize + newPos)).appendAll(right);
+        } else {
+          newRight = left.takeRight((int) -newPos).appendAll(right);
+        }
+      }
+      return new ListIterator<E>(context, newLeft, newRight);
+    }
+
+    @Override
+    public @NotNull ListIterator<E> moveTo(final int index) {
+      Require.notNegative(index, "index");
+      int knownSize = left.materializer.knownSize();
+      if (knownSize >= 0) {
+        final int newPos = index - knownSize;
+        if (newPos < 0) {
+          return new ListIterator<E>(context, left, right, newPos);
+        }
+        knownSize = right.materializer.knownSize();
+        if (knownSize >= 0 && newPos <= knownSize) {
+          return new ListIterator<E>(context, left, right, newPos);
+        }
+      }
+      return new ListIterator<E>(context, left.count().flatMap(new Function<Integer, List<E>>() {
+        @Override
+        public List<E> apply(final Integer size) {
+          final int newPos = index - size;
+          if (newPos == 0) {
+            return left;
+          } else if (newPos > 0) {
+            return left.appendAll(right.take(newPos));
+          } else {
+            return left.take(size + newPos);
+          }
+        }
+      }), left.count().flatMap(new Function<Integer, List<E>>() {
+        @Override
+        public List<E> apply(final Integer size) {
+          final int newPos = index - size;
+          if (newPos == 0) {
+            return right;
+          } else if (newPos > 0) {
+            return right.drop(newPos);
+          } else {
+            return left.drop(size + newPos).appendAll(right);
+          }
+        }
+      }));
+    }
+
+    @Override
+    public E next() {
+      try {
+        final int index = safeGetAndIncPos();
+        return index < 0 ? left.get(left.size() + index) : right.get(index);
+      } catch (final IndexOutOfBoundsException ignored) {
+        // FIXME: where the exception come from?
+        throw new NoSuchElementException();
+      }
+    }
+
+    @Override
+    public int nextIndex() {
+      return IndexOverflowException.safeCast((long) left.size() + safePos());
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
+      return currentRight().nonBlockingFor(consumer);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
+      return currentRight().nonBlockingFor(consumer);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingGet() {
+      return left.appendAll(right).nonBlockingGet();
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return currentRight().nonBlockingWhile(predicate);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull final IndexedConsumer<? super E> consumer) {
+      return currentRight().nonBlockingWhile(condition, consumer);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
+      return currentRight().nonBlockingWhile(predicate);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
+        @NotNull Consumer<? super E> consumer) {
+      return currentRight().nonBlockingWhile(condition, consumer);
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> none(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return trueIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().none(
+              offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> none(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return trueIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().none(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> notAll(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return trueIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().notAll(
+              offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> notAll(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return trueIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().notAll(predicate));
+    }
+
+    @Override
+    public boolean notEmpty() {
+      return !left.isEmpty() || !right.isEmpty();
+    }
+
+    @Override
+    public @NotNull ListIterator<E> orElse(@NotNull final Iterable<? extends E> elements) {
+      final ExecutionContext context = this.context;
+      if (atEnd()) {
+        return new ListIterator<E>(context, List.<E>emptyList(context),
+            new List<E>(context, new AtomicReference<CancellationException>(),
+                List.getElementsMaterializer(context, Require.notNull(elements, "elements"))));
+      }
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().orElse(elements));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> orElseGet(
+        @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().orElseGet(supplier));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> plus(final E element) {
+      return new ListIterator<E>(context, left, right.plus(element), safePos());
+    }
+
+    @Override
+    public @NotNull ListIterator<E> plusAll(@NotNull final Iterable<? extends E> elements) {
+      return new ListIterator<E>(context, left, right.plusAll(elements), safePos());
+    }
+
+    @Override
+    public @NotNull ListIterator<E> reduce(
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().reduce(operation));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> reduceLeft(
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().reduceLeft(operation));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> reduceRight(
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().reduceRight(operation));
+    }
+
+    @Override
+    public E previous() {
+      try {
+        final int index = safeDecAndGetPos();
+        return index < 0 ? left.get(left.size() + index) : right.get(index);
+      } catch (final IndexOutOfBoundsException ignored) {
+        // FIXME: where the exception come from?
+        throw new NoSuchElementException();
+      }
+    }
+
+    @Override
+    public int previousIndex() {
+      return nextIndex() - 1;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeAfter(final int numElements) {
+      if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().removeAfter(numElements));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeEach(final E element) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft().removeEach(element),
+          currentRight().removeEach(element));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeFirst(final E element) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().removeFirst(element));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeFirstWhere(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().removeFirstWhere(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeFirstWhere(
+        @NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().removeFirstWhere(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeLast(final E element) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().removeLast(element));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeLastWhere(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().removeLastWhere(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeLastWhere(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().removeLastWhere(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeSlice(final int start, final int end) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().removeSlice(start, end));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeWhere(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().removeWhere(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> removeWhere(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().removeWhere(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceAfter(final int numElements, final E replacement) {
+      if (numElements < 0 || numElements == Integer.MAX_VALUE || atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().replaceAfter(numElements, replacement));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceEach(final E element, final E replacement) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft().replaceEach(element, replacement),
+          currentRight().replaceEach(element, replacement));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceFirst(final E element, final E replacement) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().replaceFirst(element, replacement));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceFirstWhere(
+        @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().replaceFirstWhere(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")), replacement));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceFirstWhere(@NotNull final Predicate<? super E> predicate,
+        final E replacement) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().replaceFirstWhere(Require.notNull(predicate, "predicate"), replacement));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceLast(final E element, final E replacement) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().replaceLast(element, replacement));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceLastWhere(
+        @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().replaceLastWhere(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate")), replacement));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceLastWhere(@NotNull final Predicate<? super E> predicate,
+        final E replacement) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().replaceLastWhere(predicate, replacement));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceSlice(final int start, final int end,
+        @NotNull final Iterable<? extends E> patch) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().replaceSlice(start, end, patch));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceWhere(
+        @NotNull final IndexedPredicate<? super E> predicate, final E replacement) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft().replaceWhere(predicate, replacement),
+          currentRight().replaceWhere(offsetPredicate(nextIndex(), predicate), replacement));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> replaceWhere(@NotNull final Predicate<? super E> predicate,
+        final E replacement) {
+      if (atEnd()) {
+        return copyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft().replaceWhere(predicate, replacement),
+          currentRight().replaceWhere(predicate, replacement));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> resizeTo(final int numElements, final E padding) {
+      Require.notNegative(numElements, "numElements");
+      if (atEnd()) {
+        return appendAll(lazy.List.times(numElements, padding));
+      }
+      return new ListIterator<E>(context, currentLeft(),
+          currentRight().resizeTo(numElements, padding));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> reverse() {
+      if (atEnd()) {
+        final ExecutionContext context = this.context;
+        return new ListIterator<E>(context, left.appendAll(right).reverse(),
+            List.<E>emptyList(context));
+      }
+      return new ListIterator<E>(context, currentRight().reverse(), currentLeft().reverse());
+    }
+
+    @Override
+    public void set(final E e) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int size() {
+      return SizeOverflowException.safeCast((long) right.size() - safePos());
+    }
+
+    @Override
+    public @NotNull ListIterator<E> slice(final int start) {
+      return slice(start, Integer.MAX_VALUE);
+    }
+
+    @Override
+    public @NotNull ListIterator<E> slice(final int start, final int end) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().slice(start, end));
+    }
+
+    @Override
+    public @NotNull ListIterator<Boolean> startsWith(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
+          currentRight().startsWith(elements));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> symmetricDiff(@NotNull final Iterable<? extends E> elements) {
+      final ExecutionContext context = this.context;
+      final List<E> elementsList = new List<E>(context,
+          new AtomicReference<CancellationException>(),
+          List.getElementsMaterializer(context, Require.notNull(elements, "elements")));
+      final List<E> left = currentLeft();
+      return new ListIterator<E>(context, left.symmetricDiff(elementsList),
+          currentRight().symmetricDiff(elementsList.diff(left)));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> take(final int maxElements) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().take(maxElements));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> takeRight(final int maxElements) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().takeRight(maxElements));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> takeRightWhile(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context), currentRight().takeRightWhile(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> takeRightWhile(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          currentRight().takeRightWhile(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> takeWhile(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().takeWhile(
+          offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> takeWhile(@NotNull final Predicate<? super E> predicate) {
+      if (atEnd()) {
+        return emptyIterator();
+      }
+      return new ListIterator<E>(context, currentLeft(), currentRight().takeWhile(predicate));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> union(@NotNull final Iterable<? extends E> elements) {
+      final ExecutionContext context = this.context;
+      return new ListIterator<E>(context, List.<E>emptyList(context),
+          left.appendAll(right).union(elements), nextIndex());
+    }
+
+    private boolean atEnd() {
+      final int pos = safePos();
+      return pos >= 0 && pos == right.materializer.knownSize();
+    }
+
+    private @NotNull List<E> currentLeft() {
+      final int pos = safePos();
+      if (pos == 0) {
+        return left;
+      } else if (pos > 0) {
+        return left.appendAll(right.take(pos));
+      }
+      return left.dropRight(-pos);
+    }
+
+    private @NotNull List<E> currentRight() {
+      final int pos = safePos();
+      if (pos == 0) {
+        return right;
+      } else if (pos > 0) {
+        return right.drop(pos);
+      }
+      return left.takeRight(-pos).appendAll(right);
+    }
+
+    private @NotNull ListIterator<E> copyIterator() {
+      return new ListIterator<E>(context, left, right, safePos());
+    }
+
+    private @NotNull <T> ListIterator<T> elementIterator(final T element) {
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new ListIterator<T>(context,
+          new List<T>(context, cancelException, EmptyListAsyncMaterializer.<T>instance()),
+          new List<T>(context, cancelException,
+              new ElementToListAsyncMaterializer<T>(lazy.List.of(element))));
+    }
+
+    private @NotNull <T> ListIterator<T> emptyIterator() {
+      final ExecutionContext context = this.context;
+      final List<T> list = List.emptyList(context);
+      return new ListIterator<T>(context, list, list);
+    }
+
+    private @NotNull ListIterator<Boolean> falseIterator() {
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new ListIterator<Boolean>(context, new List<Boolean>(context, cancelException,
+          EmptyListAsyncMaterializer.<Boolean>instance()),
+          new List<Boolean>(context, cancelException, List.FALSE_MATERIALIZER));
+    }
+
+    private @NotNull ListIterator<Boolean> trueIterator() {
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new ListIterator<Boolean>(context, new List<Boolean>(context, cancelException,
+          EmptyListAsyncMaterializer.<Boolean>instance()),
+          new List<Boolean>(context, cancelException, List.TRUE_MATERIALIZER));
+    }
+
+    private int safeDecAndGetPos() {
+      synchronized (posMutex) {
+        return --pos;
+      }
+    }
+
+    private int safeGetAndIncPos() {
+      synchronized (posMutex) {
+        return pos++;
+      }
+    }
+
+    private int safePos() {
+      synchronized (posMutex) {
+        return pos;
+      }
+    }
+
+    private @NotNull ListIterator<Integer> zeroIterator() {
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new ListIterator<Integer>(context, new List<Integer>(context, cancelException,
+          EmptyListAsyncMaterializer.<Integer>instance()),
+          new List<Integer>(context, cancelException, List.ZERO_MATERIALIZER));
+    }
+  }
+
   private static class BlockingConsumer<P> implements AsyncConsumer<P> {
 
     private final AtomicReference<CancellationException> cancelException;
@@ -4744,6 +6461,11 @@ class future extends Sparx {
 
     @Override
     public boolean isMaterializedAtOnce() {
+      return true;
+    }
+
+    @Override
+    public boolean isSucceeded() {
       return true;
     }
 

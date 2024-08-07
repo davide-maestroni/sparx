@@ -70,6 +70,11 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public boolean isSucceeded() {
+    return wrapped.isSucceeded();
+  }
+
+  @Override
   public int knownSize() {
     return wrapped.knownSize();
   }

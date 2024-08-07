@@ -103,6 +103,11 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return 1;
     }

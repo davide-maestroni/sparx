@@ -114,6 +114,11 @@ public class TakeListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return Math.min(wrapped.knownSize(), maxElements);
     }
@@ -306,25 +311,17 @@ public class TakeListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
     @Override
     public void materializeHasElement(final int index,
         @NotNull final AsyncConsumer<Boolean> consumer) {
-      if (index < 0) {
+      if (index < 0 || index >= maxElements) {
         safeConsume(consumer, false, LOGGER);
       } else {
         final int knownSize = safeSize(wrappedSize);
         if (knownSize >= 0 && index < knownSize) {
           safeConsume(consumer, true, LOGGER);
         } else {
-          wrapped.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
+          wrapped.materializeHasElement(index, new CancellableAsyncConsumer<Boolean>() {
             @Override
-            public void cancellableAccept(final int size, final int index, final E element)
-                throws Exception {
-              final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size));
-              consumer.accept(index < knownSize);
-            }
-
-            @Override
-            public void cancellableComplete(final int size) throws Exception {
-              wrappedSize = size;
-              consumer.accept(false);
+            public void cancellableAccept(final Boolean hasElement) throws Exception {
+              consumer.accept(hasElement);
             }
 
             @Override
@@ -469,7 +466,7 @@ public class TakeListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     @Override
     public int weightHasElement() {
-      return wrappedSize < 0 ? wrapped.weightElement() : 1;
+      return wrappedSize < 0 ? wrapped.weightHasElement() : 1;
     }
 
     @Override

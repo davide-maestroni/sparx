@@ -120,6 +120,11 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return wrapped.knownSize();
     }
@@ -367,6 +372,11 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
     @Override
     public boolean isMaterializedAtOnce() {
       return wrapped.isMaterializedAtOnce();
+    }
+
+    @Override
+    public boolean isSucceeded() {
+      return false;
     }
 
     @Override

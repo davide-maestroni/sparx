@@ -116,6 +116,11 @@ public class MapAfterListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return knownSize;
     }

@@ -65,6 +65,11 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   }
 
   @Override
+  public boolean isSucceeded() {
+    return status.get() == STATUS_DONE;
+  }
+
+  @Override
   public boolean isMaterializedAtOnce() {
     return isDone();
   }
@@ -363,6 +368,11 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
 
     @Override
     public boolean isFailed() {
+      return false;
+    }
+
+    @Override
+    public boolean isSucceeded() {
       return false;
     }
 

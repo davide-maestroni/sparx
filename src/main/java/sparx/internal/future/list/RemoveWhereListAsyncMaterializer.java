@@ -98,6 +98,11 @@ public class RemoveWhereListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }

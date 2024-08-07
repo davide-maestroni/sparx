@@ -106,6 +106,11 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }

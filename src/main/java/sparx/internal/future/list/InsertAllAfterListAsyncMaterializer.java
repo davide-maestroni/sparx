@@ -120,6 +120,11 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return knownSize;
     }
@@ -459,9 +464,21 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
                     }
 
                     @Override
-                    public void cancellableComplete(final int size) throws Exception {
+                    public void cancellableComplete(final int size) {
                       elementsSize = size;
-                      consumer.accept(index < safeSize(numElements, wrappedSize, elementsSize));
+                      wrapped.materializeHasElement(index - size,
+                          new CancellableAsyncConsumer<Boolean>() {
+                            @Override
+                            public void cancellableAccept(final Boolean hasElement)
+                                throws Exception {
+                              consumer.accept(hasElement);
+                            }
+
+                            @Override
+                            public void error(@NotNull final Exception error) throws Exception {
+                              consumer.error(error);
+                            }
+                          });
                     }
 
                     @Override
@@ -690,8 +707,8 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
     public int weightContains() {
       final ListAsyncMaterializer<E> wrapped = this.wrapped;
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) (wrappedSize < 0 ? wrapped.weightHasElement() : 1) + wrapped.weightContains()
-              + elementsMaterializer.weightContains());
+          ((long) wrapped.weightContains() * 2) + (wrappedSize < 0 ? wrapped.weightHasElement() : 1)
+              + +elementsMaterializer.weightContains());
     }
 
     @Override

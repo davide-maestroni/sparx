@@ -114,6 +114,11 @@ public class TakeWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }

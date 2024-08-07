@@ -57,6 +57,11 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
+  public boolean isSucceeded() {
+    return false;
+  }
+
+  @Override
   public int knownSize() {
     return -1;
   }

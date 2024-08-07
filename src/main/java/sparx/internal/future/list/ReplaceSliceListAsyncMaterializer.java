@@ -78,13 +78,13 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
   }
 
   @Override
-  public int knownSize() {
-    return knownSize;
+  public boolean isMaterializedAtOnce() {
+    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   @Override
-  public boolean isMaterializedAtOnce() {
-    return isMaterializedAtOnce || super.isMaterializedAtOnce();
+  public int knownSize() {
+    return knownSize;
   }
 
   private interface StateConsumer<E> {
@@ -137,6 +137,11 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
     @Override
     public boolean isMaterializedAtOnce() {
       return wrapped.isMaterializedAtOnce();
+    }
+
+    @Override
+    public boolean isSucceeded() {
+      return false;
     }
 
     @Override
@@ -378,6 +383,11 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
     @Override
     public boolean isMaterializedAtOnce() {
       return wrapped.isMaterializedAtOnce();
+    }
+
+    @Override
+    public boolean isSucceeded() {
+      return false;
     }
 
     @Override

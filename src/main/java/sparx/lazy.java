@@ -209,7 +209,7 @@ public class lazy extends Sparx {
 
     private final IteratorMaterializer<E> materializer;
 
-    private Iterator(@NotNull final IteratorMaterializer<E> materializer) {
+    Iterator(@NotNull final IteratorMaterializer<E> materializer) {
       this.materializer = materializer;
     }
 
@@ -1444,7 +1444,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> plusAll(@NotNull final Iterable<E> elements) {
+    public @NotNull Iterator<E> plusAll(@NotNull final Iterable<? extends E> elements) {
       return appendAll(elements);
     }
 
@@ -2148,7 +2148,7 @@ public class lazy extends Sparx {
 
     private final ListMaterializer<E> materializer;
 
-    private List(@NotNull final ListMaterializer<E> materializer) {
+    List(@NotNull final ListMaterializer<E> materializer) {
       this.materializer = materializer;
     }
 
@@ -3538,7 +3538,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> plusAll(@NotNull final Iterable<E> elements) {
+    public @NotNull List<E> plusAll(@NotNull final Iterable<? extends E> elements) {
       return appendAll(elements);
     }
 
@@ -4306,12 +4306,12 @@ public class lazy extends Sparx {
 
     private int pos;
 
-    private ListIterator(@NotNull final List<E> left, @NotNull final List<E> right) {
+    ListIterator(@NotNull final List<E> left, @NotNull final List<E> right) {
       this.left = left;
       this.right = right;
     }
 
-    private ListIterator(@NotNull final List<E> left, @NotNull final List<E> right, final int pos) {
+    ListIterator(@NotNull final List<E> left, @NotNull final List<E> right, final int pos) {
       this(left, right);
       this.pos = pos;
     }
@@ -5392,7 +5392,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull ListIterator<E> plusAll(@NotNull final Iterable<E> elements) {
+    public @NotNull ListIterator<E> plusAll(@NotNull final Iterable<? extends E> elements) {
       return new ListIterator<E>(left, right.plusAll(elements), pos);
     }
 
@@ -5670,7 +5670,7 @@ public class lazy extends Sparx {
 
     @Override
     public int size() {
-      return right.size();
+      return SizeOverflowException.safeCast((long) right.size() - pos);
     }
 
     @Override

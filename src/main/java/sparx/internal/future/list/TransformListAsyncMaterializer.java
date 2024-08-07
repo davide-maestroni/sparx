@@ -129,6 +129,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return wrapped.knownSize();
     }
@@ -338,6 +343,11 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
     @Override
     public boolean isMaterializedAtOnce() {
       return true;
+    }
+
+    @Override
+    public boolean isSucceeded() {
+      return false;
     }
 
     @Override

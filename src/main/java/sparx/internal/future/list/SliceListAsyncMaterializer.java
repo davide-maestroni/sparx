@@ -143,6 +143,11 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }
@@ -387,6 +392,11 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     @Override
     public boolean isMaterializedAtOnce() {
       return wrapped.isMaterializedAtOnce();
+    }
+
+    @Override
+    public boolean isSucceeded() {
+      return false;
     }
 
     @Override

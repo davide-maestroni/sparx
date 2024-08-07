@@ -97,6 +97,11 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }

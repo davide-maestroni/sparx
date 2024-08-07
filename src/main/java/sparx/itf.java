@@ -343,7 +343,7 @@ class itf {
 
     @Override
     @NotNull
-    Collection<E> plusAll(@NotNull Iterable<E> elements);
+    Collection<E> plusAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -496,6 +496,8 @@ class itf {
   public interface Future<E, T> extends java.util.concurrent.Future<T> {
 
     boolean isFailed();
+
+    boolean isSucceeded();
 
     @NotNull
     java.util.concurrent.Future<?> nonBlockingFor(@NotNull Consumer<? super E> consumer);
@@ -862,7 +864,7 @@ class itf {
 
     @Override
     @NotNull
-    Iterator<E> plusAll(@NotNull Iterable<E> elements);
+    Iterator<E> plusAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -1358,7 +1360,7 @@ class itf {
 
     @Override
     @NotNull
-    List<E> plusAll(@NotNull Iterable<E> elements);
+    List<E> plusAll(@NotNull Iterable<? extends E> elements);
 
     @NotNull
     List<E> prepend(E element);
@@ -1856,7 +1858,7 @@ class itf {
 
     @Override
     @NotNull
-    ListIterator<E> plusAll(@NotNull Iterable<E> elements);
+    ListIterator<E> plusAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -2267,7 +2269,7 @@ class itf {
     Sequence<E> plus(E element);
 
     @NotNull
-    Sequence<E> plusAll(@NotNull Iterable<E> elements);
+    Sequence<E> plusAll(@NotNull Iterable<? extends E> elements);
 
     @NotNull
     Sequence<E> reduce(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
@@ -2694,7 +2696,7 @@ class itf {
 
     @Override
     @NotNull
-    Set<E> plusAll(@NotNull Iterable<E> elements);
+    Set<E> plusAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
@@ -3167,7 +3169,7 @@ class itf {
 
     @Override
     @NotNull
-    Stream<E> plusAll(@NotNull Iterable<E> elements);
+    Stream<E> plusAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull

@@ -122,6 +122,11 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
+    public boolean isSucceeded() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return knownSize;
     }
@@ -175,6 +180,26 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
         safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+      } else if (elementsSize >= 0 && index >= elementsSize) {
+        final int originalIndex = index;
+        wrapped.materializeElement(index - elementsSize, new CancellableIndexedAsyncConsumer<E>() {
+          @Override
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
+            final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size), elementsSize);
+            consumer.accept(knownSize, originalIndex, element);
+          }
+
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            consumer.complete(safeSize(wrappedSize = size, elementsSize));
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       } else {
         elementsMaterializer.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
           @Override
@@ -308,7 +333,8 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (index < 0) {
         safeConsume(consumer, false, LOGGER);
-      } else if (index < elementsSize || index < safeSize(wrappedSize, elementsSize)) {
+      } else if (index < wrappedSize || index < elementsSize || index < safeSize(wrappedSize,
+          elementsSize)) {
         safeConsume(consumer, true, LOGGER);
       } else if (wrappedSize >= 0) {
         if (elementsSize >= 0) {
@@ -327,6 +353,19 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
                 }
               });
         }
+      } else if (elementsSize >= 0) {
+        wrapped.materializeHasElement(index - elementsSize,
+            new CancellableAsyncConsumer<Boolean>() {
+              @Override
+              public void cancellableAccept(final Boolean hasElement) throws Exception {
+                consumer.accept(hasElement);
+              }
+
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                consumer.error(error);
+              }
+            });
       } else {
         elementsMaterializer.materializeElement(index, new CancellableIndexedAsyncConsumer<E>() {
           @Override
