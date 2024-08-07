@@ -17,6 +17,7 @@ package sparx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,11 +32,19 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sparx.concurrent.ExecutorContext;
+import sparx.internal.future.AsyncConsumer;
+import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.list.AppendListAsyncMaterializer;
+import sparx.internal.future.list.ListAsyncMaterializer;
+import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Consumer;
@@ -75,6 +84,10 @@ public class FutureListTests {
     test(List.of(1, null, 3), () -> List.of(1), ll -> ll.append(null).append(3));
     test(List.of(1, 2, 3), () -> List.of(1, 2), ll -> ll.append(3));
     test(List.of(1, null, 3), () -> List.of(1, null), ll -> ll.append(3));
+
+    testMaterializer(List.of(1, null, 3), c -> new AppendListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null), c), 3, c, new AtomicReference<>(),
+        (l, i) -> ((future.List<Integer>) l).append(i)));
 
     testCancel(f -> f.append(4));
   }
@@ -2160,19 +2173,6 @@ public class FutureListTests {
     testCancel(f -> f.union(List.of(1)));
   }
 
-  private <E, F> void test(@NotNull final java.util.List<F> expected,
-      @NotNull final Supplier<? extends List<E>> baseSupplier,
-      @NotNull final Function<future.List<E>, future.List<? extends F>> actualTransformer)
-      throws Exception {
-    test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(context)));
-    test(expected, () -> actualTransformer.apply(
-        baseSupplier.get().toFuture(context).flatMapWhere(e -> false, e -> List.of())));
-    test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(throughputContext)));
-    test(expected, () -> actualTransformer.apply(
-        baseSupplier.get().toFuture(throughputContext).flatMapWhere(e -> false, e -> List.of())));
-  }
-
-  // TODO: add args validation + isCancelled, isFailed
   private <E> void test(@NotNull final java.util.List<E> expected,
       @NotNull final Supplier<? extends future.List<? extends E>> actualSupplier) throws Exception {
     assertEquals(expected.isEmpty(), actualSupplier.get().isEmpty());
@@ -2206,6 +2206,7 @@ public class FutureListTests {
     assertTrue(lst.isDone());
     assertFalse(lst.isCancelled());
     assertFalse(lst.isFailed());
+    assertTrue(lst.isSucceeded());
     lst = actualSupplier.get();
     for (final E element : expected) {
       assertTrue(lst.contains(element));
@@ -2218,6 +2219,18 @@ public class FutureListTests {
     }
     assertFalse(itr.hasNext());
     assertThrows(NoSuchElementException.class, itr::next);
+  }
+
+  private <E, F> void test(@NotNull final java.util.List<F> expected,
+      @NotNull final Supplier<? extends List<E>> baseSupplier,
+      @NotNull final Function<future.List<E>, future.List<? extends F>> actualTransformer)
+      throws Exception {
+    test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(context)));
+    test(expected, () -> actualTransformer.apply(
+        baseSupplier.get().toFuture(context).flatMapWhere(e -> false, e -> List.of())));
+    test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(throughputContext)));
+    test(expected, () -> actualTransformer.apply(
+        baseSupplier.get().toFuture(throughputContext).flatMapWhere(e -> false, e -> List.of())));
   }
 
   private void testCancel(@NotNull final Function<future.List<Object>, Future<?>> transformer)
@@ -2240,7 +2253,261 @@ public class FutureListTests {
       assertTrue(f.isCancelled());
       if (f instanceof future.List) {
         assertFalse(((future.List<?>) f).isFailed());
+        assertFalse(((future.List<?>) f).isSucceeded());
       }
     }
+  }
+
+  private <E> void testMaterializer(@NotNull final java.util.List<E> expected,
+      @NotNull final Function<ExecutorContext, ? extends ListAsyncMaterializer<E>> factory)
+      throws Exception {
+    var trampoline = ExecutorContext.trampoline();
+    var atError = new AtomicReference<Exception>();
+    var atEmpty = new AtomicBoolean();
+    factory.apply(trampoline).materializeEmpty(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean empty) {
+        atEmpty.set(empty);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.isEmpty(), atEmpty.get());
+
+    var atSize = new AtomicInteger(-1);
+    factory.apply(trampoline).materializeSize(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Integer size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.size(), atSize.get());
+    atSize.set(-1);
+
+    var atCalled = new AtomicBoolean();
+    factory.apply(trampoline).materializeElement(Integer.MIN_VALUE, new IndexedAsyncConsumer<>() {
+      @Override
+      public void accept(final int size, final int index, final E element) {
+        atCalled.set(true);
+      }
+
+      @Override
+      public void complete(final int size) {
+        atCalled.set(true);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atCalled.get());
+    assertInstanceOf(IndexOutOfBoundsException.class, atError.get());
+    atError.set(null);
+    factory.apply(trampoline).materializeElement(-1, new IndexedAsyncConsumer<>() {
+      @Override
+      public void accept(final int size, final int index, final E element) {
+        atCalled.set(true);
+      }
+
+      @Override
+      public void complete(final int size) {
+        atCalled.set(true);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atCalled.get());
+    assertInstanceOf(IndexOutOfBoundsException.class, atError.get());
+    atError.set(null);
+    var atIndex = new AtomicInteger();
+    var atElement = new AtomicReference<E>();
+    for (int i = 0; i < expected.size(); i++) {
+      atIndex.set(-1);
+      atSize.set(-1);
+      factory.apply(trampoline).materializeElement(i, new IndexedAsyncConsumer<>() {
+        @Override
+        public void accept(final int size, final int index, final E element) {
+          atIndex.set(index);
+          atElement.set(element);
+        }
+
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+      });
+      assertEquals(i, atIndex.get());
+      assertEquals(expected.get(i), atElement.get());
+      assertEquals(-1, atSize.get());
+      assertNull(atError.get());
+    }
+    atIndex.set(-1);
+    atSize.set(-1);
+    factory.apply(trampoline).materializeElement(expected.size(), new IndexedAsyncConsumer<>() {
+      @Override
+      public void accept(final int size, final int index, final E element) {
+        atIndex.set(index);
+      }
+
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+    atSize.set(-1);
+    factory.apply(trampoline).materializeElement(Integer.MAX_VALUE, new IndexedAsyncConsumer<>() {
+      @Override
+      public void accept(final int size, final int index, final E element) {
+        atIndex.set(index);
+      }
+
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+
+    var materializer = factory.apply(trampoline);
+    materializer.materializeElement(Integer.MIN_VALUE, new IndexedAsyncConsumer<>() {
+      @Override
+      public void accept(final int size, final int index, final E element) {
+        atCalled.set(true);
+      }
+
+      @Override
+      public void complete(final int size) {
+        atCalled.set(true);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atCalled.get());
+    assertInstanceOf(IndexOutOfBoundsException.class, atError.get());
+    atError.set(null);
+    materializer.materializeElement(-1, new IndexedAsyncConsumer<>() {
+      @Override
+      public void accept(final int size, final int index, final E element) {
+        atCalled.set(true);
+      }
+
+      @Override
+      public void complete(final int size) {
+        atCalled.set(true);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertFalse(atCalled.get());
+    assertInstanceOf(IndexOutOfBoundsException.class, atError.get());
+    atError.set(null);
+    for (int i = 0; i < expected.size(); i++) {
+      atIndex.set(-1);
+      atSize.set(-1);
+      materializer.materializeElement(i, new IndexedAsyncConsumer<>() {
+        @Override
+        public void accept(final int size, final int index, final E element) {
+          atIndex.set(index);
+          atElement.set(element);
+        }
+
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+      });
+      assertEquals(i, atIndex.get());
+      assertEquals(expected.get(i), atElement.get());
+      assertEquals(-1, atSize.get());
+      assertNull(atError.get());
+    }
+    atIndex.set(-1);
+    atSize.set(-1);
+    materializer.materializeElement(expected.size(), new IndexedAsyncConsumer<>() {
+      @Override
+      public void accept(final int size, final int index, final E element) {
+        atIndex.set(index);
+      }
+
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+    atSize.set(-1);
+    materializer.materializeElement(Integer.MAX_VALUE, new IndexedAsyncConsumer<>() {
+      @Override
+      public void accept(final int size, final int index, final E element) {
+        atIndex.set(index);
+      }
+
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+
+    // TODO: contains, hasElement, next, prev, elements
   }
 }
