@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import sparx.concurrent.ExecutorContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
+import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.internal.future.list.AppendListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
@@ -87,7 +88,7 @@ public class FutureListTests {
 
     testMaterializer(List.of(1, null, 3), c -> new AppendListAsyncMaterializer<>(
         new ListToListAsyncMaterializer<>(List.of(1, null), c), 3, c, new AtomicReference<>(),
-        (l, i) -> ((future.List<Integer>) l).append(i)));
+        (l, i) -> ((List<Integer>) l).append(i)));
 
     testCancel(f -> f.append(4));
   }
@@ -2264,6 +2265,7 @@ public class FutureListTests {
     var trampoline = ExecutorContext.trampoline();
     var atError = new AtomicReference<Exception>();
     var atEmpty = new AtomicBoolean();
+    /* materializeEmpty */
     factory.apply(trampoline).materializeEmpty(new AsyncConsumer<>() {
       @Override
       public void accept(final Boolean empty) {
@@ -2277,8 +2279,10 @@ public class FutureListTests {
     });
     assertNull(atError.get());
     assertEquals(expected.isEmpty(), atEmpty.get());
+    atEmpty.set(!expected.isEmpty());
 
     var atSize = new AtomicInteger(-1);
+    /* materializeSize */
     factory.apply(trampoline).materializeSize(new AsyncConsumer<>() {
       @Override
       public void accept(final Integer size) {
@@ -2295,6 +2299,7 @@ public class FutureListTests {
     atSize.set(-1);
 
     var atCalled = new AtomicBoolean();
+    /* materializeElement */
     factory.apply(trampoline).materializeElement(Integer.MIN_VALUE, new IndexedAsyncConsumer<>() {
       @Override
       public void accept(final int size, final int index, final E element) {
@@ -2336,8 +2341,6 @@ public class FutureListTests {
     var atIndex = new AtomicInteger();
     var atElement = new AtomicReference<E>();
     for (int i = 0; i < expected.size(); i++) {
-      atIndex.set(-1);
-      atSize.set(-1);
       factory.apply(trampoline).materializeElement(i, new IndexedAsyncConsumer<>() {
         @Override
         public void accept(final int size, final int index, final E element) {
@@ -2359,9 +2362,9 @@ public class FutureListTests {
       assertEquals(expected.get(i), atElement.get());
       assertEquals(-1, atSize.get());
       assertNull(atError.get());
+      atIndex.set(-1);
+      atSize.set(-1);
     }
-    atIndex.set(-1);
-    atSize.set(-1);
     factory.apply(trampoline).materializeElement(expected.size(), new IndexedAsyncConsumer<>() {
       @Override
       public void accept(final int size, final int index, final E element) {
@@ -2401,6 +2404,7 @@ public class FutureListTests {
     assertEquals(-1, atIndex.get());
     assertEquals(expected.size(), atSize.get());
     assertNull(atError.get());
+    atSize.set(-1);
 
     var materializer = factory.apply(trampoline);
     materializer.materializeElement(Integer.MIN_VALUE, new IndexedAsyncConsumer<>() {
@@ -2442,8 +2446,6 @@ public class FutureListTests {
     assertInstanceOf(IndexOutOfBoundsException.class, atError.get());
     atError.set(null);
     for (int i = 0; i < expected.size(); i++) {
-      atIndex.set(-1);
-      atSize.set(-1);
       materializer.materializeElement(i, new IndexedAsyncConsumer<>() {
         @Override
         public void accept(final int size, final int index, final E element) {
@@ -2465,9 +2467,9 @@ public class FutureListTests {
       assertEquals(expected.get(i), atElement.get());
       assertEquals(-1, atSize.get());
       assertNull(atError.get());
+      atIndex.set(-1);
+      atSize.set(-1);
     }
-    atIndex.set(-1);
-    atSize.set(-1);
     materializer.materializeElement(expected.size(), new IndexedAsyncConsumer<>() {
       @Override
       public void accept(final int size, final int index, final E element) {
@@ -2509,6 +2511,7 @@ public class FutureListTests {
     assertNull(atError.get());
 
     var atHasElement = new AtomicBoolean();
+    /* materializeHasElement */
     factory.apply(trampoline).materializeHasElement(Integer.MIN_VALUE, new AsyncConsumer<>() {
       @Override
       public void accept(final Boolean hasElement) {
@@ -2581,6 +2584,35 @@ public class FutureListTests {
     assertFalse(atHasElement.get());
     assertNull(atError.get());
     atHasElement.set(false);
+
+    materializer.materializeEmpty(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean empty) {
+        atEmpty.set(empty);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.isEmpty(), atEmpty.get());
+    atEmpty.set(!expected.isEmpty());
+    materializer.materializeSize(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Integer size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.size(), atSize.get());
+    atSize.set(-1);
 
     materializer = factory.apply(trampoline);
     materializer.materializeHasElement(Integer.MIN_VALUE, new AsyncConsumer<>() {
@@ -2656,7 +2688,37 @@ public class FutureListTests {
     assertNull(atError.get());
     atHasElement.set(false);
 
+    materializer.materializeEmpty(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean empty) {
+        atEmpty.set(empty);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.isEmpty(), atEmpty.get());
+    atEmpty.set(!expected.isEmpty());
+    materializer.materializeSize(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Integer size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.size(), atSize.get());
+    atSize.set(-1);
+
     var atContains = new AtomicBoolean();
+    /* materializeContains */
     for (final E e : expected) {
       atContains.set(false);
       factory.apply(trampoline).materializeContains(e, new AsyncConsumer<>() {
@@ -2692,10 +2754,811 @@ public class FutureListTests {
       assertNull(atError.get());
     }
 
-    for (int i = 0; i < expected.size(); i++) {
-      // TODO: next
-    }
+    materializer.materializeEmpty(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean empty) {
+        atEmpty.set(empty);
+      }
 
-    // TODO: prev, elements
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.isEmpty(), atEmpty.get());
+    atEmpty.set(!expected.isEmpty());
+    materializer.materializeSize(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Integer size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.size(), atSize.get());
+    atSize.set(-1);
+
+    /* materializeNextWhile (stop) */
+    for (int i = 0; i < expected.size(); i++) {
+      factory.apply(trampoline).materializeNextWhile(i, new IndexedAsyncPredicate<E>() {
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) {
+          atIndex.set(index);
+          atElement.set(element);
+          return false;
+        }
+      });
+      assertEquals(i, atIndex.get());
+      assertEquals(expected.get(i), atElement.get());
+      assertEquals(-1, atSize.get());
+      assertNull(atError.get());
+      atIndex.set(-1);
+      atSize.set(-1);
+    }
+    factory.apply(trampoline).materializeNextWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        atIndex.set(index);
+        return false;
+      }
+    });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+    factory.apply(trampoline)
+        .materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+          @Override
+          public void complete(final int size) {
+            atSize.set(size);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+
+          @Override
+          public boolean test(final int size, final int index, final E element) {
+            atIndex.set(index);
+            return false;
+          }
+        });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+
+    materializer = factory.apply(trampoline);
+    for (int i = 0; i < expected.size(); i++) {
+      materializer.materializeNextWhile(i, new IndexedAsyncPredicate<E>() {
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) {
+          atIndex.set(index);
+          atElement.set(element);
+          return false;
+        }
+      });
+      assertEquals(i, atIndex.get());
+      assertEquals(expected.get(i), atElement.get());
+      assertEquals(-1, atSize.get());
+      assertNull(atError.get());
+      atIndex.set(-1);
+      atSize.set(-1);
+    }
+    materializer.materializeNextWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        atIndex.set(index);
+        return false;
+      }
+    });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+    materializer.materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        atIndex.set(index);
+        return false;
+      }
+    });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+
+    materializer.materializeEmpty(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean empty) {
+        atEmpty.set(empty);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.isEmpty(), atEmpty.get());
+    atEmpty.set(!expected.isEmpty());
+    materializer.materializeSize(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Integer size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.size(), atSize.get());
+    atSize.set(-1);
+
+    var elementList = new ArrayList<E>();
+    var indexList = new ArrayList<Integer>();
+    /* materializeNextWhile (continue) */
+    for (int i = 0; i < expected.size(); i++) {
+      factory.apply(trampoline).materializeNextWhile(i, new IndexedAsyncPredicate<E>() {
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) {
+          indexList.add(index);
+          elementList.add(element);
+          return true;
+        }
+      });
+      for (int j = i; j < expected.size(); j++) {
+        assertEquals(j, indexList.get(j - i));
+        assertEquals(expected.get(j), elementList.get(j - i));
+      }
+      assertEquals(expected.size(), atSize.get());
+      assertNull(atError.get());
+      indexList.clear();
+      elementList.clear();
+      atSize.set(-1);
+    }
+    factory.apply(trampoline).materializeNextWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        atIndex.set(index);
+        return true;
+      }
+    });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+    factory.apply(trampoline)
+        .materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+          @Override
+          public void complete(final int size) {
+            atSize.set(size);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+
+          @Override
+          public boolean test(final int size, final int index, final E element) {
+            atIndex.set(index);
+            return true;
+          }
+        });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+
+    materializer = factory.apply(trampoline);
+    for (int i = 0; i < expected.size(); i++) {
+      materializer.materializeNextWhile(i, new IndexedAsyncPredicate<E>() {
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) {
+          indexList.add(index);
+          elementList.add(element);
+          return true;
+        }
+      });
+      for (int j = i; j < expected.size(); j++) {
+        assertEquals(j, indexList.get(j - i));
+        assertEquals(expected.get(j), elementList.get(j - i));
+      }
+      assertEquals(expected.size(), atSize.get());
+      assertNull(atError.get());
+      indexList.clear();
+      elementList.clear();
+      atSize.set(-1);
+    }
+    materializer.materializeNextWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        atIndex.set(index);
+        return true;
+      }
+    });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+    materializer.materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        atIndex.set(index);
+        return true;
+      }
+    });
+    assertEquals(-1, atIndex.get());
+    assertEquals(expected.size(), atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+
+    materializer.materializeEmpty(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean empty) {
+        atEmpty.set(empty);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.isEmpty(), atEmpty.get());
+    atEmpty.set(!expected.isEmpty());
+    materializer.materializeSize(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Integer size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.size(), atSize.get());
+    atSize.set(-1);
+
+    /* materializePrevWhile (stop) */
+    for (int i = 0; i < expected.size(); i++) {
+      factory.apply(trampoline).materializePrevWhile(i, new IndexedAsyncPredicate<E>() {
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) {
+          atIndex.set(index);
+          atElement.set(element);
+          return false;
+        }
+      });
+      assertEquals(i, atIndex.get());
+      assertEquals(expected.get(i), atElement.get());
+      assertEquals(-1, atSize.get());
+      assertNull(atError.get());
+      atIndex.set(-1);
+      atSize.set(-1);
+    }
+    factory.apply(trampoline).materializePrevWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        atIndex.set(index);
+        atElement.set(element);
+        return false;
+      }
+    });
+    assertEquals(expected.size() - 1, atIndex.get());
+    assertEquals(expected.get(expected.size() - 1), atElement.get());
+    assertEquals(-1, atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+    factory.apply(trampoline)
+        .materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+          @Override
+          public void complete(final int size) {
+            atSize.set(size);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+
+          @Override
+          public boolean test(final int size, final int index, final E element) {
+            atIndex.set(index);
+            atElement.set(element);
+            return false;
+          }
+        });
+    assertEquals(expected.size() - 1, atIndex.get());
+    assertEquals(expected.get(expected.size() - 1), atElement.get());
+    assertEquals(-1, atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+
+    materializer = factory.apply(trampoline);
+    for (int i = 0; i < expected.size(); i++) {
+      materializer.materializePrevWhile(i, new IndexedAsyncPredicate<E>() {
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) {
+          atIndex.set(index);
+          atElement.set(element);
+          return false;
+        }
+      });
+      assertEquals(i, atIndex.get());
+      assertEquals(expected.get(i), atElement.get());
+      assertEquals(-1, atSize.get());
+      assertNull(atError.get());
+      atIndex.set(-1);
+      atSize.set(-1);
+    }
+    materializer.materializePrevWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        atIndex.set(index);
+        atElement.set(element);
+        return false;
+      }
+    });
+    assertEquals(expected.size() - 1, atIndex.get());
+    assertEquals(expected.get(expected.size() - 1), atElement.get());
+    assertEquals(-1, atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+    materializer.materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        atIndex.set(index);
+        atElement.set(element);
+        return false;
+      }
+    });
+    assertEquals(expected.size() - 1, atIndex.get());
+    assertEquals(expected.get(expected.size() - 1), atElement.get());
+    assertEquals(-1, atSize.get());
+    assertNull(atError.get());
+    atIndex.set(-1);
+    atSize.set(-1);
+
+    materializer.materializeEmpty(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean empty) {
+        atEmpty.set(empty);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.isEmpty(), atEmpty.get());
+    atEmpty.set(!expected.isEmpty());
+    materializer.materializeSize(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Integer size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.size(), atSize.get());
+    atSize.set(-1);
+
+    /* materializePrevWhile (continue) */
+    for (int i = 0; i < expected.size(); i++) {
+      factory.apply(trampoline).materializePrevWhile(i, new IndexedAsyncPredicate<E>() {
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) {
+          indexList.add(index);
+          elementList.add(element);
+          return true;
+        }
+      });
+      for (int j = i; j >= 0; j--) {
+        assertEquals(j, indexList.get(i - j));
+        assertEquals(expected.get(j), elementList.get(i - j));
+      }
+      assertNull(atError.get());
+      indexList.clear();
+      elementList.clear();
+      atSize.set(-1);
+    }
+    factory.apply(trampoline).materializePrevWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        indexList.add(index);
+        elementList.add(element);
+        return true;
+      }
+    });
+    for (int i = expected.size() - 1; i >= 0; i--) {
+      assertEquals(i, indexList.get(expected.size() - 1 - i));
+      assertEquals(expected.get(i), elementList.get(expected.size() - 1 - i));
+    }
+    assertNull(atError.get());
+    indexList.clear();
+    elementList.clear();
+    atSize.set(-1);
+    factory.apply(trampoline)
+        .materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+          @Override
+          public void complete(final int size) {
+            atSize.set(size);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+
+          @Override
+          public boolean test(final int size, final int index, final E element) {
+            indexList.add(index);
+            elementList.add(element);
+            return true;
+          }
+        });
+    for (int i = expected.size() - 1; i >= 0; i--) {
+      assertEquals(i, indexList.get(expected.size() - 1 - i));
+      assertEquals(expected.get(i), elementList.get(expected.size() - 1 - i));
+    }
+    assertNull(atError.get());
+    indexList.clear();
+    elementList.clear();
+    atSize.set(-1);
+
+    materializer = factory.apply(trampoline);
+    for (int i = 0; i < expected.size(); i++) {
+      materializer.materializePrevWhile(i, new IndexedAsyncPredicate<E>() {
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) {
+          indexList.add(index);
+          elementList.add(element);
+          return true;
+        }
+      });
+      for (int j = i; j >= 0; j--) {
+        assertEquals(j, indexList.get(i - j));
+        assertEquals(expected.get(j), elementList.get(i - j));
+      }
+      assertNull(atError.get());
+      indexList.clear();
+      elementList.clear();
+      atSize.set(-1);
+    }
+    materializer.materializePrevWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        indexList.add(index);
+        elementList.add(element);
+        return true;
+      }
+    });
+    for (int i = expected.size() - 1; i >= 0; i--) {
+      assertEquals(i, indexList.get(expected.size() - 1 - i));
+      assertEquals(expected.get(i), elementList.get(expected.size() - 1 - i));
+    }
+    assertNull(atError.get());
+    indexList.clear();
+    elementList.clear();
+    atSize.set(-1);
+    materializer.materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        indexList.add(index);
+        elementList.add(element);
+        return true;
+      }
+    });
+    for (int i = expected.size() - 1; i >= 0; i--) {
+      assertEquals(i, indexList.get(expected.size() - 1 - i));
+      assertEquals(expected.get(i), elementList.get(expected.size() - 1 - i));
+    }
+    assertNull(atError.get());
+    indexList.clear();
+    elementList.clear();
+    atSize.set(-1);
+
+    materializer.materializeEmpty(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean empty) {
+        atEmpty.set(empty);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.isEmpty(), atEmpty.get());
+    atEmpty.set(!expected.isEmpty());
+    materializer.materializeSize(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Integer size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.size(), atSize.get());
+    atSize.set(-1);
+
+    /* materializeElements (continue) */
+    materializer = factory.apply(trampoline);
+    materializer.materializeElements(new AsyncConsumer<>() {
+      @Override
+      public void accept(final java.util.List<E> elements) {
+        elementList.addAll(elements);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertEquals(expected, elementList);
+    assertNull(atError.get());
+    elementList.clear();
+
+    materializer.materializeEmpty(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Boolean empty) {
+        atEmpty.set(empty);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.isEmpty(), atEmpty.get());
+    atEmpty.set(!expected.isEmpty());
+    materializer.materializeSize(new AsyncConsumer<>() {
+      @Override
+      public void accept(final Integer size) {
+        atSize.set(size);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.size(), atSize.get());
+    atSize.set(-1);
   }
 }

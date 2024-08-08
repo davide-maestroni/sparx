@@ -258,7 +258,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         @Override
         public void cancellableComplete(final int size) throws Exception {
           final int knownSize = safeSize(wrappedSize = size);
-          if (predicate.test(knownSize, size, element)) {
+          if (index > size || predicate.test(knownSize, size, element)) {
             predicate.complete(knownSize);
           }
         }

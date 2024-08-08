@@ -5725,7 +5725,44 @@ class future extends Sparx {
 
     @Override
     public @NotNull Future<?> nonBlockingGet() {
-      return left.appendAll(right).nonBlockingGet();
+      final Future<?> leftFuture = left.nonBlockingGet();
+      final Future<?> rightFuture = right.nonBlockingGet();
+      return new Future<Object>() {
+        @Override
+        public boolean cancel(final boolean mayInterruptIfRunning) {
+          return leftFuture.cancel(mayInterruptIfRunning) || rightFuture.cancel(
+              mayInterruptIfRunning);
+        }
+
+        @Override
+        public Object get() throws InterruptedException, ExecutionException {
+          leftFuture.get();
+          return rightFuture.get();
+        }
+
+        @Override
+        public Object get(final long timeout, @NotNull final TimeUnit unit)
+            throws InterruptedException, ExecutionException, TimeoutException {
+          final long startTimeMillis = System.currentTimeMillis();
+          long timeoutMillis = unit.toMillis(timeout);
+          leftFuture.get(timeoutMillis, TimeUnit.MILLISECONDS);
+          timeoutMillis -= System.currentTimeMillis() - startTimeMillis;
+          if (timeoutMillis <= 0) {
+            throw new TimeoutException();
+          }
+          return rightFuture.get(timeoutMillis, TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public boolean isCancelled() {
+          return leftFuture.isCancelled() && rightFuture.isCancelled();
+        }
+
+        @Override
+        public boolean isDone() {
+          return leftFuture.isDone() && rightFuture.isDone();
+        }
+      };
     }
 
     @Override
