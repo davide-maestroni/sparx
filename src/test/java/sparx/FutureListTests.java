@@ -43,6 +43,7 @@ import sparx.concurrent.ExecutorContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
+import sparx.internal.future.iterator.ListToIteratorAsyncMaterializer;
 import sparx.internal.future.list.AppendAllListAsyncMaterializer;
 import sparx.internal.future.list.AppendListAsyncMaterializer;
 import sparx.internal.future.list.CountListAsyncMaterializer;
@@ -62,6 +63,8 @@ import sparx.internal.future.list.FindIndexOfSliceListAsyncMaterializer;
 import sparx.internal.future.list.FindLastIndexListAsyncMaterializer;
 import sparx.internal.future.list.FindLastIndexOfSliceListAsyncMaterializer;
 import sparx.internal.future.list.FindLastListAsyncMaterializer;
+import sparx.internal.future.list.FlatMapAfterListAsyncMaterializer;
+import sparx.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.lazy.List;
@@ -794,6 +797,11 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2, 3), indexes);
 
+    testMaterializer(List.of(1, 1, null, null, 3, 3), c -> new FlatMapListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c),
+        (i, e) -> new ListToIteratorAsyncMaterializer<>(List.of(e, e), c), c,
+        new AtomicReference<>(), List::wrap));
+
     testCancel(f -> f.flatMap(e -> List.of(e)));
   }
 
@@ -831,6 +839,11 @@ public class FutureListTests {
     }).doFor(i -> {
     });
     assertEquals(List.of(1), indexes);
+
+    testMaterializer(List.of(1, null, null, 3), c -> new FlatMapAfterListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 1,
+        (i, e) -> new ListToListAsyncMaterializer<>(List.of(e, e), c), c, new AtomicReference<>(),
+        List::wrap));
 
     testCancel(f -> f.flatMapAfter(0, e -> List.of(e)));
   }
@@ -2884,7 +2897,7 @@ public class FutureListTests {
 
     /* materializeNextWhile (stop) */
     for (int i = 0; i < expected.size(); i++) {
-      factory.apply(trampoline).materializeNextWhile(i, new IndexedAsyncPredicate<E>() {
+      factory.apply(trampoline).materializeNextWhile(i, new IndexedAsyncPredicate<>() {
         @Override
         public void complete(final int size) {
           atSize.set(size);
@@ -2909,7 +2922,7 @@ public class FutureListTests {
       atIndex.set(-1);
       atSize.set(-1);
     }
-    factory.apply(trampoline).materializeNextWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+    factory.apply(trampoline).materializeNextWhile(expected.size(), new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -2932,7 +2945,7 @@ public class FutureListTests {
     atIndex.set(-1);
     atSize.set(-1);
     factory.apply(trampoline)
-        .materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+        .materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<>() {
           @Override
           public void complete(final int size) {
             atSize.set(size);
@@ -2957,7 +2970,7 @@ public class FutureListTests {
 
     materializer = factory.apply(trampoline);
     for (int i = 0; i < expected.size(); i++) {
-      materializer.materializeNextWhile(i, new IndexedAsyncPredicate<E>() {
+      materializer.materializeNextWhile(i, new IndexedAsyncPredicate<>() {
         @Override
         public void complete(final int size) {
           atSize.set(size);
@@ -2982,7 +2995,7 @@ public class FutureListTests {
       atIndex.set(-1);
       atSize.set(-1);
     }
-    materializer.materializeNextWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+    materializer.materializeNextWhile(expected.size(), new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -3004,7 +3017,7 @@ public class FutureListTests {
     assertNull(atError.get());
     atIndex.set(-1);
     atSize.set(-1);
-    materializer.materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+    materializer.materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -3060,7 +3073,7 @@ public class FutureListTests {
     var indexList = new ArrayList<Integer>();
     /* materializeNextWhile (continue) */
     for (int i = 0; i < expected.size(); i++) {
-      factory.apply(trampoline).materializeNextWhile(i, new IndexedAsyncPredicate<E>() {
+      factory.apply(trampoline).materializeNextWhile(i, new IndexedAsyncPredicate<>() {
         @Override
         public void complete(final int size) {
           atSize.set(size);
@@ -3088,7 +3101,7 @@ public class FutureListTests {
       elementList.clear();
       atSize.set(-1);
     }
-    factory.apply(trampoline).materializeNextWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+    factory.apply(trampoline).materializeNextWhile(expected.size(), new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -3111,7 +3124,7 @@ public class FutureListTests {
     atIndex.set(-1);
     atSize.set(-1);
     factory.apply(trampoline)
-        .materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+        .materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<>() {
           @Override
           public void complete(final int size) {
             atSize.set(size);
@@ -3136,7 +3149,7 @@ public class FutureListTests {
 
     materializer = factory.apply(trampoline);
     for (int i = 0; i < expected.size(); i++) {
-      materializer.materializeNextWhile(i, new IndexedAsyncPredicate<E>() {
+      materializer.materializeNextWhile(i, new IndexedAsyncPredicate<>() {
         @Override
         public void complete(final int size) {
           atSize.set(size);
@@ -3164,7 +3177,7 @@ public class FutureListTests {
       elementList.clear();
       atSize.set(-1);
     }
-    materializer.materializeNextWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+    materializer.materializeNextWhile(expected.size(), new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -3186,7 +3199,7 @@ public class FutureListTests {
     assertNull(atError.get());
     atIndex.set(-1);
     atSize.set(-1);
-    materializer.materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+    materializer.materializeNextWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -3240,7 +3253,7 @@ public class FutureListTests {
 
     /* materializePrevWhile (stop) */
     for (int i = 0; i < expected.size(); i++) {
-      factory.apply(trampoline).materializePrevWhile(i, new IndexedAsyncPredicate<E>() {
+      factory.apply(trampoline).materializePrevWhile(i, new IndexedAsyncPredicate<>() {
         @Override
         public void complete(final int size) {
           atSize.set(size);
@@ -3265,7 +3278,7 @@ public class FutureListTests {
       atIndex.set(-1);
       atSize.set(-1);
     }
-    factory.apply(trampoline).materializePrevWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+    factory.apply(trampoline).materializePrevWhile(expected.size(), new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -3290,7 +3303,7 @@ public class FutureListTests {
     atIndex.set(-1);
     atSize.set(-1);
     factory.apply(trampoline)
-        .materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+        .materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<>() {
           @Override
           public void complete(final int size) {
             atSize.set(size);
@@ -3317,7 +3330,7 @@ public class FutureListTests {
 
     materializer = factory.apply(trampoline);
     for (int i = 0; i < expected.size(); i++) {
-      materializer.materializePrevWhile(i, new IndexedAsyncPredicate<E>() {
+      materializer.materializePrevWhile(i, new IndexedAsyncPredicate<>() {
         @Override
         public void complete(final int size) {
           atSize.set(size);
@@ -3342,7 +3355,7 @@ public class FutureListTests {
       atIndex.set(-1);
       atSize.set(-1);
     }
-    materializer.materializePrevWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+    materializer.materializePrevWhile(expected.size(), new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -3366,7 +3379,7 @@ public class FutureListTests {
     assertNull(atError.get());
     atIndex.set(-1);
     atSize.set(-1);
-    materializer.materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+    materializer.materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -3422,7 +3435,7 @@ public class FutureListTests {
 
     /* materializePrevWhile (continue) */
     for (int i = 0; i < expected.size(); i++) {
-      factory.apply(trampoline).materializePrevWhile(i, new IndexedAsyncPredicate<E>() {
+      factory.apply(trampoline).materializePrevWhile(i, new IndexedAsyncPredicate<>() {
         @Override
         public void complete(final int size) {
           atSize.set(size);
@@ -3449,7 +3462,7 @@ public class FutureListTests {
       elementList.clear();
       atSize.set(-1);
     }
-    factory.apply(trampoline).materializePrevWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+    factory.apply(trampoline).materializePrevWhile(expected.size(), new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -3476,7 +3489,7 @@ public class FutureListTests {
     elementList.clear();
     atSize.set(-1);
     factory.apply(trampoline)
-        .materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+        .materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<>() {
           @Override
           public void complete(final int size) {
             atSize.set(size);
@@ -3505,7 +3518,7 @@ public class FutureListTests {
 
     materializer = factory.apply(trampoline);
     for (int i = 0; i < expected.size(); i++) {
-      materializer.materializePrevWhile(i, new IndexedAsyncPredicate<E>() {
+      materializer.materializePrevWhile(i, new IndexedAsyncPredicate<>() {
         @Override
         public void complete(final int size) {
           atSize.set(size);
@@ -3532,7 +3545,7 @@ public class FutureListTests {
       elementList.clear();
       atSize.set(-1);
     }
-    materializer.materializePrevWhile(expected.size(), new IndexedAsyncPredicate<E>() {
+    materializer.materializePrevWhile(expected.size(), new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);
@@ -3558,7 +3571,7 @@ public class FutureListTests {
     indexList.clear();
     elementList.clear();
     atSize.set(-1);
-    materializer.materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<E>() {
+    materializer.materializePrevWhile(Integer.MAX_VALUE, new IndexedAsyncPredicate<>() {
       @Override
       public void complete(final int size) {
         atSize.set(size);

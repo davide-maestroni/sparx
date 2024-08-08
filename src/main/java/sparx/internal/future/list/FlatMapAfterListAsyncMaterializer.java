@@ -1022,9 +1022,30 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
               elementsMaterializer = mapper.apply(index, element);
               elementsSize = elementsMaterializer.knownSize();
             }
-            isWrapped = false;
-            elementsMaterializer.materializePrevWhile(Integer.MAX_VALUE, this);
+            if (elementsSize >= 0) {
+              isWrapped = false;
+              elementsMaterializer.materializePrevWhile(
+                  Math.min(elementsSize - 1, this.index - numElements), this);
+            } else {
+              elementsMaterializer.materializeSize(new CancellableAsyncConsumer<Integer>() {
+                @Override
+                public void cancellableAccept(final Integer size) {
+                  elementsSize = size;
+                  isWrapped = false;
+                  elementsMaterializer.materializePrevWhile(size - 1,
+                      MaterializingPrevAsyncPredicate.this);
+                }
+
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  predicate.error(error);
+                }
+              });
+            }
             return false;
+          }
+          if (index > numElements && elementsSize >= 0) {
+            this.index = IndexOverflowException.safeCast((long) index + elementsSize - 1);
           }
         } else {
           elementsSize = Math.max(elementsSize, size);
@@ -1046,13 +1067,14 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
             @Override
             public void accept(final ListAsyncMaterializer<E> elementsMaterializer) {
               if (elementsSize >= 0) {
-                if (index <= SizeOverflowException.safeCast((long) numElements + elementsSize)) {
+                if (index < SizeOverflowException.safeCast((long) numElements + elementsSize)) {
                   isWrapped = false;
                   elementsMaterializer.materializePrevWhile(index - numElements,
                       MaterializingPrevAsyncPredicate.this);
                 } else {
+                  isWrapped = true;
                   wrapped.materializePrevWhile(
-                      (int) Math.min(Integer.MAX_VALUE, (long) wrappedIndex - elementsSize + 1),
+                      (int) Math.min(Integer.MAX_VALUE, (long) index - elementsSize + 1),
                       MaterializingPrevAsyncPredicate.this);
                 }
               } else {
@@ -1064,7 +1086,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
                   }
 
                   @Override
-                  public void error(@NotNull Exception error) throws Exception {
+                  public void error(@NotNull final Exception error) throws Exception {
                     predicate.error(error);
                   }
                 });
