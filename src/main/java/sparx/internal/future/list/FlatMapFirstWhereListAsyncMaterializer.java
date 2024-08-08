@@ -328,11 +328,11 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
     public void materializeHasElement(final int index,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+        safeConsume(consumer, false, LOGGER);
       } else if (index <= testedIndex) {
         safeConsume(consumer, true, LOGGER);
       } else {
-        final int elementIndex = index;
+        final int originalIndex = index;
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(int size) throws Exception {
@@ -346,7 +346,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
             if (testedIndex < index) {
               try {
                 if (predicate.test(index, element)) {
-                  setState(index).materializeHasElement(elementIndex, consumer);
+                  setState(index).materializeHasElement(originalIndex, consumer);
                   return false;
                 }
               } catch (final Exception e) {
@@ -355,7 +355,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
               }
               testedIndex = index;
             }
-            if (elementIndex == index) {
+            if (originalIndex == index) {
               consumer.accept(true);
               return false;
             }

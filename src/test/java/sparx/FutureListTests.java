@@ -64,7 +64,10 @@ import sparx.internal.future.list.FindLastIndexListAsyncMaterializer;
 import sparx.internal.future.list.FindLastIndexOfSliceListAsyncMaterializer;
 import sparx.internal.future.list.FindLastListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapAfterListAsyncMaterializer;
+import sparx.internal.future.list.FlatMapFirstWhereListAsyncMaterializer;
+import sparx.internal.future.list.FlatMapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapListAsyncMaterializer;
+import sparx.internal.future.list.FlatMapWhereListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.lazy.List;
@@ -911,6 +914,11 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2, 2), indexes);
 
+    testMaterializer(List.of(1, null, null, 3), c -> new FlatMapFirstWhereListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), (i, e) -> e == null,
+        (i, e) -> new ListToListAsyncMaterializer<>(List.of(e, e), c), c, new AtomicReference<>(),
+        List::wrap));
+
     testCancel(f -> f.flatMapFirstWhere(e -> true, List::of));
   }
 
@@ -973,6 +981,11 @@ public class FutureListTests {
     }).doFor(i -> {
     });
     assertEquals(List.of(3, 2, 2), indexes);
+
+    testMaterializer(List.of(1, null, null, 3), c -> new FlatMapLastWhereListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), (i, e) -> e == null,
+        (i, e) -> new ListToListAsyncMaterializer<>(List.of(e, e), c), c, new AtomicReference<>(),
+        List::wrap));
 
     testCancel(f -> f.flatMapLastWhere(e -> true, List::of));
   }
@@ -1055,6 +1068,11 @@ public class FutureListTests {
     }).doFor(i -> {
     });
     assertEquals(List.of(0, 1, 2, 2, 3), indexes);
+
+    testMaterializer(List.of(1, null, null, 3), c -> new FlatMapWhereListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), (i, e) -> e == null,
+        (i, e) -> new ListToIteratorAsyncMaterializer<>(List.of(e, e), c), c,
+        new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.flatMapWhere(e -> true, List::of));
   }
