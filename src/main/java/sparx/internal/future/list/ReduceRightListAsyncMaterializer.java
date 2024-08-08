@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
-import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -39,11 +38,10 @@ public class ReduceRightListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
   public ReduceRightListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
-      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, operation, context, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, operation, cancelException, decorateFunction));
   }
 
   @Override
@@ -64,7 +62,6 @@ public class ReduceRightListAsyncMaterializer<E> extends AbstractListAsyncMateri
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final ExecutionContext context;
     private final Function<List<E>, List<E>> decorateFunction;
     private final BinaryFunction<? super E, ? super E, ? extends E> operation;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
@@ -72,12 +69,10 @@ public class ReduceRightListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
-        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Function<List<E>, List<E>> decorateFunction) {
       this.wrapped = wrapped;
       this.operation = operation;
-      this.context = context;
       this.cancelException = cancelException;
       this.decorateFunction = decorateFunction;
     }
@@ -304,14 +299,13 @@ public class ReduceRightListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     private void setState() throws Exception {
       consumeState(ReduceRightListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()),
-              context)));
+          new EmptyListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
     }
 
     private void setState(final E result) throws Exception {
       consumeState(ReduceRightListAsyncMaterializer.this.setState(
-          new ListToListAsyncMaterializer<E>(
-              decorateFunction.apply(Collections.singletonList(result)), context)));
+          new ElementToListAsyncMaterializer<E>(
+              decorateFunction.apply(Collections.singletonList(result)))));
     }
   }
 }

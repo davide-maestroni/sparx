@@ -80,7 +80,10 @@ import sparx.internal.future.list.IntersectListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.internal.future.list.MapAfterListAsyncMaterializer;
+import sparx.internal.future.list.MapFirstWhereListAsyncMaterializer;
+import sparx.internal.future.list.MapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.MapListAsyncMaterializer;
+import sparx.internal.future.list.MaxListAsyncMaterializer;
 import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Consumer;
@@ -1455,6 +1458,11 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2, 2), indexes);
 
+    testMaterializer(List.of(0, null, 3), c -> new MapFirstWhereListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), (i, e) -> e != null,
+        (i, e) -> e - 1, c, new AtomicReference<>(),
+        (ls, i, e) -> ((List<Integer>) ls).replaceAfter(i, e)));
+
     testCancel(f -> f.mapFirstWhere(e -> true, e -> e));
   }
 
@@ -1501,6 +1509,11 @@ public class FutureListTests {
     }).doFor(i -> {
     });
     assertEquals(List.of(3, 2, 2), indexes);
+
+    testMaterializer(List.of(1, null, 2), c -> new MapLastWhereListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), (i, e) -> e != null,
+        (i, e) -> e - 1, c, new AtomicReference<>(),
+        (ls, i, e) -> ((List<Integer>) ls).replaceAfter(i, e)));
 
     testCancel(f -> f.mapLastWhere(e -> true, e -> e));
   }
@@ -1569,6 +1582,10 @@ public class FutureListTests {
         () -> List.of(1, null).toFuture(context).max(Integer::compareTo).first());
 
     test(List.of(), List::<Integer>of, ll -> ll.max(Integer::compareTo));
+
+    testMaterializer(List.of(3),
+        c -> new MaxListAsyncMaterializer<>(new ListToListAsyncMaterializer<>(List.of(1, 2, 3), c),
+            Integer::compare, new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.map((i, e) -> i).max(Integer::compare));
   }
@@ -1667,6 +1684,8 @@ public class FutureListTests {
     test(List.of(1), () -> List.of(1), ll -> ll.orElse(List.of()));
     test(List.of(2), List::of, ll -> ll.orElse(List.of(2)));
     test(List.of(), List::of, ll -> ll.orElse(List.of()));
+
+    // TODO
 
     testCancel(f -> f.orElse(List.of(1)));
   }

@@ -66,9 +66,8 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
       this.knownSize = materializedLength;
       if (materializedLength == 0) {
         try {
-          setState(
-              new ListToListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()),
-                  context));
+          setState(new EmptyListAsyncMaterializer<E>(
+              decorateFunction.apply(Collections.<E>emptyList())));
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
@@ -327,8 +326,8 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
         final int materializedLength = Math.max(0, materializedEnd - materializedStart);
         if (materializedLength == 0) {
           try {
-            consumer.accept(setState(new ListToListAsyncMaterializer<E>(
-                decorateFunction.apply(Collections.<E>emptyList()), context)));
+            consumer.accept(setState(new EmptyListAsyncMaterializer<E>(
+                decorateFunction.apply(Collections.<E>emptyList()))));
           } catch (final Exception e) {
             if (e instanceof InterruptedException) {
               Thread.currentThread().interrupt();

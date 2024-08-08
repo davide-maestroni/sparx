@@ -52,8 +52,7 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
     if (knownSize == 0) {
       try {
         setState(
-            new ListToListAsyncMaterializer<E>(reverseFunction.apply(Collections.<E>emptyList()),
-                context));
+            new EmptyListAsyncMaterializer<E>(reverseFunction.apply(Collections.<E>emptyList())));
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
@@ -310,8 +309,8 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
       } else if (getState() == this) {
         if (wrappedSize == 0) {
           try {
-            consumer.accept(setState(new ListToListAsyncMaterializer<E>(
-                reverseFunction.apply(Collections.<E>emptyList()), context)));
+            consumer.accept(setState(new EmptyListAsyncMaterializer<E>(
+                reverseFunction.apply(Collections.<E>emptyList()))));
           } catch (final Exception e) {
             if (e instanceof InterruptedException) {
               Thread.currentThread().interrupt();

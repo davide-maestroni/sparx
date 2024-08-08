@@ -3103,10 +3103,9 @@ class future extends Sparx {
             lazyMaterializerMax(materializer, cancelException,
                 Require.notNull(comparator, "comparator")));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new MaxListAsyncMaterializer<E>(materializer, Require.notNull(comparator, "comparator"),
-              context, cancelException, List.<E>decorateFunction()));
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
@@ -3123,7 +3122,7 @@ class future extends Sparx {
       }
       final ExecutionContext context = this.context;
       return new List<E>(context, cancelException, new MaxListAsyncMaterializer<E>(materializer,
-          reversed(Require.notNull(comparator, "comparator")), context, cancelException,
+          reversed(Require.notNull(comparator, "comparator")), cancelException,
           List.<E>decorateFunction()));
     }
 
@@ -3364,10 +3363,9 @@ class future extends Sparx {
             lazyMaterializerReduceLeft(materializer, cancelException,
                 Require.notNull(operation, "operation")));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new ReduceLeftListAsyncMaterializer<E>(materializer,
-              Require.notNull(operation, "operation"), context, cancelException,
+              Require.notNull(operation, "operation"), cancelException,
               List.<E>decorateFunction()));
     }
 
@@ -3385,10 +3383,9 @@ class future extends Sparx {
             lazyMaterializerReduceRight(materializer, cancelException,
                 Require.notNull(operation, "operation")));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new ReduceRightListAsyncMaterializer<E>(materializer,
-              Require.notNull(operation, "operation"), context, cancelException,
+              Require.notNull(operation, "operation"), cancelException,
               List.<E>decorateFunction()));
     }
 

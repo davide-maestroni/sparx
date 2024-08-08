@@ -335,7 +335,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
     public void materializeHasElement(final int index,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+        safeConsume(consumer, false, LOGGER);
       } else if (wrappedSize >= 0) {
         safeConsume(consumer, index < wrappedSize, LOGGER);
       } else if (index <= testedIndex) {
@@ -375,7 +375,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
                 try {
                   if (ImmaterialState.this.predicate.test(index, element)) {
                     final ListAsyncMaterializer<E> state = setState(index);
-                    state.materializeNextWhile(index, predicate);
+                    state.materializeNextWhile(Math.max(index, originalIndex), predicate);
                     return false;
                   }
                 } catch (final Exception e) {
