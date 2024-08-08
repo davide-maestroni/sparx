@@ -68,8 +68,19 @@ import sparx.internal.future.list.FlatMapFirstWhereListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapWhereListAsyncMaterializer;
+import sparx.internal.future.list.FoldLeftListAsyncMaterializer;
+import sparx.internal.future.list.FoldRightListAsyncMaterializer;
+import sparx.internal.future.list.GroupListAsyncMaterializer;
+import sparx.internal.future.list.GroupListAsyncMaterializer.Chunker;
+import sparx.internal.future.list.IncludesAllListAsyncMaterializer;
+import sparx.internal.future.list.IncludesSliceListAsyncMaterializer;
+import sparx.internal.future.list.InsertAfterListAsyncMaterializer;
+import sparx.internal.future.list.InsertAllAfterListAsyncMaterializer;
+import sparx.internal.future.list.IntersectListAsyncMaterializer;
 import sparx.internal.future.list.ListAsyncMaterializer;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
+import sparx.internal.future.list.MapAfterListAsyncMaterializer;
+import sparx.internal.future.list.MapListAsyncMaterializer;
 import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Consumer;
@@ -1087,6 +1098,10 @@ public class FutureListTests {
     test(List.of(1), List::<Integer>of, ll -> ll.foldLeft(1, Integer::sum));
     test(List.of(List.of()), List::of, ll -> ll.foldLeft(List.of(), List::append));
 
+    testMaterializer(List.of(3), c -> new FoldLeftListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 0, (a, e) -> e,
+        new AtomicReference<>(), List::wrap));
+
     testCancel(f -> f.foldLeft(0, (i, e) -> i));
   }
 
@@ -1099,6 +1114,10 @@ public class FutureListTests {
         ll -> ll.foldRight(List.<Integer>of(), (i, li) -> li.append(i)));
     test(List.of(1), List::<Integer>of, ll -> ll.foldRight(1, Integer::sum));
     test(List.of(List.of()), List::of, ll -> ll.foldRight(List.of(), (i, li) -> li.append(i)));
+
+    testMaterializer(List.of(1), c -> new FoldRightListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 0, (e, a) -> e,
+        new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.foldRight(0, (e, i) -> i));
   }
@@ -1113,6 +1132,31 @@ public class FutureListTests {
     test(List.of(List.of(1, 2), List.of(3, 4), List.of(5)), () -> l, ll -> ll.group(2));
     test(List.of(List.of(1, 2, 3), List.of(4, 5)), () -> l, ll -> ll.group(3));
     test(List.of(List.of(1, 2, 3, 4, 5)), () -> l, ll -> ll.group(10));
+
+    testMaterializer(List.of(List.of(1, null), List.of(3)), c -> {
+      var chunker = new Chunker<Integer, future.List<Integer>>() {
+        @Override
+        public @NotNull future.List<Integer> getChunk(
+            @NotNull final ListAsyncMaterializer<Integer> materializer, final int start,
+            final int end) {
+          return new future.List<>(context, new AtomicReference<>(), materializer).slice(start,
+              end);
+        }
+
+        @Override
+        public void getElements(@NotNull final future.List<Integer> chunk,
+            @NotNull final AsyncConsumer<java.util.List<Integer>> consumer) {
+          try {
+            consumer.accept(chunk.get());
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+      return new GroupListAsyncMaterializer<>(
+          new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, chunker, c,
+          new AtomicReference<>(), List::wrap);
+    });
 
     testCancel(f -> f.group(3));
   }
@@ -1131,6 +1175,36 @@ public class FutureListTests {
     test(List.of(List.of(1, 2, 3), List.of(4, 5, -1)), () -> l, ll -> ll.groupWithPadding(3, -1));
     test(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)), () -> l,
         ll -> ll.groupWithPadding(10, -1));
+
+    testMaterializer(List.of(List.of(1, null), List.of(3, 4)), c -> {
+      var chunker = new Chunker<Integer, future.List<Integer>>() {
+        @Override
+        public @NotNull future.List<Integer> getChunk(
+            @NotNull final ListAsyncMaterializer<Integer> materializer, final int start,
+            final int end) {
+          var sliced = new future.List<>(context, new AtomicReference<>(), materializer).slice(
+              start, end);
+          int paddingSize = 2 - (end - start);
+          if (paddingSize > 0) {
+            return sliced.appendAll(List.times(paddingSize, 4));
+          }
+          return sliced;
+        }
+
+        @Override
+        public void getElements(@NotNull final future.List<Integer> chunk,
+            @NotNull final AsyncConsumer<java.util.List<Integer>> consumer) {
+          try {
+            consumer.accept(chunk.get());
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+      return new GroupListAsyncMaterializer<>(
+          new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, chunker, c,
+          new AtomicReference<>(), List::wrap);
+    });
 
     testCancel(f -> f.groupWithPadding(3, null));
   }
@@ -1157,6 +1231,11 @@ public class FutureListTests {
     test(List.of(false), List::of, ll -> ll.includesAll(List.of(null, 1).toFuture(context)));
     test(List.of(true), List::of, ll -> ll.includesAll(List.of()));
 
+    testMaterializer(List.of(true), c -> new IncludesAllListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c),
+        new ListToListAsyncMaterializer<>(List.of(3, null, 1), c), new AtomicReference<>(),
+        List::wrap));
+
     testCancel(f -> f.includesAll(List.of(1)));
   }
 
@@ -1170,6 +1249,11 @@ public class FutureListTests {
     test(List.of(true), () -> l, ll -> ll.includesSlice(List.of()));
     test(List.of(false), List::of, ll -> ll.includesSlice(List.of(null, 1)));
     test(List.of(true), List::of, ll -> ll.includesSlice(List.of()));
+
+    testMaterializer(List.of(true), c -> new IncludesSliceListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c),
+        new ListToListAsyncMaterializer<>(List.of(null, 3), c), c, new AtomicReference<>(),
+        List::wrap));
 
     testCancel(f -> f.includesSlice(List.of(1)));
   }
@@ -1188,6 +1272,10 @@ public class FutureListTests {
     Iterable<Object> iterable = () -> List.of().iterator();
     test(List.of(), () -> List.wrap(iterable), ll -> ll.insertAfter(5, null));
     test(List.of(null), () -> List.wrap(iterable), ll -> ll.insertAfter(0, null));
+
+    testMaterializer(List.of(1, null, 2, 3), c -> new InsertAfterListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, 2, c, new AtomicReference<>(),
+        (ls, i, e) -> ((List<Integer>) ls).insertAfter(i, e)));
 
     testCancel(f -> f.insertAfter(1, 2));
   }
@@ -1209,6 +1297,11 @@ public class FutureListTests {
     test(List.of(), () -> List.wrap(iterable), ll -> ll.insertAllAfter(5, List.of(null, 5)));
     test(List.of(null, 5), () -> List.wrap(iterable), ll -> ll.insertAllAfter(0, List.of(null, 5)));
 
+    testMaterializer(List.of(1, null, 2, null, 3), c -> new InsertAllAfterListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2,
+        new ListToListAsyncMaterializer<>(List.of(2, null), c), c, new AtomicReference<>(),
+        (ls, i, e) -> ((List<Integer>) ls).insertAllAfter(i, e)));
+
     testCancel(f -> f.insertAllAfter(1, List.of(2)));
   }
 
@@ -1225,6 +1318,11 @@ public class FutureListTests {
     test(List.of(), () -> List.of(1, null), ll -> ll.intersect(List.of(2, 4)));
     test(List.of(), () -> List.of(1, 2, null, 4), ll -> ll.intersect(List.of()));
     test(List.of(), List::of, ll -> ll.intersect(List.of(1, 2, null, 4)));
+
+    testMaterializer(List.of(null, 3), c -> new IntersectListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c),
+        new ListToListAsyncMaterializer<>(List.of(3, 2, null), c), c, new AtomicReference<>(),
+        List::wrap));
 
     testCancel(f -> f.intersect(List.of(2)));
   }
@@ -1259,6 +1357,10 @@ public class FutureListTests {
     }).doFor(i -> {
     });
     assertEquals(List.of(0, 1, 2, 3), indexes);
+
+    testMaterializer(List.of(2, null, 4), c -> new MapListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c),
+        (i, e) -> e != null ? e + 1 : null, c, new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.map(e -> e));
   }
@@ -1299,6 +1401,10 @@ public class FutureListTests {
     }).doFor(i -> {
     });
     assertEquals(List.of(2), indexes);
+
+    testMaterializer(List.of(1, 2, 3), c -> new MapAfterListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 1, (i, e) -> 2, c,
+        new AtomicReference<>(), (ls, i, e) -> ((List<Integer>) ls).replaceAfter(i, e)));
 
     testCancel(f -> f.mapAfter(0, e -> e));
   }

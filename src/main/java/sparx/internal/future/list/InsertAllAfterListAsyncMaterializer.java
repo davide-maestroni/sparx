@@ -514,6 +514,7 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
         initOffset = numElements;
         materializer = elementsMaterializer;
       }
+      final int prevIndex = numElements - 1;
       materializer.materializeNextWhile((int) (index - initOffset),
           new CancellableIndexedAsyncPredicate<E>() {
             private boolean isWrapped = initIsWrapped;
@@ -524,15 +525,21 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
               if (isWrapped) {
                 wrappedSize = size;
                 if (size == numElements) {
+                  isWrapped = false;
                   offset = size;
                   elementsMaterializer.materializeNextWhile(0, this);
                 } else {
                   predicate.complete(safeSize(numElements, size, elementsSize));
                 }
               } else {
-                isWrapped = true;
-                offset = elementsSize = size;
-                wrapped.materializeNextWhile(numElements, this);
+                elementsSize = size;
+                if (wrappedSize == numElements) {
+                  predicate.complete(safeSize(numElements, wrappedSize, elementsSize));
+                } else {
+                  isWrapped = true;
+                  offset = size;
+                  wrapped.materializeNextWhile(Math.max(numElements, index - size), this);
+                }
               }
             }
 
@@ -544,7 +551,7 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
                     wrappedSize = Math.max(wrappedSize, size), elementsSize);
                 final boolean next = predicate.test(knownSize,
                     IndexOverflowException.safeCast(offset + index), element);
-                if (index == numElements - 1 && next) {
+                if (index == prevIndex && next) {
                   isWrapped = false;
                   offset = numElements;
                   elementsMaterializer.materializeNextWhile(0, this);

@@ -2478,8 +2478,8 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<List<E>>(context, cancelException,
           new GroupListAsyncMaterializer<E, List<E>>(materializer, size,
-              List.getChunker(context, taskID, cancelException, Require.positive(size, "size"),
-                  padding), context, cancelException, List.<List<E>>decorateFunction()));
+              getChunker(context, taskID, cancelException, Require.positive(size, "size"), padding),
+              context, cancelException, List.<List<E>>decorateFunction()));
     }
 
     @Override

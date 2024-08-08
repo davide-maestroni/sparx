@@ -219,7 +219,7 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
           safeConsume(consumer, safeSize(wrappedSize, maxSize), index, elements.get(index), LOGGER);
         } else if (wrappedSize >= 0) {
           final int size = wrappedSize;
-          final int startIndex = IndexOverflowException.safeCast((long) index * maxSize);
+          final long startIndex = (long) index * maxSize;
           if (startIndex >= size) {
             safeConsumeComplete(consumer, safeSize(wrappedSize, maxSize), LOGGER);
             return;
@@ -227,8 +227,8 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
           final L chunk;
           if (!elements.has(index)) {
             final int maxSize = this.maxSize;
-            final int endIndex = (int) Math.min(size, (long) startIndex + maxSize);
-            chunk = chunker.getChunk(wrapped, startIndex, endIndex);
+            final int endIndex = (int) Math.min(size, startIndex + maxSize);
+            chunk = chunker.getChunk(wrapped, (int) startIndex, endIndex);
             elements.set(index, chunk);
           } else {
             chunk = elements.get(index);
@@ -302,7 +302,7 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
           safeConsume(consumer, true, LOGGER);
         } else if (wrappedSize >= 0) {
           final int size = wrappedSize;
-          final int startIndex = IndexOverflowException.safeCast((long) index * maxSize);
+          final long startIndex = (long) index * maxSize;
           safeConsume(consumer, startIndex < size, LOGGER);
         } else {
           wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
@@ -375,9 +375,9 @@ public class GroupListAsyncMaterializer<E, L extends List<E>> extends
         final ElementsCache<L> elements = this.elements;
         final Chunker<E, ? extends L> chunker = this.chunker;
         final ListAsyncMaterializer<E> wrapped = this.wrapped;
-        final int startIndex = IndexOverflowException.safeCast(
-            Math.min(index, elementsSize - 1) * maxSize);
-        for (int i = startIndex, n = index; i >= 0; --n) {
+        final int cappedIndex = Math.min(index, elementsSize - 1);
+        final int startIndex = IndexOverflowException.safeCast(cappedIndex * maxSize);
+        for (int i = startIndex, n = cappedIndex; i >= 0; --n) {
           final int endIndex = (int) Math.min(size, i + maxSize);
           if (!elements.has(n)) {
             final L chunk = chunker.getChunk(wrapped, i, endIndex);

@@ -344,7 +344,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
     public void materializeNextWhile(final int index,
         @NotNull final IndexedAsyncPredicate<E> predicate) {
       if (index > numElements) {
-        wrapped.materializeNextWhile(index, new CancellableIndexedAsyncPredicate<E>() {
+        wrapped.materializeNextWhile(index - 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
             final int knownSize = safeSize(numElements, wrappedSize = size);
@@ -361,12 +361,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
             final int knownSize = safeSize(numElements, wrappedSize = Math.max(wrappedSize, size));
-            if (index == numElements && predicate.test(knownSize, index,
-                ImmaterialState.this.element)) {
-              return predicate.test(knownSize, safeIndex(index), element);
-            }
-            return predicate.test(knownSize, index < numElements ? index : safeIndex(index),
-                element);
+            return predicate.test(knownSize, safeIndex(index), element);
           }
 
           @Override
@@ -392,9 +387,9 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
             final int knownSize = safeSize(numElements, wrappedSize = Math.max(wrappedSize, size));
-            if (index == numElements && predicate.test(knownSize, index,
-                ImmaterialState.this.element)) {
-              return predicate.test(knownSize, safeIndex(index), element);
+            if (index == numElements) {
+              return predicate.test(knownSize, index, ImmaterialState.this.element)
+                  && predicate.test(knownSize, safeIndex(index), element);
             }
             return predicate.test(knownSize, index < numElements ? index : safeIndex(index),
                 element);
@@ -432,7 +427,8 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
           }
         });
       } else {
-        wrapped.materializePrevWhile(index, new CancellableIndexedAsyncPredicate<E>() {
+        final int prevIndex = numElements - 1;
+        wrapped.materializePrevWhile(index - 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
             final int knownSize = safeSize(numElements, wrappedSize = Math.max(wrappedSize, size));
@@ -443,8 +439,9 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
             final int knownSize = safeSize(numElements, wrappedSize = Math.max(wrappedSize, size));
-            if (index == numElements && predicate.test(knownSize, safeIndex(index), element)) {
-              return predicate.test(knownSize, index, ImmaterialState.this.element);
+            if (index == prevIndex) {
+              return predicate.test(knownSize, numElements, ImmaterialState.this.element)
+                  && predicate.test(knownSize, index, element);
             }
             return predicate.test(knownSize, index < numElements ? index : safeIndex(index),
                 element);
