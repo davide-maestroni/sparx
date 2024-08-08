@@ -1937,10 +1937,9 @@ class future extends Sparx {
             lazyMaterializerFindLast(materializer, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FindLastListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
+              Require.notNull(predicate, "predicate"), cancelException,
               List.<E>decorateFunction()));
     }
 
@@ -1956,10 +1955,9 @@ class future extends Sparx {
             lazyMaterializerFindLast(materializer, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
-      final ExecutionContext context = this.context;
       return new List<E>(context, cancelException,
           new FindLastListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), cancelException,
               List.<E>decorateFunction()));
     }
 

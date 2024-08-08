@@ -407,7 +407,7 @@ public class AppendAllListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         @Override
         public void cancellableComplete(final int size) {
           wrappedSize = size;
-          elementsMaterializer.materializeNextWhile(index - size,
+          elementsMaterializer.materializeNextWhile(Math.max(0, index - size),
               new CancellableIndexedAsyncPredicate<E>() {
                 @Override
                 public void cancellableComplete(final int size) throws Exception {

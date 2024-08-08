@@ -2035,6 +2035,8 @@ class itf {
     @NotNull
     Sequence<E> diff(@NotNull Iterable<?> elements);
 
+    // TODO: distinct, distinctBy
+
     void doFor(@NotNull Consumer<? super E> consumer);
 
     void doFor(@NotNull IndexedConsumer<? super E> consumer);

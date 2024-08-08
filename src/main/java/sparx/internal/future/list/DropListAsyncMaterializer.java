@@ -195,24 +195,25 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
         safeConsumeComplete(consumer, safeSize(wrappedSize), LOGGER);
       } else {
         final int originalIndex = index;
-        wrapped.materializeElement(safeIndex(index), new CancellableIndexedAsyncConsumer<E>() {
-          @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            consumer.accept(safeSize(wrappedSize = Math.max(wrappedSize, size)), originalIndex,
-                element);
-          }
+        wrapped.materializeElement(IndexOverflowException.safeCast((long) maxElements + index),
+            new CancellableIndexedAsyncConsumer<E>() {
+              @Override
+              public void cancellableAccept(final int size, final int index, final E element)
+                  throws Exception {
+                consumer.accept(safeSize(wrappedSize = Math.max(wrappedSize, size)), originalIndex,
+                    element);
+              }
 
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            consumer.complete(safeSize(wrappedSize = size));
-          }
+              @Override
+              public void cancellableComplete(final int size) throws Exception {
+                consumer.complete(safeSize(wrappedSize = size));
+              }
 
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                consumer.error(error);
+              }
+            });
       }
     }
 
@@ -425,7 +426,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     private int safeIndex(final int index) {
       if (index >= 0) {
-        return IndexOverflowException.safeCast((long) maxElements + index);
+        return (int) Math.min(Integer.MAX_VALUE, (long) maxElements + index);
       }
       return index;
     }
