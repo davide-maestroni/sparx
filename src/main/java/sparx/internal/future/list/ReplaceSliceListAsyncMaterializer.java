@@ -748,6 +748,7 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
             final boolean next = predicate.test(safeSize(elementsSize), index, element);
             if (index == start - 1 && next) {
               materializeNextWhile(start, predicate);
+              return false;
             }
             return next;
           }
@@ -758,34 +759,33 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
           }
         });
       } else if (elementsSize >= 0 && index >= IndexOverflowException.safeCast(
-          (long) start - elementsSize + length)) {
+          (long) start + elementsSize)) {
         final int offset = elementsSize - length;
-        wrapped.materializeNextWhile(IndexOverflowException.safeCast((long) start + length),
-            new CancellableIndexedAsyncPredicate<E>() {
-              @Override
-              public void cancellableComplete(final int size) throws Exception {
-                predicate.complete(knownSize);
-              }
+        wrapped.materializeNextWhile(index - offset, new CancellableIndexedAsyncPredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            predicate.complete(knownSize);
+          }
 
-              @Override
-              public boolean cancellableTest(final int size, final int index, final E element)
-                  throws Exception {
-                return predicate.test(safeSize(elementsSize),
-                    IndexOverflowException.safeCast((long) index + offset), element);
-              }
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            return predicate.test(safeSize(elementsSize),
+                IndexOverflowException.safeCast((long) index + offset), element);
+          }
 
-              @Override
-              public void error(@NotNull final Exception error) throws Exception {
-                predicate.error(error);
-              }
-            });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            predicate.error(error);
+          }
+        });
       } else {
         elementsMaterializer.materializeNextWhile(index - start,
             new CancellableIndexedAsyncPredicate<E>() {
               @Override
               public void cancellableComplete(final int size) {
                 elementsSize = size;
-                materializeNextWhile(IndexOverflowException.safeCast((long) index - size + length),
+                materializeNextWhile(IndexOverflowException.safeCast((long) start + size),
                     predicate);
               }
 
@@ -853,27 +853,32 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
                 }
               });
         } else {
+          final int end = start + length;
           final int offset = elementsSize - length;
-          wrapped.materializePrevWhile(IndexOverflowException.safeCast((long) index + offset),
-              new CancellableIndexedAsyncPredicate<E>() {
-                @Override
-                public void cancellableComplete(final int size) {
-                  materializePrevWhile(
-                      IndexOverflowException.safeCast((long) start + elementsSize - 1), predicate);
-                }
+          wrapped.materializePrevWhile(index - offset, new CancellableIndexedAsyncPredicate<E>() {
+            @Override
+            public void cancellableComplete(final int size) throws Exception {
+              predicate.complete(safeSize(elementsSize));
+            }
 
-                @Override
-                public boolean cancellableTest(final int size, final int index, final E element)
-                    throws Exception {
-                  return predicate.test(safeSize(elementsSize),
-                      IndexOverflowException.safeCast((long) index + offset), element);
-                }
+            @Override
+            public boolean cancellableTest(final int size, final int index, final E element)
+                throws Exception {
+              final boolean next = predicate.test(safeSize(elementsSize),
+                  IndexOverflowException.safeCast((long) index + offset), element);
+              if (index == end && next) {
+                materializePrevWhile(
+                    IndexOverflowException.safeCast((long) start + elementsSize - 1), predicate);
+                return false;
+              }
+              return next;
+            }
 
-                @Override
-                public void error(@NotNull final Exception error) throws Exception {
-                  predicate.error(error);
-                }
-              });
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              predicate.error(error);
+            }
+          });
         }
       } else {
         elementsMaterializer.materializeSize(new CancellableAsyncConsumer<Integer>() {

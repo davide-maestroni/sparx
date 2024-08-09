@@ -95,6 +95,7 @@ import sparx.internal.future.list.RemoveFirstWhereListAsyncMaterializer;
 import sparx.internal.future.list.RemoveLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.RemoveSliceListAsyncMaterializer;
 import sparx.internal.future.list.RemoveWhereListAsyncMaterializer;
+import sparx.internal.future.list.ReplaceSliceListAsyncMaterializer;
 import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Consumer;
@@ -2209,7 +2210,10 @@ public class FutureListTests {
     test(List.of(5), List::of, ll -> ll.replaceSlice(0, 0, List.of(5)));
     test(List.of(5), List::of, ll -> ll.replaceSlice(1, -1, List.of(5)));
 
-    // TODO
+    testMaterializer(List.of(1, null, 2, null, 3), c -> new ReplaceSliceListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 1, 2,
+        new ListToListAsyncMaterializer<>(List.of(null, 2, null), c), c, new AtomicReference<>(),
+        List::wrap));
 
     testCancel(f -> f.replaceSlice(0, -1, List.of()));
   }
@@ -2284,6 +2288,8 @@ public class FutureListTests {
     test(List.of(1, 2, null, 4), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(4, 5));
     test(List.of(1, 2, null, 4, 5), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(5, 5));
     test(List.of(1, 2, null, 4, 5, 5), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(6, 5));
+
+    // TODO
 
     testCancel(f -> f.resizeTo(1, null));
   }
