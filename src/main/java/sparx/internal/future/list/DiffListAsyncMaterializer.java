@@ -117,18 +117,16 @@ public class DiffListAsyncMaterializer<E> extends ProgressiveListAsyncMaterializ
           nextIndex = index + 1;
           final HashMap<Object, Integer> elementsBag = ImmaterialState.this.elementsBag;
           final Integer count = elementsBag.get(element);
-          boolean next = true;
           if (count == null) {
-            next = setNextElement(element);
-          } else {
-            final int decCount = count - 1;
-            if (decCount == 0) {
-              elementsBag.remove(element);
-            } else {
-              elementsBag.put(element, decCount);
-            }
+            return setNextElement(element);
           }
-          return next;
+          final int decCount = count - 1;
+          if (decCount == 0) {
+            elementsBag.remove(element);
+          } else {
+            elementsBag.put(element, decCount);
+          }
+          return true;
         }
 
         @Override

@@ -72,11 +72,10 @@ public class FilterListAsyncMaterializer<E> extends ProgressiveListAsyncMaterial
         public boolean cancellableTest(final int size, final int index, final E element)
             throws Exception {
           nextIndex = index + 1;
-          boolean next = true;
           if (predicate.test(index, element)) {
-            next = setNextElement(element);
+            return setNextElement(element);
           }
-          return next;
+          return true;
         }
 
         @Override

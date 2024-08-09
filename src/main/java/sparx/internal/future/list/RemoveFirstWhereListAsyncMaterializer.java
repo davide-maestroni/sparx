@@ -333,7 +333,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
     public void materializeHasElement(final int index,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+        safeConsume(consumer, false, LOGGER);
       } else if (index <= testedIndex) {
         safeConsume(consumer, true, LOGGER);
       } else {
@@ -394,7 +394,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
                 try {
                   if (ImmaterialState.this.predicate.test(index, element)) {
                     final ListAsyncMaterializer<E> state = setState(index);
-                    state.materializeNextWhile(index, predicate);
+                    state.materializeNextWhile(Math.max(index, originalIndex), predicate);
                     return false;
                   }
                 } catch (final Exception e) {
@@ -403,7 +403,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
                 }
                 testedIndex = index;
               }
-              if (originalIndex <= index) {
+              if (index >= originalIndex) {
                 return predicate.test(-1, index, element);
               }
               return true;
@@ -526,7 +526,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
               }
               testedIndex = index;
             }
-            return true;
+            return !stateConsumers.isEmpty();
           }
 
           @Override

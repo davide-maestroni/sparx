@@ -228,7 +228,7 @@ public class RemoveAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
         });
       } else {
         final int originalIndex = index;
-        wrapped.materializeElement(IndexOverflowException.safeCast((long) index + 1),
+        wrapped.materializeElement((int) Math.min(Integer.MAX_VALUE, (long) index + 1),
             new CancellableIndexedAsyncConsumer<E>() {
               @Override
               public void cancellableAccept(final int size, final int index, final E element)
@@ -406,7 +406,7 @@ public class RemoveAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
             return predicate.test(knownSize, index, element);
           } else if (index > numElements) {
             if (index == numElements + 1) {
-              if (predicate.test(knownSize, index, element)) {
+              if (predicate.test(knownSize, index - 1, element)) {
                 if (index == 1) {
                   predicate.complete(knownSize);
                 } else {

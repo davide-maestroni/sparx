@@ -384,7 +384,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
                 }
                 testedIndex = index;
               }
-              if (originalIndex <= index) {
+              if (index >= originalIndex) {
                 return predicate.test(wrappedSize, index, element);
               }
               return true;

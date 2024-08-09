@@ -373,8 +373,8 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
     @Override
     public void materializeNextWhile(final int index,
         @NotNull final IndexedAsyncPredicate<E> predicate) {
-      final int startIndex = index;
-      wrapped.materializeNextWhile(Math.min(startIndex, testedIndex + 1),
+      final int originalIndex = index;
+      wrapped.materializeNextWhile(Math.min(originalIndex, testedIndex + 1),
           new CancellableIndexedAsyncPredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {
@@ -388,7 +388,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
               if (testedIndex < index) {
                 try {
                   if (ImmaterialState.this.predicate.test(index, element)) {
-                    setState(index).materializeNextWhile(Math.max(index, startIndex), predicate);
+                    setState(index).materializeNextWhile(Math.max(index, originalIndex), predicate);
                     return false;
                   }
                 } catch (final Exception e) {
@@ -397,7 +397,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
                 }
                 testedIndex = index;
               }
-              if (index >= startIndex) {
+              if (index >= originalIndex) {
                 return predicate.test(-1, index, element);
               }
               return true;
@@ -506,7 +506,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
-            consumeState(setState(setState(new WrappingState(wrapped, context, cancelException))));
+            setState(new WrappingState(wrapped, context, cancelException));
           }
 
           @Override

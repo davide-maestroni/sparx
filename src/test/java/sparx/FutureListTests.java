@@ -90,6 +90,11 @@ import sparx.internal.future.list.PrependAllListAsyncMaterializer;
 import sparx.internal.future.list.PrependListAsyncMaterializer;
 import sparx.internal.future.list.ReduceLeftListAsyncMaterializer;
 import sparx.internal.future.list.ReduceRightListAsyncMaterializer;
+import sparx.internal.future.list.RemoveAfterListAsyncMaterializer;
+import sparx.internal.future.list.RemoveFirstWhereListAsyncMaterializer;
+import sparx.internal.future.list.RemoveLastWhereListAsyncMaterializer;
+import sparx.internal.future.list.RemoveSliceListAsyncMaterializer;
+import sparx.internal.future.list.RemoveWhereListAsyncMaterializer;
 import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Consumer;
@@ -1811,7 +1816,9 @@ public class FutureListTests {
     test(List.of(1, 2, 3), () -> l, ll -> ll.removeAfter(-7));
     test(List.of(), List::of, ll -> ll.removeAfter(5));
 
-    // TODO
+    testMaterializer(List.of(1, null), c -> new RemoveAfterListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, c, new AtomicReference<>(),
+        (ls, i) -> ((List<Integer>) ls).removeAfter(i)));
 
     testCancel(f -> f.removeAfter(0));
   }
@@ -1882,6 +1889,10 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2), indexes);
 
+    testMaterializer(List.of(null, 3), c -> new RemoveFirstWhereListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), (i, e) -> e != null, c,
+        new AtomicReference<>(), (ls, i) -> ((List<Integer>) ls).removeAfter(i)));
+
     testCancel(f -> f.removeFirstWhere(e -> false));
   }
 
@@ -1937,6 +1948,10 @@ public class FutureListTests {
     });
     assertEquals(List.of(3, 2), indexes);
 
+    testMaterializer(List.of(1, null), c -> new RemoveLastWhereListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), (i, e) -> e != null, c,
+        new AtomicReference<>(), (ls, i) -> ((List<Integer>) ls).removeAfter(i)));
+
     testCancel(f -> f.removeLastWhere(e -> false));
   }
 
@@ -1960,6 +1975,10 @@ public class FutureListTests {
     test(List.of(1, 2, 4), () -> l, ll -> ll.removeSlice(-2, -1));
     test(List.of(), () -> l, ll -> ll.removeSlice(0, Integer.MAX_VALUE));
     test(List.of(), List::of, ll -> ll.removeSlice(1, -1));
+
+    testMaterializer(List.of(1), c -> new RemoveSliceListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 1, Integer.MAX_VALUE, c,
+        new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.removeSlice(0, -1));
   }
@@ -2003,6 +2022,10 @@ public class FutureListTests {
     }).doFor(i -> {
     });
     assertEquals(List.of(0, 1, 2, 3), indexes);
+
+    testMaterializer(List.of(null), c -> new RemoveWhereListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), (i, e) -> e != null, c,
+        new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.removeWhere(e -> false));
   }
@@ -2185,6 +2208,8 @@ public class FutureListTests {
     test(List.of(), () -> l, ll -> ll.replaceSlice(0, Integer.MAX_VALUE, List.of()));
     test(List.of(5), List::of, ll -> ll.replaceSlice(0, 0, List.of(5)));
     test(List.of(5), List::of, ll -> ll.replaceSlice(1, -1, List.of(5)));
+
+    // TODO
 
     testCancel(f -> f.replaceSlice(0, -1, List.of()));
   }

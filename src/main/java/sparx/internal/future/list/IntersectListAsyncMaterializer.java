@@ -118,7 +118,6 @@ public class IntersectListAsyncMaterializer<E> extends ProgressiveListAsyncMater
           nextIndex = index + 1;
           final HashMap<Object, Integer> elementsBag = ImmaterialState.this.elementsBag;
           final Integer count = elementsBag.get(element);
-          boolean next = true;
           if (count != null) {
             final int decCount = count - 1;
             if (decCount == 0) {
@@ -126,9 +125,9 @@ public class IntersectListAsyncMaterializer<E> extends ProgressiveListAsyncMater
             } else {
               elementsBag.put(element, decCount);
             }
-            next = setNextElement(element);
+            return setNextElement(element);
           }
-          return next;
+          return true;
         }
 
         @Override

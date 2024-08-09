@@ -563,7 +563,7 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
         @NotNull final IndexedAsyncPredicate<E> predicate) {
       final int end = start + length - 1;
       wrapped.materializeNextWhile(
-          index < start ? index : IndexOverflowException.safeCast((long) index + length),
+          index < start ? index : (int) Math.min(Integer.MAX_VALUE, (long) index + length),
           new CancellableIndexedAsyncPredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {
@@ -612,7 +612,7 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
         });
       } else {
         final int end = start + length;
-        wrapped.materializePrevWhile(IndexOverflowException.safeCast((long) index + length),
+        wrapped.materializePrevWhile((int) Math.min(Integer.MAX_VALUE, (long) index + length),
             new CancellableIndexedAsyncPredicate<E>() {
               @Override
               public void cancellableComplete(final int size) throws Exception {
@@ -623,6 +623,14 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
               public boolean cancellableTest(final int size, final int index, final E element)
                   throws Exception {
                 final int knownSize = MaterialState.this.knownSize;
+                if (index >= start && index < end) {
+                  if (start > 0) {
+                    wrapped.materializePrevWhile(start - 1, this);
+                  } else {
+                    predicate.complete(knownSize);
+                  }
+                  return false;
+                }
                 final boolean next = predicate.test(knownSize,
                     index < start ? index : index - length, element);
                 if (next && index == end) {
