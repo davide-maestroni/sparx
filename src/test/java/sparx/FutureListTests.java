@@ -54,6 +54,7 @@ import sparx.internal.future.list.DropRightListAsyncMaterializer;
 import sparx.internal.future.list.DropRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.DropWhileListAsyncMaterializer;
 import sparx.internal.future.list.EachListAsyncMaterializer;
+import sparx.internal.future.list.EmptyListAsyncMaterializer;
 import sparx.internal.future.list.EndsWithListAsyncMaterializer;
 import sparx.internal.future.list.ExistsListAsyncMaterializer;
 import sparx.internal.future.list.FilterListAsyncMaterializer;
@@ -84,6 +85,11 @@ import sparx.internal.future.list.MapFirstWhereListAsyncMaterializer;
 import sparx.internal.future.list.MapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.MapListAsyncMaterializer;
 import sparx.internal.future.list.MaxListAsyncMaterializer;
+import sparx.internal.future.list.OrElseListAsyncMaterializer;
+import sparx.internal.future.list.PrependAllListAsyncMaterializer;
+import sparx.internal.future.list.PrependListAsyncMaterializer;
+import sparx.internal.future.list.ReduceLeftListAsyncMaterializer;
+import sparx.internal.future.list.ReduceRightListAsyncMaterializer;
 import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Consumer;
@@ -1685,7 +1691,9 @@ public class FutureListTests {
     test(List.of(2), List::of, ll -> ll.orElse(List.of(2)));
     test(List.of(), List::of, ll -> ll.orElse(List.of()));
 
-    // TODO
+    testMaterializer(List.of(1, null, 3),
+        c -> new OrElseListAsyncMaterializer<>(new EmptyListAsyncMaterializer<>(List.of()),
+            new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), c, new AtomicReference<>()));
 
     testCancel(f -> f.orElse(List.of(1)));
   }
@@ -1726,6 +1734,10 @@ public class FutureListTests {
     test(List.of(3, 1, 2), () -> List.of(1, 2), ll -> ll.prepend(3));
     test(List.of(3, 1, null), () -> List.of(1, null), ll -> ll.prepend(3));
 
+    testMaterializer(List.of(0, 1, null, 3), c -> new PrependListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 0, c, new AtomicReference<>(),
+        (l, i) -> ((List<Integer>) l).prepend(i)));
+
     testCancel(f -> f.prepend(0));
   }
 
@@ -1739,6 +1751,11 @@ public class FutureListTests {
     test(List.of(null, 3, 1), () -> List.of(1), ll -> ll.prependAll(List.of(null, 3)));
     test(List.of(3, 1, 2), () -> List.of(1, 2), ll -> ll.prependAll(Set.of(3)));
     test(List.of(3, 1, null), () -> List.of(1, null), ll -> ll.prependAll(Set.of(3)));
+
+    testMaterializer(List.of(0, null, 1, null, 3), c -> new PrependAllListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c),
+        new ListToListAsyncMaterializer<>(List.of(0, null), c), c, new AtomicReference<>(),
+        (l, i) -> ((List<Integer>) l).prependAll(i)));
 
     testCancel(f -> f.prependAll(List.of(0)));
   }
@@ -1756,6 +1773,10 @@ public class FutureListTests {
             .first());
     test(List.of(), List::<Integer>of, ll -> ll.reduceLeft(Integer::sum));
 
+    testMaterializer(List.of(3), c -> new ReduceLeftListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, 2, 3), c), (lt, rt) -> rt,
+        new AtomicReference<>(), List::wrap));
+
     testCancel(f -> f.reduceLeft((i, e) -> i));
   }
 
@@ -1772,6 +1793,10 @@ public class FutureListTests {
             .first());
     test(List.of(), List::<Integer>of, ll -> ll.reduceRight(Integer::sum));
 
+    testMaterializer(List.of(1), c -> new ReduceRightListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, 2, 3), c), (lt, rt) -> lt,
+        new AtomicReference<>(), List::wrap));
+
     testCancel(f -> f.reduceRight((i, e) -> i));
   }
 
@@ -1785,6 +1810,8 @@ public class FutureListTests {
     test(List.of(2, 3), () -> l, ll -> ll.removeAfter(0));
     test(List.of(1, 2, 3), () -> l, ll -> ll.removeAfter(-7));
     test(List.of(), List::of, ll -> ll.removeAfter(5));
+
+    // TODO
 
     testCancel(f -> f.removeAfter(0));
   }
@@ -2459,6 +2486,12 @@ public class FutureListTests {
     assertFalse(lst.isCancelled());
     assertFalse(lst.isFailed());
     assertEquals(expected, lst.get());
+    assertTrue(lst.isDone());
+    assertFalse(lst.isCancelled());
+    assertFalse(lst.isFailed());
+    assertTrue(lst.isSucceeded());
+    lst = actualSupplier.get();
+    lst.nonBlockingGet().get();
     assertTrue(lst.isDone());
     assertFalse(lst.isCancelled());
     assertFalse(lst.isFailed());

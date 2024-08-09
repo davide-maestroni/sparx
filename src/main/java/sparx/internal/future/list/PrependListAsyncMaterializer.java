@@ -16,6 +16,7 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.AsyncConsumers.safeConsume;
+import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
@@ -223,7 +224,7 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
         @NotNull final AsyncConsumer<Boolean> consumer) {
       if (index < 0) {
         safeConsume(consumer, false, LOGGER);
-      } else if (index == 0 || index < wrappedSize) {
+      } else if (index == 0 || index <= wrappedSize) {
         safeConsume(consumer, true, LOGGER);
       } else if (wrappedSize >= 0) {
         safeConsume(consumer, false, LOGGER);
@@ -272,27 +273,32 @@ public class PrependListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
     @Override
     public void materializePrevWhile(final int index,
         @NotNull final IndexedAsyncPredicate<E> predicate) {
-      wrapped.materializePrevWhile(Math.max(0, index - 1),
-          new CancellableIndexedAsyncPredicate<E>() {
-            @Override
-            public void cancellableComplete(final int size) throws Exception {
-              if (predicate.test(safeSize(wrappedSize = Math.max(wrappedSize, size)), 0, element)) {
-                predicate.complete(safeSize(wrappedSize));
-              }
+      if (index == 0) {
+        if (safeConsume(predicate, safeSize(wrappedSize), 0, element, LOGGER)) {
+          safeConsumeComplete(predicate, safeSize(wrappedSize), LOGGER);
+        }
+      } else {
+        wrapped.materializePrevWhile(index - 1, new CancellableIndexedAsyncPredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            if (predicate.test(safeSize(wrappedSize = Math.max(wrappedSize, size)), 0, element)) {
+              predicate.complete(safeSize(wrappedSize));
             }
+          }
 
-            @Override
-            public boolean cancellableTest(final int size, final int index, final E element)
-                throws Exception {
-              return predicate.test(safeSize(wrappedSize = Math.max(wrappedSize, size)),
-                  IndexOverflowException.safeCast((long) index + 1), element);
-            }
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            return predicate.test(safeSize(wrappedSize = Math.max(wrappedSize, size)),
+                IndexOverflowException.safeCast((long) index + 1), element);
+          }
 
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              predicate.error(error);
-            }
-          });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            predicate.error(error);
+          }
+        });
+      }
     }
 
     @Override
