@@ -302,12 +302,13 @@ public class ResizeListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     public void materializePrevWhile(final int index,
         @NotNull final IndexedAsyncPredicate<E> predicate) {
       if (wrappedSize >= 0) {
-        for (int i = Math.min(index, numElements); i >= wrappedSize; --i) {
+        int i = Math.min(index, numElements - 1);
+        for (; i >= wrappedSize; --i) {
           if (!safeConsume(predicate, numElements, i, padding, LOGGER)) {
             return;
           }
         }
-        wrapped.materializePrevWhile(index, new CancellableIndexedAsyncPredicate<E>() {
+        wrapped.materializePrevWhile(i, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
             predicate.complete(numElements);
@@ -325,39 +326,40 @@ public class ResizeListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           }
         });
       } else {
-        wrapped.materializePrevWhile(index, new CancellableIndexedAsyncPredicate<E>() {
-          private boolean first = true;
+        wrapped.materializePrevWhile(Math.min(index, numElements - 1),
+            new CancellableIndexedAsyncPredicate<E>() {
+              private boolean first = true;
 
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            if (handleFirst(-1)) {
-              predicate.complete(numElements);
-            }
-          }
-
-          @Override
-          public boolean cancellableTest(final int size, final int index, final E element)
-              throws Exception {
-            return handleFirst(index) && predicate.test(numElements, index, element);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            predicate.error(error);
-          }
-
-          private boolean handleFirst(final int index) throws Exception {
-            if (first) {
-              first = false;
-              for (int i = numElements - 1; i > index; --i) {
-                if (!predicate.test(numElements, i, padding)) {
-                  return false;
+              @Override
+              public void cancellableComplete(final int size) throws Exception {
+                if (handleFirst(-1)) {
+                  predicate.complete(numElements);
                 }
               }
-            }
-            return true;
-          }
-        });
+
+              @Override
+              public boolean cancellableTest(final int size, final int index, final E element)
+                  throws Exception {
+                return handleFirst(index) && predicate.test(numElements, index, element);
+              }
+
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                predicate.error(error);
+              }
+
+              private boolean handleFirst(final int index) throws Exception {
+                if (first) {
+                  first = false;
+                  for (int i = numElements - 1; i > index; --i) {
+                    if (!predicate.test(numElements, i, padding)) {
+                      return false;
+                    }
+                  }
+                }
+                return true;
+              }
+            });
       }
     }
 

@@ -526,7 +526,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
               }
               testedIndex = index;
             }
-            return !stateConsumers.isEmpty();
+            return true;
           }
 
           @Override

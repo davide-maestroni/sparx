@@ -96,6 +96,16 @@ import sparx.internal.future.list.RemoveLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.RemoveSliceListAsyncMaterializer;
 import sparx.internal.future.list.RemoveWhereListAsyncMaterializer;
 import sparx.internal.future.list.ReplaceSliceListAsyncMaterializer;
+import sparx.internal.future.list.ResizeListAsyncMaterializer;
+import sparx.internal.future.list.ReverseListAsyncMaterializer;
+import sparx.internal.future.list.SliceListAsyncMaterializer;
+import sparx.internal.future.list.SortedListAsyncMaterializer;
+import sparx.internal.future.list.StartsWithListAsyncMaterializer;
+import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
+import sparx.internal.future.list.TakeListAsyncMaterializer;
+import sparx.internal.future.list.TakeRightListAsyncMaterializer;
+import sparx.internal.future.list.TakeRightWhileListAsyncMaterializer;
+import sparx.internal.future.list.TakeWhileListAsyncMaterializer;
 import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Consumer;
@@ -2289,7 +2299,12 @@ public class FutureListTests {
     test(List.of(1, 2, null, 4, 5), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(5, 5));
     test(List.of(1, 2, null, 4, 5, 5), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(6, 5));
 
-    // TODO
+    testMaterializer(List.of(1, null), c -> new ResizeListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, 4, c, new AtomicReference<>(),
+        (ls, i, p) -> ((List<Integer>) ls).resizeTo(i, p), List::wrap));
+    testMaterializer(List.of(1, null, 3, 4), c -> new ResizeListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 4, 4, c, new AtomicReference<>(),
+        (ls, i, p) -> ((List<Integer>) ls).resizeTo(i, p), List::wrap));
 
     testCancel(f -> f.resizeTo(1, null));
   }
@@ -2300,6 +2315,10 @@ public class FutureListTests {
     test(List.of(4, null, 2, 1), () -> l, future.List::reverse);
     test(l, () -> l, ll -> ll.reverse().reverse());
     test(List.of(), List::<Integer>of, future.List::reverse);
+
+    testMaterializer(List.of(3, null, 1), c -> new ReverseListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), c, new AtomicReference<>(),
+        ls -> ((List<Integer>) ls).reverse()));
 
     testCancel(future.List::reverse);
   }
@@ -2325,6 +2344,10 @@ public class FutureListTests {
     test(List.of(1, 2, null, 4), () -> l, ll -> ll.slice(0, Integer.MAX_VALUE));
     test(List.of(), List::of, ll -> ll.slice(1, -1));
 
+    testMaterializer(List.of(1, null), c -> new SliceListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 0, -1, c,
+        new AtomicReference<>(), List::wrap));
+
     testCancel(f -> f.slice(1));
   }
 
@@ -2333,6 +2356,10 @@ public class FutureListTests {
     var l = List.of(1, 2, 3, 2, 1);
     test(List.of(1, 1, 2, 2, 3), () -> l, ll -> ll.sorted(Integer::compare));
     test(List.of(), List::<Integer>of, ll -> ll.sorted(Integer::compare));
+
+    testMaterializer(List.of(1, 2, 3), c -> new SortedListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(2, 1, 3), c), Integer::compare, c,
+        new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.map((i, e) -> i).sorted(Integer::compare));
   }
@@ -2349,6 +2376,11 @@ public class FutureListTests {
     test(List.of(false), () -> List.of(1, null, 3), ll -> ll.startsWith(List.of(null, 3)));
     test(List.of(true), () -> List.of(1, null, 3), ll -> ll.startsWith(List.of(1, null, 3)));
     test(List.of(false), () -> List.of(1, null, 3), ll -> ll.startsWith(List.of(null, null, 3)));
+
+    testMaterializer(List.of(true), c -> new StartsWithListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c),
+        new ListToIteratorAsyncMaterializer<>(List.of(1, null), c), c, new AtomicReference<>(),
+        List::wrap));
 
     testCancel(f -> f.startsWith(List.of(1)));
   }
@@ -2373,6 +2405,11 @@ public class FutureListTests {
         ll -> ll.symmetricDiff(List.of()));
     test(List.of(1, 2, null, 4), List::of, ll -> ll.symmetricDiff(List.of(1, 2, null, 4)));
 
+    testMaterializer(List.of(3, 4), c -> new SymmetricDiffListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c),
+        new ListToListAsyncMaterializer<>(List.of(1, null, 4), c), c, new AtomicReference<>(),
+        List::wrap));
+
     testCancel(f -> f.symmetricDiff(List.of(1)));
   }
 
@@ -2388,6 +2425,10 @@ public class FutureListTests {
     test(List.of(), () -> List.of(1, null, 3), ll -> ll.take(0));
     test(List.of(), () -> List.of(1, null, 3), ll -> ll.take(-1));
 
+    testMaterializer(List.of(1, null), c -> new TakeListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, c, new AtomicReference<>(),
+        List::wrap));
+
     testCancel(f -> f.take(1));
   }
 
@@ -2402,6 +2443,10 @@ public class FutureListTests {
     test(List.of(1, null, 3), () -> List.of(1, null, 3), ll -> ll.takeRight(4));
     test(List.of(), () -> List.of(1, null, 3), ll -> ll.takeRight(0));
     test(List.of(), () -> List.of(1, null, 3), ll -> ll.takeRight(-1));
+
+    testMaterializer(List.of(null, 3), c -> new TakeRightListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, c, new AtomicReference<>(),
+        List::wrap));
 
     testCancel(f -> f.takeRight(1));
   }
@@ -2434,6 +2479,10 @@ public class FutureListTests {
     });
     assertEquals(List.of(3, 2), indexes);
 
+    testMaterializer(List.of(3), c -> new TakeRightWhileListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), (i, e) -> e != null, c,
+        new AtomicReference<>(), List::wrap));
+
     testCancel(f -> f.takeRightWhile(e -> true));
   }
 
@@ -2464,6 +2513,10 @@ public class FutureListTests {
     }).doFor(i -> {
     });
     assertEquals(List.of(0, 1, 2), indexes);
+
+    testMaterializer(List.of(1), c -> new TakeWhileListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), (i, e) -> e != null, c,
+        new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.takeWhile(e -> true));
   }

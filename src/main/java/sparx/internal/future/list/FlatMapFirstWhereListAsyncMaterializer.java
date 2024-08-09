@@ -519,7 +519,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
               }
               testedIndex = index;
             }
-            return !stateConsumers.isEmpty();
+            return true;
           }
 
           @Override

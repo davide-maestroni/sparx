@@ -573,7 +573,9 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
                 if (index < end) {
                   return next;
                 }
-                cancellableComplete(length);
+                if (next) {
+                  cancellableComplete(length);
+                }
                 return false;
               }
 
@@ -602,7 +604,9 @@ public class SliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
               if (index > start) {
                 return next;
               }
-              cancellableComplete(length);
+              if (next) {
+                cancellableComplete(length);
+              }
               return false;
             }
 
