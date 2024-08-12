@@ -236,14 +236,6 @@ class itf {
 
     @Override
     @NotNull
-    Collection<? extends Sequence<E>> group(int maxSize);
-
-    @Override
-    @NotNull
-    Collection<? extends Sequence<E>> groupWithPadding(int size, E padding);
-
-    @Override
-    @NotNull
     Collection<Boolean> includes(Object element);
 
     @Override
@@ -456,6 +448,14 @@ class itf {
     @Override
     @NotNull
     Collection<E> slice(int start, int end);
+
+    @Override
+    @NotNull
+    Collection<? extends Collection<E>> slidingWindow(int maxSize, int step);
+
+    @Override
+    @NotNull
+    Collection<? extends Collection<E>> slidingWindowWithPadding(int size, int step, E padding);
 
     @Override
     @NotNull
@@ -726,14 +726,6 @@ class itf {
 
     @Override
     @NotNull
-    Iterator<? extends Iterator<E>> group(int maxSize);
-
-    @Override
-    @NotNull
-    Iterator<? extends Iterator<E>> groupWithPadding(int size, E padding);
-
-    @Override
-    @NotNull
     Iterator<Boolean> includes(Object element);
 
     @Override
@@ -985,7 +977,7 @@ class itf {
     Iterator<? extends Iterator<E>> slidingWindow(int maxSize, int step);
 
     @NotNull
-    Iterator<? extends Iterator<E>> slidingWindow(int size, int step, E padding);
+    Iterator<? extends Iterator<E>> slidingWindowWithPadding(int size, int step, E padding);
 
     @Override
     @NotNull
@@ -1240,14 +1232,6 @@ class itf {
 
     @Override
     @NotNull
-    List<? extends List<E>> group(int maxSize);
-
-    @Override
-    @NotNull
-    List<? extends List<E>> groupWithPadding(int size, E padding);
-
-    @Override
-    @NotNull
     List<Boolean> includes(Object element);
 
     @Override
@@ -1482,6 +1466,14 @@ class itf {
     @Override
     @NotNull
     List<E> slice(int start, int end);
+
+    @Override
+    @NotNull
+    List<? extends List<E>> slidingWindow(int maxSize, int step);
+
+    @Override
+    @NotNull
+    List<? extends List<E>> slidingWindowWithPadding(int size, int step, E padding);
 
     @Override
     @NotNull
@@ -1722,14 +1714,6 @@ class itf {
     @NotNull
     <F> ListIterator<F> foldRight(F identity,
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
-
-    @Override
-    @NotNull
-    ListIterator<? extends ListIterator<E>> group(int maxSize);
-
-    @Override
-    @NotNull
-    ListIterator<? extends ListIterator<E>> groupWithPadding(int size, E padding);
 
     @Override
     @NotNull
@@ -1980,6 +1964,14 @@ class itf {
 
     @Override
     @NotNull
+    ListIterator<? extends ListIterator<E>> slidingWindow(int maxSize, int step);
+
+    @Override
+    @NotNull
+    ListIterator<? extends ListIterator<E>> slidingWindowWithPadding(int size, int step, E padding);
+
+    @Override
+    @NotNull
     ListIterator<Boolean> startsWith(@NotNull Iterable<?> elements);
 
     @NotNull
@@ -2184,12 +2176,6 @@ class itf {
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
     @NotNull
-    Sequence<? extends Sequence<E>> group(int maxSize);
-
-    @NotNull
-    Sequence<? extends Sequence<E>> groupWithPadding(int size, E padding);
-
-    @NotNull
     Sequence<Boolean> includes(Object element);
 
     @NotNull
@@ -2358,6 +2344,12 @@ class itf {
 
     @NotNull
     Sequence<E> slice(int start, int end);
+
+    @NotNull
+    Sequence<? extends Sequence<E>> slidingWindow(int maxSize, int step);
+
+    @NotNull
+    Sequence<? extends Sequence<E>> slidingWindowWithPadding(int size, int step, E padding);
 
     @NotNull
     Sequence<Boolean> startsWith(@NotNull Iterable<?> elements);
@@ -2592,14 +2584,6 @@ class itf {
 
     @Override
     @NotNull
-    Set<? extends Set<E>> group(int maxSize);
-
-    @Override
-    @NotNull
-    Set<? extends Set<E>> groupWithPadding(int size, E padding);
-
-    @Override
-    @NotNull
     Set<Boolean> includes(Object element);
 
     @Override
@@ -2811,6 +2795,14 @@ class itf {
     @Override
     @NotNull
     Set<E> slice(int start, int end);
+
+    @Override
+    @NotNull
+    Set<? extends Set<E>> slidingWindow(int maxSize, int step);
+
+    @Override
+    @NotNull
+    Set<? extends Set<E>> slidingWindowWithPadding(int size, int step, E padding);
 
     @Override
     @NotNull
@@ -3049,14 +3041,6 @@ class itf {
 
     @Override
     @NotNull
-    Stream<? extends Stream<E>> group(int maxSize);
-
-    @Override
-    @NotNull
-    Stream<? extends Stream<E>> groupWithPadding(int size, E padding);
-
-    @Override
-    @NotNull
     Stream<Boolean> includes(Object element);
 
     @Override
@@ -3284,6 +3268,14 @@ class itf {
     @Override
     @NotNull
     Stream<E> slice(int start, int end);
+
+    @Override
+    @NotNull
+    Stream<? extends Stream<E>> slidingWindow(int maxSize, int step);
+
+    @Override
+    @NotNull
+    Stream<? extends Stream<E>> slidingWindowWithPadding(int size, int step, E padding);
 
     @Override
     @NotNull

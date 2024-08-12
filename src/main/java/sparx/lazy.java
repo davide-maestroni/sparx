@@ -58,8 +58,6 @@ import sparx.internal.lazy.iterator.FlatMapWhereIteratorMaterializer;
 import sparx.internal.lazy.iterator.FloatArrayToIteratorMaterializer;
 import sparx.internal.lazy.iterator.FoldLeftIteratorMaterializer;
 import sparx.internal.lazy.iterator.FoldRightIteratorMaterializer;
-import sparx.internal.lazy.iterator.GroupIteratorMaterializer;
-import sparx.internal.lazy.iterator.GroupWithPaddingIteratorMaterializer;
 import sparx.internal.lazy.iterator.IncludesAllIteratorMaterializer;
 import sparx.internal.lazy.iterator.IncludesSliceIteratorMaterializer;
 import sparx.internal.lazy.iterator.InsertAfterIteratorMaterializer;
@@ -134,8 +132,6 @@ import sparx.internal.lazy.list.FlatMapWhereListMaterializer;
 import sparx.internal.lazy.list.FloatArrayToListMaterializer;
 import sparx.internal.lazy.list.FoldLeftListMaterializer;
 import sparx.internal.lazy.list.FoldRightListMaterializer;
-import sparx.internal.lazy.list.GroupListMaterializer;
-import sparx.internal.lazy.list.GroupListMaterializer.Chunker;
 import sparx.internal.lazy.list.IncludesAllListMaterializer;
 import sparx.internal.lazy.list.IncludesSliceListMaterializer;
 import sparx.internal.lazy.list.InsertAfterListMaterializer;
@@ -170,6 +166,8 @@ import sparx.internal.lazy.list.SingleFlatMapWhereListMaterializer;
 import sparx.internal.lazy.list.SingleMapListMaterializer;
 import sparx.internal.lazy.list.SingleMapWhereListMaterializer;
 import sparx.internal.lazy.list.SliceListMaterializer;
+import sparx.internal.lazy.list.SlidingWindowListMaterializer;
+import sparx.internal.lazy.list.SlidingWindowListMaterializer.Splitter;
 import sparx.internal.lazy.list.SortedListMaterializer;
 import sparx.internal.lazy.list.StartsWithListMaterializer;
 import sparx.internal.lazy.list.SymmetricDiffListMaterializer;
@@ -1028,32 +1026,6 @@ public class lazy extends Sparx {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public @NotNull Iterator<? extends Iterator<E>> group(final int maxSize) {
-      final IteratorMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return Iterator.of();
-      }
-      return new Iterator<Iterator<E>>(new GroupIteratorMaterializer<E, Iterator<E>>(materializer,
-          Require.positive(maxSize, "maxSize"),
-          (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public @NotNull Iterator<? extends Iterator<E>> groupWithPadding(final int size,
-        final E padding) {
-      final IteratorMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return Iterator.of();
-      }
-      return new Iterator<Iterator<E>>(
-          new GroupWithPaddingIteratorMaterializer<E, Iterator<E>>(materializer,
-              Require.positive(size, "size"), padding,
-              (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
-    }
-
-    @Override
     public boolean hasNext() {
       return materializer.materializeHasNext();
     }
@@ -1873,8 +1845,8 @@ public class lazy extends Sparx {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @NotNull Iterator<? extends Iterator<E>> slidingWindow(final int size, final int step,
-        final E padding) {
+    public @NotNull Iterator<? extends Iterator<E>> slidingWindowWithPadding(final int size,
+        final int step, final E padding) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return Iterator.of();
@@ -2130,7 +2102,7 @@ public class lazy extends Sparx {
   public static class List<E> extends AbstractListSequence<E> implements itf.List<E> {
 
     private static final List<?> EMPTY_LIST = new List<Object>(EmptyListMaterializer.instance());
-    private static final Chunker<?, ? extends List<?>> CHUNKER = new Chunker<Object, List<Object>>() {
+    private static final Splitter<?, ? extends List<?>> SPLITTER = new Splitter<Object, List<Object>>() {
       @Override
       public @NotNull List<Object> getChunk(@NotNull final ListMaterializer<Object> materializer,
           final int start, final int end) {
@@ -2299,8 +2271,8 @@ public class lazy extends Sparx {
       return new List<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
     }
 
-    private static @NotNull <E> Chunker<E, List<E>> getChunker(final int size, final E padding) {
-      return new Chunker<E, List<E>>() {
+    private static @NotNull <E> Splitter<E, List<E>> getSplitter(final int size, final E padding) {
+      return new Splitter<E, List<E>>() {
         @Override
         public @NotNull List<E> getChunk(@NotNull final ListMaterializer<E> materializer,
             final int start, final int end) {
@@ -3091,31 +3063,6 @@ public class lazy extends Sparx {
     @Override
     public E get(final int index) {
       return materializer.materializeElement(index);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public @NotNull List<? extends List<E>> group(final int maxSize) {
-      final ListMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return List.of();
-      }
-      return new List<List<E>>(
-          new GroupListMaterializer<E, List<E>>(materializer, Require.positive(maxSize, "maxSize"),
-              (Chunker<E, ? extends List<E>>) CHUNKER));
-    }
-
-    @Override
-    public @NotNull List<? extends List<E>> groupWithPadding(final int size, final E padding) {
-      final ListMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return List.of();
-      }
-      if (size == 1) {
-        return group(1);
-      }
-      return new List<List<E>>(new GroupListMaterializer<E, List<E>>(materializer, size,
-          getChunker(Require.positive(size, "size"), padding)));
     }
 
     @Override
@@ -3995,6 +3942,32 @@ public class lazy extends Sparx {
         }
       }
       return new List<E>(new SliceListMaterializer<E>(materializer, start, end));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull List<? extends List<E>> slidingWindow(final int maxSize, final int step) {
+      final ListMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return List.of();
+      }
+      return new List<List<E>>(new SlidingWindowListMaterializer<E, List<E>>(materializer,
+          Require.positive(maxSize, "maxSize"), Require.positive(step, "step"),
+          (Splitter<E, ? extends List<E>>) SPLITTER));
+    }
+
+    @Override
+    public @NotNull List<? extends List<E>> slidingWindowWithPadding(final int size, final int step,
+        final E padding) {
+      final ListMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return List.of();
+      }
+      if (size == 1) {
+        return slidingWindow(1, step);
+      }
+      return new List<List<E>>(new SlidingWindowListMaterializer<E, List<E>>(materializer, size,
+          Require.positive(step, "step"), getSplitter(Require.positive(size, "size"), padding)));
     }
 
     @Override
@@ -4984,24 +4957,6 @@ public class lazy extends Sparx {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public @NotNull ListIterator<? extends ListIterator<E>> group(final int maxSize) {
-      return new ListIterator<ListIterator<E>>(
-          currentLeft().group(maxSize).map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
-          currentRight().group(maxSize).map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public @NotNull ListIterator<? extends ListIterator<E>> groupWithPadding(final int size,
-        final E padding) {
-      return new ListIterator<ListIterator<E>>(currentLeft().groupWithPadding(size, padding)
-          .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
-          currentRight().groupWithPadding(size, padding)
-              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
-    }
-
-    @Override
     public boolean hasNext() {
       final int pos = this.pos;
       if (pos >= 0) {
@@ -5684,6 +5639,46 @@ public class lazy extends Sparx {
         return ListIterator.of();
       }
       return new ListIterator<E>(List.<E>of(), currentRight().slice(start, end));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindow(final int maxSize,
+        final int step) {
+      final List<E> currentLeft = currentLeft();
+      final List<E> currentRight = currentRight();
+      return new ListIterator<ListIterator<E>>(
+          currentLeft.count().flatMap(new IndexedFunction<Integer, List<E>>() {
+                @Override
+                public List<E> apply(final int index, final Integer size) {
+                  if (size < step) {
+                    return List.of();
+                  }
+                  return currentLeft.drop(size % step).appendAll(currentRight.take(maxSize - step));
+                }
+              }).slidingWindow(maxSize, step)
+              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
+          currentRight.slidingWindow(maxSize, step)
+              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindowWithPadding(final int size,
+        final int step, final E padding) {
+      final List<E> currentLeft = currentLeft();
+      final List<E> currentRight = currentRight();
+      return new ListIterator<ListIterator<E>>(
+          currentLeft.count().flatMap(new IndexedFunction<Integer, List<E>>() {
+                @Override
+                public List<E> apply(final int index, final Integer size) {
+                  return currentLeft.prependAll(List.times(size % step, padding))
+                      .appendAll(currentRight.take(size - step));
+                }
+              }).slidingWindowWithPadding(size, step, padding)
+              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
+          currentRight.slidingWindowWithPadding(size, step, padding)
+              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
     }
 
     @Override

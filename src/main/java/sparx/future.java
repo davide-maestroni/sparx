@@ -2453,7 +2453,6 @@ class future extends Sparx {
       }
     }
 
-    @Override
     public @NotNull List<? extends List<E>> group(final int maxSize) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
@@ -2468,7 +2467,6 @@ class future extends Sparx {
               List.<List<E>>decorateFunction()));
     }
 
-    @Override
     public @NotNull List<? extends List<E>> groupWithPadding(final int size, final E padding) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
@@ -4025,6 +4023,17 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull List<? extends List<E>> slidingWindow(int maxSize, int step) {
+      return null;
+    }
+
+    @Override
+    public @NotNull List<? extends List<E>> slidingWindowWithPadding(int size, int step,
+        E padding) {
+      return null;
+    }
+
+    @Override
     public @NotNull List<E> sorted(@NotNull final Comparator<? super E> comparator) {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       final ListAsyncMaterializer<E> materializer = this.materializer;
@@ -5277,7 +5286,6 @@ class future extends Sparx {
       return new lazy.ListIterator<E>(leftList, rightList, pos);
     }
 
-    @Override
     @SuppressWarnings("unchecked")
     public @NotNull ListIterator<? extends ListIterator<E>> group(final int maxSize) {
       return new ListIterator<ListIterator<E>>(context,
@@ -5285,7 +5293,6 @@ class future extends Sparx {
           currentRight().group(maxSize).map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
     }
 
-    @Override
     @SuppressWarnings("unchecked")
     public @NotNull ListIterator<? extends ListIterator<E>> groupWithPadding(final int size,
         final E padding) {
@@ -6162,6 +6169,17 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new ListIterator<E>(context, List.<E>emptyList(context),
           currentRight().slice(start, end));
+    }
+
+    @Override
+    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindow(int maxSize, int step) {
+      return null;
+    }
+
+    @Override
+    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindowWithPadding(int size,
+        int step, E padding) {
+      return null;
     }
 
     @Override

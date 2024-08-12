@@ -639,30 +639,6 @@ public class LazyListTests {
   }
 
   @Test
-  public void group() throws Exception {
-    assertThrows(IllegalArgumentException.class, () -> List.of(0).group(-1));
-    assertThrows(IllegalArgumentException.class, () -> List.of(0).group(0));
-    var l = List.of(1, 2, 3, 4, 5);
-    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)), () -> l.group(1));
-    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5)), () -> l.group(2));
-    test(List.of(List.of(1, 2, 3), List.of(4, 5)), () -> l.group(3));
-    test(List.of(List.of(1, 2, 3, 4, 5)), () -> l.group(10));
-  }
-
-  @Test
-  public void groupWithPadding() throws Exception {
-    assertThrows(IllegalArgumentException.class, () -> List.of(0).groupWithPadding(-1, 0));
-    assertThrows(IllegalArgumentException.class, () -> List.of(0).groupWithPadding(0, 0));
-    var l = List.of(1, 2, 3, 4, 5);
-    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)),
-        () -> l.groupWithPadding(1, null));
-    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)),
-        () -> l.groupWithPadding(2, null));
-    test(List.of(List.of(1, 2, 3), List.of(4, 5, -1)), () -> l.groupWithPadding(3, -1));
-    test(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)), () -> l.groupWithPadding(10, -1));
-  }
-
-  @Test
   public void includes() throws Exception {
     var l = List.of(1, 2, 3, null, 5);
     test(List.of(true), () -> l.includes(null));
@@ -1406,6 +1382,91 @@ public class LazyListTests {
     test(List.of(null), () -> l.slice(-2, -1));
     test(List.of(1, 2, null, 4), () -> l.slice(0, Integer.MAX_VALUE));
     test(List.of(), () -> List.of().slice(1, -1));
+  }
+
+  @Test
+  public void slidingWindow() throws Exception {
+    assertThrows(IllegalArgumentException.class, () -> List.of(0).slidingWindow(-1, 1));
+    assertThrows(IllegalArgumentException.class, () -> List.of(0).slidingWindow(0, 1));
+    assertThrows(IllegalArgumentException.class, () -> List.of(0).slidingWindow(1, -1));
+    assertThrows(IllegalArgumentException.class, () -> List.of(0).slidingWindow(1, 0));
+    var l = List.of(1, 2, 3, 4, 5, 6);
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
+        List.of(5, 6), List.of(6)), () -> l.slidingWindow(3, 1));
+    test(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6)), () -> l.slidingWindow(3, 2));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, 6)), () -> l.slidingWindow(3, 3));
+    test(List.of(List.of(1, 2, 3), List.of(5, 6)), () -> l.slidingWindow(3, 4));
+    test(List.of(List.of(1, 2, 3), List.of(6)), () -> l.slidingWindow(3, 5));
+    test(List.of(List.of(1, 2, 3)), () -> l.slidingWindow(3, 6));
+    test(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
+        List.of(6)), () -> l.slidingWindow(2, 1));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)), () -> l.slidingWindow(2, 2));
+    test(List.of(List.of(1, 2), List.of(4, 5)), () -> l.slidingWindow(2, 3));
+    test(List.of(List.of(1, 2), List.of(5, 6)), () -> l.slidingWindow(2, 4));
+    test(List.of(List.of(1, 2), List.of(6)), () -> l.slidingWindow(2, 5));
+    test(List.of(List.of(1, 2)), () -> l.slidingWindow(2, 6));
+    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)),
+        () -> l.slidingWindow(1, 1));
+    test(List.of(List.of(1), List.of(3), List.of(5)), () -> l.slidingWindow(1, 2));
+    test(List.of(List.of(1), List.of(4)), () -> l.slidingWindow(1, 3));
+    test(List.of(List.of(1), List.of(5)), () -> l.slidingWindow(1, 4));
+    test(List.of(List.of(1), List.of(6)), () -> l.slidingWindow(1, 5));
+    test(List.of(List.of(1)), () -> l.slidingWindow(1, 6));
+
+    var lh = List.of(1, 2, 3);
+    test(List.of(List.of(1, 2, 3), List.of(2, 3), List.of(3)), () -> lh.slidingWindow(3, 1));
+    test(List.of(List.of(1, 2, 3), List.of(3)), () -> lh.slidingWindow(3, 2));
+    test(List.of(List.of(1, 2, 3)), () -> lh.slidingWindow(3, 3));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3), List.of(3)), () -> lh.slidingWindow(4, 1));
+    test(List.of(List.of(1, 2, 3), List.of(3)), () -> lh.slidingWindow(4, 2));
+    test(List.of(List.of(1, 2, 3)), () -> lh.slidingWindow(4, 3));
+  }
+
+  @Test
+  public void slidingWindowWithPadding() throws Exception {
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).slidingWindowWithPadding(-1, 1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).slidingWindowWithPadding(0, 1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).slidingWindowWithPadding(1, -1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).slidingWindowWithPadding(1, 0, 0));
+    var l = List.of(1, 2, 3, 4, 5, 6);
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
+        List.of(5, 6, 0), List.of(6, 0, 0)), () -> l.slidingWindowWithPadding(3, 1, 0));
+    test(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6, 0)),
+        () -> l.slidingWindowWithPadding(3, 2, 0));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, 6)), () -> l.slidingWindowWithPadding(3, 3, 0));
+    test(List.of(List.of(1, 2, 3), List.of(5, 6, 0)), () -> l.slidingWindowWithPadding(3, 4, 0));
+    test(List.of(List.of(1, 2, 3), List.of(6, 0, 0)), () -> l.slidingWindowWithPadding(3, 5, 0));
+    test(List.of(List.of(1, 2, 3)), () -> l.slidingWindowWithPadding(3, 6, 0));
+    test(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
+        List.of(6, 0)), () -> l.slidingWindowWithPadding(2, 1, 0));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)),
+        () -> l.slidingWindowWithPadding(2, 2, 0));
+    test(List.of(List.of(1, 2), List.of(4, 5)), () -> l.slidingWindowWithPadding(2, 3, 0));
+    test(List.of(List.of(1, 2), List.of(5, 6)), () -> l.slidingWindowWithPadding(2, 4, 0));
+    test(List.of(List.of(1, 2), List.of(6, 0)), () -> l.slidingWindowWithPadding(2, 5, 0));
+    test(List.of(List.of(1, 2)), () -> l.slidingWindowWithPadding(2, 6, 0));
+    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)),
+        () -> l.slidingWindowWithPadding(1, 1, 0));
+    test(List.of(List.of(1), List.of(3), List.of(5)), () -> l.slidingWindowWithPadding(1, 2, 0));
+    test(List.of(List.of(1), List.of(4)), () -> l.slidingWindowWithPadding(1, 3, 0));
+    test(List.of(List.of(1), List.of(5)), () -> l.slidingWindowWithPadding(1, 4, 0));
+    test(List.of(List.of(1), List.of(6)), () -> l.slidingWindowWithPadding(1, 5, 0));
+    test(List.of(List.of(1)), () -> l.slidingWindowWithPadding(1, 6, 0));
+
+    var lh = List.of(1, 2, 3);
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 0), List.of(3, 0, 0)),
+        () -> lh.slidingWindowWithPadding(3, 1, 0));
+    test(List.of(List.of(1, 2, 3), List.of(3, 0, 0)), () -> lh.slidingWindowWithPadding(3, 2, 0));
+    test(List.of(List.of(1, 2, 3)), () -> lh.slidingWindowWithPadding(3, 3, 0));
+    test(List.of(List.of(1, 2, 3, 0), List.of(2, 3, 0, 0), List.of(3, 0, 0, 0)),
+        () -> lh.slidingWindowWithPadding(4, 1, 0));
+    test(List.of(List.of(1, 2, 3, 0), List.of(3, 0, 0, 0)),
+        () -> lh.slidingWindowWithPadding(4, 2, 0));
+    test(List.of(List.of(1, 2, 3, 0)), () -> lh.slidingWindowWithPadding(4, 3, 0));
   }
 
   @Test

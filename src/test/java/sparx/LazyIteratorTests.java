@@ -925,71 +925,6 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void group() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, 5);
-    assertThrows(IllegalArgumentException.class, () -> itr.get().group(0));
-    assertFalse(itr.get().group(1).isEmpty());
-    assertEquals(5, itr.get().group(1).size());
-    assertEquals(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)),
-        itr.get().group(1).toList().map(Iterator::toList));
-    assertEquals(List.of(3), itr.get().group(1).drop(2).first().toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().group(1).drop(5).first());
-    assertFalse(itr.get().group(2).isEmpty());
-    assertEquals(3, itr.get().group(2).size());
-    assertEquals(List.of(List.of(1, 2), List.of(3, 4), List.of(5)),
-        itr.get().group(2).toList().map(Iterator::toList));
-    assertEquals(List.of(3, 4), itr.get().group(2).drop(1).first().toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().group(2).drop(3).first());
-    assertFalse(itr.get().group(3).isEmpty());
-    assertEquals(2, itr.get().group(3).size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(4, 5)),
-        itr.get().group(3).toList().map(Iterator::toList));
-    assertEquals(List.of(4, 5), itr.get().group(3).drop(1).first().toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().group(3).drop(2).first());
-    assertFalse(itr.get().group(10).isEmpty());
-    assertEquals(1, itr.get().group(10).size());
-    assertEquals(List.of(List.of(1, 2, 3, 4, 5)),
-        itr.get().group(10).toList().map(Iterator::toList));
-    assertEquals(List.of(1, 2, 3, 4, 5), itr.get().group(10).first().toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().group(10).drop(1).first());
-  }
-
-  @Test
-  public void groupWithPadding() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, 5);
-    assertThrows(IllegalArgumentException.class, () -> itr.get().groupWithPadding(0, null));
-    assertFalse(itr.get().groupWithPadding(1, null).isEmpty());
-    assertEquals(5, itr.get().groupWithPadding(1, null).size());
-    assertEquals(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)),
-        itr.get().groupWithPadding(1, null).toList().map(Iterator::toList));
-    assertEquals(List.of(3), itr.get().groupWithPadding(1, null).drop(2).first().toList());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().groupWithPadding(1, null).drop(5).first());
-    assertFalse(itr.get().groupWithPadding(2, null).isEmpty());
-    assertEquals(3, itr.get().groupWithPadding(2, null).size());
-    assertEquals(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)),
-        itr.get().groupWithPadding(2, null).toList().map(Iterator::toList));
-    assertEquals(List.of(3, 4), itr.get().groupWithPadding(2, null).drop(1).first().toList());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().groupWithPadding(2, null).drop(3).first());
-    assertFalse(itr.get().groupWithPadding(3, -1).isEmpty());
-    assertEquals(2, itr.get().groupWithPadding(3, -1).size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(4, 5, -1)),
-        itr.get().groupWithPadding(3, -1).toList().map(Iterator::toList));
-    assertEquals(List.of(4, 5, -1), itr.get().groupWithPadding(3, -1).drop(1).first().toList());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().groupWithPadding(3, -1).drop(2).first());
-    assertFalse(itr.get().groupWithPadding(10, -1).isEmpty());
-    assertEquals(1, itr.get().groupWithPadding(10, -1).size());
-    assertEquals(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)),
-        itr.get().groupWithPadding(10, -1).toList().map(Iterator::toList));
-    assertEquals(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1),
-        itr.get().groupWithPadding(10, -1).first().toList());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().groupWithPadding(10, -1).drop(1).first());
-  }
-
-  @Test
   public void includes() {
     Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, null, 5);
     assertFalse(itr.get().includes(null).isEmpty());
@@ -2665,158 +2600,158 @@ public class LazyIteratorTests {
   @Test
   public void slidingWindowWithPadding() {
     Supplier<Iterator<? extends Iterator<Integer>>> itr = () -> Iterator.of(1, 2, 3, 4, 5, 6)
-        .slidingWindow(3, 1, 0);
+        .slidingWindowWithPadding(3, 1, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(6, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
         List.of(5, 6, 0), List.of(6, 0, 0)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 2, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 2, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(3, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6, 0)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 3, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 3, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3), List.of(4, 5, 6)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 4, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 4, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3), List.of(5, 6, 0)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 5, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 5, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3), List.of(6, 0, 0)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 6, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 6, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(1, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 1, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 1, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(6, itr.get().size());
     assertEquals(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
         List.of(6, 0)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 2, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 2, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(3, itr.get().size());
     assertEquals(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 3, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 3, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1, 2), List.of(4, 5)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 4, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 4, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1, 2), List.of(5, 6)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 5, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 5, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1, 2), List.of(6, 0)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 6, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 6, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(1, itr.get().size());
     assertEquals(List.of(List.of(1, 2)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 1, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 1, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(6, itr.get().size());
     assertEquals(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 2, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 2, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(3, itr.get().size());
     assertEquals(List.of(List.of(1), List.of(3), List.of(5)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 3, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 3, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1), List.of(4)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 4, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 4, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1), List.of(5)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 5, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 5, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1), List.of(6)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 6, 0);
+    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 6, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(1, itr.get().size());
     assertEquals(List.of(List.of(1)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(3, 1, 0);
+    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(3, 1, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(3, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3), List.of(2, 3, 0), List.of(3, 0, 0)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(3, 2, 0);
+    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(3, 2, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3), List.of(3, 0, 0)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(3, 3, 0);
+    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(3, 3, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(1, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3)), itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(4, 1, 0);
+    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(4, 1, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(3, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3, 0), List.of(2, 3, 0, 0), List.of(3, 0, 0, 0)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(4, 2, 0);
+    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(4, 2, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(2, itr.get().size());
     assertEquals(List.of(List.of(1, 2, 3, 0), List.of(3, 0, 0, 0)),
         itr.get().map(Iterator::toList).toList());
 
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(4, 3, 0);
+    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(4, 3, 0);
     assertFalse(itr.get().isEmpty());
     assertTrue(itr.get().notEmpty());
     assertEquals(1, itr.get().size());
