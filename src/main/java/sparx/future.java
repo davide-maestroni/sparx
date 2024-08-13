@@ -113,7 +113,6 @@ import sparx.internal.future.list.TakeRightListAsyncMaterializer;
 import sparx.internal.future.list.TakeRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.TakeWhileListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
-import sparx.lazy.List;
 import sparx.util.DeadLockException;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
@@ -6135,12 +6134,7 @@ class future extends Sparx {
 
     @Override
     public int size() {
-      final int rightSize = right.size();
-      synchronized (posMutex) {
-        final int size = SizeOverflowException.safeCast((long) rightSize - pos);
-        pos = rightSize;
-        return size;
-      }
+      return SizeOverflowException.safeCast((long) right.size() - safePos());
     }
 
     @Override
