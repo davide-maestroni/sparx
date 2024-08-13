@@ -16,7 +16,10 @@
 package sparx;
 
 import java.util.Comparator;
+import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
+import sparx.util.annotation.Positive;
 import sparx.util.function.Action;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
@@ -58,6 +61,18 @@ class itf {
     @Override
     @NotNull
     Collection<E> diff(@NotNull Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Collection<E> distinct();
+
+    @Override
+    @NotNull
+    <K> Collection<E> distinctBy(@NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> Collection<E> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @Override
     @NotNull
@@ -439,7 +454,7 @@ class itf {
 
     @Override
     @NotNull
-    Collection<E> resizeTo(int numElements, E padding);
+    Collection<E> resizeTo(@NotNegative int numElements, E padding);
 
     @Override
     @NotNull
@@ -451,11 +466,12 @@ class itf {
 
     @Override
     @NotNull
-    Collection<? extends Collection<E>> slidingWindow(int maxSize, int step);
+    Collection<? extends Collection<E>> slidingWindow(@Positive int maxSize, @Positive int step);
 
     @Override
     @NotNull
-    Collection<? extends Collection<E>> slidingWindowWithPadding(int size, int step, E padding);
+    Collection<? extends Collection<E>> slidingWindowWithPadding(@Positive int size,
+        @Positive int step, E padding);
 
     @Override
     @NotNull
@@ -552,6 +568,18 @@ class itf {
     @Override
     @NotNull
     Iterator<E> diff(@NotNull Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Iterator<E> distinct();
+
+    @Override
+    @NotNull
+    <K> Iterator<E> distinctBy(@NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<E> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @Override
     @NotNull
@@ -960,7 +988,7 @@ class itf {
 
     @Override
     @NotNull
-    Iterator<E> resizeTo(int numElements, E padding);
+    Iterator<E> resizeTo(@NotNegative int numElements, E padding);
 
     @NotNull
     Iterator<E> runFinally(@NotNull Action action);
@@ -974,10 +1002,11 @@ class itf {
     Iterator<E> slice(int start, int end);
 
     @NotNull
-    Iterator<? extends Iterator<E>> slidingWindow(int maxSize, int step);
+    Iterator<? extends Iterator<E>> slidingWindow(@Positive int maxSize, @Positive int step);
 
     @NotNull
-    Iterator<? extends Iterator<E>> slidingWindowWithPadding(int size, int step, E padding);
+    Iterator<? extends Iterator<E>> slidingWindowWithPadding(@Positive int size, @Positive int step,
+        E padding);
 
     @Override
     @NotNull
@@ -1058,6 +1087,18 @@ class itf {
     @Override
     @NotNull
     List<E> diff(@NotNull Iterable<?> elements);
+
+    @Override
+    @NotNull
+    List<E> distinct();
+
+    @Override
+    @NotNull
+    <K> List<E> distinctBy(@NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> List<E> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @Override
     @NotNull
@@ -1454,7 +1495,7 @@ class itf {
 
     @Override
     @NotNull
-    List<E> resizeTo(int numElements, E padding);
+    List<E> resizeTo(@NotNegative int numElements, E padding);
 
     @NotNull
     List<E> reverse();
@@ -1469,11 +1510,12 @@ class itf {
 
     @Override
     @NotNull
-    List<? extends List<E>> slidingWindow(int maxSize, int step);
+    List<? extends List<E>> slidingWindow(@Positive int maxSize, @Positive int step);
 
     @Override
     @NotNull
-    List<? extends List<E>> slidingWindowWithPadding(int size, int step, E padding);
+    List<? extends List<E>> slidingWindowWithPadding(@Positive int size, @Positive int step,
+        E padding);
 
     @Override
     @NotNull
@@ -1543,6 +1585,18 @@ class itf {
     @Override
     @NotNull
     ListIterator<E> diff(@NotNull Iterable<?> elements);
+
+    @Override
+    @NotNull
+    ListIterator<E> distinct();
+
+    @Override
+    @NotNull
+    <K> ListIterator<E> distinctBy(@NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> ListIterator<E> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @Override
     @NotNull
@@ -1949,7 +2003,7 @@ class itf {
 
     @Override
     @NotNull
-    ListIterator<E> resizeTo(int numElements, E padding);
+    ListIterator<E> resizeTo(@NotNegative int numElements, E padding);
 
     @NotNull
     ListIterator<E> reverse();
@@ -1964,11 +2018,13 @@ class itf {
 
     @Override
     @NotNull
-    ListIterator<? extends ListIterator<E>> slidingWindow(int maxSize, int step);
+    ListIterator<? extends ListIterator<E>> slidingWindow(@Positive int maxSize,
+        @Positive int step);
 
     @Override
     @NotNull
-    ListIterator<? extends ListIterator<E>> slidingWindowWithPadding(int size, int step, E padding);
+    ListIterator<? extends ListIterator<E>> slidingWindowWithPadding(@Positive int size,
+        @Positive int step, E padding);
 
     @Override
     @NotNull
@@ -2027,7 +2083,14 @@ class itf {
     @NotNull
     Sequence<E> diff(@NotNull Iterable<?> elements);
 
-    // TODO: distinct, distinctBy
+    @NotNull
+    Sequence<E> distinct();
+
+    @NotNull
+    <K> Sequence<E> distinctBy(@NotNull Function<? super E, K> keyExtractor);
+
+    @NotNull
+    <K> Sequence<E> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
 
     void doFor(@NotNull Consumer<? super E> consumer);
 
@@ -2335,7 +2398,7 @@ class itf {
     Sequence<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
     @NotNull
-    Sequence<E> resizeTo(int numElements, E padding);
+    Sequence<E> resizeTo(@NotNegative int numElements, E padding);
 
     int size();
 
@@ -2346,10 +2409,11 @@ class itf {
     Sequence<E> slice(int start, int end);
 
     @NotNull
-    Sequence<? extends Sequence<E>> slidingWindow(int maxSize, int step);
+    Sequence<? extends Sequence<E>> slidingWindow(@Positive int maxSize, @Positive int step);
 
     @NotNull
-    Sequence<? extends Sequence<E>> slidingWindowWithPadding(int size, int step, E padding);
+    Sequence<? extends Sequence<E>> slidingWindowWithPadding(@Positive int size, @Positive int step,
+        E padding);
 
     @NotNull
     Sequence<Boolean> startsWith(@NotNull Iterable<?> elements);
@@ -2359,8 +2423,6 @@ class itf {
 
     @NotNull
     Sequence<E> take(int maxElements);
-
-    // TODO: takeAfter == slice(numElements, numElements + 1) (positive???)
 
     @NotNull
     Sequence<E> takeRight(int maxElements);
@@ -2410,6 +2472,18 @@ class itf {
     @Override
     @NotNull
     Set<E> diff(@NotNull Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Set<E> distinct();
+
+    @Override
+    @NotNull
+    <K> Set<E> distinctBy(@NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> Set<E> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @Override
     @NotNull
@@ -2786,7 +2860,7 @@ class itf {
 
     @Override
     @NotNull
-    Set<E> resizeTo(int numElements, E padding);
+    Set<E> resizeTo(@NotNegative int numElements, E padding);
 
     @Override
     @NotNull
@@ -2798,11 +2872,12 @@ class itf {
 
     @Override
     @NotNull
-    Set<? extends Set<E>> slidingWindow(int maxSize, int step);
+    Set<? extends Set<E>> slidingWindow(@Positive int maxSize, @Positive int step);
 
     @Override
     @NotNull
-    Set<? extends Set<E>> slidingWindowWithPadding(int size, int step, E padding);
+    Set<? extends Set<E>> slidingWindowWithPadding(@Positive int size, @Positive int step,
+        E padding);
 
     @Override
     @NotNull
@@ -2867,6 +2942,18 @@ class itf {
     @Override
     @NotNull
     Stream<E> diff(@NotNull Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Stream<E> distinct();
+
+    @Override
+    @NotNull
+    <K> Stream<E> distinctBy(@NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> Stream<E> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @Override
     @NotNull
@@ -3259,7 +3346,7 @@ class itf {
 
     @Override
     @NotNull
-    Stream<E> resizeTo(int numElements, E padding);
+    Stream<E> resizeTo(@NotNegative int numElements, E padding);
 
     @Override
     @NotNull
@@ -3271,11 +3358,12 @@ class itf {
 
     @Override
     @NotNull
-    Stream<? extends Stream<E>> slidingWindow(int maxSize, int step);
+    Stream<? extends Stream<E>> slidingWindow(@Positive int maxSize, @Positive int step);
 
     @Override
     @NotNull
-    Stream<? extends Stream<E>> slidingWindowWithPadding(int size, int step, E padding);
+    Stream<? extends Stream<E>> slidingWindowWithPadding(@Positive int size, @Positive int step,
+        E padding);
 
     @Override
     @NotNull

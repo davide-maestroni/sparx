@@ -110,6 +110,20 @@ public class LazyListTests {
     test(List.of(), () -> List.of().diff(List.of(1, 2, null, 4)));
   }
 
+
+  @Test
+  public void distinctBy() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).distinctBy((Function<? super Integer, Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).distinctBy((IndexedFunction<? super Integer, Object>) null));
+    test(List.of(1, null, 2), () -> List.of(1, 1, null, 2, null, 1).distinct());
+    test(List.of(1, 2),
+        () -> List.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 1 : e));
+    test(List.of(1, null),
+        () -> List.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 2 : e));
+  }
+
   @Test
   public void doFor() {
     assertThrows(NullPointerException.class,

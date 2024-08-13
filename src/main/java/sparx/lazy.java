@@ -33,6 +33,7 @@ import sparx.internal.lazy.iterator.CollectionToIteratorMaterializer;
 import sparx.internal.lazy.iterator.CountIteratorMaterializer;
 import sparx.internal.lazy.iterator.CountWhereIteratorMaterializer;
 import sparx.internal.lazy.iterator.DiffIteratorMaterializer;
+import sparx.internal.lazy.iterator.DistinctByIteratorMaterializer;
 import sparx.internal.lazy.iterator.DoubleArrayToIteratorMaterializer;
 import sparx.internal.lazy.iterator.DropIteratorMaterializer;
 import sparx.internal.lazy.iterator.DropRightIteratorMaterializer;
@@ -108,6 +109,7 @@ import sparx.internal.lazy.list.CollectionToListMaterializer;
 import sparx.internal.lazy.list.CountListMaterializer;
 import sparx.internal.lazy.list.CountWhereListMaterializer;
 import sparx.internal.lazy.list.DiffListMaterializer;
+import sparx.internal.lazy.list.DistinctByListMaterializer;
 import sparx.internal.lazy.list.DoubleArrayToListMaterializer;
 import sparx.internal.lazy.list.DropListMaterializer;
 import sparx.internal.lazy.list.DropRightListMaterializer;
@@ -179,6 +181,8 @@ import sparx.util.IndexOverflowException;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
+import sparx.util.annotation.Positive;
 import sparx.util.function.Action;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
@@ -191,7 +195,20 @@ import sparx.util.function.Supplier;
 
 public class lazy extends Sparx {
 
+  private static final IndexedFunction<?, ?> INDEXED_IDENTITY = new IndexedFunction<Object, Object>() {
+    @Override
+    public Object apply(final int index, final Object param) {
+      return param;
+    }
+  };
+
   private lazy() {
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  static <E> IndexedFunction<E, E> indexedIdentity() {
+    return (IndexedFunction<E, E>) INDEXED_IDENTITY;
   }
 
   public static class Iterator<E> implements itf.Iterator<E> {
@@ -519,6 +536,34 @@ public class lazy extends Sparx {
         return this;
       }
       return new Iterator<E>(new DiffIteratorMaterializer<E>(materializer, elementsMaterializer));
+    }
+
+    @Override
+    public @NotNull Iterator<E> distinct() {
+      return distinctBy(indexedIdentity());
+    }
+
+    @Override
+    public @NotNull <K> Iterator<E> distinctBy(@NotNull final Function<? super E, K> keyExtractor) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return this;
+      }
+      return new Iterator<E>(new DistinctByIteratorMaterializer<E, K>(materializer,
+          toIndexedFunction(Require.notNull(keyExtractor, "keyExtractor"))));
+    }
+
+    @Override
+    public @NotNull <K> Iterator<E> distinctBy(
+        @NotNull final IndexedFunction<? super E, K> keyExtractor) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return this;
+      }
+      return new Iterator<E>(new DistinctByIteratorMaterializer<E, K>(materializer,
+          Require.notNull(keyExtractor, "keyExtractor")));
     }
 
     @Override
@@ -1755,7 +1800,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> resizeTo(final int numElements, final E padding) {
+    public @NotNull Iterator<E> resizeTo(@NotNegative final int numElements, final E padding) {
       Require.notNegative(numElements, "numElements");
       if (numElements == 0) {
         return Iterator.of();
@@ -1841,8 +1886,8 @@ public class lazy extends Sparx {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @NotNull Iterator<? extends Iterator<E>> slidingWindow(final int maxSize,
-        final int step) {
+    public @NotNull Iterator<? extends Iterator<E>> slidingWindow(@Positive final int maxSize,
+        @Positive final int step) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return Iterator.of();
@@ -1854,8 +1899,8 @@ public class lazy extends Sparx {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @NotNull Iterator<? extends Iterator<E>> slidingWindowWithPadding(final int size,
-        final int step, final E padding) {
+    public @NotNull Iterator<? extends Iterator<E>> slidingWindowWithPadding(
+        @Positive final int size, @Positive final int step, final E padding) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return Iterator.of();
@@ -2437,6 +2482,34 @@ public class lazy extends Sparx {
         return this;
       }
       return new List<E>(new DiffListMaterializer<E>(materializer, elementsMaterializer));
+    }
+
+    @Override
+    public @NotNull List<E> distinct() {
+      return distinctBy(indexedIdentity());
+    }
+
+    @Override
+    public @NotNull <K> List<E> distinctBy(@NotNull final Function<? super E, K> keyExtractor) {
+      final ListMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return this;
+      }
+      return new List<E>(new DistinctByListMaterializer<E, K>(materializer,
+          toIndexedFunction(Require.notNull(keyExtractor, "keyExtractor"))));
+    }
+
+    @Override
+    public @NotNull <K> List<E> distinctBy(
+        @NotNull final IndexedFunction<? super E, K> keyExtractor) {
+      final ListMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return this;
+      }
+      return new List<E>(new DistinctByListMaterializer<E, K>(materializer,
+          Require.notNull(keyExtractor, "keyExtractor")));
     }
 
     @Override
@@ -3889,7 +3962,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> resizeTo(final int numElements, final E padding) {
+    public @NotNull List<E> resizeTo(@NotNegative final int numElements, final E padding) {
       Require.notNegative(numElements, "numElements");
       if (numElements == 0) {
         return List.of();
@@ -3970,7 +4043,8 @@ public class lazy extends Sparx {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @NotNull List<? extends List<E>> slidingWindow(final int maxSize, final int step) {
+    public @NotNull List<? extends List<E>> slidingWindow(@Positive final int maxSize,
+        @Positive final int step) {
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return List.of();
@@ -3981,8 +4055,8 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull List<? extends List<E>> slidingWindowWithPadding(final int size, final int step,
-        final E padding) {
+    public @NotNull List<? extends List<E>> slidingWindowWithPadding(@Positive final int size,
+        @Positive final int step, final E padding) {
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return List.of();
@@ -4531,6 +4605,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ZERO_ITERATOR;
       }
+      // TODO: nextIndex() => to lazy
       return new ListIterator<Integer>(List.<Integer>of(), currentRight().countWhere(
           offsetPredicate(nextIndex(), Require.notNull(predicate, "predicate"))));
     }
@@ -4550,6 +4625,42 @@ public class lazy extends Sparx {
       final List<E> left = currentLeft();
       return new ListIterator<E>(left.diff(elementsList),
           currentRight().diff(elementsList.diff(left)));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> distinct() {
+      final List<E> left = currentLeft().distinct();
+      return new ListIterator<E>(left, currentRight().removeWhere(new Predicate<E>() {
+        @Override
+        public boolean test(final E element) {
+          return left.contains(element);
+        }
+      }));
+    }
+
+    @Override
+    public @NotNull <K> ListIterator<E> distinctBy(
+        @NotNull final Function<? super E, K> keyExtractor) {
+      final List<E> left = currentLeft().distinctBy(keyExtractor);
+      return new ListIterator<E>(left, currentRight().removeWhere(new Predicate<E>() {
+        @Override
+        public boolean test(final E element) throws Exception {
+          return left.map(keyExtractor).contains(keyExtractor.apply(element));
+        }
+      }));
+    }
+
+    @Override
+    public @NotNull <K> ListIterator<E> distinctBy(
+        @NotNull final IndexedFunction<? super E, K> keyExtractor) {
+      final List<E> left = currentLeft().distinctBy(keyExtractor);
+      return new ListIterator<E>(left,
+          currentRight().removeWhere(offsetPredicate(nextIndex(), new IndexedPredicate<E>() {
+            @Override
+            public boolean test(final int index, final E element) throws Exception {
+              return left.map(keyExtractor).contains(keyExtractor.apply(index, element));
+            }
+          })));
     }
 
     @Override
@@ -5632,7 +5743,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull ListIterator<E> resizeTo(final int numElements, final E padding) {
+    public @NotNull ListIterator<E> resizeTo(@NotNegative final int numElements, final E padding) {
       Require.notNegative(numElements, "numElements");
       if (atEnd()) {
         return new ListIterator<E>(left.appendAll(right), List.times(numElements, padding));
@@ -5673,8 +5784,8 @@ public class lazy extends Sparx {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindow(final int maxSize,
-        final int step) {
+    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindow(
+        @Positive final int maxSize, @Positive final int step) {
       final List<E> currentLeft = currentLeft();
       final List<E> currentRight = currentRight();
       return new ListIterator<ListIterator<E>>(
@@ -5694,8 +5805,8 @@ public class lazy extends Sparx {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindowWithPadding(final int size,
-        final int step, final E padding) {
+    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindowWithPadding(
+        @Positive final int size, @Positive final int step, final E padding) {
       final List<E> currentLeft = currentLeft();
       final List<E> currentRight = currentRight();
       return new ListIterator<ListIterator<E>>(

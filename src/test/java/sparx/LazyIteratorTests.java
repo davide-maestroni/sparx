@@ -36,6 +36,8 @@ import org.junit.jupiter.api.Test;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
 import sparx.util.SizeOverflowException;
+import sparx.util.function.Function;
+import sparx.util.function.IndexedFunction;
 
 @SuppressWarnings("DataFlowIssue")
 public class LazyIteratorTests {
@@ -155,6 +157,32 @@ public class LazyIteratorTests {
 
     assertEquals(List.of(1, 2, null, 4), Iterator.of(1, 2, null, 4).diff(Iterator.of()).toList());
     assertEquals(List.of(), Iterator.of().diff(Iterator.of(1, 2, null, 4)).toList());
+  }
+
+  @Test
+  public void distinctBy() {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).distinctBy((Function<? super Integer, Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).distinctBy((IndexedFunction<? super Integer, Object>) null));
+
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 1, null, 2, null, 1).distinct();
+    assertFalse(itr.get().isEmpty());
+    assertTrue(itr.get().notEmpty());
+    assertEquals(3, itr.get().size());
+    assertEquals(List.of(1, null, 2), itr.get().toList());
+
+    itr = () -> Iterator.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 1 : e);
+    assertFalse(itr.get().isEmpty());
+    assertTrue(itr.get().notEmpty());
+    assertEquals(2, itr.get().size());
+    assertEquals(List.of(1, 2), itr.get().toList());
+
+    itr = () -> Iterator.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 2 : e);
+    assertFalse(itr.get().isEmpty());
+    assertTrue(itr.get().notEmpty());
+    assertEquals(2, itr.get().size());
+    assertEquals(List.of(1, null), itr.get().toList());
   }
 
   @Test
