@@ -71,8 +71,6 @@ import sparx.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapWhereListAsyncMaterializer;
 import sparx.internal.future.list.FoldLeftListAsyncMaterializer;
 import sparx.internal.future.list.FoldRightListAsyncMaterializer;
-import sparx.internal.future.list.GroupListAsyncMaterializer;
-import sparx.internal.future.list.GroupListAsyncMaterializer.Chunker;
 import sparx.internal.future.list.IncludesAllListAsyncMaterializer;
 import sparx.internal.future.list.IncludesSliceListAsyncMaterializer;
 import sparx.internal.future.list.InsertAfterListAsyncMaterializer;
@@ -99,6 +97,8 @@ import sparx.internal.future.list.ReplaceSliceListAsyncMaterializer;
 import sparx.internal.future.list.ResizeListAsyncMaterializer;
 import sparx.internal.future.list.ReverseListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
+import sparx.internal.future.list.SlidingWindowListAsyncMaterializer;
+import sparx.internal.future.list.SlidingWindowListAsyncMaterializer.Splitter;
 import sparx.internal.future.list.SortedListAsyncMaterializer;
 import sparx.internal.future.list.StartsWithListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
@@ -1145,93 +1145,6 @@ public class FutureListTests {
         new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.foldRight(0, (e, i) -> i));
-  }
-
-  @Test
-  public void group() throws Exception {
-    assertThrows(IllegalArgumentException.class, () -> List.of(0).toFuture(context).group(-1));
-    assertThrows(IllegalArgumentException.class, () -> List.of(0).toFuture(context).group(0));
-    var l = List.of(1, 2, 3, 4, 5);
-    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)), () -> l,
-        ll -> ll.group(1));
-    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5)), () -> l, ll -> ll.group(2));
-    test(List.of(List.of(1, 2, 3), List.of(4, 5)), () -> l, ll -> ll.group(3));
-    test(List.of(List.of(1, 2, 3, 4, 5)), () -> l, ll -> ll.group(10));
-
-    testMaterializer(List.of(List.of(1, null), List.of(3)), c -> {
-      var chunker = new Chunker<Integer, future.List<Integer>>() {
-        @Override
-        public @NotNull future.List<Integer> getChunk(
-            @NotNull final ListAsyncMaterializer<Integer> materializer, final int start,
-            final int end) {
-          return new future.List<>(context, new AtomicReference<>(), materializer).slice(start,
-              end);
-        }
-
-        @Override
-        public void getElements(@NotNull final future.List<Integer> chunk,
-            @NotNull final AsyncConsumer<java.util.List<Integer>> consumer) {
-          try {
-            consumer.accept(chunk.get());
-          } catch (final Exception e) {
-            throw new RuntimeException(e);
-          }
-        }
-      };
-      return new GroupListAsyncMaterializer<>(
-          new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, chunker, c,
-          new AtomicReference<>(), List::wrap);
-    });
-
-    testCancel(f -> f.group(3));
-  }
-
-  @Test
-  public void groupWithPadding() throws Exception {
-    assertThrows(IllegalArgumentException.class,
-        () -> List.of(0).toFuture(context).groupWithPadding(-1, 0));
-    assertThrows(IllegalArgumentException.class,
-        () -> List.of(0).toFuture(context).groupWithPadding(0, 0));
-    var l = List.of(1, 2, 3, 4, 5);
-    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5)), () -> l,
-        ll -> ll.groupWithPadding(1, null));
-    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, null)), () -> l,
-        ll -> ll.groupWithPadding(2, null));
-    test(List.of(List.of(1, 2, 3), List.of(4, 5, -1)), () -> l, ll -> ll.groupWithPadding(3, -1));
-    test(List.of(List.of(1, 2, 3, 4, 5, -1, -1, -1, -1, -1)), () -> l,
-        ll -> ll.groupWithPadding(10, -1));
-
-    testMaterializer(List.of(List.of(1, null), List.of(3, 4)), c -> {
-      var chunker = new Chunker<Integer, future.List<Integer>>() {
-        @Override
-        public @NotNull future.List<Integer> getChunk(
-            @NotNull final ListAsyncMaterializer<Integer> materializer, final int start,
-            final int end) {
-          var sliced = new future.List<>(context, new AtomicReference<>(), materializer).slice(
-              start, end);
-          int paddingSize = 2 - (end - start);
-          if (paddingSize > 0) {
-            return sliced.appendAll(List.times(paddingSize, 4));
-          }
-          return sliced;
-        }
-
-        @Override
-        public void getElements(@NotNull final future.List<Integer> chunk,
-            @NotNull final AsyncConsumer<java.util.List<Integer>> consumer) {
-          try {
-            consumer.accept(chunk.get());
-          } catch (final Exception e) {
-            throw new RuntimeException(e);
-          }
-        }
-      };
-      return new GroupListAsyncMaterializer<>(
-          new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, chunker, c,
-          new AtomicReference<>(), List::wrap);
-    });
-
-    testCancel(f -> f.groupWithPadding(3, null));
   }
 
   @Test
@@ -2349,6 +2262,164 @@ public class FutureListTests {
         new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.slice(1));
+  }
+
+  @Test
+  public void slidingWindow() throws Exception {
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).toFuture(context).slidingWindow(-1, 1));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).toFuture(context).slidingWindow(0, 1));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).toFuture(context).slidingWindow(1, -1));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).toFuture(context).slidingWindow(1, 0));
+    var l = List.of(1, 2, 3, 4, 5, 6);
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
+        List.of(5, 6), List.of(6)), () -> l, ll -> ll.slidingWindow(3, 1));
+    test(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6)), () -> l,
+        ll -> ll.slidingWindow(3, 2));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, 6)), () -> l, ll -> ll.slidingWindow(3, 3));
+    test(List.of(List.of(1, 2, 3), List.of(5, 6)), () -> l, ll -> ll.slidingWindow(3, 4));
+    test(List.of(List.of(1, 2, 3), List.of(6)), () -> l, ll -> ll.slidingWindow(3, 5));
+    test(List.of(List.of(1, 2, 3)), () -> l, ll -> ll.slidingWindow(3, 6));
+    test(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
+        List.of(6)), () -> l, ll -> ll.slidingWindow(2, 1));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)), () -> l,
+        ll -> ll.slidingWindow(2, 2));
+    test(List.of(List.of(1, 2), List.of(4, 5)), () -> l, ll -> ll.slidingWindow(2, 3));
+    test(List.of(List.of(1, 2), List.of(5, 6)), () -> l, ll -> ll.slidingWindow(2, 4));
+    test(List.of(List.of(1, 2), List.of(6)), () -> l, ll -> ll.slidingWindow(2, 5));
+    test(List.of(List.of(1, 2)), () -> l, ll -> ll.slidingWindow(2, 6));
+    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)), () -> l,
+        ll -> ll.slidingWindow(1, 1));
+    test(List.of(List.of(1), List.of(3), List.of(5)), () -> l, ll -> ll.slidingWindow(1, 2));
+    test(List.of(List.of(1), List.of(4)), () -> l, ll -> ll.slidingWindow(1, 3));
+    test(List.of(List.of(1), List.of(5)), () -> l, ll -> ll.slidingWindow(1, 4));
+    test(List.of(List.of(1), List.of(6)), () -> l, ll -> ll.slidingWindow(1, 5));
+    test(List.of(List.of(1)), () -> l, ll -> ll.slidingWindow(1, 6));
+
+    var lh = List.of(1, 2, 3);
+    test(List.of(List.of(1, 2, 3), List.of(2, 3), List.of(3)), () -> lh,
+        ll -> ll.slidingWindow(3, 1));
+    test(List.of(List.of(1, 2, 3), List.of(3)), () -> lh, ll -> ll.slidingWindow(3, 2));
+    test(List.of(List.of(1, 2, 3)), () -> lh, ll -> ll.slidingWindow(3, 3));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3), List.of(3)), () -> lh,
+        ll -> ll.slidingWindow(4, 1));
+    test(List.of(List.of(1, 2, 3), List.of(3)), () -> lh, ll -> ll.slidingWindow(4, 2));
+    test(List.of(List.of(1, 2, 3)), () -> lh, ll -> ll.slidingWindow(4, 3));
+
+    testMaterializer(List.of(List.of(1, null), List.of(null, 3), List.of(3)), c -> {
+      var splitter = new Splitter<Integer, future.List<Integer>>() {
+        @Override
+        public @NotNull future.List<Integer> getChunk(
+            @NotNull final ListAsyncMaterializer<Integer> materializer, final int start,
+            final int end) {
+          return new future.List<>(c, new AtomicReference<>(), materializer).slice(start, end);
+        }
+
+        @Override
+        public void getElements(@NotNull final future.List<Integer> chunk,
+            @NotNull final AsyncConsumer<java.util.List<Integer>> consumer) {
+          try {
+            consumer.accept(chunk.get());
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+      return new SlidingWindowListAsyncMaterializer<>(
+          new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, 1, splitter, c,
+          new AtomicReference<>(), List::wrap);
+    });
+
+    testCancel(f -> f.slidingWindow(2, 1));
+  }
+
+  @Test
+  public void slidingWindowWithPadding() throws Exception {
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).toFuture(context).slidingWindowWithPadding(-1, 1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).toFuture(context).slidingWindowWithPadding(0, 1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).toFuture(context).slidingWindowWithPadding(1, -1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> List.of(0).toFuture(context).slidingWindowWithPadding(1, 0, 0));
+    var l = List.of(1, 2, 3, 4, 5, 6);
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
+        List.of(5, 6, 0), List.of(6, 0, 0)), () -> l, ll -> ll.slidingWindowWithPadding(3, 1, 0));
+    test(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6, 0)), () -> l,
+        ll -> ll.slidingWindowWithPadding(3, 2, 0));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, 6)), () -> l,
+        ll -> ll.slidingWindowWithPadding(3, 3, 0));
+    test(List.of(List.of(1, 2, 3), List.of(5, 6, 0)), () -> l,
+        ll -> ll.slidingWindowWithPadding(3, 4, 0));
+    test(List.of(List.of(1, 2, 3), List.of(6, 0, 0)), () -> l,
+        ll -> ll.slidingWindowWithPadding(3, 5, 0));
+    test(List.of(List.of(1, 2, 3)), () -> l, ll -> ll.slidingWindowWithPadding(3, 6, 0));
+    test(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
+        List.of(6, 0)), () -> l, ll -> ll.slidingWindowWithPadding(2, 1, 0));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)), () -> l,
+        ll -> ll.slidingWindowWithPadding(2, 2, 0));
+    test(List.of(List.of(1, 2), List.of(4, 5)), () -> l,
+        ll -> ll.slidingWindowWithPadding(2, 3, 0));
+    test(List.of(List.of(1, 2), List.of(5, 6)), () -> l,
+        ll -> ll.slidingWindowWithPadding(2, 4, 0));
+    test(List.of(List.of(1, 2), List.of(6, 0)), () -> l,
+        ll -> ll.slidingWindowWithPadding(2, 5, 0));
+    test(List.of(List.of(1, 2)), () -> l, ll -> ll.slidingWindowWithPadding(2, 6, 0));
+    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)), () -> l,
+        ll -> ll.slidingWindowWithPadding(1, 1, 0));
+    test(List.of(List.of(1), List.of(3), List.of(5)), () -> l,
+        ll -> ll.slidingWindowWithPadding(1, 2, 0));
+    test(List.of(List.of(1), List.of(4)), () -> l, ll -> ll.slidingWindowWithPadding(1, 3, 0));
+    test(List.of(List.of(1), List.of(5)), () -> l, ll -> ll.slidingWindowWithPadding(1, 4, 0));
+    test(List.of(List.of(1), List.of(6)), () -> l, ll -> ll.slidingWindowWithPadding(1, 5, 0));
+    test(List.of(List.of(1)), () -> l, ll -> ll.slidingWindowWithPadding(1, 6, 0));
+
+    var lh = List.of(1, 2, 3);
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 0), List.of(3, 0, 0)), () -> lh,
+        ll -> ll.slidingWindowWithPadding(3, 1, 0));
+    test(List.of(List.of(1, 2, 3), List.of(3, 0, 0)), () -> lh,
+        ll -> ll.slidingWindowWithPadding(3, 2, 0));
+    test(List.of(List.of(1, 2, 3)), () -> lh, ll -> ll.slidingWindowWithPadding(3, 3, 0));
+    test(List.of(List.of(1, 2, 3, 0), List.of(2, 3, 0, 0), List.of(3, 0, 0, 0)), () -> lh,
+        ll -> ll.slidingWindowWithPadding(4, 1, 0));
+    test(List.of(List.of(1, 2, 3, 0), List.of(3, 0, 0, 0)), () -> lh,
+        ll -> ll.slidingWindowWithPadding(4, 2, 0));
+    test(List.of(List.of(1, 2, 3, 0)), () -> lh, ll -> ll.slidingWindowWithPadding(4, 3, 0));
+
+    testMaterializer(List.of(List.of(1, null), List.of(null, 3), List.of(3, 0)), c -> {
+      var splitter = new Splitter<Integer, future.List<Integer>>() {
+        @Override
+        public @NotNull future.List<Integer> getChunk(
+            @NotNull final ListAsyncMaterializer<Integer> materializer, final int start,
+            final int end) {
+          var list = new future.List<>(c, new AtomicReference<>(), materializer).slice(start, end);
+          int paddingSize = 2 - (end - start);
+          if (paddingSize > 0) {
+            list = list.appendAll(List.times(paddingSize, 0));
+          }
+          return list;
+        }
+
+        @Override
+        public void getElements(@NotNull final future.List<Integer> chunk,
+            @NotNull final AsyncConsumer<java.util.List<Integer>> consumer) {
+          try {
+            consumer.accept(chunk.get());
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+      return new SlidingWindowListAsyncMaterializer<>(
+          new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 2, 1, splitter, c,
+          new AtomicReference<>(), List::wrap);
+    });
+
+    testCancel(f -> f.slidingWindowWithPadding(2, 1, 0));
   }
 
   @Test

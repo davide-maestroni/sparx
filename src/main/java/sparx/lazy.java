@@ -5625,7 +5625,10 @@ public class lazy extends Sparx {
 
     @Override
     public int size() {
-      return SizeOverflowException.safeCast((long) right.size() - pos);
+      final int rightSize = right.size();
+      final int size = SizeOverflowException.safeCast((long) rightSize - pos);
+      pos = rightSize;
+      return size;
     }
 
     @Override

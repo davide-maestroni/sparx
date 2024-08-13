@@ -76,8 +76,6 @@ import sparx.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapWhereListAsyncMaterializer;
 import sparx.internal.future.list.FoldLeftListAsyncMaterializer;
 import sparx.internal.future.list.FoldRightListAsyncMaterializer;
-import sparx.internal.future.list.GroupListAsyncMaterializer;
-import sparx.internal.future.list.GroupListAsyncMaterializer.Chunker;
 import sparx.internal.future.list.IncludesAllListAsyncMaterializer;
 import sparx.internal.future.list.IncludesSliceListAsyncMaterializer;
 import sparx.internal.future.list.InsertAfterListAsyncMaterializer;
@@ -104,6 +102,8 @@ import sparx.internal.future.list.ReplaceSliceListAsyncMaterializer;
 import sparx.internal.future.list.ResizeListAsyncMaterializer;
 import sparx.internal.future.list.ReverseListAsyncMaterializer;
 import sparx.internal.future.list.SliceListAsyncMaterializer;
+import sparx.internal.future.list.SlidingWindowListAsyncMaterializer;
+import sparx.internal.future.list.SlidingWindowListAsyncMaterializer.Splitter;
 import sparx.internal.future.list.SortedListAsyncMaterializer;
 import sparx.internal.future.list.StartsWithListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
@@ -296,81 +296,6 @@ class future extends Sparx {
           FALSE_MATERIALIZER);
     }
 
-    private static @NotNull <E> Chunker<E, List<E>> getChunker(
-        @NotNull final ExecutionContext context, @NotNull final String taskID,
-        @NotNull final AtomicReference<CancellationException> cancelException) {
-      return new Chunker<E, List<E>>() {
-        @Override
-        public @NotNull List<E> getChunk(@NotNull final ListAsyncMaterializer<E> materializer,
-            final int start, final int end) {
-          return new List<E>(context, cancelException, materializer).slice(start, end);
-        }
-
-        @Override
-        public void getElements(@NotNull final List<E> chunk,
-            @NotNull final AsyncConsumer<java.util.List<E>> consumer) {
-          final ListAsyncMaterializer<E> materializer = chunk.materializer;
-          context.scheduleAfter(new Task() {
-            @Override
-            public void run() {
-              materializer.materializeElements(consumer);
-            }
-
-            @Override
-            public @NotNull String taskID() {
-              return taskID;
-            }
-
-            @Override
-            public int weight() {
-              return materializer.weightElements();
-            }
-          });
-        }
-      };
-    }
-
-    private static @NotNull <E> Chunker<E, List<E>> getChunker(
-        @NotNull final ExecutionContext context, @NotNull final String taskID,
-        @NotNull final AtomicReference<CancellationException> cancelException, final int size,
-        final E padding) {
-      return new Chunker<E, List<E>>() {
-        @Override
-        public @NotNull List<E> getChunk(@NotNull final ListAsyncMaterializer<E> materializer,
-            final int start, final int end) {
-          final List<E> sliced = new List<E>(context, cancelException, materializer).slice(start,
-              end);
-          final int paddingSize = size - (end - start);
-          if (paddingSize > 0) {
-            return sliced.appendAll(lazy.List.times(paddingSize, padding));
-          }
-          return sliced;
-        }
-
-        @Override
-        public void getElements(@NotNull final List<E> chunk,
-            @NotNull final AsyncConsumer<java.util.List<E>> consumer) {
-          final ListAsyncMaterializer<E> materializer = chunk.materializer;
-          context.scheduleAfter(new Task() {
-            @Override
-            public void run() {
-              materializer.materializeElements(consumer);
-            }
-
-            @Override
-            public @NotNull String taskID() {
-              return taskID;
-            }
-
-            @Override
-            public int weight() {
-              return materializer.weightElements();
-            }
-          });
-        }
-      };
-    }
-
     @SuppressWarnings("unchecked")
     private static @NotNull <E> ListAsyncMaterializer<E> getElementsMaterializer(
         @NotNull final ExecutionContext context, @NotNull final Iterable<? extends E> elements) {
@@ -472,6 +397,81 @@ class future extends Sparx {
         @Override
         public ListAsyncMaterializer<E> apply(final int index, final E element) throws Exception {
           return getElementsMaterializer(context, mapper.apply(index, element));
+        }
+      };
+    }
+
+    private static @NotNull <E> Splitter<E, List<E>> getSplitter(
+        @NotNull final ExecutionContext context, @NotNull final String taskID,
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      return new Splitter<E, List<E>>() {
+        @Override
+        public @NotNull List<E> getChunk(@NotNull final ListAsyncMaterializer<E> materializer,
+            final int start, final int end) {
+          return new List<E>(context, cancelException, materializer).slice(start, end);
+        }
+
+        @Override
+        public void getElements(@NotNull final List<E> chunk,
+            @NotNull final AsyncConsumer<java.util.List<E>> consumer) {
+          final ListAsyncMaterializer<E> materializer = chunk.materializer;
+          context.scheduleAfter(new Task() {
+            @Override
+            public void run() {
+              materializer.materializeElements(consumer);
+            }
+
+            @Override
+            public @NotNull String taskID() {
+              return taskID;
+            }
+
+            @Override
+            public int weight() {
+              return materializer.weightElements();
+            }
+          });
+        }
+      };
+    }
+
+    private static @NotNull <E> Splitter<E, List<E>> getSplitter(
+        @NotNull final ExecutionContext context, @NotNull final String taskID,
+        @NotNull final AtomicReference<CancellationException> cancelException, final int size,
+        final E padding) {
+      return new Splitter<E, List<E>>() {
+        @Override
+        public @NotNull List<E> getChunk(@NotNull final ListAsyncMaterializer<E> materializer,
+            final int start, final int end) {
+          final List<E> sliced = new List<E>(context, cancelException, materializer).slice(start,
+              end);
+          final int paddingSize = size - (end - start);
+          if (paddingSize > 0) {
+            return sliced.appendAll(lazy.List.times(paddingSize, padding));
+          }
+          return sliced;
+        }
+
+        @Override
+        public void getElements(@NotNull final List<E> chunk,
+            @NotNull final AsyncConsumer<java.util.List<E>> consumer) {
+          final ListAsyncMaterializer<E> materializer = chunk.materializer;
+          context.scheduleAfter(new Task() {
+            @Override
+            public void run() {
+              materializer.materializeElements(consumer);
+            }
+
+            @Override
+            public @NotNull String taskID() {
+              return taskID;
+            }
+
+            @Override
+            public int weight() {
+              return materializer.weightElements();
+            }
+          });
         }
       };
     }
@@ -2453,33 +2453,6 @@ class future extends Sparx {
       }
     }
 
-    public @NotNull List<? extends List<E>> group(final int maxSize) {
-      final ListAsyncMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return emptyList(context);
-      }
-      final ExecutionContext context = this.context;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
-      return new List<List<E>>(context, cancelException,
-          new GroupListAsyncMaterializer<E, List<E>>(materializer,
-              Require.positive(maxSize, "maxSize"),
-              List.<E>getChunker(context, taskID, cancelException), context, cancelException,
-              List.<List<E>>decorateFunction()));
-    }
-
-    public @NotNull List<? extends List<E>> groupWithPadding(final int size, final E padding) {
-      final ListAsyncMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return emptyList(context);
-      }
-      final ExecutionContext context = this.context;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
-      return new List<List<E>>(context, cancelException,
-          new GroupListAsyncMaterializer<E, List<E>>(materializer, size,
-              getChunker(context, taskID, cancelException, Require.positive(size, "size"), padding),
-              context, cancelException, List.<List<E>>decorateFunction()));
-    }
-
     @Override
     public @NotNull List<Boolean> includes(final Object element) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
@@ -4023,14 +3996,36 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<? extends List<E>> slidingWindow(int maxSize, int step) {
-      return null;
+    public @NotNull List<? extends List<E>> slidingWindow(final int maxSize, final int step) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyList(context);
+      }
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new List<List<E>>(context, cancelException,
+          new SlidingWindowListAsyncMaterializer<E, List<E>>(materializer,
+              Require.positive(maxSize, "maxSize"), Require.positive(step, "step"),
+              List.<E>getSplitter(context, taskID, cancelException), context, cancelException,
+              List.<List<E>>decorateFunction()));
     }
 
     @Override
-    public @NotNull List<? extends List<E>> slidingWindowWithPadding(int size, int step,
-        E padding) {
-      return null;
+    public @NotNull List<? extends List<E>> slidingWindowWithPadding(final int size, final int step,
+        final E padding) {
+      if (materializer.knownSize() == 0) {
+        return emptyList(context);
+      }
+      if (size == 1) {
+        return slidingWindow(1, step);
+      }
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new List<List<E>>(context, cancelException,
+          new SlidingWindowListAsyncMaterializer<E, List<E>>(materializer, size,
+              Require.positive(step, "step"),
+              getSplitter(context, taskID, cancelException, Require.positive(size, "size"),
+                  padding), context, cancelException, List.<List<E>>decorateFunction()));
     }
 
     @Override
@@ -5286,23 +5281,6 @@ class future extends Sparx {
       return new lazy.ListIterator<E>(leftList, rightList, pos);
     }
 
-    @SuppressWarnings("unchecked")
-    public @NotNull ListIterator<? extends ListIterator<E>> group(final int maxSize) {
-      return new ListIterator<ListIterator<E>>(context,
-          currentLeft().group(maxSize).map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
-          currentRight().group(maxSize).map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
-    }
-
-    @SuppressWarnings("unchecked")
-    public @NotNull ListIterator<? extends ListIterator<E>> groupWithPadding(final int size,
-        final E padding) {
-      return new ListIterator<ListIterator<E>>(context,
-          currentLeft().groupWithPadding(size, padding)
-              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
-          currentRight().groupWithPadding(size, padding)
-              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
-    }
-
     @Override
     public boolean hasNext() {
       final int pos = safePos();
@@ -6153,7 +6131,12 @@ class future extends Sparx {
 
     @Override
     public int size() {
-      return SizeOverflowException.safeCast((long) right.size() - safePos());
+      final int rightSize = right.size();
+      synchronized (posMutex) {
+        final int size = SizeOverflowException.safeCast((long) rightSize - pos);
+        pos = rightSize;
+        return size;
+      }
     }
 
     @Override
@@ -6172,14 +6155,45 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindow(int maxSize, int step) {
-      return null;
+    @SuppressWarnings("unchecked")
+    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindow(final int maxSize,
+        final int step) {
+      final List<E> currentLeft = currentLeft();
+      final List<E> currentRight = currentRight();
+      final ExecutionContext context = this.context;
+      return new ListIterator<ListIterator<E>>(context,
+          currentLeft.count().flatMap(new IndexedFunction<Integer, List<E>>() {
+                @Override
+                public List<E> apply(final int index, final Integer size) {
+                  if (size < step) {
+                    return List.emptyList(context);
+                  }
+                  return currentLeft.drop(size % step).appendAll(currentRight.take(maxSize - step));
+                }
+              }).slidingWindow(maxSize, step)
+              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
+          currentRight.slidingWindow(maxSize, step)
+              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
     }
 
     @Override
-    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindowWithPadding(int size,
-        int step, E padding) {
-      return null;
+    @SuppressWarnings("unchecked")
+    public @NotNull ListIterator<? extends ListIterator<E>> slidingWindowWithPadding(final int size,
+        final int step, final E padding) {
+      final List<E> currentLeft = currentLeft();
+      final List<E> currentRight = currentRight();
+      final ExecutionContext context = this.context;
+      return new ListIterator<ListIterator<E>>(context,
+          currentLeft.count().flatMap(new IndexedFunction<Integer, List<E>>() {
+                @Override
+                public List<E> apply(final int index, final Integer size) {
+                  return currentLeft.prependAll(lazy.List.times(size % step, padding))
+                      .appendAll(currentRight.take(size - step));
+                }
+              }).slidingWindowWithPadding(size, step, padding)
+              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR),
+          currentRight.slidingWindowWithPadding(size, step, padding)
+              .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
     }
 
     @Override
