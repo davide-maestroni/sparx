@@ -113,6 +113,7 @@ import sparx.internal.future.list.TakeRightListAsyncMaterializer;
 import sparx.internal.future.list.TakeRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.TakeWhileListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
+import sparx.lazy.List;
 import sparx.util.DeadLockException;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
@@ -3958,6 +3959,9 @@ class future extends Sparx {
       if (end == Integer.MAX_VALUE && start >= 0) {
         return drop(start);
       }
+      if (start == 0 && end >= 0) {
+        return take(end);
+      }
       if ((start == end) || (end >= 0 && start >= end)) {
         return emptyList(context);
       }
@@ -4108,7 +4112,7 @@ class future extends Sparx {
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
-      if (materializer.knownSize() == 0) {
+      if (maxElements == Integer.MAX_VALUE || materializer.knownSize() == 0) {
         return new List<E>(context, cancelException, materializer);
       }
       if (materializer.isMaterializedAtOnce()) {
@@ -4128,7 +4132,7 @@ class future extends Sparx {
       }
       final ListAsyncMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
-      if (materializer.knownSize() == 0) {
+      if (maxElements == Integer.MAX_VALUE || materializer.knownSize() == 0) {
         return new List<E>(context, cancelException, materializer);
       }
       if (materializer.isMaterializedAtOnce()) {

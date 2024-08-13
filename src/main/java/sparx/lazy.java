@@ -613,6 +613,9 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<E> drop(final int maxElements) {
+      if (maxElements == Integer.MAX_VALUE) {
+        return Iterator.of();
+      }
       final IteratorMaterializer<E> materializer = this.materializer;
       if (maxElements <= 0 || materializer.knownSize() == 0) {
         return this;
@@ -622,6 +625,9 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<E> dropRight(final int maxElements) {
+      if (maxElements == Integer.MAX_VALUE) {
+        return Iterator.of();
+      }
       final IteratorMaterializer<E> materializer = this.materializer;
       if (maxElements <= 0 || materializer.knownSize() == 0) {
         return this;
@@ -1802,6 +1808,9 @@ public class lazy extends Sparx {
       if (end == Integer.MAX_VALUE && start >= 0) {
         return drop(start);
       }
+      if (start == 0 && end >= 0) {
+        return take(end);
+      }
       if ((start == end) || (end >= 0 && start >= end)) {
         return Iterator.of();
       }
@@ -1940,6 +1949,9 @@ public class lazy extends Sparx {
       if (maxElements <= 0) {
         return Iterator.of();
       }
+      if (maxElements == Integer.MAX_VALUE) {
+        return this;
+      }
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return this;
@@ -1951,6 +1963,9 @@ public class lazy extends Sparx {
     public @NotNull Iterator<E> takeRight(final int maxElements) {
       if (maxElements <= 0) {
         return Iterator.of();
+      }
+      if (maxElements == Integer.MAX_VALUE) {
+        return this;
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
@@ -2578,12 +2593,15 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<E> drop(final int maxElements) {
+      if (maxElements == Integer.MAX_VALUE) {
+        return List.of();
+      }
       final ListMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
       if (maxElements <= 0 || knownSize == 0) {
         return this;
       }
-      if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
+      if (knownSize > 0 && maxElements >= knownSize) {
         return List.of();
       }
       return new List<E>(new DropListMaterializer<E>(materializer, maxElements));
@@ -2591,12 +2609,15 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<E> dropRight(final int maxElements) {
+      if (maxElements == Integer.MAX_VALUE) {
+        return List.of();
+      }
       final ListMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
       if (maxElements <= 0 || knownSize == 0) {
         return this;
       }
-      if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
+      if (knownSize > 0 && maxElements >= knownSize) {
         return List.of();
       }
       return new List<E>(new DropRightListMaterializer<E>(materializer, maxElements));
@@ -3916,6 +3937,9 @@ public class lazy extends Sparx {
       if (end == Integer.MAX_VALUE && start >= 0) {
         return drop(start);
       }
+      if (start == 0 && end >= 0) {
+        return take(end);
+      }
       if ((start == end) || (end >= 0 && start >= end)) {
         return List.of();
       }
@@ -4016,6 +4040,9 @@ public class lazy extends Sparx {
       if (maxElements <= 0) {
         return List.of();
       }
+      if (maxElements == Integer.MAX_VALUE) {
+        return this;
+      }
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return this;
@@ -4027,6 +4054,9 @@ public class lazy extends Sparx {
     public @NotNull List<E> takeRight(final int maxElements) {
       if (maxElements <= 0) {
         return List.of();
+      }
+      if (maxElements == Integer.MAX_VALUE) {
+        return this;
       }
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
