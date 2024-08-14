@@ -228,6 +228,8 @@ public class lazy extends Sparx {
       this.materializer = materializer;
     }
 
+    // TODO: fix pos => should not reset after operator => nextIndex()???
+
     @SuppressWarnings("unchecked")
     public static @NotNull <E> Iterator<E> of() {
       return (Iterator<E>) EMPTY_ITERATOR;
@@ -5788,6 +5790,7 @@ public class lazy extends Sparx {
         @Positive final int maxSize, @Positive final int step) {
       final List<E> currentLeft = currentLeft();
       final List<E> currentRight = currentRight();
+      // TODO: fix => start from left
       return new ListIterator<ListIterator<E>>(
           currentLeft.count().flatMap(new IndexedFunction<Integer, List<E>>() {
                 @Override
