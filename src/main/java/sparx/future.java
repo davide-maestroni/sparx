@@ -4882,9 +4882,9 @@ class future extends Sparx {
       if (!atEnd(pos)) {
         Require.notNull(consumer, "consumer");
         final List<E> right = currentRight(pos);
-        left.count().doFor(new Consumer<Integer>() {
+        left.count().doFor(new IndexedConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) {
+          public void accept(final int index, final Integer size) {
             final int offset = IndexOverflowException.safeCast((long) size + pos);
             right.doFor(offsetConsumer(offset, consumer));
           }
@@ -4898,9 +4898,9 @@ class future extends Sparx {
       if (!atEnd(pos)) {
         Require.notNull(predicate, "predicate");
         final List<E> right = currentRight(pos);
-        left.count().doFor(new Consumer<Integer>() {
+        left.count().doFor(new IndexedConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) {
+          public void accept(final int index, final Integer size) {
             final int offset = IndexOverflowException.safeCast((long) size + pos);
             right.doWhile(offsetPredicate(offset, predicate));
           }
@@ -4916,9 +4916,9 @@ class future extends Sparx {
         Require.notNull(condition, "condition");
         Require.notNull(consumer, "consumer");
         final List<E> right = currentRight(pos);
-        left.count().doFor(new Consumer<Integer>() {
+        left.count().doFor(new IndexedConsumer<Integer>() {
           @Override
-          public void accept(final Integer size) {
+          public void accept(final int index, final Integer size) {
             final int offset = IndexOverflowException.safeCast((long) size + pos);
             right.doWhile(offsetPredicate(offset, condition), offsetConsumer(offset, consumer));
           }
