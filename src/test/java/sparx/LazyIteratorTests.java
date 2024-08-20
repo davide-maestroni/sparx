@@ -38,151 +38,81 @@ import sparx.lazy.List;
 import sparx.util.SizeOverflowException;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
+import sparx.util.function.Predicate;
 
 @SuppressWarnings("DataFlowIssue")
 public class LazyIteratorTests {
 
   @Test
-  public void append() {
-    var itr = Iterator.<Integer>of().append(1).append(2).append(3);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, 2, 3), itr.toList());
-
-    itr = Iterator.<Integer>of().append(1).append(null).append(3);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-
-    itr = Iterator.of(1).append(2).append(3);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, 2, 3), itr.toList());
-
-    itr = Iterator.of(1).append(null).append(3);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-
-    itr = Iterator.of(1, 2).append(3);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, 2, 3), itr.toList());
-
-    itr = Iterator.of(1, null).append(3);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
+  public void append() throws Exception {
+    test(List.of(1, 2, 3), () -> Iterator.<Integer>of().append(1).append(2).append(3));
+    test(List.of(1, null, 3), () -> Iterator.<Integer>of().append(1).append(null).append(3));
+    test(List.of(1, 2, 3), () -> Iterator.of(1).append(2).append(3));
+    test(List.of(1, null, 3), () -> Iterator.of(1).append(null).append(3));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2).append(3));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null).append(3));
   }
 
   @Test
-  public void appendAll() {
-    var itr = Iterator.<Integer>of().appendAll(Arrays.asList(1, 2, 3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, 2, 3), itr.toList());
-
-    itr = Iterator.<Integer>of().appendAll(List.of(1, null, 3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-
-    itr = Iterator.<Integer>of().appendAll(Iterator.of(1, null, 3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-
-    itr = Iterator.of(1).appendAll(new LinkedHashSet<>(List.of(2, 3)));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, 2, 3), itr.toList());
-
-    itr = Iterator.of(1).appendAll(List.of(null, 3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-
-    itr = Iterator.of(1).appendAll(Iterator.of(null, 3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-
-    itr = Iterator.of(1, 2).appendAll(Set.of(3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, 2, 3), itr.toList());
-
-    itr = Iterator.of(1, null).appendAll(Set.of(3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-
-    itr = Iterator.of(1, null).appendAll(Iterator.of(3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
+  public void appendAll() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of().appendAll(null));
+    test(List.of(1, 2, 3), () -> Iterator.<Integer>of().appendAll(Arrays.asList(1, 2, 3)));
+    test(List.of(1, null, 3), () -> Iterator.<Integer>of().appendAll(List.of(1, null, 3)));
+    test(List.of(1, null, 3), () -> Iterator.<Integer>of().appendAll(Iterator.of(1, null, 3)));
+    test(List.of(1, 2, 3), () -> Iterator.of(1).appendAll(new LinkedHashSet<>(List.of(2, 3))));
+    test(List.of(1, null, 3), () -> Iterator.of(1).appendAll(List.of(null, 3)));
+    test(List.of(1, null, 3), () -> Iterator.of(1).appendAll(Iterator.of(null, 3)));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2).appendAll(Set.of(3)));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null).appendAll(Set.of(3)));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null).appendAll(Iterator.of(3)));
   }
 
   @Test
-  public void count() {
-    assertFalse(Iterator.of().count().isEmpty());
-    assertTrue(Iterator.of().count().notEmpty());
-    assertEquals(1, Iterator.of().count().size());
-    assertEquals(0, Iterator.of().count().first());
-    assertEquals(3, Iterator.of(1, 2, 3).count().first());
-    assertEquals(3, Iterator.of(1, null, 3).count().first());
+  public void count() throws Exception {
+    test(List.of(0), () -> Iterator.of().count());
+    test(List.of(3), () -> Iterator.of(1, 2, 3).count());
+    test(List.of(3), () -> Iterator.of(1, null, 3).count());
   }
 
   @Test
-  public void countWhere() {
-    assertFalse(Iterator.of().countWhere(Objects::nonNull).isEmpty());
-    assertTrue(Iterator.of().countWhere(Objects::nonNull).notEmpty());
-    assertEquals(1, Iterator.of().countWhere(Objects::nonNull).size());
-    assertEquals(0, Iterator.of().countWhere(Objects::nonNull).first());
-    assertEquals(2, Iterator.of(1, 2, 3).countWhere(i -> i < 3).first());
-    assertEquals(3, Iterator.of(1, 2, 3).countWhere(i -> i > 0).first());
+  public void countWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).countWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).countWhere((Predicate<? super Integer>) null));
+    test(List.of(0), () -> Iterator.of().countWhere(Objects::nonNull));
+    test(List.of(2), () -> Iterator.of(1, 2, 3).countWhere(i -> i < 3));
+    test(List.of(3), () -> Iterator.of(1, 2, 3).countWhere(i -> i > 0));
+
     var itr = Iterator.of(1, null, 3).countWhere(i -> i > 0);
     assertThrows(NullPointerException.class, itr::first);
   }
 
   @Test
-  public void diff() {
-    assertEquals(List.of(2, 4), Iterator.of(1, 2, null, 4).diff(List.of(1, null)).toList());
-    assertEquals(List.of(2, null), Iterator.of(1, 2, null, 4).diff(Iterator.of(1, 4)).toList());
-    assertEquals(List.of(2, null), Iterator.of(1, 2, null, 4).diff(List.of(1, 3, 4)).toList());
-    assertEquals(List.of(2, null, 4),
-        Iterator.of(1, 2, null, 4).diff(Iterator.of(3, 1, 3)).toList());
-    assertEquals(List.of(1, 2, 4), Iterator.of(1, 2, null, 4).diff(List.of(null, null)).toList());
-    assertEquals(List.of(), Iterator.of(1, null).diff(Iterator.of(1, 2, null, 4)).toList());
-
-    assertEquals(List.of(1, 2, null, 4), Iterator.of(1, 2, null, 4).diff(Iterator.of()).toList());
-    assertEquals(List.of(), Iterator.of().diff(Iterator.of(1, 2, null, 4)).toList());
+  public void diff() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).diff(null));
+    test(List.of(2, 4), () -> Iterator.of(1, 2, null, 4).diff(List.of(1, null)));
+    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4).diff(Iterator.of(1, 4)));
+    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4).diff(List.of(1, 3, 4)));
+    test(List.of(2, null, 4), () -> Iterator.of(1, 2, null, 4).diff(Iterator.of(3, 1, 3)));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null, 4).diff(List.of(null, null)));
+    test(List.of(), () -> Iterator.of(1, null).diff(Iterator.of(1, 2, null, 4)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).diff(Iterator.of()));
+    test(List.of(), () -> Iterator.of().diff(Iterator.of(1, 2, null, 4)));
   }
 
   @Test
-  public void distinctBy() {
+  public void distinctBy() throws Exception {
     assertThrows(NullPointerException.class,
         () -> Iterator.of(0, 0).distinctBy((Function<? super Integer, Object>) null));
     assertThrows(NullPointerException.class,
         () -> Iterator.of(0, 0).distinctBy((IndexedFunction<? super Integer, Object>) null));
-
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 1, null, 2, null, 1).distinct();
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 2), itr.get().toList());
-
-    itr = () -> Iterator.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 1 : e);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(1, 2), itr.get().toList());
-
-    itr = () -> Iterator.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 2 : e);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(1, null), itr.get().toList());
+    test(List.of(1, null, 2), () -> Iterator.of(1, 1, null, 2, null, 1).distinct());
+    test(List.of(1, 2),
+        () -> Iterator.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 1 : e));
+    test(List.of(1, null),
+        () -> Iterator.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 2 : e));
   }
 
   @Test
