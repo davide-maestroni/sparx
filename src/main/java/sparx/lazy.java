@@ -58,7 +58,9 @@ import sparx.internal.lazy.iterator.FlatMapLastWhereIteratorMaterializer;
 import sparx.internal.lazy.iterator.FlatMapWhereIteratorMaterializer;
 import sparx.internal.lazy.iterator.FloatArrayToIteratorMaterializer;
 import sparx.internal.lazy.iterator.FoldLeftIteratorMaterializer;
+import sparx.internal.lazy.iterator.FoldLeftWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.FoldRightIteratorMaterializer;
+import sparx.internal.lazy.iterator.FoldRightWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.IncludesAllIteratorMaterializer;
 import sparx.internal.lazy.iterator.IncludesSliceIteratorMaterializer;
 import sparx.internal.lazy.iterator.InsertAfterIteratorMaterializer;
@@ -133,7 +135,9 @@ import sparx.internal.lazy.list.FlatMapListMaterializer;
 import sparx.internal.lazy.list.FlatMapWhereListMaterializer;
 import sparx.internal.lazy.list.FloatArrayToListMaterializer;
 import sparx.internal.lazy.list.FoldLeftListMaterializer;
+import sparx.internal.lazy.list.FoldLeftWhileListMaterializer;
 import sparx.internal.lazy.list.FoldRightListMaterializer;
+import sparx.internal.lazy.list.FoldRightWhileListMaterializer;
 import sparx.internal.lazy.list.IncludesAllListMaterializer;
 import sparx.internal.lazy.list.IncludesSliceListMaterializer;
 import sparx.internal.lazy.list.InsertAfterListMaterializer;
@@ -1068,6 +1072,18 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull <F> Iterator<F> foldLeftWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return Iterator.of(identity);
+      }
+      return new Iterator<F>(new FoldLeftWhileIteratorMaterializer<E, F>(materializer, identity,
+          Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
+    }
+
+    @Override
     public @NotNull <F> Iterator<F> foldRight(final F identity,
         @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
       final IteratorMaterializer<E> materializer = this.materializer;
@@ -1076,6 +1092,18 @@ public class lazy extends Sparx {
       }
       return new Iterator<F>(new FoldRightIteratorMaterializer<E, F>(materializer, identity,
           Require.notNull(operation, "operation")));
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> foldRightWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return Iterator.of(identity);
+      }
+      return new Iterator<F>(new FoldRightWhileIteratorMaterializer<E, F>(materializer, identity,
+          Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
     }
 
     @Override
@@ -3146,6 +3174,18 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull <F> List<F> foldLeftWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      final ListMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return List.of(identity);
+      }
+      return new List<F>(new FoldLeftWhileListMaterializer<E, F>(materializer, identity,
+          Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
+    }
+
+    @Override
     public @NotNull <F> List<F> foldRight(final F identity,
         @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
       final ListMaterializer<E> materializer = this.materializer;
@@ -3154,6 +3194,18 @@ public class lazy extends Sparx {
       }
       return new List<F>(new FoldRightListMaterializer<E, F>(materializer, identity,
           Require.notNull(operation, "operation")));
+    }
+
+    @Override
+    public @NotNull <F> List<F> foldRightWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      final ListMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return List.of(identity);
+      }
+      return new List<F>(new FoldRightWhileListMaterializer<E, F>(materializer, identity,
+          Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
     }
 
     @Override
@@ -5091,12 +5143,34 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull <F> ListIterator<F> foldLeftWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      if (atEnd()) {
+        return new ListIterator<F>(List.<F>of(), List.of(identity));
+      }
+      return new ListIterator<F>(List.<F>of(),
+          currentRight().foldLeftWhile(identity, predicate, operation));
+    }
+
+    @Override
     public @NotNull <F> ListIterator<F> foldRight(final F identity,
         @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
       if (atEnd()) {
         return new ListIterator<F>(List.<F>of(), List.of(identity));
       }
       return new ListIterator<F>(List.<F>of(), currentRight().foldRight(identity, operation));
+    }
+
+    @Override
+    public @NotNull <F> ListIterator<F> foldRightWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      if (atEnd()) {
+        return new ListIterator<F>(List.<F>of(), List.of(identity));
+      }
+      return new ListIterator<F>(List.<F>of(),
+          currentRight().foldRightWhile(identity, predicate, operation));
     }
 
     @Override

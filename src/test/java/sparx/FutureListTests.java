@@ -70,7 +70,9 @@ import sparx.internal.future.list.FlatMapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapWhereListAsyncMaterializer;
 import sparx.internal.future.list.FoldLeftListAsyncMaterializer;
+import sparx.internal.future.list.FoldLeftWhileListAsyncMaterializer;
 import sparx.internal.future.list.FoldRightListAsyncMaterializer;
+import sparx.internal.future.list.FoldRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.IncludesAllListAsyncMaterializer;
 import sparx.internal.future.list.IncludesSliceListAsyncMaterializer;
 import sparx.internal.future.list.InsertAfterListAsyncMaterializer;
@@ -1116,6 +1118,8 @@ public class FutureListTests {
   @Test
   public void foldLeft() throws Exception {
     assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).foldLeft(1, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e)).foldLeft(1, null));
     var l = List.of(1, 2, 3, 4, 5);
     test(List.of(16), () -> l, ll -> ll.foldLeft(1, Integer::sum));
     test(List.of(List.of(1, 2)), () -> List.of(1, 2),
@@ -1128,6 +1132,33 @@ public class FutureListTests {
         new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.foldLeft(0, (i, e) -> i));
+  }
+
+  @Test
+  public void foldLeftWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).foldLeftWhile(1, null, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).foldLeftWhile(1, e -> true, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .foldLeftWhile(1, null, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .foldLeftWhile(1, e -> true, null));
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(7), () -> l, ll -> ll.foldLeftWhile(1, i -> i < 5, Integer::sum));
+    test(List.of(1), () -> l, ll -> ll.foldLeftWhile(1, i -> false, Integer::sum));
+    test(List.of(List.of(1)), () -> List.of(1, 2),
+        ll -> ll.foldLeftWhile(List.<Integer>of(), List::isEmpty, List::append));
+    test(List.of(1), List::<Integer>of, ll -> ll.foldLeftWhile(1, i -> true, Integer::sum));
+    test(List.of(List.of()), List::of, ll -> ll.foldLeftWhile(List.of(), i -> true, List::append));
+
+    testMaterializer(List.of(null), c -> new FoldLeftWhileListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 0, Objects::nonNull, (a, e) -> e,
+        new AtomicReference<>(), List::wrap));
+
+    testCancel(f -> f.foldLeftWhile(0, e -> true, (i, e) -> i));
   }
 
   @Test
@@ -1145,6 +1176,34 @@ public class FutureListTests {
         new AtomicReference<>(), List::wrap));
 
     testCancel(f -> f.foldRight(0, (e, i) -> i));
+  }
+
+  @Test
+  public void foldRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).foldRightWhile(1, null, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).foldRightWhile(1, e -> true, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .foldRightWhile(1, null, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .foldRightWhile(1, e -> true, null));
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(6), () -> l, ll -> ll.foldRightWhile(1, i -> i < 5, Integer::sum));
+    test(List.of(1), () -> l, ll -> ll.foldRightWhile(1, i -> false, Integer::sum));
+    test(List.of(List.of(2)), () -> List.of(1, 2),
+        ll -> ll.foldRightWhile(List.<Integer>of(), List::isEmpty, (i, li) -> li.append(i)));
+    test(List.of(1), List::<Integer>of, ll -> ll.foldRightWhile(1, i -> true, Integer::sum));
+    test(List.of(List.of()), List::of,
+        ll -> ll.foldRightWhile(List.of(), i -> true, (i, li) -> li.append(i)));
+
+    testMaterializer(List.of(null), c -> new FoldRightWhileListAsyncMaterializer<>(
+        new ListToListAsyncMaterializer<>(List.of(1, null, 3), c), 0, Objects::nonNull, (e, a) -> e,
+        new AtomicReference<>(), List::wrap));
+
+    testCancel(f -> f.foldRightWhile(0, e -> true, (e, i) -> i));
   }
 
   @Test

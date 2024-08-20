@@ -75,7 +75,9 @@ import sparx.internal.future.list.FlatMapLastWhereListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapListAsyncMaterializer;
 import sparx.internal.future.list.FlatMapWhereListAsyncMaterializer;
 import sparx.internal.future.list.FoldLeftListAsyncMaterializer;
+import sparx.internal.future.list.FoldLeftWhileListAsyncMaterializer;
 import sparx.internal.future.list.FoldRightListAsyncMaterializer;
+import sparx.internal.future.list.FoldRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.IncludesAllListAsyncMaterializer;
 import sparx.internal.future.list.IncludesSliceListAsyncMaterializer;
 import sparx.internal.future.list.InsertAfterListAsyncMaterializer;
@@ -749,6 +751,19 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E, F> LazyListAsyncMaterializer<E, F> lazyMaterializerFoldLeftWhile(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException, final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      return new LazyListAsyncMaterializer<E, F>(materializer, cancelException, 1) {
+        @Override
+        protected @NotNull java.util.List<F> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).foldLeftWhile(identity, predicate, operation);
+        }
+      };
+    }
+
     private static @NotNull <E, F> LazyListAsyncMaterializer<E, F> lazyMaterializerFoldRight(
         @NotNull final ListAsyncMaterializer<E> materializer,
         @NotNull final AtomicReference<CancellationException> cancelException, final F identity,
@@ -757,6 +772,19 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<F> transform(@NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).foldRight(identity, operation);
+        }
+      };
+    }
+
+    private static @NotNull <E, F> LazyListAsyncMaterializer<E, F> lazyMaterializerFoldRightWhile(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final AtomicReference<CancellationException> cancelException, final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      return new LazyListAsyncMaterializer<E, F>(materializer, cancelException, 1) {
+        @Override
+        protected @NotNull java.util.List<F> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).foldRightWhile(identity, predicate, operation);
         }
       };
     }
@@ -2301,6 +2329,27 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull <F> List<F> foldLeftWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<F>(context, cancelException,
+            new ElementToListAsyncMaterializer<F>(lazy.List.of(identity)));
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<F>(context, cancelException,
+            lazyMaterializerFoldLeftWhile(materializer, cancelException, identity,
+                Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
+      }
+      return new List<F>(context, cancelException,
+          new FoldLeftWhileListAsyncMaterializer<E, F>(materializer, identity,
+              Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation"),
+              cancelException, List.<F>decorateFunction()));
+    }
+
+    @Override
     public @NotNull <F> List<F> foldRight(final F identity,
         @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
       final ListAsyncMaterializer<E> materializer = this.materializer;
@@ -2319,6 +2368,27 @@ class future extends Sparx {
           new FoldRightListAsyncMaterializer<E, F>(materializer, identity,
               Require.notNull(operation, "operation"), cancelException,
               List.<F>decorateFunction()));
+    }
+
+    @Override
+    public @NotNull <F> List<F> foldRightWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new List<F>(context, cancelException,
+            new ElementToListAsyncMaterializer<F>(lazy.List.of(identity)));
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<F>(context, cancelException,
+            lazyMaterializerFoldRightWhile(materializer, cancelException, identity,
+                Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
+      }
+      return new List<F>(context, cancelException,
+          new FoldRightWhileListAsyncMaterializer<E, F>(materializer, identity,
+              Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation"),
+              cancelException, List.<F>decorateFunction()));
     }
 
     @Override
@@ -5558,6 +5628,19 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull <F> ListIterator<F> foldLeftWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      final int pos = safePos();
+      if (atEnd(pos)) {
+        return elementIterator(identity);
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<F>(context, List.<F>emptyList(context),
+          currentRight(pos).foldLeftWhile(identity, predicate, operation));
+    }
+
+    @Override
     public @NotNull <F> ListIterator<F> foldRight(final F identity,
         @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
       final int pos = safePos();
@@ -5567,6 +5650,19 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new ListIterator<F>(context, List.<F>emptyList(context),
           currentRight(pos).foldRight(identity, operation));
+    }
+
+    @Override
+    public @NotNull <F> ListIterator<F> foldRightWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      final int pos = safePos();
+      if (atEnd(pos)) {
+        return elementIterator(identity);
+      }
+      final ExecutionContext context = this.context;
+      return new ListIterator<F>(context, List.<F>emptyList(context),
+          currentRight(pos).foldRightWhile(identity, predicate, operation));
     }
 
     @Override

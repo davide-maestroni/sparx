@@ -16,7 +16,6 @@
 package sparx;
 
 import java.util.Comparator;
-import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
@@ -240,9 +239,17 @@ class itf {
     <F> Collection<F> foldLeft(F identity,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
+    @NotNull
+    <F> Collection<F> foldLeftWhile(F identity, @NotNull Predicate<? super F> predicate,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
     @Override
     @NotNull
     <F> Collection<F> foldRight(F identity,
+        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
+
+    @NotNull
+    <F> Collection<F> foldRightWhile(F identity, @NotNull Predicate<? super F> predicate,
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
     @Override
@@ -747,9 +754,17 @@ class itf {
     <F> Iterator<F> foldLeft(F identity,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
+    @NotNull
+    <F> Iterator<F> foldLeftWhile(F identity, @NotNull Predicate<? super F> predicate,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
     @Override
     @NotNull
     <F> Iterator<F> foldRight(F identity,
+        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
+
+    @NotNull
+    <F> Iterator<F> foldRightWhile(F identity, @NotNull Predicate<? super F> predicate,
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
     @Override
@@ -1266,9 +1281,17 @@ class itf {
     <F> List<F> foldLeft(F identity,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
+    @NotNull
+    <F> List<F> foldLeftWhile(F identity, @NotNull Predicate<? super F> predicate,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
     @Override
     @NotNull
     <F> List<F> foldRight(F identity,
+        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
+
+    @NotNull
+    <F> List<F> foldRightWhile(F identity, @NotNull Predicate<? super F> predicate,
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
     @Override
@@ -1764,9 +1787,17 @@ class itf {
     <F> ListIterator<F> foldLeft(F identity,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
+    @NotNull
+    <F> ListIterator<F> foldLeftWhile(F identity, @NotNull Predicate<? super F> predicate,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
     @Override
     @NotNull
     <F> ListIterator<F> foldRight(F identity,
+        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
+
+    @NotNull
+    <F> ListIterator<F> foldRightWhile(F identity, @NotNull Predicate<? super F> predicate,
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
     @Override
@@ -2235,7 +2266,15 @@ class itf {
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
     @NotNull
+    <F> Sequence<F> foldLeftWhile(F identity, @NotNull Predicate<? super F> predicate,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @NotNull
     <F> Sequence<F> foldRight(F identity,
+        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
+
+    @NotNull
+    <F> Sequence<F> foldRightWhile(F identity, @NotNull Predicate<? super F> predicate,
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
     @NotNull
@@ -2651,9 +2690,17 @@ class itf {
     <F> Set<F> foldLeft(F identity,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
+    @NotNull
+    <F> Set<F> foldLeftWhile(F identity, @NotNull Predicate<? super F> predicate,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
     @Override
     @NotNull
     <F> Set<F> foldRight(F identity,
+        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
+
+    @NotNull
+    <F> Set<F> foldRightWhile(F identity, @NotNull Predicate<? super F> predicate,
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
     @Override
@@ -3121,9 +3168,17 @@ class itf {
     <F> Stream<F> foldLeft(F identity,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
+    @NotNull
+    <F> Stream<F> foldLeftWhile(F identity, @NotNull Predicate<? super F> predicate,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
     @Override
     @NotNull
     <F> Stream<F> foldRight(F identity,
+        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
+
+    @NotNull
+    <F> Stream<F> foldRightWhile(F identity, @NotNull Predicate<? super F> predicate,
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
     @Override

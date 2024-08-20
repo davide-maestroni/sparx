@@ -118,8 +118,7 @@ public class LazyListTests {
     assertThrows(NullPointerException.class,
         () -> List.of(0, 0).distinctBy((IndexedFunction<? super Integer, Object>) null));
     test(List.of(1, null, 2), () -> List.of(1, 1, null, 2, null, 1).distinct());
-    test(List.of(1, 2),
-        () -> List.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 1 : e));
+    test(List.of(1, 2), () -> List.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 1 : e));
     test(List.of(1, null),
         () -> List.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 2 : e));
   }
@@ -642,6 +641,19 @@ public class LazyListTests {
   }
 
   @Test
+  public void foldLeftWhile() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0).foldLeftWhile(1, null, Integer::sum));
+    assertThrows(NullPointerException.class, () -> List.of(0).foldLeftWhile(1, e -> true, null));
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(7), () -> l.foldLeftWhile(1, i -> i < 5, Integer::sum));
+    test(List.of(1), () -> l.foldLeftWhile(1, i -> false, Integer::sum));
+    test(List.of(List.of(1)),
+        () -> List.of(1, 2).foldLeftWhile(List.<Integer>of(), List::isEmpty, List::append));
+    test(List.of(1), () -> List.<Integer>of().foldLeftWhile(1, i -> true, Integer::sum));
+    test(List.of(List.of()), () -> List.of().foldLeftWhile(List.of(), i -> true, List::append));
+  }
+
+  @Test
   public void foldRight() throws Exception {
     assertThrows(NullPointerException.class, () -> List.of(0).foldRight(1, null));
     var l = List.of(1, 2, 3, 4, 5);
@@ -650,6 +662,21 @@ public class LazyListTests {
         () -> List.of(1, 2).foldRight(List.<Integer>of(), (i, li) -> li.append(i)));
     test(List.of(1), () -> List.<Integer>of().foldRight(1, Integer::sum));
     test(List.of(List.of()), () -> List.of().foldRight(List.of(), (i, li) -> li.append(i)));
+  }
+
+  @Test
+  public void foldRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0).foldRightWhile(1, null, Integer::sum));
+    assertThrows(NullPointerException.class, () -> List.of(0).foldRightWhile(1, e -> true, null));
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(6), () -> l.foldRightWhile(1, i -> i < 5, Integer::sum));
+    test(List.of(1), () -> l.foldRightWhile(1, i -> false, Integer::sum));
+    test(List.of(List.of(2)), () -> List.of(1, 2)
+        .foldRightWhile(List.<Integer>of(), List::isEmpty, (i, li) -> li.append(i)));
+    test(List.of(1), () -> List.<Integer>of().foldRightWhile(1, i -> true, Integer::sum));
+    test(List.of(List.of()),
+        () -> List.of().foldRightWhile(List.of(), i -> true, (i, li) -> li.append(i)));
   }
 
   @Test
