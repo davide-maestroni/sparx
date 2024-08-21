@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class TakeWhileIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class TakeWhileIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 

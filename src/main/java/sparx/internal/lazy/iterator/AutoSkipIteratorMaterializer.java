@@ -15,15 +15,15 @@
  */
 package sparx.internal.lazy.iterator;
 
-public interface IteratorMaterializer<E> {
+public abstract class AutoSkipIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-  int knownSize();
-
-  boolean materializeHasNext();
-
-  E materializeNext();
-
-  int materializeSkip(int count);
-
-  int nextIndex();
+  @Override
+  public int materializeSkip(final int count) {
+    int skipped = 0;
+    while (skipped < count && materializeHasNext()) {
+      materializeNext();
+      ++skipped;
+    }
+    return skipped;
+  }
 }

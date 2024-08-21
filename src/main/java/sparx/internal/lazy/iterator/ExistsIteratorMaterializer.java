@@ -19,33 +19,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
-
-  private volatile IteratorMaterializer<Boolean> state;
+public class ExistsIteratorMaterializer<E> extends StatefulIteratorMaterializer<Boolean> {
 
   public ExistsIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult) {
-    state = new ImmaterialState(wrapped, predicate, defaultResult);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public Boolean materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, predicate, defaultResult));
   }
 
   private class ImmaterialState implements IteratorMaterializer<Boolean> {
@@ -75,7 +54,7 @@ public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boole
     public Boolean materializeNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (!wrapped.materializeHasNext()) {
-        state = EmptyIteratorMaterializer.instance();
+        setState(EmptyIteratorMaterializer.<Boolean>instance());
         return defaultResult;
       }
       try {
@@ -83,7 +62,7 @@ public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boole
         int i = 0;
         do {
           if (predicate.test(i, wrapped.materializeNext())) {
-            state = EmptyIteratorMaterializer.instance();
+            setState(EmptyIteratorMaterializer.<Boolean>instance());
             return true;
           }
           ++i;
@@ -91,17 +70,22 @@ public class ExistsIteratorMaterializer<E> implements IteratorMaterializer<Boole
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
-      state = EmptyIteratorMaterializer.instance();
+      setState(EmptyIteratorMaterializer.<Boolean>instance());
       return false;
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setState(EmptyIteratorMaterializer.<Boolean>instance());
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

@@ -19,7 +19,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 
-public class TakeRightIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class TakeRightIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 

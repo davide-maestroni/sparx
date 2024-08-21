@@ -47,7 +47,7 @@ public class UnionIteratorMaterializer<E> implements IteratorMaterializer<E> {
     return state.materializeSkip(count);
   }
 
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class ImmaterialState extends AutoSkipIteratorMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
     private final IteratorMaterializer<E> elementsMaterializer;

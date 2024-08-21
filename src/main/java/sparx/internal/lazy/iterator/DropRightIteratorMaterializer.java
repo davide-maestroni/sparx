@@ -18,30 +18,14 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 
-public class DropRightIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class DropRightIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<E> state;
-
-  // maxElements: positive
   public DropRightIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int maxElements) {
-    state = new ImmaterialState(wrapped, maxElements);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
+      @Positive final int maxElements) {
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, maxElements));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -74,7 +58,7 @@ public class DropRightIteratorMaterializer<E> extends AbstractIteratorMaterializ
           elements.add(wrapped.materializeNext());
         }
         if (elements.size() < maxElements) {
-          state = EmptyIteratorMaterializer.instance();
+          setState(EmptyIteratorMaterializer.<E>instance());
           return false;
         }
       }
@@ -94,6 +78,11 @@ public class DropRightIteratorMaterializer<E> extends AbstractIteratorMaterializ
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

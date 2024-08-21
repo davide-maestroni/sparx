@@ -54,4 +54,9 @@ public class ElementToIteratorMaterializer<E> implements IteratorMaterializer<E>
     }
     return 0;
   }
+
+  @Override
+  public int nextIndex() {
+    return consumed ? 1 : 0;
+  }
 }

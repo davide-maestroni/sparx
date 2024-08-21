@@ -15,41 +15,52 @@
  */
 package sparx.internal.lazy.iterator;
 
-import java.util.Collection;
-import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 
-public class CollectionToIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
+abstract class StatefulIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-  private final Collection<E> elements;
-  private final Iterator<E> iterator;
+  private int index;
+  private volatile IteratorMaterializer<E> state;
 
-  private int pos;
-
-  public CollectionToIteratorMaterializer(@NotNull final Collection<E> elements) {
-    this.elements = elements;
-    iterator = elements.iterator();
+  protected StatefulIteratorMaterializer(final int index) {
+    this.index = index;
   }
 
   @Override
   public int knownSize() {
-    return elements.size() - pos;
+    return state.knownSize();
   }
 
   @Override
   public boolean materializeHasNext() {
-    return iterator.hasNext();
+    return state.materializeHasNext();
   }
 
   @Override
   public E materializeNext() {
-    final E next = iterator.next();
-    ++pos;
+    final E next = state.materializeNext();
+    ++index;
     return next;
   }
 
   @Override
+  public int materializeSkip(final int count) {
+    final int skipped = state.materializeSkip(count);
+    index += skipped;
+    return skipped;
+  }
+
+  @Override
   public int nextIndex() {
-    return pos;
+    return index;
+  }
+
+  protected final @NotNull IteratorMaterializer<E> getState() {
+    return state;
+  }
+
+  protected final @NotNull IteratorMaterializer<E> setState(
+      @NotNull final IteratorMaterializer<E> newState) {
+    return state = newState;
   }
 }

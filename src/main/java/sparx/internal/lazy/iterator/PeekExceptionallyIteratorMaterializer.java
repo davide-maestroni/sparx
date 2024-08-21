@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedConsumer;
 
-public class PeekExceptionallyIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class PeekExceptionallyIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private final IndexedConsumer<? super Throwable> consumer;
   private final IteratorMaterializer<E> wrapped;

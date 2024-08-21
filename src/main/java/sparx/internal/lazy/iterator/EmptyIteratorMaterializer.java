@@ -46,4 +46,9 @@ public class EmptyIteratorMaterializer<E> implements IteratorMaterializer<E> {
   public int materializeSkip(final int count) {
     return 0;
   }
+
+  @Override
+  public int nextIndex() {
+    return 0;
+  }
 }

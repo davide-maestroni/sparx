@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 
-public class IntersectIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class IntersectIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private final IteratorMaterializer<Object> elementsMaterializer;
   private final IteratorMaterializer<E> wrapped;

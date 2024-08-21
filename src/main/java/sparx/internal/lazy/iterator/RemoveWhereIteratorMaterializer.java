@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class RemoveWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class RemoveWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private final IndexedPredicate<? super E> predicate;
   private final IteratorMaterializer<E> wrapped;

@@ -21,20 +21,21 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 
-public class DistinctByIteratorMaterializer<E, K> extends AbstractIteratorMaterializer<E> {
+public class DistinctByIteratorMaterializer<E, K> extends AutoSkipIteratorMaterializer<E> {
 
   private final HashSet<Object> distinctKeys = new HashSet<Object>();
   private final IndexedFunction<? super E, K> keyExtractor;
   private final IteratorMaterializer<E> wrapped;
 
   private boolean hasNext;
+  private int index;
   private E next;
-  private int pos;
 
   public DistinctByIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedFunction<? super E, K> keyExtractor) {
     this.wrapped = wrapped;
     this.keyExtractor = keyExtractor;
+    index = wrapped.nextIndex();
   }
 
   @Override
@@ -52,8 +53,8 @@ public class DistinctByIteratorMaterializer<E, K> extends AbstractIteratorMateri
       final HashSet<Object> distinctKeys = this.distinctKeys;
       final IndexedFunction<? super E, K> keyExtractor = this.keyExtractor;
       while (wrapped.materializeHasNext()) {
+        final int index = wrapped.nextIndex();
         final E element = wrapped.materializeNext();
-        final int index = pos++;
         if (distinctKeys.add(keyExtractor.apply(index, element))) {
           hasNext = true;
           next = element;
@@ -75,6 +76,12 @@ public class DistinctByIteratorMaterializer<E, K> extends AbstractIteratorMateri
     final E next = this.next;
     hasNext = false;
     this.next = null;
+    ++index;
     return next;
+  }
+
+  @Override
+  public int nextIndex() {
+    return index;
   }
 }

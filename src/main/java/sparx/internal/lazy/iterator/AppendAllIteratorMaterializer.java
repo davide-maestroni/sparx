@@ -18,33 +18,12 @@ package sparx.internal.lazy.iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.SizeOverflowException;
 
-public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class AppendAllIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public AppendAllIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IteratorMaterializer<E> elementsMaterializer) {
-    state = new ImmaterialState(wrapped, elementsMaterializer);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -75,7 +54,7 @@ public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E>
       if (wrapped.materializeHasNext()) {
         return true;
       }
-      return (state = elementsMaterializer).materializeHasNext();
+      return setState(elementsMaterializer).materializeHasNext();
     }
 
     @Override
@@ -84,7 +63,7 @@ public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E>
       if (wrapped.materializeHasNext()) {
         return wrapped.materializeNext();
       }
-      return (state = elementsMaterializer).materializeNext();
+      return setState(elementsMaterializer).materializeNext();
     }
 
     @Override
@@ -92,11 +71,16 @@ public class AppendAllIteratorMaterializer<E> implements IteratorMaterializer<E>
       if (count > 0) {
         final int skipped = wrapped.materializeSkip(count);
         if (skipped < count) {
-          return skipped + (state = elementsMaterializer).materializeSkip(count - skipped);
+          return skipped + setState(elementsMaterializer).materializeSkip(count - skipped);
         }
         return skipped;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

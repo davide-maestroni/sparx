@@ -20,7 +20,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
 
-public class SymmetricDiffIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class SymmetricDiffIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private final IteratorMaterializer<E> elements;
   private final ListMaterializer<E> elementsMaterializer;

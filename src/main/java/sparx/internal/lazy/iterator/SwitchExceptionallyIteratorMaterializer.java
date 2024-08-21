@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 
-public class SwitchExceptionallyIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class SwitchExceptionallyIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 

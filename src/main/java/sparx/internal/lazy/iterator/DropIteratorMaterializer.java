@@ -17,35 +17,14 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.Positive;
 
-public class DropIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class DropIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<E> state;
-
-  // maxElements: positive
   public DropIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int maxElements) {
-    state = new ImmaterialState(wrapped, maxElements);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+      @Positive final int maxElements) {
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, maxElements));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -73,10 +52,10 @@ public class DropIteratorMaterializer<E> implements IteratorMaterializer<E> {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final int skipped = wrapped.materializeSkip(maxElements);
       if (skipped < maxElements) {
-        state = EmptyIteratorMaterializer.instance();
+        setState(EmptyIteratorMaterializer.<E>instance());
         return false;
       }
-      return (state = wrapped).materializeHasNext();
+      return setState(wrapped).materializeHasNext();
     }
 
     @Override
@@ -84,15 +63,20 @@ public class DropIteratorMaterializer<E> implements IteratorMaterializer<E> {
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0 && materializeHasNext()) {
-        return state.materializeSkip(count);
+        return getState().materializeSkip(count);
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

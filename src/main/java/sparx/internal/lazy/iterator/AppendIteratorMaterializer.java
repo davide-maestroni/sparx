@@ -18,33 +18,12 @@ package sparx.internal.lazy.iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.SizeOverflowException;
 
-public class AppendIteratorMaterializer<E> implements IteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class AppendIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public AppendIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final E element) {
-    state = new ImmaterialState(wrapped, element);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, element));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -77,7 +56,7 @@ public class AppendIteratorMaterializer<E> implements IteratorMaterializer<E> {
       if (wrapped.materializeHasNext()) {
         return wrapped.materializeNext();
       }
-      state = EmptyIteratorMaterializer.instance();
+      setState(EmptyIteratorMaterializer.<E>instance());
       return element;
     }
 
@@ -85,10 +64,15 @@ public class AppendIteratorMaterializer<E> implements IteratorMaterializer<E> {
     public int materializeSkip(final int count) {
       final int skipped = wrapped.materializeSkip(count);
       if (skipped < count) {
-        state = EmptyIteratorMaterializer.instance();
+        setState(EmptyIteratorMaterializer.<E>instance());
         return skipped + 1;
       }
       return skipped;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

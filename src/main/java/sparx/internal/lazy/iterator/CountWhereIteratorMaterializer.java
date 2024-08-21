@@ -19,33 +19,13 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class CountWhereIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
+public class CountWhereIteratorMaterializer<E> extends StatefulIteratorMaterializer<Integer> {
 
-  private volatile IteratorMaterializer<Integer> state;
 
   public CountWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    state = new ImmaterialState(wrapped, predicate);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public Integer materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, predicate));
   }
 
   private class ImmaterialState implements IteratorMaterializer<Integer> {
@@ -82,7 +62,7 @@ public class CountWhereIteratorMaterializer<E> implements IteratorMaterializer<I
           }
           ++i;
         }
-        state = EmptyIteratorMaterializer.instance();
+        setState(EmptyIteratorMaterializer.<Integer>instance());
         return count;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
@@ -92,10 +72,15 @@ public class CountWhereIteratorMaterializer<E> implements IteratorMaterializer<I
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setState(EmptyIteratorMaterializer.<Integer>instance());
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

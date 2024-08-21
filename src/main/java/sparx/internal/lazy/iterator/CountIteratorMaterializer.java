@@ -17,32 +17,11 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 
-public class CountIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
-
-  private volatile IteratorMaterializer<Integer> state;
+public class CountIteratorMaterializer<E> extends StatefulIteratorMaterializer<Integer> {
 
   public CountIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped) {
-    state = new ImmaterialState(wrapped);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public Integer materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped));
   }
 
   private class ImmaterialState implements IteratorMaterializer<Integer> {
@@ -66,17 +45,22 @@ public class CountIteratorMaterializer<E> implements IteratorMaterializer<Intege
     @Override
     public Integer materializeNext() {
       final int size = wrapped.materializeSkip(Integer.MAX_VALUE);
-      state = EmptyIteratorMaterializer.instance();
+      setState(EmptyIteratorMaterializer.<Integer>instance());
       return size;
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setState(EmptyIteratorMaterializer.<Integer>instance());
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

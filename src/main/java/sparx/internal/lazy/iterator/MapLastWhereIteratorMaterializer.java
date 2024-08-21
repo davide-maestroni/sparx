@@ -21,7 +21,7 @@ import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class MapLastWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class MapLastWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 

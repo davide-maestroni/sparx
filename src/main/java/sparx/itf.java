@@ -3267,6 +3267,8 @@ class itf {
     @NotNull
     Stream<E> min(@NotNull Comparator<? super E> comparator);
 
+    int nextIndex();
+
     @Override
     @NotNull
     Stream<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);

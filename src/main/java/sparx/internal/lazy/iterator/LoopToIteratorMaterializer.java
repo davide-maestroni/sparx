@@ -21,7 +21,7 @@ import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class LoopToIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class LoopToIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private final IndexedPredicate<? super E> predicate;
   private final IndexedFunction<? super E, ? extends E> update;

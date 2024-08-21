@@ -20,33 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class FindLastIteratorMaterializer<E> implements IteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class FindLastIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public FindLastIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    state = new ImmaterialState(wrapped, predicate);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, predicate));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -82,13 +61,13 @@ public class FindLastIteratorMaterializer<E> implements IteratorMaterializer<E> 
           ++i;
         }
         if (found) {
-          state = new ElementToIteratorMaterializer<E>(last);
+          setState(new ElementToIteratorMaterializer<E>(last));
           return true;
         }
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
-      state = EmptyIteratorMaterializer.instance();
+      setState(EmptyIteratorMaterializer.<E>instance());
       return false;
     }
 
@@ -97,15 +76,20 @@ public class FindLastIteratorMaterializer<E> implements IteratorMaterializer<E> 
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0 && materializeHasNext()) {
-        return state.materializeSkip(count);
+        return getState().materializeSkip(count);
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

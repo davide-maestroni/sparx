@@ -21,33 +21,13 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
 import sparx.util.DequeueList;
 
-public class FindLastIndexOfSliceIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
-
-  private volatile IteratorMaterializer<Integer> state;
+public class FindLastIndexOfSliceIteratorMaterializer<E> extends
+    StatefulIteratorMaterializer<Integer> {
 
   public FindLastIndexOfSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(wrapped, elementsMaterializer);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public Integer materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
   private class ImmaterialState implements IteratorMaterializer<Integer> {
@@ -73,8 +53,8 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> implements IteratorMate
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
       if (!elementsIterator.hasNext()) {
-        state = new ElementToIteratorMaterializer<Integer>(
-            wrapped.materializeSkip(Integer.MAX_VALUE));
+        setState(
+            new ElementToIteratorMaterializer<Integer>(wrapped.materializeSkip(Integer.MAX_VALUE)));
         return true;
       }
       boolean found = false;
@@ -143,10 +123,10 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> implements IteratorMate
         }
       }
       if (found) {
-        state = new ElementToIteratorMaterializer<Integer>(last);
+        setState(new ElementToIteratorMaterializer<Integer>(last));
         return true;
       }
-      state = EmptyIteratorMaterializer.instance();
+      setState(EmptyIteratorMaterializer.<Integer>instance());
       return false;
     }
 
@@ -155,7 +135,7 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> implements IteratorMate
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
@@ -164,6 +144,11 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> implements IteratorMate
         return materializeHasNext() ? 1 : 0;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

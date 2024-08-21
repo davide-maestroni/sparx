@@ -20,7 +20,7 @@ import sparx.util.DequeueList;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class RemoveLastWhereIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class RemoveLastWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 

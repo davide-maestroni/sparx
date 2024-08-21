@@ -20,33 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class FindIndexIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
-
-  private volatile IteratorMaterializer<Integer> state;
+public class FindIndexIteratorMaterializer<E> extends StatefulIteratorMaterializer<Integer> {
 
   public FindIndexIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    state = new ImmaterialState(wrapped, predicate);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public Integer materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, predicate));
   }
 
   private class ImmaterialState implements IteratorMaterializer<Integer> {
@@ -73,7 +52,7 @@ public class FindIndexIteratorMaterializer<E> implements IteratorMaterializer<In
         int i = 0;
         while (wrapped.materializeHasNext()) {
           if (predicate.test(i, wrapped.materializeNext())) {
-            state = new ElementToIteratorMaterializer<Integer>(i);
+            setState(new ElementToIteratorMaterializer<Integer>(i));
             return true;
           }
           ++i;
@@ -81,7 +60,7 @@ public class FindIndexIteratorMaterializer<E> implements IteratorMaterializer<In
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
-      state = EmptyIteratorMaterializer.instance();
+      setState(EmptyIteratorMaterializer.<Integer>instance());
       return false;
     }
 
@@ -90,7 +69,7 @@ public class FindIndexIteratorMaterializer<E> implements IteratorMaterializer<In
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
@@ -99,6 +78,11 @@ public class FindIndexIteratorMaterializer<E> implements IteratorMaterializer<In
         return materializeHasNext() ? 1 : 0;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

@@ -20,33 +20,12 @@ import sparx.internal.lazy.list.ListMaterializer;
 import sparx.util.DequeueList;
 import sparx.util.SizeOverflowException;
 
-public class EndsWithIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
-
-  private volatile IteratorMaterializer<Boolean> state;
+public class EndsWithIteratorMaterializer<E> extends StatefulIteratorMaterializer<Boolean> {
 
   public EndsWithIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(wrapped, elementsMaterializer);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public Boolean materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
   private class ImmaterialState implements IteratorMaterializer<Boolean> {
@@ -85,28 +64,33 @@ public class EndsWithIteratorMaterializer<E> implements IteratorMaterializer<Boo
       }
       final int wrappedSize = wrappedElements.size();
       if (wrappedSize < elementsSize) {
-        state = EmptyIteratorMaterializer.instance();
+        setState(EmptyIteratorMaterializer.<Boolean>instance());
         return false;
       }
       for (int i = wrappedSize - 1, j = elementsSize - 1; i >= 0 && j >= 0; --i, --j) {
         final E left = wrappedElements.get(i);
         final Object right = elementsMaterializer.materializeElement(j);
         if (left != right && (left == null || !left.equals(right))) {
-          state = EmptyIteratorMaterializer.instance();
+          setState(EmptyIteratorMaterializer.<Boolean>instance());
           return false;
         }
       }
-      state = EmptyIteratorMaterializer.instance();
+      setState(EmptyIteratorMaterializer.<Boolean>instance());
       return true;
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setState(EmptyIteratorMaterializer.<Boolean>instance());
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

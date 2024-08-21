@@ -51,4 +51,9 @@ public class DoubleArrayToIteratorMaterializer implements IteratorMaterializer<D
     }
     return 0;
   }
+
+  @Override
+  public int nextIndex() {
+    return pos;
+  }
 }

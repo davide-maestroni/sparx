@@ -18,7 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 
-public class IteratorToIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class IteratorToIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private final Iterator<E> elements;
 

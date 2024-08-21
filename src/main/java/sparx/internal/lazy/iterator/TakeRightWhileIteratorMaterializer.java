@@ -21,7 +21,7 @@ import sparx.util.DequeueList;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class TakeRightWhileIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class TakeRightWhileIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 

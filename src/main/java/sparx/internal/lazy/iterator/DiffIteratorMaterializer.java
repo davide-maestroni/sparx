@@ -19,19 +19,21 @@ import java.util.HashMap;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 
-public class DiffIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class DiffIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private final IteratorMaterializer<?> elementsMaterializer;
   private final IteratorMaterializer<E> wrapped;
 
   private HashMap<Object, Integer> elementsBag;
   private boolean hasNext;
+  private int index;
   private E next;
 
   public DiffIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IteratorMaterializer<?> elementsMaterializer) {
     this.wrapped = wrapped;
     this.elementsMaterializer = elementsMaterializer;
+    index = wrapped.nextIndex();
   }
 
   @Override
@@ -72,7 +74,13 @@ public class DiffIteratorMaterializer<E> extends AbstractIteratorMaterializer<E>
     final E next = this.next;
     hasNext = false;
     this.next = null;
+    ++index;
     return next;
+  }
+
+  @Override
+  public int nextIndex() {
+    return index;
   }
 
   private @NotNull HashMap<Object, Integer> fillElementsBag() {

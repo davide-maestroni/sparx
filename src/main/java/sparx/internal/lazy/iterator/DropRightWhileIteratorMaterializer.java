@@ -21,7 +21,7 @@ import sparx.util.DequeueList;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class DropRightWhileIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
+public class DropRightWhileIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private volatile IteratorMaterializer<E> state;
 

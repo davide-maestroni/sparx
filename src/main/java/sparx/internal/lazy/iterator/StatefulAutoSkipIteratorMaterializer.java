@@ -15,7 +15,11 @@
  */
 package sparx.internal.lazy.iterator;
 
-public abstract class AbstractIteratorMaterializer<E> implements IteratorMaterializer<E> {
+abstract class StatefulAutoSkipIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
+
+  protected StatefulAutoSkipIteratorMaterializer(final int index) {
+    super(index);
+  }
 
   @Override
   public int materializeSkip(final int count) {

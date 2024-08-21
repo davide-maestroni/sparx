@@ -21,33 +21,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
 import sparx.util.DequeueList;
 
-public class FindIndexOfSliceIteratorMaterializer<E> implements IteratorMaterializer<Integer> {
-
-  private volatile IteratorMaterializer<Integer> state;
+public class FindIndexOfSliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<Integer> {
 
   public FindIndexOfSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(wrapped, elementsMaterializer);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public Integer materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
   private class ImmaterialState implements IteratorMaterializer<Integer> {
@@ -73,13 +52,13 @@ public class FindIndexOfSliceIteratorMaterializer<E> implements IteratorMaterial
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
       if (!elementsIterator.hasNext()) {
-        state = new ElementToIteratorMaterializer<Integer>(0);
+        setState(new ElementToIteratorMaterializer<Integer>(0));
         return true;
       }
       int index = 0;
       while (wrapped.materializeHasNext()) {
         if (!elementsIterator.hasNext()) {
-          state = new ElementToIteratorMaterializer<Integer>(index);
+          setState(new ElementToIteratorMaterializer<Integer>(index));
           return true;
         }
         final E left = wrapped.materializeNext();
@@ -96,7 +75,7 @@ public class FindIndexOfSliceIteratorMaterializer<E> implements IteratorMaterial
             for (final E e : queue) {
               if (!wrapped.materializeHasNext()) {
                 final int result = index - queue.size();
-                state = new ElementToIteratorMaterializer<Integer>(result);
+                setState(new ElementToIteratorMaterializer<Integer>(result));
                 return true;
               }
               right = elementsIterator.next();
@@ -112,7 +91,7 @@ public class FindIndexOfSliceIteratorMaterializer<E> implements IteratorMaterial
           ++index;
         }
       }
-      state = EmptyIteratorMaterializer.instance();
+      setState(EmptyIteratorMaterializer.<Integer>instance());
       return false;
     }
 
@@ -121,7 +100,7 @@ public class FindIndexOfSliceIteratorMaterializer<E> implements IteratorMaterial
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
@@ -130,6 +109,11 @@ public class FindIndexOfSliceIteratorMaterializer<E> implements IteratorMaterial
         return materializeHasNext() ? 1 : 0;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }
