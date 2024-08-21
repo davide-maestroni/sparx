@@ -59,13 +59,11 @@ public class EachIteratorMaterializer<E> extends StatefulIteratorMaterializer<Bo
       }
       try {
         final IndexedPredicate<? super E> predicate = this.predicate;
-        int i = 0;
         do {
-          if (!predicate.test(i, wrapped.materializeNext())) {
+          if (!predicate.test(wrapped.nextIndex(), wrapped.materializeNext())) {
             setState(EmptyIteratorMaterializer.<Boolean>instance());
             return false;
           }
-          ++i;
         } while (wrapped.materializeHasNext());
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);

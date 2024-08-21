@@ -21,29 +21,14 @@ import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class FlatMapFirstWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class FlatMapFirstWhereIteratorMaterializer<E> extends
+    StatefulAutoSkipIteratorMaterializer<E> {
 
   public FlatMapFirstWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
-    state = new ImmaterialState(wrapped, predicate, mapper);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, predicate, mapper));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -83,8 +68,8 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends AutoSkipIteratorMa
             hasNext = false;
             this.next = null;
             final IteratorMaterializer<E> materializer = mapper.apply(pos, next);
-            return (state = new InsertAllIteratorMaterializer<E>(wrapped,
-                materializer)).materializeHasNext();
+            return setState(
+                new InsertAllIteratorMaterializer<E>(wrapped, materializer)).materializeHasNext();
           }
           hasNext = true;
           this.next = next;
@@ -109,12 +94,17 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends AutoSkipIteratorMa
         this.next = null;
         return next;
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

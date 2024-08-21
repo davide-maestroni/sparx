@@ -49,14 +49,13 @@ public class DropWhileIteratorMaterializer<E> extends StatefulIteratorMaterializ
       try {
         final IteratorMaterializer<E> wrapped = this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        int i = 0;
         while (wrapped.materializeHasNext()) {
+          final int index = wrapped.nextIndex();
           final E next = wrapped.materializeNext();
-          if (!predicate.test(i, next)) {
+          if (!predicate.test(index, next)) {
             setState(new InsertIteratorMaterializer<E>(wrapped, next));
             return true;
           }
-          ++i;
         }
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);

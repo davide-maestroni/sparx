@@ -4943,6 +4943,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
+      // TODO: relative index???
       return new ListIterator<Integer>(List.<Integer>of(),
           currentRight().findIndexOf(element).map(offsetMapper(nextIndex())));
     }

@@ -17,37 +17,16 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 
-public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class FlatMapAfterIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<E> state;
-
-  // numElements: not negative
   public FlatMapAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int numElements,
+      @NotNegative final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
-    state = new ImmaterialState(wrapped, numElements, mapper);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, numElements, mapper));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -103,6 +82,11 @@ public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer
       return 0;
     }
 
+    @Override
+    public int nextIndex() {
+      return -1;
+    }
+
     private @NotNull IteratorMaterializer<E> materializer() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final int pos = this.pos;
@@ -111,10 +95,10 @@ public class FlatMapAfterIteratorMaterializer<E> implements IteratorMaterializer
           if (wrapped.materializeHasNext()) {
             final IteratorMaterializer<E> materializer = mapper.apply(pos,
                 wrapped.materializeNext());
-            return (state = new AppendAllIteratorMaterializer<E>(materializer, wrapped));
+            return setState(new AppendAllIteratorMaterializer<E>(materializer, wrapped));
           }
         } catch (final Exception e) {
-          state = wrapped;
+          setState(wrapped);
           throw UncheckedException.throwUnchecked(e);
         }
       }

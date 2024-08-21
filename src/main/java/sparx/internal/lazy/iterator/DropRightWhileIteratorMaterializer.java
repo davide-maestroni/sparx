@@ -21,28 +21,12 @@ import sparx.util.DequeueList;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class DropRightWhileIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class DropRightWhileIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
 
   public DropRightWhileIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    state = new ImmaterialState(wrapped, predicate);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
+    super(wrapped.nextIndex());
+    setState(new ImmaterialState(wrapped, predicate));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -68,12 +52,13 @@ public class DropRightWhileIteratorMaterializer<E> extends AutoSkipIteratorMater
       final DequeueList<E> elements = this.elements;
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (elements.isEmpty()) {
+        final int offset = wrapped.nextIndex();
         while (wrapped.materializeHasNext()) {
           elements.add(wrapped.materializeNext());
         }
         try {
           final IndexedPredicate<? super E> predicate = this.predicate;
-          int i = elements.size() - 1;
+          int i = offset + elements.size() - 1;
           while (!elements.isEmpty() && predicate.test(i, elements.getLast())) {
             elements.removeLast();
             --i;
@@ -82,7 +67,7 @@ public class DropRightWhileIteratorMaterializer<E> extends AutoSkipIteratorMater
           throw UncheckedException.throwUnchecked(e);
         }
         if (elements.isEmpty()) {
-          state = EmptyIteratorMaterializer.instance();
+          setState(EmptyIteratorMaterializer.<E>instance());
           return false;
         }
       }
@@ -100,6 +85,11 @@ public class DropRightWhileIteratorMaterializer<E> extends AutoSkipIteratorMater
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

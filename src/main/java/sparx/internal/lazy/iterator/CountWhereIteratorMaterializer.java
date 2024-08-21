@@ -54,13 +54,11 @@ public class CountWhereIteratorMaterializer<E> extends StatefulIteratorMateriali
       try {
         final IteratorMaterializer<E> wrapped = this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        int i = 0;
         int count = 0;
         while (wrapped.materializeHasNext()) {
-          if (predicate.test(i, wrapped.materializeNext())) {
+          if (predicate.test(wrapped.nextIndex(), wrapped.materializeNext())) {
             ++count;
           }
-          ++i;
         }
         setState(EmptyIteratorMaterializer.<Integer>instance());
         return count;
