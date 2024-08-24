@@ -24,7 +24,6 @@ public class DropRightIteratorMaterializer<E> extends StatefulAutoSkipIteratorMa
 
   public DropRightIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @Positive final int maxElements) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, maxElements));
   }
 
@@ -58,7 +57,7 @@ public class DropRightIteratorMaterializer<E> extends StatefulAutoSkipIteratorMa
           elements.add(wrapped.materializeNext());
         }
         if (elements.size() < maxElements) {
-          setState(EmptyIteratorMaterializer.<E>instance());
+          setEmptyState();
           return false;
         }
       }

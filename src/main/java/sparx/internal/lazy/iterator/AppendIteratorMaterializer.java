@@ -22,7 +22,6 @@ public class AppendIteratorMaterializer<E> extends StatefulIteratorMaterializer<
 
   public AppendIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final E element) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, element));
   }
 
@@ -56,7 +55,7 @@ public class AppendIteratorMaterializer<E> extends StatefulIteratorMaterializer<
       if (wrapped.materializeHasNext()) {
         return wrapped.materializeNext();
       }
-      setState(EmptyIteratorMaterializer.<E>instance());
+      setEmptyState();
       return element;
     }
 
@@ -64,7 +63,7 @@ public class AppendIteratorMaterializer<E> extends StatefulIteratorMaterializer<
     public int materializeSkip(final int count) {
       final int skipped = wrapped.materializeSkip(count);
       if (skipped < count) {
-        setState(EmptyIteratorMaterializer.<E>instance());
+        setEmptyState();
         return skipped + 1;
       }
       return skipped;

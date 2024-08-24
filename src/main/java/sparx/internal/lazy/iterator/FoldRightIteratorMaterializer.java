@@ -20,34 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 
-public class FoldRightIteratorMaterializer<E, F> implements IteratorMaterializer<F> {
-
-  private volatile IteratorMaterializer<F> state;
+public class FoldRightIteratorMaterializer<E, F> extends StatefulIteratorMaterializer<F> {
 
   public FoldRightIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final F identity,
       @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
-    state = new ImmaterialState(wrapped, identity, operation);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public F materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, identity, operation));
   }
 
   private class ImmaterialState implements IteratorMaterializer<F> {
@@ -87,7 +65,7 @@ public class FoldRightIteratorMaterializer<E, F> implements IteratorMaterializer
         for (int i = elements.size() - 1; i >= 0; --i) {
           current = operation.apply(elements.get(i), current);
         }
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return current;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
@@ -97,10 +75,15 @@ public class FoldRightIteratorMaterializer<E, F> implements IteratorMaterializer
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

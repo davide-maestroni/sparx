@@ -21,34 +21,12 @@ import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Predicate;
 
-public class FoldRightWhileIteratorMaterializer<E, F> implements IteratorMaterializer<F> {
-
-  private volatile IteratorMaterializer<F> state;
+public class FoldRightWhileIteratorMaterializer<E, F> extends StatefulIteratorMaterializer<F> {
 
   public FoldRightWhileIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final F identity, @NotNull final Predicate<? super F> predicate,
       @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
-    state = new ImmaterialState(wrapped, identity, predicate, operation);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public F materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, identity, predicate, operation));
   }
 
   private class ImmaterialState implements IteratorMaterializer<F> {
@@ -92,7 +70,7 @@ public class FoldRightWhileIteratorMaterializer<E, F> implements IteratorMateria
         for (int i = elements.size() - 1; i >= 0 && predicate.test(current); --i) {
           current = operation.apply(elements.get(i), current);
         }
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return current;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
@@ -102,10 +80,15 @@ public class FoldRightWhileIteratorMaterializer<E, F> implements IteratorMateria
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

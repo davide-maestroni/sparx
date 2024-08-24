@@ -25,7 +25,6 @@ public class DropRightWhileIteratorMaterializer<E> extends StatefulAutoSkipItera
 
   public DropRightWhileIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, predicate));
   }
 
@@ -52,13 +51,12 @@ public class DropRightWhileIteratorMaterializer<E> extends StatefulAutoSkipItera
       final DequeueList<E> elements = this.elements;
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (elements.isEmpty()) {
-        final int offset = wrapped.nextIndex();
         while (wrapped.materializeHasNext()) {
           elements.add(wrapped.materializeNext());
         }
         try {
           final IndexedPredicate<? super E> predicate = this.predicate;
-          int i = offset + elements.size() - 1;
+          int i = elements.size() - 1;
           while (!elements.isEmpty() && predicate.test(i, elements.getLast())) {
             elements.removeLast();
             --i;
@@ -67,7 +65,7 @@ public class DropRightWhileIteratorMaterializer<E> extends StatefulAutoSkipItera
           throw UncheckedException.throwUnchecked(e);
         }
         if (elements.isEmpty()) {
-          setState(EmptyIteratorMaterializer.<E>instance());
+          setEmptyState();
           return false;
         }
       }

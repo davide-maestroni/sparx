@@ -64,4 +64,9 @@ public class ListMaterializerToIteratorMaterializer<E> implements IteratorMateri
     pos += skipped;
     return skipped;
   }
+
+  @Override
+  public int nextIndex() {
+    return pos;
+  }
 }

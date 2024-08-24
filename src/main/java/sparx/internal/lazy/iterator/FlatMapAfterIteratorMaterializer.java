@@ -25,7 +25,6 @@ public class FlatMapAfterIteratorMaterializer<E> extends StatefulIteratorMateria
   public FlatMapAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNegative final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, numElements, mapper));
   }
 

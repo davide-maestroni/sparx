@@ -17,35 +17,14 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.NotNegative;
 
-public class InsertAllAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class InsertAllAfterIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<E> state;
-
-  // numElements: not negative
   public InsertAllAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int numElements, @NotNull final IteratorMaterializer<E> elementsMaterializer) {
-    state = new ImmaterialState(wrapped, numElements, elementsMaterializer);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+      @NotNegative final int numElements,
+      @NotNull final IteratorMaterializer<E> elementsMaterializer) {
+    setState(new ImmaterialState(wrapped, numElements, elementsMaterializer));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -91,7 +70,7 @@ public class InsertAllAfterIteratorMaterializer<E> implements IteratorMaterializ
         if (elementsMaterializer.materializeHasNext()) {
           return elementsMaterializer.materializeNext();
         }
-        return (state = wrapped).materializeNext();
+        return setState(wrapped).materializeNext();
       }
       final E next = wrapped.materializeNext();
       ++pos;
@@ -118,6 +97,11 @@ public class InsertAllAfterIteratorMaterializer<E> implements IteratorMaterializ
         return skipped;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

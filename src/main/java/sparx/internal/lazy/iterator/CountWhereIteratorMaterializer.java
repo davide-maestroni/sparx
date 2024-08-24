@@ -24,7 +24,6 @@ public class CountWhereIteratorMaterializer<E> extends StatefulIteratorMateriali
 
   public CountWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, predicate));
   }
 
@@ -54,13 +53,15 @@ public class CountWhereIteratorMaterializer<E> extends StatefulIteratorMateriali
       try {
         final IteratorMaterializer<E> wrapped = this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
+        int i = 0;
         int count = 0;
         while (wrapped.materializeHasNext()) {
-          if (predicate.test(wrapped.nextIndex(), wrapped.materializeNext())) {
+          if (predicate.test(i, wrapped.materializeNext())) {
             ++count;
           }
+          ++i;
         }
-        setState(EmptyIteratorMaterializer.<Integer>instance());
+        setEmptyState();
         return count;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
@@ -70,7 +71,7 @@ public class CountWhereIteratorMaterializer<E> extends StatefulIteratorMateriali
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        setState(EmptyIteratorMaterializer.<Integer>instance());
+        setEmptyState();
         return 1;
       }
       return 0;

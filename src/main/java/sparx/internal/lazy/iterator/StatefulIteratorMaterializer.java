@@ -22,6 +22,10 @@ abstract class StatefulIteratorMaterializer<E> implements IteratorMaterializer<E
   private int index;
   private volatile IteratorMaterializer<E> state;
 
+  protected StatefulIteratorMaterializer() {
+    this(0);
+  }
+
   protected StatefulIteratorMaterializer(final int index) {
     this.index = index;
   }
@@ -57,6 +61,10 @@ abstract class StatefulIteratorMaterializer<E> implements IteratorMaterializer<E
 
   protected final @NotNull IteratorMaterializer<E> getState() {
     return state;
+  }
+
+  protected final @NotNull IteratorMaterializer<E> setEmptyState() {
+    return setState(EmptyIteratorMaterializer.<E>instance());
   }
 
   protected final @NotNull IteratorMaterializer<E> setState(

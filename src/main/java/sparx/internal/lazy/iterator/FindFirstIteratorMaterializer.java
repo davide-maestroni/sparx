@@ -24,7 +24,6 @@ public class FindFirstIteratorMaterializer<E> extends StatefulIteratorMaterializ
 
   public FindFirstIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, predicate));
   }
 
@@ -61,7 +60,7 @@ public class FindFirstIteratorMaterializer<E> extends StatefulIteratorMaterializ
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
-      setState(EmptyIteratorMaterializer.<E>instance());
+      setEmptyState();
       return false;
     }
 

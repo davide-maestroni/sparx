@@ -22,7 +22,6 @@ public class AppendAllIteratorMaterializer<E> extends StatefulIteratorMaterializ
 
   public AppendAllIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IteratorMaterializer<E> elementsMaterializer) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 

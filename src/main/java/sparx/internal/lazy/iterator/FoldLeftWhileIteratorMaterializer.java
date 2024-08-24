@@ -20,34 +20,12 @@ import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Predicate;
 
-public class FoldLeftWhileIteratorMaterializer<E, F> implements IteratorMaterializer<F> {
-
-  private volatile IteratorMaterializer<F> state;
+public class FoldLeftWhileIteratorMaterializer<E, F> extends StatefulIteratorMaterializer<F> {
 
   public FoldLeftWhileIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final F identity, @NotNull final Predicate<? super F> predicate,
       @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation) {
-    state = new ImmaterialState(wrapped, identity, predicate, operation);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public F materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, identity, predicate, operation));
   }
 
   private class ImmaterialState implements IteratorMaterializer<F> {
@@ -86,7 +64,7 @@ public class FoldLeftWhileIteratorMaterializer<E, F> implements IteratorMaterial
         while (predicate.test(current) && wrapped.materializeHasNext()) {
           current = operation.apply(current, wrapped.materializeNext());
         }
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return current;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
@@ -96,10 +74,15 @@ public class FoldLeftWhileIteratorMaterializer<E, F> implements IteratorMaterial
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

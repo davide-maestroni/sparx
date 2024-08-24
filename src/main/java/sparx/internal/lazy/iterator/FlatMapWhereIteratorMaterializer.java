@@ -28,6 +28,7 @@ public class FlatMapWhereIteratorMaterializer<E> implements IteratorMaterializer
   private final IteratorMaterializer<E> wrapped;
 
   private boolean hasNext;
+  private int index;
   private IteratorMaterializer<E> materializer = EmptyIteratorMaterializer.instance();
   private E next;
   private int pos;
@@ -38,7 +39,6 @@ public class FlatMapWhereIteratorMaterializer<E> implements IteratorMaterializer
     this.wrapped = wrapped;
     this.predicate = predicate;
     this.mapper = mapper;
-    pos = wrapped.nextIndex();
   }
 
   @Override
@@ -87,7 +87,9 @@ public class FlatMapWhereIteratorMaterializer<E> implements IteratorMaterializer
       this.next = null;
       return next;
     }
-    return materializer.materializeNext();
+    final E next = materializer.materializeNext();
+    ++index;
+    return next;
   }
 
   @Override
@@ -110,6 +112,6 @@ public class FlatMapWhereIteratorMaterializer<E> implements IteratorMaterializer
 
   @Override
   public int nextIndex() {
-    return pos;
+    return index;
   }
 }

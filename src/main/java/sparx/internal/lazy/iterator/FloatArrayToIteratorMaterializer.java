@@ -51,4 +51,9 @@ public class FloatArrayToIteratorMaterializer implements IteratorMaterializer<Fl
     }
     return 0;
   }
+
+  @Override
+  public int nextIndex() {
+    return pos;
+  }
 }

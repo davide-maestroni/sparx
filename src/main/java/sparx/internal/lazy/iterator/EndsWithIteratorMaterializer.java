@@ -24,7 +24,6 @@ public class EndsWithIteratorMaterializer<E> extends StatefulIteratorMaterialize
 
   public EndsWithIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
@@ -64,25 +63,25 @@ public class EndsWithIteratorMaterializer<E> extends StatefulIteratorMaterialize
       }
       final int wrappedSize = wrappedElements.size();
       if (wrappedSize < elementsSize) {
-        setState(EmptyIteratorMaterializer.<Boolean>instance());
+        setEmptyState();
         return false;
       }
       for (int i = wrappedSize - 1, j = elementsSize - 1; i >= 0 && j >= 0; --i, --j) {
         final E left = wrappedElements.get(i);
         final Object right = elementsMaterializer.materializeElement(j);
         if (left != right && (left == null || !left.equals(right))) {
-          setState(EmptyIteratorMaterializer.<Boolean>instance());
+          setEmptyState();
           return false;
         }
       }
-      setState(EmptyIteratorMaterializer.<Boolean>instance());
+      setEmptyState();
       return true;
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        setState(EmptyIteratorMaterializer.<Boolean>instance());
+        setEmptyState();
         return 1;
       }
       return 0;

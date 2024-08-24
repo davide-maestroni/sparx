@@ -23,7 +23,6 @@ public class DropIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
 
   public DropIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @Positive final int maxElements) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, maxElements));
   }
 
@@ -52,7 +51,7 @@ public class DropIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final int skipped = wrapped.materializeSkip(maxElements);
       if (skipped < maxElements) {
-        setState(EmptyIteratorMaterializer.<E>instance());
+        setEmptyState();
         return false;
       }
       return setState(wrapped).materializeHasNext();

@@ -24,7 +24,6 @@ public class FindIndexIteratorMaterializer<E> extends StatefulIteratorMaterializ
 
   public FindIndexIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, predicate));
   }
 
@@ -51,7 +50,7 @@ public class FindIndexIteratorMaterializer<E> extends StatefulIteratorMaterializ
         final IndexedPredicate<? super E> predicate = this.predicate;
         int i = 0;
         while (wrapped.materializeHasNext()) {
-          if (predicate.test(wrapped.nextIndex(), wrapped.materializeNext())) {
+          if (predicate.test(i, wrapped.materializeNext())) {
             setState(new ElementToIteratorMaterializer<Integer>(i));
             return true;
           }
@@ -60,7 +59,7 @@ public class FindIndexIteratorMaterializer<E> extends StatefulIteratorMaterializ
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
-      setState(EmptyIteratorMaterializer.<Integer>instance());
+      setEmptyState();
       return false;
     }
 

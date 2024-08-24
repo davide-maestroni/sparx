@@ -18,33 +18,11 @@ package sparx.internal.lazy.iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.SizeOverflowException;
 
-public class InsertIteratorMaterializer<E> implements IteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class InsertIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public InsertIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final E element) {
-    state = new ImmaterialState(wrapped, element);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, element));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -73,16 +51,21 @@ public class InsertIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
     @Override
     public E materializeNext() {
-      state = wrapped;
+      setState(wrapped);
       return element;
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        return (state = wrapped).materializeSkip(count - 1) + 1;
+        return setState(wrapped).materializeSkip(count - 1) + 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

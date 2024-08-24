@@ -1220,7 +1220,7 @@ public class lazy extends Sparx {
     @NotNull
     @Override
     public Iterator<E> iterator() {
-      return this;
+      return this; // TODO: relative???
     }
 
     @Override

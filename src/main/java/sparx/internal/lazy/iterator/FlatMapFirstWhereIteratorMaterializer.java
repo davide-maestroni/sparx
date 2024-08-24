@@ -27,7 +27,6 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends
   public FlatMapFirstWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, predicate, mapper));
   }
 

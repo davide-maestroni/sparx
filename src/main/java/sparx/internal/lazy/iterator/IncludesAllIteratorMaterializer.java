@@ -18,33 +18,11 @@ package sparx.internal.lazy.iterator;
 import java.util.HashSet;
 import org.jetbrains.annotations.NotNull;
 
-public class IncludesAllIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
-
-  private volatile IteratorMaterializer<Boolean> state;
+public class IncludesAllIteratorMaterializer<E> extends StatefulIteratorMaterializer<Boolean> {
 
   public IncludesAllIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final Iterable<?> elements) {
-    state = new ImmaterialState(wrapped, elements);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public Boolean materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, elements));
   }
 
   private class ImmaterialState implements IteratorMaterializer<Boolean> {
@@ -75,28 +53,33 @@ public class IncludesAllIteratorMaterializer<E> implements IteratorMaterializer<
         elements.add(element);
       }
       if (elements.isEmpty()) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return true;
       }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       while (wrapped.materializeHasNext()) {
         elements.remove(wrapped.materializeNext());
         if (elements.isEmpty()) {
-          state = EmptyIteratorMaterializer.instance();
+          setEmptyState();
           return true;
         }
       }
-      state = EmptyIteratorMaterializer.instance();
+      setEmptyState();
       return false;
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

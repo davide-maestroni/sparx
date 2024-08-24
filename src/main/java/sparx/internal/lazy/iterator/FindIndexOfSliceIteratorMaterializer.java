@@ -25,7 +25,6 @@ public class FindIndexOfSliceIteratorMaterializer<E> extends StatefulIteratorMat
 
   public FindIndexOfSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
@@ -91,7 +90,7 @@ public class FindIndexOfSliceIteratorMaterializer<E> extends StatefulIteratorMat
           ++index;
         }
       }
-      setState(EmptyIteratorMaterializer.<Integer>instance());
+      setEmptyState();
       return false;
     }
 

@@ -26,7 +26,6 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> extends
 
   public FindLastIndexOfSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
@@ -126,7 +125,7 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> extends
         setState(new ElementToIteratorMaterializer<Integer>(last));
         return true;
       }
-      setState(EmptyIteratorMaterializer.<Integer>instance());
+      setEmptyState();
       return false;
     }
 

@@ -20,33 +20,11 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
 import sparx.util.DequeueList;
 
-public class IncludesSliceIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
-
-  private volatile IteratorMaterializer<Boolean> state;
+public class IncludesSliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<Boolean> {
 
   public IncludesSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final ListMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(wrapped, elementsMaterializer);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public Boolean materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
   private class ImmaterialState implements IteratorMaterializer<Boolean> {
@@ -76,13 +54,13 @@ public class IncludesSliceIteratorMaterializer<E> implements IteratorMaterialize
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
       if (!elementsIterator.hasNext()) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return true;
       }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       while (wrapped.materializeHasNext()) {
         if (!elementsIterator.hasNext()) {
-          state = EmptyIteratorMaterializer.instance();
+          setEmptyState();
           return true;
         }
         final E left = wrapped.materializeNext();
@@ -95,7 +73,7 @@ public class IncludesSliceIteratorMaterializer<E> implements IteratorMaterialize
             elementsIterator = elementsMaterializer.materializeIterator();
             for (final E e : queue) {
               if (!wrapped.materializeHasNext()) {
-                state = EmptyIteratorMaterializer.instance();
+                setEmptyState();
                 return true;
               }
               right = elementsIterator.next();
@@ -112,17 +90,22 @@ public class IncludesSliceIteratorMaterializer<E> implements IteratorMaterialize
           queue.add(left);
         }
       }
-      state = EmptyIteratorMaterializer.instance();
+      setEmptyState();
       return false;
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

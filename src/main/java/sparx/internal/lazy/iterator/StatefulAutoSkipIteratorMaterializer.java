@@ -17,6 +17,9 @@ package sparx.internal.lazy.iterator;
 
 abstract class StatefulAutoSkipIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
+  protected StatefulAutoSkipIteratorMaterializer() {
+  }
+
   protected StatefulAutoSkipIteratorMaterializer(final int index) {
     super(index);
   }

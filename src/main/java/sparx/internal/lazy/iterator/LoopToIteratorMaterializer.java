@@ -63,4 +63,9 @@ public class LoopToIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<
       throw UncheckedException.toUnchecked(e);
     }
   }
+
+  @Override
+  public int nextIndex() {
+    return pos;
+  }
 }

@@ -33,7 +33,6 @@ public class DiffIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E>
       @NotNull final IteratorMaterializer<?> elementsMaterializer) {
     this.wrapped = wrapped;
     this.elementsMaterializer = elementsMaterializer;
-    index = wrapped.nextIndex();
   }
 
   @Override

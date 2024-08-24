@@ -24,7 +24,6 @@ public class FindLastIndexIteratorMaterializer<E> extends StatefulIteratorMateri
 
   public FindLastIndexIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, predicate));
   }
 
@@ -66,7 +65,7 @@ public class FindLastIndexIteratorMaterializer<E> extends StatefulIteratorMateri
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
-      setState(EmptyIteratorMaterializer.<Integer>instance());
+      setEmptyState();
       return false;
     }
 

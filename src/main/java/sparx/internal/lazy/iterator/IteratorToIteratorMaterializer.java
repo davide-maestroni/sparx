@@ -22,6 +22,8 @@ public class IteratorToIteratorMaterializer<E> extends AutoSkipIteratorMateriali
 
   private final Iterator<E> elements;
 
+  private int pos;
+
   public IteratorToIteratorMaterializer(@NotNull final Iterator<E> elements) {
     this.elements = elements;
   }
@@ -38,6 +40,13 @@ public class IteratorToIteratorMaterializer<E> extends AutoSkipIteratorMateriali
 
   @Override
   public E materializeNext() {
-    return elements.next();
+    final E next = elements.next();
+    ++pos;
+    return next;
+  }
+
+  @Override
+  public int nextIndex() {
+    return pos;
   }
 }

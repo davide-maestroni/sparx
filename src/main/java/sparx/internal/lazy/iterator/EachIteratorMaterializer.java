@@ -23,7 +23,6 @@ public class EachIteratorMaterializer<E> extends StatefulIteratorMaterializer<Bo
 
   public EachIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped, predicate, defaultResult));
   }
 
@@ -54,28 +53,30 @@ public class EachIteratorMaterializer<E> extends StatefulIteratorMaterializer<Bo
     public Boolean materializeNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (!wrapped.materializeHasNext()) {
-        setState(EmptyIteratorMaterializer.<Boolean>instance());
+        setEmptyState();
         return defaultResult;
       }
       try {
         final IndexedPredicate<? super E> predicate = this.predicate;
+        int i = 0;
         do {
-          if (!predicate.test(wrapped.nextIndex(), wrapped.materializeNext())) {
-            setState(EmptyIteratorMaterializer.<Boolean>instance());
+          if (!predicate.test(i, wrapped.materializeNext())) {
+            setEmptyState();
             return false;
           }
+          ++i;
         } while (wrapped.materializeHasNext());
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
-      setState(EmptyIteratorMaterializer.<Boolean>instance());
+      setEmptyState();
       return true;
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        setState(EmptyIteratorMaterializer.<Boolean>instance());
+        setEmptyState();
         return 1;
       }
       return 0;

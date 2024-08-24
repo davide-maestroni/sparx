@@ -20,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 public class CountIteratorMaterializer<E> extends StatefulIteratorMaterializer<Integer> {
 
   public CountIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped) {
-    super(wrapped.nextIndex());
     setState(new ImmaterialState(wrapped));
   }
 
@@ -45,14 +44,14 @@ public class CountIteratorMaterializer<E> extends StatefulIteratorMaterializer<I
     @Override
     public Integer materializeNext() {
       final int size = wrapped.materializeSkip(Integer.MAX_VALUE);
-      setState(EmptyIteratorMaterializer.<Integer>instance());
+      setEmptyState();
       return size;
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        setState(EmptyIteratorMaterializer.<Integer>instance());
+        setEmptyState();
         return 1;
       }
       return 0;
