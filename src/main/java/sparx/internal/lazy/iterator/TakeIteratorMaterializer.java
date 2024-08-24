@@ -17,35 +17,13 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.Positive;
 
-public class TakeIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class TakeIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  private final IteratorMaterializer<E> state;
-
-  // maxElements: positive
   public TakeIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int maxElements) {
-    state = new ImmaterialState(wrapped, maxElements);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+      @Positive final int maxElements) {
+    setState(new ImmaterialState(wrapped, maxElements));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -91,6 +69,11 @@ public class TakeIteratorMaterializer<E> implements IteratorMaterializer<E> {
         return skipped;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

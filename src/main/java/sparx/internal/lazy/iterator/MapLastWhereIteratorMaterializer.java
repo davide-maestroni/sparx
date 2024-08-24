@@ -21,29 +21,12 @@ import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
-public class MapLastWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class MapLastWhereIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
 
   public MapLastWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-    state = new ImmaterialState(wrapped, predicate, mapper);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
+    setState(new ImmaterialState(wrapped, predicate, mapper));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -91,21 +74,26 @@ public class MapLastWhereIteratorMaterializer<E> extends AutoSkipIteratorMateria
           final IndexedPredicate<? super E> predicate = this.predicate;
           for (int i = elements.size() - 1; i >= 0; --i) {
             if (predicate.test(pos + i, elements.get(i))) {
-              return (state = new MapAfterIteratorMaterializer<E>(
+              return setState(new MapAfterIteratorMaterializer<E>(
                   new DequeueToIteratorMaterializer<E>(elements), i, mapper));
             }
           }
-          return (state = new DequeueToIteratorMaterializer<E>(elements));
+          return setState(new DequeueToIteratorMaterializer<E>(elements));
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
       }
-      return (state = wrapped);
+      return setState(wrapped);
     }
 
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

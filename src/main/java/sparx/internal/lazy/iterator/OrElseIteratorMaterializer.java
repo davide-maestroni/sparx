@@ -17,33 +17,11 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 
-public class OrElseIteratorMaterializer<E> implements IteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class OrElseIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public OrElseIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IteratorMaterializer<E> elementsMaterializer) {
-    state = new ImmaterialState(wrapped, elementsMaterializer);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -75,9 +53,9 @@ public class OrElseIteratorMaterializer<E> implements IteratorMaterializer<E> {
     public E materializeNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        return (state = wrapped).materializeNext();
+        return setState(wrapped).materializeNext();
       }
-      return (state = elementsMaterializer).materializeNext();
+      return setState(elementsMaterializer).materializeNext();
     }
 
     @Override
@@ -86,12 +64,17 @@ public class OrElseIteratorMaterializer<E> implements IteratorMaterializer<E> {
         final IteratorMaterializer<E> wrapped = this.wrapped;
         final int skipped = wrapped.materializeSkip(count);
         if (skipped > 0) {
-          state = wrapped;
+          setState(wrapped);
           return skipped;
         }
-        return (state = elementsMaterializer).materializeSkip(count);
+        return setState(elementsMaterializer).materializeSkip(count);
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

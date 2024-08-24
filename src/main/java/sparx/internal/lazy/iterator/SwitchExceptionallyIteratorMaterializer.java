@@ -20,28 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedFunction;
 
-public class SwitchExceptionallyIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class SwitchExceptionallyIteratorMaterializer<E> extends
+    StatefulAutoSkipIteratorMaterializer<E> {
 
   public SwitchExceptionallyIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedFunction<? super Throwable, ? extends IteratorMaterializer<E>> mapper) {
-    state = new ImmaterialState(wrapped, mapper);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
+    setState(new ImmaterialState(wrapped, mapper));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -68,7 +52,7 @@ public class SwitchExceptionallyIteratorMaterializer<E> extends AutoSkipIterator
         return wrapped.materializeHasNext();
       } catch (final Throwable t) {
         try {
-          return (state = mapper.apply(pos, t)).materializeHasNext();
+          return setState(mapper.apply(pos, t)).materializeHasNext();
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
@@ -81,12 +65,13 @@ public class SwitchExceptionallyIteratorMaterializer<E> extends AutoSkipIterator
         throw new NoSuchElementException();
       }
       try {
+        final IteratorMaterializer<E> state = getState();
         final E next = (state == this ? wrapped : state).materializeNext();
         ++pos;
         return next;
       } catch (final Throwable t) {
         try {
-          return (state = mapper.apply(pos++, t)).materializeNext();
+          return setState(mapper.apply(pos++, t)).materializeNext();
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
@@ -96,6 +81,11 @@ public class SwitchExceptionallyIteratorMaterializer<E> extends AutoSkipIterator
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

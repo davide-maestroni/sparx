@@ -18,33 +18,11 @@ package sparx.internal.lazy.iterator;
 import java.util.ArrayList;
 import org.jetbrains.annotations.NotNull;
 
-public class UnionIteratorMaterializer<E> implements IteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class UnionIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public UnionIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IteratorMaterializer<E> elementsMaterializer) {
-    state = new ImmaterialState(wrapped, elementsMaterializer);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
   private class ImmaterialState extends AutoSkipIteratorMaterializer<E> {
@@ -71,9 +49,9 @@ public class UnionIteratorMaterializer<E> implements IteratorMaterializer<E> {
         return true;
       }
       if (elements.isEmpty()) {
-        return (state = elementsMaterializer).materializeHasNext();
+        return setState(elementsMaterializer).materializeHasNext();
       }
-      return (state = new DiffIteratorMaterializer<E>(elementsMaterializer,
+      return setState(new DiffIteratorMaterializer<E>(elementsMaterializer,
           new ListToIteratorMaterializer<E>(elements))).materializeHasNext();
     }
 
@@ -82,6 +60,11 @@ public class UnionIteratorMaterializer<E> implements IteratorMaterializer<E> {
       final E next = wrapped.materializeNext();
       elements.add(next);
       return next;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

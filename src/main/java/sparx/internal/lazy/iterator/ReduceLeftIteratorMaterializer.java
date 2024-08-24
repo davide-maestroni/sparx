@@ -20,33 +20,11 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.BinaryFunction;
 
-public class ReduceLeftIteratorMaterializer<E> implements IteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class ReduceLeftIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public ReduceLeftIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
-    state = new ImmaterialState(wrapped, operation);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, operation));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -82,7 +60,7 @@ public class ReduceLeftIteratorMaterializer<E> implements IteratorMaterializer<E
         while (wrapped.materializeHasNext()) {
           current = operation.apply(current, wrapped.materializeNext());
         }
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return current;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
@@ -92,10 +70,15 @@ public class ReduceLeftIteratorMaterializer<E> implements IteratorMaterializer<E
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

@@ -20,28 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class RemoveFirstWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class RemoveFirstWhereIteratorMaterializer<E> extends
+    StatefulAutoSkipIteratorMaterializer<E> {
 
   public RemoveFirstWhereIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    state = new ImmaterialState(wrapped, predicate);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
+    setState(new ImmaterialState(wrapped, predicate));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -83,11 +67,11 @@ public class RemoveFirstWhereIteratorMaterializer<E> extends AutoSkipIteratorMat
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
-        if ((state = wrapped).materializeHasNext()) {
+        if (setState(wrapped).materializeHasNext()) {
           return true;
         }
       }
-      state = EmptyIteratorMaterializer.instance();
+      setEmptyState();
       return false;
     }
 
@@ -102,12 +86,17 @@ public class RemoveFirstWhereIteratorMaterializer<E> extends AutoSkipIteratorMat
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

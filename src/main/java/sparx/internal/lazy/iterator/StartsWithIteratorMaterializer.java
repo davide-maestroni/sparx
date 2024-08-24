@@ -17,33 +17,11 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 
-public class StartsWithIteratorMaterializer<E> implements IteratorMaterializer<Boolean> {
-
-  private volatile IteratorMaterializer<Boolean> state;
+public class StartsWithIteratorMaterializer<E> extends StatefulIteratorMaterializer<Boolean> {
 
   public StartsWithIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IteratorMaterializer<?> elementsMaterializer) {
-    state = new ImmaterialState(wrapped, elementsMaterializer);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public Boolean materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
   private class ImmaterialState implements IteratorMaterializer<Boolean> {
@@ -71,7 +49,7 @@ public class StartsWithIteratorMaterializer<E> implements IteratorMaterializer<B
     public Boolean materializeNext() {
       final IteratorMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       if (!elementsMaterializer.materializeHasNext()) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return true;
       }
       final IteratorMaterializer<E> wrapped = this.wrapped;
@@ -79,21 +57,26 @@ public class StartsWithIteratorMaterializer<E> implements IteratorMaterializer<B
         final E left = wrapped.materializeNext();
         final Object right = elementsMaterializer.materializeNext();
         if (left != right && (left == null || !left.equals(right))) {
-          state = EmptyIteratorMaterializer.instance();
+          setEmptyState();
           return false;
         }
       }
-      state = EmptyIteratorMaterializer.instance();
+      setEmptyState();
       return !elementsMaterializer.materializeHasNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return 1;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

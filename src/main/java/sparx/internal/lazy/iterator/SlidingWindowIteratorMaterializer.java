@@ -25,41 +25,19 @@ import sparx.util.UncheckedException;
 import sparx.util.annotation.Positive;
 import sparx.util.function.Function;
 
-public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> implements
-    IteratorMaterializer<I> {
-
-  private final IteratorMaterializer<I> state;
+public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
+    StatefulIteratorMaterializer<I> {
 
   public SlidingWindowIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @Positive final int maxSize, @Positive final int step,
       @NotNull final Function<? super List<E>, ? extends I> mapper) {
-    state = new ImmaterialState(wrapped, maxSize, 0, step, null, mapper);
+    setState(new ImmaterialState(wrapped, maxSize, 0, step, null, mapper));
   }
 
   public SlidingWindowIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @Positive final int size, @Positive final int step, final E padding,
       @NotNull final Function<? super List<E>, ? extends I> mapper) {
-    state = new ImmaterialState(wrapped, size, size, step, padding, mapper);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public I materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, size, size, step, padding, mapper));
   }
 
   private class ImmaterialState implements IteratorMaterializer<I> {
@@ -178,6 +156,11 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
       return 0;
     }
 
+    @Override
+    public int nextIndex() {
+      return -1;
+    }
+
     private boolean advance() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final DequeueList<E> elements = this.elements;
@@ -185,6 +168,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
       final int skip = this.skip;
       if (elements.isEmpty()) {
         if (!wrapped.materializeHasNext()) {
+          setEmptyState();
           return false;
         }
         for (int i = 0; i < maxSize; ++i) {
@@ -197,6 +181,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
         elements.clear();
         wrapped.materializeSkip(skip);
         if (!wrapped.materializeHasNext()) {
+          setEmptyState();
           return false;
         }
         for (int i = 0; i < maxSize; ++i) {
@@ -212,6 +197,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> impleme
             elements.add(wrapped.materializeNext());
           }
           if (elements.size() <= 1) {
+            setEmptyState();
             return false;
           }
           elements.removeFirst();

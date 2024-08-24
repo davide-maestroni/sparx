@@ -19,9 +19,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 
-public class ReplaceSliceIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
 
   public ReplaceSliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       final int start, final int end, @NotNull final IteratorMaterializer<E> elementsMaterializer) {
@@ -40,26 +38,11 @@ public class ReplaceSliceIteratorMaterializer<E> extends AutoSkipIteratorMateria
         materializedEnd = Math.min(knownSize, materializedEnd);
       }
       final int materializedLength = Math.max(0, materializedEnd - materializedStart);
-      state = new MaterialState(wrapped, materializedStart, materializedLength,
-          elementsMaterializer);
+      setState(
+          new MaterialState(wrapped, materializedStart, materializedLength, elementsMaterializer));
     } else {
-      state = new ImmaterialState(wrapped, start, end, elementsMaterializer);
+      setState(new ImmaterialState(wrapped, start, end, elementsMaterializer));
     }
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -104,10 +87,11 @@ public class ReplaceSliceIteratorMaterializer<E> extends AutoSkipIteratorMateria
           materializedEnd = Math.min(wrappedSize, materializedEnd);
         }
         final int materializedLength = Math.max(0, materializedEnd - materializedStart);
-        return (state = new MaterialState(new DequeueToIteratorMaterializer<E>(elements),
-            materializedStart, materializedLength, elementsMaterializer)).materializeHasNext();
+        return setState(
+            new MaterialState(new DequeueToIteratorMaterializer<E>(elements), materializedStart,
+                materializedLength, elementsMaterializer)).materializeHasNext();
       }
-      state = EmptyIteratorMaterializer.instance();
+      setEmptyState();
       return false;
     }
 
@@ -116,12 +100,17 @@ public class ReplaceSliceIteratorMaterializer<E> extends AutoSkipIteratorMateria
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 
@@ -154,15 +143,15 @@ public class ReplaceSliceIteratorMaterializer<E> extends AutoSkipIteratorMateria
         final IteratorMaterializer<E> elementsMaterializer = this.elementsMaterializer;
         if (elementsMaterializer.materializeHasNext()) {
           wrapped.materializeSkip(length);
-          return (state = new AppendAllIteratorMaterializer<E>(elementsMaterializer,
+          return setState(new AppendAllIteratorMaterializer<E>(elementsMaterializer,
               wrapped)).materializeHasNext();
         }
-        (state = wrapped).materializeSkip(length);
+        setState(wrapped).materializeSkip(length);
       }
       if (wrapped.materializeHasNext()) {
         return true;
       }
-      state = EmptyIteratorMaterializer.instance();
+      setEmptyState();
       return false;
     }
 
@@ -172,13 +161,18 @@ public class ReplaceSliceIteratorMaterializer<E> extends AutoSkipIteratorMateria
         throw new NoSuchElementException();
       }
       ++pos;
-      final IteratorMaterializer<E> state = ReplaceSliceIteratorMaterializer.this.state;
+      final IteratorMaterializer<E> state = getState();
       return (state == this ? wrapped : state).materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

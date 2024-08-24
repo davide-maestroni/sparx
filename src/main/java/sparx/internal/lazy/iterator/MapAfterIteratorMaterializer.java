@@ -17,36 +17,15 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 
-public class MapAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class MapAfterIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<E> state;
-
-  // numElements: not negative
   public MapAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int numElements, @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-    state = new ImmaterialState(wrapped, numElements, mapper);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+      @NotNegative final int numElements,
+      @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+    setState(new ImmaterialState(wrapped, numElements, mapper));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -79,7 +58,7 @@ public class MapAfterIteratorMaterializer<E> implements IteratorMaterializer<E> 
       final int pos = this.pos;
       if (pos == numElements) {
         try {
-          return mapper.apply(pos, (state = wrapped).materializeNext());
+          return mapper.apply(pos, setState(wrapped).materializeNext());
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
@@ -99,9 +78,14 @@ public class MapAfterIteratorMaterializer<E> implements IteratorMaterializer<E> 
           this.pos += skipped;
           return skipped;
         }
-        return (state = wrapped).materializeSkip(count);
+        return setState(wrapped).materializeSkip(count);
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

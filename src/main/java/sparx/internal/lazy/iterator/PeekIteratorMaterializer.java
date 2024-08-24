@@ -25,8 +25,6 @@ public class PeekIteratorMaterializer<E> implements IteratorMaterializer<E> {
   private final IndexedConsumer<? super E> consumer;
   private final IteratorMaterializer<E> wrapped;
 
-  private int pos;
-
   public PeekIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedConsumer<? super E> consumer) {
     this.wrapped = wrapped;
@@ -49,11 +47,10 @@ public class PeekIteratorMaterializer<E> implements IteratorMaterializer<E> {
     if (!wrapped.materializeHasNext()) {
       throw new NoSuchElementException();
     }
-    final int pos = this.pos;
-    ++this.pos;
+    final int index = wrapped.nextIndex();
     final E next = wrapped.materializeNext();
     try {
-      consumer.accept(pos, next);
+      consumer.accept(index, next);
     } catch (final Exception e) {
       throw UncheckedException.throwUnchecked(e);
     }
@@ -63,5 +60,10 @@ public class PeekIteratorMaterializer<E> implements IteratorMaterializer<E> {
   @Override
   public int materializeSkip(final int count) {
     return wrapped.materializeSkip(count);
+  }
+
+  @Override
+  public int nextIndex() {
+    return wrapped.nextIndex();
   }
 }

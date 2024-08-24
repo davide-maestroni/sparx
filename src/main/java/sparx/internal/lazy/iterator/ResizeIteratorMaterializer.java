@@ -17,35 +17,13 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.Positive;
 
-public class ResizeIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class ResizeIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<E> state;
-
-  // numElements: positive
   public ResizeIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int numElements, final E padding) {
-    state = new ImmaterialState(wrapped, numElements, padding);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+      @Positive final int numElements, final E padding) {
+    setState(new ImmaterialState(wrapped, numElements, padding));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -83,8 +61,8 @@ public class ResizeIteratorMaterializer<E> implements IteratorMaterializer<E> {
         ++pos;
         return wrapped.materializeNext();
       }
-      return (state = new RepeatIteratorMaterializer<E>(numElements - pos,
-          padding)).materializeNext();
+      return setState(
+          new RepeatIteratorMaterializer<E>(numElements - pos, padding)).materializeNext();
     }
 
     @Override
@@ -94,12 +72,18 @@ public class ResizeIteratorMaterializer<E> implements IteratorMaterializer<E> {
         final int toSkip = Math.min(count, remaining);
         int skipped = wrapped.materializeSkip(toSkip);
         if (skipped < toSkip) {
-          skipped += (state = new RepeatIteratorMaterializer<E>(remaining,
-              padding)).materializeSkip(toSkip - skipped);
+          skipped += setState(
+              new RepeatIteratorMaterializer<E>(remaining, padding)).materializeSkip(
+              toSkip - skipped);
         }
         return skipped;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

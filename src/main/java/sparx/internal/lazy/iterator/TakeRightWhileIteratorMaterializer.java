@@ -21,28 +21,11 @@ import sparx.util.DequeueList;
 import sparx.util.UncheckedException;
 import sparx.util.function.IndexedPredicate;
 
-public class TakeRightWhileIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class TakeRightWhileIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
 
   public TakeRightWhileIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    state = new ImmaterialState(wrapped, predicate);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
+    setState(new ImmaterialState(wrapped, predicate));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -71,14 +54,15 @@ public class TakeRightWhileIteratorMaterializer<E> extends AutoSkipIteratorMater
       try {
         for (int i = elements.size() - 1; i >= 0; --i) {
           if (!predicate.test(i, elements.get(i))) {
-            return (state = new DropIteratorMaterializer<E>(
-                new DequeueToIteratorMaterializer<E>(elements), i + 1)).materializeHasNext();
+            return setState(
+                new DropIteratorMaterializer<E>(new DequeueToIteratorMaterializer<E>(elements),
+                    i + 1)).materializeHasNext();
           }
         }
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
-      return (state = new DequeueToIteratorMaterializer<E>(elements)).materializeHasNext();
+      return setState(new DequeueToIteratorMaterializer<E>(elements)).materializeHasNext();
     }
 
     @Override
@@ -86,12 +70,17 @@ public class TakeRightWhileIteratorMaterializer<E> extends AutoSkipIteratorMater
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

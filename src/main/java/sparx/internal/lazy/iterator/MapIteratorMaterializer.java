@@ -24,8 +24,6 @@ public class MapIteratorMaterializer<E, F> implements IteratorMaterializer<F> {
   private final IndexedFunction<? super E, F> mapper;
   private final IteratorMaterializer<E> wrapped;
 
-  private int pos;
-
   public MapIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedFunction<? super E, F> mapper) {
     this.wrapped = wrapped;
@@ -45,7 +43,8 @@ public class MapIteratorMaterializer<E, F> implements IteratorMaterializer<F> {
   @Override
   public F materializeNext() {
     try {
-      return mapper.apply(pos++, wrapped.materializeNext());
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      return mapper.apply(wrapped.nextIndex(), wrapped.materializeNext());
     } catch (final Exception e) {
       throw UncheckedException.throwUnchecked(e);
     }
@@ -54,5 +53,10 @@ public class MapIteratorMaterializer<E, F> implements IteratorMaterializer<F> {
   @Override
   public int materializeSkip(final int count) {
     return wrapped.materializeSkip(count);
+  }
+
+  @Override
+  public int nextIndex() {
+    return wrapped.nextIndex();
   }
 }

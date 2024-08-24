@@ -26,6 +26,7 @@ public class RemoveWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterial
   private final IteratorMaterializer<E> wrapped;
 
   private boolean hasNext;
+  private int index;
   private E next;
   private int pos;
 
@@ -72,6 +73,7 @@ public class RemoveWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterial
     hasNext = false;
     final E next = this.next;
     this.next = null;
+    ++index;
     return next;
   }
 
@@ -80,5 +82,10 @@ public class RemoveWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterial
     final int skipped = super.materializeSkip(count);
     pos += skipped;
     return skipped;
+  }
+
+  @Override
+  public int nextIndex() {
+    return index;
   }
 }

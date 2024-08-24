@@ -18,30 +18,13 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 
-public class TakeRightIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
+public class TakeRightIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<E> state;
-
-  // maxElements: positive
   public TakeRightIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int maxElements) {
-    state = new ImmaterialState(wrapped, maxElements);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
+      @Positive final int maxElements) {
+    setState(new ImmaterialState(wrapped, maxElements));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -74,7 +57,7 @@ public class TakeRightIteratorMaterializer<E> extends AutoSkipIteratorMaterializ
           elements.removeFirst();
         }
       }
-      return (state = new DequeueToIteratorMaterializer<E>(elements)).materializeHasNext();
+      return setState(new DequeueToIteratorMaterializer<E>(elements)).materializeHasNext();
     }
 
     @Override
@@ -82,12 +65,17 @@ public class TakeRightIteratorMaterializer<E> extends AutoSkipIteratorMaterializ
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

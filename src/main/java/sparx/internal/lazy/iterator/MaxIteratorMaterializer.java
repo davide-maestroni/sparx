@@ -19,33 +19,11 @@ import java.util.Comparator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 
-public class MaxIteratorMaterializer<E> implements IteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class MaxIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public MaxIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final Comparator<? super E> comparator) {
-    state = new ImmaterialState(wrapped, comparator);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+    setState(new ImmaterialState(wrapped, comparator));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -75,7 +53,7 @@ public class MaxIteratorMaterializer<E> implements IteratorMaterializer<E> {
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (!wrapped.materializeHasNext()) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return false;
       }
       final Comparator<? super E> comparator = this.comparator;
@@ -86,7 +64,7 @@ public class MaxIteratorMaterializer<E> implements IteratorMaterializer<E> {
           max = next;
         }
       }
-      state = new ElementToIteratorMaterializer<E>(max);
+      setState(new ElementToIteratorMaterializer<E>(max));
       return true;
     }
 
@@ -95,16 +73,21 @@ public class MaxIteratorMaterializer<E> implements IteratorMaterializer<E> {
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return wrapped.materializeHasNext() ? 1 : 0;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

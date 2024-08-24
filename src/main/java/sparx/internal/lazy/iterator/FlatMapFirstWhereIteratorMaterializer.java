@@ -87,10 +87,10 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends
         throw new NoSuchElementException();
       }
       if (hasNext) {
-        ++pos;
         hasNext = false;
         final E next = this.next;
         this.next = null;
+        ++pos;
         return next;
       }
       return getState().materializeNext();

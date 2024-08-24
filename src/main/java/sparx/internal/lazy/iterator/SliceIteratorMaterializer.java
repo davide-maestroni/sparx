@@ -19,37 +19,15 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 
-public class SliceIteratorMaterializer<E> implements IteratorMaterializer<E> {
-
-  private volatile IteratorMaterializer<E> state;
+public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public SliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped, final int start,
       final int end) {
     if (start >= 0 && end >= 0) {
-      state = new MaterialState(wrapped, start, Math.max(0, end - start));
+      setState(new MaterialState(wrapped, start, Math.max(0, end - start)));
     } else {
-      state = new ImmaterialState(wrapped, start, end);
+      setState(new ImmaterialState(wrapped, start, end));
     }
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -93,10 +71,10 @@ public class SliceIteratorMaterializer<E> implements IteratorMaterializer<E> {
         } else {
           materializedLength = 0;
         }
-        return (state = new MaterialState(new DequeueToIteratorMaterializer<E>(elements),
+        return setState(new MaterialState(new DequeueToIteratorMaterializer<E>(elements),
             Math.max(0, materializedStart), materializedLength)).materializeHasNext();
       }
-      state = EmptyIteratorMaterializer.instance();
+      setEmptyState();
       return false;
     }
 
@@ -105,16 +83,21 @@ public class SliceIteratorMaterializer<E> implements IteratorMaterializer<E> {
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
     public int materializeSkip(final int count) {
       if (count > 0) {
         materializeHasNext();
-        return state.materializeSkip(count);
+        return getState().materializeSkip(count);
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 
@@ -147,7 +130,7 @@ public class SliceIteratorMaterializer<E> implements IteratorMaterializer<E> {
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       wrapped.materializeSkip(start);
-      return (state = new TakeIteratorMaterializer<E>(wrapped, length)).materializeHasNext();
+      return setState(new TakeIteratorMaterializer<E>(wrapped, length)).materializeHasNext();
     }
 
     @Override
@@ -155,7 +138,7 @@ public class SliceIteratorMaterializer<E> implements IteratorMaterializer<E> {
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return state.materializeNext();
+      return getState().materializeNext();
     }
 
     @Override
@@ -167,16 +150,21 @@ public class SliceIteratorMaterializer<E> implements IteratorMaterializer<E> {
         if (count < length) {
           final int skipped = wrapped.materializeSkip(count);
           if (skipped == count) {
-            state = new TakeIteratorMaterializer<E>(wrapped, length - count);
+            setState(new TakeIteratorMaterializer<E>(wrapped, length - count));
           } else {
-            state = EmptyIteratorMaterializer.instance();
+            setEmptyState();
           }
           return skipped;
         }
-        state = EmptyIteratorMaterializer.instance();
+        setEmptyState();
         return wrapped.materializeSkip(length);
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }

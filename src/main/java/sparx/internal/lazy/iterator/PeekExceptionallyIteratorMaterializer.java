@@ -66,4 +66,9 @@ public class PeekExceptionallyIteratorMaterializer<E> extends AutoSkipIteratorMa
       throw UncheckedException.throwUnchecked(t);
     }
   }
+
+  @Override
+  public int nextIndex() {
+    return pos;
+  }
 }

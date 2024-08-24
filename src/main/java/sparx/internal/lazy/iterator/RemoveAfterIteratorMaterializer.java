@@ -16,35 +16,13 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
 
-public class RemoveAfterIteratorMaterializer<E> implements IteratorMaterializer<E> {
+public class RemoveAfterIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  private volatile IteratorMaterializer<E> state;
-
-  // numElements: not negative
   public RemoveAfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      final int numElements) {
-    state = new ImmaterialState(wrapped, numElements);
-  }
-
-  @Override
-  public int knownSize() {
-    return state.knownSize();
-  }
-
-  @Override
-  public boolean materializeHasNext() {
-    return state.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    return state.materializeNext();
-  }
-
-  @Override
-  public int materializeSkip(final int count) {
-    return state.materializeSkip(count);
+      @NotNegative final int numElements) {
+    setState(new ImmaterialState(wrapped, numElements));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
@@ -76,7 +54,7 @@ public class RemoveAfterIteratorMaterializer<E> implements IteratorMaterializer<
       if (numElements == pos) {
         final IteratorMaterializer<E> wrapped = this.wrapped;
         if (wrapped.materializeHasNext()) {
-          (state = wrapped).materializeSkip(1);
+          setState(wrapped).materializeSkip(1);
           return wrapped.materializeHasNext();
         }
         return false;
@@ -88,7 +66,7 @@ public class RemoveAfterIteratorMaterializer<E> implements IteratorMaterializer<
     public E materializeNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext() && numElements == pos++) {
-        (state = wrapped).materializeSkip(1);
+        setState(wrapped).materializeSkip(1);
       }
       return wrapped.materializeNext();
     }
@@ -107,11 +85,16 @@ public class RemoveAfterIteratorMaterializer<E> implements IteratorMaterializer<
         pos += skipped;
         if (skipped == remaining) {
           wrapped.materializeSkip(1);
-          return skipped + (state = wrapped).materializeSkip(count - remaining);
+          return skipped + setState(wrapped).materializeSkip(count - remaining);
         }
         return skipped;
       }
       return 0;
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
     }
   }
 }
