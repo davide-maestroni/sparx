@@ -1836,6 +1836,9 @@ class itf {
     @NotNull
     Iterator<E> iterator();
 
+    @NotNull
+    List<E> leftList();
+
     @Override
     @NotNull
     <F> ListIterator<F> map(@NotNull Function<? super E, F> mapper);
@@ -2038,6 +2041,9 @@ class itf {
 
     @NotNull
     ListIterator<E> reverse();
+
+    @NotNull
+    List<E> rightList();
 
     @Override
     @NotNull
