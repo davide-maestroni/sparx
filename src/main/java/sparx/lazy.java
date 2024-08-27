@@ -5662,13 +5662,7 @@ public class lazy extends Sparx {
     public int skip(final int maxElements) {
       if (maxElements > 0) {
         final int currPos = pos;
-        final int newPos;
-        final int knownSize = list.knownSize();
-        if (knownSize >= 0) {
-          newPos = (int) Math.min(knownSize, (long) currPos + maxElements);
-        } else {
-          newPos = (int) Math.min(Integer.MAX_VALUE, (long) currPos + maxElements);
-        }
+        final int newPos = (int) Math.min(list.size(), (long) currPos + maxElements);
         return (pos = newPos) - currPos;
       }
       return 0;
@@ -5871,10 +5865,66 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull ListIterator<E> moveBy(final int maxElements) {
+      final long pos = this.pos;
+      if (maxElements == 0) {
+        return this;
+      }
+      final long newPos = pos + maxElements;
+      if (newPos >= Integer.MAX_VALUE || newPos <= Integer.MIN_VALUE) {
+        throw new IndexOverflowException(newPos);
+      }
+      if ((newPos >= 0 && newPos < pos) || (newPos <= 0 && newPos > pos)) {
+        this.pos = (int) newPos;
+        return this;
+      }
+      if (newPos >= 0) {
+        final int knownSize = right.materializer.knownSize();
+        if (knownSize >= 0) {
+          this.pos = Math.min(knownSize, (int) newPos);
+        } else {
+          this.pos = (int) newPos;
+        }
+      } else {
+        final int knownSize = left.materializer.knownSize();
+        if (knownSize >= 0) {
+          this.pos = Math.max(-knownSize, (int) newPos);
+        } else {
+          this.pos = (int) newPos;
+        }
+      }
+      return this;
+    }
+
+    @Override
+    public @NotNull ListIterator<E> moveTo(final int index) {
+      final int pos = index - left.size();
+      if (pos >= 0) {
+        final int knownSize = right.materializer.knownSize();
+        if (knownSize >= 0) {
+          this.pos = Math.min(knownSize, pos);
+        } else {
+          this.pos = pos;
+        }
+      } else {
+        final int knownSize = left.materializer.knownSize();
+        if (knownSize >= 0) {
+          this.pos = Math.max(-knownSize, pos);
+        } else {
+          this.pos = pos;
+        }
+      }
+      return this;
+    }
+
+    @Override
     public E next() {
       try {
         final int pos = this.pos++;
-        return pos < 0 ? left.get(left.size() + pos) : right.get(pos);
+        if (pos < 0) {
+          return left.get(Math.max(0, left.size() + pos));
+        }
+        return right.get(pos);
       } catch (final IndexOutOfBoundsException ignored) {
         // FIXME: where the exception come from?
         throw new NoSuchElementException();
@@ -5883,7 +5933,12 @@ public class lazy extends Sparx {
 
     @Override
     public int nextIndex() {
-      return IndexOverflowException.safeCast((long) left.size() + pos);
+      final List<E> right = this.right;
+      final int knownSize = right.knownSize();
+      if (knownSize >= 0) {
+        return IndexOverflowException.safeCast((long) left.size() + Math.min(knownSize, pos));
+      }
+      return IndexOverflowException.safeCast((long) left.size() + Math.min(right.size(), pos));
     }
 
     @Override
@@ -5895,7 +5950,10 @@ public class lazy extends Sparx {
     public E previous() {
       try {
         final int pos = --this.pos;
-        return pos < 0 ? left.get(left.size() + pos) : right.get(pos);
+        if (pos < 0) {
+          return left.get(left.size() + pos);
+        }
+        return right.get(Math.min(right.size(), pos));
       } catch (final IndexOutOfBoundsException ignored) {
         // FIXME: where the exception come from?
         throw new NoSuchElementException();
@@ -5916,14 +5974,9 @@ public class lazy extends Sparx {
     @Override
     public int skip(final int maxElements) {
       if (maxElements > 0) {
-        final int currPos = pos;
-        final int newPos;
-        final int knownSize = right.knownSize();
-        if (knownSize >= 0) {
-          newPos = (int) Math.min(knownSize, (long) currPos + maxElements);
-        } else {
-          newPos = (int) Math.min(Integer.MAX_VALUE, (long) currPos + maxElements);
-        }
+        final int size = right.size();
+        final int currPos = Math.max(-left.size(), Math.min(size, pos));
+        final int newPos = (int) Math.min(size, (long) currPos + maxElements);
         return (pos = newPos) - currPos;
       }
       return 0;
@@ -5931,7 +5984,7 @@ public class lazy extends Sparx {
 
     @Override
     public int size() {
-      return SizeOverflowException.safeCast((long) right.size() - pos);
+      return SizeOverflowException.safeCast(Math.max(0, (long) right.size() - pos));
     }
 
     @Override
