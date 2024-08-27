@@ -3030,5 +3030,30 @@ public class LazyIteratorTests {
     }
     assertFalse(itr.hasNext());
     assertThrows(NoSuchElementException.class, itr::next);
+
+    for (int i = 0; i < expected.size(); i++) {
+      itr = actualSupplier.get();
+      itr.skip(i + 1);
+      for (int j = i + 1; j < expected.size(); j++) {
+        assertEquals(expected.get(j), itr.next());
+        assertThrows(UnsupportedOperationException.class, itr::remove);
+      }
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
+
+    for (int i = 0; i < expected.size(); i++) {
+      itr = actualSupplier.get();
+      for (int j = 0; j < i; j++) {
+        assertEquals(expected.get(j), itr.next());
+      }
+      itr.skip(1);
+      for (int j = i + 1; j < expected.size(); j++) {
+        assertEquals(expected.get(j), itr.next());
+        assertThrows(UnsupportedOperationException.class, itr::remove);
+      }
+      assertFalse(itr.hasNext());
+      assertThrows(NoSuchElementException.class, itr::next);
+    }
   }
 }

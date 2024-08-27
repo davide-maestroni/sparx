@@ -15,6 +15,13 @@
  */
 package sparx;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -23,6 +30,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.internal.lazy.iterator.AppendAllIteratorMaterializer;
@@ -71,6 +79,7 @@ import sparx.internal.lazy.iterator.IntArrayToIteratorMaterializer;
 import sparx.internal.lazy.iterator.IntersectIteratorMaterializer;
 import sparx.internal.lazy.iterator.IteratorMaterializer;
 import sparx.internal.lazy.iterator.IteratorToIteratorMaterializer;
+import sparx.internal.lazy.iterator.LinesIteratorMaterializer;
 import sparx.internal.lazy.iterator.ListMaterializerToIteratorMaterializer;
 import sparx.internal.lazy.iterator.ListToIteratorMaterializer;
 import sparx.internal.lazy.iterator.LongArrayToIteratorMaterializer;
@@ -103,6 +112,7 @@ import sparx.internal.lazy.iterator.TakeRightIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeRightWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.UnionIteratorMaterializer;
+import sparx.internal.lazy.iterator.WrappingIteratorMaterializer;
 import sparx.internal.lazy.list.AppendAllListMaterializer;
 import sparx.internal.lazy.list.AppendListMaterializer;
 import sparx.internal.lazy.list.ArrayToListMaterializer;
@@ -183,6 +193,7 @@ import sparx.internal.lazy.list.TakeRightWhileListMaterializer;
 import sparx.internal.lazy.list.TakeWhileListMaterializer;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
@@ -230,8 +241,6 @@ public class lazy extends Sparx {
     Iterator(@NotNull final IteratorMaterializer<E> materializer) {
       this.materializer = materializer;
     }
-
-    // TODO: fix pos => should not reset after operator => nextIndex()???
 
     @SuppressWarnings("unchecked")
     public static @NotNull <E> Iterator<E> of() {
@@ -342,7 +351,20 @@ public class lazy extends Sparx {
           new IntArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
     }
 
-    // TODO: ofLines
+    public static @NotNull Iterator<String> ofLines(@NotNull final File file,
+        @Nullable final Charset charset) throws FileNotFoundException {
+      return ofLines(new FileInputStream(file), charset);
+    }
+
+    private static @NotNull Iterator<String> ofLines(@NotNull final InputStream inputStream,
+        @Nullable final Charset charset) {
+      return ofLines(new BufferedReader(new InputStreamReader(inputStream,
+          charset != null ? charset : Charset.defaultCharset())));
+    }
+
+    private static @NotNull Iterator<String> ofLines(@NotNull final BufferedReader reader) {
+      return new Iterator<String>(new LinesIteratorMaterializer(Require.notNull(reader, "reader")));
+    }
 
     public static @NotNull Iterator<Long> ofLongs(final long... elements) {
       if (elements == null) {
@@ -540,7 +562,7 @@ public class lazy extends Sparx {
       final IteratorMaterializer<Object> elementsMaterializer = getElementsMaterializer(
           Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
-        return this;
+        return iterator();
       }
       return new Iterator<E>(new DiffIteratorMaterializer<E>(materializer, elementsMaterializer));
     }
@@ -554,8 +576,11 @@ public class lazy extends Sparx {
     public @NotNull <K> Iterator<E> distinctBy(@NotNull final Function<? super E, K> keyExtractor) {
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
-      if (knownSize == 0 || knownSize == 1) {
+      if (knownSize == 0) {
         return this;
+      }
+      if (knownSize == 1) {
+        return iterator();
       }
       return new Iterator<E>(new DistinctByIteratorMaterializer<E, K>(materializer,
           toIndexedFunction(Require.notNull(keyExtractor, "keyExtractor"))));
@@ -566,8 +591,11 @@ public class lazy extends Sparx {
         @NotNull final IndexedFunction<? super E, K> keyExtractor) {
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
-      if (knownSize == 0 || knownSize == 1) {
+      if (knownSize == 0) {
         return this;
+      }
+      if (knownSize == 1) {
+        return iterator();
       }
       return new Iterator<E>(new DistinctByIteratorMaterializer<E, K>(materializer,
           Require.notNull(keyExtractor, "keyExtractor")));
@@ -669,8 +697,11 @@ public class lazy extends Sparx {
         return Iterator.of();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
-      if (maxElements <= 0 || materializer.knownSize() == 0) {
+      if (materializer.knownSize() == 0) {
         return this;
+      }
+      if (maxElements <= 0) {
+        return iterator();
       }
       return new Iterator<E>(new DropIteratorMaterializer<E>(materializer, maxElements));
     }
@@ -681,8 +712,11 @@ public class lazy extends Sparx {
         return Iterator.of();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
-      if (maxElements <= 0 || materializer.knownSize() == 0) {
+      if (materializer.knownSize() == 0) {
         return this;
+      }
+      if (maxElements <= 0) {
+        return iterator();
       }
       return new Iterator<E>(new DropRightIteratorMaterializer<E>(materializer, maxElements));
     }
@@ -955,12 +989,15 @@ public class lazy extends Sparx {
     public @NotNull Iterator<E> flatMapAfter(final int numElements,
         @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-        return this;
+        return iterator();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
-      if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
+      if (knownSize == 0) {
         return this;
+      }
+      if (knownSize > 0 && knownSize <= numElements) {
+        return iterator();
       }
       return new Iterator<E>(new FlatMapAfterIteratorMaterializer<E>(materializer, numElements,
           getElementToMaterializer(Require.notNull(mapper, "mapper"))));
@@ -970,12 +1007,15 @@ public class lazy extends Sparx {
     public @NotNull Iterator<E> flatMapAfter(final int numElements,
         @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-        return this;
+        return iterator();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
-      if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
+      if (knownSize == 0) {
         return this;
+      }
+      if (knownSize > 0 && knownSize <= numElements) {
+        return iterator();
       }
       return new Iterator<E>(new FlatMapAfterIteratorMaterializer<E>(materializer, numElements,
           getElementToMaterializer(Require.notNull(mapper, "mapper"))));
@@ -1142,7 +1182,7 @@ public class lazy extends Sparx {
     @Override
     public @NotNull Iterator<E> insertAfter(final int numElements, final E element) {
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-        return this;
+        return iterator();
       }
       if (numElements == 0) {
         return insert(element);
@@ -1154,7 +1194,7 @@ public class lazy extends Sparx {
       }
       if (knownSize > 0) {
         if (knownSize < numElements) {
-          return this;
+          return iterator();
         }
         if (knownSize == numElements) {
           return append(element);
@@ -1174,7 +1214,7 @@ public class lazy extends Sparx {
     public @NotNull Iterator<E> insertAllAfter(final int numElements,
         @NotNull final Iterable<? extends E> elements) {
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-        return this;
+        return iterator();
       }
       if (numElements == 0) {
         return insertAll(elements);
@@ -1186,7 +1226,7 @@ public class lazy extends Sparx {
       }
       if (knownSize > 0) {
         if (knownSize < numElements) {
-          return this;
+          return iterator();
         }
         if (knownSize == numElements) {
           return appendAll(elements);
@@ -1219,7 +1259,7 @@ public class lazy extends Sparx {
     @NotNull
     @Override
     public Iterator<E> iterator() {
-      return this; // TODO: relative???
+      return new Iterator<E>(new WrappingIteratorMaterializer<E>(materializer));
     }
 
     @Override
@@ -1259,12 +1299,15 @@ public class lazy extends Sparx {
     public @NotNull Iterator<E> mapAfter(final int numElements,
         @NotNull final Function<? super E, ? extends E> mapper) {
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-        return this;
+        return iterator();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
-      if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
+      if (knownSize == 0) {
         return this;
+      }
+      if (knownSize > 0 && knownSize <= numElements) {
+        return iterator();
       }
       return new Iterator<E>(new MapAfterIteratorMaterializer<E>(materializer, numElements,
           toIndexedFunction(Require.notNull(mapper, "mapper"))));
@@ -1274,12 +1317,15 @@ public class lazy extends Sparx {
     public @NotNull Iterator<E> mapAfter(final int numElements,
         @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-        return this;
+        return iterator();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
-      if (knownSize == 0 || (knownSize > 0 && knownSize <= numElements)) {
+      if (knownSize == 0) {
         return this;
+      }
+      if (knownSize > 0 && knownSize <= numElements) {
+        return iterator();
       }
       return new Iterator<E>(new MapAfterIteratorMaterializer<E>(materializer, numElements,
           Require.notNull(mapper, "mapper")));
@@ -1438,7 +1484,7 @@ public class lazy extends Sparx {
         return new Iterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
       }
       if (knownSize > 0) {
-        return this;
+        return iterator();
       }
       return new Iterator<E>(new OrElseIteratorMaterializer<E>(materializer,
           getElementsMaterializer(Require.notNull(elements, "elements"))));
@@ -1518,8 +1564,11 @@ public class lazy extends Sparx {
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
-      if (knownSize == 0 || knownSize == 1) {
+      if (knownSize == 0) {
         return this;
+      }
+      if (knownSize == 1) {
+        return iterator();
       }
       return new Iterator<E>(new ReduceLeftIteratorMaterializer<E>(materializer,
           Require.notNull(operation, "operation")));
@@ -1530,8 +1579,11 @@ public class lazy extends Sparx {
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
-      if (knownSize == 0 || knownSize == 1) {
+      if (knownSize == 0) {
         return this;
+      }
+      if (knownSize == 1) {
+        return iterator();
       }
       return new Iterator<E>(new ReduceRightIteratorMaterializer<E>(materializer,
           Require.notNull(operation, "operation")));
@@ -1545,7 +1597,7 @@ public class lazy extends Sparx {
     @Override
     public @NotNull Iterator<E> removeAfter(final int numElements) {
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-        return this;
+        return iterator();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
@@ -1633,7 +1685,7 @@ public class lazy extends Sparx {
     @Override
     public @NotNull Iterator<E> removeSlice(final int start, final int end) {
       if (end >= 0 && start >= end) {
-        return this;
+        return iterator();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
@@ -1654,7 +1706,7 @@ public class lazy extends Sparx {
           knownEnd = Math.min(knownSize, end);
         }
         if (knownStart >= knownEnd) {
-          return this;
+          return iterator();
         }
         final int knownLength = knownEnd - knownStart;
         if (knownLength == 1) {
@@ -1690,7 +1742,7 @@ public class lazy extends Sparx {
     @Override
     public @NotNull Iterator<E> replaceAfter(final int numElements, final E replacement) {
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-        return this;
+        return iterator();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
@@ -1848,7 +1900,7 @@ public class lazy extends Sparx {
           return Iterator.times(numElements, padding);
         }
         if (knownSize == numElements) {
-          return this;
+          return iterator();
         }
         if (knownSize > numElements) {
           return new Iterator<E>(new TakeIteratorMaterializer<E>(materializer, numElements));
@@ -1857,6 +1909,11 @@ public class lazy extends Sparx {
             new RepeatIteratorMaterializer<E>(numElements - knownSize, padding)));
       }
       return new Iterator<E>(new ResizeIteratorMaterializer<E>(materializer, numElements, padding));
+    }
+
+    @Override
+    public int skip(final int maxElements) {
+      return materializer.materializeSkip(maxElements);
     }
 
     @Override
@@ -2031,7 +2088,7 @@ public class lazy extends Sparx {
         return Iterator.of();
       }
       if (maxElements == Integer.MAX_VALUE) {
-        return this;
+        return iterator();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
@@ -2046,7 +2103,7 @@ public class lazy extends Sparx {
         return Iterator.of();
       }
       if (maxElements == Integer.MAX_VALUE) {
-        return this;
+        return iterator();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
@@ -4469,6 +4526,11 @@ public class lazy extends Sparx {
       return new ListIterator<E>(List.from(elements));
     }
 
+    public static @NotNull <E> ListIterator<E> joining(@NotNull final List<? extends E> left,
+        @NotNull final List<? extends E> right) {
+      return new JoiningListIterator<E>(left, right);
+    }
+
     @SuppressWarnings("unchecked")
     public static @NotNull <E> ListIterator<E> of() {
       return (ListIterator<E>) EMPTY_ITERATOR;
@@ -4583,57 +4645,6 @@ public class lazy extends Sparx {
 
     public static @NotNull <E> ListIterator<E> wrap(@NotNull final Iterable<? extends E> elements) {
       return new ListIterator<E>(List.wrap(elements));
-    }
-
-    private static @NotNull <E> IndexedConsumer<E> offsetConsumer(final long offset,
-        @NotNull final IndexedConsumer<E> consumer) {
-      if (offset == 0) {
-        return consumer;
-      }
-      return new IndexedConsumer<E>() {
-        @Override
-        public void accept(int index, E param) throws Exception {
-          consumer.accept(IndexOverflowException.safeCast(offset + index), param);
-        }
-      };
-    }
-
-    private static @NotNull <E, F> IndexedFunction<E, F> offsetFunction(final long offset,
-        @NotNull final IndexedFunction<E, F> function) {
-      if (offset == 0) {
-        return function;
-      }
-      return new IndexedFunction<E, F>() {
-        @Override
-        public F apply(final int index, final E param) throws Exception {
-          return function.apply(IndexOverflowException.safeCast(offset + index), param);
-        }
-      };
-    }
-
-    private static @NotNull <E> IndexedPredicate<E> offsetPredicate(final long offset,
-        @NotNull final IndexedPredicate<E> predicate) {
-      if (offset == 0) {
-        return predicate;
-      }
-      return new IndexedPredicate<E>() {
-        @Override
-        public boolean test(final int index, final E param) throws Exception {
-          return predicate.test(IndexOverflowException.safeCast(offset + index), param);
-        }
-      };
-    }
-
-    private static @NotNull Function<Integer, Integer> offsetMapper(final long offset) {
-      if (offset == 0) {
-        return INDEX_IDENTITY;
-      }
-      return new Function<Integer, Integer>() {
-        @Override
-        public Integer apply(final Integer param) {
-          return IndexOverflowException.safeCast(offset + param);
-        }
-      };
     }
 
     @Override
@@ -5293,9 +5304,9 @@ public class lazy extends Sparx {
       if (maxElements != 0) {
         final int knownSize = list.knownSize();
         if (knownSize >= 0) {
-          pos = Math.min(knownSize, Math.max(0, pos + maxElements));
+          pos = (int) Math.min(knownSize, Math.max(0, (long) pos + maxElements));
         } else {
-          pos = Math.max(0, pos + maxElements);
+          pos = (int) Math.min(Integer.MAX_VALUE, Math.max(0, (long) pos + maxElements));
         }
       }
       return this;
@@ -5648,6 +5659,22 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public int skip(final int maxElements) {
+      if (maxElements > 0) {
+        final int currPos = pos;
+        final int newPos;
+        final int knownSize = list.knownSize();
+        if (knownSize >= 0) {
+          newPos = (int) Math.min(knownSize, (long) currPos + maxElements);
+        } else {
+          newPos = (int) Math.min(Integer.MAX_VALUE, (long) currPos + maxElements);
+        }
+        return (pos = newPos) - currPos;
+      }
+      return 0;
+    }
+
+    @Override
     public @NotNull ListIterator<E> reverse() {
       if (atEnd()) {
         return ListIterator.of();
@@ -5769,8 +5796,148 @@ public class lazy extends Sparx {
       return new ListIterator<E>(rightList().union(elements));
     }
 
-    private boolean atEnd() {
-      return pos >= list.materializer.knownSize();
+    protected boolean atEnd() {
+      final int knownSize = list.knownSize();
+      return knownSize >= 0 && pos >= knownSize;
+    }
+  }
+
+  private static class JoiningListIterator<E> extends ListIterator<E> {
+
+    private final List<E> left;
+    private final List<E> right;
+
+    private int pos;
+
+    @SuppressWarnings("unchecked")
+    JoiningListIterator(@NotNull final List<? extends E> left,
+        @NotNull final List<? extends E> right) {
+      super((List<E>) right);
+      this.left = (List<E>) left;
+      this.right = (List<E>) right;
+    }
+
+    @Override
+    public E first() {
+      final int pos = this.pos;
+      if (pos >= 0) {
+        return right.get(pos);
+      }
+      final List<? extends E> left = this.left;
+      return left.get(left.size() + pos);
+    }
+
+    @Override
+    public boolean hasNext() {
+      final int pos = this.pos;
+      if (pos >= 0) {
+        return right.materializer.canMaterializeElement(pos);
+      }
+      return true;
+    }
+
+    @Override
+    public boolean hasPrevious() {
+      final int pos = this.pos;
+      if (pos == 0) {
+        return !left.isEmpty();
+      }
+      if (pos < 0) {
+        return left.size() + pos >= 0;
+      }
+      return true;
+    }
+
+    @Override
+    public @NotNull List<E> leftList() {
+      final int pos = this.pos;
+      if (pos == 0) {
+        return left;
+      } else if (pos > 0) {
+        return left.appendAll(right.take(pos));
+      }
+      return left.dropRight(-pos);
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return left.isEmpty() && right.isEmpty();
+    }
+
+    @Override
+    public E last() {
+      final List<E> right = this.right;
+      return right.isEmpty() ? left.last() : right.last();
+    }
+
+    @Override
+    public E next() {
+      try {
+        final int pos = this.pos++;
+        return pos < 0 ? left.get(left.size() + pos) : right.get(pos);
+      } catch (final IndexOutOfBoundsException ignored) {
+        // FIXME: where the exception come from?
+        throw new NoSuchElementException();
+      }
+    }
+
+    @Override
+    public int nextIndex() {
+      return IndexOverflowException.safeCast((long) left.size() + pos);
+    }
+
+    @Override
+    public boolean notEmpty() {
+      return !left.isEmpty() || !right.isEmpty();
+    }
+
+    @Override
+    public E previous() {
+      try {
+        final int pos = --this.pos;
+        return pos < 0 ? left.get(left.size() + pos) : right.get(pos);
+      } catch (final IndexOutOfBoundsException ignored) {
+        // FIXME: where the exception come from?
+        throw new NoSuchElementException();
+      }
+    }
+
+    @Override
+    public @NotNull List<E> rightList() {
+      final int pos = this.pos;
+      if (pos == 0) {
+        return right;
+      } else if (pos > 0) {
+        return right.drop(pos);
+      }
+      return left.takeRight(-pos).appendAll(right);
+    }
+
+    @Override
+    public int skip(final int maxElements) {
+      if (maxElements > 0) {
+        final int currPos = pos;
+        final int newPos;
+        final int knownSize = right.knownSize();
+        if (knownSize >= 0) {
+          newPos = (int) Math.min(knownSize, (long) currPos + maxElements);
+        } else {
+          newPos = (int) Math.min(Integer.MAX_VALUE, (long) currPos + maxElements);
+        }
+        return (pos = newPos) - currPos;
+      }
+      return 0;
+    }
+
+    @Override
+    public int size() {
+      return SizeOverflowException.safeCast((long) right.size() - pos);
+    }
+
+    @Override
+    protected boolean atEnd() {
+      final int knownSize = right.knownSize();
+      return knownSize >= 0 && pos >= knownSize;
     }
   }
 }

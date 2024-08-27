@@ -3411,6 +3411,8 @@ class itf {
     @NotNull
     Stream<E> resizeTo(@NotNegative int numElements, E padding);
 
+    int skip(int maxElements);
+
     @Override
     @NotNull
     Stream<E> slice(int start);

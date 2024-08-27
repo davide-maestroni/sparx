@@ -115,6 +115,7 @@ import sparx.internal.future.list.TakeRightListAsyncMaterializer;
 import sparx.internal.future.list.TakeRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.TakeWhileListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
+import sparx.itf.List;
 import sparx.util.DeadLockException;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
@@ -5668,7 +5669,7 @@ class future extends Sparx {
     @Override
     public lazy.ListIterator<E> get() throws InterruptedException, ExecutionException {
       final int pos = safePos();
-      return new lazy.ListIterator<E>(left.get(), right.get(), pos);
+      return new lazy.ListIterator<E>(right.get(), pos);
     }
 
     @Override
@@ -5683,7 +5684,7 @@ class future extends Sparx {
         throw new TimeoutException();
       }
       final lazy.List<E> rightList = right.get(timeoutMillis, TimeUnit.MILLISECONDS);
-      return new lazy.ListIterator<E>(leftList, rightList, pos);
+      return new lazy.ListIterator<E>(rightList, pos);
     }
 
     @Override
@@ -5879,6 +5880,12 @@ class future extends Sparx {
         return lazy.Iterator.of();
       }
       return currentRight(pos).iterator();
+    }
+
+    @Override
+    public @NotNull List<E> leftList() {
+      // TODO
+      return null;
     }
 
     @Override
@@ -6683,6 +6690,12 @@ class future extends Sparx {
     }
 
     @Override
+    public int skip(final int maxElements) {
+      // TODO
+      return 0;
+    }
+
+    @Override
     public @NotNull ListIterator<E> reverse() {
       final int pos = safePos();
       if (atEnd(pos)) {
@@ -6691,6 +6704,12 @@ class future extends Sparx {
             List.<E>emptyList(context));
       }
       return new ListIterator<E>(context, currentRight(pos).reverse(), currentLeft(pos).reverse());
+    }
+
+    @Override
+    public @NotNull List<E> rightList() {
+      // TODO
+      return null;
     }
 
     @Override
