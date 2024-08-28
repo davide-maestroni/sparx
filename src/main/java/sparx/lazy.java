@@ -4708,8 +4708,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ZERO_ITERATOR;
       }
-      return new ListIterator<Integer>(
-          nextList().countWhere(Require.notNull(predicate, "predicate")));
+      return new ListIterator<Integer>(nextList().countWhere(predicate));
     }
 
     @Override

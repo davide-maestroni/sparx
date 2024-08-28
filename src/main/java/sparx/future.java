@@ -4736,22 +4736,19 @@ class future extends Sparx {
     };
 
     private final ExecutionContext context;
-    private final List<E> left;
-    private final List<E> right;
+    private final List<E> list;
     private final Object posMutex = new Object();
 
     private int pos;
 
-    ListIterator(@NotNull final ExecutionContext context, @NotNull final List<E> left,
-        @NotNull final List<E> right) {
+    ListIterator(@NotNull final ExecutionContext context, @NotNull final List<E> list) {
       this.context = context;
-      this.left = left;
-      this.right = right;
+      this.list = list;
     }
 
-    ListIterator(@NotNull final ExecutionContext context, @NotNull final List<E> left,
-        @NotNull final List<E> right, final int pos) {
-      this(context, left, right);
+    ListIterator(@NotNull final ExecutionContext context, @NotNull final List<E> list,
+        final int pos) {
+      this(context, list);
       this.pos = pos;
     }
 
@@ -4818,12 +4815,12 @@ class future extends Sparx {
 
     @Override
     public @NotNull ListIterator<E> append(final E element) {
-      return new ListIterator<E>(context, left, right.append(element), safePos());
+      return new ListIterator<E>(context, nextList().append(element));
     }
 
     @Override
     public @NotNull ListIterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
-      return new ListIterator<E>(context, left, right.appendAll(elements), safePos());
+      return new ListIterator<E>(context, nextList().appendAll(elements));
     }
 
     @Override
@@ -4843,9 +4840,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return zeroIterator();
       }
-      final ExecutionContext context = this.context;
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          currentRight(pos).count());
+      return new ListIterator<Integer>(context, nextList(pos).count());
     }
 
     @Override
@@ -4855,17 +4850,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return zeroIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final ExecutionContext context = this.context;
-      final List<E> right = currentRight(pos);
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Integer>>() {
-            @Override
-            public Iterable<Integer> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.countWhere(offsetPredicate(offset, predicate));
-            }
-          }));
+      return new ListIterator<Integer>(context, nextList(pos).countWhere(predicate));
     }
 
     @Override
@@ -4875,74 +4860,36 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return zeroIterator();
       }
-      final ExecutionContext context = this.context;
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          currentRight(pos).countWhere(predicate));
+      return new ListIterator<Integer>(context, nextList(pos).countWhere(predicate));
     }
 
     @Override
     public @NotNull ListIterator<E> diff(@NotNull final Iterable<?> elements) {
-      final ExecutionContext context = this.context;
-      final List<?> elementsList = new List<Object>(context,
-          new AtomicReference<CancellationException>(),
-          List.getElementsMaterializer(context, Require.notNull(elements, "elements")));
-      final int pos = safePos();
-      final List<E> left = currentLeft(pos);
-      return new ListIterator<E>(context, left.diff(elementsList),
-          currentRight(pos).diff(elementsList.diff(left)));
+      return new ListIterator<E>(context, nextList().diff(elements));
     }
 
     @Override
     public @NotNull ListIterator<E> distinct() {
-      final int pos = safePos();
-      final List<E> left = currentLeft(pos).distinct();
-      return new ListIterator<E>(context, left, currentRight(pos).removeWhere(new Predicate<E>() {
-        @Override
-        public boolean test(final E element) {
-          return left.contains(element);
-        }
-      }));
+      return new ListIterator<E>(context, nextList().distinct());
     }
 
     @Override
     public @NotNull <K> ListIterator<E> distinctBy(
         @NotNull final Function<? super E, K> keyExtractor) {
-      final int pos = safePos();
-      final List<E> left = currentLeft(pos).distinctBy(keyExtractor);
-      return new ListIterator<E>(context, left, currentRight(pos).removeWhere(new Predicate<E>() {
-        @Override
-        public boolean test(final E element) throws Exception {
-          return left.map(keyExtractor).contains(keyExtractor.apply(element));
-        }
-      }));
+      return new ListIterator<E>(context, nextList().distinctBy(keyExtractor));
     }
 
     @Override
     public @NotNull <K> ListIterator<E> distinctBy(
         @NotNull final IndexedFunction<? super E, K> keyExtractor) {
-      final int pos = safePos();
-      final List<E> left = currentLeft(pos).distinctBy(keyExtractor);
-      final List<E> right = currentRight(pos);
-      return new ListIterator<E>(context, left,
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<E>>() {
-            @Override
-            public Iterable<E> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.removeWhere(offsetPredicate(offset, new IndexedPredicate<E>() {
-                @Override
-                public boolean test(final int index, final E element) throws Exception {
-                  return left.map(keyExtractor).contains(keyExtractor.apply(index, element));
-                }
-              }));
-            }
-          }));
+      return new ListIterator<E>(context, nextList().distinctBy(keyExtractor));
     }
 
     @Override
     public void doFor(@NotNull final Consumer<? super E> consumer) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        currentRight(pos).doFor(consumer);
+        nextList(pos).doFor(consumer);
       }
     }
 
@@ -4950,15 +4897,7 @@ class future extends Sparx {
     public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        Require.notNull(consumer, "consumer");
-        final List<E> right = currentRight(pos);
-        left.count().doFor(new IndexedConsumer<Integer>() {
-          @Override
-          public void accept(final int index, final Integer size) {
-            final int offset = IndexOverflowException.safeCast((long) size + pos);
-            right.doFor(offsetConsumer(offset, consumer));
-          }
-        });
+        nextList(pos).doFor(consumer);
       }
     }
 
@@ -4966,15 +4905,7 @@ class future extends Sparx {
     public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        Require.notNull(predicate, "predicate");
-        final List<E> right = currentRight(pos);
-        left.count().doFor(new IndexedConsumer<Integer>() {
-          @Override
-          public void accept(final int index, final Integer size) {
-            final int offset = IndexOverflowException.safeCast((long) size + pos);
-            right.doWhile(offsetPredicate(offset, predicate));
-          }
-        });
+        nextList(pos).doWhile(predicate);
       }
     }
 
@@ -4983,16 +4914,7 @@ class future extends Sparx {
         @NotNull final IndexedConsumer<? super E> consumer) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        Require.notNull(condition, "condition");
-        Require.notNull(consumer, "consumer");
-        final List<E> right = currentRight(pos);
-        left.count().doFor(new IndexedConsumer<Integer>() {
-          @Override
-          public void accept(final int index, final Integer size) {
-            final int offset = IndexOverflowException.safeCast((long) size + pos);
-            right.doWhile(offsetPredicate(offset, condition), offsetConsumer(offset, consumer));
-          }
-        });
+        nextList(pos).doWhile(condition, consumer);
       }
     }
 
@@ -5017,24 +4939,18 @@ class future extends Sparx {
     public @NotNull ListIterator<E> drop(final int maxElements) {
       final int pos = safePos();
       if (maxElements <= 0 || atEnd(pos)) {
-        return copyIterator(pos);
+        return emptyIterator();
       }
-      return new ListIterator<E>(context, currentLeft(pos), currentRight(pos).drop(maxElements));
+      return new ListIterator<E>(context, nextList(pos).drop(maxElements));
     }
 
     @Override
     public @NotNull ListIterator<E> dropRight(final int maxElements) {
       final int pos = safePos();
       if (maxElements <= 0 || atEnd(pos)) {
-        return copyIterator(pos);
+        return emptyIterator();
       }
-      final List<E> right = this.right;
-      final int knownSize = right.materializer.knownSize();
-      if (knownSize >= 0 && knownSize - Math.max(0, pos) >= maxElements) {
-        new ListIterator<E>(context, left, right.dropRight(maxElements), pos);
-      }
-      return new ListIterator<E>(context, currentLeft(pos),
-          currentRight(pos).dropRight(maxElements));
+      return new ListIterator<E>(context, nextList(pos).dropRight(maxElements));
     }
 
     @Override
@@ -5042,28 +4958,18 @@ class future extends Sparx {
         @NotNull final IndexedPredicate<? super E> predicate) {
       final int pos = safePos();
       if (atEnd(pos)) {
-        return copyIterator(pos);
+        return emptyIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      return new ListIterator<E>(context, currentLeft(pos),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<E>>() {
-            @Override
-            public Iterable<E> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.dropRightWhile(offsetPredicate(offset, predicate));
-            }
-          }));
+      return new ListIterator<E>(context, nextList(pos).dropRightWhile(predicate));
     }
 
     @Override
     public @NotNull ListIterator<E> dropRightWhile(@NotNull final Predicate<? super E> predicate) {
       final int pos = safePos();
       if (atEnd(pos)) {
-        return copyIterator(pos);
+        return emptyIterator();
       }
-      return new ListIterator<E>(context, currentLeft(pos),
-          currentRight(pos).dropRightWhile(predicate));
+      return new ListIterator<E>(context, nextList(pos).dropRightWhile(predicate));
     }
 
     @Override
@@ -5071,27 +4977,18 @@ class future extends Sparx {
         @NotNull final IndexedPredicate<? super E> predicate) {
       final int pos = safePos();
       if (atEnd(pos)) {
-        return copyIterator(pos);
+        return emptyIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      return new ListIterator<E>(context, currentLeft(pos),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<E>>() {
-            @Override
-            public Iterable<E> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.dropWhile(offsetPredicate(offset, predicate));
-            }
-          }));
+      return new ListIterator<E>(context, nextList(pos).dropWhile(predicate));
     }
 
     @Override
     public @NotNull ListIterator<E> dropWhile(@NotNull final Predicate<? super E> predicate) {
       final int pos = safePos();
       if (atEnd(pos)) {
-        return copyIterator(pos);
+        return emptyIterator();
       }
-      return new ListIterator<E>(context, currentLeft(pos), currentRight(pos).dropWhile(predicate));
+      return new ListIterator<E>(context, nextList(pos).dropWhile(predicate));
     }
 
     @Override
@@ -5101,17 +4998,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return falseIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Boolean>>() {
-            @Override
-            public Iterable<Boolean> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.each(offsetPredicate(offset, predicate));
-            }
-          }));
+      return new ListIterator<Boolean>(context, nextList(pos).each(predicate));
     }
 
     @Override
@@ -5121,15 +5008,12 @@ class future extends Sparx {
         return falseIterator();
       }
       final ExecutionContext context = this.context;
-      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
-          currentRight(pos).each(predicate));
+      return new ListIterator<Boolean>(context, nextList(pos).each(predicate));
     }
 
     @Override
     public @NotNull ListIterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
-      final ExecutionContext context = this.context;
-      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
-          currentRight(safePos()).endsWith(elements));
+      return new ListIterator<Boolean>(context, nextList().endsWith(elements));
     }
 
     @Override
@@ -5139,17 +5023,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return falseIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Boolean>>() {
-            @Override
-            public Iterable<Boolean> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.exists(offsetPredicate(offset, predicate));
-            }
-          }));
+      return new ListIterator<Boolean>(context, nextList(pos).exists(predicate));
     }
 
     @Override
@@ -5158,36 +5032,25 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return falseIterator();
       }
-      final ExecutionContext context = this.context;
-      return new ListIterator<Boolean>(context, List.<Boolean>emptyList(context),
-          currentRight(pos).exists(predicate));
+      return new ListIterator<Boolean>(context, nextList(pos).exists(predicate));
     }
 
     @Override
     public @NotNull ListIterator<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
       final int pos = safePos();
       if (atEnd(pos)) {
-        return copyIterator(pos);
+        return emptyIterator();
       }
-      final List<E> right = currentRight(pos);
-      return new ListIterator<E>(context, currentLeft(pos).filter(predicate),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<E>>() {
-            @Override
-            public Iterable<E> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.filter(offsetPredicate(offset, predicate));
-            }
-          }));
+      return new ListIterator<E>(context, nextList(pos).filter(predicate));
     }
 
     @Override
     public @NotNull ListIterator<E> filter(@NotNull final Predicate<? super E> predicate) {
       final int pos = safePos();
       if (atEnd(pos)) {
-        return copyIterator(pos);
+        return emptyIterator();
       }
-      return new ListIterator<E>(context, currentLeft(pos).filter(predicate),
-          currentRight(pos).filter(predicate));
+      return new ListIterator<E>(context, nextList(pos).filter(predicate));
     }
 
     @Override
@@ -5196,17 +5059,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<E>(context, List.<E>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<E>>() {
-            @Override
-            public Iterable<E> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findAny(offsetPredicate(offset, predicate));
-            }
-          }));
+      return new ListIterator<E>(context, nextList(pos).findAny(predicate));
     }
 
     @Override
@@ -5215,9 +5068,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      final ExecutionContext context = this.context;
-      return new ListIterator<E>(context, List.<E>emptyList(context),
-          currentRight(pos).findAny(predicate));
+      return new ListIterator<E>(context, nextList(pos).findAny(predicate));
     }
 
     @Override
@@ -5227,17 +5078,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<E>(context, List.<E>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<E>>() {
-            @Override
-            public Iterable<E> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findFirst(offsetPredicate(offset, predicate));
-            }
-          }));
+      return new ListIterator<E>(context, nextList(pos).findFirst(predicate));
     }
 
     @Override
@@ -5246,9 +5087,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      final ExecutionContext context = this.context;
-      return new ListIterator<E>(context, List.<E>emptyList(context),
-          currentRight(pos).findFirst(predicate));
+      return new ListIterator<E>(context, nextList(pos).findFirst(predicate));
     }
 
     @Override
@@ -5257,31 +5096,12 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Integer>>() {
-            @Override
-            public Iterable<Integer> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findIndexOf(element).map(offsetMapper(offset));
-            }
-          }));
+      return new ListIterator<Integer>(context, nextList(pos).findIndexOf(element));
     }
 
     @Override
     public @NotNull ListIterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
-      Require.notNull(elements, "elements");
-      final List<E> right = currentRight(safePos());
-      final ExecutionContext context = this.context;
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Integer>>() {
-            @Override
-            public Iterable<Integer> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findIndexOfSlice(elements).map(offsetMapper(offset));
-            }
-          }));
+      return new ListIterator<Integer>(context, nextList().findIndexOfSlice(elements));
     }
 
     @Override
@@ -5291,18 +5111,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Integer>>() {
-            @Override
-            public Iterable<Integer> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findIndexWhere(offsetPredicate(offset, predicate))
-                  .map(offsetMapper(offset));
-            }
-          }));
+      return new ListIterator<Integer>(context, nextList(pos).findIndexWhere(predicate));
     }
 
     @Override
@@ -5312,17 +5121,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Integer>>() {
-            @Override
-            public Iterable<Integer> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findIndexWhere(predicate).map(offsetMapper(offset));
-            }
-          }));
+      return new ListIterator<Integer>(context, nextList(pos).findIndexWhere(predicate));
     }
 
     @Override
@@ -5331,17 +5130,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<E>(context, List.<E>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<E>>() {
-            @Override
-            public Iterable<E> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findLast(offsetPredicate(offset, predicate));
-            }
-          }));
+      return new ListIterator<E>(context, nextList(pos).findLast(predicate));
     }
 
     @Override
@@ -5350,9 +5139,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      final ExecutionContext context = this.context;
-      return new ListIterator<E>(context, List.<E>emptyList(context),
-          currentRight(pos).findLast(predicate));
+      return new ListIterator<E>(context, nextList(pos).findLast(predicate));
     }
 
     @Override
@@ -5361,31 +5148,13 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Integer>>() {
-            @Override
-            public Iterable<Integer> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findLastIndexOf(element).map(offsetMapper(offset));
-            }
-          }));
+      return new ListIterator<Integer>(context, nextList(pos).findLastIndexOf(element));
     }
 
     @Override
     public @NotNull ListIterator<Integer> findLastIndexOfSlice(
         @NotNull final Iterable<?> elements) {
-      final List<E> right = currentRight(safePos());
-      final ExecutionContext context = this.context;
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Integer>>() {
-            @Override
-            public Iterable<Integer> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findLastIndexOfSlice(elements).map(offsetMapper(offset));
-            }
-          }));
+      return new ListIterator<Integer>(context, nextList().findLastIndexOfSlice(elements));
     }
 
     @Override
@@ -5395,18 +5164,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Integer>>() {
-            @Override
-            public Iterable<Integer> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findLastIndexWhere(offsetPredicate(offset, predicate))
-                  .map(offsetMapper(offset));
-            }
-          }));
+      return new ListIterator<Integer>(context, nextList(pos).findLastIndexWhere(predicate));
     }
 
     @Override
@@ -5416,17 +5174,7 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return emptyIterator();
       }
-      Require.notNull(predicate, "predicate");
-      final List<E> right = currentRight(pos);
-      final ExecutionContext context = this.context;
-      return new ListIterator<Integer>(context, List.<Integer>emptyList(context),
-          left.count().flatMap(new IndexedFunction<Integer, Iterable<Integer>>() {
-            @Override
-            public Iterable<Integer> apply(final int index, final Integer size) {
-              final int offset = IndexOverflowException.safeCast((long) size + pos);
-              return right.findLastIndexWhere(predicate).map(offsetMapper(offset));
-            }
-          }));
+      return new ListIterator<Integer>(context, nextList(pos).findLastIndexWhere(predicate));
     }
 
     @Override
@@ -6167,8 +5915,7 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> nextList() {
-      // TODO
-      return null;
+      return nextList(safePos());
     }
 
     @Override
@@ -6936,37 +6683,36 @@ class future extends Sparx {
     }
 
     private @NotNull ListIterator<E> copyIterator(final int pos) {
-      return new ListIterator<E>(context, left, right, pos);
+      return new ListIterator<E>(context, list, pos);
     }
 
     private @NotNull <T> ListIterator<T> elementIterator(final T element) {
       final ExecutionContext context = this.context;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
-      return new ListIterator<T>(context,
-          new List<T>(context, cancelException, EmptyListAsyncMaterializer.<T>instance()),
-          new List<T>(context, cancelException,
-              new ElementToListAsyncMaterializer<T>(lazy.List.of(element))));
+      return new ListIterator<T>(context, new List<T>(context, cancelException,
+          new ElementToListAsyncMaterializer<T>(lazy.List.of(element))));
     }
 
     private @NotNull <T> ListIterator<T> emptyIterator() {
       final ExecutionContext context = this.context;
-      final List<T> list = List.emptyList(context);
-      return new ListIterator<T>(context, list, list);
+      return new ListIterator<T>(context, List.<T>emptyList(context));
     }
 
     private @NotNull ListIterator<Boolean> falseIterator() {
       final ExecutionContext context = this.context;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
-      return new ListIterator<Boolean>(context, new List<Boolean>(context, cancelException,
-          EmptyListAsyncMaterializer.<Boolean>instance()),
+      return new ListIterator<Boolean>(context,
           new List<Boolean>(context, cancelException, List.FALSE_MATERIALIZER));
+    }
+
+    private @NotNull List<E> nextList(final int pos) {
+      return list.drop(pos);
     }
 
     private @NotNull ListIterator<Boolean> trueIterator() {
       final ExecutionContext context = this.context;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
-      return new ListIterator<Boolean>(context, new List<Boolean>(context, cancelException,
-          EmptyListAsyncMaterializer.<Boolean>instance()),
+      return new ListIterator<Boolean>(context,
           new List<Boolean>(context, cancelException, List.TRUE_MATERIALIZER));
     }
 
