@@ -4659,12 +4659,12 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull ListIterator<E> append(final E element) {
-      return new ListIterator<E>(rightList().append(element));
+      return new ListIterator<E>(nextList().append(element));
     }
 
     @Override
     public @NotNull ListIterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
-      return new ListIterator<E>(rightList().appendAll(elements));
+      return new ListIterator<E>(nextList().appendAll(elements));
     }
 
     @Override
@@ -4678,7 +4678,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ZERO_ITERATOR;
       }
-      return new ListIterator<Integer>(rightList().count());
+      return new ListIterator<Integer>(nextList().count());
     }
 
     @Override
@@ -4688,7 +4688,7 @@ public class lazy extends Sparx {
         return ZERO_ITERATOR;
       }
       return new ListIterator<Integer>(
-          rightList().countWhere(Require.notNull(predicate, "predicate")));
+          nextList().countWhere(Require.notNull(predicate, "predicate")));
     }
 
     @Override
@@ -4697,49 +4697,49 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ZERO_ITERATOR;
       }
-      return new ListIterator<Integer>(rightList().countWhere(predicate));
+      return new ListIterator<Integer>(nextList().countWhere(predicate));
     }
 
     @Override
     public @NotNull ListIterator<E> diff(@NotNull final Iterable<?> elements) {
-      return new ListIterator<E>(rightList().diff(elements));
+      return new ListIterator<E>(nextList().diff(elements));
     }
 
     @Override
     public @NotNull ListIterator<E> distinct() {
-      return new ListIterator<E>(rightList().distinct());
+      return new ListIterator<E>(nextList().distinct());
     }
 
     @Override
     public @NotNull <K> ListIterator<E> distinctBy(
         @NotNull final Function<? super E, K> keyExtractor) {
-      return new ListIterator<E>(rightList().distinctBy(keyExtractor));
+      return new ListIterator<E>(nextList().distinctBy(keyExtractor));
     }
 
     @Override
     public @NotNull <K> ListIterator<E> distinctBy(
         @NotNull final IndexedFunction<? super E, K> keyExtractor) {
-      return new ListIterator<E>(rightList().distinctBy(keyExtractor));
+      return new ListIterator<E>(nextList().distinctBy(keyExtractor));
     }
 
     @Override
     public void doFor(@NotNull final Consumer<? super E> consumer) {
       if (!atEnd()) {
-        rightList().doFor(consumer);
+        nextList().doFor(consumer);
       }
     }
 
     @Override
     public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
       if (!atEnd()) {
-        rightList().doFor(consumer);
+        nextList().doFor(consumer);
       }
     }
 
     @Override
     public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
       if (!atEnd()) {
-        rightList().doWhile(predicate);
+        nextList().doWhile(predicate);
       }
     }
 
@@ -4747,14 +4747,14 @@ public class lazy extends Sparx {
     public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
         @NotNull final IndexedConsumer<? super E> consumer) {
       if (!atEnd()) {
-        rightList().doWhile(condition, consumer);
+        nextList().doWhile(condition, consumer);
       }
     }
 
     @Override
     public void doWhile(@NotNull final Predicate<? super E> predicate) {
       if (!atEnd()) {
-        rightList().doWhile(predicate);
+        nextList().doWhile(predicate);
       }
     }
 
@@ -4762,7 +4762,7 @@ public class lazy extends Sparx {
     public void doWhile(@NotNull final Predicate<? super E> condition,
         @NotNull final Consumer<? super E> consumer) {
       if (!atEnd()) {
-        rightList().doWhile(condition, consumer);
+        nextList().doWhile(condition, consumer);
       }
     }
 
@@ -4771,7 +4771,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().drop(maxElements));
+      return new ListIterator<E>(nextList().drop(maxElements));
     }
 
     @Override
@@ -4779,7 +4779,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().dropRight(maxElements));
+      return new ListIterator<E>(nextList().dropRight(maxElements));
     }
 
     @Override
@@ -4788,7 +4788,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().dropRightWhile(predicate));
+      return new ListIterator<E>(nextList().dropRightWhile(predicate));
     }
 
     @Override
@@ -4796,7 +4796,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().dropRightWhile(predicate));
+      return new ListIterator<E>(nextList().dropRightWhile(predicate));
     }
 
     @Override
@@ -4805,7 +4805,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().dropWhile(predicate));
+      return new ListIterator<E>(nextList().dropWhile(predicate));
     }
 
     @Override
@@ -4813,7 +4813,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().dropWhile(predicate));
+      return new ListIterator<E>(nextList().dropWhile(predicate));
     }
 
     @Override
@@ -4822,7 +4822,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return FALSE_ITERATOR;
       }
-      return new ListIterator<Boolean>(rightList().each(predicate));
+      return new ListIterator<Boolean>(nextList().each(predicate));
     }
 
     @Override
@@ -4830,12 +4830,12 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return FALSE_ITERATOR;
       }
-      return new ListIterator<Boolean>(rightList().each(predicate));
+      return new ListIterator<Boolean>(nextList().each(predicate));
     }
 
     @Override
     public @NotNull ListIterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
-      return new ListIterator<Boolean>(rightList().endsWith(elements));
+      return new ListIterator<Boolean>(nextList().endsWith(elements));
     }
 
     @Override
@@ -4844,7 +4844,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return FALSE_ITERATOR;
       }
-      return new ListIterator<Boolean>(rightList().exists(predicate));
+      return new ListIterator<Boolean>(nextList().exists(predicate));
     }
 
     @Override
@@ -4852,7 +4852,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return FALSE_ITERATOR;
       }
-      return new ListIterator<Boolean>(rightList().exists(predicate));
+      return new ListIterator<Boolean>(nextList().exists(predicate));
     }
 
     @Override
@@ -4860,7 +4860,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().filter(predicate));
+      return new ListIterator<E>(nextList().filter(predicate));
     }
 
     @Override
@@ -4868,7 +4868,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().filter(predicate));
+      return new ListIterator<E>(nextList().filter(predicate));
     }
 
     @Override
@@ -4876,7 +4876,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().findAny(predicate));
+      return new ListIterator<E>(nextList().findAny(predicate));
     }
 
     @Override
@@ -4884,7 +4884,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().findAny(predicate));
+      return new ListIterator<E>(nextList().findAny(predicate));
     }
 
     @Override
@@ -4893,7 +4893,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().findFirst(predicate));
+      return new ListIterator<E>(nextList().findFirst(predicate));
     }
 
     @Override
@@ -4901,7 +4901,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().findFirst(predicate));
+      return new ListIterator<E>(nextList().findFirst(predicate));
     }
 
     @Override
@@ -4909,12 +4909,12 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<Integer>(rightList().findIndexOf(element));
+      return new ListIterator<Integer>(nextList().findIndexOf(element));
     }
 
     @Override
     public @NotNull ListIterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
-      return new ListIterator<Integer>(rightList().findIndexOfSlice(elements));
+      return new ListIterator<Integer>(nextList().findIndexOfSlice(elements));
     }
 
     @Override
@@ -4923,7 +4923,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<Integer>(rightList().findIndexWhere(predicate));
+      return new ListIterator<Integer>(nextList().findIndexWhere(predicate));
     }
 
     @Override
@@ -4932,7 +4932,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<Integer>(rightList().findIndexWhere(predicate));
+      return new ListIterator<Integer>(nextList().findIndexWhere(predicate));
     }
 
     @Override
@@ -4940,7 +4940,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().findLast(predicate));
+      return new ListIterator<E>(nextList().findLast(predicate));
     }
 
     @Override
@@ -4948,7 +4948,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().findLast(predicate));
+      return new ListIterator<E>(nextList().findLast(predicate));
     }
 
     @Override
@@ -4956,13 +4956,13 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<Integer>(rightList().findLastIndexOf(element));
+      return new ListIterator<Integer>(nextList().findLastIndexOf(element));
     }
 
     @Override
     public @NotNull ListIterator<Integer> findLastIndexOfSlice(
         @NotNull final Iterable<?> elements) {
-      return new ListIterator<Integer>(rightList().findLastIndexOfSlice(elements));
+      return new ListIterator<Integer>(nextList().findLastIndexOfSlice(elements));
     }
 
     @Override
@@ -4971,7 +4971,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<Integer>(rightList().findLastIndexWhere(predicate));
+      return new ListIterator<Integer>(nextList().findLastIndexWhere(predicate));
     }
 
     @Override
@@ -4980,7 +4980,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<Integer>(rightList().findLastIndexWhere(predicate));
+      return new ListIterator<Integer>(nextList().findLastIndexWhere(predicate));
     }
 
     @Override
@@ -4991,13 +4991,13 @@ public class lazy extends Sparx {
     @Override
     public @NotNull <F> ListIterator<F> flatMap(
         @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
-      return new ListIterator<F>(rightList().flatMap(mapper));
+      return new ListIterator<F>(nextList().flatMap(mapper));
     }
 
     @Override
     public @NotNull <F> ListIterator<F> flatMap(
         @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
-      return new ListIterator<F>(rightList().flatMap(mapper));
+      return new ListIterator<F>(nextList().flatMap(mapper));
     }
 
     @Override
@@ -5006,7 +5006,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().flatMapAfter(numElements, mapper));
+      return new ListIterator<E>(nextList().flatMapAfter(numElements, mapper));
     }
 
     @Override
@@ -5015,7 +5015,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().flatMapAfter(numElements, mapper));
+      return new ListIterator<E>(nextList().flatMapAfter(numElements, mapper));
     }
 
     @Override
@@ -5025,7 +5025,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().flatMapFirstWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().flatMapFirstWhere(predicate, mapper));
     }
 
     @Override
@@ -5034,7 +5034,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().flatMapFirstWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().flatMapFirstWhere(predicate, mapper));
     }
 
     @Override
@@ -5044,7 +5044,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().flatMapLastWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().flatMapLastWhere(predicate, mapper));
     }
 
     @Override
@@ -5053,7 +5053,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().flatMapLastWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().flatMapLastWhere(predicate, mapper));
     }
 
     @Override
@@ -5063,7 +5063,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().flatMapWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().flatMapWhere(predicate, mapper));
     }
 
     @Override
@@ -5072,7 +5072,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().flatMapWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().flatMapWhere(predicate, mapper));
     }
 
     @Override
@@ -5081,7 +5081,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return new ListIterator<F>(List.of(identity));
       }
-      return new ListIterator<F>(rightList().fold(identity, operation));
+      return new ListIterator<F>(nextList().fold(identity, operation));
     }
 
     @Override
@@ -5090,7 +5090,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return new ListIterator<F>(List.of(identity));
       }
-      return new ListIterator<F>(rightList().foldLeft(identity, operation));
+      return new ListIterator<F>(nextList().foldLeft(identity, operation));
     }
 
     @Override
@@ -5100,7 +5100,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return new ListIterator<F>(List.of(identity));
       }
-      return new ListIterator<F>(rightList().foldLeftWhile(identity, predicate, operation));
+      return new ListIterator<F>(nextList().foldLeftWhile(identity, predicate, operation));
     }
 
     @Override
@@ -5109,7 +5109,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return new ListIterator<F>(List.of(identity));
       }
-      return new ListIterator<F>(rightList().foldRight(identity, operation));
+      return new ListIterator<F>(nextList().foldRight(identity, operation));
     }
 
     @Override
@@ -5119,7 +5119,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return new ListIterator<F>(List.of(identity));
       }
-      return new ListIterator<F>(rightList().foldRightWhile(identity, predicate, operation));
+      return new ListIterator<F>(nextList().foldRightWhile(identity, predicate, operation));
     }
 
     @Override
@@ -5137,22 +5137,22 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return FALSE_ITERATOR;
       }
-      return new ListIterator<Boolean>(rightList().includes(element));
+      return new ListIterator<Boolean>(nextList().includes(element));
     }
 
     @Override
     public @NotNull ListIterator<Boolean> includesAll(@NotNull final Iterable<?> elements) {
-      return new ListIterator<Boolean>(rightList().includesAll(elements));
+      return new ListIterator<Boolean>(nextList().includesAll(elements));
     }
 
     @Override
     public @NotNull ListIterator<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
-      return new ListIterator<Boolean>(rightList().includesSlice(elements));
+      return new ListIterator<Boolean>(nextList().includesSlice(elements));
     }
 
     @Override
     public @NotNull ListIterator<E> insert(final E element) {
-      return new ListIterator<E>(rightList().insertAfter(0, element));
+      return new ListIterator<E>(nextList().insertAfter(0, element));
     }
 
     @Override
@@ -5160,12 +5160,12 @@ public class lazy extends Sparx {
       if (numElements != 0 && atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().insertAfter(numElements, element));
+      return new ListIterator<E>(nextList().insertAfter(numElements, element));
     }
 
     @Override
     public @NotNull ListIterator<E> insertAll(@NotNull final Iterable<? extends E> elements) {
-      return new ListIterator<E>(rightList().insertAllAfter(0, elements));
+      return new ListIterator<E>(nextList().insertAllAfter(0, elements));
     }
 
     @Override
@@ -5174,12 +5174,12 @@ public class lazy extends Sparx {
       if (numElements != 0 && atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().insertAllAfter(numElements, elements));
+      return new ListIterator<E>(nextList().insertAllAfter(numElements, elements));
     }
 
     @Override
     public @NotNull ListIterator<E> intersect(@NotNull final Iterable<?> elements) {
-      return new ListIterator<E>(rightList().intersect(elements));
+      return new ListIterator<E>(nextList().intersect(elements));
     }
 
     @Override
@@ -5187,12 +5187,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return Iterator.of();
       }
-      return rightList().iterator();
-    }
-
-    @Override
-    public @NotNull List<E> leftList() {
-      return list.take(pos);
+      return nextList().iterator();
     }
 
     @Override
@@ -5207,12 +5202,12 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull <F> ListIterator<F> map(@NotNull final Function<? super E, F> mapper) {
-      return new ListIterator<F>(rightList().map(mapper));
+      return new ListIterator<F>(nextList().map(mapper));
     }
 
     @Override
     public @NotNull <F> ListIterator<F> map(@NotNull final IndexedFunction<? super E, F> mapper) {
-      return new ListIterator<F>(rightList().map(mapper));
+      return new ListIterator<F>(nextList().map(mapper));
     }
 
     @Override
@@ -5221,7 +5216,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().mapAfter(numElements, mapper));
+      return new ListIterator<E>(nextList().mapAfter(numElements, mapper));
     }
 
     @Override
@@ -5230,7 +5225,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().mapAfter(numElements, mapper));
+      return new ListIterator<E>(nextList().mapAfter(numElements, mapper));
     }
 
     @Override
@@ -5240,7 +5235,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().mapFirstWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().mapFirstWhere(predicate, mapper));
     }
 
     @Override
@@ -5249,7 +5244,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().mapFirstWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().mapFirstWhere(predicate, mapper));
     }
 
     @Override
@@ -5259,7 +5254,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().mapLastWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().mapLastWhere(predicate, mapper));
     }
 
     @Override
@@ -5268,19 +5263,19 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().mapLastWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().mapLastWhere(predicate, mapper));
     }
 
     @Override
     public @NotNull ListIterator<E> mapWhere(@NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
-      return new ListIterator<E>(rightList().mapWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().mapWhere(predicate, mapper));
     }
 
     @Override
     public @NotNull ListIterator<E> mapWhere(@NotNull final Predicate<? super E> predicate,
         @NotNull final Function<? super E, ? extends E> mapper) {
-      return new ListIterator<E>(rightList().mapWhere(predicate, mapper));
+      return new ListIterator<E>(nextList().mapWhere(predicate, mapper));
     }
 
     @Override
@@ -5288,7 +5283,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().max(comparator));
+      return new ListIterator<E>(nextList().max(comparator));
     }
 
     @Override
@@ -5296,7 +5291,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().min(comparator));
+      return new ListIterator<E>(nextList().min(comparator));
     }
 
     @Override
@@ -5345,12 +5340,17 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull List<E> nextList() {
+      return list.drop(pos);
+    }
+
+    @Override
     public @NotNull ListIterator<Boolean> none(
         @NotNull final IndexedPredicate<? super E> predicate) {
       if (atEnd()) {
         return TRUE_ITERATOR;
       }
-      return new ListIterator<Boolean>(rightList().none(predicate));
+      return new ListIterator<Boolean>(nextList().none(predicate));
     }
 
     @Override
@@ -5358,7 +5358,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return TRUE_ITERATOR;
       }
-      return new ListIterator<Boolean>(rightList().none(predicate));
+      return new ListIterator<Boolean>(nextList().none(predicate));
     }
 
     @Override
@@ -5367,7 +5367,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return TRUE_ITERATOR;
       }
-      return new ListIterator<Boolean>(rightList().notAll(predicate));
+      return new ListIterator<Boolean>(nextList().notAll(predicate));
     }
 
     @Override
@@ -5375,7 +5375,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return TRUE_ITERATOR;
       }
-      return new ListIterator<Boolean>(rightList().notAll(predicate));
+      return new ListIterator<Boolean>(nextList().notAll(predicate));
     }
 
     @Override
@@ -5388,50 +5388,23 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return new ListIterator<E>(List.wrap(elements));
       }
-      return new ListIterator<E>(rightList().orElse(elements));
+      return new ListIterator<E>(nextList().orElse(elements));
     }
 
     @Override
     public @NotNull ListIterator<E> orElseGet(
         @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
-      return new ListIterator<E>(rightList().orElseGet(supplier));
+      return new ListIterator<E>(nextList().orElseGet(supplier));
     }
 
     @Override
     public @NotNull ListIterator<E> plus(final E element) {
-      return new ListIterator<E>(rightList().plus(element));
+      return new ListIterator<E>(nextList().plus(element));
     }
 
     @Override
     public @NotNull ListIterator<E> plusAll(@NotNull final Iterable<? extends E> elements) {
-      return new ListIterator<E>(rightList().plusAll(elements));
-    }
-
-    @Override
-    public @NotNull ListIterator<E> reduce(
-        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
-      if (atEnd()) {
-        return ListIterator.of();
-      }
-      return new ListIterator<E>(rightList().reduce(operation));
-    }
-
-    @Override
-    public @NotNull ListIterator<E> reduceLeft(
-        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
-      if (atEnd()) {
-        return ListIterator.of();
-      }
-      return new ListIterator<E>(rightList().reduceLeft(operation));
-    }
-
-    @Override
-    public @NotNull ListIterator<E> reduceRight(
-        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
-      if (atEnd()) {
-        return ListIterator.of();
-      }
-      return new ListIterator<E>(rightList().reduceRight(operation));
+      return new ListIterator<E>(nextList().plusAll(elements));
     }
 
     @Override
@@ -5458,6 +5431,38 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull List<E> previousList() {
+      return list.take(pos);
+    }
+
+    @Override
+    public @NotNull ListIterator<E> reduce(
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      if (atEnd()) {
+        return ListIterator.of();
+      }
+      return new ListIterator<E>(nextList().reduce(operation));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> reduceLeft(
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      if (atEnd()) {
+        return ListIterator.of();
+      }
+      return new ListIterator<E>(nextList().reduceLeft(operation));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> reduceRight(
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      if (atEnd()) {
+        return ListIterator.of();
+      }
+      return new ListIterator<E>(nextList().reduceRight(operation));
+    }
+
+    @Override
     public void remove() {
       throw new UnsupportedOperationException();
     }
@@ -5467,7 +5472,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeAfter(numElements));
+      return new ListIterator<E>(nextList().removeAfter(numElements));
     }
 
     @Override
@@ -5475,7 +5480,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeEach(element));
+      return new ListIterator<E>(nextList().removeEach(element));
     }
 
     @Override
@@ -5483,7 +5488,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeFirst(element));
+      return new ListIterator<E>(nextList().removeFirst(element));
     }
 
     @Override
@@ -5492,7 +5497,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeFirstWhere(predicate));
+      return new ListIterator<E>(nextList().removeFirstWhere(predicate));
     }
 
     @Override
@@ -5501,7 +5506,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeFirstWhere(predicate));
+      return new ListIterator<E>(nextList().removeFirstWhere(predicate));
     }
 
     @Override
@@ -5509,7 +5514,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeLast(element));
+      return new ListIterator<E>(nextList().removeLast(element));
     }
 
     @Override
@@ -5518,7 +5523,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeLastWhere(predicate));
+      return new ListIterator<E>(nextList().removeLastWhere(predicate));
     }
 
     @Override
@@ -5526,7 +5531,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeLastWhere(predicate));
+      return new ListIterator<E>(nextList().removeLastWhere(predicate));
     }
 
     @Override
@@ -5534,7 +5539,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeSlice(start, end));
+      return new ListIterator<E>(nextList().removeSlice(start, end));
     }
 
     @Override
@@ -5543,7 +5548,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeWhere(predicate));
+      return new ListIterator<E>(nextList().removeWhere(predicate));
     }
 
     @Override
@@ -5551,7 +5556,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().removeWhere(predicate));
+      return new ListIterator<E>(nextList().removeWhere(predicate));
     }
 
     @Override
@@ -5559,7 +5564,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceAfter(numElements, replacement));
+      return new ListIterator<E>(nextList().replaceAfter(numElements, replacement));
     }
 
     @Override
@@ -5567,7 +5572,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceEach(element, replacement));
+      return new ListIterator<E>(nextList().replaceEach(element, replacement));
     }
 
     @Override
@@ -5575,7 +5580,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceFirst(element, replacement));
+      return new ListIterator<E>(nextList().replaceFirst(element, replacement));
     }
 
     @Override
@@ -5584,7 +5589,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceFirstWhere(predicate, replacement));
+      return new ListIterator<E>(nextList().replaceFirstWhere(predicate, replacement));
     }
 
     @Override
@@ -5593,7 +5598,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceFirstWhere(predicate, replacement));
+      return new ListIterator<E>(nextList().replaceFirstWhere(predicate, replacement));
     }
 
     @Override
@@ -5601,7 +5606,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceLast(element, replacement));
+      return new ListIterator<E>(nextList().replaceLast(element, replacement));
     }
 
     @Override
@@ -5610,7 +5615,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceLastWhere(predicate, replacement));
+      return new ListIterator<E>(nextList().replaceLastWhere(predicate, replacement));
     }
 
     @Override
@@ -5619,7 +5624,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceLastWhere(predicate, replacement));
+      return new ListIterator<E>(nextList().replaceLastWhere(predicate, replacement));
     }
 
     @Override
@@ -5628,7 +5633,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceSlice(start, end, patch));
+      return new ListIterator<E>(nextList().replaceSlice(start, end, patch));
     }
 
     @Override
@@ -5637,7 +5642,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceWhere(predicate, replacement));
+      return new ListIterator<E>(nextList().replaceWhere(predicate, replacement));
     }
 
     @Override
@@ -5646,7 +5651,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().replaceWhere(predicate, replacement));
+      return new ListIterator<E>(nextList().replaceWhere(predicate, replacement));
     }
 
     @Override
@@ -5655,7 +5660,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return new ListIterator<E>(List.times(numElements, padding));
       }
-      return new ListIterator<E>(rightList().resizeTo(numElements, padding));
+      return new ListIterator<E>(nextList().resizeTo(numElements, padding));
     }
 
     @Override
@@ -5673,12 +5678,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().reverse());
-    }
-
-    @Override
-    public @NotNull List<E> rightList() {
-      return list.drop(pos);
+      return new ListIterator<E>(nextList().reverse());
     }
 
     @Override
@@ -5701,14 +5701,14 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().slice(start, end));
+      return new ListIterator<E>(nextList().slice(start, end));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public @NotNull ListIterator<? extends ListIterator<E>> slidingWindow(
         @Positive final int maxSize, @Positive final int step) {
-      return new ListIterator<ListIterator<E>>(rightList().slidingWindow(maxSize, step)
+      return new ListIterator<ListIterator<E>>(nextList().slidingWindow(maxSize, step)
           .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
     }
 
@@ -5717,18 +5717,18 @@ public class lazy extends Sparx {
     public @NotNull ListIterator<? extends ListIterator<E>> slidingWindowWithPadding(
         @Positive final int size, @Positive final int step, final E padding) {
       return new ListIterator<ListIterator<E>>(
-          rightList().slidingWindowWithPadding(size, step, padding)
+          nextList().slidingWindowWithPadding(size, step, padding)
               .map((Function<List<E>, ListIterator<E>>) LIST_TO_ITERATOR));
     }
 
     @Override
     public @NotNull ListIterator<Boolean> startsWith(@NotNull final Iterable<?> elements) {
-      return new ListIterator<Boolean>(rightList().startsWith(elements));
+      return new ListIterator<Boolean>(nextList().startsWith(elements));
     }
 
     @Override
     public @NotNull ListIterator<E> symmetricDiff(@NotNull final Iterable<? extends E> elements) {
-      return new ListIterator<E>(rightList().symmetricDiff(elements));
+      return new ListIterator<E>(nextList().symmetricDiff(elements));
     }
 
     @Override
@@ -5736,7 +5736,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().take(maxElements));
+      return new ListIterator<E>(nextList().take(maxElements));
     }
 
     @Override
@@ -5744,7 +5744,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().takeRight(maxElements));
+      return new ListIterator<E>(nextList().takeRight(maxElements));
     }
 
     @Override
@@ -5753,7 +5753,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().takeRightWhile(predicate));
+      return new ListIterator<E>(nextList().takeRightWhile(predicate));
     }
 
     @Override
@@ -5761,7 +5761,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().takeRightWhile(predicate));
+      return new ListIterator<E>(nextList().takeRightWhile(predicate));
     }
 
     @Override
@@ -5770,7 +5770,7 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().takeWhile(predicate));
+      return new ListIterator<E>(nextList().takeWhile(predicate));
     }
 
     @Override
@@ -5778,16 +5778,16 @@ public class lazy extends Sparx {
       if (atEnd()) {
         return ListIterator.of();
       }
-      return new ListIterator<E>(rightList().takeWhile(predicate));
+      return new ListIterator<E>(nextList().takeWhile(predicate));
     }
 
     public @NotNull List<E> toList() {
-      return rightList();
+      return nextList();
     }
 
     @Override
     public @NotNull ListIterator<E> union(@NotNull final Iterable<? extends E> elements) {
-      return new ListIterator<E>(rightList().union(elements));
+      return new ListIterator<E>(nextList().union(elements));
     }
 
     protected boolean atEnd() {
@@ -5798,34 +5798,34 @@ public class lazy extends Sparx {
 
   private static class JoiningListIterator<E> extends ListIterator<E> {
 
-    private final List<E> left;
-    private final List<E> right;
+    private final List<E> previous;
+    private final List<E> next;
 
     private int pos;
 
     @SuppressWarnings("unchecked")
-    JoiningListIterator(@NotNull final List<? extends E> left,
-        @NotNull final List<? extends E> right) {
-      super((List<E>) right);
-      this.left = (List<E>) left;
-      this.right = (List<E>) right;
+    JoiningListIterator(@NotNull final List<? extends E> previous,
+        @NotNull final List<? extends E> next) {
+      super((List<E>) next);
+      this.previous = (List<E>) previous;
+      this.next = (List<E>) next;
     }
 
     @Override
     public E first() {
       final int pos = this.pos;
       if (pos >= 0) {
-        return right.get(pos);
+        return next.get(pos);
       }
-      final List<? extends E> left = this.left;
-      return left.get(left.size() + pos);
+      final List<? extends E> previous = this.previous;
+      return previous.get(previous.size() + pos);
     }
 
     @Override
     public boolean hasNext() {
       final int pos = this.pos;
       if (pos >= 0) {
-        return right.materializer.canMaterializeElement(pos);
+        return next.materializer.canMaterializeElement(pos);
       }
       return true;
     }
@@ -5834,34 +5834,23 @@ public class lazy extends Sparx {
     public boolean hasPrevious() {
       final int pos = this.pos;
       if (pos == 0) {
-        return !left.isEmpty();
+        return !previous.isEmpty();
       }
       if (pos < 0) {
-        return left.size() + pos >= 0;
+        return previous.size() + pos >= 0;
       }
       return true;
     }
 
     @Override
-    public @NotNull List<E> leftList() {
-      final int pos = this.pos;
-      if (pos == 0) {
-        return left;
-      } else if (pos > 0) {
-        return left.appendAll(right.take(pos));
-      }
-      return left.dropRight(-pos);
-    }
-
-    @Override
     public boolean isEmpty() {
-      return left.isEmpty() && right.isEmpty();
+      return previous.isEmpty() && next.isEmpty();
     }
 
     @Override
     public E last() {
-      final List<E> right = this.right;
-      return right.isEmpty() ? left.last() : right.last();
+      final List<E> next = this.next;
+      return next.isEmpty() ? previous.last() : next.last();
     }
 
     @Override
@@ -5879,14 +5868,14 @@ public class lazy extends Sparx {
         return this;
       }
       if (newPos >= 0) {
-        final int knownSize = right.materializer.knownSize();
+        final int knownSize = next.materializer.knownSize();
         if (knownSize >= 0) {
           this.pos = Math.min(knownSize, (int) newPos);
         } else {
           this.pos = (int) newPos;
         }
       } else {
-        final int knownSize = left.materializer.knownSize();
+        final int knownSize = previous.materializer.knownSize();
         if (knownSize >= 0) {
           this.pos = Math.max(-knownSize, (int) newPos);
         } else {
@@ -5898,21 +5887,17 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull ListIterator<E> moveTo(final int index) {
-      final int pos = index - left.size();
+      final int size = previous.size();
+      final int pos = Math.max(0, index) - size;
       if (pos >= 0) {
-        final int knownSize = right.materializer.knownSize();
+        final int knownSize = next.materializer.knownSize();
         if (knownSize >= 0) {
           this.pos = Math.min(knownSize, pos);
         } else {
           this.pos = pos;
         }
       } else {
-        final int knownSize = left.materializer.knownSize();
-        if (knownSize >= 0) {
-          this.pos = Math.max(-knownSize, pos);
-        } else {
-          this.pos = pos;
-        }
+        this.pos = pos;
       }
       return this;
     }
@@ -5922,9 +5907,10 @@ public class lazy extends Sparx {
       try {
         final int pos = this.pos++;
         if (pos < 0) {
-          return left.get(Math.max(0, left.size() + pos));
+          final List<E> previous = this.previous;
+          return previous.get(Math.max(0, previous.size() + pos));
         }
-        return right.get(pos);
+        return next.get(pos);
       } catch (final IndexOutOfBoundsException ignored) {
         // FIXME: where the exception come from?
         throw new NoSuchElementException();
@@ -5933,17 +5919,28 @@ public class lazy extends Sparx {
 
     @Override
     public int nextIndex() {
-      final List<E> right = this.right;
-      final int knownSize = right.knownSize();
+      final List<E> next = this.next;
+      final int knownSize = next.knownSize();
       if (knownSize >= 0) {
-        return IndexOverflowException.safeCast((long) left.size() + Math.min(knownSize, pos));
+        return IndexOverflowException.safeCast((long) previous.size() + Math.min(knownSize, pos));
       }
-      return IndexOverflowException.safeCast((long) left.size() + Math.min(right.size(), pos));
+      return IndexOverflowException.safeCast((long) previous.size() + Math.min(next.size(), pos));
+    }
+
+    @Override
+    public @NotNull List<E> nextList() {
+      final int pos = this.pos;
+      if (pos == 0) {
+        return next;
+      } else if (pos > 0) {
+        return next.drop(pos);
+      }
+      return previous.takeRight(-pos).appendAll(next);
     }
 
     @Override
     public boolean notEmpty() {
-      return !left.isEmpty() || !right.isEmpty();
+      return !previous.isEmpty() || !next.isEmpty();
     }
 
     @Override
@@ -5951,9 +5948,11 @@ public class lazy extends Sparx {
       try {
         final int pos = --this.pos;
         if (pos < 0) {
-          return left.get(left.size() + pos);
+          final List<E> previous = this.previous;
+          return previous.get(previous.size() + pos);
         }
-        return right.get(Math.min(right.size(), pos));
+        final List<E> next = this.next;
+        return next.get(Math.min(next.size(), pos));
       } catch (final IndexOutOfBoundsException ignored) {
         // FIXME: where the exception come from?
         throw new NoSuchElementException();
@@ -5961,21 +5960,21 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> rightList() {
+    public @NotNull List<E> previousList() {
       final int pos = this.pos;
       if (pos == 0) {
-        return right;
+        return previous;
       } else if (pos > 0) {
-        return right.drop(pos);
+        return previous.appendAll(next.take(pos));
       }
-      return left.takeRight(-pos).appendAll(right);
+      return previous.dropRight(-pos);
     }
 
     @Override
     public int skip(final int maxElements) {
       if (maxElements > 0) {
-        final int size = right.size();
-        final int currPos = Math.max(-left.size(), Math.min(size, pos));
+        final int size = next.size();
+        final int currPos = Math.max(-previous.size(), Math.min(size, pos));
         final int newPos = (int) Math.min(size, (long) currPos + maxElements);
         return (pos = newPos) - currPos;
       }
@@ -5984,12 +5983,12 @@ public class lazy extends Sparx {
 
     @Override
     public int size() {
-      return SizeOverflowException.safeCast(Math.max(0, (long) right.size() - pos));
+      return SizeOverflowException.safeCast(Math.max(0, (long) next.size() - pos));
     }
 
     @Override
     protected boolean atEnd() {
-      final int knownSize = right.knownSize();
+      final int knownSize = next.knownSize();
       return knownSize >= 0 && pos >= knownSize;
     }
   }

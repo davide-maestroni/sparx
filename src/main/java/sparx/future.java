@@ -115,7 +115,6 @@ import sparx.internal.future.list.TakeRightListAsyncMaterializer;
 import sparx.internal.future.list.TakeRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.TakeWhileListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
-import sparx.itf.List;
 import sparx.util.DeadLockException;
 import sparx.util.IndexOverflowException;
 import sparx.util.Require;
@@ -5883,12 +5882,6 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> leftList() {
-      // TODO
-      return null;
-    }
-
-    @Override
     public boolean isEmpty() {
       return left.isEmpty() && right.isEmpty();
     }
@@ -6173,6 +6166,12 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull List<E> nextList() {
+      // TODO
+      return null;
+    }
+
+    @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
       return currentRight(safePos()).nonBlockingFor(consumer);
     }
@@ -6346,6 +6345,28 @@ class future extends Sparx {
     }
 
     @Override
+    public E previous() {
+      try {
+        final int index = safeDecAndGetPos();
+        return index < 0 ? left.get(left.size() + index) : right.get(index);
+      } catch (final IndexOutOfBoundsException ignored) {
+        // FIXME: where the exception come from?
+        throw new NoSuchElementException();
+      }
+    }
+
+    @Override
+    public int previousIndex() {
+      return nextIndex() - 1;
+    }
+
+    @Override
+    public @NotNull List<E> previousList() {
+      // TODO
+      return null;
+    }
+
+    @Override
     public @NotNull ListIterator<E> reduce(
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       final int pos = safePos();
@@ -6379,22 +6400,6 @@ class future extends Sparx {
       final ExecutionContext context = this.context;
       return new ListIterator<E>(context, List.<E>emptyList(context),
           currentRight(pos).reduceRight(operation));
-    }
-
-    @Override
-    public E previous() {
-      try {
-        final int index = safeDecAndGetPos();
-        return index < 0 ? left.get(left.size() + index) : right.get(index);
-      } catch (final IndexOutOfBoundsException ignored) {
-        // FIXME: where the exception come from?
-        throw new NoSuchElementException();
-      }
-    }
-
-    @Override
-    public int previousIndex() {
-      return nextIndex() - 1;
     }
 
     @Override
@@ -6704,12 +6709,6 @@ class future extends Sparx {
             List.<E>emptyList(context));
       }
       return new ListIterator<E>(context, currentRight(pos).reverse(), currentLeft(pos).reverse());
-    }
-
-    @Override
-    public @NotNull List<E> rightList() {
-      // TODO
-      return null;
     }
 
     @Override

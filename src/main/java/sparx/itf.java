@@ -1836,9 +1836,6 @@ class itf {
     @NotNull
     Iterator<E> iterator();
 
-    @NotNull
-    List<E> leftList();
-
     @Override
     @NotNull
     <F> ListIterator<F> map(@NotNull Function<? super E, F> mapper);
@@ -1900,6 +1897,9 @@ class itf {
     @NotNull
     ListIterator<E> moveTo(int index);
 
+    @NotNull
+    List<E> nextList();
+
     @Override
     @NotNull
     ListIterator<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);
@@ -1931,6 +1931,9 @@ class itf {
     @Override
     @NotNull
     ListIterator<E> plusAll(@NotNull Iterable<? extends E> elements);
+
+    @NotNull
+    List<E> previousList();
 
     @Override
     @NotNull
@@ -2041,9 +2044,6 @@ class itf {
 
     @NotNull
     ListIterator<E> reverse();
-
-    @NotNull
-    List<E> rightList();
 
     @Override
     @NotNull
