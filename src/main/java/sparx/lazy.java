@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,6 +70,7 @@ import sparx.internal.lazy.iterator.FoldLeftIteratorMaterializer;
 import sparx.internal.lazy.iterator.FoldLeftWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.FoldRightIteratorMaterializer;
 import sparx.internal.lazy.iterator.FoldRightWhileIteratorMaterializer;
+import sparx.internal.lazy.iterator.GeneratorToIteratorMaterializer;
 import sparx.internal.lazy.iterator.IncludesAllIteratorMaterializer;
 import sparx.internal.lazy.iterator.IncludesSliceIteratorMaterializer;
 import sparx.internal.lazy.iterator.InsertAfterIteratorMaterializer;
@@ -343,12 +345,34 @@ public class lazy extends Sparx {
           new FloatArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
     }
 
+    public static @NotNull <G, E> Iterator<E> ofGenerator(@NotNull final G generator,
+        @NotNull final IndexedPredicate<? super G> hasNextPredicate,
+        @NotNull final IndexedFunction<? super G, ? extends E> nextFunction) {
+      return new Iterator<E>(
+          new GeneratorToIteratorMaterializer<G, E>(Require.notNull(generator, "generator"),
+              Require.notNull(hasNextPredicate, "hasNextPredicate"),
+              Require.notNull(nextFunction, "nextFunction")));
+    }
+
+    public static @NotNull <G, E> Iterator<E> ofGenerator(@NotNull final G generator,
+        @NotNull final Predicate<? super G> hasNextPredicate,
+        @NotNull final Function<? super G, ? extends E> nextFunction) {
+      return new Iterator<E>(
+          new GeneratorToIteratorMaterializer<G, E>(Require.notNull(generator, "generator"),
+              toIndexedPredicate(Require.notNull(hasNextPredicate, "hasNextPredicate")),
+              toIndexedFunction(Require.notNull(nextFunction, "nextFunction"))));
+    }
+
     public static @NotNull Iterator<Integer> ofInts(final int... elements) {
       if (elements == null) {
         return Iterator.of();
       }
       return new Iterator<Integer>(
           new IntArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
+    }
+
+    private static @NotNull Iterator<String> ofLines(@NotNull final BufferedReader reader) {
+      return new Iterator<String>(new LinesIteratorMaterializer(Require.notNull(reader, "reader")));
     }
 
     public static @NotNull Iterator<String> ofLines(@NotNull final File file,
@@ -362,8 +386,11 @@ public class lazy extends Sparx {
           charset != null ? charset : Charset.defaultCharset())));
     }
 
-    private static @NotNull Iterator<String> ofLines(@NotNull final BufferedReader reader) {
-      return new Iterator<String>(new LinesIteratorMaterializer(Require.notNull(reader, "reader")));
+    public static @NotNull Iterator<String> ofLines(@NotNull final Reader reader) {
+      if (reader instanceof BufferedReader) {
+        return ofLines((BufferedReader) reader);
+      }
+      return ofLines(new BufferedReader(reader));
     }
 
     public static @NotNull Iterator<Long> ofLongs(final long... elements) {
@@ -4526,9 +4553,9 @@ public class lazy extends Sparx {
       return new ListIterator<E>(List.from(elements));
     }
 
-    public static @NotNull <E> ListIterator<E> joining(@NotNull final List<? extends E> left,
-        @NotNull final List<? extends E> right) {
-      return new JoiningListIterator<E>(left, right);
+    public static @NotNull <E> ListIterator<E> joining(@NotNull final List<? extends E> previous,
+        @NotNull final List<? extends E> next) {
+      return new JoiningListIterator<E>(previous, next);
     }
 
     @SuppressWarnings("unchecked")
