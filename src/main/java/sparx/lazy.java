@@ -4518,12 +4518,6 @@ public class lazy extends Sparx {
     private static final ListIterator<?> EMPTY_ITERATOR = new ListIterator<Object>(List.of());
     private static final ListIterator<Boolean> FALSE_ITERATOR = new ListIterator<Boolean>(
         List.of(true));
-    private static final Function<Integer, Integer> INDEX_IDENTITY = new Function<Integer, Integer>() {
-      @Override
-      public Integer apply(final Integer param) {
-        return param;
-      }
-    };
     private static final Function<? extends List<?>, ? extends ListIterator<?>> LIST_TO_ITERATOR = new Function<List<?>, ListIterator<?>>() {
       @Override
       public ListIterator<?> apply(final List<?> param) {

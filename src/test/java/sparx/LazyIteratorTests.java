@@ -136,153 +136,71 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void drop() {
-    var itr = Iterator.<Integer>of().drop(1);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(0, itr.size());
-    itr = Iterator.<Integer>of().drop(0);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(0, itr.size());
-    itr = Iterator.<Integer>of().drop(-1);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(List.of(), itr.toList());
-
-    itr = Iterator.of(1, null, 3).drop(1);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(null, 3), itr.toList());
-    itr = Iterator.of(1, null, 3).drop(2);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(3), itr.toList());
-    itr = Iterator.of(1, null, 3).drop(3);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(List.of(), itr.toList());
-    itr = Iterator.of(1, null, 3).drop(4);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(List.of(), itr.toList());
-    itr = Iterator.of(1, null, 3).drop(0);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-    itr = Iterator.of(1, null, 3).drop(-1);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
+  public void drop() throws Exception {
+    test(List.of(), () -> Iterator.<Integer>of().drop(1));
+    test(List.of(), () -> Iterator.<Integer>of().drop(0));
+    test(List.of(), () -> Iterator.<Integer>of().drop(-1));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).drop(-1));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).drop(0));
+    test(List.of(null, 3), () -> Iterator.of(1, null, 3).drop(1));
+    test(List.of(3), () -> Iterator.of(1, null, 3).drop(2));
+    test(List.of(), () -> Iterator.of(1, null, 3).drop(3));
+    test(List.of(), () -> Iterator.of(1, null, 3).drop(4));
   }
 
   @Test
-  public void dropRight() {
-    var itr = Iterator.<Integer>of().dropRight(1);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(0, itr.size());
-    itr = Iterator.<Integer>of().dropRight(0);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(0, itr.size());
-    itr = Iterator.<Integer>of().dropRight(-1);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(List.of(), itr.toList());
-
-    itr = Iterator.of(1, null, 3).dropRight(1);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null), itr.toList());
-    itr = Iterator.of(1, null, 3).dropRight(2);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1), itr.toList());
-    itr = Iterator.of(1, null, 3).dropRight(3);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(List.of(), itr.toList());
-    itr = Iterator.of(1, null, 3).dropRight(4);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(List.of(), itr.toList());
-    itr = Iterator.of(1, null, 3).dropRight(0);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-    itr = Iterator.of(1, null, 3).dropRight(-1);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
+  public void dropRight() throws Exception {
+    test(List.of(), () -> Iterator.<Integer>of().dropRight(1));
+    test(List.of(), () -> Iterator.<Integer>of().dropRight(0));
+    test(List.of(), () -> Iterator.<Integer>of().dropRight(-1));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).dropRight(-1));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).dropRight(0));
+    test(List.of(1, null), () -> Iterator.of(1, null, 3).dropRight(1));
+    test(List.of(1), () -> Iterator.of(1, null, 3).dropRight(2));
+    test(List.of(), () -> Iterator.of(1, null, 3).dropRight(3));
+    test(List.of(), () -> Iterator.of(1, null, 3).dropRight(4));
   }
 
   @Test
-  public void dropRightWhile() {
-    var itr = Iterator.<Integer>of().dropRightWhile(e -> e > 0);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(0, itr.size());
-
-    itr = Iterator.of(1, null, 3).dropRightWhile(Objects::isNull);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-    itr = Iterator.of(1, null, 3).dropRightWhile(Objects::nonNull);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null), itr.toList());
-    itr = Iterator.of(1, null, 3).dropRightWhile(e -> e < 1);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-
-    itr = Iterator.of(1, 2, 3).dropRightWhile(e -> e > 0);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(List.of(), itr.toList());
+  public void dropRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).dropRightWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).dropRightWhile((Predicate<? super Integer>) null));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).dropRightWhile(Objects::isNull));
+    test(List.of(1, null), () -> Iterator.of(1, null, 3).dropRightWhile(Objects::nonNull));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).dropRightWhile(e -> e < 1));
+    test(List.of(), () -> Iterator.of(1, 2, 3).dropRightWhile(e -> e > 0));
 
     assertThrows(NullPointerException.class,
         () -> Iterator.of(1, null, 3).dropRightWhile(e -> e > 0).size());
   }
 
   @Test
-  public void dropWhile() {
-    var itr = Iterator.<Integer>of().dropWhile(e -> e > 0);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(0, itr.size());
-
-    itr = Iterator.of(1, null, 3).dropWhile(Objects::isNull);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-    itr = Iterator.of(1, null, 3).dropWhile(Objects::nonNull);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(null, 3), itr.toList());
-    itr = Iterator.of(1, null, 3).dropWhile(e -> e < 1);
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertEquals(List.of(1, null, 3), itr.toList());
-
-    itr = Iterator.of(1, 2, 3).dropWhile(e -> e > 0);
-    assertTrue(itr.isEmpty());
-    assertFalse(itr.notEmpty());
-    assertEquals(List.of(), itr.toList());
+  public void dropWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).dropWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).dropWhile((Predicate<? super Integer>) null));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).dropWhile(Objects::isNull));
+    test(List.of(null, 3), () -> Iterator.of(1, null, 3).dropWhile(Objects::nonNull));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).dropWhile(e -> e < 1));
+    test(List.of(), () -> Iterator.of(1, 2, 3).dropWhile(e -> e > 0));
 
     assertThrows(NullPointerException.class,
         () -> Iterator.of(1, null, 3).dropWhile(e -> e > 0).size());
   }
 
   @Test
-  public void each() {
-    assertFalse(Iterator.of().each(Objects::nonNull).isEmpty());
-    assertTrue(Iterator.of().each(Objects::nonNull).notEmpty());
-    assertEquals(1, Iterator.of().each(Objects::nonNull).size());
-    assertFalse(Iterator.of().each(Objects::nonNull).first());
-    assertFalse(Iterator.of(1, 2, 3).each(i -> i < 3).first());
-    assertTrue(Iterator.of(1, 2, 3).each(i -> i > 0).first());
+  public void each() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).each((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).each((Predicate<? super Integer>) null));
+    test(List.of(false), () -> Iterator.of().each(Objects::nonNull));
+    test(List.of(false), () -> Iterator.of(1, 2, 3).each(i -> i < 3));
+    test(List.of(true), () -> Iterator.of(1, 2, 3).each(i -> i > 0));
+
     var itr = Iterator.of(1, null, 3).each(i -> i > 0);
     assertThrows(NullPointerException.class, itr::first);
   }
