@@ -18,6 +18,7 @@ package sparx.internal.future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 
@@ -38,9 +39,14 @@ public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
 
   @Override
   public void accept(final P param) {
-    context.scheduleAfter(new Task() {
+    context.scheduleAfter(new ContextTask(context) {
       @Override
-      public void run() {
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      protected void runWithContext() {
         try {
           wrapped.accept(param);
         } catch (final Exception error) {
@@ -54,24 +60,19 @@ public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
           }
         }
       }
+    });
+  }
 
+  @Override
+  public void error(@NotNull final Exception error) {
+    context.scheduleAfter(new ContextTask(context) {
       @Override
       public @NotNull String taskID() {
         return taskID;
       }
 
       @Override
-      public int weight() {
-        return 1;
-      }
-    });
-  }
-
-  @Override
-  public void error(@NotNull final Exception error) {
-    context.scheduleAfter(new Task() {
-      @Override
-      public void run() {
+      protected void runWithContext() {
         try {
           wrapped.error(error);
         } catch (final Exception e) {
@@ -80,16 +81,6 @@ public class ContextAsyncConsumer<P> implements AsyncConsumer<P> {
           }
           logger.log(Level.SEVERE, "Ignored exception", e);
         }
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
       }
     });
   }

@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -39,9 +40,10 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
   public EachListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
+      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(
         new ImmaterialState(wrapped, predicate, defaultResult, cancelException, decorateFunction));
   }

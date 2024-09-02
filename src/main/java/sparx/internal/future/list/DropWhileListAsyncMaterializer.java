@@ -43,7 +43,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
@@ -280,7 +280,7 @@ public class DropWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
               return true;
             } else {
               if (index == 0) {
-                consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+                consumeState(setState(new WrappingState(wrapped, cancelException)));
               } else {
                 consumeState(setState(
                     new DropListAsyncMaterializer<E>(wrapped, index, status, context,

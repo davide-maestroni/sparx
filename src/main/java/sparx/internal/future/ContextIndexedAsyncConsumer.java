@@ -18,6 +18,7 @@ package sparx.internal.future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 
@@ -39,9 +40,14 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
 
   @Override
   public void accept(final int size, final int index, final P param) throws Exception {
-    context.scheduleAfter(new Task() {
+    context.scheduleAfter(new ContextTask(context) {
       @Override
-      public void run() {
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      protected void runWithContext() {
         try {
           wrapped.accept(size, index, param);
         } catch (final Exception error) {
@@ -58,24 +64,19 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
           }
         }
       }
+    });
+  }
 
+  @Override
+  public void complete(final int size) throws Exception {
+    context.scheduleAfter(new ContextTask(context) {
       @Override
       public @NotNull String taskID() {
         return taskID;
       }
 
       @Override
-      public int weight() {
-        return 1;
-      }
-    });
-  }
-
-  @Override
-  public void complete(final int size) throws Exception {
-    context.scheduleAfter(new Task() {
-      @Override
-      public void run() {
+      protected void runWithContext() {
         try {
           wrapped.complete(size);
         } catch (final Exception error) {
@@ -92,24 +93,19 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
           }
         }
       }
+    });
+  }
 
+  @Override
+  public void error(@NotNull final Exception error) throws Exception {
+    context.scheduleAfter(new ContextTask(context) {
       @Override
       public @NotNull String taskID() {
         return taskID;
       }
 
       @Override
-      public int weight() {
-        return 1;
-      }
-    });
-  }
-
-  @Override
-  public void error(@NotNull final Exception error) throws Exception {
-    context.scheduleAfter(new Task() {
-      @Override
-      public void run() {
+      protected void runWithContext() {
         try {
           wrapped.error(error);
         } catch (final Exception e) {
@@ -118,16 +114,6 @@ public class ContextIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
           }
           logger.log(Level.SEVERE, "Ignored exception", e);
         }
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return 1;
       }
     });
   }

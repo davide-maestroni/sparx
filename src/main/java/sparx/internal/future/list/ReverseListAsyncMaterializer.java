@@ -46,7 +46,7 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> reverseFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     final int knownSize = this.knownSize = wrapped.knownSize();
     if (knownSize == 0) {

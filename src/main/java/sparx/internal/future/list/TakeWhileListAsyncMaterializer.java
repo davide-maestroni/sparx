@@ -35,12 +35,6 @@ import sparx.util.function.IndexedPredicate;
 
 public class TakeWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
-  private static final Function<? extends List<?>, ? extends List<?>> DUMMY_DECORATE_FUNCTION = new Function<List<Object>, List<Object>>() {
-    @Override
-    public List<Object> apply(final List<Object> elements) {
-      return elements;
-    }
-  };
   private static final Logger LOGGER = Logger.getLogger(
       TakeWhileListAsyncMaterializer.class.getName());
 
@@ -50,7 +44,7 @@ public class TakeWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
@@ -136,7 +130,7 @@ public class TakeWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.accept(false);
           }
 
@@ -173,7 +167,7 @@ public class TakeWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.accept(false);
           }
 
@@ -241,7 +235,7 @@ public class TakeWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.complete(size);
           }
 
@@ -342,7 +336,7 @@ public class TakeWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
           new CancellableIndexedAsyncPredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {
-              setState(new WrappingState(wrapped, context, cancelException));
+              setState(new WrappingState(wrapped, cancelException));
               predicate.complete(size);
             }
 
@@ -472,7 +466,7 @@ public class TakeWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterial
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
-            consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+            consumeState(setState(new WrappingState(wrapped, cancelException)));
           }
 
           @Override

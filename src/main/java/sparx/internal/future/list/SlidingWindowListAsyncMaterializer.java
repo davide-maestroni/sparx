@@ -49,7 +49,7 @@ public class SlidingWindowListAsyncMaterializer<E, L extends List<E>> extends
       @NotNull final Splitter<E, ? extends L> splitter, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<L>, List<L>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize(), step);
     setState(new ImmaterialState(wrapped, maxSize, step, splitter, context, cancelException,
         decorateFunction));

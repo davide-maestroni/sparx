@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
-import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -141,7 +141,7 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
     return taskID != null ? taskID : "";
   }
 
-  private class NextTask implements Task {
+  private class NextTask extends ContextTask {
 
     private final IndexedAsyncPredicate<E> predicate;
     private final int throughput;
@@ -149,12 +149,24 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
     private String taskID;
 
     private NextTask(@NotNull final IndexedAsyncPredicate<E> predicate, final int throughput) {
+      super(context);
       this.predicate = predicate;
       this.throughput = throughput;
     }
 
     @Override
-    public void run() {
+    public @NotNull
+    final String taskID() {
+      return taskID;
+    }
+
+    @Override
+    public int weight() {
+      return Math.min(throughput, elements.size() - index);
+    }
+
+    @Override
+    protected void runWithContext() {
       final int throughput = this.throughput;
       final IndexedAsyncPredicate<E> predicate = this.predicate;
       final Collection<E> elements = CollectionToIteratorAsyncMaterializer.this.elements;
@@ -172,17 +184,6 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
         taskID = getTaskID();
         context.scheduleAfter(this);
       }
-    }
-
-    @Override
-    public @NotNull
-    final String taskID() {
-      return taskID;
-    }
-
-    @Override
-    public int weight() {
-      return Math.min(throughput, elements.size() - index);
     }
   }
 }

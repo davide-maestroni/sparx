@@ -35,8 +35,9 @@ import sparx.util.function.Function;
 
 abstract class ProgressiveListAsyncMaterializer<E, F> extends AbstractListAsyncMaterializer<F> {
 
-  ProgressiveListAsyncMaterializer(@NotNull final AtomicInteger status) {
-    super(status);
+  ProgressiveListAsyncMaterializer(@NotNull final ExecutionContext context,
+      @NotNull final AtomicInteger status) {
+    super(context, status);
   }
 
   @Override

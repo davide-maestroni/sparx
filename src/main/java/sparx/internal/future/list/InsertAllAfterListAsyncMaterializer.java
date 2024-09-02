@@ -47,7 +47,7 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, List<E>, List<E>> insertAllFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(numElements, wrapped.knownSize(), elementsMaterializer.knownSize());
     setState(
         new ImmaterialState(wrapped, numElements, elementsMaterializer, context, cancelException,
@@ -715,7 +715,7 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
       final ListAsyncMaterializer<E> wrapped = this.wrapped;
       return (int) Math.min(Integer.MAX_VALUE,
           ((long) wrapped.weightContains() * 2) + (wrappedSize < 0 ? wrapped.weightHasElement() : 1)
-              + +elementsMaterializer.weightContains());
+              + elementsMaterializer.weightContains());
     }
 
     @Override

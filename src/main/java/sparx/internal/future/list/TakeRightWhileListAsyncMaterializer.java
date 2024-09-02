@@ -43,7 +43,7 @@ public class TakeRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
@@ -276,7 +276,7 @@ public class TakeRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
       wrapped.materializePrevWhile(wrappedSize - 1, new CancellableIndexedAsyncPredicate<E>() {
         @Override
         public void cancellableComplete(final int size) {
-          consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+          consumeState(setState(new WrappingState(wrapped, cancelException)));
         }
 
         @Override

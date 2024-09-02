@@ -44,7 +44,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, predicate, mapper, context, cancelException,
         decorateFunction));
   }
@@ -292,7 +292,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
       wrapped.materializePrevWhile(wrappedSize - 1, new CancellableIndexedAsyncPredicate<E>() {
         @Override
         public void cancellableComplete(final int size) {
-          consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+          consumeState(setState(new WrappingState(wrapped, cancelException)));
         }
 
         @Override
@@ -305,7 +305,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           } else if (index > 0) {
             return true;
           } else {
-            consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+            consumeState(setState(new WrappingState(wrapped, cancelException)));
           }
           return false;
         }

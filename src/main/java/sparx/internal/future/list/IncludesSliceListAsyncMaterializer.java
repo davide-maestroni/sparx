@@ -43,7 +43,7 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
         decorateFunction));
   }
@@ -326,13 +326,6 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
       }
 
       @Override
-      @SuppressWarnings("unchecked")
-      public void run() {
-        isWrapped = true;
-        ((ListAsyncMaterializer<Object>) wrapped).materializeElement(wrappedIndex, this);
-      }
-
-      @Override
       public @NotNull String taskID() {
         return taskID;
       }
@@ -341,6 +334,13 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
       public int weight() {
         return (int) Math.min(Integer.MAX_VALUE,
             (long) wrapped.weightElement() + elementsMaterializer.weightElement());
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      protected void runWithContext() {
+        isWrapped = true;
+        ((ListAsyncMaterializer<Object>) wrapped).materializeElement(wrappedIndex, this);
       }
     }
   }

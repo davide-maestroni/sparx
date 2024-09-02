@@ -54,7 +54,7 @@ public class DropListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(status);
+    super(context, status);
     final int wrappedSize = wrapped.knownSize();
     knownSize = wrappedSize >= 0 ? Math.max(0, wrappedSize - maxElements) : -1;
     setState(new ImmaterialState(wrapped, maxElements, context, cancelException, decorateFunction));

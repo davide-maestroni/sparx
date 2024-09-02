@@ -46,7 +46,7 @@ public class PrependAllListAsyncMaterializer<E> extends AbstractListAsyncMateria
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize(), elementsMaterializer.knownSize());
     isMaterializedAtOnce =
         wrapped.isMaterializedAtOnce() && elementsMaterializer.isMaterializedAtOnce();

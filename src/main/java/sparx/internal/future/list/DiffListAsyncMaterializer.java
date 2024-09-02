@@ -34,7 +34,7 @@ public class DiffListAsyncMaterializer<E> extends ProgressiveListAsyncMaterializ
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
         decorateFunction));
   }

@@ -37,7 +37,7 @@ public class FlatMapListAsyncMaterializer<E, F> extends ProgressiveListAsyncMate
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<F>, List<F>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, mapper, context, cancelException, decorateFunction));
   }
 
@@ -132,15 +132,6 @@ public class FlatMapListAsyncMaterializer<E, F> extends ProgressiveListAsyncMate
       }
 
       @Override
-      public void run() {
-        if (elementsMaterializer != null) {
-          elementsMaterializer.materializeNextWhile(elementsPredicate);
-        } else {
-          wrapped.materializeElement(nextIndex, this);
-        }
-      }
-
-      @Override
       public @NotNull String taskID() {
         return taskID;
       }
@@ -150,6 +141,15 @@ public class FlatMapListAsyncMaterializer<E, F> extends ProgressiveListAsyncMate
         final IteratorAsyncMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
         return elementsMaterializer != null ? elementsMaterializer.weightNextWhile()
             : wrapped.weightElement();
+      }
+
+      @Override
+      protected void runWithContext() {
+        if (elementsMaterializer != null) {
+          elementsMaterializer.materializeNextWhile(elementsPredicate);
+        } else {
+          wrapped.materializeElement(nextIndex, this);
+        }
       }
 
       private void schedule() {

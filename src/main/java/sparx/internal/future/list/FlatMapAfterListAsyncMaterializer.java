@@ -57,7 +57,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       @NotNull final AtomicInteger status, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(status);
+    super(context, status);
     setState(new ImmaterialState(wrapped, numElements, mapper, context, cancelException,
         decorateFunction));
   }
@@ -687,7 +687,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            consumer.accept(setState(new WrappingState(wrapped, context, cancelException)));
+            consumer.accept(setState(new WrappingState(wrapped, cancelException)));
           }
 
           @Override
@@ -785,11 +785,6 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       }
 
       @Override
-      public void run() {
-        wrapped.materializeNextWhile(index, this);
-      }
-
-      @Override
       public @NotNull String taskID() {
         return taskID;
       }
@@ -797,6 +792,11 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       @Override
       public int weight() {
         return wrapped.weightNextWhile();
+      }
+
+      @Override
+      protected void runWithContext() {
+        wrapped.materializeNextWhile(index, this);
       }
 
       private void schedule() {
@@ -866,11 +866,6 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       }
 
       @Override
-      public void run() {
-        wrapped.materializeNextWhile(index, this);
-      }
-
-      @Override
       public @NotNull String taskID() {
         return taskID;
       }
@@ -878,6 +873,11 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       @Override
       public int weight() {
         return wrapped.weightNextWhile();
+      }
+
+      @Override
+      protected void runWithContext() {
+        wrapped.materializeNextWhile(index, this);
       }
 
       private void schedule() {
@@ -942,7 +942,17 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       }
 
       @Override
-      public void run() {
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightNextWhile();
+      }
+
+      @Override
+      protected void runWithContext() {
         if (isWrapped) {
           wrapped.materializeNextWhile(wrappedIndex, this);
         } else {
@@ -960,16 +970,6 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
             }
           });
         }
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return wrapped.weightNextWhile();
       }
 
       private void schedule() {
@@ -1059,7 +1059,17 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       }
 
       @Override
-      public void run() {
+      public @NotNull String taskID() {
+        return taskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightNextWhile();
+      }
+
+      @Override
+      protected void runWithContext() {
         if (isWrapped) {
           wrapped.materializePrevWhile(wrappedIndex, this);
         } else {
@@ -1099,16 +1109,6 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
             }
           });
         }
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return wrapped.weightNextWhile();
       }
 
       private void schedule() {

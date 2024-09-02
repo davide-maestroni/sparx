@@ -43,7 +43,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
   }
@@ -288,7 +288,7 @@ public class DropRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
           } else {
             final int maxElements = wrappedSize - index - 1;
             if (maxElements == 0) {
-              consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+              consumeState(setState(new WrappingState(wrapped, cancelException)));
             } else {
               consumeState(setState(
                   new DropRightListAsyncMaterializer<E>(wrapped, maxElements, status, context,

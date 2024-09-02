@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
@@ -134,7 +135,7 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
     return taskID != null ? taskID : "";
   }
 
-  private class NextTask implements Task {
+  private class NextTask extends ContextTask {
 
     private final IndexedAsyncPredicate<E> predicate;
     private final int throughput;
@@ -142,12 +143,24 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
     private String taskID;
 
     private NextTask(@NotNull final IndexedAsyncPredicate<E> predicate, final int throughput) {
+      super(context);
       this.predicate = predicate;
       this.throughput = throughput;
     }
 
     @Override
-    public void run() {
+    public @NotNull
+    final String taskID() {
+      return taskID;
+    }
+
+    @Override
+    public int weight() {
+      return throughput;
+    }
+
+    @Override
+    protected void runWithContext() {
       final int throughput = this.throughput;
       final IndexedAsyncPredicate<E> predicate = this.predicate;
       final Iterator<E> iterator = elements;
@@ -162,17 +175,6 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
         taskID = getTaskID();
         context.scheduleAfter(this);
       }
-    }
-
-    @Override
-    public @NotNull
-    final String taskID() {
-      return taskID;
-    }
-
-    @Override
-    public int weight() {
-      return throughput;
     }
   }
 }

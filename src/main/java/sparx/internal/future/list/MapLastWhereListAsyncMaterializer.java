@@ -46,7 +46,7 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> replaceFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     knownSize = wrapped.knownSize();
     setState(
         new ImmaterialState(wrapped, predicate, mapper, context, cancelException, replaceFunction));
@@ -296,7 +296,7 @@ public class MapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMater
           @Override
           public void cancellableComplete(final int size) {
             wrappedSize = Math.max(wrappedSize, size);
-            consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+            consumeState(setState(new WrappingState(wrapped, cancelException)));
           }
 
           @Override

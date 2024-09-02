@@ -53,7 +53,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> replaceFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     knownSize = wrapped.knownSize();
     setState(
         new ImmaterialState(wrapped, predicate, mapper, context, cancelException, replaceFunction));
@@ -140,7 +140,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
           @Override
           public void cancellableComplete(final int size) throws Exception {
             wrappedSize = size;
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.accept(false);
           }
 
@@ -186,7 +186,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
           @Override
           public void cancellableComplete(final int size) throws Exception {
             wrappedSize = size;
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.accept(false);
           }
 
@@ -264,7 +264,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.complete(wrappedSize = size);
           }
 
@@ -363,7 +363,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
           new CancellableIndexedAsyncPredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {
-              setState(new WrappingState(wrapped, context, cancelException));
+              setState(new WrappingState(wrapped, cancelException));
               predicate.complete(wrappedSize = size);
             }
 
@@ -504,7 +504,7 @@ public class MapFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMate
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
-            consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+            consumeState(setState(new WrappingState(wrapped, cancelException)));
           }
 
           @Override

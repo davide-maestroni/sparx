@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -41,8 +42,9 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
   private final int knownSize;
 
   public TransformListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
+      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException, final int knownSize) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     this.cancelException = cancelException;
     this.knownSize = knownSize;
     setState(new ImmaterialState(wrapped, cancelException));

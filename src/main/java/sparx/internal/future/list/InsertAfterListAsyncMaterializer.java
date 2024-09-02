@@ -46,7 +46,7 @@ public class InsertAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
       @Positive final int numElements, final E element, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> insertFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(numElements, wrapped.knownSize());
     setState(new ImmaterialState(wrapped, numElements, element, context, cancelException,
         insertFunction));

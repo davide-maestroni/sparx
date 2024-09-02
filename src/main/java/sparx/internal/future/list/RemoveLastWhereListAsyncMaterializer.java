@@ -41,7 +41,7 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, Integer, List<E>> removeFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, predicate, context, cancelException, removeFunction));
   }
 
@@ -287,7 +287,7 @@ public class RemoveLastWhereListAsyncMaterializer<E> extends AbstractListAsyncMa
         wrapped.materializePrevWhile(Integer.MAX_VALUE, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
-            consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+            consumeState(setState(new WrappingState(wrapped, cancelException)));
           }
 
           @Override

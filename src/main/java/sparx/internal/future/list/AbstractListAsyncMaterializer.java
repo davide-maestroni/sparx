@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
@@ -40,12 +41,15 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   protected static final int STATUS_DONE = 1;
   protected static final int STATUS_RUNNING = 0;
 
+  final ExecutionContext context;
   final AtomicInteger status;
 
   private CancellationException cancelException;
   private ListAsyncMaterializer<E> state;
 
-  public AbstractListAsyncMaterializer(@NotNull final AtomicInteger status) {
+  public AbstractListAsyncMaterializer(@NotNull final ExecutionContext context,
+      @NotNull final AtomicInteger status) {
+    this.context = context;
     this.status = status;
   }
 
@@ -215,7 +219,12 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     return state;
   }
 
-  protected abstract class CancellableAsyncConsumer<P> implements AsyncConsumer<P> {
+  protected abstract class CancellableAsyncConsumer<P> extends ContextTask implements
+      AsyncConsumer<P> {
+
+    protected CancellableAsyncConsumer() {
+      super(context);
+    }
 
     @Override
     public void accept(final P param) throws Exception {
@@ -231,7 +240,12 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
   }
 
-  protected abstract class CancellableIndexedAsyncConsumer<P> implements IndexedAsyncConsumer<P> {
+  protected abstract class CancellableIndexedAsyncConsumer<P> extends ContextTask implements
+      IndexedAsyncConsumer<P> {
+
+    protected CancellableIndexedAsyncConsumer() {
+      super(context);
+    }
 
     @Override
     public void accept(final int size, final int index, final P param) throws Exception {
@@ -260,7 +274,12 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
   }
 
-  protected abstract class CancellableIndexedAsyncPredicate<P> implements IndexedAsyncPredicate<P> {
+  protected abstract class CancellableIndexedAsyncPredicate<P> extends ContextTask implements
+      IndexedAsyncPredicate<P> {
+
+    protected CancellableIndexedAsyncPredicate() {
+      super(context);
+    }
 
     @Override
     public void complete(final int size) throws Exception {
@@ -292,8 +311,12 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
   }
 
-  protected abstract class CancellableMultiAsyncConsumer<P1, P2> implements AsyncConsumer<P1>,
-      IndexedAsyncConsumer<P2> {
+  protected abstract class CancellableMultiAsyncConsumer<P1, P2> extends ContextTask implements
+      AsyncConsumer<P1>, IndexedAsyncConsumer<P2> {
+
+    protected CancellableMultiAsyncConsumer() {
+      super(context);
+    }
 
     @Override
     public void accept(final P1 param) throws Exception {
@@ -339,7 +362,6 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   protected class WrappingState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final ExecutionContext context;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
     private final int knownSize;
@@ -348,10 +370,8 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     private int wrappedSize;
 
     protected WrappingState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
-      this.context = context;
       this.cancelException = cancelException;
       wrappedSize = knownSize = wrapped.knownSize();
     }

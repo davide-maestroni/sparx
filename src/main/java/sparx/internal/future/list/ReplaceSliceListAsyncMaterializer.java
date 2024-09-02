@@ -47,7 +47,7 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {

@@ -45,7 +45,7 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
       final int start, final int end, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
@@ -64,7 +64,7 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
       final int materializedLength = Math.max(0, materializedEnd - materializedStart);
       this.knownSize = knownSize - materializedLength;
       if (materializedLength == 0) {
-        setState(new WrappingState(wrapped, context, cancelException));
+        setState(new WrappingState(wrapped, cancelException));
       } else {
         setState(
             new MaterialState(wrapped, materializedStart, materializedLength, knownSize, context,
@@ -321,7 +321,7 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
         final int materializedLength = Math.max(0, materializedEnd - materializedStart);
         if (materializedLength == 0) {
           try {
-            consumer.accept(setState(new WrappingState(wrapped, context, cancelException)));
+            consumer.accept(setState(new WrappingState(wrapped, cancelException)));
           } catch (final Exception e) {
             final CancellationException exception = cancelException.get();
             if (exception != null) {

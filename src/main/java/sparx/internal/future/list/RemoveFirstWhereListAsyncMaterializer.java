@@ -48,7 +48,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, Integer, List<E>> removeFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, predicate, context, cancelException, removeFunction));
   }
 
@@ -128,7 +128,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
         wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.accept(false);
           }
 
@@ -172,7 +172,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
         wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.accept(false);
           }
 
@@ -247,7 +247,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.complete(size);
           }
 
@@ -383,7 +383,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           new CancellableIndexedAsyncPredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {
-              setState(new WrappingState(wrapped, context, cancelException));
+              setState(new WrappingState(wrapped, cancelException));
               predicate.complete(size);
             }
 
@@ -513,7 +513,7 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
           }
 
           @Override

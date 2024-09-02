@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
@@ -40,9 +41,10 @@ public class FoldRightListAsyncMaterializer<E, F> extends AbstractListAsyncMater
 
   public FoldRightListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final F identity, @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation,
+      @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<F>, List<F>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, identity, operation, cancelException, decorateFunction));
   }
 

@@ -45,7 +45,7 @@ public class SortedListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       @NotNull final Comparator<? super E> comparator, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, comparator, context, cancelException, decorateFunction));
     knownSize = wrapped.knownSize();
   }

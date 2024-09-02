@@ -44,7 +44,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, predicate, mapper, context, cancelException,
         decorateFunction));
   }
@@ -128,7 +128,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.accept(false);
           }
 
@@ -170,7 +170,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.accept(false);
           }
 
@@ -243,7 +243,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.complete(size);
           }
 
@@ -336,7 +336,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(int size) throws Exception {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
             consumer.accept(false);
           }
 
@@ -378,7 +378,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
           new CancellableIndexedAsyncPredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {
-              setState(new WrappingState(wrapped, context, cancelException));
+              setState(new WrappingState(wrapped, cancelException));
               predicate.complete(size);
             }
 
@@ -506,7 +506,7 @@ public class FlatMapFirstWhereListAsyncMaterializer<E> extends AbstractListAsync
         wrapped.materializeNextWhile(testedIndex + 1, new CancellableIndexedAsyncPredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
-            setState(new WrappingState(wrapped, context, cancelException));
+            setState(new WrappingState(wrapped, cancelException));
           }
 
           @Override

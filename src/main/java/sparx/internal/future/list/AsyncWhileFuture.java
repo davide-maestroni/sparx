@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
@@ -82,9 +83,19 @@ public class AsyncWhileFuture<E> implements Future<Void> {
         }
       });
     } else {
-      context.scheduleAfter(new Task() {
+      context.scheduleAfter(new ContextTask(context) {
         @Override
-        public void run() {
+        public @NotNull String taskID() {
+          return taskID;
+        }
+
+        @Override
+        public int weight() {
+          return materializer.weightNextWhile();
+        }
+
+        @Override
+        protected void runWithContext() {
           materializer.materializeNextWhile(0, new IndexedAsyncPredicate<E>() {
             @Override
             public void complete(final int size) {
@@ -119,16 +130,6 @@ public class AsyncWhileFuture<E> implements Future<Void> {
               }
             }
           });
-        }
-
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
-
-        @Override
-        public int weight() {
-          return materializer.weightNextWhile();
         }
       });
     }
@@ -174,9 +175,19 @@ public class AsyncWhileFuture<E> implements Future<Void> {
         }
       });
     } else {
-      context.scheduleAfter(new Task() {
+      context.scheduleAfter(new ContextTask(context) {
         @Override
-        public void run() {
+        public @NotNull String taskID() {
+          return taskID;
+        }
+
+        @Override
+        public int weight() {
+          return materializer.weightElement();
+        }
+
+        @Override
+        protected void runWithContext() {
           materializer.materializeNextWhile(0, new IndexedAsyncPredicate<E>() {
             @Override
             public void complete(final int size) {
@@ -212,16 +223,6 @@ public class AsyncWhileFuture<E> implements Future<Void> {
               }
             }
           });
-        }
-
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
-
-        @Override
-        public int weight() {
-          return materializer.weightElement();
         }
       });
     }

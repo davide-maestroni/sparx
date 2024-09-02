@@ -41,13 +41,13 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     final int knownSize = wrapped.knownSize();
     this.knownSize = knownSize == 0 ? elementsMaterializer.knownSize() : knownSize;
     isMaterializedAtOnce = knownSize == 0 ? elementsMaterializer.isMaterializedAtOnce()
         : knownSize > 0 ? wrapped.isMaterializedAtOnce()
             : wrapped.isMaterializedAtOnce() && elementsMaterializer.isMaterializedAtOnce();
-    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException));
+    setState(new ImmaterialState(wrapped, elementsMaterializer, cancelException));
   }
 
   @Override
@@ -68,18 +68,15 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final ExecutionContext context;
     private final ListAsyncMaterializer<E> elementsMaterializer;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
-        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
-      this.context = context;
       this.cancelException = cancelException;
     }
 
@@ -273,10 +270,9 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           @Override
           public void cancellableAccept(final Boolean empty) {
             if (empty) {
-              consumeState(
-                  setState(new WrappingState(elementsMaterializer, context, cancelException)));
+              consumeState(setState(new WrappingState(elementsMaterializer, cancelException)));
             } else {
-              consumeState(setState(new WrappingState(wrapped, context, cancelException)));
+              consumeState(setState(new WrappingState(wrapped, cancelException)));
             }
           }
 

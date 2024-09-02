@@ -43,7 +43,7 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
         decorateFunction));
   }
@@ -375,13 +375,6 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
       }
 
       @Override
-      @SuppressWarnings("unchecked")
-      public void run() {
-        isWrapped = true;
-        ((ListAsyncMaterializer<Object>) wrapped).materializeElement(wrappedIndex, this);
-      }
-
-      @Override
       public @NotNull String taskID() {
         return taskID;
       }
@@ -390,6 +383,13 @@ public class FindLastIndexOfSliceListAsyncMaterializer<E> extends
       public int weight() {
         return (int) Math.min(Integer.MAX_VALUE,
             (long) wrapped.weightElement() + elementsMaterializer.weightElement());
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      protected void runWithContext() {
+        isWrapped = true;
+        ((ListAsyncMaterializer<Object>) wrapped).materializeElement(wrappedIndex, this);
       }
     }
   }

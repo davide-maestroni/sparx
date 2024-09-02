@@ -46,7 +46,7 @@ public class ResizeListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> resizeFunction,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(
         new ImmaterialState(wrapped, numElements, padding, context, cancelException, resizeFunction,
             decorateFunction));

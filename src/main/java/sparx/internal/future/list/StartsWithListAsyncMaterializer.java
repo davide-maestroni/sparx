@@ -45,7 +45,7 @@ public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMateria
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
         decorateFunction));
   }
@@ -215,7 +215,7 @@ public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMateria
         return 1;
       }
       return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightElement() + +elementsMaterializer.weightNext());
+          (long) wrapped.weightElement() + elementsMaterializer.weightNext());
     }
 
     @Override
@@ -317,12 +317,6 @@ public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void run() {
-        isWrapped = false;
-        elementsMaterializer.materializeNext(this);
-      }
-
-      @Override
       public @NotNull String taskID() {
         return taskID;
       }
@@ -331,6 +325,12 @@ public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMateria
       public int weight() {
         return (int) Math.min(Integer.MAX_VALUE,
             (long) wrapped.weightElement() + elementsMaterializer.weightNext());
+      }
+
+      @Override
+      protected void runWithContext() {
+        isWrapped = false;
+        elementsMaterializer.materializeNext(this);
       }
     }
   }

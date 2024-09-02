@@ -44,7 +44,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<F>, List<F>> decorateFunction) {
-    super(new AtomicInteger(STATUS_RUNNING));
+    super(context, new AtomicInteger(STATUS_RUNNING));
     knownSize = wrapped.knownSize();
     setState(new ImmaterialState(wrapped, mapper, context, cancelException, decorateFunction));
   }
