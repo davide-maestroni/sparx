@@ -18,6 +18,7 @@ package sparx;
 import static sparx.internal.future.AsyncConsumers.safeConsume;
 import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
+import static sparx.lazy.indexedIdentity;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,6 +55,7 @@ import sparx.internal.future.list.AsyncWhileFuture;
 import sparx.internal.future.list.CountListAsyncMaterializer;
 import sparx.internal.future.list.CountWhereListAsyncMaterializer;
 import sparx.internal.future.list.DiffListAsyncMaterializer;
+import sparx.internal.future.list.DistinctByListAsyncMaterializer;
 import sparx.internal.future.list.DropListAsyncMaterializer;
 import sparx.internal.future.list.DropRightListAsyncMaterializer;
 import sparx.internal.future.list.DropRightWhileListAsyncMaterializer;
@@ -557,6 +559,19 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
           return ((lazy.List<E>) elements).diff(otherElements);
+        }
+      };
+    }
+
+    private static @NotNull <E, K> LazyListAsyncMaterializer<E, E> lazyMaterializerDistinctBy(
+        @NotNull final ListAsyncMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedFunction<? super E, K> keyExtractor) {
+      return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
+          return ((lazy.List<E>) elements).distinctBy(keyExtractor);
         }
       };
     }
@@ -1558,19 +1573,48 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> distinct() {
-      // TODO: implement
-      return null;
+      return distinctBy(indexedIdentity());
     }
 
     @Override
     public @NotNull <K> List<E> distinctBy(@NotNull final Function<? super E, K> keyExtractor) {
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerDistinctBy(materializer, context, cancelException,
+                toIndexedFunction(Require.notNull(keyExtractor, "keyExtractor"))));
+      }
+      return new List<E>(context, cancelException,
+          new DistinctByListAsyncMaterializer<E, K>(materializer,
+              toIndexedFunction(Require.notNull(keyExtractor, "keyExtractor")), context,
+              cancelException, List.<E>decorateFunction()));
     }
 
     @Override
     public @NotNull <K> List<E> distinctBy(
         @NotNull final IndexedFunction<? super E, K> keyExtractor) {
-      return null;
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return new List<E>(context, cancelException, materializer);
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerDistinctBy(materializer, context, cancelException,
+                Require.notNull(keyExtractor, "keyExtractor")));
+      }
+      return new List<E>(context, cancelException,
+          new DistinctByListAsyncMaterializer<E, K>(materializer,
+              Require.notNull(keyExtractor, "keyExtractor"), context, cancelException,
+              List.<E>decorateFunction()));
     }
 
     @Override

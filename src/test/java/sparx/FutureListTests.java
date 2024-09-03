@@ -257,6 +257,25 @@ public class FutureListTests {
   }
 
   @Test
+  public void distinctBy() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).toFuture(context).distinctBy((Function<? super Integer, Object>) null));
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context)
+        .distinctBy((IndexedFunction<? super Integer, Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).toFuture(context).flatMap(e -> List.of(e))
+            .distinctBy((Function<? super Integer, Object>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).toFuture(context).flatMap(e -> List.of(e))
+            .distinctBy((IndexedFunction<? super Integer, Object>) null));
+    test(List.of(1, null, 2), () -> List.of(1, 1, null, 2, null, 1), future.List::distinct);
+    test(List.of(1, 2), () -> List.of(1, 1, null, 2, null, 1),
+        ll -> ll.distinctBy(e -> e == null ? 1 : e));
+    test(List.of(1, null), () -> List.of(1, 1, null, 2, null, 1),
+        ll -> ll.distinctBy(e -> e == null ? 2 : e));
+  }
+
+  @Test
   public void doFor() throws Exception {
     assertThrows(NullPointerException.class,
         () -> List.of(0).toFuture(context).doFor((Consumer<? super Object>) null));

@@ -110,7 +110,6 @@ public class LazyListTests {
     test(List.of(), () -> List.of().diff(List.of(1, 2, null, 4)));
   }
 
-
   @Test
   public void distinctBy() throws Exception {
     assertThrows(NullPointerException.class,
