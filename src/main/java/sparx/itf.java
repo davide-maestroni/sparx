@@ -2146,7 +2146,7 @@ class itf {
     Sequence<E> drop(int maxElements);
 
     @NotNull
-    Sequence<E> dropRight(int maxElements);
+    Sequence<E> dropRight(int maxElements); // TODO: dropLast ???
 
     @NotNull
     Sequence<E> dropRightWhile(@NotNull IndexedPredicate<? super E> predicate);
@@ -2470,7 +2470,7 @@ class itf {
     Sequence<E> take(int maxElements);
 
     @NotNull
-    Sequence<E> takeRight(int maxElements);
+    Sequence<E> takeRight(int maxElements); // TODO: takeLast ???
 
     @NotNull
     Sequence<E> takeRightWhile(@NotNull IndexedPredicate<? super E> predicate);

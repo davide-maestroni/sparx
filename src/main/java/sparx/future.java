@@ -110,6 +110,7 @@ import sparx.internal.future.list.SlidingWindowListAsyncMaterializer;
 import sparx.internal.future.list.SlidingWindowListAsyncMaterializer.Splitter;
 import sparx.internal.future.list.SortedListAsyncMaterializer;
 import sparx.internal.future.list.StartsWithListAsyncMaterializer;
+import sparx.internal.future.list.StopCancelListAsyncMaterializer;
 import sparx.internal.future.list.SwitchListAsyncMaterializer;
 import sparx.internal.future.list.SymmetricDiffListAsyncMaterializer;
 import sparx.internal.future.list.TakeListAsyncMaterializer;
@@ -4282,6 +4283,12 @@ class future extends Sparx {
       return new List<Boolean>(context, cancelException,
           new StartsWithListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
               cancelException, List.<Boolean>decorateFunction()));
+    }
+
+    public @NotNull List<E> stopCancelPropagation() {
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new List<E>(context, cancelException,
+          new StopCancelListAsyncMaterializer<E>(materializer));
     }
 
     // TODO: stopCancelPropagation + switchMap, mergeMap, concatMap(==flatMap) + flatMapAll(?)
