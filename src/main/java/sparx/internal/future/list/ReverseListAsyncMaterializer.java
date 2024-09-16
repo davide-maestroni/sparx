@@ -51,7 +51,7 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
     final int knownSize = this.knownSize = wrapped.knownSize();
     if (knownSize == 0) {
       try {
-        setState(
+        setDone(
             new EmptyListAsyncMaterializer<E>(reverseFunction.apply(Collections.<E>emptyList())));
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
@@ -64,13 +64,13 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
   }
 
   @Override
-  public int knownSize() {
-    return knownSize;
+  public boolean isMaterializedAtOnce() {
+    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   @Override
-  public boolean isMaterializedAtOnce() {
-    return isMaterializedAtOnce || super.isMaterializedAtOnce();
+  public int knownSize() {
+    return knownSize;
   }
 
   private interface StateConsumer<E> {
@@ -148,11 +148,6 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
           consumer.error(error);
         }
       });
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
@@ -309,7 +304,7 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
       } else if (getState() == this) {
         if (wrappedSize == 0) {
           try {
-            consumer.accept(setState(new EmptyListAsyncMaterializer<E>(
+            consumer.accept(setDone(new EmptyListAsyncMaterializer<E>(
                 reverseFunction.apply(Collections.<E>emptyList()))));
           } catch (final Exception e) {
             if (e instanceof InterruptedException) {
@@ -407,11 +402,6 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -449,7 +439,7 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
           @Override
           public void cancellableAccept(final List<E> elements) throws Exception {
             final List<E> materialized = reverseFunction.apply(elements);
-            setState(new ListToListAsyncMaterializer<E>(materialized, context));
+            setDone(new ListToListAsyncMaterializer<E>(materialized, context));
             consumeElements(materialized);
           }
 

@@ -42,6 +42,7 @@ import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.internal.future.iterator.CollectionToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorAsyncMaterializer;
+import sparx.internal.future.iterator.IteratorAsyncForFuture;
 import sparx.internal.future.iterator.IteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ListAsyncMaterializerToIteratorAsyncMaterializer;
@@ -49,9 +50,6 @@ import sparx.internal.future.iterator.ListToIteratorAsyncMaterializer;
 import sparx.internal.future.list.AbstractListAsyncMaterializer;
 import sparx.internal.future.list.AppendAllListAsyncMaterializer;
 import sparx.internal.future.list.AppendListAsyncMaterializer;
-import sparx.internal.future.list.AsyncForFuture;
-import sparx.internal.future.list.AsyncGetFuture;
-import sparx.internal.future.list.AsyncWhileFuture;
 import sparx.internal.future.list.CountListAsyncMaterializer;
 import sparx.internal.future.list.CountWhereListAsyncMaterializer;
 import sparx.internal.future.list.DiffListAsyncMaterializer;
@@ -85,7 +83,10 @@ import sparx.internal.future.list.IncludesSliceListAsyncMaterializer;
 import sparx.internal.future.list.InsertAfterListAsyncMaterializer;
 import sparx.internal.future.list.InsertAllAfterListAsyncMaterializer;
 import sparx.internal.future.list.IntersectListAsyncMaterializer;
+import sparx.internal.future.list.ListAsyncForFuture;
+import sparx.internal.future.list.ListAsyncGetFuture;
 import sparx.internal.future.list.ListAsyncMaterializer;
+import sparx.internal.future.list.ListAsyncWhileFuture;
 import sparx.internal.future.list.ListToListAsyncMaterializer;
 import sparx.internal.future.list.MapAfterListAsyncMaterializer;
 import sparx.internal.future.list.MapFirstWhereListAsyncMaterializer;
@@ -118,12 +119,14 @@ import sparx.internal.future.list.TakeRightListAsyncMaterializer;
 import sparx.internal.future.list.TakeRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.TakeWhileListAsyncMaterializer;
 import sparx.internal.future.list.TransformListAsyncMaterializer;
+import sparx.itf.Sequence;
 import sparx.util.DeadLockException;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
+import sparx.util.function.Action;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
@@ -162,10 +165,13 @@ class future extends Sparx {
       }
       return new ListToIteratorAsyncMaterializer<E>(list, context);
     }
-    if (elements instanceof Collection) {
+    if (elements instanceof java.util.Collection) {
       return new CollectionToIteratorAsyncMaterializer<E>((Collection<E>) elements, context);
     }
     // TODO: future.Iterator
+    if (elements instanceof Iterator) {
+      // TODO: return new Iterator<E>();
+    }
     if (elements instanceof java.util.Iterator) {
       return new IteratorToIteratorAsyncMaterializer<E>((java.util.Iterator<E>) elements, context);
     }
@@ -178,8 +184,883 @@ class future extends Sparx {
     return elements instanceof List;
   }
 
-  public static class List<E> extends AbstractListSequence<E> implements
-      itf.Future<E, lazy.List<E>>, itf.List<E> {
+  public static class Iterator<E> implements itf.Future<E, lazy.Iterator<E>>, itf.Iterator<E> {
+
+    private static final Logger LOGGER = Logger.getLogger(Iterator.class.getName());
+
+    private final AtomicReference<CancellationException> cancelException;
+    private final ExecutionContext context;
+    private final IteratorAsyncMaterializer<E> materializer;
+    private final String taskID;
+
+    Iterator(@NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IteratorAsyncMaterializer<E> materializer) {
+      this.context = context;
+      this.materializer = materializer;
+      this.cancelException = cancelException;
+      taskID = Integer.toHexString(System.identityHashCode(this));
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingGet() {
+      return null;
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull IndexedConsumer<? super E> consumer) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Consumer<? super E> consumer) {
+      return null;
+    }
+
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+      return false;
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return false;
+    }
+
+    @Override
+    public boolean isDone() {
+      return false;
+    }
+
+    @Override
+    public lazy.Iterator<E> get() throws InterruptedException, ExecutionException {
+      return null;
+    }
+
+    @Override
+    public lazy.Iterator<E> get(long timeout, @NotNull TimeUnit unit)
+        throws InterruptedException, ExecutionException, TimeoutException {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> append(E element) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> appendAll(@NotNull Iterable<? extends E> elements) {
+      return null;
+    }
+
+    @Override
+    public <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> as() {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> count() {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> countWhere(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> diff(@NotNull Iterable<?> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> distinct() {
+      return null;
+    }
+
+    @Override
+    public @NotNull <K> Iterator<E> distinctBy(@NotNull Function<? super E, K> keyExtractor) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <K> Iterator<E> distinctBy(
+        @NotNull IndexedFunction<? super E, K> keyExtractor) {
+      return null;
+    }
+
+    @Override
+    public void doFor(@NotNull Consumer<? super E> consumer) {
+
+    }
+
+    @Override
+    public void doFor(@NotNull IndexedConsumer<? super E> consumer) {
+
+    }
+
+    @Override
+    public void doWhile(@NotNull IndexedPredicate<? super E> predicate) {
+
+    }
+
+    @Override
+    public void doWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedConsumer<? super E> consumer) {
+
+    }
+
+    @Override
+    public void doWhile(@NotNull Predicate<? super E> predicate) {
+
+    }
+
+    @Override
+    public void doWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Consumer<? super E> consumer) {
+
+    }
+
+    @Override
+    public @NotNull Iterator<E> drop(int maxElements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> dropRight(int maxElements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> dropRightWhile(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> dropRightWhile(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> dropWhile(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> dropWhile(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> each(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> each(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> endsWith(@NotNull Iterable<?> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> exists(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> exists(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> filter(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> filter(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> findAny(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> findAny(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> findFirst(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> findFirst(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> findIndexOf(Object element) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> findIndexOfSlice(@NotNull Iterable<?> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> findIndexWhere(
+        @NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> findLast(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> findLast(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> findLastIndexOf(Object element) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements) {
+      return null;
+    }
+
+    @Override
+    public E first() {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> findLastIndexWhere(
+        @NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> flatMap(
+        @NotNull Function<? super E, ? extends Iterable<F>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> flatMap(
+        @NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> flatMapAfter(int numElements,
+        @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> flatMapAfter(int numElements,
+        @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> flatMapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
+        @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> flatMapFirstWhere(@NotNull Predicate<? super E> predicate,
+        @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> flatMapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
+        @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
+        @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> flatMapWhere(@NotNull IndexedPredicate<? super E> predicate,
+        @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
+        @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> fold(F identity,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> foldLeft(F identity,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> foldLeftWhile(F identity,
+        @NotNull Predicate<? super F> predicate,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> foldRight(F identity,
+        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> foldRightWhile(F identity,
+        @NotNull Predicate<? super F> predicate,
+        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> includes(Object element) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> includesAll(@NotNull Iterable<?> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> includesSlice(@NotNull Iterable<?> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> insert(E element) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> insertAfter(int numElements, E element) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> insertAll(@NotNull Iterable<? extends E> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> insertAllAfter(int numElements,
+        @NotNull Iterable<? extends E> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> intersect(@NotNull Iterable<?> elements) {
+      return null;
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return false;
+    }
+
+    @Override
+    public boolean isFailed() {
+      return materializer.isFailed();
+    }
+
+    @Override
+    public boolean isSucceeded() {
+      return materializer.isSucceeded();
+    }
+
+    @Override
+    public E last() {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> iterator() {
+      return null;
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> map(@NotNull Function<? super E, F> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <F> Iterator<F> map(@NotNull IndexedFunction<? super E, F> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> mapAfter(int numElements,
+        @NotNull Function<? super E, ? extends E> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> mapAfter(int numElements,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> mapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> mapFirstWhere(@NotNull Predicate<? super E> predicate,
+        @NotNull Function<? super E, ? extends E> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> mapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> mapLastWhere(@NotNull Predicate<? super E> predicate,
+        @NotNull Function<? super E, ? extends E> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> mapWhere(@NotNull IndexedPredicate<? super E> predicate,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> mapWhere(@NotNull Predicate<? super E> predicate,
+        @NotNull Function<? super E, ? extends E> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> max(@NotNull Comparator<? super E> comparator) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> min(@NotNull Comparator<? super E> comparator) {
+      return null;
+    }
+
+    @Override
+    public int nextIndex() {
+      return 0;
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
+      return new IteratorAsyncForFuture<E>(context, taskID, cancelException, materializer,
+          toIndexedConsumer(Require.notNull(consumer, "consumer")));
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
+      return new IteratorAsyncForFuture<E>(context, taskID, cancelException, materializer,
+          Require.notNull(consumer, "consumer"));
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> none(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> none(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> notAll(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public boolean notEmpty() {
+      return false;
+    }
+
+    @Override
+    public @NotNull Iterator<E> orElse(@NotNull Iterable<? extends E> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> orElseGet(
+        @NotNull Supplier<? extends Iterable<? extends E>> supplier) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> peek(@NotNull Consumer<? super E> consumer) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> peek(@NotNull IndexedConsumer<? super E> consumer) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> peekExceptionally(@NotNull Consumer<? super Throwable> consumer) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> peekExceptionally(
+        @NotNull IndexedConsumer<? super Throwable> consumer) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> plus(E element) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> plusAll(@NotNull Iterable<? extends E> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> reduce(
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> reduceLeft(
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> reduceRight(
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeAfter(int numElements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeEach(E element) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeFirst(E element) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeFirstWhere(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeFirstWhere(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeLast(E element) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeLastWhere(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeLastWhere(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeSlice(int start, int end) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeWhere(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> removeWhere(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceAfter(int numElements, E replacement) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceEach(E element, E replacement) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceFirst(E element, E replacement) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
+        E replacement) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate,
+        E replacement) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceLast(E element, E replacement) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceLastWhere(@NotNull IndexedPredicate<? super E> predicate,
+        E replacement) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceLastWhere(@NotNull Predicate<? super E> predicate,
+        E replacement) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceSlice(int start, int end,
+        @NotNull Iterable<? extends E> patch) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceWhere(@NotNull IndexedPredicate<? super E> predicate,
+        E replacement) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> replaceWhere(@NotNull Predicate<? super E> predicate,
+        E replacement) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> resizeTo(int numElements, E padding) {
+      return null;
+    }
+
+    @Override
+    public int size() {
+      return 0;
+    }
+
+    @Override
+    public int skip(int maxElements) {
+      return 0;
+    }
+
+    @Override
+    public @NotNull Iterator<E> runFinally(@NotNull Action action) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> slice(int start) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> slice(int start, int end) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<? extends itf.Iterator<E>> slidingWindow(int maxSize, int step) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<? extends itf.Iterator<E>> slidingWindowWithPadding(int size, int step,
+        E padding) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<Boolean> startsWith(@NotNull Iterable<?> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <T extends Throwable> Iterator<E> switchExceptionally(
+        @NotNull Class<T> exceptionType,
+        @NotNull Function<? super T, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull <T extends Throwable> Iterator<E> switchExceptionally(
+        @NotNull Class<T> exceptionType,
+        @NotNull IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> switchExceptionally(
+        @NotNull Function<? super Throwable, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> switchExceptionally(
+        @NotNull IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> symmetricDiff(@NotNull Iterable<? extends E> elements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> take(int maxElements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> takeRight(int maxElements) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> takeRightWhile(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> takeRightWhile(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> takeWhile(@NotNull IndexedPredicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> takeWhile(@NotNull Predicate<? super E> predicate) {
+      return null;
+    }
+
+    @Override
+    public @NotNull Iterator<E> union(@NotNull Iterable<? extends E> elements) {
+      return null;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return false;
+    }
+
+    @Override
+    public E next() {
+      return null;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
+  }
+
+  public static class List<E> extends AbstractListSequence<E> implements itf.Future<E, Void>,
+      itf.List<E> {
 
     private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> APPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {
       @Override
@@ -1404,6 +2285,11 @@ class future extends Sparx {
       return (List<F>) this;
     }
 
+    // TODO: extra
+    public @NotNull lazy.List<E> asLazy() {
+      return lazy.List.wrap(this);
+    }
+
     @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
       if (!materializer.isDone() && cancelException.compareAndSet(null,
@@ -2509,10 +3395,10 @@ class future extends Sparx {
     }
 
     @Override
-    public lazy.List<E> get() throws InterruptedException, ExecutionException {
+    public Void get() throws InterruptedException, ExecutionException {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
-        return lazy.List.of();
+        return null;
       }
       final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
           cancelException);
@@ -2537,7 +3423,7 @@ class future extends Sparx {
           @Override
           protected void runWithContext() {
             try {
-              materializer.materializeDone(consumer);
+              materializer.materializeElements(consumer);
             } catch (final Exception e) {
               consumer.error(e);
             }
@@ -2545,7 +3431,8 @@ class future extends Sparx {
         });
       }
       try {
-        return (lazy.List<E>) consumer.get();
+        consumer.get();
+        return null;
       } catch (final InterruptedException e) {
         throw e;
       } catch (final Exception e) {
@@ -2610,11 +3497,11 @@ class future extends Sparx {
     }
 
     @Override
-    public lazy.List<E> get(final long timeout, @NotNull final TimeUnit unit)
+    public Void get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
       final ListAsyncMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
-        return lazy.List.of();
+        return null;
       }
       final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
           cancelException);
@@ -2639,7 +3526,7 @@ class future extends Sparx {
           @Override
           protected void runWithContext() {
             try {
-              materializer.materializeDone(consumer);
+              materializer.materializeElements(consumer);
             } catch (final Exception e) {
               consumer.error(e);
             }
@@ -2647,7 +3534,8 @@ class future extends Sparx {
         });
       }
       try {
-        return lazy.List.wrap(consumer.get(timeout, unit));
+        consumer.get(timeout, unit);
+        return null;
       } catch (final InterruptedException e) {
         throw e;
       } catch (final Exception e) {
@@ -3307,45 +4195,45 @@ class future extends Sparx {
 
     @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
-      return new AsyncForFuture<E>(context, taskID, cancelException, materializer,
+      return new ListAsyncForFuture<E>(context, taskID, cancelException, materializer,
           toIndexedConsumer(Require.notNull(consumer, "consumer")));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
-      return new AsyncForFuture<E>(context, taskID, cancelException, materializer,
+      return new ListAsyncForFuture<E>(context, taskID, cancelException, materializer,
           Require.notNull(consumer, "consumer"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingGet() {
-      return new AsyncGetFuture<E>(context, taskID, cancelException, materializer);
+      return new ListAsyncGetFuture<E>(context, taskID, cancelException, materializer);
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(
         @NotNull final IndexedPredicate<? super E> predicate) {
-      return new AsyncWhileFuture<E>(context, taskID, cancelException, materializer,
+      return new ListAsyncWhileFuture<E>(context, taskID, cancelException, materializer,
           Require.notNull(predicate, "predicate"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
         @NotNull final IndexedConsumer<? super E> consumer) {
-      return new AsyncWhileFuture<E>(context, taskID, cancelException, materializer,
+      return new ListAsyncWhileFuture<E>(context, taskID, cancelException, materializer,
           Require.notNull(condition, "condition"), Require.notNull(consumer, "consumer"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
-      return new AsyncWhileFuture<E>(context, taskID, cancelException, materializer,
+      return new ListAsyncWhileFuture<E>(context, taskID, cancelException, materializer,
           toIndexedPredicate(Require.notNull(predicate, "predicate")));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
         @NotNull final Consumer<? super E> consumer) {
-      return new AsyncWhileFuture<E>(context, taskID, cancelException, materializer,
+      return new ListAsyncWhileFuture<E>(context, taskID, cancelException, materializer,
           toIndexedPredicate(Require.notNull(condition, "condition")),
           toIndexedConsumer(Require.notNull(consumer, "consumer")));
     }
@@ -4285,6 +5173,7 @@ class future extends Sparx {
               cancelException, List.<Boolean>decorateFunction()));
     }
 
+    // TODO: extra
     public @NotNull List<E> stopCancelPropagation() {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<E>(context, cancelException,
@@ -4318,6 +5207,8 @@ class future extends Sparx {
               cancelException, List.<E>decorateFunction()));
     }
 
+    // TODO: toFuture(context) ???
+    // TODO: extra
     public @NotNull List<E> switchTo(@NotNull final ExecutionContext context) {
       if (context.equals(this.context)) {
         return this;
@@ -4442,6 +5333,47 @@ class future extends Sparx {
               List.<E>decorateFunction()));
     }
 
+
+    // TODO: extra
+    public @NotNull lazy.List<E> toLazy() {
+      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
+          cancelException);
+      final ExecutionContext context = this.context;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(consumer);
+      } else {
+        context.scheduleAfter(new ContextTask(context) {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+
+          @Override
+          protected void runWithContext() {
+            try {
+              materializer.materializeElements(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+        });
+      }
+      try {
+        return (lazy.List<E>) consumer.get();
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+
     @Override
     public @NotNull List<E> union(@NotNull final Iterable<? extends E> elements) {
       final ExecutionContext context = this.context;
@@ -4561,11 +5493,6 @@ class future extends Sparx {
         }
 
         @Override
-        public void materializeDone(@NotNull final AsyncConsumer<java.util.List<E>> consumer) {
-          safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-        }
-
-        @Override
         public void materializeElement(final int index,
             @NotNull final IndexedAsyncConsumer<E> consumer) {
           if (index < 0) {
@@ -4578,7 +5505,19 @@ class future extends Sparx {
 
         @Override
         public void materializeElements(@NotNull final AsyncConsumer<java.util.List<E>> consumer) {
-          materialized().materializeElements(consumer);
+          final ListAsyncMaterializer<E> state = materialized();
+          state.materializeElements(new AsyncConsumer<java.util.List<E>>() {
+            @Override
+            public void accept(final java.util.List<E> elements) throws Exception {
+              setDone(state);
+              consumer.accept(elements);
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
         }
 
         @Override
@@ -4859,8 +5798,7 @@ class future extends Sparx {
     }
   }
 
-  public static class ListIterator<E> implements itf.Future<E, lazy.ListIterator<E>>,
-      itf.ListIterator<E> {
+  public static class ListIterator<E> implements itf.Future<E, Void>, itf.ListIterator<E> {
 
     private static final Function<? extends List<?>, ? extends ListIterator<?>> LIST_TO_ITERATOR = new Function<List<?>, ListIterator<?>>() {
       @Override
@@ -4910,6 +5848,12 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     public @NotNull <F> ListIterator<F> as() {
       return (ListIterator<F>) this;
+    }
+
+    // TODO: extra
+    public @NotNull lazy.ListIterator<E> asLazy() {
+      final int pos = safePos();
+      return list.asLazy().listIterator(pos);
     }
 
     @Override
@@ -5415,17 +6359,16 @@ class future extends Sparx {
     }
 
     @Override
-    public lazy.ListIterator<E> get() throws InterruptedException, ExecutionException {
-      final int pos = safePos();
-      return new lazy.ListIterator<E>(list.get(), pos);
+    public Void get() throws InterruptedException, ExecutionException {
+      list.get();
+      return null;
     }
 
     @Override
-    public lazy.ListIterator<E> get(final long timeout, @NotNull final TimeUnit unit)
+    public Void get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
-      final int pos = safePos();
-      final lazy.List<E> rightList = list.get(timeout, unit);
-      return new lazy.ListIterator<E>(rightList, pos);
+      list.get(timeout, unit);
+      return null;
     }
 
     @Override
@@ -6245,6 +7188,11 @@ class future extends Sparx {
       return new ListIterator<Boolean>(context, nextList().startsWith(elements));
     }
 
+    // TODO: extra
+    public @NotNull ListIterator<E> stopCancelPropagation() {
+      return new ListIterator<E>(context, nextList().stopCancelPropagation());
+    }
+
     @Override
     public @NotNull ListIterator<E> symmetricDiff(@NotNull final Iterable<? extends E> elements) {
       return new ListIterator<E>(context, nextList().symmetricDiff(elements));
@@ -6304,6 +7252,12 @@ class future extends Sparx {
         return emptyIterator();
       }
       return new ListIterator<E>(context, nextList(pos).takeWhile(predicate));
+    }
+
+    // TODO: extra
+    public @NotNull lazy.ListIterator<E> toLazy() {
+      final int pos = safePos();
+      return list.toLazy().listIterator(pos);
     }
 
     @Override
@@ -6556,11 +7510,6 @@ class future extends Sparx {
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       safeConsume(consumer, false, LOGGER);
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<java.util.List<E>> consumer) {
-      materializeElements(consumer);
     }
 
     @Override

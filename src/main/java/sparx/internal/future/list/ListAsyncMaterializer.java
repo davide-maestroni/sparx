@@ -25,8 +25,6 @@ import sparx.util.annotation.NotNegative;
 
 public interface ListAsyncMaterializer<E> extends CollectionAsyncMaterializer<E> {
 
-  void materializeDone(@NotNull AsyncConsumer<List<E>> consumer);
-
   void materializeElement(int index, @NotNull IndexedAsyncConsumer<E> consumer);
 
   void materializeElements(@NotNull AsyncConsumer<List<E>> consumer);

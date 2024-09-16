@@ -120,8 +120,8 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
     public void materializeContains(final Object element,
         @NotNull final AsyncConsumer<Boolean> consumer) {
       final ElementsCache<F> elements = this.elements;
+      int i = 0;
       if (element == null) {
-        int i = 0;
         while (elements.has(i)) {
           if (elements.get(i) == null) {
             safeConsume(consumer, true, LOGGER);
@@ -166,7 +166,6 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
           }
         });
       } else {
-        int i = 0;
         while (elements.has(i)) {
           if (element.equals(elements.get(i))) {
             safeConsume(consumer, true, LOGGER);
@@ -212,11 +211,6 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
           }
         });
       }
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
@@ -280,7 +274,7 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
           public void cancellableComplete(final int size) throws Exception {
             wrappedSize = size;
             final List<F> materialized = decorateFunction.apply(elements.toList());
-            setState(new ListToListAsyncMaterializer<F>(materialized, context));
+            setDone(new ListToListAsyncMaterializer<F>(materialized, context));
             consumeElements(materialized);
           }
 

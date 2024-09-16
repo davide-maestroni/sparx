@@ -198,11 +198,6 @@ public class RemoveAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -260,7 +255,7 @@ public class RemoveAfterListAsyncMaterializer<E> extends AbstractListAsyncMateri
           @Override
           public void cancellableAccept(final List<E> elements) throws Exception {
             final List<E> materialized = removeFunction.apply(elements, numElements);
-            setState(new ListToListAsyncMaterializer<E>(materialized, context));
+            setDone(new ListToListAsyncMaterializer<E>(materialized, context));
             consumeElements(materialized);
           }
 

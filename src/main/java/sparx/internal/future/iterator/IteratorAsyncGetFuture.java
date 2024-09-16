@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.internal.future.list;
+package sparx.internal.future.iterator;
 
-import java.util.List;
+import java.util.Iterator;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -26,13 +26,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
-import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
-import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.DeadLockException;
-import sparx.util.function.IndexedConsumer;
 
-public class AsyncForFuture<E> implements Future<Void> {
+public class IteratorAsyncGetFuture<E> implements Future<Void> {
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -45,10 +42,10 @@ public class AsyncForFuture<E> implements Future<Void> {
 
   private volatile Exception error;
 
-  public AsyncForFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
+  public IteratorAsyncGetFuture(@NotNull final ExecutionContext context,
+      @NotNull final String taskID,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final ListAsyncMaterializer<E> materializer,
-      @NotNull final IndexedConsumer<? super E> consumer) {
+      @NotNull final IteratorAsyncMaterializer<E> materializer) {
     this.context = context;
     this.taskID = taskID;
     this.cancelException = cancelException;
@@ -56,13 +53,9 @@ public class AsyncForFuture<E> implements Future<Void> {
       if (!materializer.isDone()) {
         throw new DeadLockException("cannot wait on the future own execution context");
       }
-      materializer.materializeElements(new AsyncConsumer<List<E>>() {
+      materializer.materializeElements(new AsyncConsumer<Iterator<E>>() {
         @Override
-        public void accept(final java.util.List<E> elements) throws Exception {
-          int i = 0;
-          for (final E element : elements) {
-            consumer.accept(i++, element);
-          }
+        public void accept(final Iterator<E> elements) {
           synchronized (cancelException) {
             status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
             cancelException.notifyAll();
@@ -73,7 +66,7 @@ public class AsyncForFuture<E> implements Future<Void> {
         public void error(@NotNull final Exception error) {
           synchronized (cancelException) {
             if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-              AsyncForFuture.this.error = error;
+              IteratorAsyncGetFuture.this.error = error;
             }
             cancelException.notifyAll();
           }
@@ -88,34 +81,28 @@ public class AsyncForFuture<E> implements Future<Void> {
 
         @Override
         public int weight() {
-          return materializer.weightNextWhile();
+          return materializer.weightElements();
         }
 
         @Override
         protected void runWithContext() {
-          materializer.materializeNextWhile(0, new IndexedAsyncPredicate<E>() {
+          materializer.materializeElements(new AsyncConsumer<Iterator<E>>() {
             @Override
-            public void complete(final int size) {
+            public void accept(final Iterator<E> elements) {
               synchronized (cancelException) {
+                if (isCancelled()) {
+                  throw getCancelException();
+                }
                 status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
                 cancelException.notifyAll();
               }
             }
 
             @Override
-            public boolean test(final int size, final int index, final E element) throws Exception {
-              if (isCancelled()) {
-                throw getCancelException();
-              }
-              consumer.accept(index, element);
-              return true;
-            }
-
-            @Override
             public void error(@NotNull final Exception error) {
               synchronized (cancelException) {
                 if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-                  AsyncForFuture.this.error = error;
+                  IteratorAsyncGetFuture.this.error = error;
                 }
                 cancelException.notifyAll();
               }

@@ -69,13 +69,13 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   }
 
   @Override
-  public boolean isSucceeded() {
-    return status.get() == STATUS_DONE;
+  public boolean isMaterializedAtOnce() {
+    return isDone();
   }
 
   @Override
-  public boolean isMaterializedAtOnce() {
-    return isDone();
+  public boolean isSucceeded() {
+    return status.get() == STATUS_DONE;
   }
 
   @Override
@@ -88,23 +88,6 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
     state.materializeContains(element, consumer);
-  }
-
-  @Override
-  public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-    state.materializeElements(new AsyncConsumer<List<E>>() {
-      @Override
-      public void accept(final List<E> elements) throws Exception {
-        finalizeElements(elements);
-        setState(state, STATUS_DONE);
-        consumer.accept(elements);
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) throws Exception {
-        consumer.error(error);
-      }
-    });
   }
 
   @Override
@@ -185,9 +168,6 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     return state.weightSize();
   }
 
-  protected void finalizeElements(final List<E> elements) {
-  }
-
   @NotNull
   protected final ListAsyncMaterializer<E> getState() {
     return state;
@@ -197,6 +177,12 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
   protected final ListAsyncMaterializer<E> setCancelled(
       @NotNull final CancellationException exception) {
     return setState(new CancelledListAsyncMaterializer<E>(exception), STATUS_CANCELLED);
+  }
+
+  @NotNull
+  protected final ListAsyncMaterializer<E> setDone(
+      @NotNull final ListAsyncMaterializer<E> newState) {
+    return setState(newState, STATUS_DONE);
   }
 
   @NotNull
@@ -392,13 +378,13 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
     }
 
     @Override
-    public boolean isSucceeded() {
-      return false;
+    public boolean isMaterializedAtOnce() {
+      return wrapped.isMaterializedAtOnce();
     }
 
     @Override
-    public boolean isMaterializedAtOnce() {
-      return wrapped.isMaterializedAtOnce();
+    public boolean isSucceeded() {
+      return false;
     }
 
     @Override
@@ -431,11 +417,6 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
           consumer.error(error);
         }
       });
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
@@ -474,7 +455,7 @@ public abstract class AbstractListAsyncMaterializer<E> implements ListAsyncMater
         wrapped.materializeElements(new CancellableAsyncConsumer<List<E>>() {
           @Override
           public void cancellableAccept(final List<E> elements) {
-            setState(new ListToListAsyncMaterializer<E>(elements, context));
+            setDone(new ListToListAsyncMaterializer<E>(elements, context));
             for (final AsyncConsumer<List<E>> consumer : elementsConsumers) {
               safeConsume(consumer, elements, LOGGER);
             }

@@ -2400,7 +2400,7 @@ public class FutureListTests {
         public void getElements(@NotNull final future.List<Integer> chunk,
             @NotNull final AsyncConsumer<java.util.List<Integer>> consumer) {
           try {
-            consumer.accept(chunk.get());
+            consumer.accept(chunk.toLazy());
           } catch (final Exception e) {
             throw new RuntimeException(e);
           }
@@ -2486,7 +2486,7 @@ public class FutureListTests {
         public void getElements(@NotNull final future.List<Integer> chunk,
             @NotNull final AsyncConsumer<java.util.List<Integer>> consumer) {
           try {
-            consumer.accept(chunk.get());
+            consumer.accept(chunk.toLazy());
           } catch (final Exception e) {
             throw new RuntimeException(e);
           }
@@ -2718,7 +2718,8 @@ public class FutureListTests {
     var lst = actualSupplier.get();
     assertFalse(lst.isCancelled());
     assertFalse(lst.isFailed());
-    assertEquals(expected, lst.get());
+    lst.get();
+    assertEquals(expected, lst);
     assertTrue(lst.isDone());
     assertFalse(lst.isCancelled());
     assertFalse(lst.isFailed());

@@ -179,11 +179,6 @@ abstract class ProgressiveListAsyncMaterializer<E, F> extends AbstractListAsyncM
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), logger);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<F> consumer) {
       if (index < 0) {
@@ -416,7 +411,7 @@ abstract class ProgressiveListAsyncMaterializer<E, F> extends AbstractListAsyncM
 
     void setComplete() throws Exception {
       final List<F> materialized = decorateFunction.apply(elements);
-      setState(new ListToListAsyncMaterializer<F>(materialized, context));
+      setDone(new ListToListAsyncMaterializer<F>(materialized, context));
       consumeComplete(elements.size());
     }
 

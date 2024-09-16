@@ -78,13 +78,13 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
   }
 
   @Override
-  public int knownSize() {
-    return knownSize;
+  public boolean isMaterializedAtOnce() {
+    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   @Override
-  public boolean isMaterializedAtOnce() {
-    return isMaterializedAtOnce || super.isMaterializedAtOnce();
+  public int knownSize() {
+    return knownSize;
   }
 
   private interface StateConsumer<E> {
@@ -164,11 +164,6 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -188,7 +183,18 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
       materialized(new StateConsumer<E>() {
         @Override
         public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-          state.materializeElements(consumer);
+          state.materializeElements(new AsyncConsumer<List<E>>() {
+            @Override
+            public void accept(final List<E> elements) throws Exception {
+              setDone(state);
+              consumer.accept(elements);
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
         }
       });
     }
@@ -467,11 +473,6 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -518,7 +519,7 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
               @Override
               public void cancellableComplete(final int size) throws Exception {
                 final List<E> materialized = decorateFunction.apply(elements);
-                setState(new ListToListAsyncMaterializer<E>(materialized, context));
+                setDone(new ListToListAsyncMaterializer<E>(materialized, context));
                 consumeElements(materialized);
               }
 

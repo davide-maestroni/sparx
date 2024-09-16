@@ -204,11 +204,6 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -359,7 +354,7 @@ public class InsertAllAfterListAsyncMaterializer<E> extends AbstractListAsyncMat
               public void cancellableAccept(final List<E> elements) throws Exception {
                 final List<E> materialized = insertAllFunction.apply(wrappedElements, numElements,
                     elements);
-                setState(new ListToListAsyncMaterializer<E>(materialized, context));
+                setDone(new ListToListAsyncMaterializer<E>(materialized, context));
                 consumeElements(materialized);
               }
 

@@ -28,6 +28,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
+import sparx.lazy;
 
 public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterializer<E> {
 
@@ -58,12 +59,32 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
   }
 
   @Override
+  public boolean isFailed() {
+    return false;
+  }
+
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return true;
+  }
+
+  @Override
+  public boolean isSucceeded() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return elements.size();
   }
 
   @Override
   public void materializeCancel(@NotNull final CancellationException exception) {
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<Iterator<E>> consumer) {
+    safeConsume(consumer, lazy.Iterator.wrap(iterator), LOGGER);
   }
 
   @Override
@@ -114,6 +135,11 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
       index += skipped;
       safeConsume(consumer, skipped, LOGGER);
     }
+  }
+
+  @Override
+  public int weightElements() {
+    return 1;
   }
 
   @Override

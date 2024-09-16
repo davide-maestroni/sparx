@@ -40,8 +40,7 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
       CountWhereListAsyncMaterializer.class.getName());
 
   public CountWhereListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
-      @NotNull final ExecutionContext context,
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
     super(context, new AtomicInteger(STATUS_RUNNING));
@@ -121,11 +120,6 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
           state.materializeContains(element, consumer);
         }
       });
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<Integer>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
@@ -276,9 +270,8 @@ public class CountWhereListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     private void setState(final int size) throws Exception {
-      consumeState(CountWhereListAsyncMaterializer.this.setState(
-          new ElementToListAsyncMaterializer<Integer>(
-              decorateFunction.apply(Collections.singletonList(size)))));
+      consumeState(setDone(new ElementToListAsyncMaterializer<Integer>(
+          decorateFunction.apply(Collections.singletonList(size)))));
     }
   }
 }

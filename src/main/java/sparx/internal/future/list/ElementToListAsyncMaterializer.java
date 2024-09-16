@@ -84,11 +84,6 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   }
 
   @Override
-  public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-    materializeElements(consumer);
-  }
-
-  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     if (index < 0) {
       safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);

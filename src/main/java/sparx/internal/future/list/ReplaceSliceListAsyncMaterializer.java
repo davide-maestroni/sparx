@@ -167,11 +167,6 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -489,11 +484,6 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
           consumer.error(error);
         }
       });
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
@@ -986,7 +976,7 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     private void setComplete(@NotNull final List<E> elements) throws Exception {
       final List<E> materialized = decorateFunction.apply(elements);
-      setState(new ListToListAsyncMaterializer<E>(materialized, context));
+      setDone(new ListToListAsyncMaterializer<E>(materialized, context));
       consumeElements(materialized);
     }
 

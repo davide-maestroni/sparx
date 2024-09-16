@@ -77,11 +77,6 @@ public class FailedListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-    materializeElements(consumer);
-  }
-
-  @Override
   public void materializeElement(final int ignored,
       @NotNull final IndexedAsyncConsumer<E> consumer) {
     safeConsumeError(consumer, error, LOGGER);

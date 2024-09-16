@@ -132,11 +132,6 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -156,7 +151,18 @@ public class OrElseListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
       materialized(new StateConsumer<E>() {
         @Override
         public void accept(@NotNull final ListAsyncMaterializer<E> state) {
-          state.materializeElements(consumer);
+          state.materializeElements(new AsyncConsumer<List<E>>() {
+            @Override
+            public void accept(final List<E> elements) throws Exception {
+              setDone(state);
+              consumer.accept(elements);
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
         }
       });
     }

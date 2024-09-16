@@ -210,11 +210,6 @@ public class SlidingWindowListAsyncMaterializer<E, L extends List<E>> extends
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<L>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<L> consumer) {
       if (index < 0) {
@@ -510,7 +505,7 @@ public class SlidingWindowListAsyncMaterializer<E, L extends List<E>> extends
       }
       try {
         final List<L> materialized = decorateFunction.apply(elements.toList());
-        setState(new ListToListAsyncMaterializer<L>(materialized, context));
+        setDone(new ListToListAsyncMaterializer<L>(materialized, context));
         consumeElements(materialized);
       } catch (final Exception e) {
         if (e instanceof InterruptedException) {

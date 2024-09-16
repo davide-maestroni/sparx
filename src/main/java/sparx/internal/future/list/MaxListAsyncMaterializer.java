@@ -37,8 +37,7 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
   private static final Logger LOGGER = Logger.getLogger(MaxListAsyncMaterializer.class.getName());
 
   public MaxListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final Comparator<? super E> comparator,
-      @NotNull final ExecutionContext context,
+      @NotNull final Comparator<? super E> comparator, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(context, new AtomicInteger(STATUS_RUNNING));
@@ -123,11 +122,6 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
           state.materializeContains(element, consumer);
         }
       });
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
@@ -294,12 +288,12 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
     }
 
     private void setState() throws Exception {
-      consumeState(MaxListAsyncMaterializer.this.setState(
+      consumeState(setDone(
           new EmptyListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
     }
 
     private void setState(final E element) throws Exception {
-      consumeState(MaxListAsyncMaterializer.this.setState(new ElementToListAsyncMaterializer<E>(
+      consumeState(setDone(new ElementToListAsyncMaterializer<E>(
           decorateFunction.apply(Collections.singletonList(element)))));
     }
   }

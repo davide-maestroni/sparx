@@ -58,13 +58,13 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   }
 
   @Override
-  public int knownSize() {
-    return knownSize;
+  public boolean isMaterializedAtOnce() {
+    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   @Override
-  public boolean isMaterializedAtOnce() {
-    return isMaterializedAtOnce || super.isMaterializedAtOnce();
+  public int knownSize() {
+    return knownSize;
   }
 
   private class ImmaterialState implements ListAsyncMaterializer<E> {
@@ -150,11 +150,6 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -195,7 +190,7 @@ public class AppendListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
           @Override
           public void cancellableAccept(final List<E> elements) throws Exception {
             final List<E> materialized = appendFunction.apply(elements, element);
-            setState(new ListToListAsyncMaterializer<E>(materialized, context));
+            setDone(new ListToListAsyncMaterializer<E>(materialized, context));
             consumeElements(materialized);
           }
 

@@ -127,11 +127,6 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
       if (index < 0) {
@@ -298,14 +293,13 @@ public class ReduceLeftListAsyncMaterializer<E> extends AbstractListAsyncMateria
     }
 
     private void setState() throws Exception {
-      consumeState(ReduceLeftListAsyncMaterializer.this.setState(
+      consumeState(setDone(
           new EmptyListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
     }
 
     private void setState(final E result) throws Exception {
-      consumeState(ReduceLeftListAsyncMaterializer.this.setState(
-          new ElementToListAsyncMaterializer<E>(
-              decorateFunction.apply(Collections.singletonList(result)))));
+      consumeState(setDone(new ElementToListAsyncMaterializer<E>(
+          decorateFunction.apply(Collections.singletonList(result)))));
     }
   }
 }

@@ -132,11 +132,6 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<Integer>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Integer> consumer) {
       if (index < 0) {
@@ -299,15 +294,13 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     }
 
     private void setState() throws Exception {
-      consumeState(FindIndexOfSliceListAsyncMaterializer.this.setState(
-          new EmptyListAsyncMaterializer<Integer>(
-              decorateFunction.apply(Collections.<Integer>emptyList()))));
+      consumeState(setDone(new EmptyListAsyncMaterializer<Integer>(
+          decorateFunction.apply(Collections.<Integer>emptyList()))));
     }
 
     private void setState(final int index) throws Exception {
-      consumeState(FindIndexOfSliceListAsyncMaterializer.this.setState(
-          new ElementToListAsyncMaterializer<Integer>(
-              decorateFunction.apply(Collections.singletonList(index)))));
+      consumeState(setDone(new ElementToListAsyncMaterializer<Integer>(
+          decorateFunction.apply(Collections.singletonList(index)))));
     }
 
     private class MaterializingAsyncConsumer extends

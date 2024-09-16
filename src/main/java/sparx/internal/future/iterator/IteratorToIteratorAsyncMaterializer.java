@@ -24,10 +24,10 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
-import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
+import sparx.lazy;
 
 public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterializer<E> {
 
@@ -56,12 +56,32 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
   }
 
   @Override
+  public boolean isFailed() {
+    return false;
+  }
+
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return true;
+  }
+
+  @Override
+  public boolean isSucceeded() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return -1;
   }
 
   @Override
   public void materializeCancel(@NotNull final CancellationException exception) {
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<Iterator<E>> consumer) {
+    safeConsume(consumer, lazy.Iterator.wrap(elements), LOGGER);
   }
 
   @Override
@@ -108,6 +128,11 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
       index += skipped;
       safeConsume(consumer, skipped, LOGGER);
     }
+  }
+
+  @Override
+  public int weightElements() {
+    return 0;
   }
 
   @Override

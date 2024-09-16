@@ -20,11 +20,11 @@ import org.jetbrains.annotations.NotNull;
 
 public class IteratorToIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
-  private final Iterator<E> elements;
+  private final Iterator<? extends E> elements;
 
   private int pos;
 
-  public IteratorToIteratorMaterializer(@NotNull final Iterator<E> elements) {
+  public IteratorToIteratorMaterializer(@NotNull final Iterator<? extends E> elements) {
     this.elements = elements;
   }
 

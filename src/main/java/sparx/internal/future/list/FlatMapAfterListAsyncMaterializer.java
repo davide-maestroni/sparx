@@ -19,6 +19,7 @@ import static sparx.internal.future.AsyncConsumers.safeConsume;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -145,11 +146,6 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       } else {
         new MaterializingContainsElementAsyncPredicate(element, consumer).run();
       }
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
@@ -295,7 +291,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
             wrappedSize = wrappedElements.size();
             if (numElements >= wrappedSize) {
               final List<E> materialized = decorateFunction.apply(wrappedElements);
-              setState(new ListToListAsyncMaterializer<E>(materialized, context));
+              setDone(new ListToListAsyncMaterializer<E>(materialized, context));
               consumeElements(materialized);
             } else {
               if (elementsMaterializer == null) {
@@ -312,7 +308,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
                   elements.addAll(
                       wrappedElements.subList(Math.min(numElements + 1, wrappedSize), wrappedSize));
                   final List<E> materialized = decorateFunction.apply(elements);
-                  setState(new ListToListAsyncMaterializer<E>(materialized, context));
+                  setDone(new ListToListAsyncMaterializer<E>(materialized, context));
                   consumeElements(materialized);
                 }
 
@@ -687,7 +683,9 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
-            consumer.accept(setState(new WrappingState(wrapped, cancelException)));
+            setState(new WrappingState(wrapped, cancelException));
+            consumer.accept(new EmptyListAsyncMaterializer<E>(
+                decorateFunction.apply(Collections.<E>emptyList())));
           }
 
           @Override

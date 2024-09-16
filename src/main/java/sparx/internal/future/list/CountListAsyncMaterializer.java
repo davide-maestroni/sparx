@@ -118,11 +118,6 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<Integer>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Integer> consumer) {
       if (index < 0) {
@@ -259,9 +254,8 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
     }
 
     private void setState(final int size) throws Exception {
-      consumeState(CountListAsyncMaterializer.this.setState(
-          new ElementToListAsyncMaterializer<Integer>(
-              decorateFunction.apply(Collections.singletonList(size)))));
+      consumeState(setDone(new ElementToListAsyncMaterializer<Integer>(
+          decorateFunction.apply(Collections.singletonList(size)))));
     }
   }
 }

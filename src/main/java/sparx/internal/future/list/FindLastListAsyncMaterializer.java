@@ -38,8 +38,7 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
       FindLastListAsyncMaterializer.class.getName());
 
   public FindLastListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate,
-      @NotNull final ExecutionContext context,
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> decorateFunction) {
     super(context, new AtomicInteger(STATUS_RUNNING));
@@ -124,11 +123,6 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
           state.materializeContains(element, consumer);
         }
       });
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
@@ -294,14 +288,13 @@ public class FindLastListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     private void setState() throws Exception {
-      consumeState(FindLastListAsyncMaterializer.this.setState(
+      consumeState(setDone(
           new EmptyListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
     }
 
     private void setState(final E element) throws Exception {
-      consumeState(FindLastListAsyncMaterializer.this.setState(
-          new ElementToListAsyncMaterializer<E>(
-              decorateFunction.apply(Collections.singletonList(element)))));
+      consumeState(setDone(new ElementToListAsyncMaterializer<E>(
+          decorateFunction.apply(Collections.singletonList(element)))));
     }
   }
 }

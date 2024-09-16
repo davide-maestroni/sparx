@@ -428,6 +428,16 @@ public class lazy extends Sparx {
     }
 
     @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> wrap(
+        @NotNull final java.util.Iterator<? extends E> elements) {
+      if (elements instanceof Iterator) {
+        return (Iterator<E>) elements;
+      }
+      return new Iterator<E>(
+          new IteratorToIteratorMaterializer<E>(Require.notNull(elements, "elements")));
+    }
+
+    @SuppressWarnings("unchecked")
     private static @NotNull <E> IteratorMaterializer<E> getElementsMaterializer(
         @NotNull final Iterable<? extends E> elements) {
       if (elements instanceof Iterator) {

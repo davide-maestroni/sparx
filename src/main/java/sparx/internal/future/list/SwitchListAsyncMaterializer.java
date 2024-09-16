@@ -126,32 +126,6 @@ public class SwitchListAsyncMaterializer<E> implements ListAsyncMaterializer<E> 
   }
 
   @Override
-  public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-    final ContextAsyncConsumer<List<E>> switchConsumer = new ContextAsyncConsumer<List<E>>(
-        toContext, getTaskID(), consumer, LOGGER);
-    fromContext.scheduleAfter(new ContextTask(fromContext) {
-      @Override
-      public @NotNull String taskID() {
-        return fromTaskID;
-      }
-
-      @Override
-      public int weight() {
-        return wrapped.weightElements();
-      }
-
-      @Override
-      protected void runWithContext() {
-        try {
-          wrapped.materializeDone(switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, e, LOGGER);
-        }
-      }
-    });
-  }
-
-  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     final ContextIndexedAsyncConsumer<E> switchConsumer = new ContextIndexedAsyncConsumer<E>(
         toContext, getTaskID(), consumer, LOGGER);

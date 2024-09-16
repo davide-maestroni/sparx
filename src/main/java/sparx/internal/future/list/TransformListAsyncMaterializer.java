@@ -61,10 +61,12 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
   }
 
   @Override
-  public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
-    super.materializeDone(new AsyncConsumer<List<F>>() {
+  public void materializeElements(@NotNull final AsyncConsumer<List<F>> consumer) {
+    super.materializeElements(new AsyncConsumer<List<F>>() {
       @Override
       public void accept(final List<F> elements) throws Exception {
+        materialize(elements);
+        setDone(new ListToListAsyncMaterializer<F>(elements, context));
         consumer.accept(elements);
       }
 
@@ -80,11 +82,6 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
         }
       }
     });
-  }
-
-  @Override
-  protected void finalizeElements(final List<F> elements) {
-    materialize(elements);
   }
 
   protected abstract int knownSize(@NotNull List<F> elements);
@@ -154,11 +151,6 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
           state.materializeContains(element, consumer);
         }
       });
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override
@@ -371,11 +363,6 @@ public abstract class TransformListAsyncMaterializer<E, F> extends
       } catch (final Exception error) {
         consumeError(consumer, error);
       }
-    }
-
-    @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
     }
 
     @Override

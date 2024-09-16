@@ -198,11 +198,6 @@ public class MapAfterListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<E> consumer) {
@@ -285,10 +280,10 @@ public class MapAfterListAsyncMaterializer<E> extends AbstractListAsyncMateriali
             if (numElements < elements.size()) {
               final List<E> materialized = replaceFunction.apply(elements, numElements,
                   getMapped(elements.get(numElements)));
-              setState(new ListToListAsyncMaterializer<E>(materialized, context));
+              setDone(new ListToListAsyncMaterializer<E>(materialized, context));
               consumeElements(materialized);
             } else {
-              setState(new ListToListAsyncMaterializer<E>(elements, context));
+              setDone(new ListToListAsyncMaterializer<E>(elements, context));
               consumeElements(elements);
             }
           }

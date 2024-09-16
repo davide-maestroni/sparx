@@ -71,11 +71,6 @@ public class StopCancelListAsyncMaterializer<E> implements ListAsyncMaterializer
   }
 
   @Override
-  public void materializeDone(@NotNull final AsyncConsumer<List<E>> consumer) {
-    wrapped.materializeDone(consumer);
-  }
-
-  @Override
   public void materializeElement(final int index, @NotNull final IndexedAsyncConsumer<E> consumer) {
     wrapped.materializeElement(index, consumer);
   }

@@ -21,6 +21,7 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +29,7 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.internal.future.list.ListAsyncMaterializer;
+import sparx.lazy;
 
 public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
     IteratorAsyncMaterializer<E> {
@@ -58,6 +60,21 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
   }
 
   @Override
+  public boolean isFailed() {
+    return materializer.isFailed();
+  }
+
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return materializer.isMaterializedAtOnce();
+  }
+
+  @Override
+  public boolean isSucceeded() {
+    return materializer.isSucceeded();
+  }
+
+  @Override
   public int knownSize() {
     return materializer.knownSize();
   }
@@ -66,6 +83,21 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
   public void materializeCancel(@NotNull final CancellationException exception) {
     cancelException = exception;
     materializer.materializeCancel(exception);
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<Iterator<E>> consumer) {
+    materializer.materializeElements(new AsyncConsumer<List<E>>() {
+      @Override
+      public void accept(final List<E> list) throws Exception {
+        consumer.accept(lazy.Iterator.wrap(list).drop(index));
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) throws Exception {
+        consumer.error(error);
+      }
+    });
   }
 
   @Override
@@ -156,6 +188,11 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
         }
       });
     }
+  }
+
+  @Override
+  public int weightElements() {
+    return materializer.weightElements();
   }
 
   @Override

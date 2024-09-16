@@ -126,11 +126,6 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<F>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<F> consumer) {
       if (index < 0) {
@@ -276,9 +271,8 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
     }
 
     private void setState(final F result) throws Exception {
-      consumeState(FoldLeftListAsyncMaterializer.this.setState(
-          new ElementToListAsyncMaterializer<F>(
-              decorateFunction.apply(Collections.singletonList(result)))));
+      consumeState(setDone(new ElementToListAsyncMaterializer<F>(
+          decorateFunction.apply(Collections.singletonList(result)))));
     }
   }
 }

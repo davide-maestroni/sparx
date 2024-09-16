@@ -18,12 +18,14 @@ package sparx.internal.future.iterator;
 import static sparx.internal.future.AsyncConsumers.safeConsume;
 import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 
+import java.util.Iterator;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
+import sparx.lazy;
 
 public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterializer<E> {
 
@@ -49,12 +51,37 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
   }
 
   @Override
+  public boolean isFailed() {
+    return false;
+  }
+
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return true;
+  }
+
+  @Override
+  public boolean isSucceeded() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
 
   @Override
   public void materializeCancel(@NotNull final CancellationException exception) {
+  }
+
+  @Override
+  public void materializeElements(@NotNull final AsyncConsumer<Iterator<E>> consumer) {
+    if (consumed) {
+      safeConsume(consumer, lazy.Iterator.<E>of(), LOGGER);
+    } else {
+      consumed = true;
+      safeConsume(consumer, lazy.Iterator.of(element), LOGGER);
+    }
   }
 
   @Override
@@ -91,6 +118,11 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
       consumed = true;
       safeConsume(consumer, 1, LOGGER);
     }
+  }
+
+  @Override
+  public int weightElements() {
+    return 1;
   }
 
   @Override

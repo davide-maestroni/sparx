@@ -129,11 +129,6 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<Boolean>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
       if (index < 0) {
@@ -306,9 +301,8 @@ public class EndsWithListAsyncMaterializer<E> extends AbstractListAsyncMateriali
     }
 
     private void setState(final boolean endsWith) throws Exception {
-      consumeState(EndsWithListAsyncMaterializer.this.setState(
-          new ElementToListAsyncMaterializer<Boolean>(
-              decorateFunction.apply(Collections.singletonList(endsWith)))));
+      consumeState(setDone(new ElementToListAsyncMaterializer<Boolean>(
+          decorateFunction.apply(Collections.singletonList(endsWith)))));
     }
 
     private class MaterializingAsyncConsumer extends

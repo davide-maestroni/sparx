@@ -127,11 +127,6 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
     }
 
     @Override
-    public void materializeDone(@NotNull final AsyncConsumer<List<Boolean>> consumer) {
-      safeConsumeError(consumer, new UnsupportedOperationException(), LOGGER);
-    }
-
-    @Override
     public void materializeElement(final int index,
         @NotNull final IndexedAsyncConsumer<Boolean> consumer) {
       if (index < 0) {
@@ -281,9 +276,8 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
     }
 
     private void setState(final boolean includes) throws Exception {
-      consumeState(IncludesSliceListAsyncMaterializer.this.setState(
-          new ElementToListAsyncMaterializer<Boolean>(
-              decorateFunction.apply(Collections.singletonList(includes)))));
+      consumeState(setDone(new ElementToListAsyncMaterializer<Boolean>(
+          decorateFunction.apply(Collections.singletonList(includes)))));
     }
 
     private class MaterializingAsyncConsumer extends
