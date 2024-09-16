@@ -489,7 +489,8 @@ public class SlidingWindowListAsyncMaterializer<E, L extends List<E>> extends
       elementsConsumers.clear();
     }
 
-    private void materializeElements() {
+    @NotNull
+    private ElementsCache<L> fillElementsCache() {
       final int size = wrappedSize;
       final long maxSize = this.maxSize;
       final int step = this.step;
@@ -503,6 +504,11 @@ public class SlidingWindowListAsyncMaterializer<E, L extends List<E>> extends
           elements.set(n, chunk);
         }
       }
+      return elements;
+    }
+
+    private void materializeElements() {
+      final ElementsCache<L> elements = fillElementsCache();
       try {
         final List<L> materialized = decorateFunction.apply(elements.toList());
         setDone(new ListToListAsyncMaterializer<L>(materialized, context));
