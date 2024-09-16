@@ -29,7 +29,6 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.internal.future.list.ListAsyncMaterializer;
-import sparx.lazy;
 
 public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
     IteratorAsyncMaterializer<E> {
@@ -86,11 +85,11 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
   }
 
   @Override
-  public void materializeElements(@NotNull final AsyncConsumer<Iterator<E>> consumer) {
+  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
     materializer.materializeElements(new AsyncConsumer<List<E>>() {
       @Override
       public void accept(final List<E> list) throws Exception {
-        consumer.accept(lazy.Iterator.wrap(list).drop(index));
+        consumer.accept(list.subList(index, list.size()));
       }
 
       @Override

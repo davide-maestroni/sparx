@@ -18,7 +18,9 @@ package sparx.internal.future.iterator;
 import static sparx.internal.future.AsyncConsumers.safeConsume;
 import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -80,8 +82,13 @@ public class IteratorToIteratorAsyncMaterializer<E> implements IteratorAsyncMate
   }
 
   @Override
-  public void materializeElements(@NotNull final AsyncConsumer<Iterator<E>> consumer) {
-    safeConsume(consumer, lazy.Iterator.wrap(elements), LOGGER);
+  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+    final ArrayList<E> elements = new ArrayList<E>();
+    final Iterator<E> iterator = this.elements;
+    while (iterator.hasNext()) {
+      elements.add(iterator.next());
+    }
+    safeConsume(consumer, elements, LOGGER);
   }
 
   @Override

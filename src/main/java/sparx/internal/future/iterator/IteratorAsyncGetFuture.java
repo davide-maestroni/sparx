@@ -15,7 +15,7 @@
  */
 package sparx.internal.future.iterator;
 
-import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -53,9 +53,9 @@ public class IteratorAsyncGetFuture<E> implements Future<Void> {
       if (!materializer.isDone()) {
         throw new DeadLockException("cannot wait on the future own execution context");
       }
-      materializer.materializeElements(new AsyncConsumer<Iterator<E>>() {
+      materializer.materializeElements(new AsyncConsumer<List<E>>() {
         @Override
-        public void accept(final Iterator<E> elements) {
+        public void accept(final List<E> elements) {
           synchronized (cancelException) {
             status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
             cancelException.notifyAll();
@@ -86,9 +86,9 @@ public class IteratorAsyncGetFuture<E> implements Future<Void> {
 
         @Override
         protected void runWithContext() {
-          materializer.materializeElements(new AsyncConsumer<Iterator<E>>() {
+          materializer.materializeElements(new AsyncConsumer<List<E>>() {
             @Override
-            public void accept(final Iterator<E> elements) {
+            public void accept(final List<E> elements) {
               synchronized (cancelException) {
                 if (isCancelled()) {
                   throw getCancelException();

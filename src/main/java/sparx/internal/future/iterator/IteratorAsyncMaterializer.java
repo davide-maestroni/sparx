@@ -15,7 +15,7 @@
  */
 package sparx.internal.future.iterator;
 
-import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
@@ -38,7 +38,7 @@ public interface IteratorAsyncMaterializer<E> {
 
   void materializeCancel(@NotNull CancellationException exception);
 
-  void materializeElements(@NotNull AsyncConsumer<Iterator<E>> consumer);
+  void materializeElements(@NotNull AsyncConsumer<List<E>> consumer);
 
   void materializeHasNext(@NotNull AsyncConsumer<Boolean> consumer);
 

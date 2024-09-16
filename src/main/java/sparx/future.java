@@ -43,6 +43,7 @@ import sparx.internal.future.iterator.CollectionToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorAsyncForFuture;
+import sparx.internal.future.iterator.IteratorAsyncGetFuture;
 import sparx.internal.future.iterator.IteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ListAsyncMaterializerToIteratorAsyncMaterializer;
@@ -204,7 +205,7 @@ class future extends Sparx {
 
     @Override
     public @NotNull Future<?> nonBlockingGet() {
-      return null;
+      return new IteratorAsyncGetFuture<E>(context, taskID, cancelException, materializer);
     }
 
     @Override

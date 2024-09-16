@@ -18,14 +18,14 @@ package sparx.internal.future.iterator;
 import static sparx.internal.future.AsyncConsumers.safeConsume;
 import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 
-import java.util.Iterator;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.lazy;
 
 public class EmptyIteratorAsyncMaterializer<E> implements IteratorAsyncMaterializer<E> {
 
@@ -73,8 +73,8 @@ public class EmptyIteratorAsyncMaterializer<E> implements IteratorAsyncMateriali
   }
 
   @Override
-  public void materializeElements(@NotNull final AsyncConsumer<Iterator<E>> consumer) {
-    safeConsume(consumer, lazy.Iterator.<E>of(), LOGGER);
+  public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
+    safeConsume(consumer, Collections.<E>emptyList(), LOGGER);
   }
 
   @Override
