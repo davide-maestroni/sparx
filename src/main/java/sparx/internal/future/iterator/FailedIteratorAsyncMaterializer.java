@@ -15,10 +15,8 @@
  */
 package sparx.internal.future.iterator;
 
-import static sparx.internal.future.AsyncConsumers.safeConsume;
-import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
+import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
@@ -27,15 +25,15 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 
-public class EmptyIteratorAsyncMaterializer<E> implements IteratorAsyncMaterializer<E> {
+public class FailedIteratorAsyncMaterializer<E> implements IteratorAsyncMaterializer<E> {
 
-  private static final EmptyIteratorAsyncMaterializer<?> INSTANCE = new EmptyIteratorAsyncMaterializer<Object>();
   private static final Logger LOGGER = Logger.getLogger(
-      EmptyIteratorAsyncMaterializer.class.getName());
+      FailedIteratorAsyncMaterializer.class.getName());
 
-  @SuppressWarnings("unchecked")
-  public static @NotNull <E> IteratorAsyncMaterializer<E> instance() {
-    return (IteratorAsyncMaterializer<E>) INSTANCE;
+  private final Exception error;
+
+  public FailedIteratorAsyncMaterializer(@NotNull final Exception error) {
+    this.error = error;
   }
 
   @Override
@@ -50,7 +48,7 @@ public class EmptyIteratorAsyncMaterializer<E> implements IteratorAsyncMateriali
 
   @Override
   public boolean isFailed() {
-    return false;
+    return true;
   }
 
   @Override
@@ -60,12 +58,12 @@ public class EmptyIteratorAsyncMaterializer<E> implements IteratorAsyncMateriali
 
   @Override
   public boolean isSucceeded() {
-    return true;
+    return false;
   }
 
   @Override
   public int knownSize() {
-    return 0;
+    return -1;
   }
 
   @Override
@@ -74,27 +72,27 @@ public class EmptyIteratorAsyncMaterializer<E> implements IteratorAsyncMateriali
 
   @Override
   public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-    safeConsume(consumer, Collections.<E>emptyList(), LOGGER);
+    safeConsumeError(consumer, error, LOGGER);
   }
 
   @Override
   public void materializeHasNext(@NotNull final AsyncConsumer<Boolean> consumer) {
-    safeConsume(consumer, false, LOGGER);
+    safeConsumeError(consumer, error, LOGGER);
   }
 
   @Override
   public void materializeNext(@NotNull final IndexedAsyncConsumer<E> consumer) {
-    safeConsumeComplete(consumer, 0, LOGGER);
+    safeConsumeError(consumer, error, LOGGER);
   }
 
   @Override
   public void materializeNextWhile(@NotNull final IndexedAsyncPredicate<E> predicate) {
-    safeConsumeComplete(predicate, 0, LOGGER);
+    safeConsumeError(predicate, error, LOGGER);
   }
 
   @Override
   public void materializeSkip(final int count, @NotNull final AsyncConsumer<Integer> consumer) {
-    safeConsume(consumer, 0, LOGGER);
+    safeConsumeError(consumer, error, LOGGER);
   }
 
   @Override

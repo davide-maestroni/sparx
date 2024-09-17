@@ -164,8 +164,8 @@ public class CollectionToIteratorAsyncMaterializer<E> implements IteratorAsyncMa
   }
 
   @Override
-  public int weightSkip(final int count) {
-    return Math.max(1, count);
+  public int weightSkip() {
+    return 1;
   }
 
   private @NotNull String getTaskID() {

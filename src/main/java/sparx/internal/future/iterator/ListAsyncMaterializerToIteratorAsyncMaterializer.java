@@ -210,7 +210,7 @@ public class ListAsyncMaterializerToIteratorAsyncMaterializer<E> implements
   }
 
   @Override
-  public int weightSkip(final int count) {
+  public int weightSkip() {
     return materializer.weightSize();
   }
 }

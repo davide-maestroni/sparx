@@ -81,7 +81,9 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
   @Override
   public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
     final List<E> elements = this.elements;
-    safeConsume(consumer, elements.subList(index, elements.size()), LOGGER);
+    final int start = index;
+    index = elements.size();
+    safeConsume(consumer, elements.subList(start, index), LOGGER);
   }
 
   @Override
@@ -149,7 +151,7 @@ public class ListToIteratorAsyncMaterializer<E> implements IteratorAsyncMaterial
   }
 
   @Override
-  public int weightSkip(int count) {
+  public int weightSkip() {
     return 1;
   }
 

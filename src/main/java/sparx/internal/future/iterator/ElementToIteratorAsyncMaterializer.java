@@ -141,7 +141,7 @@ public class ElementToIteratorAsyncMaterializer<E> implements IteratorAsyncMater
   }
 
   @Override
-  public int weightSkip(final int count) {
+  public int weightSkip() {
     return 1;
   }
 }

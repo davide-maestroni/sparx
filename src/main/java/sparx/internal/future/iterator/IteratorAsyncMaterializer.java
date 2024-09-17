@@ -56,5 +56,5 @@ public interface IteratorAsyncMaterializer<E> {
 
   int weightNextWhile();
 
-  int weightSkip(int count);
+  int weightSkip();
 }

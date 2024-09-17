@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.internal.future.list;
+package sparx.internal.future.iterator;
 
 import java.util.concurrent.CancellationException;
 import org.jetbrains.annotations.NotNull;
 
-public class CancelledListAsyncMaterializer<E> extends FailedListAsyncMaterializer<E> {
+public class CancelledIteratorAsyncMaterializer<E> extends FailedIteratorAsyncMaterializer<E> {
 
-  public CancelledListAsyncMaterializer(@NotNull final CancellationException exception) {
+  public CancelledIteratorAsyncMaterializer(@NotNull final CancellationException exception) {
     super(exception);
   }
 

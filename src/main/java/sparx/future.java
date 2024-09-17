@@ -39,12 +39,14 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
+import sparx.internal.future.iterator.AppendIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.CollectionToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.IteratorAsyncForFuture;
 import sparx.internal.future.iterator.IteratorAsyncGetFuture;
 import sparx.internal.future.iterator.IteratorAsyncMaterializer;
+import sparx.internal.future.iterator.IteratorAsyncWhileFuture;
 import sparx.internal.future.iterator.IteratorToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ListAsyncMaterializerToIteratorAsyncMaterializer;
 import sparx.internal.future.iterator.ListToIteratorAsyncMaterializer;
@@ -185,7 +187,7 @@ class future extends Sparx {
     return elements instanceof List;
   }
 
-  public static class Iterator<E> implements itf.Future<E, lazy.Iterator<E>>, itf.Iterator<E> {
+  public static class Iterator<E> implements itf.Future<E, Void>, itf.Iterator<E> {
 
     private static final Logger LOGGER = Logger.getLogger(Iterator.class.getName());
 
@@ -204,62 +206,22 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingGet() {
-      return new IteratorAsyncGetFuture<E>(context, taskID, cancelException, materializer);
-    }
-
-    @Override
-    public @NotNull Future<?> nonBlockingWhile(
-        @NotNull final IndexedPredicate<? super E> predicate) {
-      return null;
-    }
-
-    @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
-        @NotNull IndexedConsumer<? super E> consumer) {
-      return null;
-    }
-
-    @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull Predicate<? super E> predicate) {
-      return null;
-    }
-
-    @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Consumer<? super E> consumer) {
-      return null;
-    }
-
-    @Override
-    public boolean cancel(boolean mayInterruptIfRunning) {
-      return false;
-    }
-
-    @Override
-    public boolean isCancelled() {
-      return false;
-    }
-
-    @Override
-    public boolean isDone() {
-      return false;
-    }
-
-    @Override
-    public lazy.Iterator<E> get() throws InterruptedException, ExecutionException {
-      return null;
-    }
-
-    @Override
-    public lazy.Iterator<E> get(long timeout, @NotNull TimeUnit unit)
-        throws InterruptedException, ExecutionException, TimeoutException {
-      return null;
-    }
-
-    @Override
-    public @NotNull Iterator<E> append(E element) {
-      return null;
+    public @NotNull Iterator<E> append(final E element) {
+      final ExecutionContext context = this.context;
+      final IteratorAsyncMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new Iterator<E>(context, cancelException,
+            EmptyIteratorAsyncMaterializer.<E>instance());
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        // TODO: transform
+//        return new List<E>(context, cancelException,
+//            lazyMaterializerAppend(materializer, context, cancelException, element));
+      }
+      return new Iterator<E>(context, cancelException,
+          new AppendIteratorAsyncMaterializer<E>(materializer, element, context, cancelException,
+              List.<E>appendFunction()));
     }
 
     @Override
@@ -275,6 +237,37 @@ class future extends Sparx {
     @Override
     public @NotNull <F> Iterator<F> as() {
       return null;
+    }
+
+    @Override
+    public boolean cancel(final boolean mayInterruptIfRunning) {
+      if (!materializer.isDone() && cancelException.compareAndSet(null,
+          new CancellationException())) {
+        final ExecutionContext context = this.context;
+        if (mayInterruptIfRunning) {
+          context.interruptTask(taskID);
+        }
+        context.scheduleBefore(new ContextTask(context) {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          protected void runWithContext() {
+            try {
+              materializer.materializeCancel(cancelException.get());
+            } catch (final Exception e) {
+              LOGGER.log(Level.SEVERE, "Ignored exception", e);
+            }
+          }
+        });
+        synchronized (cancelException) {
+          cancelException.notifyAll();
+        }
+        return true;
+      }
+      return false;
     }
 
     @Override
@@ -580,6 +573,19 @@ class future extends Sparx {
     }
 
     @Override
+    public Void get() throws InterruptedException, ExecutionException {
+      nonBlockingGet().get();
+      return null;
+    }
+
+    @Override
+    public Void get(final long timeout, @NotNull final TimeUnit unit)
+        throws InterruptedException, ExecutionException, TimeoutException {
+      nonBlockingGet().get(timeout, unit);
+      return null;
+    }
+
+    @Override
     public @NotNull Iterator<Boolean> includes(Object element) {
       return null;
     }
@@ -618,6 +624,16 @@ class future extends Sparx {
     @Override
     public @NotNull Iterator<E> intersect(@NotNull Iterable<?> elements) {
       return null;
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return materializer.isCancelled() || cancelException.get() != null;
+    }
+
+    @Override
+    public boolean isDone() {
+      return materializer.isDone() || cancelException.get() != null;
     }
 
     @Override
@@ -728,6 +744,39 @@ class future extends Sparx {
     public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
       return new IteratorAsyncForFuture<E>(context, taskID, cancelException, materializer,
           Require.notNull(consumer, "consumer"));
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingGet() {
+      return new IteratorAsyncGetFuture<E>(context, taskID, cancelException, materializer);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new IteratorAsyncWhileFuture<E>(context, taskID, cancelException, materializer,
+          Require.notNull(predicate, "predicate"));
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull final IndexedConsumer<? super E> consumer) {
+      return new IteratorAsyncWhileFuture<E>(context, taskID, cancelException, materializer,
+          Require.notNull(condition, "condition"), Require.notNull(consumer, "consumer"));
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
+      return new IteratorAsyncWhileFuture<E>(context, taskID, cancelException, materializer,
+          toIndexedPredicate(Require.notNull(predicate, "predicate")));
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
+        @NotNull final Consumer<? super E> consumer) {
+      return new IteratorAsyncWhileFuture<E>(context, taskID, cancelException, materializer,
+          toIndexedPredicate(Require.notNull(condition, "condition")),
+          toIndexedConsumer(Require.notNull(consumer, "consumer")));
     }
 
     @Override
@@ -3397,51 +3446,8 @@ class future extends Sparx {
 
     @Override
     public Void get() throws InterruptedException, ExecutionException {
-      final ListAsyncMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return null;
-      }
-      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
-          cancelException);
-      final ExecutionContext context = this.context;
-      if (context.isCurrent()) {
-        if (!materializer.isDone()) {
-          throw new DeadLockException("cannot wait on the future own execution context");
-        }
-        materializer.materializeElements(consumer);
-      } else {
-        context.scheduleAfter(new ContextTask(context) {
-          @Override
-          public @NotNull String taskID() {
-            return taskID;
-          }
-
-          @Override
-          public int weight() {
-            return materializer.weightElements();
-          }
-
-          @Override
-          protected void runWithContext() {
-            try {
-              materializer.materializeElements(consumer);
-            } catch (final Exception e) {
-              consumer.error(e);
-            }
-          }
-        });
-      }
-      try {
-        consumer.get();
-        return null;
-      } catch (final InterruptedException e) {
-        throw e;
-      } catch (final Exception e) {
-        if (isCancelled() && e instanceof CancellationException) {
-          throw (CancellationException) new CancellationException().initCause(e);
-        }
-        throw new ExecutionException(e);
-      }
+      nonBlockingGet().get();
+      return null;
     }
 
     @Override
@@ -3500,51 +3506,8 @@ class future extends Sparx {
     @Override
     public Void get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
-      final ListAsyncMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return null;
-      }
-      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
-          cancelException);
-      final ExecutionContext context = this.context;
-      if (context.isCurrent()) {
-        if (!materializer.isDone()) {
-          throw new DeadLockException("cannot wait on the future own execution context");
-        }
-        materializer.materializeElements(consumer);
-      } else {
-        context.scheduleAfter(new ContextTask(context) {
-          @Override
-          public @NotNull String taskID() {
-            return taskID;
-          }
-
-          @Override
-          public int weight() {
-            return materializer.weightElements();
-          }
-
-          @Override
-          protected void runWithContext() {
-            try {
-              materializer.materializeElements(consumer);
-            } catch (final Exception e) {
-              consumer.error(e);
-            }
-          }
-        });
-      }
-      try {
-        consumer.get(timeout, unit);
-        return null;
-      } catch (final InterruptedException e) {
-        throw e;
-      } catch (final Exception e) {
-        if (isCancelled() && e instanceof CancellationException) {
-          throw (CancellationException) new CancellationException().initCause(e);
-        }
-        throw new ExecutionException(e);
-      }
+      nonBlockingGet().get(timeout, unit);
+      return null;
     }
 
     @Override
@@ -3761,16 +3724,6 @@ class future extends Sparx {
     }
 
     @Override
-    public boolean isFailed() {
-      return materializer.isFailed();
-    }
-
-    @Override
-    public boolean isSucceeded() {
-      return materializer.isSucceeded();
-    }
-
-    @Override
     public boolean isEmpty() {
       final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>(cancelException);
       final ExecutionContext context = this.context;
@@ -3817,6 +3770,16 @@ class future extends Sparx {
       } catch (final InterruptedException e) {
         throw UncheckedException.toUnchecked(e);
       }
+    }
+
+    @Override
+    public boolean isFailed() {
+      return materializer.isFailed();
+    }
+
+    @Override
+    public boolean isSucceeded() {
+      return materializer.isSucceeded();
     }
 
     @Override
@@ -5859,7 +5822,7 @@ class future extends Sparx {
 
     @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
-      return false;
+      return list.cancel(mayInterruptIfRunning);
     }
 
     @Override
@@ -6483,13 +6446,19 @@ class future extends Sparx {
     }
 
     @Override
+    public boolean isCancelled() {
+      return list.isCancelled();
+    }
+
+    @Override
     public boolean isDone() {
       return list.isDone();
     }
 
     @Override
-    public boolean isCancelled() {
-      return list.isCancelled();
+    public boolean isEmpty() {
+      final int pos = safePos();
+      return list.isEmpty() || pos >= list.size();
     }
 
     @Override
@@ -6510,12 +6479,6 @@ class future extends Sparx {
         return lazy.Iterator.of();
       }
       return nextList(pos).iterator();
-    }
-
-    @Override
-    public boolean isEmpty() {
-      final int pos = safePos();
-      return list.isEmpty() || pos >= list.size();
     }
 
     @Override

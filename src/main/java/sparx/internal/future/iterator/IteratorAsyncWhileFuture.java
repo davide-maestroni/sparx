@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.internal.future.list;
+package sparx.internal.future.iterator;
 
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -32,7 +32,7 @@ import sparx.util.DeadLockException;
 import sparx.util.function.IndexedConsumer;
 import sparx.util.function.IndexedPredicate;
 
-public class ListAsyncWhileFuture<E> implements Future<Void> {
+public class IteratorAsyncWhileFuture<E> implements Future<Void> {
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -45,9 +45,10 @@ public class ListAsyncWhileFuture<E> implements Future<Void> {
 
   private volatile Exception error;
 
-  public ListAsyncWhileFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
+  public IteratorAsyncWhileFuture(@NotNull final ExecutionContext context,
+      @NotNull final String taskID,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final ListAsyncMaterializer<E> materializer,
+      @NotNull final IteratorAsyncMaterializer<E> materializer,
       @NotNull final IndexedPredicate<? super E> predicate) {
     this.context = context;
     this.taskID = taskID;
@@ -58,7 +59,7 @@ public class ListAsyncWhileFuture<E> implements Future<Void> {
       }
       materializer.materializeElements(new AsyncConsumer<List<E>>() {
         @Override
-        public void accept(final java.util.List<E> elements) throws Exception {
+        public void accept(final List<E> elements) throws Exception {
           int i = 0;
           for (final E element : elements) {
             if (!predicate.test(i++, element)) {
@@ -75,7 +76,7 @@ public class ListAsyncWhileFuture<E> implements Future<Void> {
         public void error(@NotNull final Exception error) {
           synchronized (cancelException) {
             if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-              ListAsyncWhileFuture.this.error = error;
+              IteratorAsyncWhileFuture.this.error = error;
             }
             cancelException.notifyAll();
           }
@@ -95,7 +96,7 @@ public class ListAsyncWhileFuture<E> implements Future<Void> {
 
         @Override
         protected void runWithContext() {
-          materializer.materializeNextWhile(0, new IndexedAsyncPredicate<E>() {
+          materializer.materializeNextWhile(new IndexedAsyncPredicate<E>() {
             @Override
             public void complete(final int size) {
               synchronized (cancelException) {
@@ -123,7 +124,7 @@ public class ListAsyncWhileFuture<E> implements Future<Void> {
             public void error(@NotNull final Exception error) {
               synchronized (cancelException) {
                 if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-                  ListAsyncWhileFuture.this.error = error;
+                  IteratorAsyncWhileFuture.this.error = error;
                 }
                 cancelException.notifyAll();
               }
@@ -134,9 +135,10 @@ public class ListAsyncWhileFuture<E> implements Future<Void> {
     }
   }
 
-  public ListAsyncWhileFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
+  public IteratorAsyncWhileFuture(@NotNull final ExecutionContext context,
+      @NotNull final String taskID,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final ListAsyncMaterializer<E> materializer,
+      @NotNull final IteratorAsyncMaterializer<E> materializer,
       @NotNull final IndexedPredicate<? super E> condition,
       @NotNull final IndexedConsumer<? super E> consumer) {
     this.context = context;
@@ -148,7 +150,7 @@ public class ListAsyncWhileFuture<E> implements Future<Void> {
       }
       materializer.materializeElements(new AsyncConsumer<List<E>>() {
         @Override
-        public void accept(final java.util.List<E> elements) throws Exception {
+        public void accept(final List<E> elements) throws Exception {
           int i = 0;
           for (final E element : elements) {
             if (condition.test(i, element)) {
@@ -167,7 +169,7 @@ public class ListAsyncWhileFuture<E> implements Future<Void> {
         public void error(@NotNull final Exception error) {
           synchronized (cancelException) {
             if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-              ListAsyncWhileFuture.this.error = error;
+              IteratorAsyncWhileFuture.this.error = error;
             }
             cancelException.notifyAll();
           }
@@ -187,7 +189,7 @@ public class ListAsyncWhileFuture<E> implements Future<Void> {
 
         @Override
         protected void runWithContext() {
-          materializer.materializeNextWhile(0, new IndexedAsyncPredicate<E>() {
+          materializer.materializeNextWhile(new IndexedAsyncPredicate<E>() {
             @Override
             public void complete(final int size) {
               synchronized (cancelException) {
@@ -216,7 +218,7 @@ public class ListAsyncWhileFuture<E> implements Future<Void> {
             public void error(@NotNull final Exception error) {
               synchronized (cancelException) {
                 if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-                  ListAsyncWhileFuture.this.error = error;
+                  IteratorAsyncWhileFuture.this.error = error;
                 }
                 cancelException.notifyAll();
               }
