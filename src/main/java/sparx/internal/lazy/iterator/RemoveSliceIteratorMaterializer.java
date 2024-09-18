@@ -90,11 +90,6 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 
   private class MaterialState implements IteratorMaterializer<E> {
@@ -149,11 +144,6 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextIndex() {
-      return -1;
     }
   }
 }

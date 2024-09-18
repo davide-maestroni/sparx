@@ -51,9 +51,4 @@ public class CharSequenceToIteratorMaterializer implements IteratorMaterializer<
     }
     return 0;
   }
-
-  @Override
-  public int nextIndex() {
-    return pos;
-  }
 }

@@ -34,6 +34,9 @@ public class EmptyIteratorFutureMaterializer<E> implements IteratorFutureMateria
   private static final Logger LOGGER = Logger.getLogger(
       EmptyIteratorFutureMaterializer.class.getName());
 
+  private EmptyIteratorFutureMaterializer() {
+  }
+
   @SuppressWarnings("unchecked")
   public static @NotNull <E> IteratorFutureMaterializer<E> instance() {
     return (IteratorFutureMaterializer<E>) INSTANCE;

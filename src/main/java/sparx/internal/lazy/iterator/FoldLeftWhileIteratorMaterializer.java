@@ -79,10 +79,5 @@ public class FoldLeftWhileIteratorMaterializer<E, F> extends StatefulIteratorMat
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

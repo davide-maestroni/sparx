@@ -81,10 +81,5 @@ public class ReduceRightIteratorMaterializer<E> extends StatefulIteratorMaterial
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

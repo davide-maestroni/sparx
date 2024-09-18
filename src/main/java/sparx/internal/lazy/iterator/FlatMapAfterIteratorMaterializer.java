@@ -81,11 +81,6 @@ public class FlatMapAfterIteratorMaterializer<E> extends StatefulIteratorMateria
       return 0;
     }
 
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
-
     private @NotNull IteratorMaterializer<E> materializer() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final int pos = this.pos;

@@ -47,9 +47,4 @@ public class CollectionToIteratorMaterializer<E> extends AutoSkipIteratorMateria
     ++pos;
     return next;
   }
-
-  @Override
-  public int nextIndex() {
-    return pos;
-  }
 }

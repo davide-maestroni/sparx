@@ -56,8 +56,7 @@ public class RemoveFirstWhereIteratorMaterializer<E> extends
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
         final IndexedPredicate<? super E> predicate = this.predicate;
-        final int pos = this.pos;
-        ++this.pos;
+        final int pos = this.pos++;
         E next = wrapped.materializeNext();
         try {
           if (!predicate.test(pos, next)) {
@@ -92,11 +91,6 @@ public class RemoveFirstWhereIteratorMaterializer<E> extends
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextIndex() {
-      return -1;
     }
   }
 }

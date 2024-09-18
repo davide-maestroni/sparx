@@ -51,9 +51,4 @@ public class LongArrayToIteratorMaterializer implements IteratorMaterializer<Lon
     }
     return 0;
   }
-
-  @Override
-  public int nextIndex() {
-    return pos;
-  }
 }

@@ -109,10 +109,5 @@ public class FindIndexOfSliceIteratorMaterializer<E> extends StatefulIteratorMat
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

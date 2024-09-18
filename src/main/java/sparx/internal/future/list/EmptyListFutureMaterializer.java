@@ -34,12 +34,12 @@ public class EmptyListFutureMaterializer<E> implements ListFutureMaterializer<E>
   private static final Logger LOGGER = Logger.getLogger(
       EmptyListFutureMaterializer.class.getName());
 
+  private EmptyListFutureMaterializer() {
+  }
+
   @SuppressWarnings("unchecked")
   public static @NotNull <E> EmptyListFutureMaterializer<E> instance() {
     return (EmptyListFutureMaterializer<E>) INSTANCE;
-  }
-
-  private EmptyListFutureMaterializer() {
   }
 
   @Override

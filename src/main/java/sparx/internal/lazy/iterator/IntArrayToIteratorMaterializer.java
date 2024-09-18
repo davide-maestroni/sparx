@@ -51,9 +51,4 @@ public class IntArrayToIteratorMaterializer implements IteratorMaterializer<Inte
     }
     return 0;
   }
-
-  @Override
-  public int nextIndex() {
-    return pos;
-  }
 }

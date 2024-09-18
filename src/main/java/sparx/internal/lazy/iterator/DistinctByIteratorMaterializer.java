@@ -28,7 +28,6 @@ public class DistinctByIteratorMaterializer<E, K> extends AutoSkipIteratorMateri
   private final IteratorMaterializer<E> wrapped;
 
   private boolean hasNext;
-  private int index;
   private E next;
   private int pos;
 
@@ -76,12 +75,6 @@ public class DistinctByIteratorMaterializer<E, K> extends AutoSkipIteratorMateri
     final E next = this.next;
     hasNext = false;
     this.next = null;
-    ++index;
     return next;
-  }
-
-  @Override
-  public int nextIndex() {
-    return index;
   }
 }

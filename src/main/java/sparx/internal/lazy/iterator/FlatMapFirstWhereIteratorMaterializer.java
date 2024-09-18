@@ -61,8 +61,8 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
         try {
+          final int pos = this.pos++;
           final E next = wrapped.materializeNext();
-          final int pos = this.pos;
           if (predicate.test(pos, next)) {
             hasNext = false;
             this.next = null;
@@ -74,7 +74,6 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends
           this.next = next;
           return true;
         } catch (final Exception e) {
-          ++this.pos;
           throw UncheckedException.throwUnchecked(e);
         }
       }
@@ -99,11 +98,6 @@ public class FlatMapFirstWhereIteratorMaterializer<E> extends
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextIndex() {
-      return -1;
     }
   }
 }

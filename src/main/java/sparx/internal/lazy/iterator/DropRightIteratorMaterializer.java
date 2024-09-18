@@ -78,10 +78,5 @@ public class DropRightIteratorMaterializer<E> extends StatefulAutoSkipIteratorMa
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

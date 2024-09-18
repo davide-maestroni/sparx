@@ -28,7 +28,6 @@ public class SymmetricDiffIteratorMaterializer<E> extends AutoSkipIteratorMateri
 
   private HashMap<E, Integer> elementsBag;
   private boolean hasNext;
-  private int index;
   private boolean isWrapped = true;
   private E next;
 
@@ -99,13 +98,7 @@ public class SymmetricDiffIteratorMaterializer<E> extends AutoSkipIteratorMateri
     final E next = this.next;
     hasNext = false;
     this.next = null;
-    ++index;
     return next;
-  }
-
-  @Override
-  public int nextIndex() {
-    return index;
   }
 
   private @NotNull HashMap<E, Integer> fillElementsBag() {

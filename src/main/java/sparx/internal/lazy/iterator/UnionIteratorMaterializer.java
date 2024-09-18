@@ -61,10 +61,5 @@ public class UnionIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
       elements.add(next);
       return next;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

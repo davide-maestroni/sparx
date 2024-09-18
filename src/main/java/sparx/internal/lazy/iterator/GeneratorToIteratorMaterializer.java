@@ -58,9 +58,4 @@ public class GeneratorToIteratorMaterializer<G, E> extends AutoSkipIteratorMater
       throw UncheckedException.throwUnchecked(e);
     }
   }
-
-  @Override
-  public int nextIndex() {
-    return pos;
-  }
 }

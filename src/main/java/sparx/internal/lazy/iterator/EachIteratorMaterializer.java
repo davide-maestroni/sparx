@@ -81,10 +81,5 @@ public class EachIteratorMaterializer<E> extends StatefulIteratorMaterializer<Bo
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

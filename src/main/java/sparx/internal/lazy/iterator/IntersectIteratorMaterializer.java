@@ -26,7 +26,6 @@ public class IntersectIteratorMaterializer<E> extends AutoSkipIteratorMaterializ
 
   private HashMap<Object, Integer> elementsBag;
   private boolean hasNext;
-  private int index;
   private E next;
 
   public IntersectIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
@@ -73,13 +72,7 @@ public class IntersectIteratorMaterializer<E> extends AutoSkipIteratorMaterializ
     final E next = this.next;
     hasNext = false;
     this.next = null;
-    ++index;
     return next;
-  }
-
-  @Override
-  public int nextIndex() {
-    return index;
   }
 
   private @NotNull HashMap<Object, Integer> fillElementsBag() {

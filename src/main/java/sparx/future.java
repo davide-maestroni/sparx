@@ -42,12 +42,13 @@ import sparx.internal.future.iterator.CollectionToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
-import sparx.internal.future.iterator.IteratorGetFuture;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
-import sparx.internal.future.iterator.IteratorWhileFuture;
+import sparx.internal.future.iterator.IteratorGetFuture;
 import sparx.internal.future.iterator.IteratorToIteratorFutureMaterializer;
+import sparx.internal.future.iterator.IteratorWhileFuture;
 import sparx.internal.future.iterator.ListAsyncMaterializerToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
+import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
 import sparx.internal.future.list.AbstractListFutureMaterializer;
 import sparx.internal.future.list.AppendAllListFutureMaterializer;
 import sparx.internal.future.list.AppendListFutureMaterializer;
@@ -86,10 +87,10 @@ import sparx.internal.future.list.InsertAfterListFutureMaterializer;
 import sparx.internal.future.list.InsertAllAfterListFutureMaterializer;
 import sparx.internal.future.list.IntersectListFutureMaterializer;
 import sparx.internal.future.list.ListForFuture;
-import sparx.internal.future.list.ListGetFuture;
 import sparx.internal.future.list.ListFutureMaterializer;
-import sparx.internal.future.list.ListWhileFuture;
+import sparx.internal.future.list.ListGetFuture;
 import sparx.internal.future.list.ListToListFutureMaterializer;
+import sparx.internal.future.list.ListWhileFuture;
 import sparx.internal.future.list.MapAfterListFutureMaterializer;
 import sparx.internal.future.list.MapFirstWhereListFutureMaterializer;
 import sparx.internal.future.list.MapLastWhereListFutureMaterializer;
@@ -204,6 +205,21 @@ class future extends Sparx {
       taskID = Integer.toHexString(System.identityHashCode(this));
     }
 
+    private static @NotNull <E> TransformIteratorFutureMaterializer<E, E> lazyMaterializerAppend(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException, final E element) {
+      final long knownSize = materializer.knownSize();
+      return new TransformIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          knownSize > 0 ? SizeOverflowException.safeCast(knownSize + 1) : -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).append(element);
+        }
+      };
+    }
+
     @Override
     public @NotNull Iterator<E> append(final E element) {
       final ExecutionContext context = this.context;
@@ -214,9 +230,8 @@ class future extends Sparx {
             EmptyIteratorFutureMaterializer.<E>instance());
       }
       if (materializer.isMaterializedAtOnce()) {
-        // TODO: transform
-//        return new List<E>(context, cancelException,
-//            lazyMaterializerAppend(materializer, context, cancelException, element));
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerAppend(materializer, context, cancelException, element));
       }
       return new Iterator<E>(context, cancelException,
           new AppendIteratorFutureMaterializer<E>(materializer, element, context, cancelException,
@@ -637,7 +652,7 @@ class future extends Sparx {
 
     @Override
     public boolean isEmpty() {
-      return false;
+      return !hasNext();
     }
 
     @Override
@@ -729,11 +744,6 @@ class future extends Sparx {
     }
 
     @Override
-    public int nextIndex() {
-      return 0;
-    }
-
-    @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
       return new IteratorForFuture<E>(context, taskID, cancelException, materializer,
           toIndexedConsumer(Require.notNull(consumer, "consumer")));
@@ -800,7 +810,7 @@ class future extends Sparx {
 
     @Override
     public boolean notEmpty() {
-      return false;
+      return hasNext();
     }
 
     @Override
@@ -1626,7 +1636,8 @@ class future extends Sparx {
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final IndexedPredicate<? super E> predicate) {
-      return new LazyListFutureMaterializer<E, Integer>(materializer, context, cancelException, -1) {
+      return new LazyListFutureMaterializer<E, Integer>(materializer, context, cancelException,
+          -1) {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
@@ -1641,7 +1652,8 @@ class future extends Sparx {
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Iterable<?> elements) {
       final Iterable<?> otherElements = elements;
-      return new LazyListFutureMaterializer<E, Integer>(materializer, context, cancelException, -1) {
+      return new LazyListFutureMaterializer<E, Integer>(materializer, context, cancelException,
+          -1) {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
@@ -1668,7 +1680,8 @@ class future extends Sparx {
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final IndexedPredicate<? super E> predicate) {
-      return new LazyListFutureMaterializer<E, Integer>(materializer, context, cancelException, -1) {
+      return new LazyListFutureMaterializer<E, Integer>(materializer, context, cancelException,
+          -1) {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
@@ -1683,7 +1696,8 @@ class future extends Sparx {
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final Iterable<?> elements) {
       final Iterable<?> otherElements = elements;
-      return new LazyListFutureMaterializer<E, Integer>(materializer, context, cancelException, -1) {
+      return new LazyListFutureMaterializer<E, Integer>(materializer, context, cancelException,
+          -1) {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
@@ -4590,8 +4604,8 @@ class future extends Sparx {
                 equalsElement(element)));
       }
       return new List<E>(context, cancelException,
-          new RemoveLastWhereListFutureMaterializer<E>(materializer, equalsElement(element), context,
-              cancelException, List.<E>removeAfterFunction()));
+          new RemoveLastWhereListFutureMaterializer<E>(materializer, equalsElement(element),
+              context, cancelException, List.<E>removeAfterFunction()));
     }
 
     @Override

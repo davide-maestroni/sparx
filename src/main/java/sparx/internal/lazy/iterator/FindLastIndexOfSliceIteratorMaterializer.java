@@ -144,10 +144,5 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> extends
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

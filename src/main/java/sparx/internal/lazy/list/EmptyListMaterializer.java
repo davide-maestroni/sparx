@@ -23,6 +23,9 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
 
   private static final EmptyListMaterializer<?> INSTANCE = new EmptyListMaterializer<Object>();
 
+  private EmptyListMaterializer() {
+  }
+
   @SuppressWarnings("unchecked")
   public static @NotNull <E> EmptyListMaterializer<E> instance() {
     return (EmptyListMaterializer<E>) INSTANCE;

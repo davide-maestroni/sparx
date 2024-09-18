@@ -55,9 +55,4 @@ public class RepeatIteratorMaterializer<E> implements IteratorMaterializer<E> {
     pos += skipped;
     return skipped;
   }
-
-  @Override
-  public int nextIndex() {
-    return pos;
-  }
 }

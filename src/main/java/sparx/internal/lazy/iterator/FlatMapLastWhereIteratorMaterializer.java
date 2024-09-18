@@ -91,10 +91,5 @@ public class FlatMapLastWhereIteratorMaterializer<E> extends
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

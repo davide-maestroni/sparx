@@ -75,10 +75,5 @@ public class ReduceLeftIteratorMaterializer<E> extends StatefulIteratorMateriali
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

@@ -68,10 +68,5 @@ public class AppendIteratorMaterializer<E> extends StatefulIteratorMaterializer<
       }
       return skipped;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

@@ -84,16 +84,6 @@ public class FinallyIteratorMaterializer<E> implements IteratorMaterializer<E> {
     }
   }
 
-  @Override
-  public int nextIndex() {
-    try {
-      return wrapped.nextIndex();
-    } catch (final Exception e) {
-      materialize();
-      throw UncheckedException.throwUnchecked(e);
-    }
-  }
-
   private void materialize() {
     if (isMaterialized.compareAndSet(false, true)) {
       try {

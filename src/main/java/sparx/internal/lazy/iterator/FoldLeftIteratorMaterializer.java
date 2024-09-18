@@ -74,10 +74,5 @@ public class FoldLeftIteratorMaterializer<E, F> extends StatefulIteratorMaterial
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

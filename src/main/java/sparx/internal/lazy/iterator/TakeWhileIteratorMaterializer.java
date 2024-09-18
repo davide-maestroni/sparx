@@ -54,8 +54,7 @@ public class TakeWhileIteratorMaterializer<E> extends StatefulAutoSkipIteratorMa
       }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        final int pos = this.pos;
-        ++this.pos;
+        final int pos = this.pos++;
         final E next = wrapped.materializeNext();
         try {
           if (predicate.test(pos, next)) {
@@ -85,11 +84,6 @@ public class TakeWhileIteratorMaterializer<E> extends StatefulAutoSkipIteratorMa
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextIndex() {
-      return -1;
     }
   }
 }

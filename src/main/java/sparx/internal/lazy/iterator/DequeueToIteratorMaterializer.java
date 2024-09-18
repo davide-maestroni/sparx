@@ -21,11 +21,9 @@ import sparx.util.DequeueList;
 public class DequeueToIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
   private final DequeueList<E> elements;
-  private final int size;
 
   public DequeueToIteratorMaterializer(@NotNull final DequeueList<E> elements) {
     this.elements = elements;
-    size = elements.size();
   }
 
   @Override
@@ -41,10 +39,5 @@ public class DequeueToIteratorMaterializer<E> extends AutoSkipIteratorMaterializ
   @Override
   public E materializeNext() {
     return elements.removeFirst();
-  }
-
-  @Override
-  public int nextIndex() {
-    return size - elements.size();
   }
 }

@@ -1461,11 +1461,6 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public int nextIndex() {
-      return materializer.nextIndex();
-    }
-
-    @Override
     public E next() {
       return materializer.materializeNext();
     }
@@ -2242,11 +2237,6 @@ public class lazy extends Sparx {
         return state.materializeSkip(count);
       }
 
-      @Override
-      public int nextIndex() {
-        return state.nextIndex();
-      }
-
       private class ImmaterialState implements IteratorMaterializer<E> {
 
         private final Supplier<? extends Iterable<? extends E>> supplier;
@@ -2288,17 +2278,6 @@ public class lazy extends Sparx {
             final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
                 supplier.get());
             return (state = elementsMaterializer).materializeSkip(count);
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-
-        @Override
-        public int nextIndex() {
-          try {
-            final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).nextIndex();
           } catch (final Exception e) {
             throw UncheckedException.throwUnchecked(e);
           }

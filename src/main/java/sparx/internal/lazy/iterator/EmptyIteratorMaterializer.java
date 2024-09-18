@@ -22,6 +22,9 @@ public class EmptyIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   private static final EmptyIteratorMaterializer<?> INSTANCE = new EmptyIteratorMaterializer<Object>();
 
+  private EmptyIteratorMaterializer() {
+  }
+
   @SuppressWarnings("unchecked")
   public static @NotNull <E> EmptyIteratorMaterializer<E> instance() {
     return (EmptyIteratorMaterializer<E>) INSTANCE;
@@ -44,11 +47,6 @@ public class EmptyIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   @Override
   public int materializeSkip(final int count) {
-    return 0;
-  }
-
-  @Override
-  public int nextIndex() {
     return 0;
   }
 }

@@ -80,10 +80,5 @@ public class FoldRightIteratorMaterializer<E, F> extends StatefulIteratorMateria
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

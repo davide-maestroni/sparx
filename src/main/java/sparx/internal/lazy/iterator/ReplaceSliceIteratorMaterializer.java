@@ -107,11 +107,6 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 
   private class MaterialState implements IteratorMaterializer<E> {
@@ -168,11 +163,6 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextIndex() {
-      return -1;
     }
   }
 }

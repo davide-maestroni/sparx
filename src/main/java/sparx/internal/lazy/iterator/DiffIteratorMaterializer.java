@@ -26,7 +26,6 @@ public class DiffIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E>
 
   private HashMap<Object, Integer> elementsBag;
   private boolean hasNext;
-  private int index;
   private E next;
 
   public DiffIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
@@ -73,13 +72,7 @@ public class DiffIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E>
     final E next = this.next;
     hasNext = false;
     this.next = null;
-    ++index;
     return next;
-  }
-
-  @Override
-  public int nextIndex() {
-    return index;
   }
 
   private @NotNull HashMap<Object, Integer> fillElementsBag() {

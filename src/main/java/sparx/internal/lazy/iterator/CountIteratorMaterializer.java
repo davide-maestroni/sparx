@@ -56,10 +56,5 @@ public class CountIteratorMaterializer<E> extends StatefulIteratorMaterializer<I
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

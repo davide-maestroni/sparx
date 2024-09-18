@@ -19,16 +19,7 @@ import org.jetbrains.annotations.NotNull;
 
 abstract class StatefulIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
-  private int index;
   private volatile IteratorMaterializer<E> state;
-
-  protected StatefulIteratorMaterializer() {
-    this(0);
-  }
-
-  protected StatefulIteratorMaterializer(final int index) {
-    this.index = index;
-  }
 
   @Override
   public int knownSize() {
@@ -42,21 +33,12 @@ abstract class StatefulIteratorMaterializer<E> implements IteratorMaterializer<E
 
   @Override
   public E materializeNext() {
-    final E next = state.materializeNext();
-    ++index;
-    return next;
+    return state.materializeNext();
   }
 
   @Override
   public int materializeSkip(final int count) {
-    final int skipped = state.materializeSkip(count);
-    index += skipped;
-    return skipped;
-  }
-
-  @Override
-  public int nextIndex() {
-    return index;
+    return state.materializeSkip(count);
   }
 
   protected final @NotNull IteratorMaterializer<E> getState() {

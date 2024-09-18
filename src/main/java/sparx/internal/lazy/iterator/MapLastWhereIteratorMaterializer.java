@@ -90,10 +90,5 @@ public class MapLastWhereIteratorMaterializer<E> extends StatefulAutoSkipIterato
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

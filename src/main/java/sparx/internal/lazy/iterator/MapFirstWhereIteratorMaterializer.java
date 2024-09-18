@@ -59,8 +59,7 @@ public class MapFirstWhereIteratorMaterializer<E> extends StatefulAutoSkipIterat
       }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        final int pos = this.pos;
-        ++this.pos;
+        final int pos = this.pos++;
         final E next = wrapped.materializeNext();
         try {
           if (predicate.test(pos, next)) {
@@ -97,11 +96,6 @@ public class MapFirstWhereIteratorMaterializer<E> extends StatefulAutoSkipIterat
     @Override
     public int materializeSkip(final int count) {
       throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextIndex() {
-      return -1;
     }
   }
 }

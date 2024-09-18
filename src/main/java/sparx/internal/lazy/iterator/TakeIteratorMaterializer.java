@@ -70,10 +70,5 @@ public class TakeIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

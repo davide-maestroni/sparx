@@ -69,9 +69,4 @@ public class LinesIteratorMaterializer extends AutoSkipIteratorMaterializer<Stri
     pos += skipped;
     return skipped;
   }
-
-  @Override
-  public int nextIndex() {
-    return pos;
-  }
 }

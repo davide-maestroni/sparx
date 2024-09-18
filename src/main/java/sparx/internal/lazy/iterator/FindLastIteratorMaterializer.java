@@ -85,10 +85,5 @@ public class FindLastIteratorMaterializer<E> extends StatefulIteratorMaterialize
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

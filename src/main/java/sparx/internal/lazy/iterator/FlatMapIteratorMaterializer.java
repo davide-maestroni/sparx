@@ -25,7 +25,6 @@ public class FlatMapIteratorMaterializer<E, F> implements IteratorMaterializer<F
   private final IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper;
   private final IteratorMaterializer<E> wrapped;
 
-  private int index;
   private IteratorMaterializer<F> materializer = EmptyIteratorMaterializer.instance();
   private int pos;
 
@@ -66,9 +65,7 @@ public class FlatMapIteratorMaterializer<E, F> implements IteratorMaterializer<F
     if (!materializeHasNext()) {
       throw new NoSuchElementException();
     }
-    final F next = materializer.materializeNext();
-    ++index;
-    return next;
+    return materializer.materializeNext();
   }
 
   @Override
@@ -81,10 +78,5 @@ public class FlatMapIteratorMaterializer<E, F> implements IteratorMaterializer<F
       return skipped;
     }
     return 0;
-  }
-
-  @Override
-  public int nextIndex() {
-    return index;
   }
 }

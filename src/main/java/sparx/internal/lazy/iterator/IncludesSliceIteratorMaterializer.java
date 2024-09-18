@@ -102,10 +102,5 @@ public class IncludesSliceIteratorMaterializer<E> extends StatefulIteratorMateri
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

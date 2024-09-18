@@ -98,10 +98,5 @@ public class InsertAllAfterIteratorMaterializer<E> extends StatefulIteratorMater
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 }

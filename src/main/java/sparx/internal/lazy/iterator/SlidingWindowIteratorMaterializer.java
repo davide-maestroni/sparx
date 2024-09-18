@@ -156,11 +156,6 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
       return 0;
     }
 
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
-
     private boolean advance() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final DequeueList<E> elements = this.elements;

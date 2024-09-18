@@ -94,11 +94,6 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
       }
       return 0;
     }
-
-    @Override
-    public int nextIndex() {
-      return -1;
-    }
   }
 
   private class MaterialState implements IteratorMaterializer<E> {
@@ -160,11 +155,6 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
         return wrapped.materializeSkip(length);
       }
       return 0;
-    }
-
-    @Override
-    public int nextIndex() {
-      return -1;
     }
   }
 }
