@@ -19,6 +19,7 @@ import static sparx.internal.future.AsyncConsumers.safeConsume;
 import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
@@ -29,15 +30,15 @@ import sparx.internal.future.IndexedAsyncPredicate;
 
 public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
+  private static final EmptyListAsyncMaterializer<?> INSTANCE = new EmptyListAsyncMaterializer<Object>();
   private static final Logger LOGGER = Logger.getLogger(EmptyListAsyncMaterializer.class.getName());
 
-  private final List<E> elements;
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> EmptyListAsyncMaterializer<E> instance() {
+    return (EmptyListAsyncMaterializer<E>) INSTANCE;
+  }
 
-  public EmptyListAsyncMaterializer(@NotNull final List<E> empty) {
-    if (!empty.isEmpty()) {
-      throw new IllegalArgumentException("'element' must be empty, but size is: " + empty.size());
-    }
-    this.elements = empty;
+  private EmptyListAsyncMaterializer() {
   }
 
   @Override
@@ -91,7 +92,7 @@ public class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
 
   @Override
   public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-    safeConsume(consumer, elements, LOGGER);
+    safeConsume(consumer, Collections.<E>emptyList(), LOGGER);
   }
 
   @Override

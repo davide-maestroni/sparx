@@ -31,7 +31,6 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.IndexOverflowException;
-import sparx.util.function.Function;
 
 public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
@@ -43,8 +42,7 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
   public RemoveSliceListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final int start, final int end, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     final int knownSize = wrapped.knownSize();
@@ -68,12 +66,11 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
       } else {
         setState(
             new MaterialState(wrapped, materializedStart, materializedLength, knownSize, context,
-                cancelException, decorateFunction));
+                cancelException));
       }
     } else {
       this.knownSize = -1;
-      setState(
-          new ImmaterialState(wrapped, start, end, context, cancelException, decorateFunction));
+      setState(new ImmaterialState(wrapped, start, end, context, cancelException));
     }
   }
 
@@ -96,7 +93,6 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final int end;
     private final int start;
     private final ListAsyncMaterializer<E> wrapped;
@@ -105,14 +101,12 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int start,
         final int end, @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.start = start;
       this.end = end;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
     }
 
@@ -339,7 +333,7 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
         } else {
           consumer.accept(setState(
               new MaterialState(wrapped, materializedStart, materializedLength, wrappedSize,
-                  context, cancelException, decorateFunction)));
+                  context, cancelException)));
         }
       } else {
         consumer.accept(getState());
@@ -351,7 +345,6 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
     private final int knownSize;
@@ -361,14 +354,12 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
 
     public MaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int start,
         final int length, final int wrappedSize, @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.start = start;
       this.length = length;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
       knownSize = wrappedSize - length;
     }
 
@@ -517,10 +508,9 @@ public class RemoveSliceListAsyncMaterializer<E> extends AbstractListAsyncMateri
               private final ArrayList<E> elements = new ArrayList<E>();
 
               @Override
-              public void cancellableComplete(final int size) throws Exception {
-                final List<E> materialized = decorateFunction.apply(elements);
-                setDone(new ListToListAsyncMaterializer<E>(materialized, context));
-                consumeElements(materialized);
+              public void cancellableComplete(final int size) {
+                setDone(new ListToListAsyncMaterializer<E>(elements, context));
+                consumeElements(elements);
               }
 
               @Override

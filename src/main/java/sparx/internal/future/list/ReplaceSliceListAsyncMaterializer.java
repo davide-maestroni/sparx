@@ -32,7 +32,6 @@ import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
-import sparx.util.function.Function;
 
 public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
@@ -45,8 +44,7 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
   public ReplaceSliceListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final int start, final int end, @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     final int knownSize = wrapped.knownSize();
@@ -68,12 +66,11 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
       this.knownSize = elementsSize >= 0 ? SizeOverflowException.safeCast(
           (long) knownSize - materializedLength + elementsSize) : -1;
       setState(new MaterialState(wrapped, materializedStart, materializedLength, knownSize,
-          elementsMaterializer, context, cancelException, decorateFunction));
+          elementsMaterializer, context, cancelException));
     } else {
       this.knownSize = -1;
       setState(
-          new ImmaterialState(wrapped, start, end, elementsMaterializer, context, cancelException,
-              decorateFunction));
+          new ImmaterialState(wrapped, start, end, elementsMaterializer, context, cancelException));
     }
   }
 
@@ -96,7 +93,6 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final ListAsyncMaterializer<E> elementsMaterializer;
     private final int end;
     private final int start;
@@ -107,15 +103,13 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int start,
         final int end, @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.start = start;
       this.end = end;
       this.elementsMaterializer = elementsMaterializer;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
     }
 
@@ -319,7 +313,7 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
         final int materializedLength = Math.max(0, materializedEnd - materializedStart);
         consumer.accept(setState(
             new MaterialState(wrapped, materializedStart, materializedLength, wrappedSize,
-                elementsMaterializer, context, cancelException, decorateFunction)));
+                elementsMaterializer, context, cancelException)));
       } else {
         consumer.accept(getState());
       }
@@ -330,7 +324,6 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
     private final ListAsyncMaterializer<E> elementsMaterializer;
@@ -346,8 +339,7 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
         final int length, final int wrappedSize,
         @NotNull final ListAsyncMaterializer<E> elementsMaterializer,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.start = start;
       this.length = length;
@@ -355,7 +347,6 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
       this.elementsMaterializer = elementsMaterializer;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
       elementsSize = elementsMaterializer.knownSize();
       knownSize = safeSize(elementsSize);
     }
@@ -594,7 +585,7 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
               final ArrayList<E> elements = new ArrayList<E>(patch);
               wrapped.materializeNextWhile(length, new CancellableIndexedAsyncPredicate<E>() {
                 @Override
-                public void cancellableComplete(final int size) throws Exception {
+                public void cancellableComplete(final int size) {
                   setComplete(elements);
                 }
 
@@ -621,7 +612,7 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
             private final ArrayList<E> elements = new ArrayList<E>();
 
             @Override
-            public void cancellableComplete(final int size) throws Exception {
+            public void cancellableComplete(final int size) {
               setComplete(elements);
             }
 
@@ -637,7 +628,7 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
                     wrapped.materializeNextWhile(start + length,
                         new CancellableIndexedAsyncPredicate<E>() {
                           @Override
-                          public void cancellableComplete(final int size) throws Exception {
+                          public void cancellableComplete(final int size) {
                             setComplete(elements);
                           }
 
@@ -974,10 +965,9 @@ public class ReplaceSliceListAsyncMaterializer<E> extends AbstractListAsyncMater
       return -1;
     }
 
-    private void setComplete(@NotNull final List<E> elements) throws Exception {
-      final List<E> materialized = decorateFunction.apply(elements);
-      setDone(new ListToListAsyncMaterializer<E>(materialized, context));
-      consumeElements(materialized);
+    private void setComplete(@NotNull final List<E> elements) {
+      setDone(new ListToListAsyncMaterializer<E>(elements, context));
+      consumeElements(elements);
     }
 
     private void setError(@NotNull final Exception error) {

@@ -1005,6 +1005,8 @@ class itf {
     @NotNull
     Iterator<E> resizeTo(@NotNegative int numElements, E padding);
 
+    // TODO: runAfter
+
     @NotNull
     Iterator<E> runFinally(@NotNull Action action);
 

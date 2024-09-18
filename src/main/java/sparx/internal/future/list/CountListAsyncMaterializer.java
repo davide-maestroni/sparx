@@ -20,7 +20,6 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +30,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.util.function.Function;
 
 public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Integer> {
 
@@ -39,10 +37,9 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
 
   public CountListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, cancelException));
   }
 
   @Override
@@ -58,16 +55,13 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
   private class ImmaterialState implements ListAsyncMaterializer<Integer> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final Function<List<Integer>, List<Integer>> decorateFunction;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -236,7 +230,7 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
       if (stateConsumers.size() == 1) {
         wrapped.materializeSize(new CancellableAsyncConsumer<Integer>() {
           @Override
-          public void cancellableAccept(final Integer size) throws Exception {
+          public void cancellableAccept(final Integer size) {
             setState(size);
           }
 
@@ -253,9 +247,8 @@ public class CountListAsyncMaterializer<E> extends AbstractListAsyncMaterializer
       }
     }
 
-    private void setState(final int size) throws Exception {
-      consumeState(setDone(new ElementToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.singletonList(size)))));
+    private void setState(final int size) {
+      consumeState(setDone(new ElementToListAsyncMaterializer<Integer>(size)));
     }
   }
 }

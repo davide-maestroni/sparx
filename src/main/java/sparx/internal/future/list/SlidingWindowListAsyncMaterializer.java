@@ -34,7 +34,6 @@ import sparx.internal.util.ElementsCache;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
 import sparx.util.annotation.Positive;
-import sparx.util.function.Function;
 
 public class SlidingWindowListAsyncMaterializer<E, L extends List<E>> extends
     AbstractListAsyncMaterializer<L> {
@@ -47,12 +46,10 @@ public class SlidingWindowListAsyncMaterializer<E, L extends List<E>> extends
   public SlidingWindowListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @Positive final int maxSize, @Positive final int step,
       @NotNull final Splitter<E, ? extends L> splitter, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<L>, List<L>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize(), step);
-    setState(new ImmaterialState(wrapped, maxSize, step, splitter, context, cancelException,
-        decorateFunction));
+    setState(new ImmaterialState(wrapped, maxSize, step, splitter, context, cancelException));
   }
 
   private static int safeSize(final int wrappedSize, final int step) {
@@ -83,7 +80,6 @@ public class SlidingWindowListAsyncMaterializer<E, L extends List<E>> extends
     private final AtomicReference<CancellationException> cancelException;
     private final Splitter<E, ? extends L> splitter;
     private final ExecutionContext context;
-    private final Function<List<L>, List<L>> decorateFunction;
     private final ElementsCache<L> elements = new ElementsCache<L>(knownSize);
     private final ArrayList<AsyncConsumer<List<L>>> elementsConsumers = new ArrayList<AsyncConsumer<List<L>>>(
         2);
@@ -96,15 +92,13 @@ public class SlidingWindowListAsyncMaterializer<E, L extends List<E>> extends
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int maxSize,
         final int step, @NotNull final Splitter<E, ? extends L> splitter,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<L>, List<L>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.maxSize = maxSize;
       this.step = step;
       this.splitter = splitter;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
     }
 
@@ -510,13 +504,10 @@ public class SlidingWindowListAsyncMaterializer<E, L extends List<E>> extends
     private void materializeElements() {
       final ElementsCache<L> elements = fillElementsCache();
       try {
-        final List<L> materialized = decorateFunction.apply(elements.toList());
+        final List<L> materialized = elements.toList();
         setDone(new ListToListAsyncMaterializer<L>(materialized, context));
         consumeElements(materialized);
       } catch (final Exception e) {
-        if (e instanceof InterruptedException) {
-          Thread.currentThread().interrupt();
-        }
         setError(e);
       }
     }

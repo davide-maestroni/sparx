@@ -31,7 +31,6 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.annotation.Positive;
-import sparx.util.function.Function;
 import sparx.util.function.TernaryFunction;
 
 public class ResizeListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
@@ -44,12 +43,10 @@ public class ResizeListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
   public ResizeListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @Positive final int numElements, final E padding, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> resizeFunction,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> resizeFunction) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(
-        new ImmaterialState(wrapped, numElements, padding, context, cancelException, resizeFunction,
-            decorateFunction));
+    setState(new ImmaterialState(wrapped, numElements, padding, context, cancelException,
+        resizeFunction));
     size = numElements;
   }
 
@@ -62,7 +59,6 @@ public class ResizeListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
     private final int numElements;
@@ -75,15 +71,13 @@ public class ResizeListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @Positive final int numElements, final E padding, @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> resizeFunction,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> resizeFunction) {
       this.wrapped = wrapped;
       this.numElements = numElements;
       this.padding = padding;
       this.context = context;
       this.cancelException = cancelException;
       this.resizeFunction = resizeFunction;
-      this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
     }
 
@@ -230,13 +224,11 @@ public class ResizeListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
             }
 
             @Override
-            public boolean cancellableTest(final int size, final int index, final E element)
-                throws Exception {
+            public boolean cancellableTest(final int size, final int index, final E element) {
               elements.add(element);
               if (index == last) {
-                final List<E> materialized = decorateFunction.apply(elements);
-                setDone(new ListToListAsyncMaterializer<E>(materialized, context));
-                consumeElements(materialized);
+                setDone(new ListToListAsyncMaterializer<E>(elements, context));
+                consumeElements(elements);
                 return false;
               }
               return true;

@@ -19,7 +19,6 @@ import static sparx.internal.future.AsyncConsumers.safeConsume;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +33,6 @@ import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
 import sparx.util.annotation.NotNegative;
-import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
 
 public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
@@ -46,21 +44,17 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
       @NotNegative final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends ListAsyncMaterializer<E>> mapper,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
-    this(wrapped, numElements, mapper, new AtomicInteger(STATUS_RUNNING), context, cancelException,
-        decorateFunction);
+      @NotNull final AtomicReference<CancellationException> cancelException) {
+    this(wrapped, numElements, mapper, new AtomicInteger(STATUS_RUNNING), context, cancelException);
   }
 
   FlatMapAfterListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNegative final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends ListAsyncMaterializer<E>> mapper,
       @NotNull final AtomicInteger status, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, status);
-    setState(new ImmaterialState(wrapped, numElements, mapper, context, cancelException,
-        decorateFunction));
+    setState(new ImmaterialState(wrapped, numElements, mapper, context, cancelException));
   }
 
   @Override
@@ -72,7 +66,6 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<AsyncConsumer<List<E>>> elementsConsumers = new ArrayList<AsyncConsumer<List<E>>>(
         2);
     private final IndexedFunction<? super E, ? extends ListAsyncMaterializer<E>> mapper;
@@ -86,14 +79,12 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final int numElements,
         @NotNull final IndexedFunction<? super E, ? extends ListAsyncMaterializer<E>> mapper,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.numElements = numElements;
       this.mapper = mapper;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
     }
 
@@ -290,9 +281,8 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
           public void cancellableAccept(final List<E> wrappedElements) throws Exception {
             wrappedSize = wrappedElements.size();
             if (numElements >= wrappedSize) {
-              final List<E> materialized = decorateFunction.apply(wrappedElements);
-              setDone(new ListToListAsyncMaterializer<E>(materialized, context));
-              consumeElements(materialized);
+              setDone(new ListToListAsyncMaterializer<E>(wrappedElements, context));
+              consumeElements(wrappedElements);
             } else {
               if (elementsMaterializer == null) {
                 elementsMaterializer = mapper.apply(numElements, wrappedElements.get(numElements));
@@ -300,16 +290,15 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
               }
               elementsMaterializer.materializeElements(new CancellableAsyncConsumer<List<E>>() {
                 @Override
-                public void cancellableAccept(final List<E> mappedElements) throws Exception {
+                public void cancellableAccept(final List<E> mappedElements) {
                   elementsSize = mappedElements.size();
                   final ArrayList<E> elements = new ArrayList<E>(safeSize());
                   elements.addAll(wrappedElements.subList(0, Math.min(numElements, wrappedSize)));
                   elements.addAll(mappedElements);
                   elements.addAll(
                       wrappedElements.subList(Math.min(numElements + 1, wrappedSize), wrappedSize));
-                  final List<E> materialized = decorateFunction.apply(elements);
-                  setDone(new ListToListAsyncMaterializer<E>(materialized, context));
-                  consumeElements(materialized);
+                  setDone(new ListToListAsyncMaterializer<E>(elements, context));
+                  consumeElements(elements);
                 }
 
                 @Override
@@ -684,8 +673,7 @@ public class FlatMapAfterListAsyncMaterializer<E> extends AbstractListAsyncMater
           @Override
           public void cancellableComplete(final int size) throws Exception {
             setState(new WrappingState(wrapped, cancelException));
-            consumer.accept(new EmptyListAsyncMaterializer<E>(
-                decorateFunction.apply(Collections.<E>emptyList())));
+            consumer.accept(EmptyListAsyncMaterializer.<E>instance());
           }
 
           @Override

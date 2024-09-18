@@ -16,14 +16,12 @@
 package sparx.internal.future.list;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
-import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
 
 public class DistinctByListAsyncMaterializer<E, K> extends ProgressiveListAsyncMaterializer<E, E> {
@@ -34,11 +32,9 @@ public class DistinctByListAsyncMaterializer<E, K> extends ProgressiveListAsyncM
   public DistinctByListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedFunction<? super E, K> keyExtractor,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(
-        new ImmaterialState(wrapped, keyExtractor, context, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, keyExtractor, context, cancelException));
   }
 
   private class ImmaterialState extends ProgressiveListAsyncMaterializer<E, E>.ImmaterialState {
@@ -52,9 +48,8 @@ public class DistinctByListAsyncMaterializer<E, K> extends ProgressiveListAsyncM
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedFunction<? super E, K> keyExtractor,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
-      super(wrapped, context, cancelException, decorateFunction, LOGGER);
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      super(wrapped, context, cancelException, LOGGER);
       this.wrapped = wrapped;
       this.keyExtractor = keyExtractor;
     }

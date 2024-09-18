@@ -18,7 +18,6 @@ package sparx.internal.future.list;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +28,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
 public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
@@ -39,10 +37,9 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
 
   public FindFirstListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, predicate, cancelException));
   }
 
   @Override
@@ -63,19 +60,16 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
   private class ImmaterialState implements ListAsyncMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -257,7 +251,7 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       if (stateConsumers.size() == 1) {
         wrapped.materializeNextWhile(0, new CancellableIndexedAsyncPredicate<E>() {
           @Override
-          public void cancellableComplete(final int size) throws Exception {
+          public void cancellableComplete(final int size) {
             setState();
           }
 
@@ -284,14 +278,12 @@ public class FindFirstListAsyncMaterializer<E> extends AbstractListAsyncMaterial
       }
     }
 
-    private void setState() throws Exception {
-      consumeState(setDone(
-          new EmptyListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
+    private void setState() {
+      consumeState(setDone(EmptyListAsyncMaterializer.<E>instance()));
     }
 
-    private void setState(final E element) throws Exception {
-      consumeState(setDone(new ElementToListAsyncMaterializer<E>(
-          decorateFunction.apply(Collections.singletonList(element)))));
+    private void setState(final E element) {
+      consumeState(setDone(new ElementToListAsyncMaterializer<E>(element)));
     }
   }
 }

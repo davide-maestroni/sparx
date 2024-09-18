@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
-import sparx.util.function.Function;
 
 public class DiffListAsyncMaterializer<E> extends ProgressiveListAsyncMaterializer<E, E> {
 
@@ -32,11 +31,9 @@ public class DiffListAsyncMaterializer<E> extends ProgressiveListAsyncMaterializ
   public DiffListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
-        decorateFunction));
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException));
   }
 
   private class ImmaterialState extends ProgressiveListAsyncMaterializer<E, E>.ImmaterialState {
@@ -50,9 +47,8 @@ public class DiffListAsyncMaterializer<E> extends ProgressiveListAsyncMaterializ
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<?> elementsMaterializer,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
-      super(wrapped, context, cancelException, decorateFunction, LOGGER);
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      super(wrapped, context, cancelException, LOGGER);
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
     }

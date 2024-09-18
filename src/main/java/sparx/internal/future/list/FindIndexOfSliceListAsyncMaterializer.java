@@ -18,7 +18,6 @@ package sparx.internal.future.list;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,7 +29,6 @@ import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.util.function.Function;
 
 public class FindIndexOfSliceListAsyncMaterializer<E> extends
     AbstractListAsyncMaterializer<Integer> {
@@ -41,11 +39,9 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
   public FindIndexOfSliceListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
-        decorateFunction));
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException));
   }
 
   @Override
@@ -67,7 +63,6 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<Integer>, List<Integer>> decorateFunction;
     private final ListAsyncMaterializer<Object> elementsMaterializer;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
@@ -75,13 +70,11 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<Integer>, List<Integer>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -273,9 +266,6 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
           try {
             setState(0);
           } catch (final Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-            }
             setError(e);
           }
         } else {
@@ -293,14 +283,12 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       }
     }
 
-    private void setState() throws Exception {
-      consumeState(setDone(new EmptyListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.<Integer>emptyList()))));
+    private void setState() {
+      consumeState(setDone(EmptyListAsyncMaterializer.<Integer>instance()));
     }
 
-    private void setState(final int index) throws Exception {
-      consumeState(setDone(new ElementToListAsyncMaterializer<Integer>(
-          decorateFunction.apply(Collections.singletonList(index)))));
+    private void setState(final int index) {
+      consumeState(setDone(new ElementToListAsyncMaterializer<Integer>(index)));
     }
 
     private class MaterializingAsyncConsumer extends
@@ -333,7 +321,7 @@ public class FindIndexOfSliceListAsyncMaterializer<E> extends
       }
 
       @Override
-      public void cancellableComplete(final int size) throws Exception {
+      public void cancellableComplete(final int size) {
         if (isWrapped) {
           setState();
         } else {

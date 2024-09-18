@@ -19,7 +19,6 @@ import static sparx.internal.future.AsyncConsumers.safeConsume;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +30,6 @@ import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.util.function.Function;
 
 public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Boolean> {
 
@@ -41,11 +39,9 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
   public IncludesSliceListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
-        decorateFunction));
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException));
   }
 
   @Override
@@ -62,7 +58,6 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<Boolean>, List<Boolean>> decorateFunction;
     private final ListAsyncMaterializer<Object> elementsMaterializer;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
@@ -70,13 +65,11 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ListAsyncMaterializer<Object> elementsMaterializer,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -255,9 +248,6 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
           try {
             setState(true);
           } catch (final Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-            }
             setError(e);
           }
         } else {
@@ -275,9 +265,8 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
       }
     }
 
-    private void setState(final boolean includes) throws Exception {
-      consumeState(setDone(new ElementToListAsyncMaterializer<Boolean>(
-          decorateFunction.apply(Collections.singletonList(includes)))));
+    private void setState(final boolean includes) {
+      consumeState(setDone(new ElementToListAsyncMaterializer<Boolean>(includes)));
     }
 
     private class MaterializingAsyncConsumer extends
@@ -310,7 +299,7 @@ public class IncludesSliceListAsyncMaterializer<E> extends AbstractListAsyncMate
       }
 
       @Override
-      public void cancellableComplete(final int size) throws Exception {
+      public void cancellableComplete(final int size) {
         setState(!isWrapped);
       }
 

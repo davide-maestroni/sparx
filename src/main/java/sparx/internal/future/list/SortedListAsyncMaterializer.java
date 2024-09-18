@@ -32,7 +32,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.util.function.Function;
 
 public class SortedListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
@@ -43,10 +42,9 @@ public class SortedListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
   public SortedListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final Comparator<? super E> comparator, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, comparator, context, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, comparator, context, cancelException));
     knownSize = wrapped.knownSize();
   }
 
@@ -65,7 +63,6 @@ public class SortedListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
     private final AtomicReference<CancellationException> cancelException;
     private final Comparator<? super E> comparator;
     private final ExecutionContext context;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
@@ -73,13 +70,11 @@ public class SortedListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final Comparator<? super E> comparator, @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.comparator = comparator;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
     }
 
@@ -299,10 +294,10 @@ public class SortedListAsyncMaterializer<E> extends AbstractListAsyncMaterialize
         wrapped.materializeElements(new CancellableAsyncConsumer<List<E>>() {
           @Override
           @SuppressWarnings("unchecked")
-          public void cancellableAccept(final List<E> elements) throws Exception {
+          public void cancellableAccept(final List<E> elements) {
             final Object[] array = elements.toArray();
             Arrays.sort(array, (Comparator<? super Object>) comparator);
-            final List<E> materialized = decorateFunction.apply((List<E>) Arrays.asList(array));
+            final List<E> materialized = (List<E>) Arrays.asList(array);
             consumeState(setDone(new ListToListAsyncMaterializer<E>(materialized, context)));
           }
 

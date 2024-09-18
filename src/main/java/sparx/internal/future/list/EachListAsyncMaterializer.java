@@ -20,7 +20,6 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +30,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
 public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Boolean> {
@@ -41,11 +39,9 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
   public EachListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(
-        new ImmaterialState(wrapped, predicate, defaultResult, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, predicate, defaultResult, cancelException));
   }
 
   @Override
@@ -61,7 +57,6 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
   private class ImmaterialState implements ListAsyncMaterializer<Boolean> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final Function<List<Boolean>, List<Boolean>> decorateFunction;
     private final boolean defaultResult;
     private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
@@ -69,13 +64,11 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.defaultResult = defaultResult;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -271,9 +264,8 @@ public class EachListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<
       }
     }
 
-    private void setState(final boolean matches) throws Exception {
-      consumeState(setDone(new ElementToListAsyncMaterializer<Boolean>(
-          decorateFunction.apply(Collections.singletonList(matches)))));
+    private void setState(final boolean matches) {
+      consumeState(setDone(new ElementToListAsyncMaterializer<Boolean>(matches)));
     }
   }
 }

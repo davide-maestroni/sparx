@@ -31,7 +31,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.util.function.Function;
 
 abstract class ProgressiveListAsyncMaterializer<E, F> extends AbstractListAsyncMaterializer<F> {
 
@@ -49,7 +48,6 @@ abstract class ProgressiveListAsyncMaterializer<E, F> extends AbstractListAsyncM
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<F>, List<F>> decorateFunction;
     private final ArrayList<F> elements = new ArrayList<F>();
     private final HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>> elementsConsumers = new HashMap<Integer, ArrayList<IndexedAsyncConsumer<F>>>(
         2);
@@ -59,11 +57,10 @@ abstract class ProgressiveListAsyncMaterializer<E, F> extends AbstractListAsyncM
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<F>, List<F>> decorateFunction, @NotNull final Logger logger) {
+        @NotNull final Logger logger) {
       this.wrapped = wrapped;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
       this.logger = logger;
     }
 
@@ -410,8 +407,7 @@ abstract class ProgressiveListAsyncMaterializer<E, F> extends AbstractListAsyncM
     }
 
     void setComplete() throws Exception {
-      final List<F> materialized = decorateFunction.apply(elements);
-      setDone(new ListToListAsyncMaterializer<F>(materialized, context));
+      setDone(new ListToListAsyncMaterializer<F>(elements, context));
       consumeComplete(elements.size());
     }
 

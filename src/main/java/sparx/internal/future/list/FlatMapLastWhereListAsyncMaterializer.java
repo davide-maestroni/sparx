@@ -29,7 +29,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
@@ -42,11 +41,9 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
       @NotNull final IndexedPredicate<? super E> predicate,
       @NotNull final IndexedFunction<? super E, ? extends ListAsyncMaterializer<E>> mapper,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, mapper, context, cancelException,
-        decorateFunction));
+    setState(new ImmaterialState(wrapped, predicate, mapper, context, cancelException));
   }
 
   @Override
@@ -63,7 +60,6 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final IndexedFunction<? super E, ? extends ListAsyncMaterializer<E>> mapper;
     private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
@@ -75,14 +71,12 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final IndexedFunction<? super E, ? extends ListAsyncMaterializer<E>> mapper,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.mapper = mapper;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
     }
 
@@ -307,7 +301,7 @@ public class FlatMapLastWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           if (predicate.test(index, element)) {
             consumeState(setState(
                 new FlatMapAfterListAsyncMaterializer<E>(wrapped, index, mapper, status, context,
-                    cancelException, decorateFunction)));
+                    cancelException)));
           } else if (index > 0) {
             return true;
           } else {

@@ -15,8 +15,6 @@
  */
 package sparx;
 
-import static sparx.internal.future.AsyncConsumers.safeConsume;
-import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 import static sparx.lazy.indexedIdentity;
 
@@ -63,6 +61,7 @@ import sparx.internal.future.list.DropRightWhileListAsyncMaterializer;
 import sparx.internal.future.list.DropWhileListAsyncMaterializer;
 import sparx.internal.future.list.EachListAsyncMaterializer;
 import sparx.internal.future.list.ElementToListAsyncMaterializer;
+import sparx.internal.future.list.EmptyListAsyncMaterializer;
 import sparx.internal.future.list.EndsWithListAsyncMaterializer;
 import sparx.internal.future.list.ExistsListAsyncMaterializer;
 import sparx.internal.future.list.FilterListAsyncMaterializer;
@@ -1125,14 +1124,8 @@ class future extends Sparx {
         return lazy.List.wrap(firstParam).append(secondParam).materialized();
       }
     };
-    private static final Function<? extends java.util.List<?>, ? extends java.util.List<?>> DECORATE_FUNCTION = new Function<java.util.List<?>, java.util.List<?>>() {
-      @Override
-      public java.util.List<?> apply(final java.util.List<?> param) {
-        return lazy.List.wrap(param).materialized();
-      }
-    };
     private static final ElementToListAsyncMaterializer<Boolean> FALSE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
-        lazy.List.of(false));
+        false);
     private static final TernaryFunction<? extends java.util.List<?>, Integer, ?, ? extends java.util.List<?>> INSERT_AFTER_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, Object, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
@@ -1188,9 +1181,9 @@ class future extends Sparx {
       }
     };
     private static final ElementToListAsyncMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListAsyncMaterializer<Boolean>(
-        lazy.List.of(true));
+        true);
     private static final ElementToListAsyncMaterializer<Integer> ZERO_MATERIALIZER = new ElementToListAsyncMaterializer<Integer>(
-        lazy.List.of(0));
+        0);
 
     private static final Logger LOGGER = Logger.getLogger(List.class.getName());
 
@@ -1216,11 +1209,6 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     private static @NotNull <E> BinaryFunction<java.util.List<E>, E, java.util.List<E>> appendFunction() {
       return (BinaryFunction<java.util.List<E>, E, java.util.List<E>>) APPEND_FUNCTION;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static @NotNull <E> Function<java.util.List<E>, java.util.List<E>> decorateFunction() {
-      return (Function<java.util.List<E>, java.util.List<E>>) DECORATE_FUNCTION;
     }
 
     private static @NotNull <T> List<T> emptyList(@NotNull final ExecutionContext context) {
@@ -1251,7 +1239,7 @@ class future extends Sparx {
           return EmptyListAsyncMaterializer.instance();
         }
         if (size == 1) {
-          return new ElementToListAsyncMaterializer<E>(materialized);
+          return new ElementToListAsyncMaterializer<E>(materialized.first());
         }
         return new ListToListAsyncMaterializer<E>(materialized, context);
       }
@@ -1262,9 +1250,9 @@ class future extends Sparx {
           return EmptyListAsyncMaterializer.instance();
         }
         if (size == 1) {
-          return new ElementToListAsyncMaterializer<E>(lazy.List.wrap(list));
+          return new ElementToListAsyncMaterializer<E>(list.get(0));
         }
-        return new ListToListAsyncMaterializer<E>(lazy.List.wrap(list), context);
+        return new ListToListAsyncMaterializer<E>(list, context);
       }
       if (elements instanceof java.util.Collection) {
         final java.util.Collection<E> collection = (java.util.Collection<E>) elements;
@@ -1273,7 +1261,7 @@ class future extends Sparx {
           return EmptyListAsyncMaterializer.instance();
         }
         if (size == 1) {
-          return new ElementToListAsyncMaterializer<E>(lazy.List.wrap(collection));
+          return new ElementToListAsyncMaterializer<E>(collection.iterator().next());
         }
         return new ListToListAsyncMaterializer<E>(lazy.List.wrap(collection), context);
       }
@@ -1287,9 +1275,9 @@ class future extends Sparx {
         return EmptyListAsyncMaterializer.instance();
       }
       if (size == 1) {
-        return new ElementToListAsyncMaterializer<E>(lazy.List.wrap(list));
+        return new ElementToListAsyncMaterializer<E>(list.get(0));
       }
-      return new ListToListAsyncMaterializer<E>(lazy.List.wrap(list), context);
+      return new ListToListAsyncMaterializer<E>(list, context);
     }
 
     private static @NotNull <E, F> IndexedFunction<E, IteratorAsyncMaterializer<F>> getElementToIteratorMaterializer(
@@ -1432,7 +1420,7 @@ class future extends Sparx {
           knownSize > 0 ? SizeOverflowException.safeCast(knownSize + 1) : -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).append(element);
+          return lazy.List.wrap(elements).append(element);
         }
       };
     }
@@ -1449,7 +1437,7 @@ class future extends Sparx {
               knownSize + elementsKnownSize) : -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).appendAll(appended);
+          return lazy.List.wrap(elements).appendAll(appended);
         }
       };
     }
@@ -1462,7 +1450,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).count();
+          return lazy.List.wrap(elements).count();
         }
       };
     }
@@ -1476,7 +1464,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).countWhere(predicate);
+          return lazy.List.wrap(elements).countWhere(predicate);
         }
       };
     }
@@ -1490,7 +1478,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).diff(otherElements);
+          return lazy.List.wrap(elements).diff(otherElements);
         }
       };
     }
@@ -1503,7 +1491,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).distinctBy(keyExtractor);
+          return lazy.List.wrap(elements).distinctBy(keyExtractor);
         }
       };
     }
@@ -1518,7 +1506,7 @@ class future extends Sparx {
           knownSize > 0 ? Math.max(0, knownSize - maxElements) : -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).drop(maxElements);
+          return lazy.List.wrap(elements).drop(maxElements);
         }
       };
     }
@@ -1533,7 +1521,7 @@ class future extends Sparx {
           knownSize > 0 ? Math.max(0, knownSize - maxElements) : -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).dropRight(maxElements);
+          return lazy.List.wrap(elements).dropRight(maxElements);
         }
       };
     }
@@ -1546,7 +1534,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).dropRightWhile(predicate);
+          return lazy.List.wrap(elements).dropRightWhile(predicate);
         }
       };
     }
@@ -1559,7 +1547,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).dropWhile(predicate);
+          return lazy.List.wrap(elements).dropWhile(predicate);
         }
       };
     }
@@ -1573,7 +1561,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Boolean> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).each(predicate);
+          return lazy.List.wrap(elements).each(predicate);
         }
       };
     }
@@ -1588,7 +1576,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Boolean> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).endsWith(otherElements);
+          return lazy.List.wrap(elements).endsWith(otherElements);
         }
       };
     }
@@ -1602,7 +1590,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Boolean> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).exists(predicate);
+          return lazy.List.wrap(elements).exists(predicate);
         }
       };
     }
@@ -1615,7 +1603,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).filter(predicate);
+          return lazy.List.wrap(elements).filter(predicate);
         }
       };
     }
@@ -1628,7 +1616,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).findFirst(predicate);
+          return lazy.List.wrap(elements).findFirst(predicate);
         }
       };
     }
@@ -1642,7 +1630,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).findIndexWhere(predicate);
+          return lazy.List.wrap(elements).findIndexWhere(predicate);
         }
       };
     }
@@ -1657,7 +1645,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).findIndexOfSlice(otherElements);
+          return lazy.List.wrap(elements).findIndexOfSlice(otherElements);
         }
       };
     }
@@ -1670,7 +1658,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).findLast(predicate);
+          return lazy.List.wrap(elements).findLast(predicate);
         }
       };
     }
@@ -1684,7 +1672,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).findLastIndexWhere(predicate);
+          return lazy.List.wrap(elements).findLastIndexWhere(predicate);
         }
       };
     }
@@ -1699,7 +1687,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Integer> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).findLastIndexOfSlice(otherElements);
+          return lazy.List.wrap(elements).findLastIndexOfSlice(otherElements);
         }
       };
     }
@@ -1712,7 +1700,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, F>(materializer, context, cancelException, 1) {
         @Override
         protected @NotNull java.util.List<F> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).foldLeft(identity, operation);
+          return lazy.List.wrap(elements).foldLeft(identity, operation);
         }
       };
     }
@@ -1726,7 +1714,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, F>(materializer, context, cancelException, 1) {
         @Override
         protected @NotNull java.util.List<F> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).foldLeftWhile(identity, predicate, operation);
+          return lazy.List.wrap(elements).foldLeftWhile(identity, predicate, operation);
         }
       };
     }
@@ -1739,7 +1727,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, F>(materializer, context, cancelException, 1) {
         @Override
         protected @NotNull java.util.List<F> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).foldRight(identity, operation);
+          return lazy.List.wrap(elements).foldRight(identity, operation);
         }
       };
     }
@@ -1753,7 +1741,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, F>(materializer, context, cancelException, 1) {
         @Override
         protected @NotNull java.util.List<F> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).foldRightWhile(identity, predicate, operation);
+          return lazy.List.wrap(elements).foldRightWhile(identity, predicate, operation);
         }
       };
     }
@@ -1768,7 +1756,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Boolean> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).includesAll(otherElements);
+          return lazy.List.wrap(elements).includesAll(otherElements);
         }
       };
     }
@@ -1783,7 +1771,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Boolean> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).includesSlice(otherElements);
+          return lazy.List.wrap(elements).includesSlice(otherElements);
         }
       };
     }
@@ -1807,7 +1795,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, size) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).insertAfter(numElements, element);
+          return lazy.List.wrap(elements).insertAfter(numElements, element);
         }
       };
     }
@@ -1833,7 +1821,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, size) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).insertAllAfter(numElements, inserted);
+          return lazy.List.wrap(elements).insertAllAfter(numElements, inserted);
         }
       };
     }
@@ -1847,7 +1835,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).intersect(otherElements);
+          return lazy.List.wrap(elements).intersect(otherElements);
         }
       };
     }
@@ -1861,7 +1849,7 @@ class future extends Sparx {
           materializer.knownSize()) {
         @Override
         protected @NotNull java.util.List<F> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).map(mapper);
+          return lazy.List.wrap(elements).map(mapper);
         }
       };
     }
@@ -1875,7 +1863,7 @@ class future extends Sparx {
           materializer.knownSize()) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).mapAfter(numElements, mapper);
+          return lazy.List.wrap(elements).mapAfter(numElements, mapper);
         }
       };
     }
@@ -1890,7 +1878,7 @@ class future extends Sparx {
           materializer.knownSize()) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).mapFirstWhere(predicate, mapper);
+          return lazy.List.wrap(elements).mapFirstWhere(predicate, mapper);
         }
       };
     }
@@ -1905,7 +1893,7 @@ class future extends Sparx {
           materializer.knownSize()) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).mapLastWhere(predicate, mapper);
+          return lazy.List.wrap(elements).mapLastWhere(predicate, mapper);
         }
       };
     }
@@ -1918,7 +1906,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).max(comparator);
+          return lazy.List.wrap(elements).max(comparator);
         }
       };
     }
@@ -1932,7 +1920,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Boolean> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).none(predicate);
+          return lazy.List.wrap(elements).none(predicate);
         }
       };
     }
@@ -1946,7 +1934,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<Boolean> transform(
             @NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).notAll(predicate);
+          return lazy.List.wrap(elements).notAll(predicate);
         }
       };
     }
@@ -1962,7 +1950,7 @@ class future extends Sparx {
           knownSize > 0 ? knownSize : -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).orElse(otherElements);
+          return lazy.List.wrap(elements).orElse(otherElements);
         }
       };
     }
@@ -1976,7 +1964,7 @@ class future extends Sparx {
           knownSize > 0 ? SizeOverflowException.safeCast(knownSize + 1) : -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).prepend(element);
+          return lazy.List.wrap(elements).prepend(element);
         }
       };
     }
@@ -1993,7 +1981,7 @@ class future extends Sparx {
               knownSize + elementsKnownSize) : -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).prependAll(prepended);
+          return lazy.List.wrap(elements).prependAll(prepended);
         }
       };
     }
@@ -2006,7 +1994,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).reduceLeft(operation);
+          return lazy.List.wrap(elements).reduceLeft(operation);
         }
       };
     }
@@ -2019,7 +2007,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).reduceRight(operation);
+          return lazy.List.wrap(elements).reduceRight(operation);
         }
       };
     }
@@ -2032,7 +2020,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).removeAfter(numElement);
+          return lazy.List.wrap(elements).removeAfter(numElement);
         }
       };
     }
@@ -2045,7 +2033,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).removeFirstWhere(predicate);
+          return lazy.List.wrap(elements).removeFirstWhere(predicate);
         }
       };
     }
@@ -2058,7 +2046,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).removeLastWhere(predicate);
+          return lazy.List.wrap(elements).removeLastWhere(predicate);
         }
       };
     }
@@ -2071,7 +2059,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).removeSlice(start, end);
+          return lazy.List.wrap(elements).removeSlice(start, end);
         }
       };
     }
@@ -2084,7 +2072,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).removeWhere(predicate);
+          return lazy.List.wrap(elements).removeWhere(predicate);
         }
       };
     }
@@ -2097,7 +2085,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).replaceSlice(start, end, patch);
+          return lazy.List.wrap(elements).replaceSlice(start, end, patch);
         }
       };
     }
@@ -2111,7 +2099,7 @@ class future extends Sparx {
           numElements) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).resizeTo(numElements, padding);
+          return lazy.List.wrap(elements).resizeTo(numElements, padding);
         }
       };
     }
@@ -2124,7 +2112,7 @@ class future extends Sparx {
           materializer.knownSize()) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).reverse();
+          return lazy.List.wrap(elements).reverse();
         }
       };
     }
@@ -2137,7 +2125,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).slice(start, end);
+          return lazy.List.wrap(elements).slice(start, end);
         }
       };
     }
@@ -2151,7 +2139,7 @@ class future extends Sparx {
           materializer.knownSize()) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).sorted(comparator);
+          return lazy.List.wrap(elements).sorted(comparator);
         }
       };
     }
@@ -2165,7 +2153,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).symmetricDiff(otherElements);
+          return lazy.List.wrap(elements).symmetricDiff(otherElements);
         }
       };
     }
@@ -2180,7 +2168,7 @@ class future extends Sparx {
           knownSize >= 0 ? Math.min(knownSize, maxElements) : -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).take(maxElements);
+          return lazy.List.wrap(elements).take(maxElements);
         }
       };
     }
@@ -2195,7 +2183,7 @@ class future extends Sparx {
           knownSize >= 0 ? Math.min(knownSize, maxElements) : -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).takeRight(maxElements);
+          return lazy.List.wrap(elements).takeRight(maxElements);
         }
       };
     }
@@ -2208,7 +2196,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).takeRightWhile(predicate);
+          return lazy.List.wrap(elements).takeRightWhile(predicate);
         }
       };
     }
@@ -2221,7 +2209,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).takeWhile(predicate);
+          return lazy.List.wrap(elements).takeWhile(predicate);
         }
       };
     }
@@ -2235,7 +2223,7 @@ class future extends Sparx {
       return new LazyListAsyncMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> elements) {
-          return ((lazy.List<E>) elements).union(otherElements);
+          return lazy.List.wrap(elements).union(otherElements);
         }
       };
     }
@@ -2288,7 +2276,7 @@ class future extends Sparx {
       final long knownSize = materializer.knownSize();
       if (knownSize == 0) {
         return new List<E>(context, cancelException,
-            new ElementToListAsyncMaterializer<E>(lazy.List.of(element)));
+            new ElementToListAsyncMaterializer<E>(element));
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
@@ -2435,15 +2423,14 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (knownSize > 0) {
         return new List<Integer>(context, cancelException,
-            new ElementToListAsyncMaterializer<Integer>(lazy.List.of(knownSize)));
+            new ElementToListAsyncMaterializer<Integer>(knownSize));
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<Integer>(context, cancelException,
             lazyMaterializerCount(materializer, context, cancelException));
       }
       return new List<Integer>(context, cancelException,
-          new CountListAsyncMaterializer<E>(materializer, context, cancelException,
-              List.<Integer>decorateFunction()));
+          new CountListAsyncMaterializer<E>(materializer, context, cancelException));
     }
 
     @Override
@@ -2461,8 +2448,7 @@ class future extends Sparx {
       }
       return new List<Integer>(context, cancelException,
           new CountWhereListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
-              List.<Integer>decorateFunction()));
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
@@ -2480,8 +2466,8 @@ class future extends Sparx {
       }
       return new List<Integer>(context, cancelException,
           new CountWhereListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<Integer>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
@@ -2505,7 +2491,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new DiffListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -2530,7 +2516,7 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new DistinctByListAsyncMaterializer<E, K>(materializer,
               toIndexedFunction(Require.notNull(keyExtractor, "keyExtractor")), context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -2550,8 +2536,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new DistinctByListAsyncMaterializer<E, K>(materializer,
-              Require.notNull(keyExtractor, "keyExtractor"), context, cancelException,
-              List.<E>decorateFunction()));
+              Require.notNull(keyExtractor, "keyExtractor"), context, cancelException));
     }
 
     @Override
@@ -2658,8 +2643,7 @@ class future extends Sparx {
             lazyMaterializerDrop(materializer, context, cancelException, maxElements));
       }
       return new List<E>(context, cancelException,
-          new DropListAsyncMaterializer<E>(materializer, maxElements, context, cancelException,
-              List.<E>decorateFunction()));
+          new DropListAsyncMaterializer<E>(materializer, maxElements, context, cancelException));
     }
 
     @Override
@@ -2680,8 +2664,8 @@ class future extends Sparx {
             lazyMaterializerDropRight(materializer, context, cancelException, maxElements));
       }
       return new List<E>(context, cancelException,
-          new DropRightListAsyncMaterializer<E>(materializer, maxElements, context, cancelException,
-              List.<E>decorateFunction()));
+          new DropRightListAsyncMaterializer<E>(materializer, maxElements, context,
+              cancelException));
     }
 
     @Override
@@ -2699,8 +2683,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new DropRightWhileListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
-              List.<E>decorateFunction()));
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
@@ -2718,8 +2701,8 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new DropRightWhileListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<E>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
@@ -2737,8 +2720,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new DropWhileListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
-              List.<E>decorateFunction()));
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
@@ -2756,8 +2738,8 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new DropWhileListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<E>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
@@ -2775,7 +2757,7 @@ class future extends Sparx {
       }
       return new List<Boolean>(context, cancelException,
           new EachListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              false, context, cancelException, List.<Boolean>decorateFunction()));
+              false, context, cancelException));
     }
 
     @Override
@@ -2794,7 +2776,7 @@ class future extends Sparx {
       return new List<Boolean>(context, cancelException,
           new EachListAsyncMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")), false, context,
-              cancelException, List.<Boolean>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -2816,7 +2798,7 @@ class future extends Sparx {
       }
       return new List<Boolean>(context, cancelException,
           new EndsWithListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException, List.<Boolean>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -2834,7 +2816,7 @@ class future extends Sparx {
       }
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              false, context, cancelException, List.<Boolean>decorateFunction()));
+              false, context, cancelException));
     }
 
     @Override
@@ -2853,7 +2835,7 @@ class future extends Sparx {
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")), false, context,
-              cancelException, List.<Boolean>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -2871,7 +2853,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new FilterListAsyncMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
-              context, cancelException, List.<E>decorateFunction()));
+              context, cancelException));
     }
 
     @Override
@@ -2888,8 +2870,7 @@ class future extends Sparx {
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
       return new List<E>(context, cancelException, new FilterListAsyncMaterializer<E>(materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-          List.<E>decorateFunction()));
+          toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException));
     }
 
     @Override
@@ -2917,8 +2898,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new FindFirstListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
-              List.<E>decorateFunction()));
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
@@ -2936,8 +2916,8 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new FindFirstListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<E>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
@@ -2955,7 +2935,7 @@ class future extends Sparx {
       }
       return new List<Integer>(context, cancelException,
           new FindIndexListAsyncMaterializer<E>(materializer, equalsElement(element), context,
-              cancelException, List.<Integer>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -2974,7 +2954,7 @@ class future extends Sparx {
       }
       return new List<Integer>(context, cancelException,
           new FindIndexOfSliceListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException, List.<Integer>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -2993,8 +2973,7 @@ class future extends Sparx {
       }
       return new List<Integer>(context, cancelException,
           new FindIndexListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
-              List.<Integer>decorateFunction()));
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
@@ -3012,8 +2991,8 @@ class future extends Sparx {
       }
       return new List<Integer>(context, cancelException,
           new FindIndexListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<Integer>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
@@ -3031,8 +3010,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new FindLastListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
-              List.<E>decorateFunction()));
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
@@ -3050,8 +3028,8 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new FindLastListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<E>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
@@ -3069,7 +3047,7 @@ class future extends Sparx {
       }
       return new List<Integer>(context, cancelException,
           new FindLastIndexListAsyncMaterializer<E>(materializer, equalsElement(element), context,
-              cancelException, List.<Integer>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3083,7 +3061,7 @@ class future extends Sparx {
         final int knownSize = materializer.knownSize();
         if (knownSize >= 0) {
           return new List<Integer>(context, cancelException,
-              new ElementToListAsyncMaterializer<Integer>(lazy.List.of(knownSize)));
+              new ElementToListAsyncMaterializer<Integer>(knownSize));
         }
       }
       if (materializer.isMaterializedAtOnce() && !isFuture(elements)) {
@@ -3092,7 +3070,7 @@ class future extends Sparx {
       }
       return new List<Integer>(context, cancelException,
           new FindLastIndexOfSliceListAsyncMaterializer<E>(materializer, elementsMaterializer,
-              context, cancelException, List.<Integer>decorateFunction()));
+              context, cancelException));
     }
 
     @Override
@@ -3111,8 +3089,7 @@ class future extends Sparx {
       }
       return new List<Integer>(context, cancelException,
           new FindLastIndexListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
-              List.<Integer>decorateFunction()));
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
@@ -3131,8 +3108,8 @@ class future extends Sparx {
       }
       return new List<Integer>(context, cancelException,
           new FindLastIndexListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<Integer>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
@@ -3200,7 +3177,7 @@ class future extends Sparx {
       return new List<F>(context, cancelException,
           new FlatMapListAsyncMaterializer<E, F>(materializer,
               getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException, List.<F>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3215,7 +3192,7 @@ class future extends Sparx {
       return new List<F>(context, cancelException,
           new FlatMapListAsyncMaterializer<E, F>(materializer,
               getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException, List.<F>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3234,7 +3211,7 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new FlatMapAfterListAsyncMaterializer<E>(materializer, numElements,
               getElementToMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3253,7 +3230,7 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new FlatMapAfterListAsyncMaterializer<E>(materializer, numElements,
               getElementToMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3269,7 +3246,7 @@ class future extends Sparx {
           new FlatMapFirstWhereListAsyncMaterializer<E>(materializer,
               Require.notNull(predicate, "predicate"),
               getElementToMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3285,7 +3262,7 @@ class future extends Sparx {
           new FlatMapFirstWhereListAsyncMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")),
               getElementToMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3301,7 +3278,7 @@ class future extends Sparx {
           new FlatMapLastWhereListAsyncMaterializer<E>(materializer,
               Require.notNull(predicate, "predicate"),
               getElementToMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3317,7 +3294,7 @@ class future extends Sparx {
           new FlatMapLastWhereListAsyncMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")),
               getElementToMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3333,7 +3310,7 @@ class future extends Sparx {
           new FlatMapWhereListAsyncMaterializer<E>(materializer,
               Require.notNull(predicate, "predicate"),
               getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3349,7 +3326,7 @@ class future extends Sparx {
           new FlatMapWhereListAsyncMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")),
               getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3366,7 +3343,7 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<F>(context, cancelException,
-            new ElementToListAsyncMaterializer<F>(lazy.List.of(identity)));
+            new ElementToListAsyncMaterializer<F>(identity));
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<F>(context, cancelException,
@@ -3375,8 +3352,7 @@ class future extends Sparx {
       }
       return new List<F>(context, cancelException,
           new FoldLeftListAsyncMaterializer<E, F>(materializer, identity,
-              Require.notNull(operation, "operation"), context, cancelException,
-              List.<F>decorateFunction()));
+              Require.notNull(operation, "operation"), context, cancelException));
     }
 
     @Override
@@ -3388,7 +3364,7 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<F>(context, cancelException,
-            new ElementToListAsyncMaterializer<F>(lazy.List.of(identity)));
+            new ElementToListAsyncMaterializer<F>(identity));
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<F>(context, cancelException,
@@ -3398,7 +3374,7 @@ class future extends Sparx {
       return new List<F>(context, cancelException,
           new FoldLeftWhileListAsyncMaterializer<E, F>(materializer, identity,
               Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation"),
-              context, cancelException, List.<F>decorateFunction()));
+              context, cancelException));
     }
 
     @Override
@@ -3409,7 +3385,7 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<F>(context, cancelException,
-            new ElementToListAsyncMaterializer<F>(lazy.List.of(identity)));
+            new ElementToListAsyncMaterializer<F>(identity));
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<F>(context, cancelException,
@@ -3418,8 +3394,7 @@ class future extends Sparx {
       }
       return new List<F>(context, cancelException,
           new FoldRightListAsyncMaterializer<E, F>(materializer, identity,
-              Require.notNull(operation, "operation"), context, cancelException,
-              List.<F>decorateFunction()));
+              Require.notNull(operation, "operation"), context, cancelException));
     }
 
     @Override
@@ -3431,7 +3406,7 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
         return new List<F>(context, cancelException,
-            new ElementToListAsyncMaterializer<F>(lazy.List.of(identity)));
+            new ElementToListAsyncMaterializer<F>(identity));
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<F>(context, cancelException,
@@ -3441,13 +3416,56 @@ class future extends Sparx {
       return new List<F>(context, cancelException,
           new FoldRightWhileListAsyncMaterializer<E, F>(materializer, identity,
               Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation"),
-              context, cancelException, List.<F>decorateFunction()));
+              context, cancelException));
     }
 
     @Override
     public Void get() throws InterruptedException, ExecutionException {
-      nonBlockingGet().get();
-      return null;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return null;
+      }
+      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
+          cancelException);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(consumer);
+      } else {
+        context.scheduleAfter(new ContextTask(context) {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+
+          @Override
+          protected void runWithContext() {
+            try {
+              materializer.materializeElements(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+        });
+      }
+      try {
+        consumer.get();
+        return null;
+      } catch (final InterruptedException e) {
+        throw e;
+      } catch (final Exception e) {
+        if (isCancelled() && e instanceof CancellationException) {
+          throw (CancellationException) new CancellationException().initCause(e);
+        }
+        throw new ExecutionException(e);
+      }
     }
 
     @Override
@@ -3506,8 +3524,51 @@ class future extends Sparx {
     @Override
     public Void get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
-      nonBlockingGet().get(timeout, unit);
-      return null;
+      final ListAsyncMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return null;
+      }
+      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
+          cancelException);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(consumer);
+      } else {
+        context.scheduleAfter(new ContextTask(context) {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+
+          @Override
+          protected void runWithContext() {
+            try {
+              materializer.materializeElements(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+        });
+      }
+      try {
+        consumer.get(timeout, unit);
+        return null;
+      } catch (final InterruptedException e) {
+        throw e;
+      } catch (final Exception e) {
+        if (isCancelled() && e instanceof CancellationException) {
+          throw (CancellationException) new CancellationException().initCause(e);
+        }
+        throw new ExecutionException(e);
+      }
     }
 
     @Override
@@ -3525,7 +3586,7 @@ class future extends Sparx {
       }
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer, Sparx.<E>equalsElement(element), false,
-              context, cancelException, List.<Boolean>decorateFunction()));
+              context, cancelException));
     }
 
     @Override
@@ -3544,7 +3605,7 @@ class future extends Sparx {
       }
       return new List<Boolean>(context, cancelException,
           new IncludesAllListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException, List.<Boolean>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3563,7 +3624,7 @@ class future extends Sparx {
       }
       return new List<Boolean>(context, cancelException,
           new IncludesSliceListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException, List.<Boolean>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3614,7 +3675,7 @@ class future extends Sparx {
       }
       if (knownSize == 0) {
         return new List<E>(context, cancelException,
-            new ElementToListAsyncMaterializer<E>(lazy.List.of(element)));
+            new ElementToListAsyncMaterializer<E>(element));
       }
       if (numElements == 0) {
         if (materializer.isMaterializedAtOnce()) {
@@ -3710,7 +3771,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new IntersectListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -3923,8 +3984,7 @@ class future extends Sparx {
                 toIndexedFunction(Require.notNull(mapper, "mapper"))));
       }
       return new List<F>(context, cancelException, new MapListAsyncMaterializer<E, F>(materializer,
-          toIndexedFunction(Require.notNull(mapper, "mapper")), context, cancelException,
-          List.<F>decorateFunction()));
+          toIndexedFunction(Require.notNull(mapper, "mapper")), context, cancelException));
     }
 
     @Override
@@ -3942,7 +4002,7 @@ class future extends Sparx {
       }
       return new List<F>(context, cancelException,
           new MapListAsyncMaterializer<E, F>(materializer, Require.notNull(mapper, "mapper"),
-              context, cancelException, List.<F>decorateFunction()));
+              context, cancelException));
     }
 
     @Override
@@ -4096,8 +4156,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException, new MapListAsyncMaterializer<E, E>(materializer,
           filteredMapper(Require.notNull(predicate, "predicate"),
-              Require.notNull(mapper, "mapper")), context, cancelException,
-          List.<E>decorateFunction()));
+              Require.notNull(mapper, "mapper")), context, cancelException));
     }
 
     @Override
@@ -4117,8 +4176,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException, new MapListAsyncMaterializer<E, E>(materializer,
           filteredMapper(Require.notNull(predicate, "predicate"),
-              Require.notNull(mapper, "mapper")), context, cancelException,
-          List.<E>decorateFunction()));
+              Require.notNull(mapper, "mapper")), context, cancelException));
     }
 
     @Override
@@ -4136,7 +4194,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new MaxListAsyncMaterializer<E>(materializer, Require.notNull(comparator, "comparator"),
-              context, cancelException, List.<E>decorateFunction()));
+              context, cancelException));
     }
 
     @Override
@@ -4153,8 +4211,7 @@ class future extends Sparx {
                 reversed(Require.notNull(comparator, "comparator"))));
       }
       return new List<E>(context, cancelException, new MaxListAsyncMaterializer<E>(materializer,
-          reversed(Require.notNull(comparator, "comparator")), context, cancelException,
-          List.<E>decorateFunction()));
+          reversed(Require.notNull(comparator, "comparator")), context, cancelException));
     }
 
     @Override
@@ -4217,8 +4274,7 @@ class future extends Sparx {
       }
       return new List<Boolean>(context, cancelException,
           new EachListAsyncMaterializer<E>(materializer,
-              negated(Require.notNull(predicate, "predicate")), true, context, cancelException,
-              List.<Boolean>decorateFunction()));
+              negated(Require.notNull(predicate, "predicate")), true, context, cancelException));
     }
 
     @Override
@@ -4237,7 +4293,7 @@ class future extends Sparx {
       return new List<Boolean>(context, cancelException,
           new EachListAsyncMaterializer<E>(materializer,
               toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), true, context,
-              cancelException, List.<Boolean>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -4255,8 +4311,7 @@ class future extends Sparx {
       }
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer,
-              negated(Require.notNull(predicate, "predicate")), true, context, cancelException,
-              List.<Boolean>decorateFunction()));
+              negated(Require.notNull(predicate, "predicate")), true, context, cancelException));
     }
 
     @Override
@@ -4275,7 +4330,7 @@ class future extends Sparx {
       return new List<Boolean>(context, cancelException,
           new ExistsListAsyncMaterializer<E>(materializer,
               toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), true, context,
-              cancelException, List.<Boolean>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -4339,7 +4394,7 @@ class future extends Sparx {
       final long knownSize = materializer.knownSize();
       if (knownSize == 0) {
         return new List<E>(context, cancelException,
-            new ElementToListAsyncMaterializer<E>(lazy.List.of(element)));
+            new ElementToListAsyncMaterializer<E>(element));
       }
       if (materializer.isMaterializedAtOnce()) {
         return new List<E>(context, cancelException,
@@ -4398,8 +4453,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new ReduceLeftListAsyncMaterializer<E>(materializer,
-              Require.notNull(operation, "operation"), context, cancelException,
-              List.<E>decorateFunction()));
+              Require.notNull(operation, "operation"), context, cancelException));
     }
 
     @Override
@@ -4419,8 +4473,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new ReduceRightListAsyncMaterializer<E>(materializer,
-              Require.notNull(operation, "operation"), context, cancelException,
-              List.<E>decorateFunction()));
+              Require.notNull(operation, "operation"), context, cancelException));
     }
 
     @Override
@@ -4464,7 +4517,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new RemoveWhereListAsyncMaterializer<E>(materializer, equalsElement(element), context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -4624,7 +4677,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new RemoveSliceListAsyncMaterializer<E>(materializer, start, end, context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     @Override
@@ -4642,8 +4695,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new RemoveWhereListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
-              List.<E>decorateFunction()));
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
@@ -4661,8 +4713,8 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new RemoveWhereListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<E>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
@@ -4704,7 +4756,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException, new MapListAsyncMaterializer<E, E>(materializer,
           filteredMapper(equalsElement(element), replacementMapper(replacement)), context,
-          cancelException, List.<E>decorateFunction()));
+          cancelException));
     }
 
     @Override
@@ -4871,7 +4923,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new ReplaceSliceListAsyncMaterializer<E>(materializer, start, end, elementsMaterializer,
-              context, cancelException, List.<E>decorateFunction()));
+              context, cancelException));
     }
 
     @Override
@@ -4891,7 +4943,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException, new MapListAsyncMaterializer<E, E>(materializer,
           filteredMapper(Require.notNull(predicate, "predicate"), replacementMapper(replacement)),
-          context, cancelException, List.<E>decorateFunction()));
+          context, cancelException));
     }
 
     @Override
@@ -4911,7 +4963,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException, new MapListAsyncMaterializer<E, E>(materializer,
           filteredMapper(Require.notNull(predicate, "predicate"), replacementMapper(replacement)),
-          context, cancelException, List.<E>decorateFunction()));
+          context, cancelException));
     }
 
     @Override
@@ -4945,7 +4997,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new ResizeListAsyncMaterializer<E>(materializer, numElements, padding, context,
-              cancelException, List.<E>resizeFunction(), List.<E>decorateFunction()));
+              cancelException, List.<E>resizeFunction()));
     }
 
     @Override
@@ -5061,8 +5113,7 @@ class future extends Sparx {
             lazyMaterializerSlice(materializer, context, cancelException, start, end));
       }
       return new List<E>(context, cancelException,
-          new SliceListAsyncMaterializer<E>(materializer, start, end, context, cancelException,
-              List.<E>decorateFunction()));
+          new SliceListAsyncMaterializer<E>(materializer, start, end, context, cancelException));
     }
 
     @Override
@@ -5077,8 +5128,7 @@ class future extends Sparx {
       return new List<List<E>>(context, cancelException,
           new SlidingWindowListAsyncMaterializer<E, List<E>>(materializer,
               Require.positive(maxSize, "maxSize"), Require.positive(step, "step"),
-              List.<E>getSplitter(context, taskID, cancelException), context, cancelException,
-              List.<List<E>>decorateFunction()));
+              List.<E>getSplitter(context, taskID, cancelException), context, cancelException));
     }
 
     @Override
@@ -5097,7 +5147,7 @@ class future extends Sparx {
           new SlidingWindowListAsyncMaterializer<E, List<E>>(materializer, size,
               Require.positive(step, "step"),
               getSplitter(context, taskID, cancelException, Require.positive(size, "size"),
-                  padding), context, cancelException, List.<List<E>>decorateFunction()));
+                  padding), context, cancelException));
     }
 
     @Override
@@ -5115,8 +5165,7 @@ class future extends Sparx {
                 Require.notNull(comparator, "comparator")));
       }
       return new List<E>(context, cancelException,
-          new SortedListAsyncMaterializer<E>(materializer, comparator, context, cancelException,
-              List.<E>decorateFunction()));
+          new SortedListAsyncMaterializer<E>(materializer, comparator, context, cancelException));
     }
 
     @Override
@@ -5134,7 +5183,7 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<Boolean>(context, cancelException,
           new StartsWithListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException, List.<Boolean>decorateFunction()));
+              cancelException));
     }
 
     // TODO: extra
@@ -5168,7 +5217,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new SymmetricDiffListAsyncMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException, List.<E>decorateFunction()));
+              cancelException));
     }
 
     // TODO: toFuture(context) ???
@@ -5197,8 +5246,7 @@ class future extends Sparx {
             lazyMaterializerTake(materializer, context, cancelException, maxElements));
       }
       return new List<E>(context, cancelException,
-          new TakeListAsyncMaterializer<E>(materializer, maxElements, context, cancelException,
-              List.<E>decorateFunction()));
+          new TakeListAsyncMaterializer<E>(materializer, maxElements, context, cancelException));
     }
 
     @Override
@@ -5217,8 +5265,8 @@ class future extends Sparx {
             lazyMaterializerTakeRight(materializer, context, cancelException, maxElements));
       }
       return new List<E>(context, cancelException,
-          new TakeRightListAsyncMaterializer<E>(materializer, maxElements, context, cancelException,
-              List.<E>decorateFunction()));
+          new TakeRightListAsyncMaterializer<E>(materializer, maxElements, context,
+              cancelException));
     }
 
     @Override
@@ -5236,8 +5284,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new TakeRightWhileListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
-              List.<E>decorateFunction()));
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
@@ -5255,8 +5302,8 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new TakeRightWhileListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<E>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
@@ -5274,8 +5321,7 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new TakeWhileListAsyncMaterializer<E>(materializer,
-              Require.notNull(predicate, "predicate"), context, cancelException,
-              List.<E>decorateFunction()));
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
@@ -5293,8 +5339,8 @@ class future extends Sparx {
       }
       return new List<E>(context, cancelException,
           new TakeWhileListAsyncMaterializer<E>(materializer,
-              toIndexedPredicate(Require.notNull(predicate, "predicate")), context, cancelException,
-              List.<E>decorateFunction()));
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
 
@@ -5332,7 +5378,7 @@ class future extends Sparx {
         });
       }
       try {
-        return (lazy.List<E>) consumer.get();
+        return lazy.List.wrap(consumer.get());
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
@@ -5358,8 +5404,7 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new AppendAllListAsyncMaterializer<E>(materializer,
               new DiffListAsyncMaterializer<E>(elementsMaterializer, materializer, context,
-                  cancelException, List.<E>decorateFunction()), context, cancelException,
-              List.<E>appendAllFunction()));
+                  cancelException), context, cancelException, List.<E>appendAllFunction()));
     }
 
     private static abstract class LazyListAsyncMaterializer<E, F> extends
@@ -5373,15 +5418,18 @@ class future extends Sparx {
       }
 
       @Override
-      @SuppressWarnings("unchecked")
       protected int knownSize(@NotNull final java.util.List<F> elements) {
-        return ((lazy.List<E>) elements).knownSize();
+        if (elements instanceof lazy.List) {
+          return ((lazy.List<?>) elements).knownSize();
+        }
+        return elements.size();
       }
 
       @Override
-      @SuppressWarnings("unchecked")
       protected void materialize(@NotNull final java.util.List<F> elements) {
-        ((lazy.List<E>) elements).materialized();
+        if (elements instanceof lazy.List) {
+          ((lazy.List<?>) elements).materialized();
+        }
       }
     }
 
@@ -7237,8 +7285,8 @@ class future extends Sparx {
     private @NotNull <T> ListIterator<T> elementIterator(final T element) {
       final ExecutionContext context = this.context;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
-      return new ListIterator<T>(context, new List<T>(context, cancelException,
-          new ElementToListAsyncMaterializer<T>(lazy.List.of(element))));
+      return new ListIterator<T>(context,
+          new List<T>(context, cancelException, new ElementToListAsyncMaterializer<T>(element)));
     }
 
     private @NotNull <T> ListIterator<T> emptyIterator() {
@@ -7422,141 +7470,6 @@ class future extends Sparx {
         isDone = true;
         cancelException.notifyAll();
       }
-    }
-  }
-
-  private static class EmptyListAsyncMaterializer<E> implements ListAsyncMaterializer<E> {
-
-    private static final EmptyListAsyncMaterializer<?> INSTANCE = new EmptyListAsyncMaterializer<Object>();
-    private static final Logger LOGGER = Logger.getLogger(
-        EmptyListAsyncMaterializer.class.getName());
-
-    @SuppressWarnings("unchecked")
-    public static @NotNull <E> EmptyListAsyncMaterializer<E> instance() {
-      return (EmptyListAsyncMaterializer<E>) INSTANCE;
-    }
-
-    @Override
-    public boolean isCancelled() {
-      return false;
-    }
-
-    @Override
-    public boolean isDone() {
-      return true;
-    }
-
-    @Override
-    public boolean isFailed() {
-      return false;
-    }
-
-    @Override
-    public boolean isMaterializedAtOnce() {
-      return true;
-    }
-
-    @Override
-    public boolean isSucceeded() {
-      return true;
-    }
-
-    @Override
-    public int knownSize() {
-      return 0;
-    }
-
-    @Override
-    public void materializeCancel(@NotNull final CancellationException exception) {
-    }
-
-    @Override
-    public void materializeContains(final Object element,
-        @NotNull final AsyncConsumer<Boolean> consumer) {
-      safeConsume(consumer, false, LOGGER);
-    }
-
-    @Override
-    public void materializeElement(final int index,
-        @NotNull final IndexedAsyncConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        safeConsumeComplete(consumer, 0, LOGGER);
-      }
-    }
-
-    @Override
-    public void materializeElements(@NotNull final AsyncConsumer<java.util.List<E>> consumer) {
-      safeConsume(consumer, lazy.List.<E>of(), LOGGER);
-    }
-
-    @Override
-    public void materializeEmpty(@NotNull final AsyncConsumer<Boolean> consumer) {
-      safeConsume(consumer, true, LOGGER);
-    }
-
-    @Override
-    public void materializeHasElement(final int index,
-        @NotNull final AsyncConsumer<Boolean> consumer) {
-      safeConsume(consumer, false, LOGGER);
-    }
-
-    @Override
-    public void materializeNextWhile(final int index,
-        @NotNull final IndexedAsyncPredicate<E> predicate) {
-      safeConsumeComplete(predicate, 0, LOGGER);
-    }
-
-    @Override
-    public void materializePrevWhile(final int index,
-        @NotNull final IndexedAsyncPredicate<E> predicate) {
-      safeConsumeComplete(predicate, 0, LOGGER);
-    }
-
-    @Override
-    public void materializeSize(@NotNull final AsyncConsumer<Integer> consumer) {
-      safeConsume(consumer, 0, LOGGER);
-    }
-
-    @Override
-    public int weightContains() {
-      return 1;
-    }
-
-    @Override
-    public int weightElement() {
-      return 1;
-    }
-
-    @Override
-    public int weightElements() {
-      return 1;
-    }
-
-    @Override
-    public int weightEmpty() {
-      return 1;
-    }
-
-    @Override
-    public int weightHasElement() {
-      return 1;
-    }
-
-    @Override
-    public int weightNextWhile() {
-      return 1;
-    }
-
-    @Override
-    public int weightPrevWhile() {
-      return 1;
-    }
-
-    @Override
-    public int weightSize() {
-      return 1;
     }
   }
 }

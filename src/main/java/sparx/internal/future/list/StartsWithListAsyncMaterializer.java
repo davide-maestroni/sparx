@@ -20,7 +20,6 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,7 +32,6 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.internal.future.iterator.IteratorAsyncMaterializer;
-import sparx.util.function.Function;
 
 public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<Boolean> {
 
@@ -43,11 +41,9 @@ public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMateria
   public StartsWithListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IteratorAsyncMaterializer<Object> elementsMaterializer,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
-        decorateFunction));
+    setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException));
   }
 
   @Override
@@ -64,7 +60,6 @@ public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<Boolean>, List<Boolean>> decorateFunction;
     private final IteratorAsyncMaterializer<Object> elementsMaterializer;
     private final ArrayList<StateConsumer> stateConsumers = new ArrayList<StateConsumer>(2);
     private final ListAsyncMaterializer<E> wrapped;
@@ -72,13 +67,11 @@ public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMateria
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IteratorAsyncMaterializer<Object> elementsMaterializer,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<Boolean>, List<Boolean>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -268,9 +261,8 @@ public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMateria
       }
     }
 
-    private void setState(final boolean endsWith) throws Exception {
-      consumeState(setDone(new ElementToListAsyncMaterializer<Boolean>(
-          decorateFunction.apply(Collections.singletonList(endsWith)))));
+    private void setState(final boolean endsWith) {
+      consumeState(setDone(new ElementToListAsyncMaterializer<Boolean>(endsWith)));
     }
 
     private class MaterializingAsyncConsumer extends
@@ -283,8 +275,7 @@ public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMateria
 
       @Override
       @SuppressWarnings("unchecked")
-      public void cancellableAccept(final int size, final int index, final Object element)
-          throws Exception {
+      public void cancellableAccept(final int size, final int index, final Object element) {
         if (isWrapped) {
           if (this.element == null ? element != null : !this.element.equals(element)) {
             setState(false);
@@ -301,7 +292,7 @@ public class StartsWithListAsyncMaterializer<E> extends AbstractListAsyncMateria
       }
 
       @Override
-      public void cancellableComplete(final int size) throws Exception {
+      public void cancellableComplete(final int size) {
         setState(!isWrapped);
       }
 

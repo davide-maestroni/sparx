@@ -15,14 +15,12 @@
  */
 package sparx.internal.future.list;
 
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
-import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
 public class FilterListAsyncMaterializer<E> extends ProgressiveListAsyncMaterializer<E, E> {
@@ -32,10 +30,9 @@ public class FilterListAsyncMaterializer<E> extends ProgressiveListAsyncMaterial
 
   public FilterListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException));
   }
 
   private class ImmaterialState extends ProgressiveListAsyncMaterializer<E, E>.ImmaterialState {
@@ -48,9 +45,8 @@ public class FilterListAsyncMaterializer<E> extends ProgressiveListAsyncMaterial
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
-      super(wrapped, context, cancelException, decorateFunction, LOGGER);
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      super(wrapped, context, cancelException, LOGGER);
       this.wrapped = wrapped;
       this.predicate = predicate;
     }

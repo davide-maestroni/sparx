@@ -18,7 +18,6 @@ package sparx.internal.future.list;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -30,7 +29,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.util.function.Function;
 
 public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
@@ -38,10 +36,9 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
 
   public MaxListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final Comparator<? super E> comparator, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, comparator, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, comparator, cancelException));
   }
 
   @Override
@@ -63,18 +60,15 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
 
     private final AtomicReference<CancellationException> cancelException;
     private final Comparator<? super E> comparator;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final Comparator<? super E> comparator,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.comparator = comparator;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -258,7 +252,7 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
           private E max;
 
           @Override
-          public void cancellableComplete(final int size) throws Exception {
+          public void cancellableComplete(final int size) {
             if (size == 0) {
               setState();
             } else {
@@ -287,14 +281,12 @@ public class MaxListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E
       }
     }
 
-    private void setState() throws Exception {
-      consumeState(setDone(
-          new EmptyListAsyncMaterializer<E>(decorateFunction.apply(Collections.<E>emptyList()))));
+    private void setState() {
+      consumeState(setDone(EmptyListAsyncMaterializer.<E>instance()));
     }
 
-    private void setState(final E element) throws Exception {
-      consumeState(setDone(new ElementToListAsyncMaterializer<E>(
-          decorateFunction.apply(Collections.singletonList(element)))));
+    private void setState(final E element) {
+      consumeState(setDone(new ElementToListAsyncMaterializer<E>(element)));
     }
   }
 }

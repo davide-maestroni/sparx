@@ -30,17 +30,10 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.function.BinaryFunction;
-import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
 public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
 
-  private static final Function<? extends List<?>, ? extends List<?>> DUMMY_DECORATE_FUNCTION = new Function<List<Object>, List<Object>>() {
-    @Override
-    public List<Object> apply(final List<Object> elements) {
-      return elements;
-    }
-  };
   private static final Logger LOGGER = Logger.getLogger(
       RemoveFirstWhereListAsyncMaterializer.class.getName());
 
@@ -133,7 +126,6 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           }
 
           @Override
-          @SuppressWarnings("unchecked")
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
             if (testedIndex < index) {
@@ -143,9 +135,8 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
                   if (index == 0) {
                     state.materializeContains(null, consumer);
                   } else {
-                    new DropListAsyncMaterializer<E>(state, index, context, cancelException,
-                        (Function<List<E>, List<E>>) DUMMY_DECORATE_FUNCTION).materializeContains(
-                        null, consumer);
+                    new DropListAsyncMaterializer<E>(state, index, context,
+                        cancelException).materializeContains(null, consumer);
                   }
                   return false;
                 }
@@ -177,7 +168,6 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
           }
 
           @Override
-          @SuppressWarnings("unchecked")
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
             if (testedIndex < index) {
@@ -187,9 +177,8 @@ public class RemoveFirstWhereListAsyncMaterializer<E> extends AbstractListAsyncM
                   if (index == 0) {
                     state.materializeContains(null, consumer);
                   } else {
-                    new DropListAsyncMaterializer<E>(state, index, context, cancelException,
-                        (Function<List<E>, List<E>>) DUMMY_DECORATE_FUNCTION).materializeContains(
-                        other, consumer);
+                    new DropListAsyncMaterializer<E>(state, index, context,
+                        cancelException).materializeContains(other, consumer);
                   }
                   return false;
                 }

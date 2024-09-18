@@ -30,7 +30,6 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.internal.util.ElementsCache;
-import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
 
 public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterializer<F> {
@@ -42,11 +41,10 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
   public MapListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedFunction<? super E, ? extends F> mapper,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<F>, List<F>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
     knownSize = wrapped.knownSize();
-    setState(new ImmaterialState(wrapped, mapper, context, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, mapper, context, cancelException));
   }
 
   @Override
@@ -58,7 +56,6 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<F>, List<F>> decorateFunction;
     private final ElementsCache<F> elements = new ElementsCache<F>(knownSize);
     private final ArrayList<AsyncConsumer<List<F>>> elementsConsumers = new ArrayList<AsyncConsumer<List<F>>>(
         2);
@@ -70,13 +67,11 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedFunction<? super E, ? extends F> mapper,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<F>, List<F>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.mapper = mapper;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -271,9 +266,9 @@ public class MapListAsyncMaterializer<E, F> extends AbstractListAsyncMaterialize
         }
         wrapped.materializeNextWhile(i, new CancellableIndexedAsyncPredicate<E>() {
           @Override
-          public void cancellableComplete(final int size) throws Exception {
+          public void cancellableComplete(final int size) {
             wrappedSize = size;
-            final List<F> materialized = decorateFunction.apply(elements.toList());
+            final List<F> materialized = elements.toList();
             setDone(new ListToListAsyncMaterializer<F>(materialized, context));
             consumeElements(materialized);
           }

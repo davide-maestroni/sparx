@@ -423,7 +423,11 @@ public class lazy extends Sparx {
           new RepeatIteratorMaterializer<E>(Require.notNegative(count, "count"), element));
     }
 
+    @SuppressWarnings("unchecked")
     public static @NotNull <E> Iterator<E> wrap(@NotNull final Iterable<? extends E> elements) {
+      if (elements instanceof Iterator) {
+        return (Iterator<E>) elements;
+      }
       return new Iterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
     }
 
@@ -2471,7 +2475,11 @@ public class lazy extends Sparx {
           new RepeatListMaterializer<E>(Require.notNegative(count, "count"), element));
     }
 
+    @SuppressWarnings("unchecked")
     public static @NotNull <E> List<E> wrap(@NotNull final Iterable<? extends E> elements) {
+      if (elements instanceof List) {
+        return (List<E>) elements;
+      }
       return new List<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
     }
 
@@ -4667,7 +4675,11 @@ public class lazy extends Sparx {
       return new ListIterator<E>(List.times(count, element));
     }
 
+    @SuppressWarnings("unchecked")
     public static @NotNull <E> ListIterator<E> wrap(@NotNull final Iterable<? extends E> elements) {
+      if (elements instanceof ListIterator) {
+        return (ListIterator<E>) elements;
+      }
       return new ListIterator<E>(List.wrap(elements));
     }
 

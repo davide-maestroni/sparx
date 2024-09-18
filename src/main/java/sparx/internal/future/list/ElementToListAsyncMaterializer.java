@@ -19,6 +19,7 @@ import static sparx.internal.future.AsyncConsumers.safeConsume;
 import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
@@ -32,14 +33,10 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   private static final Logger LOGGER = Logger.getLogger(
       ElementToListAsyncMaterializer.class.getName());
 
-  private final List<E> elements;
+  private final E element;
 
-  public ElementToListAsyncMaterializer(@NotNull final List<E> element) {
-    if (element.size() != 1) {
-      throw new IllegalArgumentException(
-          "'element' must not have size 1, but is: " + element.size());
-    }
-    this.elements = element;
+  public ElementToListAsyncMaterializer(@NotNull final E element) {
+    this.element = element;
   }
 
   @Override
@@ -80,7 +77,8 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   @SuppressWarnings("SuspiciousMethodCalls")
   public void materializeContains(final Object element,
       @NotNull final AsyncConsumer<Boolean> consumer) {
-    safeConsume(consumer, elements.contains(element), LOGGER);
+    safeConsume(consumer,
+        element == this.element || (element != null && element.equals(this.element)), LOGGER);
   }
 
   @Override
@@ -90,13 +88,13 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
     } else if (index != 0) {
       safeConsumeComplete(consumer, 1, LOGGER);
     } else {
-      safeConsume(consumer, 1, 0, elements.get(0), LOGGER);
+      safeConsume(consumer, 1, 0, element, LOGGER);
     }
   }
 
   @Override
   public void materializeElements(@NotNull final AsyncConsumer<List<E>> consumer) {
-    safeConsume(consumer, elements, LOGGER);
+    safeConsume(consumer, Collections.singletonList(element), LOGGER);
   }
 
   @Override
@@ -114,7 +112,7 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   public void materializeNextWhile(final int index,
       @NotNull final IndexedAsyncPredicate<E> predicate) {
     if (index == 0) {
-      if (safeConsume(predicate, 1, 0, elements.get(0), LOGGER)) {
+      if (safeConsume(predicate, 1, 0, element, LOGGER)) {
         safeConsumeComplete(predicate, 1, LOGGER);
       }
     } else {
@@ -125,7 +123,7 @@ public class ElementToListAsyncMaterializer<E> implements ListAsyncMaterializer<
   @Override
   public void materializePrevWhile(final int index,
       @NotNull final IndexedAsyncPredicate<E> predicate) {
-    if (safeConsume(predicate, 1, 0, elements.get(0), LOGGER)) {
+    if (safeConsume(predicate, 1, 0, element, LOGGER)) {
       safeConsumeComplete(predicate, 1, LOGGER);
     }
   }

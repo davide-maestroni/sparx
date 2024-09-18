@@ -15,7 +15,6 @@
  */
 package sparx.internal.future.list;
 
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,7 +23,6 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.iterator.IteratorAsyncMaterializer;
-import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
 
 public class FlatMapListAsyncMaterializer<E, F> extends ProgressiveListAsyncMaterializer<E, F> {
@@ -35,10 +33,9 @@ public class FlatMapListAsyncMaterializer<E, F> extends ProgressiveListAsyncMate
   public FlatMapListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<F>> mapper,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<F>, List<F>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, mapper, context, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, mapper, context, cancelException));
   }
 
   private class ImmaterialState extends ProgressiveListAsyncMaterializer<E, F>.ImmaterialState {
@@ -53,9 +50,8 @@ public class FlatMapListAsyncMaterializer<E, F> extends ProgressiveListAsyncMate
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedFunction<? super E, ? extends IteratorAsyncMaterializer<F>> mapper,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<F>, List<F>> decorateFunction) {
-      super(wrapped, context, cancelException, decorateFunction, LOGGER);
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      super(wrapped, context, cancelException, LOGGER);
       this.wrapped = wrapped;
       this.mapper = mapper;
       this.context = context;

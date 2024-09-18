@@ -18,7 +18,6 @@ package sparx.internal.future.list;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +28,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
-import sparx.util.function.Function;
 import sparx.util.function.IndexedPredicate;
 
 public class TakeRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMaterializer<E> {
@@ -41,11 +39,10 @@ public class TakeRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
   public TakeRightWhileListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<E>, List<E>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
-    setState(new ImmaterialState(wrapped, predicate, context, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException));
   }
 
   @Override
@@ -67,7 +64,6 @@ public class TakeRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final Function<List<E>, List<E>> decorateFunction;
     private final IndexedPredicate<? super E> predicate;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListAsyncMaterializer<E> wrapped;
@@ -77,13 +73,11 @@ public class TakeRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
     public ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<E>, List<E>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.context = context;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
       wrappedSize = wrapped.knownSize();
     }
 
@@ -293,12 +287,11 @@ public class TakeRightWhileListAsyncMaterializer<E> extends AbstractListAsyncMat
           } else {
             final int maxElements = wrappedSize - index - 1;
             if (maxElements == 0) {
-              final List<E> materialized = decorateFunction.apply(Collections.<E>emptyList());
-              consumeState(setDone(new EmptyListAsyncMaterializer<E>(materialized)));
+              consumeState(setDone(EmptyListAsyncMaterializer.<E>instance()));
             } else {
               consumeState(setState(
                   new TakeRightListAsyncMaterializer<E>(wrapped, maxElements, status, context,
-                      cancelException, decorateFunction)));
+                      cancelException)));
             }
           }
           return false;

@@ -20,7 +20,6 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,8 +50,7 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
     final int knownSize = this.knownSize = wrapped.knownSize();
     if (knownSize == 0) {
       try {
-        setDone(
-            new EmptyListAsyncMaterializer<E>(reverseFunction.apply(Collections.<E>emptyList())));
+        setDone(EmptyListAsyncMaterializer.<E>instance());
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
@@ -304,12 +302,8 @@ public class ReverseListAsyncMaterializer<E> extends AbstractListAsyncMaterializ
       } else if (getState() == this) {
         if (wrappedSize == 0) {
           try {
-            consumer.accept(setDone(new EmptyListAsyncMaterializer<E>(
-                reverseFunction.apply(Collections.<E>emptyList()))));
+            consumer.accept(setDone(EmptyListAsyncMaterializer.<E>instance()));
           } catch (final Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-            }
             final CancellationException exception = cancelException.get();
             if (exception != null) {
               consumer.accept(setCancelled(exception));

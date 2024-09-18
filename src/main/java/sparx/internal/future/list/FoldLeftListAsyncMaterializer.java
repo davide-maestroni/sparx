@@ -20,7 +20,6 @@ import static sparx.internal.future.AsyncConsumers.safeConsumeComplete;
 import static sparx.internal.future.AsyncConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,7 +31,6 @@ import sparx.internal.future.AsyncConsumer;
 import sparx.internal.future.IndexedAsyncConsumer;
 import sparx.internal.future.IndexedAsyncPredicate;
 import sparx.util.function.BinaryFunction;
-import sparx.util.function.Function;
 
 public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMaterializer<F> {
 
@@ -42,10 +40,9 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
   public FoldLeftListAsyncMaterializer(@NotNull final ListAsyncMaterializer<E> wrapped,
       final F identity, @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation,
       @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final Function<List<F>, List<F>> decorateFunction) {
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, identity, operation, cancelException, decorateFunction));
+    setState(new ImmaterialState(wrapped, identity, operation, cancelException));
   }
 
   @Override
@@ -61,7 +58,6 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
   private class ImmaterialState implements ListAsyncMaterializer<F> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final Function<List<F>, List<F>> decorateFunction;
     private final F identity;
     private final BinaryFunction<? super F, ? super E, ? extends F> operation;
     private final ArrayList<StateConsumer<F>> stateConsumers = new ArrayList<StateConsumer<F>>(2);
@@ -69,13 +65,11 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
 
     private ImmaterialState(@NotNull final ListAsyncMaterializer<E> wrapped, final F identity,
         @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Function<List<F>, List<F>> decorateFunction) {
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.identity = identity;
       this.operation = operation;
       this.cancelException = cancelException;
-      this.decorateFunction = decorateFunction;
     }
 
     @Override
@@ -246,7 +240,7 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
           private F current = identity;
 
           @Override
-          public void cancellableComplete(final int size) throws Exception {
+          public void cancellableComplete(final int size) {
             setState(current);
           }
 
@@ -270,9 +264,8 @@ public class FoldLeftListAsyncMaterializer<E, F> extends AbstractListAsyncMateri
       }
     }
 
-    private void setState(final F result) throws Exception {
-      consumeState(setDone(new ElementToListAsyncMaterializer<F>(
-          decorateFunction.apply(Collections.singletonList(result)))));
+    private void setState(final F result) {
+      consumeState(setDone(new ElementToListAsyncMaterializer<F>(result)));
     }
   }
 }
