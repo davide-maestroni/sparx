@@ -50,6 +50,10 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
     iterator = elements.iterator();
   }
 
+  public @NotNull Collection<E> elements() {
+    return elements;
+  }
+
   @Override
   public boolean isCancelled() {
     return false;

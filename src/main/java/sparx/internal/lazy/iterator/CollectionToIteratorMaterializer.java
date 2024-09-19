@@ -31,6 +31,11 @@ public class CollectionToIteratorMaterializer<E> extends AutoSkipIteratorMateria
     iterator = elements.iterator();
   }
 
+  @NotNull
+  public Collection<E> elements() {
+    return elements;
+  }
+
   @Override
   public int knownSize() {
     return elements.size() - pos;

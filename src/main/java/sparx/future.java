@@ -37,6 +37,8 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.internal.future.IteratorFutureMaterializerToListFutureMaterializer;
+import sparx.internal.future.ListFutureMaterializerToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CollectionToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
@@ -46,8 +48,8 @@ import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorGetFuture;
 import sparx.internal.future.iterator.IteratorToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorWhileFuture;
-import sparx.internal.future.iterator.ListAsyncMaterializerToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
+import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
 import sparx.internal.future.list.AbstractListFutureMaterializer;
 import sparx.internal.future.list.AppendAllListFutureMaterializer;
@@ -122,6 +124,7 @@ import sparx.internal.future.list.TakeRightListFutureMaterializer;
 import sparx.internal.future.list.TakeRightWhileListFutureMaterializer;
 import sparx.internal.future.list.TakeWhileListFutureMaterializer;
 import sparx.internal.future.list.TransformListFutureMaterializer;
+import sparx.internal.future.list.WrappingListFutureMaterializer;
 import sparx.itf.Sequence;
 import sparx.util.DeadLockException;
 import sparx.util.Require;
@@ -145,46 +148,8 @@ class future extends Sparx {
   private future() {
   }
 
-  // TODO: move to future.Iterator
-  @SuppressWarnings("unchecked")
-  private static @NotNull <E> IteratorFutureMaterializer<E> getElementsMaterializer(
-      @NotNull final ExecutionContext context, @NotNull final Iterable<? extends E> elements) {
-    if (elements instanceof List) {
-      final List<E> list = (List<E>) elements;
-      if (context.equals(list.context)) {
-        return new ListAsyncMaterializerToIteratorFutureMaterializer<E>(list.materializer);
-      }
-      return new ListAsyncMaterializerToIteratorFutureMaterializer<E>(
-          new SwitchListFutureMaterializer<E>(list.context, list.taskID, context,
-              list.materializer));
-    }
-    if (elements instanceof java.util.List) {
-      final java.util.List<E> list = (java.util.List<E>) elements;
-      if (list.isEmpty()) {
-        return EmptyIteratorFutureMaterializer.instance();
-      }
-      if (list.size() == 1) {
-        return new ElementToIteratorFutureMaterializer<E>(list.get(0));
-      }
-      return new ListToIteratorFutureMaterializer<E>(list, context);
-    }
-    if (elements instanceof java.util.Collection) {
-      return new CollectionToIteratorFutureMaterializer<E>((Collection<E>) elements, context);
-    }
-    // TODO: future.Iterator
-    if (elements instanceof Iterator) {
-      // TODO: return new Iterator<E>();
-    }
-    if (elements instanceof java.util.Iterator) {
-      return new IteratorToIteratorFutureMaterializer<E>((java.util.Iterator<E>) elements, context);
-    }
-    return new IteratorToIteratorFutureMaterializer<E>((java.util.Iterator<E>) elements.iterator(),
-        context);
-  }
-
   private static boolean isFuture(final Iterable<?> elements) {
-    // TODO: future.Iterator
-    return elements instanceof List;
+    return elements instanceof List || elements instanceof Iterator;
   }
 
   public static class Iterator<E> implements itf.Future<E, Void>, itf.Iterator<E> {
@@ -203,6 +168,47 @@ class future extends Sparx {
       this.materializer = materializer;
       this.cancelException = cancelException;
       taskID = Integer.toHexString(System.identityHashCode(this));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static @NotNull <E> IteratorFutureMaterializer<E> getElementsMaterializer(
+        @NotNull final ExecutionContext context, @NotNull final Iterable<? extends E> elements) {
+      if (elements instanceof List) {
+        final List<E> list = (List<E>) elements;
+        if (context.equals(list.context)) {
+          return new ListFutureMaterializerToIteratorFutureMaterializer<E>(list.materializer);
+        }
+        return new ListFutureMaterializerToIteratorFutureMaterializer<E>(
+            new SwitchListFutureMaterializer<E>(list.context, list.taskID, context,
+                list.materializer));
+      }
+      if (elements instanceof java.util.List) {
+        final java.util.List<E> list = (java.util.List<E>) elements;
+        if (list.isEmpty()) {
+          return EmptyIteratorFutureMaterializer.instance();
+        }
+        if (list.size() == 1) {
+          return new ElementToIteratorFutureMaterializer<E>(list.get(0));
+        }
+        return new ListToIteratorFutureMaterializer<E>(list, context);
+      }
+      if (elements instanceof java.util.Collection) {
+        return new CollectionToIteratorFutureMaterializer<E>((Collection<E>) elements, context);
+      }
+      if (elements instanceof Iterator) {
+        final Iterator<E> iterator = (Iterator<E>) elements;
+        if (context.equals(iterator.context)) {
+          return iterator.materializer;
+        }
+        return new SwitchIteratorFutureMaterializer<E>(iterator.context, iterator.taskID, context,
+            iterator.materializer);
+      }
+      if (elements instanceof java.util.Iterator) {
+        return new IteratorToIteratorFutureMaterializer<E>((java.util.Iterator<E>) elements,
+            context);
+      }
+      return new IteratorToIteratorFutureMaterializer<E>(
+          (java.util.Iterator<E>) elements.iterator(), context);
     }
 
     private static @NotNull <E> TransformIteratorFutureMaterializer<E, E> lazyMaterializerAppend(
@@ -480,7 +486,7 @@ class future extends Sparx {
 
     @Override
     public E first() {
-      return null;
+      return next();
     }
 
     @Override
@@ -588,15 +594,143 @@ class future extends Sparx {
 
     @Override
     public Void get() throws InterruptedException, ExecutionException {
-      nonBlockingGet().get();
-      return null;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return null;
+      }
+      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
+          cancelException);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(consumer);
+      } else {
+        context.scheduleAfter(new ContextTask(context) {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+
+          @Override
+          protected void runWithContext() {
+            try {
+              materializer.materializeElements(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+        });
+      }
+      try {
+        consumer.get();
+        return null;
+      } catch (final InterruptedException e) {
+        throw e;
+      } catch (final Exception e) {
+        if (isCancelled() && e instanceof CancellationException) {
+          throw (CancellationException) new CancellationException().initCause(e);
+        }
+        throw new ExecutionException(e);
+      }
     }
 
     @Override
     public Void get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
-      nonBlockingGet().get(timeout, unit);
-      return null;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return null;
+      }
+      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
+          cancelException);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(consumer);
+      } else {
+        context.scheduleAfter(new ContextTask(context) {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+
+          @Override
+          protected void runWithContext() {
+            try {
+              materializer.materializeElements(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+        });
+      }
+      try {
+        consumer.get(timeout, unit);
+        return null;
+      } catch (final InterruptedException e) {
+        throw e;
+      } catch (final Exception e) {
+        if (isCancelled() && e instanceof CancellationException) {
+          throw (CancellationException) new CancellationException().initCause(e);
+        }
+        throw new ExecutionException(e);
+      }
+    }
+
+    @Override
+    public boolean hasNext() {
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return false;
+      }
+      final BlockingConsumer<Boolean> consumer = new BlockingConsumer<Boolean>(cancelException);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeHasNext(consumer);
+      } else {
+        context.scheduleAfter(new ContextTask(context) {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+
+          @Override
+          protected void runWithContext() {
+            try {
+              materializer.materializeHasNext(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+        });
+      }
+      try {
+        return consumer.get();
+      } catch (final InterruptedException e) {
+        throw UncheckedException.toUnchecked(e);
+      }
     }
 
     @Override
@@ -672,6 +806,7 @@ class future extends Sparx {
 
     @Override
     public @NotNull Iterator<E> iterator() {
+      // TODO: WrappingMaterializer
       return null;
     }
 
@@ -741,6 +876,49 @@ class future extends Sparx {
     @Override
     public @NotNull Iterator<E> min(@NotNull Comparator<? super E> comparator) {
       return null;
+    }
+
+    @Override
+    public E next() {
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        throw new NoSuchElementException();
+      }
+      final BlockingElementConsumer<E> consumer = new BlockingElementConsumer<E>(cancelException,
+          -1);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeNext(consumer);
+      } else {
+        context.scheduleAfter(new ContextTask(context) {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+
+          @Override
+          protected void runWithContext() {
+            try {
+              materializer.materializeNext(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+        });
+      }
+      try {
+        return consumer.get();
+      } catch (final InterruptedException e) {
+        throw UncheckedException.toUnchecked(e);
+      }
     }
 
     @Override
@@ -874,6 +1052,11 @@ class future extends Sparx {
     }
 
     @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
+
+    @Override
     public @NotNull Iterator<E> removeAfter(int numElements) {
       return null;
     }
@@ -996,18 +1179,93 @@ class future extends Sparx {
     }
 
     @Override
-    public int size() {
-      return 0;
-    }
-
-    @Override
-    public int skip(int maxElements) {
-      return 0;
-    }
-
-    @Override
     public @NotNull Iterator<E> runFinally(@NotNull Action action) {
       return null;
+    }
+
+    @Override
+    public int size() {
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return 0;
+      }
+      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
+          cancelException);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeElements(consumer);
+      } else {
+        context.scheduleAfter(new ContextTask(context) {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+
+          @Override
+          protected void runWithContext() {
+            try {
+              materializer.materializeElements(consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+        });
+      }
+      try {
+        return consumer.get().size();
+      } catch (final InterruptedException e) {
+        throw UncheckedException.toUnchecked(e);
+      }
+    }
+
+    @Override
+    public int skip(final int maxElements) {
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return 0;
+      }
+      final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>(cancelException);
+      final ExecutionContext context = this.context;
+      if (context.isCurrent()) {
+        if (!materializer.isDone()) {
+          throw new DeadLockException("cannot wait on the future own execution context");
+        }
+        materializer.materializeSkip(maxElements, consumer);
+      } else {
+        context.scheduleAfter(new ContextTask(context) {
+          @Override
+          public @NotNull String taskID() {
+            return taskID;
+          }
+
+          @Override
+          public int weight() {
+            return materializer.weightElements();
+          }
+
+          @Override
+          protected void runWithContext() {
+            try {
+              materializer.materializeSkip(maxElements, consumer);
+            } catch (final Exception e) {
+              consumer.error(e);
+            }
+          }
+        });
+      }
+      try {
+        return consumer.get();
+      } catch (final InterruptedException e) {
+        throw UncheckedException.toUnchecked(e);
+      }
     }
 
     @Override
@@ -1097,24 +1355,31 @@ class future extends Sparx {
       return null;
     }
 
+    // TODO: extra
+    public @NotNull List<E> toList() {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer instanceof ListFutureMaterializerToIteratorFutureMaterializer) {
+        return new List<E>(context, cancelException, new WrappingListFutureMaterializer<E>(
+            ((ListFutureMaterializerToIteratorFutureMaterializer<E>) materializer).materializer(),
+            context, cancelException));
+      } else if (materializer instanceof ListToIteratorFutureMaterializer) {
+        return new List<E>(context, cancelException, new ListToListFutureMaterializer<E>(
+            ((ListToIteratorFutureMaterializer<E>) materializer).elements(), context));
+      } else if (materializer instanceof CollectionToIteratorFutureMaterializer) {
+        return new List<E>(context, cancelException, new ListToListFutureMaterializer<E>(
+            lazy.List.wrap(((CollectionToIteratorFutureMaterializer<E>) materializer).elements()),
+            context));
+      }
+      return new List<E>(context, cancelException,
+          new IteratorFutureMaterializerToListFutureMaterializer<E>(context, cancelException,
+              materializer));
+    }
+
     @Override
     public @NotNull Iterator<E> union(@NotNull Iterable<? extends E> elements) {
       return null;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return false;
-    }
-
-    @Override
-    public E next() {
-      return null;
-    }
-
-    @Override
-    public void remove() {
-      throw new UnsupportedOperationException("remove");
     }
   }
 
@@ -1236,13 +1501,14 @@ class future extends Sparx {
         @NotNull final ExecutionContext context, @NotNull final Iterable<? extends E> elements) {
       if (elements instanceof List) {
         final List<E> list = (List<E>) elements;
-        if (context == list.context) {
+        if (context.equals(list.context)) {
           return list.materializer;
         }
         return new SwitchListFutureMaterializer<E>(list.context, list.taskID, context,
             list.materializer);
       }
       if (elements instanceof lazy.List) {
+        // TODO: materialized????
         final lazy.List<E> materialized = ((lazy.List<E>) elements).materialized();
         final int size = materialized.size();
         if (size == 0) {
@@ -1275,7 +1541,18 @@ class future extends Sparx {
         }
         return new ListToListFutureMaterializer<E>(lazy.List.wrap(collection), context);
       }
-      // TODO: future.Iterator
+      if (elements instanceof Iterator) {
+        final Iterator<E> iterator = (Iterator<E>) elements;
+        final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+        if (context.equals(iterator.context)) {
+          return new IteratorFutureMaterializerToListFutureMaterializer<E>(context, cancelException,
+              iterator.materializer);
+        }
+        return new IteratorFutureMaterializerToListFutureMaterializer<E>(context, cancelException,
+            new SwitchIteratorFutureMaterializer<E>(iterator.context, iterator.taskID, context,
+                iterator.materializer));
+      }
+      // TODO: wrap iterator???
       final ArrayList<E> list = new ArrayList<E>();
       for (final E element : elements) {
         list.add(element);
@@ -1297,7 +1574,7 @@ class future extends Sparx {
         @Override
         public IteratorFutureMaterializer<F> apply(final int index, final E element)
             throws Exception {
-          return future.getElementsMaterializer(context, mapper.apply(element));
+          return Iterator.getElementsMaterializer(context, mapper.apply(element));
         }
       };
     }
@@ -1309,7 +1586,7 @@ class future extends Sparx {
         @Override
         public IteratorFutureMaterializer<F> apply(final int index, final E element)
             throws Exception {
-          return future.getElementsMaterializer(context, mapper.apply(index, element));
+          return Iterator.getElementsMaterializer(context, mapper.apply(index, element));
         }
       };
     }
@@ -2385,18 +2662,7 @@ class future extends Sparx {
         if (!materializer.isDone()) {
           throw new DeadLockException("cannot wait on the future own execution context");
         }
-        materializer.materializeElements(new FutureConsumer<java.util.List<E>>() {
-          @Override
-          @SuppressWarnings("SuspiciousMethodCalls")
-          public void accept(final java.util.List<E> elements) {
-            consumer.accept(elements.contains(o));
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            consumer.error(error);
-          }
-        });
+        materializer.materializeContains(o, consumer);
       } else {
         context.scheduleAfter(new ContextTask(context) {
           @Override
@@ -3139,17 +3405,7 @@ class future extends Sparx {
         if (!materializer.isDone()) {
           throw new DeadLockException("cannot wait on the future own execution context");
         }
-        materializer.materializeElements(new FutureConsumer<java.util.List<E>>() {
-          @Override
-          public void accept(final java.util.List<E> elements) {
-            consumer.accept(-1, 0, elements.get(0));
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            consumer.error(error);
-          }
-        });
+        materializer.materializeElement(0, consumer);
       } else {
         context.scheduleAfter(new ContextTask(context) {
           @Override
@@ -3495,17 +3751,7 @@ class future extends Sparx {
         if (!materializer.isDone()) {
           throw new DeadLockException("cannot wait on the future own execution context");
         }
-        materializer.materializeElements(new FutureConsumer<java.util.List<E>>() {
-          @Override
-          public void accept(final java.util.List<E> elements) {
-            consumer.accept(-1, index, elements.get(index));
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            consumer.error(error);
-          }
-        });
+        materializer.materializeElement(index, consumer);
       } else {
         context.scheduleAfter(new ContextTask(context) {
           @Override
@@ -3807,17 +4053,7 @@ class future extends Sparx {
         if (!materializer.isDone()) {
           throw new DeadLockException("cannot wait on the future own execution context");
         }
-        materializer.materializeElements(new FutureConsumer<java.util.List<E>>() {
-          @Override
-          public void accept(final java.util.List<E> elements) {
-            consumer.accept(elements.isEmpty());
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            consumer.error(error);
-          }
-        });
+        materializer.materializeEmpty(consumer);
       } else {
         context.scheduleAfter(new ContextTask(context) {
           @Override
@@ -5041,17 +5277,7 @@ class future extends Sparx {
         if (!materializer.isDone()) {
           throw new DeadLockException("cannot wait on the future own execution context");
         }
-        materializer.materializeElements(new FutureConsumer<java.util.List<E>>() {
-          @Override
-          public void accept(final java.util.List<E> elements) {
-            consumer.accept(elements.size());
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            consumer.error(error);
-          }
-        });
+        materializer.materializeSize(consumer);
       } else {
         context.scheduleAfter(new ContextTask(context) {
           @Override
@@ -5185,7 +5411,7 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> startsWith(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
-      final IteratorFutureMaterializer<Object> elementsMaterializer = future.getElementsMaterializer(
+      final IteratorFutureMaterializer<Object> elementsMaterializer = Iterator.getElementsMaterializer(
           context, Require.notNull(elements, "elements"));
       if (elementsMaterializer.knownSize() == 0) {
         return trueList(context);
@@ -6400,17 +6626,7 @@ class future extends Sparx {
         if (!materializer.isDone()) {
           throw new DeadLockException("cannot wait on the future own execution context");
         }
-        materializer.materializeElements(new FutureConsumer<java.util.List<E>>() {
-          @Override
-          public void accept(final java.util.List<E> elements) {
-            consumer.accept(pos < elements.size());
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            consumer.error(error);
-          }
-        });
+        materializer.materializeHasElement(pos, consumer);
       } else {
         final String taskID = list.taskID;
         context.scheduleAfter(new ContextTask(context) {

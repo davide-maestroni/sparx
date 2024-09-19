@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.internal.future.iterator;
+package sparx.internal.future;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
@@ -25,16 +25,14 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
-import sparx.internal.future.FutureConsumer;
-import sparx.internal.future.IndexedFutureConsumer;
-import sparx.internal.future.IndexedFuturePredicate;
+import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.list.ListFutureMaterializer;
 
-public class ListAsyncMaterializerToIteratorFutureMaterializer<E> implements
+public class ListFutureMaterializerToIteratorFutureMaterializer<E> implements
     IteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      ListAsyncMaterializerToIteratorFutureMaterializer.class.getName());
+      ListFutureMaterializerToIteratorFutureMaterializer.class.getName());
 
   private final ArrayList<IndexedFuturePredicate<E>> elementsPredicates = new ArrayList<IndexedFuturePredicate<E>>(
       2);
@@ -43,7 +41,7 @@ public class ListAsyncMaterializerToIteratorFutureMaterializer<E> implements
   private CancellationException cancelException;
   private int index;
 
-  public ListAsyncMaterializerToIteratorFutureMaterializer(
+  public ListFutureMaterializerToIteratorFutureMaterializer(
       @NotNull final ListFutureMaterializer<E> materializer) {
     this.materializer = materializer;
   }
@@ -169,7 +167,7 @@ public class ListAsyncMaterializerToIteratorFutureMaterializer<E> implements
 
         @Override
         public boolean test(final int size, final int index, final E element) {
-          ListAsyncMaterializerToIteratorFutureMaterializer.this.index = index;
+          ListFutureMaterializerToIteratorFutureMaterializer.this.index = index;
           final Iterator<IndexedFuturePredicate<E>> iterator = elementsPredicates.iterator();
           while (iterator.hasNext()) {
             if (!safeConsume(iterator.next(), size >= 0 ? size - index : -1, index, element,
@@ -202,6 +200,10 @@ public class ListAsyncMaterializerToIteratorFutureMaterializer<E> implements
         }
       });
     }
+  }
+
+  public @NotNull ListFutureMaterializer<E> materializer() {
+    return materializer;
   }
 
   @Override

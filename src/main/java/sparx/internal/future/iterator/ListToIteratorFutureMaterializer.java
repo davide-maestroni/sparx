@@ -46,6 +46,10 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
     this.context = context;
   }
 
+  public @NotNull List<E> elements() {
+    return elements;
+  }
+
   @Override
   public boolean isCancelled() {
     return false;

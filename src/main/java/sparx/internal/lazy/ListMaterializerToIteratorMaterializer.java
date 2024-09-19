@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.internal.lazy.iterator;
+package sparx.internal.lazy;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.internal.lazy.iterator.IteratorMaterializer;
 import sparx.internal.lazy.list.ListMaterializer;
 
 public class ListMaterializerToIteratorMaterializer<E> implements IteratorMaterializer<E> {
@@ -63,5 +64,9 @@ public class ListMaterializerToIteratorMaterializer<E> implements IteratorMateri
     final int skipped = Math.min(count, wrapped.materializeSize() - pos);
     pos += skipped;
     return skipped;
+  }
+
+  public @NotNull ListMaterializer<E> materializer() {
+    return wrapped;
   }
 }

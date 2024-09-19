@@ -33,7 +33,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.concurrent.ExecutionContext;
+import sparx.internal.future.iterator.IteratorToIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
+import sparx.internal.lazy.ListMaterializerToIteratorMaterializer;
 import sparx.internal.lazy.iterator.AppendAllIteratorMaterializer;
 import sparx.internal.lazy.iterator.AppendIteratorMaterializer;
 import sparx.internal.lazy.iterator.ArrayToIteratorMaterializer;
@@ -82,7 +84,6 @@ import sparx.internal.lazy.iterator.IntersectIteratorMaterializer;
 import sparx.internal.lazy.iterator.IteratorMaterializer;
 import sparx.internal.lazy.iterator.IteratorToIteratorMaterializer;
 import sparx.internal.lazy.iterator.LinesIteratorMaterializer;
-import sparx.internal.lazy.iterator.ListMaterializerToIteratorMaterializer;
 import sparx.internal.lazy.iterator.ListToIteratorMaterializer;
 import sparx.internal.lazy.iterator.LongArrayToIteratorMaterializer;
 import sparx.internal.lazy.iterator.LoopToIteratorMaterializer;
@@ -114,7 +115,6 @@ import sparx.internal.lazy.iterator.TakeRightIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeRightWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.UnionIteratorMaterializer;
-import sparx.internal.lazy.iterator.WrappingIteratorMaterializer;
 import sparx.internal.lazy.list.AppendAllListMaterializer;
 import sparx.internal.lazy.list.AppendListMaterializer;
 import sparx.internal.lazy.list.ArrayToListMaterializer;
@@ -468,7 +468,7 @@ public class lazy extends Sparx {
         }
         return new CollectionToIteratorMaterializer<E>(collection);
       }
-      return new IteratorToIteratorMaterializer<E>((java.util.Iterator<E>) elements.iterator());
+      return new IteratorToIteratorMaterializer<E>(elements.iterator());
     }
 
     private static @NotNull <E, F> IndexedFunction<E, IteratorMaterializer<F>> getElementToMaterializer(
@@ -1298,7 +1298,7 @@ public class lazy extends Sparx {
     @NotNull
     @Override
     public Iterator<E> iterator() {
-      return new Iterator<E>(new WrappingIteratorMaterializer<E>(materializer));
+      return this;
     }
 
     @Override
@@ -2187,9 +2187,23 @@ public class lazy extends Sparx {
           toIndexedPredicate(Require.notNull(predicate, "predicate"))));
     }
 
+    // TODO: extra
+    public @NotNull future.Iterator<E> toFuture(@NotNull final ExecutionContext context) {
+      return new future.Iterator<E>(Require.notNull(context, "context"),
+          new AtomicReference<CancellationException>(),
+          new IteratorToIteratorFutureMaterializer<E>(this, context));
+    }
+
+    // TODO: extra
     public @NotNull List<E> toList() {
-      if (materializer instanceof ListToIteratorMaterializer) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      if (materializer instanceof ListMaterializerToIteratorMaterializer) {
+        return new List<E>(
+            ((ListMaterializerToIteratorMaterializer<E>) materializer).materializer());
+      } else if (materializer instanceof ListToIteratorMaterializer) {
         return List.wrap(((ListToIteratorMaterializer<E>) materializer).elements());
+      } else if (materializer instanceof CollectionToIteratorMaterializer) {
+        return List.wrap(((CollectionToIteratorMaterializer<E>) materializer).elements());
       }
       return List.wrap(this);
     }
@@ -4334,6 +4348,7 @@ public class lazy extends Sparx {
           toIndexedPredicate(Require.notNull(predicate, "predicate"))));
     }
 
+    // TODO: extra
     public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext context) {
       return new future.List<E>(Require.notNull(context, "context"),
           new AtomicReference<CancellationException>(),
@@ -5795,6 +5810,7 @@ public class lazy extends Sparx {
       return new ListIterator<E>(nextList().takeWhile(predicate));
     }
 
+    // TODO: extra
     public @NotNull List<E> toList() {
       return nextList();
     }
