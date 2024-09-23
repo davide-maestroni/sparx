@@ -61,7 +61,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
     private final IteratorFutureMaterializer<E> wrapped;
 
     private IteratorFutureMaterializer<F> elementsMaterializer;
-    private int pos;
+    private int index;
     private int wrappedIndex;
 
     private ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
@@ -402,7 +402,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       public void cancellableAccept(final int size, final int index, final Object element)
           throws Exception {
         if (elementsMaterializer != null) {
-          consumer.accept(-1, pos++, (F) element);
+          consumer.accept(-1, ImmaterialState.this.index++, (F) element);
         } else {
           final IteratorFutureMaterializer<F> materializer = mapper.apply(wrappedIndex++,
               (E) element);
@@ -474,7 +474,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
         @Override
         public boolean cancellableTest(final int size, final int index, final F element)
             throws Exception {
-          return predicate.test(-1, pos++, element);
+          return predicate.test(-1, ImmaterialState.this.index++, element);
         }
 
         @Override

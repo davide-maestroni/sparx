@@ -86,7 +86,7 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
     private final IteratorFutureMaterializer<E> wrapped;
 
     private boolean consumed;
-    private int pos;
+    private int index;
 
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped, final E element,
         @NotNull final ExecutionContext context,
@@ -198,14 +198,14 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
               throws Exception {
-            consumer.accept(safeSize(size), pos++, element);
+            consumer.accept(safeSize(size), ImmaterialState.this.index++, element);
           }
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
             if (!consumed) {
               setDone();
-              consumer.accept(1, safeIndex(pos), element);
+              consumer.accept(1, safeIndex(index), element);
             } else {
               consumer.complete(0);
             }
@@ -233,7 +233,7 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
         @Override
         public boolean cancellableTest(final int size, final int index, final E element)
             throws Exception {
-          return predicate.test(safeSize(size), pos++, element);
+          return predicate.test(safeSize(size), ImmaterialState.this.index++, element);
         }
 
         @Override
