@@ -58,9 +58,8 @@ public class FlatMapLastWhereIteratorMaterializer<E> extends
 
     @Override
     public E materializeNext() {
-      final E next = materializer().materializeNext();
       ++pos;
-      return next;
+      return materializer().materializeNext();
     }
 
     private @NotNull IteratorMaterializer<E> materializer() {

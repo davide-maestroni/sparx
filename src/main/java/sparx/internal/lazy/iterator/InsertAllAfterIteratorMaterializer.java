@@ -72,9 +72,8 @@ public class InsertAllAfterIteratorMaterializer<E> extends StatefulIteratorMater
         }
         return setState(wrapped).materializeNext();
       }
-      final E next = wrapped.materializeNext();
       ++pos;
-      return next;
+      return wrapped.materializeNext();
     }
 
     @Override

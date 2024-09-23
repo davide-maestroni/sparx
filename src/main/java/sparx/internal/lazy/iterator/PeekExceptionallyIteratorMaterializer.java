@@ -54,9 +54,8 @@ public class PeekExceptionallyIteratorMaterializer<E> extends AutoSkipIteratorMa
   @Override
   public E materializeNext() {
     try {
-      final E next = wrapped.materializeNext();
       ++pos;
-      return next;
+      return wrapped.materializeNext();
     } catch (final Throwable t) {
       try {
         consumer.accept(pos++, t);

@@ -330,9 +330,8 @@ public abstract class TransformIteratorFutureMaterializer<E, F> extends
           if (!iterator.hasNext()) {
             throw new NoSuchElementException();
           }
-          final F next = iterator.next();
           ++index;
-          return next;
+          return iterator.next();
         }
 
         @Override

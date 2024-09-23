@@ -55,9 +55,8 @@ public class FlatMapAfterIteratorMaterializer<E> extends StatefulIteratorMateria
 
     @Override
     public E materializeNext() {
-      final E next = materializer().materializeNext();
       ++pos;
-      return next;
+      return materializer().materializeNext();
     }
 
     @Override

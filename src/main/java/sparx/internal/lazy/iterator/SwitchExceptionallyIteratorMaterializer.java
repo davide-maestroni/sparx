@@ -66,9 +66,8 @@ public class SwitchExceptionallyIteratorMaterializer<E> extends
       }
       try {
         final IteratorMaterializer<E> state = getState();
-        final E next = (state == this ? wrapped : state).materializeNext();
         ++pos;
-        return next;
+        return (state == this ? wrapped : state).materializeNext();
       } catch (final Throwable t) {
         try {
           return setState(mapper.apply(pos++, t)).materializeNext();

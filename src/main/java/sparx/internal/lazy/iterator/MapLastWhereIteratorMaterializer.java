@@ -57,9 +57,8 @@ public class MapLastWhereIteratorMaterializer<E> extends StatefulAutoSkipIterato
 
     @Override
     public E materializeNext() {
-      final E next = materializer().materializeNext();
       ++pos;
-      return next;
+      return materializer().materializeNext();
     }
 
     private @NotNull IteratorMaterializer<E> materializer() {

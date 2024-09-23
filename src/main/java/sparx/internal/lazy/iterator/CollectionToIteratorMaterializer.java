@@ -48,8 +48,7 @@ public class CollectionToIteratorMaterializer<E> extends AutoSkipIteratorMateria
 
   @Override
   public E materializeNext() {
-    final E next = iterator.next();
     ++pos;
-    return next;
+    return iterator.next();
   }
 }

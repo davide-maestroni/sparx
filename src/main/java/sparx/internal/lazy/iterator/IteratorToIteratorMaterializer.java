@@ -40,8 +40,7 @@ public class IteratorToIteratorMaterializer<E> extends AutoSkipIteratorMateriali
 
   @Override
   public E materializeNext() {
-    final E next = elements.next();
     ++pos;
-    return next;
+    return elements.next();
   }
 }
