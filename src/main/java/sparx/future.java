@@ -43,6 +43,7 @@ import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CollectionToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorGetFuture;
@@ -51,6 +52,7 @@ import sparx.internal.future.iterator.IteratorWhileFuture;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
+import sparx.internal.future.iterator.WrappingIteratorFutureMaterializer;
 import sparx.internal.future.list.AbstractListFutureMaterializer;
 import sparx.internal.future.list.AppendAllListFutureMaterializer;
 import sparx.internal.future.list.AppendListFutureMaterializer;
@@ -170,6 +172,11 @@ class future extends Sparx {
       taskID = Integer.toHexString(System.identityHashCode(this));
     }
 
+    private static @NotNull <E> Iterator<E> emptyIterator(@NotNull final ExecutionContext context) {
+      return new Iterator<E>(context, new AtomicReference<CancellationException>(),
+          EmptyIteratorFutureMaterializer.<E>instance());
+    }
+
     @SuppressWarnings("unchecked")
     private static @NotNull <E> IteratorFutureMaterializer<E> getElementsMaterializer(
         @NotNull final ExecutionContext context, @NotNull final Iterable<? extends E> elements) {
@@ -211,6 +218,30 @@ class future extends Sparx {
           (java.util.Iterator<E>) elements.iterator(), context);
     }
 
+    private static @NotNull <E, F> IndexedFunction<E, IteratorFutureMaterializer<F>> getElementToIteratorMaterializer(
+        @NotNull final ExecutionContext context,
+        @NotNull final Function<? super E, ? extends Iterable<? extends F>> mapper) {
+      return new IndexedFunction<E, IteratorFutureMaterializer<F>>() {
+        @Override
+        public IteratorFutureMaterializer<F> apply(final int index, final E element)
+            throws Exception {
+          return Iterator.getElementsMaterializer(context, mapper.apply(element));
+        }
+      };
+    }
+
+    private static @NotNull <E, F> IndexedFunction<E, IteratorFutureMaterializer<F>> getElementToIteratorMaterializer(
+        @NotNull final ExecutionContext context,
+        @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends F>> mapper) {
+      return new IndexedFunction<E, IteratorFutureMaterializer<F>>() {
+        @Override
+        public IteratorFutureMaterializer<F> apply(final int index, final E element)
+            throws Exception {
+          return Iterator.getElementsMaterializer(context, mapper.apply(index, element));
+        }
+      };
+    }
+
     private static @NotNull <E> TransformIteratorFutureMaterializer<E, E> lazyMaterializerAppend(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
@@ -230,11 +261,10 @@ class future extends Sparx {
     public @NotNull Iterator<E> append(final E element) {
       final ExecutionContext context = this.context;
       final IteratorFutureMaterializer<E> materializer = this.materializer;
-      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.knownSize() == 0) {
-        return new Iterator<E>(context, cancelException,
-            EmptyIteratorFutureMaterializer.<E>instance());
+        return emptyIterator(context);
       }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new Iterator<E>(context, cancelException,
             lazyMaterializerAppend(materializer, context, cancelException, element));
@@ -502,14 +532,32 @@ class future extends Sparx {
 
     @Override
     public @NotNull <F> Iterator<F> flatMap(
-        @NotNull Function<? super E, ? extends Iterable<F>> mapper) {
-      return null;
+        @NotNull final Function<? super E, ? extends Iterable<F>> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<F>(context, cancelException,
+          new FlatMapIteratorFutureMaterializer<E, F>(materializer,
+              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
+              cancelException));
     }
 
     @Override
     public @NotNull <F> Iterator<F> flatMap(
-        @NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
-      return null;
+        @NotNull final IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<F>(context, cancelException,
+          new FlatMapIteratorFutureMaterializer<E, F>(materializer,
+              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
+              cancelException));
     }
 
     @Override
@@ -806,8 +854,10 @@ class future extends Sparx {
 
     @Override
     public @NotNull Iterator<E> iterator() {
-      // TODO: WrappingMaterializer
-      return null;
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<E>(context, cancelException,
+          new WrappingIteratorFutureMaterializer<E>(materializer, context, cancelException));
     }
 
     @Override
@@ -1565,30 +1615,6 @@ class future extends Sparx {
         return new ElementToListFutureMaterializer<E>(list.get(0));
       }
       return new ListToListFutureMaterializer<E>(list, context);
-    }
-
-    private static @NotNull <E, F> IndexedFunction<E, IteratorFutureMaterializer<F>> getElementToIteratorMaterializer(
-        @NotNull final ExecutionContext context,
-        @NotNull final Function<? super E, ? extends Iterable<? extends F>> mapper) {
-      return new IndexedFunction<E, IteratorFutureMaterializer<F>>() {
-        @Override
-        public IteratorFutureMaterializer<F> apply(final int index, final E element)
-            throws Exception {
-          return Iterator.getElementsMaterializer(context, mapper.apply(element));
-        }
-      };
-    }
-
-    private static @NotNull <E, F> IndexedFunction<E, IteratorFutureMaterializer<F>> getElementToIteratorMaterializer(
-        @NotNull final ExecutionContext context,
-        @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends F>> mapper) {
-      return new IndexedFunction<E, IteratorFutureMaterializer<F>>() {
-        @Override
-        public IteratorFutureMaterializer<F> apply(final int index, final E element)
-            throws Exception {
-          return Iterator.getElementsMaterializer(context, mapper.apply(index, element));
-        }
-      };
     }
 
     private static @NotNull <E> IndexedFunction<E, ListFutureMaterializer<E>> getElementToMaterializer(
@@ -3446,8 +3472,8 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<F>(context, cancelException,
           new FlatMapListFutureMaterializer<E, F>(materializer,
-              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException));
+              Iterator.getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")),
+              context, cancelException));
     }
 
     @Override
@@ -3461,8 +3487,8 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<F>(context, cancelException,
           new FlatMapListFutureMaterializer<E, F>(materializer,
-              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException));
+              Iterator.getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")),
+              context, cancelException));
     }
 
     @Override
@@ -3579,8 +3605,8 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new FlatMapWhereListFutureMaterializer<E>(materializer,
               Require.notNull(predicate, "predicate"),
-              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException));
+              Iterator.getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")),
+              context, cancelException));
     }
 
     @Override
@@ -3595,8 +3621,8 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new FlatMapWhereListFutureMaterializer<E>(materializer,
               toIndexedPredicate(Require.notNull(predicate, "predicate")),
-              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
-              cancelException));
+              Iterator.getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")),
+              context, cancelException));
     }
 
     @Override

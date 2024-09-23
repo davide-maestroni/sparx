@@ -245,7 +245,7 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
 
     @Override
     public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-      if (consumed) {
+      if (count <= 0 || consumed) {
         safeConsume(consumer, 0, LOGGER);
       } else {
         wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
