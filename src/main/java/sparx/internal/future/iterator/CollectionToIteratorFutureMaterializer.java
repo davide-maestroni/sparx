@@ -41,17 +41,13 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
   private final Collection<E> elements;
   private final Iterator<E> iterator;
 
-  private int index;
+  private int pos;
 
   public CollectionToIteratorFutureMaterializer(@NotNull final Collection<E> elements,
       @NotNull final ExecutionContext context) {
     this.elements = elements;
     this.context = context;
     iterator = elements.iterator();
-  }
-
-  public @NotNull Collection<E> elements() {
-    return elements;
   }
 
   @Override
@@ -116,7 +112,7 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
         if (!iterator.hasNext()) {
           throw new NoSuchElementException();
         }
-        ++index;
+        ++pos;
         return iterator.next();
       }
 
@@ -131,7 +127,7 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
   public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
     final Iterator<E> iterator = this.iterator;
     if (iterator.hasNext()) {
-      final int i = index++;
+      final int i = pos++;
       safeConsume(consumer, elements.size() - i, i, iterator.next(), LOGGER);
     } else {
       safeConsumeComplete(consumer, 0, LOGGER);
@@ -147,7 +143,7 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
       final Collection<E> elements = this.elements;
       final Iterator<E> iterator = this.iterator;
       while (iterator.hasNext()) {
-        final int i = index++;
+        final int i = pos++;
         if (!safeConsume(predicate, elements.size() - i, i, iterator.next(), LOGGER)) {
           return;
         }
@@ -167,7 +163,7 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
         ++skipped;
         iterator.next();
       }
-      index += skipped;
+      pos += skipped;
       safeConsume(consumer, skipped, LOGGER);
     }
   }
@@ -189,7 +185,7 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
 
   @Override
   public int weightNextWhile() {
-    return Math.min(context.minThroughput(), elements.size() - index);
+    return Math.min(context.minThroughput(), elements.size() - pos);
   }
 
   @Override
@@ -223,7 +219,7 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
 
     @Override
     public int weight() {
-      return Math.min(throughput, elements.size() - index);
+      return Math.min(throughput, elements.size() - pos);
     }
 
     @Override
@@ -234,7 +230,7 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
       final Iterator<E> iterator = CollectionToIteratorFutureMaterializer.this.iterator;
       final int size = elements.size();
       for (int n = 0; n < throughput && iterator.hasNext(); ++n) {
-        final int i = index++;
+        final int i = pos++;
         if (!safeConsume(predicate, size - i, i, iterator.next(), LOGGER)) {
           return;
         }

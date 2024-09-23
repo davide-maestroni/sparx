@@ -346,12 +346,11 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       }
 
       @Override
-      public void cancellableComplete(final int size) throws Exception {
+      public void cancellableComplete(final int size) {
         if (elements.isEmpty()) {
           setDone(EmptyIteratorFutureMaterializer.<F>instance());
         } else {
-          // TODO: DequeToIteratorFutureMaterializer
-          setDone(new ListToIteratorFutureMaterializer<F>(elements, context));
+          setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context));
         }
         consumeElements(elements);
       }

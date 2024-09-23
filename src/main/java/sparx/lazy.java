@@ -2200,10 +2200,6 @@ public class lazy extends Sparx {
       if (materializer instanceof ListMaterializerToIteratorMaterializer) {
         return new List<E>(
             ((ListMaterializerToIteratorMaterializer<E>) materializer).materializer());
-      } else if (materializer instanceof ListToIteratorMaterializer) {
-        return List.wrap(((ListToIteratorMaterializer<E>) materializer).elements());
-      } else if (materializer instanceof CollectionToIteratorMaterializer) {
-        return List.wrap(((CollectionToIteratorMaterializer<E>) materializer).elements());
       }
       return List.wrap(this);
     }

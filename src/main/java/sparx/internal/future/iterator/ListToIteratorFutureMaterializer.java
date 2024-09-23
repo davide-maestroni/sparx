@@ -38,16 +38,12 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
   private final ExecutionContext context;
   private final List<E> elements;
 
-  private int index;
+  private int pos;
 
   public ListToIteratorFutureMaterializer(@NotNull final List<E> elements,
       @NotNull final ExecutionContext context) {
     this.elements = elements;
     this.context = context;
-  }
-
-  public @NotNull List<E> elements() {
-    return elements;
   }
 
   @Override
@@ -87,14 +83,14 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
   @Override
   public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
     final List<E> elements = this.elements;
-    final int start = index;
-    index = elements.size();
-    safeConsume(consumer, elements.subList(start, index), LOGGER);
+    final int start = pos;
+    pos = elements.size();
+    safeConsume(consumer, elements.subList(start, pos), LOGGER);
   }
 
   @Override
   public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-    safeConsume(consumer, index < elements.size(), LOGGER);
+    safeConsume(consumer, pos < elements.size(), LOGGER);
   }
 
   @Override
@@ -102,15 +98,15 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
     safeConsume(consumer, new Iterator<E>() {
       @Override
       public boolean hasNext() {
-        return index < elements.size();
+        return pos < elements.size();
       }
 
       @Override
       public E next() {
-        if (index >= elements.size()) {
+        if (pos >= elements.size()) {
           throw new NoSuchElementException();
         }
-        return elements.get(index++);
+        return elements.get(pos++);
       }
 
       @Override
@@ -123,8 +119,8 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
   @Override
   public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
     final List<E> elements = this.elements;
-    if (index < elements.size()) {
-      final int i = index++;
+    if (pos < elements.size()) {
+      final int i = pos++;
       safeConsume(consumer, elements.size() - i, i, elements.get(i), LOGGER);
     } else {
       safeConsumeComplete(consumer, 0, LOGGER);
@@ -138,8 +134,8 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
       new NextTask(predicate, throughput).run();
     } else {
       final List<E> elements = this.elements;
-      while (index < elements.size()) {
-        final int i = index++;
+      while (pos < elements.size()) {
+        final int i = pos++;
         if (!safeConsume(predicate, elements.size() - i, i, elements.get(i), LOGGER)) {
           return;
         }
@@ -153,8 +149,8 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
     if (count <= 0) {
       safeConsume(consumer, 0, LOGGER);
     } else {
-      final int skipped = Math.min(count, elements.size() - index);
-      index += skipped;
+      final int skipped = Math.min(count, elements.size() - pos);
+      pos += skipped;
       safeConsume(consumer, skipped, LOGGER);
     }
   }
@@ -176,7 +172,7 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
 
   @Override
   public int weightNextWhile() {
-    return elements.size() - index;
+    return elements.size() - pos;
   }
 
   @Override
@@ -210,7 +206,7 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
 
     @Override
     public int weight() {
-      return Math.min(throughput, elements.size() - index);
+      return Math.min(throughput, elements.size() - pos);
     }
 
     @Override
@@ -219,13 +215,13 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
       final IndexedFuturePredicate<E> predicate = this.predicate;
       final List<E> elements = ListToIteratorFutureMaterializer.this.elements;
       final int size = elements.size();
-      for (int n = 0; n < throughput && index < size; ++n) {
-        final int i = index++;
+      for (int n = 0; n < throughput && pos < size; ++n) {
+        final int i = pos++;
         if (!safeConsume(predicate, size - i, i, elements.get(i), LOGGER)) {
           return;
         }
       }
-      if (index == size) {
+      if (pos == size) {
         safeConsumeComplete(predicate, 0, LOGGER);
       } else {
         taskID = getTaskID();

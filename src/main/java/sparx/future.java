@@ -597,13 +597,13 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> flatMapWhere(@NotNull IndexedPredicate<? super E> predicate,
+    public @NotNull Iterator<E> flatMapWhere(@NotNull final IndexedPredicate<? super E> predicate,
         @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
       return null;
     }
 
     @Override
-    public @NotNull Iterator<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
+    public @NotNull Iterator<E> flatMapWhere(@NotNull final Predicate<? super E> predicate,
         @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
       return null;
     }
@@ -1414,13 +1414,6 @@ class future extends Sparx {
         return new List<E>(context, cancelException, new WrappingListFutureMaterializer<E>(
             ((ListFutureMaterializerToIteratorFutureMaterializer<E>) materializer).materializer(),
             context, cancelException));
-      } else if (materializer instanceof ListToIteratorFutureMaterializer) {
-        return new List<E>(context, cancelException, new ListToListFutureMaterializer<E>(
-            ((ListToIteratorFutureMaterializer<E>) materializer).elements(), context));
-      } else if (materializer instanceof CollectionToIteratorFutureMaterializer) {
-        return new List<E>(context, cancelException, new ListToListFutureMaterializer<E>(
-            lazy.List.wrap(((CollectionToIteratorFutureMaterializer<E>) materializer).elements()),
-            context));
       }
       return new List<E>(context, cancelException,
           new IteratorFutureMaterializerToListFutureMaterializer<E>(context, cancelException,

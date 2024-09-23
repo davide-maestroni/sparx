@@ -18,7 +18,6 @@ package sparx.internal.future.iterator;
 import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -30,21 +29,24 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.DequeueList;
 
-public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMaterializer<E> {
+public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      IteratorToIteratorFutureMaterializer.class.getName());
+      DequeueToIteratorFutureMaterializer.class.getName());
 
   private final ExecutionContext context;
-  private final Iterator<E> elements;
+  private final DequeueList<E> elements;
+  private final int knownSize;
 
   private int pos;
 
-  public IteratorToIteratorFutureMaterializer(@NotNull final Iterator<E> elements,
+  public DequeueToIteratorFutureMaterializer(@NotNull final DequeueList<E> elements,
       @NotNull final ExecutionContext context) {
     this.elements = elements;
     this.context = context;
+    knownSize = elements.size();
   }
 
   @Override
@@ -74,7 +76,7 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
 
   @Override
   public int knownSize() {
-    return -1;
+    return knownSize;
   }
 
   @Override
@@ -83,17 +85,14 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
 
   @Override
   public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
-    final ArrayList<E> elements = new ArrayList<E>();
-    final Iterator<E> iterator = this.elements;
-    while (iterator.hasNext()) {
-      elements.add(iterator.next());
-    }
+    final List<E> elements = this.elements;
+    pos += elements.size();
     safeConsume(consumer, elements, LOGGER);
   }
 
   @Override
   public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-    safeConsume(consumer, elements.hasNext(), LOGGER);
+    safeConsume(consumer, !elements.isEmpty(), LOGGER);
   }
 
   @Override
@@ -101,16 +100,15 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
     safeConsume(consumer, new Iterator<E>() {
       @Override
       public boolean hasNext() {
-        return elements.hasNext();
+        return !elements.isEmpty();
       }
 
       @Override
       public E next() {
-        if (!elements.hasNext()) {
+        if (elements.isEmpty()) {
           throw new NoSuchElementException();
         }
-        ++pos;
-        return elements.next();
+        return elements.removeFirst();
       }
 
       @Override
@@ -122,8 +120,9 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
 
   @Override
   public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
-    if (elements.hasNext()) {
-      safeConsume(consumer, -1, pos++, elements.next(), LOGGER);
+    final DequeueList<E> elements = this.elements;
+    if (!elements.isEmpty()) {
+      safeConsume(consumer, elements.size(), pos++, elements.removeFirst(), LOGGER);
     } else {
       safeConsumeComplete(consumer, 0, LOGGER);
     }
@@ -135,9 +134,9 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
     if (throughput < Integer.MAX_VALUE) {
       new NextTask(predicate, throughput).run();
     } else {
-      final Iterator<E> elements = this.elements;
-      while (elements.hasNext()) {
-        if (!safeConsume(predicate, -1, pos++, elements.next(), LOGGER)) {
+      final DequeueList<E> elements = this.elements;
+      while (!elements.isEmpty()) {
+        if (!safeConsume(predicate, elements.size(), pos++, elements.removeFirst(), LOGGER)) {
           return;
         }
       }
@@ -151,10 +150,10 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
       safeConsume(consumer, 0, LOGGER);
     } else {
       int skipped = 0;
-      final Iterator<E> elements = this.elements;
-      for (int i = 0; i < count && elements.hasNext(); ++i) {
+      final DequeueList<E> elements = this.elements;
+      while (skipped < count && !elements.isEmpty()) {
+        elements.removeFirst();
         ++skipped;
-        elements.next();
       }
       pos += skipped;
       safeConsume(consumer, skipped, LOGGER);
@@ -163,7 +162,7 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
 
   @Override
   public int weightElements() {
-    return 0;
+    return 1;
   }
 
   @Override
@@ -178,7 +177,7 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
 
   @Override
   public int weightNextWhile() {
-    return 1;
+    return elements.size() - pos;
   }
 
   @Override
@@ -212,20 +211,20 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
 
     @Override
     public int weight() {
-      return throughput;
+      return Math.min(throughput, elements.size() - pos);
     }
 
     @Override
     protected void runWithContext() {
       final int throughput = this.throughput;
       final IndexedFuturePredicate<E> predicate = this.predicate;
-      final Iterator<E> iterator = elements;
-      for (int n = 0; n < throughput && iterator.hasNext(); ++n) {
-        if (!safeConsume(predicate, -1, pos++, iterator.next(), LOGGER)) {
+      final DequeueList<E> elements = DequeueToIteratorFutureMaterializer.this.elements;
+      for (int n = 0; n < throughput && !elements.isEmpty(); ++n) {
+        if (!safeConsume(predicate, elements.size(), pos++, elements.removeFirst(), LOGGER)) {
           return;
         }
       }
-      if (!iterator.hasNext()) {
+      if (elements.isEmpty()) {
         safeConsumeComplete(predicate, 0, LOGGER);
       } else {
         taskID = getTaskID();
