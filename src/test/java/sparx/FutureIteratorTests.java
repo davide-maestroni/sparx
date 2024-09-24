@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,14 +33,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import sparx.concurrent.ExecutorContext;
 import sparx.future.Iterator;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
+import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedFunction;
 import sparx.util.function.Supplier;
 
+@SuppressWarnings("DataFlowIssue")
 public class FutureIteratorTests {
 
   private static final boolean TEST_ASYNC_CANCEL = true;
@@ -58,6 +63,110 @@ public class FutureIteratorTests {
   @AfterEach
   public void tearDown() {
     executor.shutdownNow();
+  }
+
+  @Test
+  public void append() throws Exception {
+    test(List.of(1, 2, 3), lazy.Iterator::<Integer>of, it -> it.append(1).append(2).append(3));
+    test(List.of(1, null, 3), lazy.Iterator::<Integer>of,
+        it -> it.append(1).append(null).append(3));
+    test(List.of(1, 2, 3), () -> lazy.Iterator.of(1), it -> it.append(2).append(3));
+    test(List.of(1, null, 3), () -> lazy.Iterator.of(1), it -> it.append(null).append(3));
+    test(List.of(1, 2, 3), () -> lazy.Iterator.of(1, 2), it -> it.append(3));
+    test(List.of(1, null, 3), () -> lazy.Iterator.of(1, null), it -> it.append(3));
+
+    testCancel(it -> it.append(null));
+  }
+
+  @Test
+  public void drop() throws Exception {
+    test(List.of(), lazy.Iterator::<Integer>of, it -> it.drop(1));
+    test(List.of(), lazy.Iterator::<Integer>of, it -> it.drop(0));
+    test(List.of(), lazy.Iterator::<Integer>of, it -> it.drop(-1));
+    test(List.of(1, null, 3), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(-1));
+    test(List.of(1, null, 3), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(0));
+    test(List.of(null, 3), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(1));
+    test(List.of(3), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(2));
+    test(List.of(), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(3));
+    test(List.of(), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(4));
+
+    testCancel(it -> it.drop(1));
+  }
+
+  @Test
+  public void flatMap() throws Exception {
+    assertThrows(NullPointerException.class, () -> lazy.Iterator.of(0).toFuture(context)
+        .flatMap((Function<? super Integer, List<Object>>) null));
+    assertThrows(NullPointerException.class, () -> lazy.Iterator.of(0).toFuture(context)
+        .flatMap((IndexedFunction<? super Integer, List<Object>>) null));
+    test(List.of(1, 1, 2, 2), () -> lazy.Iterator.of(1, 2), it -> it.flatMap(i -> List.of(i, i)));
+    test(List.of(), () -> lazy.Iterator.of(1, 2), it -> it.flatMap(i -> List.of()));
+    test(List.of(null, null), () -> lazy.Iterator.of(1, 2), it -> it.flatMap(i -> List.of(null)));
+
+    testCancel(it -> it.flatMap(e -> List.of(e)));
+  }
+
+  @Test
+  public void flatMapWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> lazy.Iterator.of(0).toFuture(context).flatMapWhere(null, e -> List.of()));
+    assertThrows(NullPointerException.class,
+        () -> lazy.Iterator.of(0).toFuture(context).flatMapWhere(null, (i, e) -> List.of()));
+    assertThrows(NullPointerException.class,
+        () -> lazy.Iterator.of(0).toFuture(context).flatMapWhere(e -> true, null));
+    assertThrows(NullPointerException.class,
+        () -> lazy.Iterator.of(0).toFuture(context).flatMapWhere((i, e) -> true, null));
+    test(List.of(1, null, null, 4), () -> lazy.Iterator.of(1, null, null, 4),
+        it -> it.flatMapWhere(i -> false, i -> List.of(i, i)));
+    test(List.of(1, 1, null, null, null, null, 4, 4), () -> lazy.Iterator.of(1, null, null, 4),
+        it -> it.flatMapWhere(i -> true, i -> List.of(i, i)));
+    test(List.of(1, 3, 3, 4), () -> lazy.Iterator.of(1, null, null, 4),
+        it -> it.flatMapWhere(Objects::isNull, i -> List.of(3)));
+    test(List.of(1, null, null, 4), () -> lazy.Iterator.of(1, null, null, 4),
+        it -> it.flatMapWhere(i -> false, i -> List.of()));
+    test(List.of(1, 4), () -> lazy.Iterator.of(1, null, null, 4),
+        it -> it.flatMapWhere(Objects::isNull, i -> List.of()));
+    test(List.of(), lazy.Iterator::of, it -> it.flatMapWhere(i -> false, i -> List.of()));
+    test(List.of(), lazy.Iterator::of, it -> it.flatMapWhere(i -> true, i -> List.of()));
+
+    java.util.function.Supplier<Iterator<Integer>> itr = () -> lazy.Iterator.of(1, null, null, 4)
+        .toFuture(context);
+    assertFalse(itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).isEmpty());
+    assertEquals(1, itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).first());
+    assertEquals(1, itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).drop(1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).size());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).drop(2).first());
+    assertFalse(itr.get().flatMapWhere(i -> i > 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapWhere(i -> i > 2, i -> List.of(i, i)).size());
+    assertEquals(1, itr.get().flatMapWhere(i -> i > 2, i -> List.of(i, i)).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapWhere(i -> i > 2, i -> List.of(i, i)).drop(1).first());
+
+    testCancel(it -> it.flatMapWhere(e -> true, List::of));
+  }
+
+  @Test
+  public void map() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> lazy.Iterator.of(0).toFuture(context).map((Function<? super Integer, Object>) null));
+    assertThrows(NullPointerException.class, () -> lazy.Iterator.of(0).toFuture(context)
+        .map((IndexedFunction<? super Integer, Object>) null));
+    test(List.of(2, 3, 4), () -> lazy.Iterator.of(1, 2, 3), it -> it.map(x -> x + 1));
+    test(List.of(), lazy.Iterator::<Integer>of, it -> it.map(x -> x + 1));
+
+    java.util.function.Supplier<Iterator<Integer>> itr = () -> lazy.Iterator.of(1, 2, 3)
+        .toFuture(context);
+    assertFalse(itr.get().append(null).map(x -> x + 1).isEmpty());
+    assertEquals(4, itr.get().append(null).map(x -> x + 1).size());
+    assertEquals(4, itr.get().append(null).map(x -> x + 1).drop(2).first());
+    assertEquals(2, itr.get().append(null).map(x -> x + 1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().append(null).map(x -> x + 1).drop(3).first());
+
+    testCancel(it -> it.map(e -> e));
   }
 
   private <E> void test(@NotNull final java.util.List<E> expected,

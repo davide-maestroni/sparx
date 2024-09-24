@@ -57,6 +57,8 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
     private final ExecutionContext context;
     private final ArrayList<FutureConsumer<List<F>>> elementsConsumers = new ArrayList<FutureConsumer<List<F>>>(
         2);
+    private final ArrayList<FutureConsumer<IteratorFutureMaterializer<F>>> elementsMaterializerConsumers = new ArrayList<FutureConsumer<IteratorFutureMaterializer<F>>>(
+        2);
     private final IndexedFunction<? super E, ? extends IteratorFutureMaterializer<F>> mapper;
     private final IteratorFutureMaterializer<E> wrapped;
 
@@ -126,15 +128,15 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
 
     @Override
     public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-      new HasNextFutureConsumer(consumer).schedule();
+      new HasNextFutureConsumer(consumer).run();
     }
 
     @Override
     public void materializeIterator(@NotNull final FutureConsumer<Iterator<F>> consumer) {
       materializeElements(new CancellableFutureConsumer<List<F>>() {
         @Override
-        public void cancellableAccept(final List<F> elements) throws Exception {
-          consumer.accept(elements.iterator());
+        public void cancellableAccept(final List<F> elements) {
+          getState().materializeIterator(consumer);
         }
 
         @Override
@@ -146,12 +148,12 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
 
     @Override
     public void materializeNext(@NotNull final IndexedFutureConsumer<F> consumer) {
-      new NextFutureConsumer(consumer).schedule();
+      new NextFutureConsumer(consumer).run();
     }
 
     @Override
     public void materializeNextWhile(@NotNull final IndexedFuturePredicate<F> predicate) {
-      new NextWhileFutureConsumer(predicate).schedule();
+      new NextWhileFutureConsumer(predicate).run();
     }
 
     @Override
@@ -159,7 +161,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       if (count <= 0) {
         safeConsume(consumer, 0, LOGGER);
       } else {
-        new SkipFutureConsumer(count, consumer).schedule();
+        new SkipFutureConsumer(count, consumer).run();
       }
     }
 
@@ -168,7 +170,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       if (elementsConsumers.isEmpty()) {
         final IteratorFutureMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
         return elementsMaterializer != null ? elementsMaterializer.weightNextWhile()
-            : wrapped.weightNext();
+            : elementsMaterializerConsumers.isEmpty() ? wrapped.weightNext() : 1;
       }
       return 1;
     }
@@ -177,28 +179,28 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
     public int weightHasNext() {
       final IteratorFutureMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
       return elementsMaterializer != null ? elementsMaterializer.weightHasNext()
-          : wrapped.weightNext();
+          : elementsMaterializerConsumers.isEmpty() ? wrapped.weightNext() : 1;
     }
 
     @Override
     public int weightNext() {
       final IteratorFutureMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
       return elementsMaterializer != null ? elementsMaterializer.weightNext()
-          : wrapped.weightNext();
+          : elementsMaterializerConsumers.isEmpty() ? wrapped.weightNext() : 1;
     }
 
     @Override
     public int weightNextWhile() {
       final IteratorFutureMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
       return elementsMaterializer != null ? elementsMaterializer.weightNextWhile()
-          : wrapped.weightNext();
+          : elementsMaterializerConsumers.isEmpty() ? wrapped.weightNext() : 1;
     }
 
     @Override
     public int weightSkip() {
       final IteratorFutureMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
       return elementsMaterializer != null ? elementsMaterializer.weightSkip()
-          : wrapped.weightNext();
+          : elementsMaterializerConsumers.isEmpty() ? wrapped.weightNext() : 1;
     }
 
     private void consumeElements(@NotNull final List<F> elements) {
@@ -222,6 +224,45 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       return taskID != null ? taskID : "";
     }
 
+    private void materializeElementsMaterializer(
+        @NotNull final FutureConsumer<IteratorFutureMaterializer<F>> consumer) {
+      if (elementsMaterializer != null) {
+        safeConsume(consumer, elementsMaterializer, LOGGER);
+      } else {
+        final ArrayList<FutureConsumer<IteratorFutureMaterializer<F>>> materializerConsumers = this.elementsMaterializerConsumers;
+        materializerConsumers.add(consumer);
+        if (materializerConsumers.size() == 1) {
+          wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
+            @Override
+            public void cancellableAccept(final int size, final int index, final E element)
+                throws Exception {
+              elementsMaterializer = mapper.apply(wrappedIndex++, element);
+              for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
+                safeConsume(materializerConsumer, elementsMaterializer, LOGGER);
+              }
+              materializerConsumers.clear();
+            }
+
+            @Override
+            public void cancellableComplete(final int size) {
+              for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
+                safeConsume(materializerConsumer, null, LOGGER);
+              }
+              materializerConsumers.clear();
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) {
+              for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
+                safeConsumeError(materializerConsumer, error, LOGGER);
+              }
+              materializerConsumers.clear();
+            }
+          });
+        }
+      }
+    }
+
     private void setError(@NotNull final Exception error) {
       final CancellationException exception = cancelException.get();
       if (exception != null) {
@@ -233,20 +274,20 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       }
     }
 
-    private class HasNextFutureConsumer extends CancellableIndexedFutureConsumer<E> {
+    private class HasNextFutureConsumer extends CancellableFutureConsumer<Boolean> {
 
       private final FutureConsumer<Boolean> consumer;
 
       private String taskID;
 
-      private final CancellableFutureConsumer<Boolean> elementsConsumer = new CancellableFutureConsumer<Boolean>() {
+      private final CancellableFutureConsumer<IteratorFutureMaterializer<F>> elementsMaterializerConsumer = new CancellableFutureConsumer<IteratorFutureMaterializer<F>>() {
         @Override
-        public void cancellableAccept(final Boolean hasNext) throws Exception {
-          if (hasNext) {
-            consumer.accept(true);
+        public void cancellableAccept(final IteratorFutureMaterializer<F> materializer)
+            throws Exception {
+          if (materializer == null) {
+            consumer.accept(false);
           } else {
-            elementsMaterializer = null;
-            schedule();
+            materializer.materializeHasNext(HasNextFutureConsumer.this);
           }
         }
 
@@ -261,20 +302,13 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       }
 
       @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        final IteratorFutureMaterializer<F> materializer = mapper.apply(wrappedIndex++, element);
-        if (materializer.knownSize() == 0) {
+      public void cancellableAccept(final Boolean hasNext) throws Exception {
+        if (hasNext) {
+          consumer.accept(true);
+        } else {
           elementsMaterializer = null;
           schedule();
-        } else {
-          (elementsMaterializer = materializer).materializeHasNext(elementsConsumer);
         }
-      }
-
-      @Override
-      public void cancellableComplete(final int size) throws Exception {
-        consumer.accept(false);
       }
 
       @Override
@@ -291,15 +325,15 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       public int weight() {
         final IteratorFutureMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
         return elementsMaterializer != null ? elementsMaterializer.weightHasNext()
-            : wrapped.weightNext();
+            : elementsMaterializerConsumers.isEmpty() ? wrapped.weightNext() : 1;
       }
 
       @Override
       protected void runWithContext() {
         if (elementsMaterializer != null) {
-          elementsMaterializer.materializeHasNext(elementsConsumer);
+          elementsMaterializer.materializeHasNext(this);
         } else {
-          wrapped.materializeNext(this);
+          materializeElementsMaterializer(elementsMaterializerConsumer);
         }
       }
 
@@ -309,23 +343,26 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       }
     }
 
-    private class MaterializingFutureConsumer extends CancellableIndexedFutureConsumer<E> {
+    private class MaterializingFutureConsumer extends CancellableIndexedFuturePredicate<F> {
 
       private final DequeueList<F> elements = new DequeueList<F>();
 
       private String taskID;
 
-      private final CancellableIndexedFuturePredicate<F> elementsPredicate = new CancellableIndexedFuturePredicate<F>() {
+      private final CancellableFutureConsumer<IteratorFutureMaterializer<F>> elementsMaterializerConsumer = new CancellableFutureConsumer<IteratorFutureMaterializer<F>>() {
         @Override
-        public void cancellableComplete(final int size) {
-          elementsMaterializer = null;
-          schedule();
-        }
-
-        @Override
-        public boolean cancellableTest(final int size, final int index, final F element) {
-          elements.add(element);
-          return true;
+        public void cancellableAccept(final IteratorFutureMaterializer<F> materializer) {
+          if (materializer == null) {
+            // TODO: add empty check also in future.List
+            if (elements.isEmpty()) {
+              setDone(EmptyIteratorFutureMaterializer.<F>instance());
+            } else {
+              setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context));
+            }
+            consumeElements(elements);
+          } else {
+            materializer.materializeNextWhile(MaterializingFutureConsumer.this);
+          }
         }
 
         @Override
@@ -335,24 +372,15 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       };
 
       @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        final IteratorFutureMaterializer<F> materializer = mapper.apply(wrappedIndex++, element);
-        if (materializer.knownSize() == 0) {
-          schedule();
-        } else {
-          (elementsMaterializer = materializer).materializeNextWhile(elementsPredicate);
-        }
+      public void cancellableComplete(final int size) {
+        elementsMaterializer = null;
+        schedule();
       }
 
       @Override
-      public void cancellableComplete(final int size) {
-        if (elements.isEmpty()) {
-          setDone(EmptyIteratorFutureMaterializer.<F>instance());
-        } else {
-          setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context));
-        }
-        consumeElements(elements);
+      public boolean cancellableTest(final int size, final int index, final F element) {
+        elements.add(element);
+        return true;
       }
 
       @Override
@@ -369,15 +397,15 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       public int weight() {
         final IteratorFutureMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
         return elementsMaterializer != null ? elementsMaterializer.weightNextWhile()
-            : wrapped.weightNext();
+            : elementsMaterializerConsumers.isEmpty() ? wrapped.weightNext() : 1;
       }
 
       @Override
       protected void runWithContext() {
         if (elementsMaterializer != null) {
-          elementsMaterializer.materializeNextWhile(elementsPredicate);
+          elementsMaterializer.materializeNextWhile(this);
         } else {
-          wrapped.materializeNext(this);
+          materializeElementsMaterializer(elementsMaterializerConsumer);
         }
       }
 
@@ -387,42 +415,43 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       }
     }
 
-    private class NextFutureConsumer extends CancellableIndexedFutureConsumer<Object> {
+    private class NextFutureConsumer extends CancellableIndexedFutureConsumer<F> {
 
       private final IndexedFutureConsumer<F> consumer;
 
       private String taskID;
+
+      private final CancellableFutureConsumer<IteratorFutureMaterializer<F>> elementsMaterializerConsumer = new CancellableFutureConsumer<IteratorFutureMaterializer<F>>() {
+        @Override
+        public void cancellableAccept(final IteratorFutureMaterializer<F> materializer)
+            throws Exception {
+          if (materializer == null) {
+            consumer.complete(0);
+          } else {
+            materializer.materializeNext(NextFutureConsumer.this);
+          }
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
+        }
+      };
 
       private NextFutureConsumer(@NotNull final IndexedFutureConsumer<F> consumer) {
         this.consumer = consumer;
       }
 
       @Override
-      @SuppressWarnings("unchecked")
-      public void cancellableAccept(final int size, final int index, final Object element)
+      public void cancellableAccept(final int size, final int index, final F element)
           throws Exception {
-        if (elementsMaterializer != null) {
-          consumer.accept(-1, ImmaterialState.this.index++, (F) element);
-        } else {
-          final IteratorFutureMaterializer<F> materializer = mapper.apply(wrappedIndex++,
-              (E) element);
-          if (materializer.knownSize() == 0) {
-            elementsMaterializer = null;
-            schedule();
-          } else {
-            (elementsMaterializer = materializer).materializeNext((IndexedFutureConsumer<F>) this);
-          }
-        }
+        consumer.accept(-1, ImmaterialState.this.index++, element);
       }
 
       @Override
-      public void cancellableComplete(final int size) throws Exception {
-        if (elementsMaterializer != null) {
-          elementsMaterializer = null;
-          schedule();
-        } else {
-          consumer.complete(0);
-        }
+      public void cancellableComplete(final int size) {
+        elementsMaterializer = null;
+        schedule();
       }
 
       @Override
@@ -439,16 +468,15 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       public int weight() {
         final IteratorFutureMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
         return elementsMaterializer != null ? elementsMaterializer.weightNext()
-            : wrapped.weightNext();
+            : elementsMaterializerConsumers.isEmpty() ? wrapped.weightNext() : 1;
       }
 
       @Override
-      @SuppressWarnings("unchecked")
       protected void runWithContext() {
         if (elementsMaterializer != null) {
-          elementsMaterializer.materializeNext((IndexedFutureConsumer<F>) this);
+          elementsMaterializer.materializeNext(this);
         } else {
-          wrapped.materializeNext((IndexedFutureConsumer<E>) this);
+          materializeElementsMaterializer(elementsMaterializerConsumer);
         }
       }
 
@@ -458,23 +486,21 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       }
     }
 
-    private class NextWhileFutureConsumer extends CancellableIndexedFutureConsumer<E> {
+    private class NextWhileFutureConsumer extends CancellableIndexedFuturePredicate<F> {
 
       private final IndexedFuturePredicate<F> predicate;
 
       private String taskID;
 
-      private final CancellableIndexedFuturePredicate<F> elementsPredicate = new CancellableIndexedFuturePredicate<F>() {
+      private final CancellableFutureConsumer<IteratorFutureMaterializer<F>> elementsMaterializerConsumer = new CancellableFutureConsumer<IteratorFutureMaterializer<F>>() {
         @Override
-        public void cancellableComplete(final int size) {
-          elementsMaterializer = null;
-          schedule();
-        }
-
-        @Override
-        public boolean cancellableTest(final int size, final int index, final F element)
+        public void cancellableAccept(final IteratorFutureMaterializer<F> materializer)
             throws Exception {
-          return predicate.test(-1, ImmaterialState.this.index++, element);
+          if (materializer == null) {
+            predicate.complete(0);
+          } else {
+            materializer.materializeNextWhile(NextWhileFutureConsumer.this);
+          }
         }
 
         @Override
@@ -488,20 +514,15 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       }
 
       @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        final IteratorFutureMaterializer<F> materializer = mapper.apply(wrappedIndex++, element);
-        if (materializer.knownSize() == 0) {
-          elementsMaterializer = null;
-          schedule();
-        } else {
-          (elementsMaterializer = materializer).materializeNextWhile(elementsPredicate);
-        }
+      public void cancellableComplete(final int size) {
+        elementsMaterializer = null;
+        schedule();
       }
 
       @Override
-      public void cancellableComplete(final int size) throws Exception {
-        predicate.complete(0);
+      public boolean cancellableTest(final int size, final int index, final F element)
+          throws Exception {
+        return predicate.test(-1, ImmaterialState.this.index++, element);
       }
 
       @Override
@@ -518,15 +539,15 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       public int weight() {
         final IteratorFutureMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
         return elementsMaterializer != null ? elementsMaterializer.weightNextWhile()
-            : wrapped.weightNext();
+            : elementsMaterializerConsumers.isEmpty() ? wrapped.weightNext() : 1;
       }
 
       @Override
       protected void runWithContext() {
         if (elementsMaterializer != null) {
-          elementsMaterializer.materializeNextWhile(elementsPredicate);
+          elementsMaterializer.materializeNextWhile(this);
         } else {
-          wrapped.materializeNext(this);
+          materializeElementsMaterializer(elementsMaterializerConsumer);
         }
       }
 
@@ -536,7 +557,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       }
     }
 
-    private class SkipFutureConsumer extends CancellableIndexedFutureConsumer<E> {
+    private class SkipFutureConsumer extends CancellableFutureConsumer<Integer> {
 
       private final FutureConsumer<Integer> consumer;
       private final int count;
@@ -544,15 +565,14 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       private String taskID;
       private int toSkip;
 
-      private final CancellableFutureConsumer<Integer> elementsConsumer = new CancellableFutureConsumer<Integer>() {
+      private final CancellableFutureConsumer<IteratorFutureMaterializer<F>> elementsMaterializerConsumer = new CancellableFutureConsumer<IteratorFutureMaterializer<F>>() {
         @Override
-        public void cancellableAccept(final Integer skipped) throws Exception {
-          final int remaining = toSkip -= skipped;
-          if (remaining <= 0) {
-            consumer.accept(count - remaining);
+        public void cancellableAccept(final IteratorFutureMaterializer<F> materializer)
+            throws Exception {
+          if (materializer == null) {
+            consumer.accept(count - toSkip);
           } else {
-            elementsMaterializer = null;
-            schedule();
+            materializer.materializeSkip(toSkip, SkipFutureConsumer.this);
           }
         }
 
@@ -563,25 +583,19 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       };
 
       private SkipFutureConsumer(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-        this.count = count;
+        this.count = toSkip = count;
         this.consumer = consumer;
       }
 
       @Override
-      public void cancellableAccept(final int size, final int index, final E element)
-          throws Exception {
-        final IteratorFutureMaterializer<F> materializer = mapper.apply(wrappedIndex++, element);
-        if (materializer.knownSize() == 0) {
+      public void cancellableAccept(final Integer skipped) throws Exception {
+        final int remaining = toSkip -= skipped;
+        if (remaining <= 0) {
+          consumer.accept(count - remaining);
+        } else {
           elementsMaterializer = null;
           schedule();
-        } else {
-          (elementsMaterializer = materializer).materializeSkip(toSkip, elementsConsumer);
         }
-      }
-
-      @Override
-      public void cancellableComplete(final int size) throws Exception {
-        consumer.accept(count - toSkip);
       }
 
       @Override
@@ -598,15 +612,15 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       public int weight() {
         final IteratorFutureMaterializer<F> elementsMaterializer = ImmaterialState.this.elementsMaterializer;
         return elementsMaterializer != null ? elementsMaterializer.weightSkip()
-            : wrapped.weightNext();
+            : elementsMaterializerConsumers.isEmpty() ? wrapped.weightNext() : 1;
       }
 
       @Override
       protected void runWithContext() {
         if (elementsMaterializer != null) {
-          elementsMaterializer.materializeSkip(toSkip, elementsConsumer);
+          elementsMaterializer.materializeSkip(toSkip, this);
         } else {
-          wrapped.materializeNext(this);
+          materializeElementsMaterializer(elementsMaterializerConsumer);
         }
       }
 

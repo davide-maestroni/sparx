@@ -20,7 +20,6 @@ import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -148,8 +147,13 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
             if (consumed) {
               materialized = elements;
             } else {
-              setDone();
               materialized = appendFunction.apply(elements, element);
+              consumed = true;
+              if (materialized.isEmpty()) {
+                setDone(EmptyIteratorFutureMaterializer.<E>instance());
+              } else {
+                setDone(new ListToIteratorFutureMaterializer<E>(materialized, context));
+              }
             }
             consumeElements(materialized);
           }
@@ -204,7 +208,8 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
           @Override
           public void cancellableComplete(final int size) throws Exception {
             if (!consumed) {
-              setDone();
+              consumed = true;
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
               consumer.accept(1, safeIndex(index), element);
             } else {
               consumer.complete(0);
@@ -225,7 +230,7 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
         @Override
         public void cancellableComplete(final int size) throws Exception {
           if (consumed || predicate.test(1, size, element)) {
-            setDone();
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
             predicate.complete(0);
           }
         }
@@ -252,7 +257,8 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
           @Override
           public void cancellableAccept(final Integer skipped) throws Exception {
             if (skipped < count && !consumed) {
-              setDone();
+              consumed = true;
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
               consumer.accept(skipped + 1);
             } else {
               consumer.accept(skipped);
@@ -308,10 +314,10 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
       elementsConsumers.clear();
     }
 
-    private void setDone() {
-      consumed = true;
-      AppendIteratorFutureMaterializer.this.setDone(
-          new ListToIteratorFutureMaterializer<E>(Collections.<E>emptyList(), context));
-    }
+//    private void setDone() {
+//      consumed = true;
+//      AppendIteratorFutureMaterializer.this.setDone(
+//          new ListToIteratorFutureMaterializer<E>(Collections.<E>emptyList(), context));
+//    }
   }
 }

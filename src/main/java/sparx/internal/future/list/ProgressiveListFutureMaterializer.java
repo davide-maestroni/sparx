@@ -211,22 +211,26 @@ abstract class ProgressiveListFutureMaterializer<E, F> extends AbstractListFutur
 
     @Override
     public void materializeEmpty(@NotNull final FutureConsumer<Boolean> consumer) {
-      materializeUntil(0, new IndexedFutureConsumer<F>() {
-        @Override
-        public void accept(final int size, final int index, final F element) throws Exception {
-          consumer.accept(false);
-        }
+      if (!elements.isEmpty()) {
+        safeConsume(consumer, false, logger);
+      } else {
+        materializeUntil(0, new IndexedFutureConsumer<F>() {
+          @Override
+          public void accept(final int size, final int index, final F element) throws Exception {
+            consumer.accept(false);
+          }
 
-        @Override
-        public void complete(final int size) throws Exception {
-          consumer.accept(true);
-        }
+          @Override
+          public void complete(final int size) throws Exception {
+            consumer.accept(true);
+          }
 
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override

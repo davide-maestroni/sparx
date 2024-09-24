@@ -32,6 +32,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.DequeueList;
 
 public abstract class TransformIteratorFutureMaterializer<E, F> extends
     AbstractIteratorFutureMaterializer<F> {
@@ -58,6 +59,8 @@ public abstract class TransformIteratorFutureMaterializer<E, F> extends
   public int knownSize() {
     return knownSize;
   }
+
+  protected abstract int skip(int count, @NotNull Iterator<F> elements);
 
   protected abstract @NotNull Iterator<F> transform(@NotNull Iterator<E> elements);
 
@@ -298,9 +301,14 @@ public abstract class TransformIteratorFutureMaterializer<E, F> extends
     public void materializeElements(@NotNull final FutureConsumer<List<F>> consumer) {
       try {
         final Iterator<F> iterator = this.iterator;
-        final ArrayList<F> elements = new ArrayList<F>();
+        final DequeueList<F> elements = new DequeueList<F>();
         while (iterator.hasNext()) {
           elements.add(iterator.next());
+        }
+        if (elements.isEmpty()) {
+          setDone(EmptyIteratorFutureMaterializer.<F>instance());
+        } else {
+          setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context));
         }
         safeConsume(consumer, elements, LOGGER);
       } catch (final Exception error) {
@@ -369,13 +377,7 @@ public abstract class TransformIteratorFutureMaterializer<E, F> extends
     @Override
     public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
       try {
-        int skipped = 0;
-        final Iterator<F> iterator = this.iterator;
-        while (skipped < count && iterator.hasNext()) {
-          iterator.next();
-          ++skipped;
-        }
-        safeConsume(consumer, skipped, LOGGER);
+        safeConsume(consumer, skip(count, iterator), LOGGER);
       } catch (final Exception error) {
         consumeError(consumer, error);
       }
