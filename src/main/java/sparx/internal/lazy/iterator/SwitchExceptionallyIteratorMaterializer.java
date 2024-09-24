@@ -65,8 +65,8 @@ public class SwitchExceptionallyIteratorMaterializer<E> extends
         throw new NoSuchElementException();
       }
       try {
-        final IteratorMaterializer<E> state = getState();
         ++pos;
+        final IteratorMaterializer<E> state = getState();
         return (state == this ? wrapped : state).materializeNext();
       } catch (final Throwable t) {
         try {
