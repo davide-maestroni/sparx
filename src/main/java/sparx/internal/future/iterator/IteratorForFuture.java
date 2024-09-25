@@ -51,10 +51,7 @@ public class IteratorForFuture<E> implements Future<Void> {
     this.context = context;
     this.taskID = taskID;
     this.cancelException = cancelException;
-    if (context.isCurrent()) {
-      if (!materializer.isDone()) {
-        throw new DeadLockException("cannot wait on the future own execution context");
-      }
+    if (context.isCurrent() && materializer.isDone()) {
       materializer.materializeElements(new FutureConsumer<List<E>>() {
         @Override
         public void accept(final List<E> elements) throws Exception {

@@ -2393,11 +2393,10 @@ public class FutureListTests {
         @Override
         public void getElements(@NotNull final future.List<Integer> chunk,
             @NotNull final FutureConsumer<java.util.List<Integer>> consumer) {
-          try {
-            consumer.accept(chunk.toLazy());
-          } catch (final Exception e) {
-            throw new RuntimeException(e);
-          }
+          chunk.foldLeft(new ArrayList<Integer>(), (a, e) -> {
+            a.add(e);
+            return a;
+          }).nonBlockingFor(consumer::accept);
         }
       };
       return new SlidingWindowListFutureMaterializer<>(
@@ -2479,11 +2478,10 @@ public class FutureListTests {
         @Override
         public void getElements(@NotNull final future.List<Integer> chunk,
             @NotNull final FutureConsumer<java.util.List<Integer>> consumer) {
-          try {
-            consumer.accept(chunk.toLazy());
-          } catch (final Exception e) {
-            throw new RuntimeException(e);
-          }
+          chunk.foldLeft(new ArrayList<Integer>(), (a, e) -> {
+            a.add(e);
+            return a;
+          }).nonBlockingFor(consumer::accept);
         }
       };
       return new SlidingWindowListFutureMaterializer<>(
