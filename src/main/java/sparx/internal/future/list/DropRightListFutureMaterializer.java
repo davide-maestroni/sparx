@@ -507,7 +507,11 @@ public class DropRightListFutureMaterializer<E> extends AbstractListFutureMateri
 
           @Override
           public void cancellableComplete(final int size) {
-            setDone(new ListToListFutureMaterializer<E>(elements, context));
+            if (elements.isEmpty()) {
+              setDone(EmptyListFutureMaterializer.<E>instance());
+            } else {
+              setDone(new ListToListFutureMaterializer<E>(elements, context));
+            }
             consumeElements(elements);
           }
 

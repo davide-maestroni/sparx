@@ -966,7 +966,11 @@ public class ReplaceSliceListFutureMaterializer<E> extends AbstractListFutureMat
     }
 
     private void setComplete(@NotNull final List<E> elements) {
-      setDone(new ListToListFutureMaterializer<E>(elements, context));
+      if (elements.isEmpty()) {
+        setDone(EmptyListFutureMaterializer.<E>instance());
+      } else {
+        setDone(new ListToListFutureMaterializer<E>(elements, context));
+      }
       consumeElements(elements);
     }
 

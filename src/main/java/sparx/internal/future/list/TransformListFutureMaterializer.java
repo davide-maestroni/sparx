@@ -84,9 +84,9 @@ public abstract class TransformListFutureMaterializer<E, F> extends
     });
   }
 
-  protected abstract void materialize(@NotNull List<F> elements);
+  protected abstract void materialize(@NotNull List<F> list);
 
-  protected abstract @NotNull List<F> transform(@NotNull List<E> elements);
+  protected abstract @NotNull List<F> transform(@NotNull List<E> list);
 
   private interface StateConsumer<E> {
 

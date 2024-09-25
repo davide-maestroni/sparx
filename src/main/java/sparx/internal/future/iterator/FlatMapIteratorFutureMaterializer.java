@@ -353,7 +353,6 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
         @Override
         public void cancellableAccept(final IteratorFutureMaterializer<F> materializer) {
           if (materializer == null) {
-            // TODO: add empty check also in future.List
             if (elements.isEmpty()) {
               setDone(EmptyIteratorFutureMaterializer.<F>instance());
             } else {

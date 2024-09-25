@@ -310,11 +310,5 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
       }
       elementsConsumers.clear();
     }
-
-//    private void setDone() {
-//      consumed = true;
-//      AppendIteratorFutureMaterializer.this.setDone(
-//          new ListToIteratorFutureMaterializer<E>(Collections.<E>emptyList(), context));
-//    }
   }
 }

@@ -269,7 +269,11 @@ public class MapListFutureMaterializer<E, F> extends AbstractListFutureMateriali
           public void cancellableComplete(final int size) {
             wrappedSize = size;
             final List<F> materialized = elements.toList();
-            setDone(new ListToListFutureMaterializer<F>(materialized, context));
+            if (materialized.isEmpty()) {
+              setDone(EmptyListFutureMaterializer.<F>instance());
+            } else {
+              setDone(new ListToListFutureMaterializer<F>(materialized, context));
+            }
             consumeElements(materialized);
           }
 

@@ -60,9 +60,9 @@ public abstract class TransformIteratorFutureMaterializer<E, F> extends
     return knownSize;
   }
 
-  protected abstract int skip(int count, @NotNull Iterator<F> elements);
+  protected abstract int skip(int count, @NotNull Iterator<F> iterator);
 
-  protected abstract @NotNull Iterator<F> transform(@NotNull Iterator<E> elements);
+  protected abstract @NotNull Iterator<F> transform(@NotNull Iterator<E> iterator);
 
   private interface StateConsumer<E> {
 

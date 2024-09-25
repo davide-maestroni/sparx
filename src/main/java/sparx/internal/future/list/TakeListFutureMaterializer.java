@@ -244,7 +244,11 @@ public class TakeListFutureMaterializer<E> extends AbstractListFutureMaterialize
         wrapped.materializeNextWhile(0, new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
-            setDone(new ListToListFutureMaterializer<E>(elements, context));
+            if (elements.isEmpty()) {
+              setDone(EmptyListFutureMaterializer.<E>instance());
+            } else {
+              setDone(new ListToListFutureMaterializer<E>(elements, context));
+            }
             consumeElements(elements);
           }
 

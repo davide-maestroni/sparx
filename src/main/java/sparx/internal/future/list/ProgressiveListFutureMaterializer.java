@@ -411,7 +411,11 @@ abstract class ProgressiveListFutureMaterializer<E, F> extends AbstractListFutur
     }
 
     void setComplete() throws Exception {
-      setDone(new ListToListFutureMaterializer<F>(elements, context));
+      if (elements.isEmpty()) {
+        setDone(EmptyListFutureMaterializer.<F>instance());
+      } else {
+        setDone(new ListToListFutureMaterializer<F>(elements, context));
+      }
       consumeComplete(elements.size());
     }
 

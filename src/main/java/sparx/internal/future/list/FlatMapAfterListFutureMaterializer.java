@@ -297,7 +297,11 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
                   elements.addAll(mappedElements);
                   elements.addAll(
                       wrappedElements.subList(Math.min(numElements + 1, wrappedSize), wrappedSize));
-                  setDone(new ListToListFutureMaterializer<E>(elements, context));
+                  if (elements.isEmpty()) {
+                    setDone(EmptyListFutureMaterializer.<E>instance());
+                  } else {
+                    setDone(new ListToListFutureMaterializer<E>(elements, context));
+                  }
                   consumeElements(elements);
                 }
 

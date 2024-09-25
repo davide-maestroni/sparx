@@ -505,7 +505,11 @@ public class SlidingWindowListFutureMaterializer<E, L extends List<E>> extends
       final ElementsCache<L> elements = fillElementsCache();
       try {
         final List<L> materialized = elements.toList();
-        setDone(new ListToListFutureMaterializer<L>(materialized, context));
+        if (materialized.isEmpty()) {
+          setDone(EmptyListFutureMaterializer.<L>instance());
+        } else {
+          setDone(new ListToListFutureMaterializer<L>(materialized, context));
+        }
         consumeElements(materialized);
       } catch (final Exception e) {
         setError(e);

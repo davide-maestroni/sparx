@@ -296,9 +296,15 @@ public class SortedListFutureMaterializer<E> extends AbstractListFutureMateriali
           @SuppressWarnings("unchecked")
           public void cancellableAccept(final List<E> elements) {
             final Object[] array = elements.toArray();
-            Arrays.sort(array, (Comparator<? super Object>) comparator);
-            final List<E> materialized = (List<E>) Arrays.asList(array);
-            consumeState(setDone(new ListToListFutureMaterializer<E>(materialized, context)));
+            if (array.length == 0) {
+              consumeState(setDone(EmptyListFutureMaterializer.<E>instance()));
+            } else if (array.length == 1) {
+              consumeState(setDone(new ElementToListFutureMaterializer<E>((E) array[0])));
+            } else {
+              Arrays.sort(array, (Comparator<? super Object>) comparator);
+              final List<E> materialized = (List<E>) Arrays.asList(array);
+              consumeState(setDone(new ListToListFutureMaterializer<E>(materialized, context)));
+            }
           }
 
           @Override
