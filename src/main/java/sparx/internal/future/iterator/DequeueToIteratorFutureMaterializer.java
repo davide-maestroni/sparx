@@ -85,8 +85,6 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
 
   @Override
   public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
-    final List<E> elements = this.elements;
-    pos += elements.size();
     safeConsume(consumer, elements, LOGGER);
   }
 

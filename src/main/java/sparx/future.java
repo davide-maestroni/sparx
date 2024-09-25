@@ -156,7 +156,7 @@ class future extends Sparx {
     return elements instanceof List || elements instanceof Iterator;
   }
 
-  public static class Iterator<E> implements itf.Future<E, Void>, itf.Iterator<E> {
+  public static class Iterator<E> implements itf.Future<E, java.util.Iterator<E>>, itf.Iterator<E> {
 
     private static final Logger LOGGER = Logger.getLogger(Iterator.class.getName());
 
@@ -747,7 +747,7 @@ class future extends Sparx {
     }
 
     @Override
-    public Void get() throws InterruptedException, ExecutionException {
+    public java.util.Iterator<E> get() throws InterruptedException, ExecutionException {
       final IteratorFutureMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return null;
@@ -784,7 +784,7 @@ class future extends Sparx {
       }
       try {
         consumer.get();
-        return null;
+        return this;
       } catch (final InterruptedException e) {
         throw e;
       } catch (final Exception e) {
@@ -796,7 +796,7 @@ class future extends Sparx {
     }
 
     @Override
-    public Void get(final long timeout, @NotNull final TimeUnit unit)
+    public java.util.Iterator<E> get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
       final IteratorFutureMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
@@ -834,7 +834,7 @@ class future extends Sparx {
       }
       try {
         consumer.get(timeout, unit);
-        return null;
+        return this;
       } catch (final InterruptedException e) {
         throw e;
       } catch (final Exception e) {
@@ -1582,8 +1582,8 @@ class future extends Sparx {
     }
   }
 
-  public static class List<E> extends AbstractListSequence<E> implements itf.Future<E, Void>,
-      itf.List<E> {
+  public static class List<E> extends AbstractListSequence<E> implements
+      itf.Future<E, java.util.List<E>>, itf.List<E> {
 
     private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> APPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {
       @Override
@@ -3866,7 +3866,7 @@ class future extends Sparx {
     }
 
     @Override
-    public Void get() throws InterruptedException, ExecutionException {
+    public java.util.List<E> get() throws InterruptedException, ExecutionException {
       final ListFutureMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return null;
@@ -3902,8 +3902,7 @@ class future extends Sparx {
         });
       }
       try {
-        consumer.get();
-        return null;
+        return consumer.get();
       } catch (final InterruptedException e) {
         throw e;
       } catch (final Exception e) {
@@ -3958,7 +3957,7 @@ class future extends Sparx {
     }
 
     @Override
-    public Void get(final long timeout, @NotNull final TimeUnit unit)
+    public java.util.List<E> get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
       final ListFutureMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
@@ -3995,8 +3994,7 @@ class future extends Sparx {
         });
       }
       try {
-        consumer.get(timeout, unit);
-        return null;
+        return consumer.get(timeout, unit);
       } catch (final InterruptedException e) {
         throw e;
       } catch (final Exception e) {
@@ -6218,7 +6216,8 @@ class future extends Sparx {
     }
   }
 
-  public static class ListIterator<E> implements itf.Future<E, Void>, itf.ListIterator<E> {
+  public static class ListIterator<E> implements itf.Future<E, java.util.ListIterator<E>>,
+      itf.ListIterator<E> {
 
     private static final Function<? extends List<?>, ? extends ListIterator<?>> LIST_TO_ITERATOR = new Function<List<?>, ListIterator<?>>() {
       @Override
@@ -6779,16 +6778,14 @@ class future extends Sparx {
     }
 
     @Override
-    public Void get() throws InterruptedException, ExecutionException {
-      list.get();
-      return null;
+    public java.util.ListIterator<E> get() throws InterruptedException, ExecutionException {
+      return list.get().listIterator(pos);
     }
 
     @Override
-    public Void get(final long timeout, @NotNull final TimeUnit unit)
+    public java.util.ListIterator<E> get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
-      list.get(timeout, unit);
-      return null;
+      return list.get(timeout, unit).listIterator(pos);
     }
 
     @Override

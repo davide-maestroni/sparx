@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
@@ -35,9 +36,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sparx.concurrent.ExecutorContext;
-import sparx.future.Iterator;
 import sparx.internal.future.FutureConsumer;
+import sparx.internal.future.IndexedFutureConsumer;
+import sparx.internal.future.IndexedFuturePredicate;
+import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
+import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
+import sparx.lazy.Iterator;
 import sparx.lazy.List;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Function;
@@ -67,41 +72,44 @@ public class FutureIteratorTests {
 
   @Test
   public void append() throws Exception {
-    test(List.of(1, 2, 3), lazy.Iterator::<Integer>of, it -> it.append(1).append(2).append(3));
-    test(List.of(1, null, 3), lazy.Iterator::<Integer>of,
-        it -> it.append(1).append(null).append(3));
-    test(List.of(1, 2, 3), () -> lazy.Iterator.of(1), it -> it.append(2).append(3));
-    test(List.of(1, null, 3), () -> lazy.Iterator.of(1), it -> it.append(null).append(3));
-    test(List.of(1, 2, 3), () -> lazy.Iterator.of(1, 2), it -> it.append(3));
-    test(List.of(1, null, 3), () -> lazy.Iterator.of(1, null), it -> it.append(3));
+    test(List.of(1, 2, 3), Iterator::<Integer>of, it -> it.append(1).append(2).append(3));
+    test(List.of(1, null, 3), Iterator::<Integer>of, it -> it.append(1).append(null).append(3));
+    test(List.of(1, 2, 3), () -> Iterator.of(1), it -> it.append(2).append(3));
+    test(List.of(1, null, 3), () -> Iterator.of(1), it -> it.append(null).append(3));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2), it -> it.append(3));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null), it -> it.append(3));
+
+    testMaterializer(List.of(1, 2, 3), c -> new AppendIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), 3, c, new AtomicReference<>(),
+        (l, e) -> List.wrap(l).append(e)));
 
     testCancel(it -> it.append(null));
   }
 
   @Test
   public void drop() throws Exception {
-    test(List.of(), lazy.Iterator::<Integer>of, it -> it.drop(1));
-    test(List.of(), lazy.Iterator::<Integer>of, it -> it.drop(0));
-    test(List.of(), lazy.Iterator::<Integer>of, it -> it.drop(-1));
-    test(List.of(1, null, 3), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(-1));
-    test(List.of(1, null, 3), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(0));
-    test(List.of(null, 3), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(1));
-    test(List.of(3), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(2));
-    test(List.of(), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(3));
-    test(List.of(), () -> lazy.Iterator.of(1, null, 3), it -> it.drop(4));
+    test(List.of(), Iterator::<Integer>of, it -> it.drop(1));
+    test(List.of(), Iterator::<Integer>of, it -> it.drop(0));
+    test(List.of(), Iterator::<Integer>of, it -> it.drop(-1));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.drop(-1));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.drop(0));
+    test(List.of(null, 3), () -> Iterator.of(1, null, 3), it -> it.drop(1));
+    test(List.of(3), () -> Iterator.of(1, null, 3), it -> it.drop(2));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.drop(3));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.drop(4));
 
     testCancel(it -> it.drop(1));
   }
 
   @Test
   public void flatMap() throws Exception {
-    assertThrows(NullPointerException.class, () -> lazy.Iterator.of(0).toFuture(context)
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
         .flatMap((Function<? super Integer, List<Object>>) null));
-    assertThrows(NullPointerException.class, () -> lazy.Iterator.of(0).toFuture(context)
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
         .flatMap((IndexedFunction<? super Integer, List<Object>>) null));
-    test(List.of(1, 1, 2, 2), () -> lazy.Iterator.of(1, 2), it -> it.flatMap(i -> List.of(i, i)));
-    test(List.of(), () -> lazy.Iterator.of(1, 2), it -> it.flatMap(i -> List.of()));
-    test(List.of(null, null), () -> lazy.Iterator.of(1, 2), it -> it.flatMap(i -> List.of(null)));
+    test(List.of(1, 1, 2, 2), () -> Iterator.of(1, 2), it -> it.flatMap(i -> List.of(i, i)));
+    test(List.of(), () -> Iterator.of(1, 2), it -> it.flatMap(i -> List.of()));
+    test(List.of(null, null), () -> Iterator.of(1, 2), it -> it.flatMap(i -> List.of(null)));
 
     testCancel(it -> it.flatMap(e -> List.of(e)));
   }
@@ -109,28 +117,27 @@ public class FutureIteratorTests {
   @Test
   public void flatMapWhere() throws Exception {
     assertThrows(NullPointerException.class,
-        () -> lazy.Iterator.of(0).toFuture(context).flatMapWhere(null, e -> List.of()));
+        () -> Iterator.of(0).toFuture(context).flatMapWhere(null, e -> List.of()));
     assertThrows(NullPointerException.class,
-        () -> lazy.Iterator.of(0).toFuture(context).flatMapWhere(null, (i, e) -> List.of()));
+        () -> Iterator.of(0).toFuture(context).flatMapWhere(null, (i, e) -> List.of()));
     assertThrows(NullPointerException.class,
-        () -> lazy.Iterator.of(0).toFuture(context).flatMapWhere(e -> true, null));
+        () -> Iterator.of(0).toFuture(context).flatMapWhere(e -> true, null));
     assertThrows(NullPointerException.class,
-        () -> lazy.Iterator.of(0).toFuture(context).flatMapWhere((i, e) -> true, null));
-    test(List.of(1, null, null, 4), () -> lazy.Iterator.of(1, null, null, 4),
+        () -> Iterator.of(0).toFuture(context).flatMapWhere((i, e) -> true, null));
+    test(List.of(1, null, null, 4), () -> Iterator.of(1, null, null, 4),
         it -> it.flatMapWhere(i -> false, i -> List.of(i, i)));
-    test(List.of(1, 1, null, null, null, null, 4, 4), () -> lazy.Iterator.of(1, null, null, 4),
+    test(List.of(1, 1, null, null, null, null, 4, 4), () -> Iterator.of(1, null, null, 4),
         it -> it.flatMapWhere(i -> true, i -> List.of(i, i)));
-    test(List.of(1, 3, 3, 4), () -> lazy.Iterator.of(1, null, null, 4),
+    test(List.of(1, 3, 3, 4), () -> Iterator.of(1, null, null, 4),
         it -> it.flatMapWhere(Objects::isNull, i -> List.of(3)));
-    test(List.of(1, null, null, 4), () -> lazy.Iterator.of(1, null, null, 4),
+    test(List.of(1, null, null, 4), () -> Iterator.of(1, null, null, 4),
         it -> it.flatMapWhere(i -> false, i -> List.of()));
-    test(List.of(1, 4), () -> lazy.Iterator.of(1, null, null, 4),
+    test(List.of(1, 4), () -> Iterator.of(1, null, null, 4),
         it -> it.flatMapWhere(Objects::isNull, i -> List.of()));
-    test(List.of(), lazy.Iterator::of, it -> it.flatMapWhere(i -> false, i -> List.of()));
-    test(List.of(), lazy.Iterator::of, it -> it.flatMapWhere(i -> true, i -> List.of()));
+    test(List.of(), Iterator::of, it -> it.flatMapWhere(i -> false, i -> List.of()));
+    test(List.of(), Iterator::of, it -> it.flatMapWhere(i -> true, i -> List.of()));
 
-    java.util.function.Supplier<Iterator<Integer>> itr = () -> lazy.Iterator.of(1, null, null, 4)
-        .toFuture(context);
+    Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, null, null, 4).toFuture(context);
     assertFalse(itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).isEmpty());
     assertEquals(1, itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).first());
     assertEquals(1, itr.get().flatMapWhere(i -> i == 1, i -> List.of(i, i)).drop(1).first());
@@ -151,14 +158,13 @@ public class FutureIteratorTests {
   @Test
   public void map() throws Exception {
     assertThrows(NullPointerException.class,
-        () -> lazy.Iterator.of(0).toFuture(context).map((Function<? super Integer, Object>) null));
-    assertThrows(NullPointerException.class, () -> lazy.Iterator.of(0).toFuture(context)
+        () -> Iterator.of(0).toFuture(context).map((Function<? super Integer, Object>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
         .map((IndexedFunction<? super Integer, Object>) null));
-    test(List.of(2, 3, 4), () -> lazy.Iterator.of(1, 2, 3), it -> it.map(x -> x + 1));
-    test(List.of(), lazy.Iterator::<Integer>of, it -> it.map(x -> x + 1));
+    test(List.of(2, 3, 4), () -> Iterator.of(1, 2, 3), it -> it.map(x -> x + 1));
+    test(List.of(), Iterator::<Integer>of, it -> it.map(x -> x + 1));
 
-    java.util.function.Supplier<Iterator<Integer>> itr = () -> lazy.Iterator.of(1, 2, 3)
-        .toFuture(context);
+    Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3).toFuture(context);
     assertFalse(itr.get().append(null).map(x -> x + 1).isEmpty());
     assertEquals(4, itr.get().append(null).map(x -> x + 1).size());
     assertEquals(4, itr.get().append(null).map(x -> x + 1).drop(2).first());
@@ -170,7 +176,8 @@ public class FutureIteratorTests {
   }
 
   private <E> void test(@NotNull final java.util.List<E> expected,
-      @NotNull final Supplier<? extends Iterator<? extends E>> actualSupplier) throws Exception {
+      @NotNull final Supplier<? extends future.Iterator<? extends E>> actualSupplier)
+      throws Exception {
     assertEquals(expected.isEmpty(), actualSupplier.get().isEmpty());
     assertEquals(!expected.isEmpty(), actualSupplier.get().notEmpty());
     assertEquals(expected.size(), actualSupplier.get().size());
@@ -186,8 +193,7 @@ public class FutureIteratorTests {
     itr = actualSupplier.get();
     assertFalse(itr.isCancelled());
     assertFalse(itr.isFailed());
-    itr.get();
-    assertEquals(expected, itr.toList());
+    assertEquals(expected, Iterator.wrap(itr.get()).toList());
     assertTrue(itr.isDone());
     assertFalse(itr.isCancelled());
     assertFalse(itr.isFailed());
@@ -210,23 +216,23 @@ public class FutureIteratorTests {
   }
 
   private <E, F> void test(@NotNull final java.util.List<F> expected,
-      @NotNull final Supplier<? extends lazy.Iterator<E>> baseSupplier,
+      @NotNull final Supplier<? extends Iterator<E>> baseSupplier,
       @NotNull final Function<future.Iterator<E>, future.Iterator<? extends F>> actualTransformer)
       throws Exception {
     test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(context)));
     test(expected, () -> actualTransformer.apply(
-        baseSupplier.get().toFuture(context).flatMapWhere(e -> false, e -> lazy.Iterator.of())));
+        baseSupplier.get().toFuture(context).flatMapWhere(e -> false, e -> Iterator.of())));
     test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(throughputContext)));
     test(expected, () -> actualTransformer.apply(baseSupplier.get().toFuture(throughputContext)
-        .flatMapWhere(e -> false, e -> lazy.Iterator.of())));
+        .flatMapWhere(e -> false, e -> Iterator.of())));
   }
 
   private void testCancel(@NotNull final Function<future.Iterator<Object>, Future<?>> transformer)
       throws Exception {
     if (TEST_ASYNC_CANCEL) {
-      var f = transformer.apply(lazy.Iterator.of(1, 2, 3).toFuture(context).flatMap(i -> {
+      var f = transformer.apply(Iterator.of(1, 2, 3).toFuture(context).flatMap(i -> {
         Thread.sleep(60000);
-        return lazy.Iterator.of(i);
+        return Iterator.of(i);
       }));
       executor.submit(() -> {
         try {
@@ -252,7 +258,7 @@ public class FutureIteratorTests {
     var trampoline = ExecutorContext.trampoline();
     var atError = new AtomicReference<Exception>();
     var atHasNext = new AtomicBoolean();
-    /* materializeEmpty */
+    /* materializeHasNext */
     factory.apply(trampoline).materializeHasNext(new FutureConsumer<>() {
       @Override
       public void accept(final Boolean hasNext) {
@@ -268,7 +274,156 @@ public class FutureIteratorTests {
     assertEquals(!expected.isEmpty(), atHasNext.get());
     atHasNext.set(expected.isEmpty());
 
+    var atCalled = new AtomicBoolean();
+    /* materializeNext */
     var atSize = new AtomicInteger(-1);
-    /* materializeSize */
+    var atIndex = new AtomicInteger(-1);
+    var atElement = new AtomicReference<E>();
+    var materializer = factory.apply(trampoline);
+    for (int i = 0; i < expected.size(); i++) {
+      materializer.materializeNext(new IndexedFutureConsumer<>() {
+        @Override
+        public void accept(final int size, final int index, final E element) {
+          atSize.set(size);
+          atIndex.set(index);
+          atElement.set(element);
+        }
+
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+          atCalled.set(true);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+      });
+      assertNull(atError.get());
+      assertFalse(atCalled.get());
+      assertEquals(i, atIndex.get());
+      assertEquals(expected.size(), atSize.get() + atIndex.get());
+      assertEquals(expected.get(i), atElement.get());
+      atSize.set(-1);
+      atIndex.set(-1);
+    }
+    materializer.materializeNext(new IndexedFutureConsumer<>() {
+      @Override
+      public void accept(final int size, final int index, final E element) {
+        atSize.set(size);
+        atIndex.set(index);
+        atElement.set(element);
+      }
+
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+        atCalled.set(true);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertTrue(atCalled.get());
+    assertEquals(0, atSize.get());
+    assertEquals(-1, atIndex.get());
+    atSize.set(-1);
+    atCalled.set(false);
+
+    var atSkipped = new AtomicInteger(-1);
+    /* materializeNextWhile (stop) */
+    for (int i = 0; i < expected.size(); i++) {
+      materializer = factory.apply(trampoline);
+      materializer.materializeSkip(i, new FutureConsumer<>() {
+        @Override
+        public void accept(final Integer skipped) {
+          atSkipped.set(skipped);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+      });
+      assertNull(atError.get());
+      assertEquals(i, atSkipped.get());
+      atSkipped.set(-1);
+      materializer.materializeNextWhile(new IndexedFuturePredicate<>() {
+        @Override
+        public void complete(final int size) {
+          atSize.set(size);
+          atCalled.set(true);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          atError.set(error);
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) {
+          atSize.set(size);
+          atIndex.set(index);
+          atElement.set(element);
+          return false;
+        }
+      });
+      assertNull(atError.get());
+      assertFalse(atCalled.get());
+      assertEquals(i, atIndex.get());
+      assertEquals(expected.size(), atSize.get() + atIndex.get());
+      assertEquals(expected.get(i), atElement.get());
+      atSize.set(-1);
+      atIndex.set(-1);
+    }
+    materializer = factory.apply(trampoline);
+    materializer.materializeSkip(expected.size(), new FutureConsumer<>() {
+      @Override
+      public void accept(final Integer skipped) {
+        atSkipped.set(skipped);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+    });
+    assertNull(atError.get());
+    assertEquals(expected.size(), atSkipped.get());
+    atSkipped.set(-1);
+    materializer.materializeNextWhile(new IndexedFuturePredicate<>() {
+      @Override
+      public void complete(final int size) {
+        atSize.set(size);
+        atCalled.set(true);
+      }
+
+      @Override
+      public void error(@NotNull final Exception error) {
+        atError.set(error);
+      }
+
+      @Override
+      public boolean test(final int size, final int index, final E element) {
+        atSize.set(size);
+        atIndex.set(index);
+        atElement.set(element);
+        return false;
+      }
+    });
+    assertNull(atError.get());
+    assertTrue(atCalled.get());
+    assertEquals(-1, atIndex.get());
+    assertEquals(0, atSize.get());
+    atSize.set(-1);
+    atCalled.set(false);
+
+    var elementList = new ArrayList<E>();
+    var indexList = new ArrayList<Integer>();
+    /* materializeNextWhile (continue) */
   }
 }

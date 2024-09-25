@@ -31,7 +31,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
 import sparx.util.function.BinaryFunction;
 
@@ -58,10 +57,6 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
       return SizeOverflowException.safeCast((long) wrappedSize + 1);
     }
     return -1;
-  }
-
-  private static int safeIndex(final int wrappedIndex) {
-    return IndexOverflowException.safeCast((long) wrappedIndex + 1);
   }
 
   @Override
@@ -210,7 +205,7 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
             if (!consumed) {
               consumed = true;
               setDone(EmptyIteratorFutureMaterializer.<E>instance());
-              consumer.accept(1, safeIndex(index), element);
+              consumer.accept(1, index, element);
             } else {
               consumer.complete(0);
             }
@@ -229,8 +224,8 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
         public void cancellableComplete(final int size) throws Exception {
-          if (consumed || predicate.test(1, size, element)) {
-            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+          setDone(EmptyIteratorFutureMaterializer.<E>instance());
+          if (consumed || predicate.test(1, index, element)) {
             predicate.complete(0);
           }
         }
@@ -259,8 +254,10 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
             if (skipped < count && !consumed) {
               consumed = true;
               setDone(EmptyIteratorFutureMaterializer.<E>instance());
+              index += skipped + 1;
               consumer.accept(skipped + 1);
             } else {
+              index += skipped;
               consumer.accept(skipped);
             }
           }

@@ -168,10 +168,10 @@ public class FutureListTests {
     test(List.of(1, null), () -> List.of(1, null), ll -> ll.appendAll(List.of()));
     test(List.of(1, null), () -> List.of(1, null), ll -> ll.appendAll(Set.of()));
 
-    testMaterializer(List.of(1, null, 3),
-        c -> new AppendAllListFutureMaterializer<>(new ListToListFutureMaterializer<>(List.of(1), c),
-            new ListToListFutureMaterializer<>(List.of(null, 3), c), c, new AtomicReference<>(),
-            (l, i) -> ((List<Integer>) l).appendAll(i)));
+    testMaterializer(List.of(1, null, 3), c -> new AppendAllListFutureMaterializer<>(
+        new ListToListFutureMaterializer<>(List.of(1), c),
+        new ListToListFutureMaterializer<>(List.of(null, 3), c), c, new AtomicReference<>(),
+        (l, i) -> ((List<Integer>) l).appendAll(i)));
 
     testCancel(f -> f.appendAll(List.of(4, 5)));
   }
@@ -895,7 +895,8 @@ public class FutureListTests {
 
     testMaterializer(List.of(1, null, null, 3), c -> new FlatMapAfterListFutureMaterializer<>(
         new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 1,
-        (i, e) -> new ListToListFutureMaterializer<>(List.of(e, e), c), c, new AtomicReference<>()));
+        (i, e) -> new ListToListFutureMaterializer<>(List.of(e, e), c), c,
+        new AtomicReference<>()));
 
     testCancel(f -> f.flatMapAfter(0, e -> List.of(e)));
   }
@@ -965,7 +966,8 @@ public class FutureListTests {
 
     testMaterializer(List.of(1, null, null, 3), c -> new FlatMapFirstWhereListFutureMaterializer<>(
         new ListToListFutureMaterializer<>(List.of(1, null, 3), c), (i, e) -> e == null,
-        (i, e) -> new ListToListFutureMaterializer<>(List.of(e, e), c), c, new AtomicReference<>()));
+        (i, e) -> new ListToListFutureMaterializer<>(List.of(e, e), c), c,
+        new AtomicReference<>()));
 
     testCancel(f -> f.flatMapFirstWhere(e -> true, List::of));
   }
@@ -1032,7 +1034,8 @@ public class FutureListTests {
 
     testMaterializer(List.of(1, null, null, 3), c -> new FlatMapLastWhereListFutureMaterializer<>(
         new ListToListFutureMaterializer<>(List.of(1, null, 3), c), (i, e) -> e == null,
-        (i, e) -> new ListToListFutureMaterializer<>(List.of(e, e), c), c, new AtomicReference<>()));
+        (i, e) -> new ListToListFutureMaterializer<>(List.of(e, e), c), c,
+        new AtomicReference<>()));
 
     testCancel(f -> f.flatMapLastWhere(e -> true, List::of));
   }
@@ -1164,8 +1167,8 @@ public class FutureListTests {
     test(List.of(List.of()), List::of, ll -> ll.foldLeftWhile(List.of(), i -> true, List::append));
 
     testMaterializer(List.of(null), c -> new FoldLeftWhileListFutureMaterializer<>(
-        new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 0, Objects::nonNull, (a, e) -> e,
-        c, new AtomicReference<>()));
+        new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 0, Objects::nonNull,
+        (a, e) -> e, c, new AtomicReference<>()));
 
     testCancel(f -> f.foldLeftWhile(0, e -> true, (i, e) -> i));
   }
@@ -1209,8 +1212,8 @@ public class FutureListTests {
         ll -> ll.foldRightWhile(List.of(), i -> true, (i, li) -> li.append(i)));
 
     testMaterializer(List.of(null), c -> new FoldRightWhileListFutureMaterializer<>(
-        new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 0, Objects::nonNull, (e, a) -> e,
-        c, new AtomicReference<>()));
+        new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 0, Objects::nonNull,
+        (e, a) -> e, c, new AtomicReference<>()));
 
     testCancel(f -> f.foldRightWhile(0, e -> true, (e, i) -> i));
   }
@@ -1278,8 +1281,8 @@ public class FutureListTests {
     test(List.of(null), () -> List.wrap(iterable), ll -> ll.insertAfter(0, null));
 
     testMaterializer(List.of(1, null, 2, 3), c -> new InsertAfterListFutureMaterializer<>(
-        new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 2, 2, c, new AtomicReference<>(),
-        (ls, i, e) -> ((List<Integer>) ls).insertAfter(i, e)));
+        new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 2, 2, c,
+        new AtomicReference<>(), (ls, i, e) -> ((List<Integer>) ls).insertAfter(i, e)));
 
     testCancel(f -> f.insertAfter(1, 2));
   }
@@ -1583,9 +1586,9 @@ public class FutureListTests {
 
     test(List.of(), List::<Integer>of, ll -> ll.max(Integer::compareTo));
 
-    testMaterializer(List.of(3),
-        c -> new MaxListFutureMaterializer<>(new ListToListFutureMaterializer<>(List.of(1, 2, 3), c),
-            Integer::compare, c, new AtomicReference<>()));
+    testMaterializer(List.of(3), c -> new MaxListFutureMaterializer<>(
+        new ListToListFutureMaterializer<>(List.of(1, 2, 3), c), Integer::compare, c,
+        new AtomicReference<>()));
 
     testCancel(f -> f.map((i, e) -> i).max(Integer::compare));
   }
@@ -1687,7 +1690,8 @@ public class FutureListTests {
 
     testMaterializer(List.of(1, null, 3),
         c -> new OrElseListFutureMaterializer<>(EmptyListFutureMaterializer.instance(),
-            new ListToListFutureMaterializer<>(List.of(1, null, 3), c), c, new AtomicReference<>()));
+            new ListToListFutureMaterializer<>(List.of(1, null, 3), c), c,
+            new AtomicReference<>()));
 
     testCancel(f -> f.orElse(List.of(1)));
   }
@@ -2277,11 +2281,11 @@ public class FutureListTests {
     test(List.of(1, 2, null, 4, 5, 5), () -> List.of(1, 2, null, 4), ll -> ll.resizeTo(6, 5));
 
     testMaterializer(List.of(1, null), c -> new ResizeListFutureMaterializer<>(
-        new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 2, 4, c, new AtomicReference<>(),
-        (ls, i, p) -> ((List<Integer>) ls).resizeTo(i, p)));
+        new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 2, 4, c,
+        new AtomicReference<>(), (ls, i, p) -> ((List<Integer>) ls).resizeTo(i, p)));
     testMaterializer(List.of(1, null, 3, 4), c -> new ResizeListFutureMaterializer<>(
-        new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 4, 4, c, new AtomicReference<>(),
-        (ls, i, p) -> ((List<Integer>) ls).resizeTo(i, p)));
+        new ListToListFutureMaterializer<>(List.of(1, null, 3), c), 4, 4, c,
+        new AtomicReference<>(), (ls, i, p) -> ((List<Integer>) ls).resizeTo(i, p)));
 
     testCancel(f -> f.resizeTo(1, null));
   }
@@ -2700,8 +2704,7 @@ public class FutureListTests {
     var lst = actualSupplier.get();
     assertFalse(lst.isCancelled());
     assertFalse(lst.isFailed());
-    lst.get();
-    assertEquals(expected, lst);
+    assertEquals(expected, lst.get());
     assertTrue(lst.isDone());
     assertFalse(lst.isCancelled());
     assertFalse(lst.isFailed());

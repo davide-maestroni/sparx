@@ -83,9 +83,7 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
   @Override
   public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
     final List<E> elements = this.elements;
-    final int start = pos;
-    pos = elements.size();
-    safeConsume(consumer, elements.subList(start, pos), LOGGER);
+    safeConsume(consumer, elements.subList(pos, elements.size()), LOGGER);
   }
 
   @Override
