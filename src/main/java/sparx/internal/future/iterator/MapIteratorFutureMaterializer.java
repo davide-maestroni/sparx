@@ -225,6 +225,7 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
       wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
         @Override
         public void cancellableAccept(final Integer skipped) throws Exception {
+          wrappedIndex += skipped;
           consumer.accept(skipped);
         }
 

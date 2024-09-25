@@ -588,6 +588,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
 
       @Override
       public void cancellableAccept(final Integer skipped) throws Exception {
+        index += skipped;
         final int remaining = toSkip -= skipped;
         if (remaining <= 0) {
           consumer.accept(count - remaining);
