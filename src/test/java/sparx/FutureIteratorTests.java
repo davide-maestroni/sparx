@@ -38,6 +38,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import sparx.concurrent.ContextTask;
+import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutorContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
@@ -52,7 +54,9 @@ import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
+import sparx.util.UncheckedException;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
+import sparx.util.function.Action;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.Supplier;
@@ -217,6 +221,19 @@ public class FutureIteratorTests {
     testCancel(it -> it.map(e -> e));
   }
 
+  private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {
+    context.scheduleAfter(new ContextTask(context) {
+      @Override
+      protected void runWithContext() {
+        try {
+          action.run();
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+    });
+  }
+
   private <E> void test(@NotNull final java.util.List<E> expected,
       @NotNull final Supplier<? extends future.Iterator<? extends E>> actualSupplier)
       throws Exception {
@@ -301,56 +318,60 @@ public class FutureIteratorTests {
     var atError = new AtomicReference<Exception>();
     var atSkipped = new AtomicInteger(-1);
     var atHasNext = new AtomicBoolean();
-    IteratorFutureMaterializer<E> materializer;
+    var atMaterializer = new AtomicReference<IteratorFutureMaterializer<E>>();
     /* materializeHasNext */
     for (int i = 0; i < expected.size(); i++) {
-      materializer = factory.apply(trampoline);
-      materializer.materializeSkip(i, new FutureConsumer<>() {
-        @Override
-        public void accept(final Integer skipped) {
-          atSkipped.set(skipped);
-        }
+      final int index = i;
+      atMaterializer.set(factory.apply(trampoline));
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeSkip(index, new FutureConsumer<>() {
+            @Override
+            public void accept(final Integer skipped) {
+              atSkipped.set(skipped);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
-      });
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+          }));
       assertNull(atError.get());
       assertEquals(i, atSkipped.get());
       atSkipped.set(-1);
-      materializer.materializeHasNext(new FutureConsumer<>() {
-        @Override
-        public void accept(final Boolean hasNext) {
-          atHasNext.set(hasNext);
-        }
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeHasNext(new FutureConsumer<>() {
+            @Override
+            public void accept(final Boolean hasNext) {
+              atHasNext.set(hasNext);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
-      });
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+          }));
       assertNull(atError.get());
       assertTrue(atHasNext.get());
       atHasNext.set(false);
     }
-    materializer = factory.apply(trampoline);
-    materializer.materializeSkip(expected.size(), new FutureConsumer<>() {
-      @Override
-      public void accept(final Integer skipped) {
-        atSkipped.set(skipped);
-      }
+    atMaterializer.set(factory.apply(trampoline));
+    runInContext(trampoline,
+        () -> atMaterializer.get().materializeSkip(expected.size(), new FutureConsumer<>() {
+          @Override
+          public void accept(final Integer skipped) {
+            atSkipped.set(skipped);
+          }
 
-      @Override
-      public void error(@NotNull final Exception error) {
-        atError.set(error);
-      }
-    });
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+        }));
     assertNull(atError.get());
     assertEquals(expected.size(), atSkipped.get());
     atSkipped.set(-1);
     atHasNext.set(true);
-    materializer.materializeHasNext(new FutureConsumer<>() {
+    runInContext(trampoline, () -> atMaterializer.get().materializeHasNext(new FutureConsumer<>() {
       @Override
       public void accept(final Boolean hasNext) {
         atHasNext.set(hasNext);
@@ -360,7 +381,7 @@ public class FutureIteratorTests {
       public void error(@NotNull final Exception error) {
         atError.set(error);
       }
-    });
+    }));
     assertNull(atError.get());
     assertFalse(atHasNext.get());
 
@@ -369,27 +390,28 @@ public class FutureIteratorTests {
     var atIndex = new AtomicInteger(-1);
     /* materializeNext */
     var atElement = new AtomicReference<E>();
-    materializer = factory.apply(trampoline);
+    atMaterializer.set(factory.apply(trampoline));
     for (int i = 0; i < expected.size(); i++) {
-      materializer.materializeNext(new IndexedFutureConsumer<>() {
-        @Override
-        public void accept(final int size, final int index, final E element) {
-          atSize.set(size);
-          atIndex.set(index);
-          atElement.set(element);
-        }
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeNext(new IndexedFutureConsumer<>() {
+            @Override
+            public void accept(final int size, final int index, final E element) {
+              atSize.set(size);
+              atIndex.set(index);
+              atElement.set(element);
+            }
 
-        @Override
-        public void complete(final int size) {
-          atSize.set(size);
-          atCalled.set(true);
-        }
+            @Override
+            public void complete(final int size) {
+              atSize.set(size);
+              atCalled.set(true);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
-      });
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+          }));
       assertNull(atError.get());
       assertFalse(atCalled.get());
       assertEquals(i, atIndex.get());
@@ -398,25 +420,26 @@ public class FutureIteratorTests {
       atSize.set(-1);
       atIndex.set(-1);
     }
-    materializer.materializeNext(new IndexedFutureConsumer<>() {
-      @Override
-      public void accept(final int size, final int index, final E element) {
-        atSize.set(size);
-        atIndex.set(index);
-        atElement.set(element);
-      }
+    runInContext(trampoline,
+        () -> atMaterializer.get().materializeNext(new IndexedFutureConsumer<>() {
+          @Override
+          public void accept(final int size, final int index, final E element) {
+            atSize.set(size);
+            atIndex.set(index);
+            atElement.set(element);
+          }
 
-      @Override
-      public void complete(final int size) {
-        atSize.set(size);
-        atCalled.set(true);
-      }
+          @Override
+          public void complete(final int size) {
+            atSize.set(size);
+            atCalled.set(true);
+          }
 
-      @Override
-      public void error(@NotNull final Exception error) {
-        atError.set(error);
-      }
-    });
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+        }));
     assertNull(atError.get());
     assertTrue(atCalled.get());
     assertEquals(0, atSize.get());
@@ -426,41 +449,44 @@ public class FutureIteratorTests {
 
     /* materializeNextWhile (stop) */
     for (int i = 0; i < expected.size(); i++) {
-      materializer = factory.apply(trampoline);
-      materializer.materializeSkip(i, new FutureConsumer<>() {
-        @Override
-        public void accept(final Integer skipped) {
-          atSkipped.set(skipped);
-        }
+      final int index = i;
+      atMaterializer.set(factory.apply(trampoline));
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeSkip(index, new FutureConsumer<>() {
+            @Override
+            public void accept(final Integer skipped) {
+              atSkipped.set(skipped);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
-      });
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+          }));
       assertNull(atError.get());
       assertEquals(i, atSkipped.get());
       atSkipped.set(-1);
-      materializer.materializeNextWhile(new IndexedFuturePredicate<>() {
-        @Override
-        public void complete(final int size) {
-          atSize.set(size);
-          atCalled.set(true);
-        }
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeNextWhile(new IndexedFuturePredicate<>() {
+            @Override
+            public void complete(final int size) {
+              atSize.set(size);
+              atCalled.set(true);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
 
-        @Override
-        public boolean test(final int size, final int index, final E element) {
-          atSize.set(size);
-          atIndex.set(index);
-          atElement.set(element);
-          return false;
-        }
-      });
+            @Override
+            public boolean test(final int size, final int index, final E element) {
+              atSize.set(size);
+              atIndex.set(index);
+              atElement.set(element);
+              return false;
+            }
+          }));
       assertNull(atError.get());
       assertFalse(atCalled.get());
       assertEquals(i, atIndex.get());
@@ -469,41 +495,43 @@ public class FutureIteratorTests {
       atSize.set(-1);
       atIndex.set(-1);
     }
-    materializer = factory.apply(trampoline);
-    materializer.materializeSkip(expected.size(), new FutureConsumer<>() {
-      @Override
-      public void accept(final Integer skipped) {
-        atSkipped.set(skipped);
-      }
+    atMaterializer.set(factory.apply(trampoline));
+    runInContext(trampoline,
+        () -> atMaterializer.get().materializeSkip(expected.size(), new FutureConsumer<>() {
+          @Override
+          public void accept(final Integer skipped) {
+            atSkipped.set(skipped);
+          }
 
-      @Override
-      public void error(@NotNull final Exception error) {
-        atError.set(error);
-      }
-    });
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+        }));
     assertNull(atError.get());
     assertEquals(expected.size(), atSkipped.get());
     atSkipped.set(-1);
-    materializer.materializeNextWhile(new IndexedFuturePredicate<>() {
-      @Override
-      public void complete(final int size) {
-        atSize.set(size);
-        atCalled.set(true);
-      }
+    runInContext(trampoline,
+        () -> atMaterializer.get().materializeNextWhile(new IndexedFuturePredicate<>() {
+          @Override
+          public void complete(final int size) {
+            atSize.set(size);
+            atCalled.set(true);
+          }
 
-      @Override
-      public void error(@NotNull final Exception error) {
-        atError.set(error);
-      }
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
 
-      @Override
-      public boolean test(final int size, final int index, final E element) {
-        atSize.set(size);
-        atIndex.set(index);
-        atElement.set(element);
-        return false;
-      }
-    });
+          @Override
+          public boolean test(final int size, final int index, final E element) {
+            atSize.set(size);
+            atIndex.set(index);
+            atElement.set(element);
+            return false;
+          }
+        }));
     assertNull(atError.get());
     assertTrue(atCalled.get());
     assertEquals(-1, atIndex.get());
@@ -516,41 +544,44 @@ public class FutureIteratorTests {
     var sizeList = new ArrayList<Integer>();
     /* materializeNextWhile (continue) */
     for (int i = 0; i < expected.size(); i++) {
-      materializer = factory.apply(trampoline);
-      materializer.materializeSkip(i, new FutureConsumer<>() {
-        @Override
-        public void accept(final Integer skipped) {
-          atSkipped.set(skipped);
-        }
+      final int index = i;
+      atMaterializer.set(factory.apply(trampoline));
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeSkip(index, new FutureConsumer<>() {
+            @Override
+            public void accept(final Integer skipped) {
+              atSkipped.set(skipped);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
-      });
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+          }));
       assertNull(atError.get());
       assertEquals(i, atSkipped.get());
       atSkipped.set(-1);
-      materializer.materializeNextWhile(new IndexedFuturePredicate<>() {
-        @Override
-        public void complete(final int size) {
-          atSize.set(size);
-          atCalled.set(true);
-        }
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeNextWhile(new IndexedFuturePredicate<>() {
+            @Override
+            public void complete(final int size) {
+              atSize.set(size);
+              atCalled.set(true);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
 
-        @Override
-        public boolean test(final int size, final int index, final E element) {
-          sizeList.add(size);
-          indexList.add(index);
-          elementList.add(element);
-          return true;
-        }
-      });
+            @Override
+            public boolean test(final int size, final int index, final E element) {
+              sizeList.add(size);
+              indexList.add(index);
+              elementList.add(element);
+              return true;
+            }
+          }));
       for (int j = i; j < expected.size(); j++) {
         assertEquals(j, indexList.get(j - i));
         assertEquals(expected.size(), sizeList.get(j - i) + indexList.get(j - i));
@@ -563,41 +594,43 @@ public class FutureIteratorTests {
       indexList.clear();
       elementList.clear();
     }
-    materializer = factory.apply(trampoline);
-    materializer.materializeSkip(expected.size(), new FutureConsumer<>() {
-      @Override
-      public void accept(final Integer skipped) {
-        atSkipped.set(skipped);
-      }
+    atMaterializer.set(factory.apply(trampoline));
+    runInContext(trampoline,
+        () -> atMaterializer.get().materializeSkip(expected.size(), new FutureConsumer<>() {
+          @Override
+          public void accept(final Integer skipped) {
+            atSkipped.set(skipped);
+          }
 
-      @Override
-      public void error(@NotNull final Exception error) {
-        atError.set(error);
-      }
-    });
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+        }));
     assertNull(atError.get());
     assertEquals(expected.size(), atSkipped.get());
     atSkipped.set(-1);
-    materializer.materializeNextWhile(new IndexedFuturePredicate<>() {
-      @Override
-      public void complete(final int size) {
-        atSize.set(size);
-        atCalled.set(true);
-      }
+    runInContext(trampoline,
+        () -> atMaterializer.get().materializeNextWhile(new IndexedFuturePredicate<>() {
+          @Override
+          public void complete(final int size) {
+            atSize.set(size);
+            atCalled.set(true);
+          }
 
-      @Override
-      public void error(@NotNull final Exception error) {
-        atError.set(error);
-      }
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
 
-      @Override
-      public boolean test(final int size, final int index, final E element) {
-        sizeList.add(size);
-        indexList.add(index);
-        elementList.add(element);
-        return true;
-      }
-    });
+          @Override
+          public boolean test(final int size, final int index, final E element) {
+            sizeList.add(size);
+            indexList.add(index);
+            elementList.add(element);
+            return true;
+          }
+        }));
     assertTrue(sizeList.isEmpty());
     assertTrue(indexList.isEmpty());
     assertTrue(elementList.isEmpty());
@@ -624,54 +657,58 @@ public class FutureIteratorTests {
 
     /* materializeElements */
     for (int i = 0; i < expected.size(); i++) {
-      materializer = factory.apply(trampoline);
-      materializer.materializeSkip(i, new FutureConsumer<>() {
-        @Override
-        public void accept(final Integer skipped) {
-          atSkipped.set(skipped);
-        }
+      final int index = i;
+      atMaterializer.set(factory.apply(trampoline));
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeSkip(index, new FutureConsumer<>() {
+            @Override
+            public void accept(final Integer skipped) {
+              atSkipped.set(skipped);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
-      });
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+          }));
       assertNull(atError.get());
       assertEquals(i, atSkipped.get());
       atSkipped.set(-1);
-      materializer.materializeElements(new FutureConsumer<>() {
-        @Override
-        public void accept(final java.util.List<E> elements) {
-          elementList.addAll(elements);
-        }
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeElements(new FutureConsumer<>() {
+            @Override
+            public void accept(final java.util.List<E> elements) {
+              elementList.addAll(elements);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
-      });
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+          }));
       for (int j = i; j < expected.size(); j++) {
         assertEquals(expected.get(j), elementList.get(j - i));
       }
       assertNull(atError.get());
       elementList.clear();
     }
-    materializer = factory.apply(trampoline);
-    materializer.materializeSkip(expected.size(), new FutureConsumer<>() {
-      @Override
-      public void accept(final Integer skipped) {
-        atSkipped.set(skipped);
-      }
+    atMaterializer.set(factory.apply(trampoline));
+    runInContext(trampoline,
+        () -> atMaterializer.get().materializeSkip(expected.size(), new FutureConsumer<>() {
+          @Override
+          public void accept(final Integer skipped) {
+            atSkipped.set(skipped);
+          }
 
-      @Override
-      public void error(@NotNull final Exception error) {
-        atError.set(error);
-      }
-    });
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+        }));
     assertNull(atError.get());
     assertEquals(expected.size(), atSkipped.get());
     atSkipped.set(-1);
-    materializer.materializeElements(new FutureConsumer<>() {
+    runInContext(trampoline, () -> atMaterializer.get().materializeElements(new FutureConsumer<>() {
       @Override
       public void accept(final java.util.List<E> elements) {
         elementList.addAll(elements);
@@ -681,74 +718,79 @@ public class FutureIteratorTests {
       public void error(@NotNull final Exception error) {
         atError.set(error);
       }
-    });
+    }));
     assertTrue(elementList.isEmpty());
     assertNull(atError.get());
 
     /* materializeIterator */
     for (int i = 0; i < expected.size(); i++) {
-      materializer = factory.apply(trampoline);
-      materializer.materializeSkip(i, new FutureConsumer<>() {
-        @Override
-        public void accept(final Integer skipped) {
-          atSkipped.set(skipped);
-        }
+      final int index = i;
+      atMaterializer.set(factory.apply(trampoline));
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeSkip(index, new FutureConsumer<>() {
+            @Override
+            public void accept(final Integer skipped) {
+              atSkipped.set(skipped);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
-      });
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+          }));
       assertNull(atError.get());
       assertEquals(i, atSkipped.get());
       atSkipped.set(-1);
-      materializer.materializeIterator(new FutureConsumer<>() {
-        @Override
-        public void accept(final java.util.Iterator<E> elements) {
-          elementList.addAll(lazy.Iterator.wrap(elements).toList());
-        }
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeIterator(new FutureConsumer<>() {
+            @Override
+            public void accept(final java.util.Iterator<E> elements) {
+              elementList.addAll(lazy.Iterator.wrap(elements).toList());
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
-      });
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+          }));
       for (int j = i; j < expected.size(); j++) {
         assertEquals(expected.get(j), elementList.get(j - i));
       }
       assertNull(atError.get());
       elementList.clear();
       atHasNext.set(true);
-      materializer.materializeHasNext(new FutureConsumer<>() {
-        @Override
-        public void accept(final Boolean hasNext) {
-          atHasNext.set(hasNext);
-        }
+      runInContext(trampoline,
+          () -> atMaterializer.get().materializeHasNext(new FutureConsumer<>() {
+            @Override
+            public void accept(final Boolean hasNext) {
+              atHasNext.set(hasNext);
+            }
 
-        @Override
-        public void error(@NotNull final Exception error) {
-          atError.set(error);
-        }
-      });
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+          }));
       assertNull(atError.get());
       assertFalse(atHasNext.get());
     }
-    materializer = factory.apply(trampoline);
-    materializer.materializeSkip(expected.size(), new FutureConsumer<>() {
-      @Override
-      public void accept(final Integer skipped) {
-        atSkipped.set(skipped);
-      }
+    atMaterializer.set(factory.apply(trampoline));
+    runInContext(trampoline,
+        () -> atMaterializer.get().materializeSkip(expected.size(), new FutureConsumer<>() {
+          @Override
+          public void accept(final Integer skipped) {
+            atSkipped.set(skipped);
+          }
 
-      @Override
-      public void error(@NotNull final Exception error) {
-        atError.set(error);
-      }
-    });
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+        }));
     assertNull(atError.get());
     assertEquals(expected.size(), atSkipped.get());
     atSkipped.set(-1);
-    materializer.materializeIterator(new FutureConsumer<>() {
+    runInContext(trampoline, () -> atMaterializer.get().materializeIterator(new FutureConsumer<>() {
       @Override
       public void accept(final java.util.Iterator<E> elements) {
         elementList.addAll(lazy.Iterator.wrap(elements).toList());
@@ -758,11 +800,11 @@ public class FutureIteratorTests {
       public void error(@NotNull final Exception error) {
         atError.set(error);
       }
-    });
+    }));
     assertTrue(elementList.isEmpty());
     assertNull(atError.get());
     atHasNext.set(true);
-    materializer.materializeHasNext(new FutureConsumer<>() {
+    runInContext(trampoline, () -> atMaterializer.get().materializeHasNext(new FutureConsumer<>() {
       @Override
       public void accept(final Boolean hasNext) {
         atHasNext.set(hasNext);
@@ -772,7 +814,7 @@ public class FutureIteratorTests {
       public void error(@NotNull final Exception error) {
         atError.set(error);
       }
-    });
+    }));
     assertNull(atError.get());
     assertFalse(atHasNext.get());
   }
