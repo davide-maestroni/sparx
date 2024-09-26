@@ -47,7 +47,6 @@ import sparx.internal.future.IndexedFuturePredicate;
 import sparx.internal.future.iterator.AppendAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
-import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
@@ -112,9 +111,9 @@ public class FutureIteratorTests {
     test(List.of(1, null, 3), () -> Iterator.of(1, null), it -> it.appendAll(Set.of(3)));
     test(List.of(1, null, 3), () -> Iterator.of(1, null), it -> it.appendAll(Iterator.of(3)));
 
-    testMaterializer(List.of(1, 2, 3), c -> new AppendAllIteratorFutureMaterializer<>(
+    testMaterializer(List.of(1, 2, 3, 4), c -> new AppendAllIteratorFutureMaterializer<>(
         new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
-        new ElementToIteratorFutureMaterializer<>(null), c, new AtomicReference<>(),
+        new ListToIteratorFutureMaterializer<>(List.of(3, 4), c), c, new AtomicReference<>(),
         (l, e) -> List.wrap(l).appendAll(e)));
 
     testCancel(it -> it.appendAll(List.of(null)));
@@ -132,8 +131,9 @@ public class FutureIteratorTests {
     test(List.of(), () -> Iterator.of(1, null, 3), it -> it.drop(3));
     test(List.of(), () -> Iterator.of(1, null, 3), it -> it.drop(4));
 
-    testMaterializer(List.of(1, 2, 3), c -> new DropIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), 1, c, new AtomicReference<>()));
+    testMaterializer(List.of(2, 3), c -> new DropIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 1, c,
+        new AtomicReference<>()));
 
     testCancel(it -> it.drop(1));
   }
@@ -148,7 +148,7 @@ public class FutureIteratorTests {
     test(List.of(), () -> Iterator.of(1, 2), it -> it.flatMap(i -> List.of()));
     test(List.of(null, null), () -> Iterator.of(1, 2), it -> it.flatMap(i -> List.of(null)));
 
-    testMaterializer(List.of(1, 2, 3), c -> new FlatMapIteratorFutureMaterializer<>(
+    testMaterializer(List.of(0, 1, 1, 2), c -> new FlatMapIteratorFutureMaterializer<>(
         new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
         (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
         new AtomicReference<>()));
@@ -214,8 +214,8 @@ public class FutureIteratorTests {
     assertThrows(NullPointerException.class,
         () -> itr.get().append(null).map(x -> x + 1).drop(3).first());
 
-    testMaterializer(List.of(1, 2, 3), c -> new MapIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), (i, e) -> i, c,
+    testMaterializer(List.of(0, 1, 2), c -> new MapIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> i, c,
         new AtomicReference<>()));
 
     testCancel(it -> it.map(e -> e));
@@ -415,7 +415,9 @@ public class FutureIteratorTests {
       assertNull(atError.get());
       assertFalse(atCalled.get());
       assertEquals(i, atIndex.get());
-      assertEquals(expected.size(), atSize.get() + atIndex.get());
+      if (atSize.get() >= 0) {
+        assertEquals(expected.size(), atSize.get() + atIndex.get());
+      }
       assertEquals(expected.get(i), atElement.get());
       atSize.set(-1);
       atIndex.set(-1);
@@ -490,7 +492,9 @@ public class FutureIteratorTests {
       assertNull(atError.get());
       assertFalse(atCalled.get());
       assertEquals(i, atIndex.get());
-      assertEquals(expected.size(), atSize.get() + atIndex.get());
+      if (atSize.get() >= 0) {
+        assertEquals(expected.size(), atSize.get() + atIndex.get());
+      }
       assertEquals(expected.get(i), atElement.get());
       atSize.set(-1);
       atIndex.set(-1);
@@ -584,7 +588,9 @@ public class FutureIteratorTests {
           }));
       for (int j = i; j < expected.size(); j++) {
         assertEquals(j, indexList.get(j - i));
-        assertEquals(expected.size(), sizeList.get(j - i) + indexList.get(j - i));
+        if (sizeList.get(j - i) >= 0) {
+          assertEquals(expected.size(), sizeList.get(j - i) + indexList.get(j - i));
+        }
         assertEquals(expected.get(j), elementList.get(j - i));
       }
       assertNull(atError.get());
@@ -641,17 +647,18 @@ public class FutureIteratorTests {
     atCalled.set(false);
 
     /* materializeSkip */
-    factory.apply(trampoline).materializeSkip(Integer.MAX_VALUE, new FutureConsumer<>() {
-      @Override
-      public void accept(final Integer skipped) {
-        atSkipped.set(skipped);
-      }
+    runInContext(trampoline,
+        () -> factory.apply(trampoline).materializeSkip(Integer.MAX_VALUE, new FutureConsumer<>() {
+          @Override
+          public void accept(final Integer skipped) {
+            atSkipped.set(skipped);
+          }
 
-      @Override
-      public void error(@NotNull final Exception error) {
-        atError.set(error);
-      }
-    });
+          @Override
+          public void error(@NotNull final Exception error) {
+            atError.set(error);
+          }
+        }));
     assertNull(atError.get());
     assertEquals(expected.size(), atSkipped.get());
 

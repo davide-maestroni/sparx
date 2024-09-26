@@ -143,7 +143,7 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       if (elementsConsumers.size() == 1) {
         wrapped.materializeElements(new CancellableFutureConsumer<List<E>>() {
           @Override
-          public void cancellableAccept(final List<E> elements) throws Exception {
+          public void cancellableAccept(final List<E> elements) {
             final List<E> wrappedElements = elements;
             elementsMaterializer.materializeElements(new CancellableFutureConsumer<List<E>>() {
               @Override
@@ -192,20 +192,11 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
         @Override
         public void cancellableAccept(final Boolean hasNext) throws Exception {
           if (hasNext) {
-            setState(new WrappingState(elementsMaterializer, cancelException));
             consumer.accept(true);
           } else {
-            elementsMaterializer.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
-              @Override
-              public void cancellableAccept(final Boolean hasNext) throws Exception {
-                consumer.accept(hasNext);
-              }
-
-              @Override
-              public void error(@NotNull final Exception error) throws Exception {
-                consumer.error(error);
-              }
-            });
+            setState(
+                new WrappingState(elementsMaterializer, cancelException, index)).materializeHasNext(
+                consumer);
           }
         }
 
@@ -243,25 +234,8 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
         @Override
         public void cancellableComplete(final int size) {
-          setState(new WrappingState(elementsMaterializer, cancelException));
-          elementsMaterializer.materializeNext(new CancellableIndexedFutureConsumer<E>() {
-            @Override
-            public void cancellableAccept(final int size, final int index, final E element)
-                throws Exception {
-              consumer.accept(size, ImmaterialState.this.index++, element);
-            }
-
-            @Override
-            public void cancellableComplete(final int size) throws Exception {
-              setDone(EmptyIteratorFutureMaterializer.<E>instance());
-              consumer.complete(0);
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
+          setState(new WrappingState(elementsMaterializer, cancelException, index)).materializeNext(
+              consumer);
         }
 
         @Override
@@ -276,25 +250,9 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
         public void cancellableComplete(final int size) {
-          setState(new WrappingState(elementsMaterializer, cancelException));
-          elementsMaterializer.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
-            @Override
-            public void cancellableComplete(final int size) throws Exception {
-              setDone(EmptyIteratorFutureMaterializer.<E>instance());
-              predicate.complete(0);
-            }
-
-            @Override
-            public boolean cancellableTest(final int size, final int index, final E element)
-                throws Exception {
-              return predicate.test(size, ImmaterialState.this.index++, element);
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              predicate.error(error);
-            }
-          });
+          setState(
+              new WrappingState(elementsMaterializer, cancelException, index)).materializeNextWhile(
+              predicate);
         }
 
         @Override

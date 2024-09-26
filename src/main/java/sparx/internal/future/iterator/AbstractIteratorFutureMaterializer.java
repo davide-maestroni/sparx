@@ -326,10 +326,18 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
     private final int knownSize;
     private final IteratorFutureMaterializer<E> wrapped;
 
+    private int index;
+
     protected WrappingState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final AtomicReference<CancellationException> cancelException) {
+      this(wrapped, cancelException, 0);
+    }
+
+    protected WrappingState(@NotNull final IteratorFutureMaterializer<E> wrapped,
+        @NotNull final AtomicReference<CancellationException> cancelException, final int offset) {
       this.wrapped = wrapped;
       this.cancelException = cancelException;
+      this.index = offset;
       knownSize = wrapped.knownSize();
     }
 
@@ -443,7 +451,7 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
         @Override
         public void cancellableAccept(final int size, final int index, final E element)
             throws Exception {
-          consumer.accept(size, index, element);
+          consumer.accept(size, WrappingState.this.index++, element);
         }
 
         @Override
@@ -469,7 +477,7 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
         @Override
         public boolean cancellableTest(final int size, final int index, final E element)
             throws Exception {
-          return predicate.test(size, index, element);
+          return predicate.test(size, WrappingState.this.index++, element);
         }
 
         @Override
@@ -484,6 +492,7 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
       wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
         @Override
         public void cancellableAccept(final Integer skipped) throws Exception {
+          index += skipped;
           consumer.accept(skipped);
         }
 
