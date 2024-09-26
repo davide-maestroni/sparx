@@ -36,7 +36,9 @@ import org.junit.jupiter.api.Test;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
 import sparx.util.SizeOverflowException;
+import sparx.util.function.Consumer;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedConsumer;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 import sparx.util.function.Predicate;
@@ -117,6 +119,10 @@ public class LazyIteratorTests {
 
   @Test
   public void doFor() {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).doFor((Consumer<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).doFor((IndexedConsumer<? super Integer>) null));
     var list = new ArrayList<>();
     Iterator.of(1, 2, 3).doFor(e -> list.add(e));
     assertEquals(List.of(1, 2, 3), list);
@@ -124,6 +130,17 @@ public class LazyIteratorTests {
 
   @Test
   public void doWhile() {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).doWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).doWhile((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doWhile(null, (i, e) -> {
+    }));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doWhile(null, e -> {
+    }));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).doWhile((i, e) -> true, null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doWhile(e -> true, null));
     var list = new ArrayList<>();
     Iterator.of(1, 2, 3).doWhile(e -> e < 3, list::add);
     assertEquals(List.of(1, 2), list);

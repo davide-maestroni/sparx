@@ -49,6 +49,7 @@ import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DiffIteratorFutureMaterializer;
+import sparx.internal.future.iterator.DistinctByIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -59,7 +60,9 @@ import sparx.lazy.List;
 import sparx.util.UncheckedException;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Action;
+import sparx.util.function.Consumer;
 import sparx.util.function.Function;
+import sparx.util.function.IndexedConsumer;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 import sparx.util.function.Predicate;
@@ -175,6 +178,75 @@ public class FutureIteratorTests {
         new ListToIteratorFutureMaterializer<>(List.of(1, 3), c), c, new AtomicReference<>()));
 
     testCancel(it -> it.diff(List.of(null)));
+  }
+
+  @Test
+  public void distinctBy() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).toFuture(context)
+        .distinctBy((Function<? super Integer, Object>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).toFuture(context)
+        .distinctBy((IndexedFunction<? super Integer, Object>) null));
+    test(List.of(1, null, 2), () -> Iterator.of(1, 1, null, 2, null, 1), future.Iterator::distinct);
+    test(List.of(1, 2), () -> Iterator.of(1, 1, null, 2, null, 1),
+        it -> it.distinctBy(e -> e == null ? 1 : e));
+    test(List.of(1, null), () -> Iterator.of(1, 1, null, 2, null, 1),
+        it -> it.distinctBy(e -> e == null ? 2 : e));
+
+    testMaterializer(List.of(1, 2), c -> new DistinctByIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e / 2, c,
+        new AtomicReference<>()));
+
+    testCancel(future.Iterator::distinct);
+  }
+
+  @Test
+  public void doFor() {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).doFor((Consumer<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).doFor((IndexedConsumer<? super Integer>) null));
+    var list = new ArrayList<>();
+    Iterator.of(1, 2, 3).toFuture(context).doFor(e -> list.add(e));
+    assertEquals(List.of(1, 2, 3), list);
+    list.clear();
+    Iterator.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).doFor(e -> list.add(e));
+    assertEquals(List.of(1, 2, 3), list);
+  }
+
+  @Test
+  public void doWhile() {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).toFuture(context)
+        .doWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).doWhile((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).doWhile(null, (i, e) -> {
+        }));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).doWhile(null, e -> {
+        }));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).doWhile((i, e) -> true, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).doWhile(e -> true, null));
+    var list = new ArrayList<>();
+    Iterator.of(1, 2, 3).toFuture(context).doWhile(e -> e < 3, list::add);
+    assertEquals(List.of(1, 2), list);
+    list.clear();
+    Iterator.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).doWhile(e -> e < 3, list::add);
+    assertEquals(List.of(1, 2), list);
+    list.clear();
+    Iterator.of(1, 2, 3).toFuture(context).doWhile(e -> {
+      list.add(e);
+      return e < 2;
+    });
+    assertEquals(List.of(1, 2), list);
+    list.clear();
+    Iterator.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).doWhile(e -> {
+      list.add(e);
+      return e < 2;
+    });
+    assertEquals(List.of(1, 2), list);
   }
 
   @Test

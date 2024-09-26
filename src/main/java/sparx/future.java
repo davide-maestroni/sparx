@@ -45,6 +45,7 @@ import sparx.internal.future.iterator.CollectionToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DiffIteratorFutureMaterializer;
+import sparx.internal.future.iterator.DistinctByIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
@@ -585,46 +586,129 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull <K> Iterator<E> distinctBy(@NotNull Function<? super E, K> keyExtractor) {
-      return null;
+    public @NotNull <K> Iterator<E> distinctBy(@NotNull final Function<? super E, K> keyExtractor) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerDistinctBy(materializer, context, cancelException,
+                toIndexedFunction(Require.notNull(keyExtractor, "keyExtractor"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new DistinctByIteratorFutureMaterializer<E, K>(materializer,
+              toIndexedFunction(Require.notNull(keyExtractor, "keyExtractor")), context,
+              cancelException));
     }
 
     @Override
     public @NotNull <K> Iterator<E> distinctBy(
-        @NotNull IndexedFunction<? super E, K> keyExtractor) {
-      return null;
+        @NotNull final IndexedFunction<? super E, K> keyExtractor) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerDistinctBy(materializer, context, cancelException,
+                Require.notNull(keyExtractor, "keyExtractor")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new DistinctByIteratorFutureMaterializer<E, K>(materializer,
+              Require.notNull(keyExtractor, "keyExtractor"), context, cancelException));
     }
 
     @Override
-    public void doFor(@NotNull Consumer<? super E> consumer) {
-
+    public void doFor(@NotNull final Consumer<? super E> consumer) {
+      if (materializer.knownSize() == 0) {
+        return;
+      }
+      try {
+        nonBlockingFor(consumer).get();
+      } catch (final ExecutionException e) {
+        throw UncheckedException.throwUnchecked(e.getCause());
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override
-    public void doFor(@NotNull IndexedConsumer<? super E> consumer) {
-
+    public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
+      if (materializer.knownSize() == 0) {
+        return;
+      }
+      try {
+        nonBlockingFor(consumer).get();
+      } catch (final ExecutionException e) {
+        throw UncheckedException.throwUnchecked(e.getCause());
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override
-    public void doWhile(@NotNull IndexedPredicate<? super E> predicate) {
-
+    public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+      if (materializer.knownSize() == 0) {
+        return;
+      }
+      try {
+        nonBlockingWhile(predicate).get();
+      } catch (final ExecutionException e) {
+        throw UncheckedException.throwUnchecked(e.getCause());
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override
-    public void doWhile(@NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedConsumer<? super E> consumer) {
-
+    public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull final IndexedConsumer<? super E> consumer) {
+      if (materializer.knownSize() == 0) {
+        return;
+      }
+      try {
+        nonBlockingWhile(condition, consumer).get();
+      } catch (final ExecutionException e) {
+        throw UncheckedException.throwUnchecked(e.getCause());
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override
-    public void doWhile(@NotNull Predicate<? super E> predicate) {
-
+    public void doWhile(@NotNull final Predicate<? super E> predicate) {
+      if (materializer.knownSize() == 0) {
+        return;
+      }
+      try {
+        nonBlockingWhile(predicate).get();
+      } catch (final ExecutionException e) {
+        throw UncheckedException.throwUnchecked(e.getCause());
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override
-    public void doWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Consumer<? super E> consumer) {
-
+    public void doWhile(@NotNull final Predicate<? super E> condition,
+        @NotNull final Consumer<? super E> consumer) {
+      if (materializer.knownSize() == 0) {
+        return;
+      }
+      try {
+        nonBlockingWhile(condition, consumer).get();
+      } catch (final ExecutionException e) {
+        throw UncheckedException.throwUnchecked(e.getCause());
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override
