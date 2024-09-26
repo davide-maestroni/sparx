@@ -48,6 +48,7 @@ import sparx.internal.future.iterator.AppendAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountWhereIteratorFutureMaterializer;
+import sparx.internal.future.iterator.DiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -154,6 +155,26 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.countWhere(e -> true));
+  }
+
+  @Test
+  public void diff() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context).diff(null));
+    test(List.of(2, 4), () -> Iterator.of(1, 2, null, 4), it -> it.diff(List.of(1, null)));
+    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4), it -> it.diff(Iterator.of(1, 4)));
+    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4), it -> it.diff(List.of(1, 3, 4)));
+    test(List.of(2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.diff(Iterator.of(3, 1, 3)));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null, 4), it -> it.diff(List.of(null, null)));
+    test(List.of(), () -> Iterator.of(1, null), it -> it.diff(Iterator.of(1, 2, null, 4)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.diff(Iterator.of()));
+    test(List.of(), Iterator::of, it -> it.diff(Iterator.of(1, 2, null, 4)));
+
+    testMaterializer(List.of(1), c -> new DiffIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 1, 3), c),
+        new ListToIteratorFutureMaterializer<>(List.of(1, 3), c), c, new AtomicReference<>()));
+
+    testCancel(it -> it.diff(List.of(null)));
   }
 
   @Test

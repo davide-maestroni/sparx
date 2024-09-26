@@ -44,6 +44,7 @@ import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CollectionToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountWhereIteratorFutureMaterializer;
+import sparx.internal.future.iterator.DiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
@@ -285,7 +286,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> TransformIteratorFutureMaterializer<E, E> lazyMaterializerAppend(
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerAppend(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException, final E element) {
@@ -300,7 +301,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> TransformIteratorFutureMaterializer<E, E> lazyMaterializerAppendAll(
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerAppendAll(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -317,7 +318,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> TransformIteratorFutureMaterializer<E, Integer> lazyMaterializerCount(
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Integer> lazyMaterializerCount(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
@@ -331,7 +332,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> TransformIteratorFutureMaterializer<E, Integer> lazyMaterializerCountWhere(
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Integer> lazyMaterializerCountWhere(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -346,7 +347,35 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> TransformIteratorFutureMaterializer<E, E> lazyMaterializerDrop(
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerDiff(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<?> elements) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).diff(elements);
+        }
+      };
+    }
+
+    private static @NotNull <E, K> LazyIteratorFutureMaterializer<E, E> lazyMaterializerDistinctBy(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedFunction<? super E, K> keyExtractor) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).distinctBy(keyExtractor);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerDrop(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -362,7 +391,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E, F> TransformIteratorFutureMaterializer<E, F> lazyMaterializerMap(
+    private static @NotNull <E, F> LazyIteratorFutureMaterializer<E, F> lazyMaterializerMap(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -528,13 +557,31 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> diff(@NotNull Iterable<?> elements) {
-      return null;
+    public @NotNull Iterator<E> diff(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final IteratorFutureMaterializer<Object> elementsMaterializer = getElementsMaterializer(
+          context, Require.notNull(elements, "elements"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerDiff(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new DiffIteratorFutureMaterializer<E>(materializer, elementsMaterializer, context,
+              cancelException));
     }
 
     @Override
     public @NotNull Iterator<E> distinct() {
-      return null;
+      return distinctBy(indexedIdentity());
     }
 
     @Override
