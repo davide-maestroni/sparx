@@ -20,6 +20,7 @@ import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -507,10 +508,11 @@ public class SlidingWindowListFutureMaterializer<E, L extends List<E>> extends
         final List<L> materialized = elements.toList();
         if (materialized.isEmpty()) {
           setDone(EmptyListFutureMaterializer.<L>instance());
+          consumeElements(Collections.<L>emptyList());
         } else {
           setDone(new ListToListFutureMaterializer<L>(materialized, context));
+          consumeElements(materialized);
         }
-        consumeElements(materialized);
       } catch (final Exception e) {
         setError(e);
       }

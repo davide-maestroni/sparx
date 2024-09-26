@@ -42,6 +42,8 @@ import sparx.internal.future.ListFutureMaterializerToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.AppendAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CollectionToIteratorFutureMaterializer;
+import sparx.internal.future.iterator.CountIteratorFutureMaterializer;
+import sparx.internal.future.iterator.CountWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
@@ -315,6 +317,35 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> TransformIteratorFutureMaterializer<E, Integer> lazyMaterializerCount(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      return new LazyIteratorFutureMaterializer<E, Integer>(materializer, context, cancelException,
+          1) {
+        @Override
+        protected @NotNull java.util.Iterator<Integer> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).count();
+        }
+      };
+    }
+
+    private static @NotNull <E> TransformIteratorFutureMaterializer<E, Integer> lazyMaterializerCountWhere(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyIteratorFutureMaterializer<E, Integer>(materializer, context, cancelException,
+          1) {
+        @Override
+        protected @NotNull java.util.Iterator<Integer> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).countWhere(predicate);
+        }
+      };
+    }
+
     private static @NotNull <E> TransformIteratorFutureMaterializer<E, E> lazyMaterializerDrop(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
@@ -345,6 +376,12 @@ class future extends Sparx {
           return lazy.Iterator.wrap(iterator).map(mapper);
         }
       };
+    }
+
+    private static @NotNull Iterator<Integer> zeroIterator(
+        @NotNull final ExecutionContext context) {
+      return new Iterator<Integer>(context, new AtomicReference<CancellationException>(),
+          new ElementToIteratorFutureMaterializer<Integer>(0));
     }
 
     @Override
@@ -395,8 +432,9 @@ class future extends Sparx {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public @NotNull <F> Iterator<F> as() {
-      return null;
+      return (Iterator<F>) this;
     }
 
     @Override
@@ -432,17 +470,61 @@ class future extends Sparx {
 
     @Override
     public @NotNull Iterator<Integer> count() {
-      return null;
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return zeroIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (knownSize > 0) {
+        return new Iterator<Integer>(context, cancelException,
+            new ElementToIteratorFutureMaterializer<Integer>(knownSize));
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Integer>(context, cancelException,
+            lazyMaterializerCount(materializer, context, cancelException));
+      }
+      return new Iterator<Integer>(context, cancelException,
+          new CountIteratorFutureMaterializer<E>(materializer, context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<Integer> countWhere(
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return zeroIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Integer>(context, cancelException,
+            lazyMaterializerCountWhere(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      return new Iterator<Integer>(context, cancelException,
+          new CountWhereIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<Integer> countWhere(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<Integer> countWhere(@NotNull final Predicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return zeroIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Integer>(context, cancelException,
+            lazyMaterializerCountWhere(materializer, context, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      return new Iterator<Integer>(context, cancelException,
+          new CountWhereIteratorFutureMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override

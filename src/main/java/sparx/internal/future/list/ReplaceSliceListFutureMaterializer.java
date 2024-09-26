@@ -20,6 +20,7 @@ import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -968,10 +969,11 @@ public class ReplaceSliceListFutureMaterializer<E> extends AbstractListFutureMat
     private void setComplete(@NotNull final List<E> elements) {
       if (elements.isEmpty()) {
         setDone(EmptyListFutureMaterializer.<E>instance());
+        consumeElements(Collections.<E>emptyList());
       } else {
         setDone(new ListToListFutureMaterializer<E>(elements, context));
+        consumeElements(elements);
       }
-      consumeElements(elements);
     }
 
     private void setError(@NotNull final Exception error) {

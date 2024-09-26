@@ -19,6 +19,7 @@ import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -271,10 +272,11 @@ public class MapListFutureMaterializer<E, F> extends AbstractListFutureMateriali
             final List<F> materialized = elements.toList();
             if (materialized.isEmpty()) {
               setDone(EmptyListFutureMaterializer.<F>instance());
+              consumeElements(Collections.<F>emptyList());
             } else {
               setDone(new ListToListFutureMaterializer<F>(materialized, context));
+              consumeElements(materialized);
             }
-            consumeElements(materialized);
           }
 
           @Override

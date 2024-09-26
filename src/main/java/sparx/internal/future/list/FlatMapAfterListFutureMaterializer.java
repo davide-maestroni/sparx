@@ -19,6 +19,7 @@ import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -299,10 +300,11 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
                       wrappedElements.subList(Math.min(numElements + 1, wrappedSize), wrappedSize));
                   if (elements.isEmpty()) {
                     setDone(EmptyListFutureMaterializer.<E>instance());
+                    consumeElements(Collections.<E>emptyList());
                   } else {
                     setDone(new ListToListFutureMaterializer<E>(elements, context));
+                    consumeElements(elements);
                   }
-                  consumeElements(elements);
                 }
 
                 @Override

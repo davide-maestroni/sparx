@@ -225,10 +225,11 @@ public class DropListFutureMaterializer<E> extends AbstractListFutureMaterialize
             public void cancellableComplete(final int size) {
               if (elements.isEmpty()) {
                 setDone(EmptyListFutureMaterializer.<E>instance());
+                consumeElements(Collections.<E>emptyList());
               } else {
                 setDone(new ListToListFutureMaterializer<E>(elements, context));
+                consumeElements(elements);
               }
-              consumeElements(elements);
             }
 
             @Override

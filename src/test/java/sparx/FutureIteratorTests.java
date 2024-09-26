@@ -46,6 +46,8 @@ import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.internal.future.iterator.AppendAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
+import sparx.internal.future.iterator.CountIteratorFutureMaterializer;
+import sparx.internal.future.iterator.CountWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -58,6 +60,8 @@ import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Action;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedPredicate;
+import sparx.util.function.Predicate;
 import sparx.util.function.Supplier;
 
 @SuppressWarnings("DataFlowIssue")
@@ -117,6 +121,39 @@ public class FutureIteratorTests {
         (l, e) -> List.wrap(l).appendAll(e)));
 
     testCancel(it -> it.appendAll(List.of(null)));
+  }
+
+  @Test
+  public void count() throws Exception {
+    test(List.of(0), Iterator::of, future.Iterator::count);
+    test(List.of(3), () -> Iterator.of(1, 2, 3), future.Iterator::count);
+    test(List.of(3), () -> Iterator.of(1, null, 3), future.Iterator::count);
+
+    testMaterializer(List.of(3), c -> new CountIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), c, new AtomicReference<>()));
+
+    testCancel(future.Iterator::count);
+  }
+
+  @Test
+  public void countWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .countWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).countWhere((Predicate<? super Integer>) null));
+    test(List.of(0), Iterator::of, it -> it.countWhere(Objects::nonNull));
+    test(List.of(2), () -> Iterator.of(1, 2, 3), it -> it.countWhere(i -> i < 3));
+    test(List.of(3), () -> Iterator.of(1, 2, 3), it -> it.countWhere(i -> i > 0));
+
+    var itr = Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
+        .countWhere(i -> i > 0);
+    assertThrows(NullPointerException.class, itr::first);
+
+    testMaterializer(List.of(2), c -> new CountWhereIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (n, i) -> i < 3, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.countWhere(e -> true));
   }
 
   @Test
@@ -206,7 +243,8 @@ public class FutureIteratorTests {
     test(List.of(2, 3, 4), () -> Iterator.of(1, 2, 3), it -> it.map(x -> x + 1));
     test(List.of(), Iterator::<Integer>of, it -> it.map(x -> x + 1));
 
-    Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3).toFuture(context);
+    Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3).toFuture(context)
+        .flatMap(e -> List.of(e));
     assertFalse(itr.get().append(null).map(x -> x + 1).isEmpty());
     assertEquals(4, itr.get().append(null).map(x -> x + 1).size());
     assertEquals(4, itr.get().append(null).map(x -> x + 1).drop(2).first());

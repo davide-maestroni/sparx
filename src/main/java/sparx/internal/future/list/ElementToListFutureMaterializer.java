@@ -35,6 +35,8 @@ public class ElementToListFutureMaterializer<E> implements ListFutureMaterialize
 
   private final E element;
 
+  private List<E> elements;
+
   public ElementToListFutureMaterializer(@NotNull final E element) {
     this.element = element;
   }
@@ -74,7 +76,6 @@ public class ElementToListFutureMaterializer<E> implements ListFutureMaterialize
   }
 
   @Override
-  @SuppressWarnings("SuspiciousMethodCalls")
   public void materializeContains(final Object element,
       @NotNull final FutureConsumer<Boolean> consumer) {
     safeConsume(consumer,
@@ -95,7 +96,10 @@ public class ElementToListFutureMaterializer<E> implements ListFutureMaterialize
 
   @Override
   public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
-    safeConsume(consumer, Collections.singletonList(element), LOGGER);
+    if (elements == null) {
+      elements = Collections.singletonList(element);
+    }
+    safeConsume(consumer, elements, LOGGER);
   }
 
   @Override
