@@ -32,59 +32,55 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DequeueList;
-import sparx.util.annotation.Positive;
+import sparx.util.function.IndexedPredicate;
 
-public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
+public class DropWhileIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      DropRightIteratorFutureMaterializer.class.getName());
+      DropWhileIteratorFutureMaterializer.class.getName());
 
-  private final int knownSize;
+  private final boolean isMaterializedAtOnce;
 
-  public DropRightIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
-      @Positive final int maxElements, @NotNull final ExecutionContext context,
+  public DropWhileIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    this(wrapped, maxElements, new AtomicInteger(STATUS_RUNNING), context, cancelException);
+    super(context, new AtomicInteger(STATUS_RUNNING));
+    isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
+    setState(new ImmaterialState(wrapped, predicate, context, cancelException));
   }
 
-  // TODO: needed?
-  DropRightIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
-      @Positive final int maxElements, @NotNull final AtomicInteger status,
-      @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, status);
-    final int wrappedSize = wrapped.knownSize();
-    knownSize = wrappedSize >= 0 ? Math.max(0, wrappedSize - maxElements) : -1;
-    setState(new ImmaterialState(wrapped, maxElements, context, cancelException));
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   @Override
   public int knownSize() {
-    return knownSize;
+    return -1;
   }
 
   private class ImmaterialState implements IteratorFutureMaterializer<E> {
 
-    private final DequeueList<E> buffer;
     private final ArrayList<FutureConsumer<DequeueList<E>>> bufferConsumers = new ArrayList<FutureConsumer<DequeueList<E>>>(
         2);
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final ArrayList<FutureConsumer<List<E>>> elementsConsumers = new ArrayList<FutureConsumer<List<E>>>(
         2);
-    private final int maxElements;
+    private final IndexedPredicate<? super E> predicate;
     private final IteratorFutureMaterializer<E> wrapped;
 
+    private DequeueList<E> buffer;
     private int index;
 
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
-        final int maxElements, @NotNull final ExecutionContext context,
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
-      this.maxElements = maxElements;
+      this.predicate = predicate;
       this.context = context;
       this.cancelException = cancelException;
-      buffer = new DequeueList<E>(Math.min(64, maxElements));
     }
 
     @Override
@@ -114,7 +110,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
     @Override
     public int knownSize() {
-      return knownSize;
+      return -1;
     }
 
     @Override
@@ -126,15 +122,11 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
     @Override
     public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
-      if (buffer.isEmpty()) {
+      if (buffer == null) {
         materializeBuffer(new FutureConsumer<DequeueList<E>>() {
           @Override
-          public void accept(final DequeueList<E> buffer) throws Exception {
-            if (buffer.isEmpty()) {
-              consumer.accept(Collections.<E>emptyList());
-            } else {
-              materializeElements(consumer);
-            }
+          public void accept(final DequeueList<E> buffer) {
+            materializeElements(consumer);
           }
 
           @Override
@@ -149,25 +141,16 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           wrapped.materializeElements(new CancellableFutureConsumer<List<E>>() {
             @Override
             public void cancellableAccept(final List<E> elements) {
-              final int size = elements.size();
-              if (size == 0) {
+              final DequeueList<E> materialized = new DequeueList<E>(
+                  Math.max(1, buffer.size() + elements.size()));
+              materialized.addAll(buffer);
+              materialized.addAll(elements);
+              if (materialized.isEmpty()) {
                 setDone(EmptyIteratorFutureMaterializer.<E>instance());
                 consumeElements(Collections.<E>emptyList());
               } else {
-                final DequeueList<E> materialized = new DequeueList<E>(size);
-                if (size > maxElements) {
-                  materialized.addAll(buffer);
-                  materialized.addAll(elements.subList(0, size - maxElements));
-                } else {
-                  materialized.addAll(buffer.subList(0, size));
-                }
-                if (materialized.isEmpty()) {
-                  setDone(EmptyIteratorFutureMaterializer.<E>instance());
-                  consumeElements(Collections.<E>emptyList());
-                } else {
-                  setDone(new DequeueToIteratorFutureMaterializer<E>(materialized, context));
-                  consumeElements(materialized);
-                }
+                setDone(new DequeueToIteratorFutureMaterializer<E>(materialized, context));
+                consumeElements(materialized);
               }
             }
 
@@ -189,12 +172,12 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
     @Override
     public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-      if (buffer.isEmpty()) {
+      if (buffer == null) {
         materializeBuffer(new FutureConsumer<DequeueList<E>>() {
           @Override
           public void accept(final DequeueList<E> buffer) throws Exception {
-            if (buffer.isEmpty()) {
-              consumer.accept(false);
+            if (!buffer.isEmpty()) {
+              consumer.accept(true);
             } else {
               materializeHasNext(consumer);
             }
@@ -205,6 +188,8 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
             consumer.error(error);
           }
         });
+      } else if (!buffer.isEmpty()) {
+        safeConsume(consumer, true, LOGGER);
       } else {
         wrapped.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
           @Override
@@ -237,12 +222,12 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
     @Override
     public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
-      if (buffer.isEmpty()) {
+      if (buffer == null) {
         materializeBuffer(new FutureConsumer<DequeueList<E>>() {
           @Override
           public void accept(final DequeueList<E> buffer) throws Exception {
-            if (buffer.isEmpty()) {
-              consumer.complete(0);
+            if (!buffer.isEmpty()) {
+              consumer.accept(-1, index++, buffer.removeFirst());
             } else {
               materializeNext(consumer);
             }
@@ -253,13 +238,14 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
             consumer.error(error);
           }
         });
+      } else if (!buffer.isEmpty()) {
+        safeConsume(consumer, -1, index++, buffer.removeFirst(), LOGGER);
       } else {
         wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
               throws Exception {
-            buffer.add(element);
-            consumer.accept(size, ImmaterialState.this.index++, buffer.removeFirst());
+            consumer.accept(size, ImmaterialState.this.index++, element);
           }
 
           @Override
@@ -277,13 +263,11 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
     @Override
     public void materializeNextWhile(@NotNull final IndexedFuturePredicate<E> predicate) {
-      if (buffer.isEmpty()) {
+      if (buffer == null) {
         materializeBuffer(new FutureConsumer<DequeueList<E>>() {
           @Override
           public void accept(final DequeueList<E> buffer) throws Exception {
-            if (buffer.isEmpty()) {
-              predicate.complete(0);
-            } else {
+            if (buffer.isEmpty() || predicate.test(-1, index++, buffer.removeFirst())) {
               materializeNextWhile(predicate);
             }
           }
@@ -293,6 +277,10 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
             predicate.error(error);
           }
         });
+      } else if (!buffer.isEmpty()) {
+        if (safeConsume(predicate, -1, index++, buffer.removeFirst(), LOGGER)) {
+          materializeNextWhile(predicate);
+        }
       } else {
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
@@ -303,8 +291,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           @Override
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
-            buffer.add(element);
-            return predicate.test(size, ImmaterialState.this.index++, buffer.removeFirst());
+            return predicate.test(size, ImmaterialState.this.index++, element);
           }
 
           @Override
@@ -320,28 +307,59 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       if (count <= 0) {
         safeConsume(consumer, 0, LOGGER);
       } else {
-        materializeNextWhile(new IndexedFuturePredicate<E>() {
-          private int skipped;
+        if (buffer == null) {
+          materializeBuffer(new FutureConsumer<DequeueList<E>>() {
+            @Override
+            public void accept(final DequeueList<E> buffer) {
+              if (buffer.isEmpty()) {
+                materializeSkip(count, consumer);
+              } else {
+                buffer.clear();
+                materializeSkip(count - 1, new FutureConsumer<Integer>() {
+                  @Override
+                  public void accept(final Integer skipped) throws Exception {
+                    consumer.accept(skipped + 1);
+                  }
 
-          @Override
-          public void complete(final int size) throws Exception {
-            consumer.accept(skipped);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-
-          @Override
-          public boolean test(final int size, final int index, final E element) throws Exception {
-            if (++skipped >= count) {
-              consumer.accept(skipped);
-              return false;
+                  @Override
+                  public void error(@NotNull final Exception error) throws Exception {
+                    consumer.error(error);
+                  }
+                });
+              }
             }
-            return true;
-          }
-        });
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
+        } else if (!buffer.isEmpty()) {
+          buffer.clear();
+          materializeSkip(count - 1, new FutureConsumer<Integer>() {
+            @Override
+            public void accept(final Integer skipped) throws Exception {
+              consumer.accept(skipped + 1);
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
+        } else {
+          wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
+            @Override
+            public void cancellableAccept(final Integer skipped) throws Exception {
+              consumer.accept(skipped);
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
+        }
       }
     }
 
@@ -368,7 +386,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
     @Override
     public int weightSkip() {
-      return weightNextWhile();
+      return (int) Math.min(Integer.MAX_VALUE, weightBuffer() + wrapped.weightSkip());
     }
 
     private void consumeElements(@NotNull final List<E> elements) {
@@ -392,20 +410,23 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       bufferConsumers.add(consumer);
       if (bufferConsumers.size() == 1) {
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+          private int wrappedIndex;
+
           @Override
           public void cancellableComplete(final int size) {
-            buffer.clear();
             setDone(EmptyIteratorFutureMaterializer.<E>instance());
             for (final FutureConsumer<DequeueList<E>> consumer : bufferConsumers) {
-              safeConsume(consumer, buffer, LOGGER);
+              safeConsume(consumer, buffer = new DequeueList<E>(1), LOGGER);
             }
             bufferConsumers.clear();
           }
 
           @Override
-          public boolean cancellableTest(final int size, final int index, final E element) {
-            buffer.add(element);
-            if (buffer.size() >= maxElements) {
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            if (!predicate.test(wrappedIndex++, element)) {
+              final DequeueList<E> buffer = ImmaterialState.this.buffer = new DequeueList<E>(1);
+              buffer.add(element);
               for (final FutureConsumer<DequeueList<E>> consumer : bufferConsumers) {
                 safeConsume(consumer, buffer, LOGGER);
               }
@@ -436,7 +457,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
     }
 
     private long weightBuffer() {
-      return buffer.isEmpty() && bufferConsumers.isEmpty() ? wrapped.weightNextWhile() : 0;
+      return buffer == null && bufferConsumers.isEmpty() ? wrapped.weightNextWhile() : 0;
     }
   }
 }

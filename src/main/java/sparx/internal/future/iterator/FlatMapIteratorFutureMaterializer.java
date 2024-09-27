@@ -19,6 +19,7 @@ import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -57,12 +58,11 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
     private final ExecutionContext context;
     private final ArrayList<FutureConsumer<List<F>>> elementsConsumers = new ArrayList<FutureConsumer<List<F>>>(
         2);
-    private final ArrayList<FutureConsumer<IteratorFutureMaterializer<F>>> elementsMaterializerConsumers = new ArrayList<FutureConsumer<IteratorFutureMaterializer<F>>>(
-        2);
     private final IndexedFunction<? super E, ? extends IteratorFutureMaterializer<F>> mapper;
     private final IteratorFutureMaterializer<E> wrapped;
 
     private IteratorFutureMaterializer<F> elementsMaterializer;
+    private ArrayList<FutureConsumer<IteratorFutureMaterializer<F>>> elementsMaterializerConsumers;
     private int index;
     private int wrappedIndex;
 
@@ -74,6 +74,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       this.mapper = mapper;
       this.context = context;
       this.cancelException = cancelException;
+      initConsumers();
     }
 
     @Override
@@ -224,42 +225,49 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
       return taskID != null ? taskID : "";
     }
 
+    private void initConsumers() {
+      elementsMaterializerConsumers = new ArrayList<FutureConsumer<IteratorFutureMaterializer<F>>>(
+          2);
+    }
+
     private void materializeElementsMaterializer(
         @NotNull final FutureConsumer<IteratorFutureMaterializer<F>> consumer) {
-      if (elementsMaterializer != null) {
-        safeConsume(consumer, elementsMaterializer, LOGGER);
-      } else {
-        final ArrayList<FutureConsumer<IteratorFutureMaterializer<F>>> materializerConsumers = this.elementsMaterializerConsumers;
-        materializerConsumers.add(consumer);
-        if (materializerConsumers.size() == 1) {
-          wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
-            @Override
-            public void cancellableAccept(final int size, final int index, final E element)
-                throws Exception {
-              elementsMaterializer = mapper.apply(wrappedIndex++, element);
-              for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
-                safeConsume(materializerConsumer, elementsMaterializer, LOGGER);
-              }
-              materializerConsumers.clear();
+      final ArrayList<FutureConsumer<IteratorFutureMaterializer<F>>> materializerConsumers = this.elementsMaterializerConsumers;
+      materializerConsumers.add(consumer);
+      if (materializerConsumers.size() == 1) {
+        wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
+          @Override
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
+            elementsMaterializer = mapper.apply(wrappedIndex++, element);
+            // Must be reentrant
+            initConsumers();
+            for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
+              safeConsume(materializerConsumer, elementsMaterializer, LOGGER);
             }
+            materializerConsumers.clear();
+          }
 
-            @Override
-            public void cancellableComplete(final int size) {
-              for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
-                safeConsume(materializerConsumer, null, LOGGER);
-              }
-              materializerConsumers.clear();
+          @Override
+          public void cancellableComplete(final int size) {
+            // Must be reentrant
+            initConsumers();
+            for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
+              safeConsume(materializerConsumer, null, LOGGER);
             }
+            materializerConsumers.clear();
+          }
 
-            @Override
-            public void error(@NotNull final Exception error) {
-              for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
-                safeConsumeError(materializerConsumer, error, LOGGER);
-              }
-              materializerConsumers.clear();
+          @Override
+          public void error(@NotNull final Exception error) {
+            // Must be reentrant
+            initConsumers();
+            for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
+              safeConsumeError(materializerConsumer, error, LOGGER);
             }
-          });
-        }
+            materializerConsumers.clear();
+          }
+        });
       }
     }
 
@@ -355,10 +363,11 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
           if (materializer == null) {
             if (elements.isEmpty()) {
               setDone(EmptyIteratorFutureMaterializer.<F>instance());
+              consumeElements(Collections.<F>emptyList());
             } else {
               setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context));
+              consumeElements(elements);
             }
-            consumeElements(elements);
           } else {
             materializer.materializeNextWhile(MaterializingFutureConsumer.this);
           }

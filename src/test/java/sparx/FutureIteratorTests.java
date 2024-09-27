@@ -52,6 +52,8 @@ import sparx.internal.future.iterator.DiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DistinctByIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropRightIteratorFutureMaterializer;
+import sparx.internal.future.iterator.DropRightWhileIteratorFutureMaterializer;
+import sparx.internal.future.iterator.DropWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
@@ -286,6 +288,56 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.dropRight(1));
+  }
+
+  @Test
+  public void dropRightWhile() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .dropRightWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).dropRightWhile((Predicate<? super Integer>) null));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3),
+        it -> it.dropRightWhile(Objects::isNull));
+    test(List.of(1, null), () -> Iterator.of(1, null, 3),
+        it -> it.dropRightWhile(Objects::nonNull));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.dropRightWhile(e -> e < 1));
+    test(List.of(), () -> Iterator.of(1, 2, 3), it -> it.dropRightWhile(e -> e > 0));
+
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null, 3).toFuture(context).dropRightWhile(e -> e > 0).size());
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
+            .dropRightWhile(e -> e > 0).size());
+
+    testMaterializer(List.of(1), c -> new DropRightWhileIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 1, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.dropRightWhile(e -> false));
+  }
+
+  @Test
+  public void dropWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).dropWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).dropWhile((Predicate<? super Integer>) null));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.dropWhile(Objects::isNull));
+    test(List.of(null, 3), () -> Iterator.of(1, null, 3), it -> it.dropWhile(Objects::nonNull));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.dropWhile(e -> e < 1));
+    test(List.of(), () -> Iterator.of(1, 2, 3), it -> it.dropWhile(e -> e > 0));
+
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null, 3).toFuture(context).dropWhile(e -> e > 0).size());
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
+            .dropWhile(e -> e > 0).size());
+
+    testMaterializer(List.of(3), c -> new DropWhileIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e < 3, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.dropWhile(e -> false));
   }
 
   @Test

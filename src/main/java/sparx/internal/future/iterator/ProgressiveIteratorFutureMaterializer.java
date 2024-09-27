@@ -317,10 +317,9 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
 
     void setNextError(@NotNull final Exception error) {
       final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
-      for (final FutureConsumer<DequeueList<F>> consumer : elementConsumers) {
-        safeConsumeError(consumer, error, logger);
+      while (!elementConsumers.isEmpty()) {
+        safeConsumeError(elementConsumers.removeFirst(), error, logger);
       }
-      elementConsumers.clear();
     }
 
     int weightUntilConsumed() {

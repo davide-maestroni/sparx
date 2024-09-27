@@ -16,7 +16,6 @@
 package sparx.internal.future.iterator;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
-import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
@@ -32,66 +31,47 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.SizeOverflowException;
-import sparx.util.function.BinaryFunction;
+import sparx.util.DequeueList;
+import sparx.util.function.IndexedPredicate;
 
-public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
+public class DropRightWhileIteratorFutureMaterializer<E> extends
+    AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      AppendIteratorFutureMaterializer.class.getName());
+      DropRightWhileIteratorFutureMaterializer.class.getName());
 
-  private final int knownSize;
-  private final boolean isMaterializedAtOnce;
-
-  public AppendIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
-      final E element, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final BinaryFunction<List<E>, E, List<E>> appendFunction) {
+  public DropRightWhileIteratorFutureMaterializer(
+      @NotNull final IteratorFutureMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    knownSize = safeSize(wrapped.knownSize());
-    isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
-    setState(new ImmaterialState(wrapped, element, context, cancelException, appendFunction));
-  }
-
-  private static int safeSize(final int wrappedSize) {
-    if (wrappedSize >= 0) {
-      return SizeOverflowException.safeCast((long) wrappedSize + 1);
-    }
-    return -1;
+    setState(new ImmaterialState(wrapped, predicate, cancelException));
   }
 
   @Override
   public boolean isMaterializedAtOnce() {
-    return isMaterializedAtOnce || super.isMaterializedAtOnce();
+    return true;
   }
 
   @Override
   public int knownSize() {
-    return knownSize;
+    return 1;
   }
 
   private class ImmaterialState implements IteratorFutureMaterializer<E> {
 
-    private final BinaryFunction<List<E>, E, List<E>> appendFunction;
     private final AtomicReference<CancellationException> cancelException;
-    private final ExecutionContext context;
-    private final E element;
     private final ArrayList<FutureConsumer<List<E>>> elementsConsumers = new ArrayList<FutureConsumer<List<E>>>(
         2);
+    private final IndexedPredicate<? super E> predicate;
     private final IteratorFutureMaterializer<E> wrapped;
 
-    private boolean consumed;
-    private int index;
-
-    public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped, final E element,
-        @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final BinaryFunction<List<E>, E, List<E>> appendFunction) {
+    public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
-      this.element = element;
-      this.context = context;
+      this.predicate = predicate;
       this.cancelException = cancelException;
-      this.appendFunction = appendFunction;
     }
 
     @Override
@@ -111,7 +91,7 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return wrapped.isMaterializedAtOnce();
+      return true;
     }
 
     @Override
@@ -121,7 +101,7 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
 
     @Override
     public int knownSize() {
-      return knownSize;
+      return 1;
     }
 
     @Override
@@ -139,18 +119,18 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
         wrapped.materializeElements(new CancellableFutureConsumer<List<E>>() {
           @Override
           public void cancellableAccept(final List<E> elements) throws Exception {
-            if (consumed) {
-              consumeElements(elements);
+            final DequeueList<E> materialized = new DequeueList<E>(Math.max(1, elements.size()));
+            materialized.addAll(elements);
+            while (!materialized.isEmpty() && predicate.test(materialized.size() - 1,
+                materialized.getLast())) {
+              materialized.removeLast();
+            }
+            if (materialized.isEmpty()) {
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
+              consumeElements(Collections.<E>emptyList());
             } else {
-              final List<E> materialized = appendFunction.apply(elements, element);
-              consumed = true;
-              if (materialized.isEmpty()) {
-                setDone(EmptyIteratorFutureMaterializer.<E>instance());
-                consumeElements(Collections.<E>emptyList());
-              } else {
-                setDone(new ListToIteratorFutureMaterializer<E>(materialized, context));
-                consumeElements(materialized);
-              }
+              setDone(new DequeueToIteratorFutureMaterializer<E>(materialized, context));
+              consumeElements(materialized);
             }
           }
 
@@ -171,7 +151,17 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
 
     @Override
     public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-      safeConsume(consumer, !consumed, LOGGER);
+      materializeElements(new FutureConsumer<List<E>>() {
+        @Override
+        public void accept(final List<E> elements) {
+          getState().materializeHasNext(consumer);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
+        }
+      });
     }
 
     @Override
@@ -191,50 +181,25 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
 
     @Override
     public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
-      if (consumed) {
-        safeConsumeComplete(consumer, 0, LOGGER);
-      } else {
-        wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
-          @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            consumer.accept(safeSize(size), ImmaterialState.this.index++, element);
-          }
+      materializeElements(new FutureConsumer<List<E>>() {
+        @Override
+        public void accept(final List<E> elements) {
+          getState().materializeNext(consumer);
+        }
 
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            if (!consumed) {
-              consumed = true;
-              setDone(EmptyIteratorFutureMaterializer.<E>instance());
-              consumer.accept(1, index, element);
-            } else {
-              consumer.complete(0);
-            }
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
-      }
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
+        }
+      });
     }
 
     @Override
     public void materializeNextWhile(@NotNull final IndexedFuturePredicate<E> predicate) {
-      wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+      materializeElements(new FutureConsumer<List<E>>() {
         @Override
-        public void cancellableComplete(final int size) throws Exception {
-          setDone(EmptyIteratorFutureMaterializer.<E>instance());
-          if (consumed || predicate.test(1, index, element)) {
-            predicate.complete(0);
-          }
-        }
-
-        @Override
-        public boolean cancellableTest(final int size, final int index, final E element)
-            throws Exception {
-          return predicate.test(safeSize(size), ImmaterialState.this.index++, element);
+        public void accept(final List<E> elements) {
+          getState().materializeNextWhile(predicate);
         }
 
         @Override
@@ -246,29 +211,17 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
 
     @Override
     public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-      if (count <= 0 || consumed) {
-        safeConsume(consumer, 0, LOGGER);
-      } else {
-        wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
-          @Override
-          public void cancellableAccept(final Integer skipped) throws Exception {
-            if (skipped < count && !consumed) {
-              consumed = true;
-              setDone(EmptyIteratorFutureMaterializer.<E>instance());
-              index += skipped + 1;
-              consumer.accept(skipped + 1);
-            } else {
-              index += skipped;
-              consumer.accept(skipped);
-            }
-          }
+      materializeElements(new FutureConsumer<List<E>>() {
+        @Override
+        public void accept(final List<E> elements) {
+          getState().materializeSkip(count, consumer);
+        }
 
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
-      }
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
+        }
+      });
     }
 
     @Override
@@ -278,22 +231,22 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
 
     @Override
     public int weightHasNext() {
-      return 1;
+      return weightElements();
     }
 
     @Override
     public int weightNext() {
-      return consumed ? 1 : wrapped.weightNext();
+      return weightElements();
     }
 
     @Override
     public int weightNextWhile() {
-      return consumed ? 1 : wrapped.weightNextWhile();
+      return weightElements();
     }
 
     @Override
     public int weightSkip() {
-      return consumed ? 1 : wrapped.weightSkip();
+      return weightElements();
     }
 
     private void consumeElements(@NotNull final List<E> elements) {

@@ -19,6 +19,7 @@ import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -151,10 +152,11 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
                 final List<E> materialized = appendFunction.apply(wrappedElements, elements);
                 if (materialized.isEmpty()) {
                   setDone(EmptyIteratorFutureMaterializer.<E>instance());
+                  consumeElements(Collections.<E>emptyList());
                 } else {
                   setDone(new ListToIteratorFutureMaterializer<E>(materialized, context));
+                  consumeElements(materialized);
                 }
-                consumeElements(materialized);
               }
 
               @Override

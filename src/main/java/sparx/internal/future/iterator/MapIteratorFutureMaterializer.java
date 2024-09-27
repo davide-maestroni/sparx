@@ -19,6 +19,7 @@ import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -123,10 +124,11 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
           public void cancellableComplete(final int size) {
             if (elements.isEmpty()) {
               setDone(EmptyIteratorFutureMaterializer.<F>instance());
+              consumeElements(Collections.<F>emptyList());
             } else {
               setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context));
+              consumeElements(elements);
             }
-            consumeElements(elements);
           }
 
           @Override
