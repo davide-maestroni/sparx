@@ -47,6 +47,7 @@ import sparx.internal.future.iterator.CountWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DistinctByIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
+import sparx.internal.future.iterator.DropRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
@@ -392,6 +393,22 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerDropRight(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        final int maxElements) {
+      final int knownSize = materializer.knownSize();
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          knownSize > 0 ? Math.max(0, knownSize - maxElements) : -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).dropRight(maxElements);
+        }
+      };
+    }
+
     private static @NotNull <E, F> LazyIteratorFutureMaterializer<E, F> lazyMaterializerMap(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
@@ -733,8 +750,24 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> dropRight(int maxElements) {
-      return null;
+    public @NotNull Iterator<E> dropRight(final int maxElements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (maxElements <= 0 || knownSize == 0) {
+        return cloneIterator(context, materializer);
+      }
+      if (maxElements == Integer.MAX_VALUE || (knownSize > 0 && maxElements >= knownSize)) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerDropRight(materializer, context, cancelException, maxElements));
+      }
+      return new Iterator<E>(context, cancelException,
+          new DropRightIteratorFutureMaterializer<E>(materializer, maxElements, context,
+              cancelException));
     }
 
     @Override
@@ -2131,7 +2164,7 @@ class future extends Sparx {
       return (TernaryFunction<java.util.List<E>, Integer, java.util.List<E>, java.util.List<E>>) INSERT_ALL_AFTER_FUNCTION;
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerAppend(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerAppend(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException, final E element) {
@@ -2145,7 +2178,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerAppendAll(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerAppendAll(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2161,7 +2194,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Integer> lazyMaterializerCount(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Integer> lazyMaterializerCount(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
@@ -2174,7 +2207,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Integer> lazyMaterializerCountWhere(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Integer> lazyMaterializerCountWhere(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2188,7 +2221,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerDiff(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerDiff(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2201,7 +2234,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E, K> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerDistinctBy(
+    private static @NotNull <E, K> LazyListFutureMaterializer<E, E> lazyMaterializerDistinctBy(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2214,7 +2247,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerDrop(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerDrop(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2229,7 +2262,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerDropRight(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerDropRight(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2244,7 +2277,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerDropRightWhile(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerDropRightWhile(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2257,7 +2290,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerDropWhile(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerDropWhile(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2270,7 +2303,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Boolean> lazyMaterializerEach(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Boolean> lazyMaterializerEach(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2284,7 +2317,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Boolean> lazyMaterializerEndsWith(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Boolean> lazyMaterializerEndsWith(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2298,7 +2331,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Boolean> lazyMaterializerExists(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Boolean> lazyMaterializerExists(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2312,7 +2345,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerFilter(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerFilter(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2325,7 +2358,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerFindFirst(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerFindFirst(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2338,7 +2371,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Integer> lazyMaterializerFindIndexWhere(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Integer> lazyMaterializerFindIndexWhere(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2353,7 +2386,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Integer> lazyMaterializerFindIndexOfSlice(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Integer> lazyMaterializerFindIndexOfSlice(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2368,7 +2401,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerFindLast(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerFindLast(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2381,7 +2414,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Integer> lazyMaterializerFindLastIndexWhere(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Integer> lazyMaterializerFindLastIndexWhere(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2396,7 +2429,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Integer> lazyMaterializerFindLastIndexOfSlice(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Integer> lazyMaterializerFindLastIndexOfSlice(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2411,7 +2444,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E, F> future.List.LazyListFutureMaterializer<E, F> lazyMaterializerFoldLeft(
+    private static @NotNull <E, F> LazyListFutureMaterializer<E, F> lazyMaterializerFoldLeft(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException, final F identity,
@@ -2424,7 +2457,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E, F> future.List.LazyListFutureMaterializer<E, F> lazyMaterializerFoldLeftWhile(
+    private static @NotNull <E, F> LazyListFutureMaterializer<E, F> lazyMaterializerFoldLeftWhile(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException, final F identity,
@@ -2438,7 +2471,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E, F> future.List.LazyListFutureMaterializer<E, F> lazyMaterializerFoldRight(
+    private static @NotNull <E, F> LazyListFutureMaterializer<E, F> lazyMaterializerFoldRight(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException, final F identity,
@@ -2451,7 +2484,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E, F> future.List.LazyListFutureMaterializer<E, F> lazyMaterializerFoldRightWhile(
+    private static @NotNull <E, F> LazyListFutureMaterializer<E, F> lazyMaterializerFoldRightWhile(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException, final F identity,
@@ -2465,7 +2498,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Boolean> lazyMaterializerIncludesAll(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Boolean> lazyMaterializerIncludesAll(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2479,7 +2512,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Boolean> lazyMaterializerIncludesSlice(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Boolean> lazyMaterializerIncludesSlice(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2493,7 +2526,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerInsertAfter(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerInsertAfter(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2517,7 +2550,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerInsertAllAfter(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerInsertAllAfter(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2542,7 +2575,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerIntersect(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerIntersect(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2555,7 +2588,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E, F> future.List.LazyListFutureMaterializer<E, F> lazyMaterializerMap(
+    private static @NotNull <E, F> LazyListFutureMaterializer<E, F> lazyMaterializerMap(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2569,7 +2602,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerMapAfter(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerMapAfter(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2583,7 +2616,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerMapFirstWhere(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerMapFirstWhere(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2598,7 +2631,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerMapLastWhere(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerMapLastWhere(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2613,7 +2646,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerMax(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerMax(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2626,7 +2659,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Boolean> lazyMaterializerNone(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Boolean> lazyMaterializerNone(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2640,7 +2673,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, Boolean> lazyMaterializerNotExists(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Boolean> lazyMaterializerNotExists(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2654,7 +2687,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerOrElse(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerOrElse(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2669,7 +2702,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerPrepend(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerPrepend(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException, final E element) {
@@ -2683,7 +2716,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerPrependAll(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerPrependAll(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2699,7 +2732,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerReduceLeft(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerReduceLeft(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2712,7 +2745,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerReduceRight(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerReduceRight(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2725,7 +2758,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerRemoveAfter(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerRemoveAfter(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2738,7 +2771,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerRemoveFirstWhere(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerRemoveFirstWhere(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2751,7 +2784,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerRemoveLastWhere(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerRemoveLastWhere(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2764,7 +2797,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerRemoveSlice(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerRemoveSlice(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException, final int start,
@@ -2777,7 +2810,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerRemoveWhere(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerRemoveWhere(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2790,7 +2823,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerReplaceSlice(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerReplaceSlice(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException, final int start,
@@ -2803,7 +2836,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerResizeTo(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerResizeTo(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2817,7 +2850,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerReverse(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerReverse(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
@@ -2830,7 +2863,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerSlice(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerSlice(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException, final int start,
@@ -2843,7 +2876,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerSorted(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerSorted(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2857,7 +2890,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerSymmetricDiff(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerSymmetricDiff(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2870,7 +2903,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerTake(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerTake(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2885,7 +2918,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerTakeRight(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerTakeRight(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2900,7 +2933,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerTakeRightWhile(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerTakeRightWhile(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2913,7 +2946,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerTakeWhile(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerTakeWhile(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -2926,7 +2959,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> future.List.LazyListFutureMaterializer<E, E> lazyMaterializerUnion(
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerUnion(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,

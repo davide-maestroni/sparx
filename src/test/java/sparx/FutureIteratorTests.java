@@ -51,6 +51,7 @@ import sparx.internal.future.iterator.CountWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DistinctByIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
+import sparx.internal.future.iterator.DropRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
@@ -266,6 +267,25 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.drop(1));
+  }
+
+  @Test
+  public void dropRight() throws Exception {
+    test(List.of(), Iterator::<Integer>of, it -> it.dropRight(1));
+    test(List.of(), Iterator::<Integer>of, it -> it.dropRight(0));
+    test(List.of(), Iterator::<Integer>of, it -> it.dropRight(-1));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.dropRight(-1));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.dropRight(0));
+    test(List.of(1, null), () -> Iterator.of(1, null, 3), it -> it.dropRight(1));
+    test(List.of(1), () -> Iterator.of(1, null, 3), it -> it.dropRight(2));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.dropRight(3));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.dropRight(4));
+
+    testMaterializer(List.of(1, 2), c -> new DropRightIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 1, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.dropRight(1));
   }
 
   @Test

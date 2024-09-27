@@ -35,19 +35,11 @@ public class DropWhileListFutureMaterializer<E> extends AbstractListFutureMateri
   private static final Logger LOGGER = Logger.getLogger(
       DropWhileListFutureMaterializer.class.getName());
 
-  private final boolean isMaterializedAtOnce;
-
   public DropWhileListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, predicate, context, cancelException));
-  }
-
-  @Override
-  public boolean isMaterializedAtOnce() {
-    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   @Override

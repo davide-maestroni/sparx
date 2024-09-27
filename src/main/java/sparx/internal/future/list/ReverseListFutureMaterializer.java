@@ -38,7 +38,6 @@ public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterial
   private static final Logger LOGGER = Logger.getLogger(
       ReverseListFutureMaterializer.class.getName());
 
-  private final boolean isMaterializedAtOnce;
   private final int knownSize;
 
   public ReverseListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
@@ -46,7 +45,6 @@ public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterial
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> reverseFunction) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     final int knownSize = this.knownSize = wrapped.knownSize();
     if (knownSize == 0) {
       try {
@@ -59,11 +57,6 @@ public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterial
     } else {
       setState(new ImmaterialState(wrapped, context, cancelException, reverseFunction));
     }
-  }
-
-  @Override
-  public boolean isMaterializedAtOnce() {
-    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   @Override
