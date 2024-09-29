@@ -166,7 +166,8 @@ public class DropIteratorFutureMaterializer<E> extends AbstractIteratorFutureMat
     }
 
     @Override
-    public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
+    public void materializeSkip(@Positive final int count,
+        @NotNull final FutureConsumer<Integer> consumer) {
       materialized(new StateConsumer<E>() {
         @Override
         public void accept(@NotNull final IteratorFutureMaterializer<E> state) {

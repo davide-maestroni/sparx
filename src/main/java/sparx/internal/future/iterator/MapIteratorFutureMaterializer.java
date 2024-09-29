@@ -32,6 +32,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
 public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureMaterializer<F> {
@@ -223,7 +224,8 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
     }
 
     @Override
-    public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
+    public void materializeSkip(@Positive final int count,
+        @NotNull final FutureConsumer<Integer> consumer) {
       wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
         @Override
         public void cancellableAccept(final Integer skipped) throws Exception {

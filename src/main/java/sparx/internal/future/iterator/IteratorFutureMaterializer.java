@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.Positive;
 
 public interface IteratorFutureMaterializer<E> {
 
@@ -49,7 +50,7 @@ public interface IteratorFutureMaterializer<E> {
 
   void materializeNextWhile(@NotNull IndexedFuturePredicate<E> predicate);
 
-  void materializeSkip(int count, @NotNull FutureConsumer<Integer> consumer);
+  void materializeSkip(@Positive int count, @NotNull FutureConsumer<Integer> consumer);
 
   int weightElements();
 

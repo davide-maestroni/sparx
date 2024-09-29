@@ -1779,7 +1779,7 @@ class future extends Sparx {
     @Override
     public int skip(final int maxElements) {
       final IteratorFutureMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
+      if (maxElements <= 0 || materializer.knownSize() == 0) {
         return 0;
       }
       final BlockingConsumer<Integer> consumer = new BlockingConsumer<Integer>(cancelException);
@@ -5973,16 +5973,6 @@ class future extends Sparx {
               cancelException));
     }
 
-    // TODO: toFuture(context) ???
-    // TODO: extra
-    public @NotNull List<E> switchTo(@NotNull final ExecutionContext context) {
-      if (context.equals(this.context)) {
-        return this;
-      }
-      return new List<E>(context, new AtomicReference<CancellationException>(),
-          new SwitchListFutureMaterializer<E>(this.context, taskID, context, materializer));
-    }
-
     @Override
     public @NotNull List<E> take(final int maxElements) {
       if (maxElements <= 0) {
@@ -6096,6 +6086,15 @@ class future extends Sparx {
               cancelException));
     }
 
+    // TODO: toFuture(context) ???
+    // TODO: extra
+    public @NotNull List<E> toContext(@NotNull final ExecutionContext context) {
+      if (context.equals(this.context)) {
+        return this;
+      }
+      return new List<E>(context, new AtomicReference<CancellationException>(),
+          new SwitchListFutureMaterializer<E>(this.context, taskID, context, materializer));
+    }
 
     // TODO: extra
     public @NotNull lazy.List<E> toLazy() {

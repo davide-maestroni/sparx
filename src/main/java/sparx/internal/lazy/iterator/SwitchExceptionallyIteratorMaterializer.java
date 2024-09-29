@@ -18,6 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
 public class SwitchExceptionallyIteratorMaterializer<E> extends
@@ -78,7 +79,7 @@ public class SwitchExceptionallyIteratorMaterializer<E> extends
     }
 
     @Override
-    public int materializeSkip(final int count) {
+    public int materializeSkip(@Positive final int count) {
       throw new UnsupportedOperationException();
     }
   }

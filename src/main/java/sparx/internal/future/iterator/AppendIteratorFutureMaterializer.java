@@ -33,6 +33,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.BinaryFunction;
 
 public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
@@ -245,8 +246,9 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
     }
 
     @Override
-    public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-      if (count <= 0 || consumed) {
+    public void materializeSkip(@Positive final int count,
+        @NotNull final FutureConsumer<Integer> consumer) {
+      if (consumed) {
         safeConsume(consumer, 0, LOGGER);
       } else {
         wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {

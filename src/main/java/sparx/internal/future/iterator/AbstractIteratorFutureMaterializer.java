@@ -31,6 +31,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.Positive;
 
 public abstract class AbstractIteratorFutureMaterializer<E> implements
     IteratorFutureMaterializer<E> {
@@ -112,7 +113,8 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
   }
 
   @Override
-  public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
+  public void materializeSkip(@Positive final int count,
+      @NotNull final FutureConsumer<Integer> consumer) {
     state.materializeSkip(count, consumer);
   }
 

@@ -32,6 +32,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedPredicate;
 
 public class DropRightWhileIteratorFutureMaterializer<E> extends
@@ -210,7 +211,8 @@ public class DropRightWhileIteratorFutureMaterializer<E> extends
     }
 
     @Override
-    public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
+    public void materializeSkip(@Positive final int count,
+        @NotNull final FutureConsumer<Integer> consumer) {
       materializeElements(new FutureConsumer<List<E>>() {
         @Override
         public void accept(final List<E> elements) {

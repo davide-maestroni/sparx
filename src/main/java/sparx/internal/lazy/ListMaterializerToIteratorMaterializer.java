@@ -19,6 +19,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.iterator.IteratorMaterializer;
 import sparx.internal.lazy.list.ListMaterializer;
+import sparx.util.annotation.Positive;
 
 public class ListMaterializerToIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
@@ -54,7 +55,7 @@ public class ListMaterializerToIteratorMaterializer<E> implements IteratorMateri
   }
 
   @Override
-  public int materializeSkip(final int count) {
+  public int materializeSkip(@Positive final int count) {
     final ListMaterializer<E> wrapped = this.wrapped;
     final long wrappedIndex = (long) count + pos;
     if (wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex)) {

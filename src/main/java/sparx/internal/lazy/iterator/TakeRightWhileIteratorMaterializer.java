@@ -19,6 +19,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedPredicate;
 
 public class TakeRightWhileIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
@@ -74,7 +75,7 @@ public class TakeRightWhileIteratorMaterializer<E> extends StatefulAutoSkipItera
     }
 
     @Override
-    public int materializeSkip(final int count) {
+    public int materializeSkip(@Positive final int count) {
       throw new UnsupportedOperationException();
     }
   }

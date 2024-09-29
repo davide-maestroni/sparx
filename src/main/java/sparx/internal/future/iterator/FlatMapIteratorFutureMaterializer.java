@@ -32,6 +32,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
 public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureMaterializer<F> {
@@ -158,12 +159,9 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
     }
 
     @Override
-    public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-      if (count <= 0) {
-        safeConsume(consumer, 0, LOGGER);
-      } else {
-        new SkipFutureConsumer(count, consumer).run();
-      }
+    public void materializeSkip(@Positive final int count,
+        @NotNull final FutureConsumer<Integer> consumer) {
+      new SkipFutureConsumer(count, consumer).run();
     }
 
     @Override

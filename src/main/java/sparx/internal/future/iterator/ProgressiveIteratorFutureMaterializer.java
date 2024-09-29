@@ -32,6 +32,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 
 abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
     AbstractIteratorFutureMaterializer<F> {
@@ -208,37 +209,34 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
     }
 
     @Override
-    public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-      if (count <= 0) {
-        safeConsume(consumer, 0, logger);
-      } else {
-        materializeNext(new FutureConsumer<DequeueList<F>>() {
-          private int skipped;
+    public void materializeSkip(@Positive final int count,
+        @NotNull final FutureConsumer<Integer> consumer) {
+      materializeNext(new FutureConsumer<DequeueList<F>>() {
+        private int skipped;
 
-          @Override
-          public void accept(final DequeueList<F> nextElements) throws Exception {
-            if (nextElements.isEmpty()) {
-              consumer.accept(skipped);
+        @Override
+        public void accept(final DequeueList<F> nextElements) throws Exception {
+          if (nextElements.isEmpty()) {
+            consumer.accept(skipped);
+          } else {
+            while (skipped < count && !nextElements.isEmpty()) {
+              nextElements.removeFirst();
+              ++index;
+              ++skipped;
+            }
+            if (skipped < count) {
+              materializeNext(this);
             } else {
-              while (skipped < count && !nextElements.isEmpty()) {
-                nextElements.removeFirst();
-                ++index;
-                ++skipped;
-              }
-              if (skipped < count) {
-                materializeNext(this);
-              } else {
-                consumer.accept(skipped);
-              }
+              consumer.accept(skipped);
             }
           }
+        }
 
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
-      }
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
+        }
+      });
     }
 
     @Override

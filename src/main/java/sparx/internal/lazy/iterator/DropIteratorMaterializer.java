@@ -66,8 +66,8 @@ public class DropIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0 && materializeHasNext()) {
+    public int materializeSkip(@Positive final int count) {
+      if (materializeHasNext()) {
         return getState().materializeSkip(count);
       }
       return 0;

@@ -1947,7 +1947,10 @@ public class lazy extends Sparx {
 
     @Override
     public int skip(final int maxElements) {
-      return materializer.materializeSkip(maxElements);
+      if (maxElements > 0) {
+        return materializer.materializeSkip(maxElements);
+      }
+      return 0;
     }
 
     @Override

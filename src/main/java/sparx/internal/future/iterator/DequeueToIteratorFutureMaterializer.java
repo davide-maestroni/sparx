@@ -30,6 +30,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 
 public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMaterializer<E> {
 
@@ -143,19 +144,16 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
   }
 
   @Override
-  public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-    if (count <= 0) {
-      safeConsume(consumer, 0, LOGGER);
-    } else {
-      int skipped = 0;
-      final DequeueList<E> elements = this.elements;
-      while (skipped < count && !elements.isEmpty()) {
-        elements.removeFirst();
-        ++skipped;
-      }
-      pos += skipped;
-      safeConsume(consumer, skipped, LOGGER);
+  public void materializeSkip(@Positive final int count,
+      @NotNull final FutureConsumer<Integer> consumer) {
+    int skipped = 0;
+    final DequeueList<E> elements = this.elements;
+    while (skipped < count && !elements.isEmpty()) {
+      elements.removeFirst();
+      ++skipped;
     }
+    pos += skipped;
+    safeConsume(consumer, skipped, LOGGER);
   }
 
   @Override

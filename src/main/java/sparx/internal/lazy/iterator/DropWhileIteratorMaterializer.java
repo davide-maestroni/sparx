@@ -18,6 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedPredicate;
 
 public class DropWhileIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
@@ -72,8 +73,8 @@ public class DropWhileIteratorMaterializer<E> extends StatefulIteratorMaterializ
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0 && materializeHasNext()) {
+    public int materializeSkip(@Positive final int count) {
+      if (materializeHasNext()) {
         return getState().materializeSkip(count);
       }
       return 0;

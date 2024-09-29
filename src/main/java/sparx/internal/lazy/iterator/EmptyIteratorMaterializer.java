@@ -17,6 +17,7 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.Positive;
 
 public class EmptyIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
@@ -46,7 +47,7 @@ public class EmptyIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
-  public int materializeSkip(final int count) {
+  public int materializeSkip(@Positive final int count) {
     return 0;
   }
 }

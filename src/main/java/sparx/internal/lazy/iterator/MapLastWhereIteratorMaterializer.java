@@ -18,6 +18,7 @@ package sparx.internal.lazy.iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
@@ -87,7 +88,7 @@ public class MapLastWhereIteratorMaterializer<E> extends StatefulAutoSkipIterato
     }
 
     @Override
-    public int materializeSkip(final int count) {
+    public int materializeSkip(@Positive final int count) {
       throw new UnsupportedOperationException();
     }
   }

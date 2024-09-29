@@ -18,6 +18,7 @@ package sparx.internal.lazy.iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
 import sparx.util.annotation.NotNegative;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
 public class MapAfterIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
@@ -69,18 +70,15 @@ public class MapAfterIteratorMaterializer<E> extends StatefulIteratorMaterialize
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        final int numElements = this.numElements;
-        final int pos = this.pos;
-        if (count <= numElements - pos) {
-          final int skipped = wrapped.materializeSkip(count);
-          this.pos += skipped;
-          return skipped;
-        }
-        return setState(wrapped).materializeSkip(count);
+    public int materializeSkip(@Positive final int count) {
+      final int numElements = this.numElements;
+      final int pos = this.pos;
+      if (count <= numElements - pos) {
+        final int skipped = wrapped.materializeSkip(count);
+        this.pos += skipped;
+        return skipped;
       }
-      return 0;
+      return setState(wrapped).materializeSkip(count);
     }
   }
 }

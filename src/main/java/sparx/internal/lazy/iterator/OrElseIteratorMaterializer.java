@@ -16,6 +16,7 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.Positive;
 
 public class OrElseIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
@@ -59,17 +60,14 @@ public class OrElseIteratorMaterializer<E> extends StatefulIteratorMaterializer<
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        final int skipped = wrapped.materializeSkip(count);
-        if (skipped > 0) {
-          setState(wrapped);
-          return skipped;
-        }
-        return setState(elementsMaterializer).materializeSkip(count);
+    public int materializeSkip(@Positive final int count) {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      final int skipped = wrapped.materializeSkip(count);
+      if (skipped > 0) {
+        setState(wrapped);
+        return skipped;
       }
-      return 0;
+      return setState(elementsMaterializer).materializeSkip(count);
     }
   }
 }

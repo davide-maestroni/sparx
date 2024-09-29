@@ -66,19 +66,15 @@ public class ResizeIteratorMaterializer<E> extends StatefulIteratorMaterializer<
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        final int remaining = numElements - pos;
-        final int toSkip = Math.min(count, remaining);
-        int skipped = wrapped.materializeSkip(toSkip);
-        if (skipped < toSkip) {
-          skipped += setState(
-              new RepeatIteratorMaterializer<E>(remaining, padding)).materializeSkip(
-              toSkip - skipped);
-        }
-        return skipped;
+    public int materializeSkip(@Positive final int count) {
+      final int remaining = numElements - pos;
+      final int toSkip = Math.min(count, remaining);
+      int skipped = wrapped.materializeSkip(toSkip);
+      if (skipped < toSkip) {
+        skipped += setState(new RepeatIteratorMaterializer<E>(remaining, padding)).materializeSkip(
+            toSkip - skipped);
       }
-      return 0;
+      return skipped;
     }
   }
 }

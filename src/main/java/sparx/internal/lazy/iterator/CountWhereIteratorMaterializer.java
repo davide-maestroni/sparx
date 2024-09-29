@@ -17,6 +17,7 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedPredicate;
 
 public class CountWhereIteratorMaterializer<E> extends StatefulIteratorMaterializer<Integer> {
@@ -69,12 +70,9 @@ public class CountWhereIteratorMaterializer<E> extends StatefulIteratorMateriali
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        setEmptyState();
-        return 1;
-      }
-      return 0;
+    public int materializeSkip(@Positive final int count) {
+      setEmptyState();
+      return 1;
     }
   }
 }

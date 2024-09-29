@@ -17,6 +17,7 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.Positive;
 
 public class InsertAllIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
@@ -63,14 +64,12 @@ public class InsertAllIteratorMaterializer<E> extends StatefulIteratorMaterializ
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        final int skipped = elementsMaterializer.materializeSkip(count);
-        if (skipped < count) {
-          return skipped + setState(wrapped).materializeSkip(count - skipped);
-        }
+    public int materializeSkip(@Positive final int count) {
+      final int skipped = elementsMaterializer.materializeSkip(count);
+      if (skipped < count) {
+        return skipped + setState(wrapped).materializeSkip(count - skipped);
       }
-      return 0;
+      return skipped;
     }
   }
 }

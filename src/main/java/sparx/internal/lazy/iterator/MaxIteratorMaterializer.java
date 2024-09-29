@@ -18,6 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.Positive;
 
 public class MaxIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
@@ -77,12 +78,9 @@ public class MaxIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> 
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        setEmptyState();
-        return wrapped.materializeHasNext() ? 1 : 0;
-      }
-      return 0;
+    public int materializeSkip(@Positive final int count) {
+      setEmptyState();
+      return wrapped.materializeHasNext() ? 1 : 0;
     }
   }
 }

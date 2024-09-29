@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.BinaryFunction;
 
 public class ReduceRightIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
@@ -74,12 +75,9 @@ public class ReduceRightIteratorMaterializer<E> extends StatefulIteratorMaterial
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        setEmptyState();
-        return 1;
-      }
-      return 0;
+    public int materializeSkip(@Positive final int count) {
+      setEmptyState();
+      return 1;
     }
   }
 }

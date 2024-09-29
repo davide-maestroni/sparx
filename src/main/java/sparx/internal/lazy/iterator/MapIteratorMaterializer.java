@@ -17,6 +17,7 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
 public class MapIteratorMaterializer<E, F> implements IteratorMaterializer<F> {
@@ -53,7 +54,7 @@ public class MapIteratorMaterializer<E, F> implements IteratorMaterializer<F> {
   }
 
   @Override
-  public int materializeSkip(final int count) {
+  public int materializeSkip(@Positive final int count) {
     final int skipped = wrapped.materializeSkip(count);
     pos += skipped;
     return skipped;

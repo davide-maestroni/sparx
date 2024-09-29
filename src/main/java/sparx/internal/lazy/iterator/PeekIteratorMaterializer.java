@@ -18,6 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedConsumer;
 
 public class PeekIteratorMaterializer<E> implements IteratorMaterializer<E> {
@@ -60,7 +61,7 @@ public class PeekIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
-  public int materializeSkip(final int count) {
+  public int materializeSkip(@Positive final int count) {
     final int skipped = wrapped.materializeSkip(count);
     pos += skipped;
     return skipped;

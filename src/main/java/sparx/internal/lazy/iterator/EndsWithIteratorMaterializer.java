@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
 import sparx.util.DequeueList;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.Positive;
 
 public class EndsWithIteratorMaterializer<E> extends StatefulIteratorMaterializer<Boolean> {
 
@@ -79,12 +80,9 @@ public class EndsWithIteratorMaterializer<E> extends StatefulIteratorMaterialize
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        setEmptyState();
-        return 1;
-      }
-      return 0;
+    public int materializeSkip(@Positive final int count) {
+      setEmptyState();
+      return 1;
     }
   }
 }

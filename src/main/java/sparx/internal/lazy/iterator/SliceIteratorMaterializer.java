@@ -18,6 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 
 public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
@@ -87,12 +88,9 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        materializeHasNext();
-        return getState().materializeSkip(count);
-      }
-      return 0;
+    public int materializeSkip(@Positive final int count) {
+      materializeHasNext();
+      return getState().materializeSkip(count);
     }
   }
 

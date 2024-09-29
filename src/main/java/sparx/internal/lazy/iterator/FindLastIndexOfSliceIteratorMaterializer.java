@@ -20,6 +20,7 @@ import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 
 public class FindLastIndexOfSliceIteratorMaterializer<E> extends
     StatefulIteratorMaterializer<Integer> {
@@ -138,9 +139,10 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> extends
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        return materializeHasNext() ? 1 : 0;
+    public int materializeSkip(@Positive final int count) {
+      if (materializeHasNext()) {
+        setEmptyState();
+        return 1;
       }
       return 0;
     }

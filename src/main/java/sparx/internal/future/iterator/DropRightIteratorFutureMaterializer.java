@@ -316,33 +316,30 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
     }
 
     @Override
-    public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-      if (count <= 0) {
-        safeConsume(consumer, 0, LOGGER);
-      } else {
-        materializeNextWhile(new IndexedFuturePredicate<E>() {
-          private int skipped;
+    public void materializeSkip(@Positive final int count,
+        @NotNull final FutureConsumer<Integer> consumer) {
+      materializeNextWhile(new IndexedFuturePredicate<E>() {
+        private int skipped;
 
-          @Override
-          public void complete(final int size) throws Exception {
+        @Override
+        public void complete(final int size) throws Exception {
+          consumer.accept(skipped);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
+        }
+
+        @Override
+        public boolean test(final int size, final int index, final E element) throws Exception {
+          if (++skipped >= count) {
             consumer.accept(skipped);
+            return false;
           }
-
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-
-          @Override
-          public boolean test(final int size, final int index, final E element) throws Exception {
-            if (++skipped >= count) {
-              consumer.accept(skipped);
-              return false;
-            }
-            return true;
-          }
-        });
-      }
+          return true;
+        }
+      });
     }
 
     @Override

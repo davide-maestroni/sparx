@@ -16,6 +16,7 @@
 package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
+import sparx.util.annotation.Positive;
 
 public class RepeatIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
@@ -50,7 +51,7 @@ public class RepeatIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
-  public int materializeSkip(final int count) {
+  public int materializeSkip(@Positive final int count) {
     final int skipped = Math.max(0, Math.min(count, times - pos));
     pos += skipped;
     return skipped;

@@ -19,6 +19,7 @@ import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 
 public class IncludesSliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<Boolean> {
 
@@ -95,7 +96,7 @@ public class IncludesSliceIteratorMaterializer<E> extends StatefulIteratorMateri
     }
 
     @Override
-    public int materializeSkip(final int count) {
+    public int materializeSkip(@Positive final int count) {
       if (count > 0) {
         setEmptyState();
         return 1;

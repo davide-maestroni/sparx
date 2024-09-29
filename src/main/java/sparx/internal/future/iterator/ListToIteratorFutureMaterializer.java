@@ -29,6 +29,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.Positive;
 
 public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMaterializer<E> {
 
@@ -143,14 +144,11 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
   }
 
   @Override
-  public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-    if (count <= 0) {
-      safeConsume(consumer, 0, LOGGER);
-    } else {
-      final int skipped = Math.min(count, elements.size() - pos);
-      pos += skipped;
-      safeConsume(consumer, skipped, LOGGER);
-    }
+  public void materializeSkip(@Positive final int count,
+      @NotNull final FutureConsumer<Integer> consumer) {
+    final int skipped = Math.min(count, elements.size() - pos);
+    pos += skipped;
+    safeConsume(consumer, skipped, LOGGER);
   }
 
   @Override

@@ -28,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.Positive;
 
 public class ElementToIteratorFutureMaterializer<E> implements IteratorFutureMaterializer<E> {
 
@@ -137,8 +138,9 @@ public class ElementToIteratorFutureMaterializer<E> implements IteratorFutureMat
   }
 
   @Override
-  public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-    if (count <= 0 || consumed) {
+  public void materializeSkip(@Positive final int count,
+      @NotNull final FutureConsumer<Integer> consumer) {
+    if (consumed) {
       safeConsume(consumer, 0, LOGGER);
     } else {
       consumed = true;

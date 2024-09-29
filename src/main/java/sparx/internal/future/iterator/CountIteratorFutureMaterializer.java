@@ -31,6 +31,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.Positive;
 
 public class CountIteratorFutureMaterializer<E> extends
     AbstractIteratorFutureMaterializer<Integer> {
@@ -43,11 +44,6 @@ public class CountIteratorFutureMaterializer<E> extends
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, cancelException));
-  }
-
-  @Override
-  public boolean isMaterializedAtOnce() {
-    return true;
   }
 
   @Override
@@ -193,18 +189,25 @@ public class CountIteratorFutureMaterializer<E> extends
     }
 
     @Override
-    public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-      materializeElements(new FutureConsumer<List<Integer>>() {
-        @Override
-        public void accept(final List<Integer> elements) {
-          getState().materializeSkip(count, consumer);
-        }
+    public void materializeSkip(@Positive final int count,
+        @NotNull final FutureConsumer<Integer> consumer) {
+      if (elementsConsumers.isEmpty()) {
+        setDone(EmptyIteratorFutureMaterializer.<Integer>instance());
+        consumeElements(Collections.<Integer>emptyList());
+        safeConsume(consumer, 1, LOGGER);
+      } else {
+        materializeElements(new FutureConsumer<List<Integer>>() {
+          @Override
+          public void accept(final List<Integer> elements) {
+            getState().materializeSkip(count, consumer);
+          }
 
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override

@@ -62,13 +62,10 @@ public class TakeIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        final int skipped = wrapped.materializeSkip(Math.min(count, maxElements - pos));
-        pos += skipped;
-        return skipped;
-      }
-      return 0;
+    public int materializeSkip(@Positive final int count) {
+      final int skipped = wrapped.materializeSkip(Math.min(count, maxElements - pos));
+      pos += skipped;
+      return skipped;
     }
   }
 }

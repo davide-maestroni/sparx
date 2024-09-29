@@ -15,10 +15,12 @@
  */
 package sparx.internal.lazy.iterator;
 
+import sparx.util.annotation.Positive;
+
 public abstract class AutoSkipIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   @Override
-  public int materializeSkip(final int count) {
+  public int materializeSkip(@Positive final int count) {
     int skipped = 0;
     while (skipped < count && materializeHasNext()) {
       materializeNext();

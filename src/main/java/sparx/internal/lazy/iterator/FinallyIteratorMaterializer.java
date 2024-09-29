@@ -19,6 +19,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.Action;
 
 public class FinallyIteratorMaterializer<E> implements IteratorMaterializer<E> {
@@ -71,7 +72,7 @@ public class FinallyIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
-  public int materializeSkip(final int count) {
+  public int materializeSkip(@Positive final int count) {
     try {
       final int skipped = wrapped.materializeSkip(count);
       if (skipped < count) {

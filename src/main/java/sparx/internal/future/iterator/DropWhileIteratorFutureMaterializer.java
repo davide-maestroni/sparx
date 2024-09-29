@@ -32,6 +32,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedPredicate;
 
 public class DropWhileIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
@@ -303,18 +304,19 @@ public class DropWhileIteratorFutureMaterializer<E> extends AbstractIteratorFutu
     }
 
     @Override
-    public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
-      if (count <= 0) {
-        safeConsume(consumer, 0, LOGGER);
-      } else {
-        if (buffer == null) {
-          materializeBuffer(new FutureConsumer<DequeueList<E>>() {
-            @Override
-            public void accept(final DequeueList<E> buffer) {
-              if (buffer.isEmpty()) {
-                materializeSkip(count, consumer);
+    public void materializeSkip(@Positive final int count,
+        @NotNull final FutureConsumer<Integer> consumer) {
+      if (buffer == null) {
+        materializeBuffer(new FutureConsumer<DequeueList<E>>() {
+          @Override
+          public void accept(final DequeueList<E> buffer) throws Exception {
+            if (buffer.isEmpty()) {
+              materializeSkip(count, consumer);
+            } else {
+              buffer.clear();
+              if (count == 1) {
+                consumer.accept(1);
               } else {
-                buffer.clear();
                 materializeSkip(count - 1, new FutureConsumer<Integer>() {
                   @Override
                   public void accept(final Integer skipped) throws Exception {
@@ -328,14 +330,18 @@ public class DropWhileIteratorFutureMaterializer<E> extends AbstractIteratorFutu
                 });
               }
             }
+          }
 
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
-        } else if (!buffer.isEmpty()) {
-          buffer.clear();
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      } else if (!buffer.isEmpty()) {
+        buffer.clear();
+        if (count == 1) {
+          safeConsume(consumer, 1, LOGGER);
+        } else {
           materializeSkip(count - 1, new FutureConsumer<Integer>() {
             @Override
             public void accept(final Integer skipped) throws Exception {
@@ -347,19 +353,19 @@ public class DropWhileIteratorFutureMaterializer<E> extends AbstractIteratorFutu
               consumer.error(error);
             }
           });
-        } else {
-          wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
-            @Override
-            public void cancellableAccept(final Integer skipped) throws Exception {
-              consumer.accept(skipped);
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
         }
+      } else {
+        wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer skipped) throws Exception {
+            consumer.accept(skipped);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       }
     }
 

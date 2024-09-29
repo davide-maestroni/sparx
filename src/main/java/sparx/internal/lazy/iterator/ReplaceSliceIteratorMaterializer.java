@@ -18,6 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
+import sparx.util.annotation.Positive;
 
 public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
 
@@ -104,7 +105,7 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
     }
 
     @Override
-    public int materializeSkip(final int count) {
+    public int materializeSkip(@Positive final int count) {
       throw new UnsupportedOperationException();
     }
   }

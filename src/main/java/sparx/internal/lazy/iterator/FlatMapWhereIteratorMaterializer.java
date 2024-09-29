@@ -18,6 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
@@ -90,20 +91,17 @@ public class FlatMapWhereIteratorMaterializer<E> implements IteratorMaterializer
   }
 
   @Override
-  public int materializeSkip(final int count) {
-    if (count > 0) {
-      int skipped = 0;
-      while (skipped < count && materializeHasNext()) {
-        if (hasNext) {
-          hasNext = false;
-          this.next = null;
-          ++skipped;
-        } else {
-          skipped += materializer.materializeSkip(count - skipped);
-        }
+  public int materializeSkip(@Positive final int count) {
+    int skipped = 0;
+    while (skipped < count && materializeHasNext()) {
+      if (hasNext) {
+        hasNext = false;
+        this.next = null;
+        ++skipped;
+      } else {
+        skipped += materializer.materializeSkip(count - skipped);
       }
-      return skipped;
     }
-    return 0;
+    return skipped;
   }
 }

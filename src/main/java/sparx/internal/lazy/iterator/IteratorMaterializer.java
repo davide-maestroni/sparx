@@ -15,6 +15,8 @@
  */
 package sparx.internal.lazy.iterator;
 
+import sparx.util.annotation.Positive;
+
 public interface IteratorMaterializer<E> {
 
   int knownSize();
@@ -23,5 +25,5 @@ public interface IteratorMaterializer<E> {
 
   E materializeNext();
 
-  int materializeSkip(int count);
+  int materializeSkip(@Positive int count);
 }

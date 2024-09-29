@@ -18,6 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedPredicate;
 
 public class RemoveWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
@@ -75,7 +76,7 @@ public class RemoveWhereIteratorMaterializer<E> extends AutoSkipIteratorMaterial
   }
 
   @Override
-  public int materializeSkip(final int count) {
+  public int materializeSkip(@Positive final int count) {
     final int skipped = super.materializeSkip(count);
     pos += skipped;
     return skipped;
