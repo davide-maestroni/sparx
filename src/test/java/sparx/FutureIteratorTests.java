@@ -56,6 +56,9 @@ import sparx.internal.future.iterator.DropRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EachIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EndsWithIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ExistsIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
@@ -378,10 +381,72 @@ public class FutureIteratorTests {
 
     testMaterializer(List.of(false), c -> new EndsWithIteratorFutureMaterializer<>(
         new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
-        new ListToListFutureMaterializer<>(List.of(2, 2), c), c,
-        new AtomicReference<>()));
+        new ListToListFutureMaterializer<>(List.of(2, 2), c), c, new AtomicReference<>()));
 
     testCancel(it -> it.endsWith(List.of(null)));
+  }
+
+  @Test
+  public void exists() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).exists((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).exists((Predicate<? super Integer>) null));
+    test(List.of(false), Iterator::of, it -> it.exists(Objects::nonNull));
+    test(List.of(false), () -> Iterator.of(1, 2, 3), it -> it.exists(i -> i > 3));
+    test(List.of(true), () -> Iterator.of(1, 2, 3), it -> it.exists(i -> i > 0));
+
+    var itr = Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e)).exists(i -> i > 1);
+    assertThrows(NullPointerException.class, itr::first);
+
+    testMaterializer(List.of(true), c -> new ExistsIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 2, false, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.exists(e -> false));
+  }
+
+  @Test
+  public void filter() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).filter((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).filter((Predicate<? super Integer>) null));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null, 4), it -> it.filter(Objects::nonNull));
+    test(List.of(1, 2), () -> Iterator.of(1, 2, null, 4),
+        it -> it.filter(Objects::nonNull).filter(i -> i < 3));
+    test(List.of(4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.filter(Objects::nonNull).filter(i -> i > 3));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4),
+        it -> it.filter(Objects::nonNull).filter(i -> i > 4));
+    test(List.of(), Iterator::of, it -> it.filter(Objects::isNull));
+
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null, 4).toFuture(context).flatMap(e -> List.of(e))
+            .filter(i -> i > 4).size());
+
+    testMaterializer(List.of(1, 3), c -> new FilterIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e % 2 == 1, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.filter(e -> true));
+  }
+
+  @Test
+  public void findAny() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).findAny((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).findAny((Predicate<? super Integer>) null));
+    test(List.of(null), () -> Iterator.of(1, 2, null, 4), it -> it.findAny(Objects::isNull));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4), it -> it.findAny(i -> i < 4));
+    test(List.of(), Iterator::of, it -> it.findAny(Objects::isNull));
+
+    testMaterializer(List.of(3), c -> new FindFirstIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 2, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.findAny(e -> false));
   }
 
   @Test

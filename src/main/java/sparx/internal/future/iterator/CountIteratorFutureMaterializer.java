@@ -81,7 +81,7 @@ public class CountIteratorFutureMaterializer<E> extends
 
     @Override
     public boolean isMaterializedAtOnce() {
-      return true;
+      return false;
     }
 
     @Override
@@ -212,7 +212,7 @@ public class CountIteratorFutureMaterializer<E> extends
 
     @Override
     public int weightElements() {
-      return elementsConsumers.isEmpty() ? wrapped.weightElements() : 1;
+      return elementsConsumers.isEmpty() ? wrapped.weightSkip() : 1;
     }
 
     @Override

@@ -31,22 +31,20 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.internal.future.list.ListFutureMaterializer;
-import sparx.util.DequeueList;
 import sparx.util.annotation.Positive;
+import sparx.util.function.IndexedPredicate;
 
-public class EndsWithIteratorFutureMaterializer<E> extends
-    AbstractIteratorFutureMaterializer<Boolean> {
+public class ExistsIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<Boolean> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      EndsWithIteratorFutureMaterializer.class.getName());
+      ExistsIteratorFutureMaterializer.class.getName());
 
-  public EndsWithIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
-      @NotNull final ListFutureMaterializer<Object> elementsMaterializer,
+  public ExistsIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context, new AtomicInteger(STATUS_RUNNING));
-    setState(new ImmaterialState(wrapped, elementsMaterializer, cancelException));
+    setState(new ImmaterialState(wrapped, predicate, defaultResult, cancelException));
   }
 
   @Override
@@ -57,16 +55,18 @@ public class EndsWithIteratorFutureMaterializer<E> extends
   private class ImmaterialState implements IteratorFutureMaterializer<Boolean> {
 
     private final AtomicReference<CancellationException> cancelException;
+    private final boolean defaultResult;
     private final ArrayList<FutureConsumer<List<Boolean>>> elementsConsumers = new ArrayList<FutureConsumer<List<Boolean>>>(
         2);
-    private final ListFutureMaterializer<Object> elementsMaterializer;
+    private final IndexedPredicate<? super E> predicate;
     private final IteratorFutureMaterializer<E> wrapped;
 
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
-        @NotNull final ListFutureMaterializer<Object> elementsMaterializer,
+        @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
-      this.elementsMaterializer = elementsMaterializer;
+      this.predicate = predicate;
+      this.defaultResult = defaultResult;
       this.cancelException = cancelException;
     }
 
@@ -112,20 +112,38 @@ public class EndsWithIteratorFutureMaterializer<E> extends
       final ArrayList<FutureConsumer<List<Boolean>>> elementsConsumers = this.elementsConsumers;
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
-        elementsMaterializer.materializeSize(new CancellableFutureConsumer<Integer>() {
+        wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+          private boolean result = defaultResult;
+          private int wrappedIndex;
+
           @Override
-          public void cancellableAccept(final Integer size) {
-            if (size == 0) {
+          public void cancellableComplete(final int size) {
+            setDone(new ElementToIteratorFutureMaterializer<Boolean>(result));
+            consumeElements(Collections.singletonList(result));
+          }
+
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            if (predicate.test(wrappedIndex++, element)) {
               setDone(new ElementToIteratorFutureMaterializer<Boolean>(true));
               consumeElements(Collections.singletonList(true));
-            } else {
-              new MaterializingFutureConsumer(size).schedule();
+              return false;
             }
+            result = false;
+            return true;
           }
 
           @Override
           public void error(@NotNull final Exception error) {
-            setError(error);
+            final CancellationException exception = cancelException.get();
+            if (exception != null) {
+              setCancelled(exception);
+              consumeError(exception);
+            } else {
+              setFailed(error);
+              consumeError(error);
+            }
           }
         });
       }
@@ -215,7 +233,7 @@ public class EndsWithIteratorFutureMaterializer<E> extends
 
     @Override
     public int weightElements() {
-      return elementsConsumers.isEmpty() ? elementsMaterializer.weightSize() : 1;
+      return elementsConsumers.isEmpty() ? wrapped.weightNextWhile() : 1;
     }
 
     @Override
@@ -252,103 +270,6 @@ public class EndsWithIteratorFutureMaterializer<E> extends
         safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
-    }
-
-    private @NotNull String getTaskID() {
-      final String taskID = context.currentTaskID();
-      return taskID != null ? taskID : "";
-    }
-
-    private void setError(@NotNull final Exception error) {
-      final CancellationException exception = cancelException.get();
-      if (exception != null) {
-        setCancelled(exception);
-        consumeError(exception);
-      } else {
-        setFailed(error);
-        consumeError(error);
-      }
-    }
-
-    private class MaterializingFutureConsumer extends CancellableIndexedFuturePredicate<E> {
-
-      private final DequeueList<Object> elements = new DequeueList<Object>();
-      private final int elementsSize;
-
-      private String taskID;
-
-      private MaterializingFutureConsumer(final int elementsSize) {
-        this.elementsSize = elementsSize;
-      }
-
-      @Override
-      public void cancellableComplete(final int size) {
-        if (elements.size() < elementsSize) {
-          setDone(new ElementToIteratorFutureMaterializer<Boolean>(false));
-          consumeElements(Collections.singletonList(false));
-        } else {
-          elementsMaterializer.materializeNextWhile(0,
-              new CancellableIndexedFuturePredicate<Object>() {
-                @Override
-                public void cancellableComplete(final int size) {
-                  setDone(new ElementToIteratorFutureMaterializer<Boolean>(true));
-                  consumeElements(Collections.singletonList(true));
-                }
-
-                @Override
-                public boolean cancellableTest(final int size, final int index,
-                    final Object element) {
-                  if (element == null ? null != elements.get(index)
-                      : !element.equals(elements.get(index))) {
-                    setDone(new ElementToIteratorFutureMaterializer<Boolean>(false));
-                    consumeElements(Collections.singletonList(false));
-                    return false;
-                  }
-                  return true;
-                }
-
-                @Override
-                public void error(@NotNull final Exception error) {
-                  setError(error);
-                }
-              });
-        }
-      }
-
-      @Override
-      public boolean cancellableTest(final int size, final int index, final E element) {
-        elements.add(element);
-        if (elements.size() > elementsSize) {
-          elements.removeFirst();
-        }
-        return true;
-      }
-
-      @Override
-      public void error(@NotNull final Exception error) {
-        setError(error);
-      }
-
-      @Override
-      public @NotNull String taskID() {
-        return taskID;
-      }
-
-      @Override
-      public int weight() {
-        return (int) Math.min(Integer.MAX_VALUE,
-            (long) wrapped.weightNextWhile() + elementsMaterializer.weightNextWhile());
-      }
-
-      @Override
-      protected void runWithContext() {
-        wrapped.materializeNextWhile(this);
-      }
-
-      private void schedule() {
-        taskID = getTaskID();
-        context.scheduleAfter(this);
-      }
     }
   }
 }

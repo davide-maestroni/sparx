@@ -236,42 +236,45 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void exists() {
-    assertFalse(Iterator.of().exists(Objects::nonNull).isEmpty());
-    assertTrue(Iterator.of().exists(Objects::nonNull).notEmpty());
-    assertEquals(1, Iterator.of().exists(Objects::nonNull).size());
-    assertFalse(Iterator.of().exists(Objects::nonNull).first());
-    assertFalse(Iterator.of(1, 2, 3).exists(i -> i > 3).first());
-    assertTrue(Iterator.of(1, 2, 3).exists(i -> i > 0).first());
+  public void exists() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).exists((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).exists((Predicate<? super Integer>) null));
+    test(List.of(false), () -> Iterator.of().exists(Objects::nonNull));
+    test(List.of(false), () -> Iterator.of(1, 2, 3).exists(i -> i > 3));
+    test(List.of(true), () -> Iterator.of(1, 2, 3).exists(i -> i > 0));
+
     var itr = Iterator.of(1, null, 3).exists(i -> i > 1);
     assertThrows(NullPointerException.class, itr::first);
   }
 
   @Test
-  public void filter() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().filter(Objects::nonNull).isEmpty());
-    assertEquals(List.of(1, 2, 4), itr.get().filter(Objects::nonNull).toList());
-    assertEquals(List.of(1, 2), itr.get().filter(Objects::nonNull).filter(i -> i < 3).toList());
-    assertEquals(List.of(4), itr.get().filter(Objects::nonNull).filter(i -> i > 3).toList());
-    assertEquals(List.of(), itr.get().filter(Objects::nonNull).filter(i -> i > 4).toList());
-    assertThrows(NullPointerException.class, () -> itr.get().filter(i -> i > 4).size());
+  public void filter() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).filter((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).filter((Predicate<? super Integer>) null));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null, 4).filter(Objects::nonNull));
+    test(List.of(1, 2),
+        () -> Iterator.of(1, 2, null, 4).filter(Objects::nonNull).filter(i -> i < 3));
+    test(List.of(4), () -> Iterator.of(1, 2, null, 4).filter(Objects::nonNull).filter(i -> i > 3));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).filter(Objects::nonNull).filter(i -> i > 4));
+    test(List.of(), () -> Iterator.of().filter(Objects::isNull));
 
-    assertTrue(Iterator.of().filter(Objects::isNull).isEmpty());
-    assertEquals(0, Iterator.of().filter(Objects::isNull).size());
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null, 4).filter(i -> i > 4).size());
   }
 
   @Test
-  public void findAny() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().findAny(Objects::isNull).isEmpty());
-    assertEquals(1, itr.get().findAny(Objects::isNull).size());
-    assertEquals(List.of(null), itr.get().findAny(Objects::isNull).toList());
-    assertFalse(itr.get().findAny(i -> i < 4).isEmpty());
-    assertEquals(1, itr.get().findAny(i -> i < 4).size());
-
-    assertTrue(Iterator.of().findAny(Objects::isNull).isEmpty());
-    assertEquals(0, Iterator.of().findAny(Objects::isNull).size());
+  public void findAny() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).findAny((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).findAny((Predicate<? super Integer>) null));
+    test(List.of(null), () -> Iterator.of(1, 2, null, 4).findAny(Objects::isNull));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4).findAny(i -> i < 4));
+    test(List.of(), () -> Iterator.of().findAny(Objects::isNull));
   }
 
   @Test

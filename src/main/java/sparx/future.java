@@ -54,6 +54,9 @@ import sparx.internal.future.iterator.EachIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EndsWithIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ExistsIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -473,6 +476,49 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).endsWith(elements);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Boolean> lazyMaterializerExists(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyIteratorFutureMaterializer<E, Boolean>(materializer, context, cancelException,
+          1) {
+        @Override
+        protected @NotNull java.util.Iterator<Boolean> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.wrap(list).exists(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerFilter(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.wrap(list).filter(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerFindFirst(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.wrap(list).findFirst(predicate);
         }
       };
     }
@@ -976,43 +1022,124 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Boolean> exists(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<Boolean> exists(@NotNull final IndexedPredicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return falseIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Boolean>(context, cancelException,
+            lazyMaterializerExists(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      return new Iterator<Boolean>(context, cancelException,
+          new ExistsIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), false, context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<Boolean> exists(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<Boolean> exists(@NotNull final Predicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return falseIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Boolean>(context, cancelException,
+            lazyMaterializerExists(materializer, context, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      return new Iterator<Boolean>(context, cancelException,
+          new ExistsIteratorFutureMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), false, context,
+              cancelException));
     }
 
     @Override
-    public @NotNull Iterator<E> filter(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<E> filter(@NotNull final IndexedPredicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerFilter(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new FilterIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<E> filter(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<E> filter(@NotNull final Predicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerFilter(materializer, context, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new FilterIteratorFutureMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
-    public @NotNull Iterator<E> findAny(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<E> findAny(@NotNull final IndexedPredicate<? super E> predicate) {
+      return findFirst(predicate);
     }
 
     @Override
-    public @NotNull Iterator<E> findAny(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<E> findAny(@NotNull final Predicate<? super E> predicate) {
+      return findFirst(predicate);
     }
 
     @Override
-    public @NotNull Iterator<E> findFirst(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<E> findFirst(@NotNull final IndexedPredicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerFindFirst(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new FindFirstIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<E> findFirst(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<E> findFirst(@NotNull final Predicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerFindFirst(materializer, context, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new FindFirstIteratorFutureMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
