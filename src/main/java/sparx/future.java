@@ -50,8 +50,10 @@ import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropWhileIteratorFutureMaterializer;
+import sparx.internal.future.iterator.EachIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
+import sparx.internal.future.iterator.EndsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -192,6 +194,12 @@ class future extends Sparx {
     private static @NotNull <E> Iterator<E> emptyIterator(@NotNull final ExecutionContext context) {
       return new Iterator<E>(context, new AtomicReference<CancellationException>(),
           EmptyIteratorFutureMaterializer.<E>instance());
+    }
+
+    private static @NotNull Iterator<Boolean> falseIterator(
+        @NotNull final ExecutionContext context) {
+      return new Iterator<Boolean>(context, new AtomicReference<CancellationException>(),
+          new ElementToIteratorFutureMaterializer<Boolean>(false));
     }
 
     @SuppressWarnings("unchecked")
@@ -439,6 +447,36 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Boolean> lazyMaterializerEach(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyIteratorFutureMaterializer<E, Boolean>(materializer, context, cancelException,
+          1) {
+        @Override
+        protected @NotNull java.util.Iterator<Boolean> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.wrap(list).each(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Boolean> lazyMaterializerEndsWith(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<?> elements) {
+      return new LazyIteratorFutureMaterializer<E, Boolean>(materializer, context, cancelException,
+          1) {
+        @Override
+        protected @NotNull java.util.Iterator<Boolean> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).endsWith(elements);
+        }
+      };
+    }
+
     private static @NotNull <E, F> LazyIteratorFutureMaterializer<E, F> lazyMaterializerMap(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
@@ -453,6 +491,12 @@ class future extends Sparx {
           return lazy.Iterator.wrap(iterator).map(mapper);
         }
       };
+    }
+
+    private static @NotNull Iterator<Boolean> trueIterator(
+        @NotNull final ExecutionContext context) {
+      return new Iterator<Boolean>(context, new AtomicReference<CancellationException>(),
+          new ElementToIteratorFutureMaterializer<Boolean>(true));
     }
 
     private static @NotNull Iterator<Integer> zeroIterator(
@@ -876,18 +920,59 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Boolean> each(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<Boolean> each(@NotNull final IndexedPredicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return falseIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Boolean>(context, cancelException,
+            lazyMaterializerEach(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      return new Iterator<Boolean>(context, cancelException,
+          new EachIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), false, context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<Boolean> each(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<Boolean> each(@NotNull final Predicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return falseIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Boolean>(context, cancelException,
+            lazyMaterializerEach(materializer, context, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      return new Iterator<Boolean>(context, cancelException,
+          new EachIteratorFutureMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), false, context,
+              cancelException));
     }
 
     @Override
-    public @NotNull Iterator<Boolean> endsWith(@NotNull Iterable<?> elements) {
-      return null;
+    public @NotNull Iterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      final ListFutureMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+          context, Require.notNull(elements, "elements"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return trueIterator(context);
+      }
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
+        return new Iterator<Boolean>(context, cancelException,
+            lazyMaterializerEndsWith(materializer, context, cancelException, elements));
+      }
+      return new Iterator<Boolean>(context, cancelException,
+          new EndsWithIteratorFutureMaterializer<E>(materializer, elementsMaterializer, context,
+              cancelException));
     }
 
     @Override
@@ -1117,13 +1202,10 @@ class future extends Sparx {
 
     @Override
     public java.util.Iterator<E> get() throws InterruptedException, ExecutionException {
-      final IteratorFutureMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return null;
-      }
       final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
           cancelException);
       final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
       if (context.isCurrent()) {
         if (!materializer.isDone()) {
           throw new DeadLockException("cannot wait on the future own execution context");
@@ -1167,13 +1249,10 @@ class future extends Sparx {
     @Override
     public java.util.Iterator<E> get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
-      final IteratorFutureMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return null;
-      }
       final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
           cancelException);
       final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
       if (context.isCurrent()) {
         if (!materializer.isDone()) {
           throw new DeadLockException("cannot wait on the future own execution context");
@@ -3603,9 +3682,6 @@ class future extends Sparx {
         return trueList(context);
       }
       final ListFutureMaterializer<E> materializer = this.materializer;
-      if (materializer.knownSize() == 0) {
-        return falseList(context);
-      }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new List<Boolean>(context, cancelException,

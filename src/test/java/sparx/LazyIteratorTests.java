@@ -138,8 +138,7 @@ public class LazyIteratorTests {
     }));
     assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doWhile(null, e -> {
     }));
-    assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).doWhile((i, e) -> true, null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doWhile((i, e) -> true, null));
     assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doWhile(e -> true, null));
     var list = new ArrayList<>();
     Iterator.of(1, 2, 3).doWhile(e -> e < 3, list::add);
@@ -223,60 +222,17 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void endsWith() {
-    var itr = Iterator.<Integer>of().endsWith(List.of());
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertTrue(itr.first());
-    assertEquals(0, itr.size());
-
-    itr = Iterator.<Integer>of().endsWith(List.of(1));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertFalse(itr.first());
-    assertEquals(0, itr.size());
-
-    itr = Iterator.of(1, null, 3).endsWith(List.of());
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertTrue(itr.first());
-    assertEquals(0, itr.size());
-
-    itr = Iterator.of(1, null, 3).endsWith(List.of(3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertTrue(itr.first());
-    assertEquals(0, itr.size());
-
-    itr = Iterator.of(1, null, 3).endsWith(List.of(null));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertFalse(itr.first());
-    assertEquals(0, itr.size());
-
-    itr = Iterator.of(1, null, 3).endsWith(List.of(null, 3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertTrue(itr.first());
-    assertEquals(0, itr.size());
-
-    itr = Iterator.of(1, null, 3).endsWith(List.of(1, null));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertFalse(itr.first());
-    assertEquals(0, itr.size());
-
-    itr = Iterator.of(1, null, 3).endsWith(List.of(1, null, 3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertTrue(itr.first());
-    assertEquals(0, itr.size());
-
-    itr = Iterator.of(1, null, 3).endsWith(List.of(null, null, 3));
-    assertFalse(itr.isEmpty());
-    assertTrue(itr.notEmpty());
-    assertFalse(itr.first());
-    assertEquals(0, itr.size());
+  public void endsWith() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).endsWith(null));
+    test(List.of(true), () -> Iterator.<Integer>of().endsWith(List.of()));
+    test(List.of(false), () -> Iterator.<Integer>of().endsWith(List.of(1)));
+    test(List.of(true), () -> Iterator.of(1, null, 3).endsWith(List.of()));
+    test(List.of(true), () -> Iterator.of(1, null, 3).endsWith(List.of(3)));
+    test(List.of(false), () -> Iterator.of(1, null, 3).endsWith(List.of(null)));
+    test(List.of(true), () -> Iterator.of(1, null, 3).endsWith(List.of(null, 3)));
+    test(List.of(false), () -> Iterator.of(1, null, 3).endsWith(List.of(1, null)));
+    test(List.of(true), () -> Iterator.of(1, null, 3).endsWith(List.of(1, null, 3)));
+    test(List.of(false), () -> Iterator.of(1, null, 3).endsWith(List.of(null, null, 3)));
   }
 
   @Test

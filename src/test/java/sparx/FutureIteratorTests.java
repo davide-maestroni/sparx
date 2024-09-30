@@ -54,10 +54,13 @@ import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropWhileIteratorFutureMaterializer;
+import sparx.internal.future.iterator.EachIteratorFutureMaterializer;
+import sparx.internal.future.iterator.EndsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
+import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
 import sparx.util.UncheckedException;
@@ -338,6 +341,47 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.dropWhile(e -> false));
+  }
+
+  @Test
+  public void each() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).each((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).each((Predicate<? super Integer>) null));
+    test(List.of(false), Iterator::of, it -> it.each(Objects::nonNull));
+    test(List.of(false), () -> Iterator.of(1, 2, 3), it -> it.each(i -> i < 3));
+    test(List.of(true), () -> Iterator.of(1, 2, 3), it -> it.each(i -> i > 0));
+
+    var itr = Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e)).each(i -> i > 0);
+    assertThrows(NullPointerException.class, itr::first);
+
+    testMaterializer(List.of(false), c -> new EachIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e < 3, false, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.each(e -> true));
+  }
+
+  @Test
+  public void endsWith() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context).endsWith(null));
+    test(List.of(true), Iterator::<Integer>of, it -> it.endsWith(List.of()));
+    test(List.of(false), Iterator::<Integer>of, it -> it.endsWith(List.of(1)));
+    test(List.of(true), () -> Iterator.of(1, null, 3), it -> it.endsWith(List.of()));
+    test(List.of(true), () -> Iterator.of(1, null, 3), it -> it.endsWith(List.of(3)));
+    test(List.of(false), () -> Iterator.of(1, null, 3), it -> it.endsWith(List.of(null)));
+    test(List.of(true), () -> Iterator.of(1, null, 3), it -> it.endsWith(List.of(null, 3)));
+    test(List.of(false), () -> Iterator.of(1, null, 3), it -> it.endsWith(List.of(1, null)));
+    test(List.of(true), () -> Iterator.of(1, null, 3), it -> it.endsWith(List.of(1, null, 3)));
+    test(List.of(false), () -> Iterator.of(1, null, 3), it -> it.endsWith(List.of(null, null, 3)));
+
+    testMaterializer(List.of(false), c -> new EndsWithIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        new ListToListFutureMaterializer<>(List.of(2, 2), c), c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.endsWith(List.of(null)));
   }
 
   @Test

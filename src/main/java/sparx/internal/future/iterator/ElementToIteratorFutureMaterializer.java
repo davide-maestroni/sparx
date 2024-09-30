@@ -82,7 +82,6 @@ public class ElementToIteratorFutureMaterializer<E> implements IteratorFutureMat
     if (consumed) {
       safeConsume(consumer, Collections.<E>emptyList(), LOGGER);
     } else {
-      consumed = true;
       safeConsume(consumer, Collections.singletonList(element), LOGGER);
     }
   }

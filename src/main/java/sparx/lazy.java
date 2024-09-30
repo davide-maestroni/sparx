@@ -824,8 +824,13 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
-      return new Iterator<Boolean>(new EndsWithIteratorMaterializer<E>(materializer,
-          List.getElementsMaterializer(Require.notNull(elements, "elements"))));
+      final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+          Require.notNull(elements, "elements"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return Iterator.of(true);
+      }
+      return new Iterator<Boolean>(
+          new EndsWithIteratorMaterializer<E>(materializer, elementsMaterializer));
     }
 
     @Override
