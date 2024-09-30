@@ -59,6 +59,7 @@ import sparx.internal.future.iterator.EndsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ExistsIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
@@ -447,6 +448,44 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.findAny(e -> false));
+  }
+
+  @Test
+  public void findIndexOf() throws Exception {
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4), it -> it.findIndexOf(null));
+    test(List.of(3), () -> Iterator.of(1, 2, null, 4), it -> it.findIndexOf(4));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.findIndexOf(3));
+    test(List.of(), Iterator::of, it -> it.findIndexOf(null));
+
+    testMaterializer(List.of(1), c -> new FindIndexIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 1, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.findIndexOf(null));
+  }
+
+  @Test
+  public void findIndexWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .findIndexWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).findIndexWhere((Predicate<? super Integer>) null));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4), it -> it.findIndexWhere(Objects::isNull));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4), it -> it.findIndexWhere(i -> i > 1));
+    test(List.of(), Iterator::of, it -> it.findIndexWhere(Objects::isNull));
+
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null, 4).toFuture(context).flatMap(e -> List.of(e))
+            .findIndexWhere(i -> i > 3).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null, 4).toFuture(context).flatMap(e -> List.of(e))
+            .findIndexWhere(i -> i > 3).first());
+
+    testMaterializer(List.of(), c -> new FindIndexIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 3, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.findIndexWhere(e -> false));
   }
 
   @Test

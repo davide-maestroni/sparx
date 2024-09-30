@@ -278,23 +278,11 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void findIndexOf() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().findIndexOf(null).isEmpty());
-    assertEquals(1, itr.get().findIndexOf(null).size());
-    assertEquals(2, itr.get().findIndexOf(null).first());
-    assertEquals(List.of(2), itr.get().findIndexOf(null).toList());
-    assertFalse(itr.get().findIndexOf(4).isEmpty());
-    assertEquals(1, itr.get().findIndexOf(4).size());
-    assertEquals(3, itr.get().findIndexOf(4).first());
-    assertEquals(List.of(3), itr.get().findIndexOf(4).toList());
-    assertTrue(itr.get().findIndexOf(3).isEmpty());
-    assertEquals(0, itr.get().findIndexOf(3).size());
-    assertThrows(NoSuchElementException.class, () -> itr.get().findIndexOf(3).first());
-    assertEquals(List.of(), itr.get().findIndexOf(3).toList());
-
-    assertTrue(Iterator.of().findIndexOf(null).isEmpty());
-    assertEquals(0, Iterator.of().findIndexOf(null).size());
+  public void findIndexOf() throws Exception {
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4).findIndexOf(null));
+    test(List.of(3), () -> Iterator.of(1, 2, null, 4).findIndexOf(4));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).findIndexOf(3));
+    test(List.of(), () -> Iterator.of().findIndexOf(null));
   }
 
   @Test
@@ -329,21 +317,19 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void findIndexWhere() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().findIndexWhere(Objects::isNull).isEmpty());
-    assertEquals(1, itr.get().findIndexWhere(Objects::isNull).size());
-    assertEquals(2, itr.get().findIndexWhere(Objects::isNull).first());
-    assertEquals(List.of(2), itr.get().findIndexWhere(Objects::isNull).toList());
-    assertFalse(itr.get().findIndexWhere(i -> i > 1).isEmpty());
-    assertEquals(1, itr.get().findIndexWhere(i -> i > 1).size());
-    assertEquals(1, itr.get().findIndexWhere(i -> i > 1).first());
-    assertEquals(List.of(1), itr.get().findIndexWhere(i -> i > 1).toList());
-    assertThrows(NullPointerException.class, () -> itr.get().findIndexWhere(i -> i > 3).isEmpty());
-    assertThrows(NullPointerException.class, () -> itr.get().findIndexWhere(i -> i > 3).first());
+  public void findIndexWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).findIndexWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).findIndexWhere((Predicate<? super Integer>) null));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4).findIndexWhere(Objects::isNull));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4).findIndexWhere(i -> i > 1));
+    test(List.of(), () -> Iterator.of().findIndexWhere(Objects::isNull));
 
-    assertTrue(Iterator.of().findIndexWhere(Objects::isNull).isEmpty());
-    assertEquals(0, Iterator.of().findIndexWhere(Objects::isNull).size());
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null, 4).findIndexWhere(i -> i > 3).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null, 4).findIndexWhere(i -> i > 3).first());
   }
 
   @Test

@@ -57,6 +57,7 @@ import sparx.internal.future.iterator.EndsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ExistsIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -519,6 +520,21 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> list) {
           return lazy.Iterator.wrap(list).findFirst(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Integer> lazyMaterializerFindIndexWhere(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyIteratorFutureMaterializer<E, Integer>(materializer, context, cancelException,
+          -1) {
+        @Override
+        protected @NotNull java.util.Iterator<Integer> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).findIndexWhere(predicate);
         }
       };
     }
@@ -1143,8 +1159,21 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Integer> findIndexOf(Object element) {
-      return null;
+    public @NotNull Iterator<Integer> findIndexOf(final Object element) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Integer>(context, cancelException,
+            lazyMaterializerFindIndexWhere(materializer, context, cancelException,
+                equalsElement(element)));
+      }
+      return new Iterator<Integer>(context, cancelException,
+          new FindIndexIteratorFutureMaterializer<E>(materializer, equalsElement(element), context,
+              cancelException));
     }
 
     @Override
@@ -1154,13 +1183,41 @@ class future extends Sparx {
 
     @Override
     public @NotNull Iterator<Integer> findIndexWhere(
-        @NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Integer>(context, cancelException,
+            lazyMaterializerFindIndexWhere(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      return new Iterator<Integer>(context, cancelException,
+          new FindIndexIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<Integer> findIndexWhere(
+        @NotNull final Predicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Integer>(context, cancelException,
+            lazyMaterializerFindIndexWhere(materializer, context, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      return new Iterator<Integer>(context, cancelException,
+          new FindIndexIteratorFutureMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override
@@ -1184,11 +1241,6 @@ class future extends Sparx {
     }
 
     @Override
-    public E first() {
-      return next();
-    }
-
-    @Override
     public @NotNull Iterator<Integer> findLastIndexWhere(
         @NotNull IndexedPredicate<? super E> predicate) {
       return null;
@@ -1197,6 +1249,11 @@ class future extends Sparx {
     @Override
     public @NotNull Iterator<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate) {
       return null;
+    }
+
+    @Override
+    public E first() {
+      return next();
     }
 
     @Override
@@ -1529,16 +1586,16 @@ class future extends Sparx {
     }
 
     @Override
-    public E last() {
-      return null;
-    }
-
-    @Override
     public @NotNull Iterator<E> iterator() {
       final ExecutionContext context = this.context;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new Iterator<E>(context, cancelException,
           new WrappingIteratorFutureMaterializer<E>(materializer, context, cancelException));
+    }
+
+    @Override
+    public E last() {
+      return null;
     }
 
     @Override
