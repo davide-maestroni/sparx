@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 
 public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> implements
@@ -30,8 +31,8 @@ public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> imp
 
   private volatile State<E> state;
 
-  // numElements: not negative
-  public MapAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int numElements,
+  public MapAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @NotNegative final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
     this.wrapped = wrapped;
     this.numElements = numElements;
@@ -39,7 +40,7 @@ public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> imp
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return wrapped.canMaterializeElement(index);
   }
 
@@ -58,10 +59,7 @@ public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> imp
   }
 
   @Override
-  public E materializeElement(final int index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(Integer.toString(index));
-    }
+  public E materializeElement(@NotNegative final int index) {
     if (index != numElements) {
       return wrapped.materializeElement(index);
     }

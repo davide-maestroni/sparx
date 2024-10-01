@@ -18,6 +18,7 @@ package sparx.internal.lazy.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
 
 public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
@@ -79,10 +80,7 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
   }
 
   @Override
-  public E materializeElement(final int index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(Integer.toString(index));
-    }
+  public E materializeElement(@NotNegative final int index) {
     if (state.materializedStart() <= index) {
       final long wrappedIndex = (long) index + state.materializedLength();
       if (wrappedIndex >= Integer.MAX_VALUE) {

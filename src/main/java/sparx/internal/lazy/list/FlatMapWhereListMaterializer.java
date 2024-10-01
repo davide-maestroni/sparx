@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
@@ -37,7 +38,7 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return state.canMaterializeElement(index);
   }
 
@@ -52,7 +53,7 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     return state.materializeElement(index);
   }
 
@@ -96,8 +97,8 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
-      return index >= 0 && materializeUntil(index) > index;
+    public boolean canMaterializeElement(@NotNegative final int index) {
+      return materializeUntil(index) > index;
     }
 
     @Override
@@ -216,8 +217,8 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public E materializeElement(final int index) {
-      if (index < 0 || materializeUntil(index) <= index) {
+    public E materializeElement(@NotNegative final int index) {
+      if (materializeUntil(index) <= index) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }
       return elements.get(index);

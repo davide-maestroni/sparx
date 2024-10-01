@@ -23,19 +23,20 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.util.ElementsCache;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
+import sparx.util.annotation.Positive;
 
 public class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L> {
 
   private volatile ListMaterializer<L> state;
 
-  // maxSize: positive
-  public GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxSize,
-      @NotNull final Chunker<E, ? extends L> chunker) {
+  public GroupListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @Positive final int maxSize, @NotNull final Chunker<E, ? extends L> chunker) {
     state = new ImmaterialState(wrapped, maxSize, chunker);
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return state.canMaterializeElement(index);
   }
 
@@ -50,7 +51,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
   }
 
   @Override
-  public L materializeElement(final int index) {
+  public L materializeElement(@NotNegative final int index) {
     return state.materializeElement(index);
   }
 
@@ -120,10 +121,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
     }
 
     @Override
-    public L materializeElement(final int index) {
-      if (index < 0) {
-        throw new IndexOutOfBoundsException(Integer.toString(index));
-      }
+    public L materializeElement(@NotNegative final int index) {
       final ElementsCache<L> elements = this.elements;
       if (elements.has(index)) {
         return elements.get(index);

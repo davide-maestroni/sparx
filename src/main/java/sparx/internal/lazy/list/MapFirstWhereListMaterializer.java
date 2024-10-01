@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
@@ -38,7 +39,7 @@ public class MapFirstWhereListMaterializer<E> extends AbstractListMaterializer<E
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return wrapped.canMaterializeElement(index);
   }
 
@@ -48,10 +49,7 @@ public class MapFirstWhereListMaterializer<E> extends AbstractListMaterializer<E
   }
 
   @Override
-  public E materializeElement(final int index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(Integer.toString(index));
-    }
+  public E materializeElement(@NotNegative final int index) {
     if (state.materializeUntil(index) == index) {
       return state.materialized();
     }

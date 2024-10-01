@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedPredicate;
 
 public class DropWhileListMaterializer<E> extends AbstractListMaterializer<E> implements
@@ -36,10 +37,7 @@ public class DropWhileListMaterializer<E> extends AbstractListMaterializer<E> im
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    if (index < 0) {
-      return false;
-    }
+  public boolean canMaterializeElement(@NotNegative final int index) {
     final long wrappedIndex = (long) index + state.materialized();
     return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
   }
@@ -59,10 +57,7 @@ public class DropWhileListMaterializer<E> extends AbstractListMaterializer<E> im
   }
 
   @Override
-  public E materializeElement(final int index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(Integer.toString(index));
-    }
+  public E materializeElement(@NotNegative final int index) {
     final long wrappedIndex = (long) index + state.materialized();
     if (wrappedIndex >= Integer.MAX_VALUE) {
       throw new IndexOutOfBoundsException(Integer.toString(index));

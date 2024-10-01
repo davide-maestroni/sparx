@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.util.ElementsCache;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 
 public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
@@ -33,7 +34,7 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return state.canMaterializeElement(index);
   }
 
@@ -48,7 +49,7 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
   }
 
   @Override
-  public F materializeElement(final int index) {
+  public F materializeElement(@NotNegative final int index) {
     return state.materializeElement(index);
   }
 
@@ -82,12 +83,12 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
+    public boolean canMaterializeElement(@NotNegative final int index) {
       return wrapped.canMaterializeElement(index);
     }
 
     @Override
-    public F materializeElement(final int index) {
+    public F materializeElement(@NotNegative final int index) {
       final ElementsCache<F> elementsCache = this.elementsCache;
       if (elementsCache.has(index)) {
         return elementsCache.get(index);

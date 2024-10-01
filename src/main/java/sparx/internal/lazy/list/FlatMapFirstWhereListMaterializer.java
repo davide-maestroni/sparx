@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 
@@ -36,7 +37,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return state.canMaterializeElement(index);
   }
 
@@ -51,7 +52,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     return state.materializeElement(index);
   }
 
@@ -89,10 +90,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
-      if (index < 0) {
-        return false;
-      }
+    public boolean canMaterializeElement(@NotNegative final int index) {
       final int numElements = this.numElements;
       if (index < numElements) {
         return wrapped.canMaterializeElement(index);
@@ -100,8 +98,9 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       final int elementIndex = index - numElements;
       final ListMaterializer<E> materializer = this.materializer;
       final long wrappedIndex = (long) index - materializer.materializeSize() + 1;
-      return materializer.canMaterializeElement(elementIndex) || (wrappedIndex < Integer.MAX_VALUE
-          && wrapped.canMaterializeElement((int) wrappedIndex));
+      return (elementIndex >= 0 && materializer.canMaterializeElement(elementIndex)) || (
+          wrappedIndex >= 0 && wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement(
+              (int) wrappedIndex));
     }
 
     @Override
@@ -153,21 +152,22 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
     }
 
     @Override
-    public E materializeElement(final int index) {
-      if (index < 0) {
-        throw new IndexOutOfBoundsException(Integer.toString(index));
-      }
+    public E materializeElement(@NotNegative final int index) {
       final int numElements = this.numElements;
       if (index < numElements) {
         return wrapped.materializeElement(index);
       }
       final int elementIndex = index - numElements;
       final ListMaterializer<E> materializer = this.materializer;
-      if (materializer.canMaterializeElement(elementIndex)) {
+      if (elementIndex >= 0 && materializer.canMaterializeElement(elementIndex)) {
         return materializer.materializeElement(elementIndex);
       }
-      return wrapped.materializeElement(
-          IndexOverflowException.safeCast((long) index - materializer.materializeSize() + 1));
+      final int wrappedIndex = IndexOverflowException.safeCast(
+          (long) index - materializer.materializeSize() + 1);
+      if (wrappedIndex < 0) {
+        throw new IndexOutOfBoundsException(Integer.toString(wrappedIndex));
+      }
+      return wrapped.materializeElement(wrappedIndex);
     }
 
     @Override

@@ -3329,6 +3329,9 @@ public class lazy extends Sparx {
 
     @Override
     public E get(final int index) {
+      if (index < 0) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
       return materializer.materializeElement(index);
     }
 
@@ -3454,6 +3457,9 @@ public class lazy extends Sparx {
 
     @Override
     public E last() {
+      if (isEmpty()) {
+        throw new IndexOutOfBoundsException(Integer.toString(0));
+      }
       return materializer.materializeElement(size() - 1);
     }
 
@@ -4396,7 +4402,7 @@ public class lazy extends Sparx {
 
       @Override
       public boolean canMaterializeElement(final int index) {
-        return state.canMaterializeElement(index);
+        return index >= 0 && state.canMaterializeElement(index);
       }
 
       @Override
@@ -4410,7 +4416,7 @@ public class lazy extends Sparx {
       }
 
       @Override
-      public E materializeElement(final int index) {
+      public E materializeElement(@NotNegative final int index) {
         return state.materializeElement(index);
       }
 
@@ -4443,7 +4449,7 @@ public class lazy extends Sparx {
         }
 
         @Override
-        public boolean canMaterializeElement(final int index) {
+        public boolean canMaterializeElement(@NotNegative final int index) {
           try {
             final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
                 supplier.get());
@@ -4470,7 +4476,7 @@ public class lazy extends Sparx {
         }
 
         @Override
-        public E materializeElement(final int index) {
+        public E materializeElement(@NotNegative final int index) {
           try {
             final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
                 supplier.get());

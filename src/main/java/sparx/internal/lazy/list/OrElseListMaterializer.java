@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
 
 public class OrElseListMaterializer<E> implements ListMaterializer<E> {
 
@@ -28,7 +29,7 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return state.canMaterializeElement(index);
   }
 
@@ -43,7 +44,7 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     return state.materializeElement(index);
   }
 
@@ -79,7 +80,7 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
+    public boolean canMaterializeElement(@NotNegative final int index) {
       return materialized().canMaterializeElement(index);
     }
 
@@ -103,7 +104,7 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public E materializeElement(final int index) {
+    public E materializeElement(@NotNegative final int index) {
       return materialized().materializeElement(index);
     }
 

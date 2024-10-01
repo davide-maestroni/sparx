@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.NotNegative;
 
 public class InsertAfterListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
@@ -27,25 +28,21 @@ public class InsertAfterListMaterializer<E> extends AbstractListMaterializer<E> 
   private final int numElements;
   private final ListMaterializer<E> wrapped;
 
-  // numElements: not negative
   public InsertAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      final int numElements, final E element) {
+      @NotNegative final int numElements, final E element) {
     this.wrapped = wrapped;
     this.numElements = numElements;
     this.element = element;
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    if (index < 0) {
-      return false;
-    }
+  public boolean canMaterializeElement(@NotNegative final int index) {
     final int numElements = this.numElements;
     if (numElements == index) {
       return true;
     }
     if (numElements < index) {
-      return wrapped.canMaterializeElement(index - 1);
+      return index >= 1 && wrapped.canMaterializeElement(index - 1);
     }
     return wrapped.canMaterializeElement(index);
   }
@@ -72,10 +69,7 @@ public class InsertAfterListMaterializer<E> extends AbstractListMaterializer<E> 
   }
 
   @Override
-  public E materializeElement(final int index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(Integer.toString(index));
-    }
+  public E materializeElement(@NotNegative final int index) {
     final int numElements = this.numElements;
     if (numElements == index) {
       return element;

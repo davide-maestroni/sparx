@@ -17,6 +17,8 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
+import sparx.util.annotation.Positive;
 
 public class DropListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
@@ -24,17 +26,16 @@ public class DropListMaterializer<E> extends AbstractListMaterializer<E> impleme
   private final int maxElements;
   private final ListMaterializer<E> wrapped;
 
-  // maxElements: positive
-  public DropListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxElements) {
+  public DropListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @Positive final int maxElements) {
     this.wrapped = wrapped;
     this.maxElements = maxElements;
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     final long wrappedIndex = (long) index + maxElements;
-    return index >= 0 && wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement(
-        (int) wrappedIndex);
+    return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
   }
 
   @Override
@@ -47,9 +48,9 @@ public class DropListMaterializer<E> extends AbstractListMaterializer<E> impleme
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     final long wrappedIndex = (long) index + maxElements;
-    if (index < 0 || wrappedIndex >= Integer.MAX_VALUE) {
+    if (wrappedIndex >= Integer.MAX_VALUE) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return wrapped.materializeElement((int) wrappedIndex);

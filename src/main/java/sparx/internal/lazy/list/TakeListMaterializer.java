@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.Positive;
 
 public class TakeListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
@@ -24,8 +25,7 @@ public class TakeListMaterializer<E> extends AbstractListMaterializer<E> impleme
   private final int maxElements;
   private final ListMaterializer<E> wrapped;
 
-  // maxElements: positive
-  public TakeListMaterializer(@NotNull final ListMaterializer<E> wrapped, final int maxElements) {
+  public TakeListMaterializer(@NotNull final ListMaterializer<E> wrapped, @Positive final int maxElements) {
     this.wrapped = wrapped;
     this.maxElements = maxElements;
   }

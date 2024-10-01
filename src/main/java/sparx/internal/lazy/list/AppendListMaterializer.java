@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.NotNegative;
 
 public class AppendListMaterializer<E> implements ListMaterializer<E> {
 
@@ -31,10 +32,9 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
-    return index >= 0 && (wrapped.canMaterializeElement(index)
-        || index == wrapped.materializeSize());
+    return wrapped.canMaterializeElement(index) || index == wrapped.materializeSize();
   }
 
   @Override

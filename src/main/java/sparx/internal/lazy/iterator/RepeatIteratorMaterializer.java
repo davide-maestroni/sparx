@@ -25,8 +25,7 @@ public class RepeatIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   private int pos;
 
-  // times: positive
-  public RepeatIteratorMaterializer(final int times, final E element) {
+  public RepeatIteratorMaterializer(@Positive final int times, final E element) {
     this.times = times;
     this.element = element;
   }

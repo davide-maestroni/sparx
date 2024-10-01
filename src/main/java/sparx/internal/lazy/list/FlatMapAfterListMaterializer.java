@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 
 public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
@@ -31,9 +32,8 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
 
   private volatile State<E> state;
 
-  // numElements: not negative
   public FlatMapAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      final int numElements,
+      @NotNegative final int numElements,
       @NotNull final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper) {
     this.wrapped = wrapped;
     this.numElements = numElements;
@@ -41,10 +41,7 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    if (index < 0) {
-      return false;
-    }
+  public boolean canMaterializeElement(@NotNegative final int index) {
     final int numElements = this.numElements;
     if (index < numElements) {
       return wrapped.canMaterializeElement(index);
@@ -55,8 +52,9 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
     final int elementIndex = index - numElements;
     final ListMaterializer<E> materializer = state.materialized();
     final long wrappedIndex = (long) index - materializer.materializeSize() + 1;
-    return materializer.canMaterializeElement(elementIndex) || (wrappedIndex < Integer.MAX_VALUE
-        && wrapped.canMaterializeElement((int) wrappedIndex));
+    return (elementIndex >= 0 && materializer.canMaterializeElement(elementIndex)) || (
+        wrappedIndex >= 0 && wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement(
+            (int) wrappedIndex));
   }
 
   @Override
@@ -104,21 +102,22 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(Integer.toString(index));
-    }
+  public E materializeElement(@NotNegative final int index) {
     final int numElements = this.numElements;
     if (index < numElements) {
       return wrapped.materializeElement(index);
     }
     final int elementIndex = index - numElements;
     final ListMaterializer<E> materializer = state.materialized();
-    if (materializer.canMaterializeElement(elementIndex)) {
+    if (elementIndex >= 0 && materializer.canMaterializeElement(elementIndex)) {
       return materializer.materializeElement(elementIndex);
     }
-    return wrapped.materializeElement(
-        IndexOverflowException.safeCast((long) index - materializer.materializeSize() + 1));
+    final int wrappedIndex = IndexOverflowException.safeCast(
+        (long) index - materializer.materializeSize() + 1);
+    if (wrappedIndex < 0) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
+    return wrapped.materializeElement(wrappedIndex);
   }
 
   @Override

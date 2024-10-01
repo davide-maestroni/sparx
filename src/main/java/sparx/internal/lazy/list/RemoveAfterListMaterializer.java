@@ -18,6 +18,7 @@ package sparx.internal.lazy.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
 
 public class RemoveAfterListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
@@ -25,9 +26,8 @@ public class RemoveAfterListMaterializer<E> extends AbstractListMaterializer<E> 
   private final int numElements;
   private final ListMaterializer<E> wrapped;
 
-  // numElements: not negative
   public RemoveAfterListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      final int numElements) {
+      @NotNegative final int numElements) {
     this.wrapped = wrapped;
     this.numElements = numElements;
   }

@@ -16,10 +16,11 @@
 package sparx.internal.lazy.list;
 
 import sparx.internal.lazy.CollectionMaterializer;
+import sparx.util.annotation.NotNegative;
 
 public interface ListMaterializer<E> extends CollectionMaterializer<E> {
 
-  boolean canMaterializeElement(int index);
+  boolean canMaterializeElement(@NotNegative int index);
 
-  E materializeElement(int index);
+  E materializeElement(@NotNegative int index);
 }

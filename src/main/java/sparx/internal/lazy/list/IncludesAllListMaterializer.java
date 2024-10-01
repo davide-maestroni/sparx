@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 
 public class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean> {
 
@@ -35,7 +36,7 @@ public class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean>
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return index == 0;
   }
 
@@ -50,7 +51,7 @@ public class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean>
   }
 
   @Override
-  public Boolean materializeElement(final int index) {
+  public Boolean materializeElement(@NotNegative final int index) {
     if (index == 0) {
       return state.materialized();
     }

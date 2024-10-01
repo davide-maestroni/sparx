@@ -29,7 +29,6 @@ public class SlidingWindowListMaterializer<E, L extends List<E>> implements List
 
   private volatile ListMaterializer<L> state;
 
-  // maxSize: positive
   public SlidingWindowListMaterializer(@NotNull final ListMaterializer<E> wrapped,
       @Positive final int maxSize, @Positive final int step,
       @NotNull final Splitter<E, ? extends L> splitter) {
