@@ -32,6 +32,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 public class SortedListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
@@ -131,11 +132,9 @@ public class SortedListFutureMaterializer<E> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (wrappedSize >= 0 && index >= wrappedSize) {
+      if (wrappedSize >= 0 && index >= wrappedSize) {
         safeConsumeComplete(consumer, wrappedSize, LOGGER);
       } else {
         materialized(new StateConsumer<E>() {
@@ -177,11 +176,9 @@ public class SortedListFutureMaterializer<E> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (wrappedSize >= 0) {
+      if (wrappedSize >= 0) {
         safeConsume(consumer, index < wrappedSize, LOGGER);
       } else {
         wrapped.materializeHasElement(index, new CancellableFutureConsumer<Boolean>() {
@@ -199,7 +196,7 @@ public class SortedListFutureMaterializer<E> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -210,7 +207,7 @@ public class SortedListFutureMaterializer<E> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       materialized(new StateConsumer<E>() {
         @Override

@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
 
 public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
 
@@ -38,7 +39,7 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return state.canMaterializeElement(index);
   }
 
@@ -53,7 +54,7 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     return state.materializeElement(index);
   }
 
@@ -91,8 +92,8 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
-      return index >= 0 && index < elements.size();
+    public boolean canMaterializeElement(@NotNegative final int index) {
+      return index < elements.size();
     }
 
     @Override
@@ -115,7 +116,7 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public E materializeElement(final int index) {
+    public E materializeElement(@NotNegative final int index) {
       final ArrayList<E> elements = this.elementsList;
       if (elements.size() <= index) {
         final AtomicInteger modCount = this.modCount;
@@ -144,6 +145,9 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public int materializeElements() {
+      if (elements.isEmpty()) {
+        return 0;
+      }
       final int size = elements.size();
       materializeElement(size - 1);
       return size;
@@ -174,8 +178,8 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
-      return index >= 0 && index < elements.size();
+    public boolean canMaterializeElement(@NotNegative final int index) {
+      return index < elements.size();
     }
 
     @Override
@@ -198,7 +202,7 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public E materializeElement(int index) {
+    public E materializeElement(@NotNegative int index) {
       final Iterator<E> iterator = elements.iterator();
       while (iterator.hasNext() && index-- > 0) {
         iterator.next();

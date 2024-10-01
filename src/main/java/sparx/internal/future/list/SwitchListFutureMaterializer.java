@@ -29,6 +29,7 @@ import sparx.internal.future.ContextIndexedFutureConsumer;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 public class SwitchListFutureMaterializer<E> implements ListFutureMaterializer<E> {
 
@@ -126,7 +127,7 @@ public class SwitchListFutureMaterializer<E> implements ListFutureMaterializer<E
   }
 
   @Override
-  public void materializeElement(final int index,
+  public void materializeElement(@NotNegative final int index,
       @NotNull final IndexedFutureConsumer<E> consumer) {
     final ContextIndexedFutureConsumer<E> switchConsumer = new ContextIndexedFutureConsumer<E>(
         toContext, getTaskID(), consumer, LOGGER);
@@ -205,7 +206,7 @@ public class SwitchListFutureMaterializer<E> implements ListFutureMaterializer<E
   }
 
   @Override
-  public void materializeHasElement(final int index,
+  public void materializeHasElement(@NotNegative final int index,
       @NotNull final FutureConsumer<Boolean> consumer) {
     final ContextFutureConsumer<Boolean> switchConsumer = new ContextFutureConsumer<Boolean>(
         toContext, getTaskID(), consumer, LOGGER);
@@ -232,7 +233,7 @@ public class SwitchListFutureMaterializer<E> implements ListFutureMaterializer<E
   }
 
   @Override
-  public void materializeNextWhile(final int index,
+  public void materializeNextWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     final NextIndexedFutureConsumer nextConsumer = new NextIndexedFutureConsumer(toContext,
         getTaskID(), predicate, LOGGER);
@@ -260,7 +261,7 @@ public class SwitchListFutureMaterializer<E> implements ListFutureMaterializer<E
   }
 
   @Override
-  public void materializePrevWhile(final int index,
+  public void materializePrevWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     final PrevIndexedFutureConsumer nextConsumer = new PrevIndexedFutureConsumer(toContext,
         getTaskID(), predicate, LOGGER);
@@ -468,10 +469,14 @@ public class SwitchListFutureMaterializer<E> implements ListFutureMaterializer<E
 
         @Override
         protected void runWithContext() {
-          try {
-            wrapped.materializeElement(size - 1, switchConsumer);
-          } catch (final Exception e) {
-            safeConsumeError(switchConsumer, e, LOGGER);
+          if (size > 0) {
+            try {
+              wrapped.materializeElement(size - 1, switchConsumer);
+            } catch (final Exception e) {
+              safeConsumeError(switchConsumer, e, LOGGER);
+            }
+          } else {
+            safeConsumeError(switchConsumer, new IndexOutOfBoundsException("0"), LOGGER);
           }
         }
       });

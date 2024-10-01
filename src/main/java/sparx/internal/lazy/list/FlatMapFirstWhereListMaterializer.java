@@ -222,10 +222,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
-      if (index < 0) {
-        return false;
-      }
+    public boolean canMaterializeElement(@NotNegative final int index) {
       final int numElements = materializeUntil(index);
       if (numElements < 0 || index < numElements) {
         return wrapped.canMaterializeElement(index);
@@ -233,8 +230,8 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       final int elementIndex = index - numElements;
       final ListMaterializer<E> materializer = materialized();
       final long wrappedIndex = (long) index - materializer.materializeSize() + 1;
-      return materializer.canMaterializeElement(elementIndex) || (wrappedIndex < Integer.MAX_VALUE
-          && wrapped.canMaterializeElement((int) wrappedIndex));
+      return materializer.canMaterializeElement(elementIndex) || (wrappedIndex >= 0
+          && wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex));
     }
 
     @Override
@@ -283,10 +280,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
     }
 
     @Override
-    public E materializeElement(final int index) {
-      if (index < 0) {
-        throw new IndexOutOfBoundsException(Integer.toString(index));
-      }
+    public E materializeElement(@NotNegative final int index) {
       final int numElements = materializeUntil(index);
       if (numElements < 0 || index < numElements) {
         return wrapped.materializeElement(index);
@@ -296,8 +290,12 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       if (materializer.canMaterializeElement(elementIndex)) {
         return materializer.materializeElement(elementIndex);
       }
-      return wrapped.materializeElement(
-          IndexOverflowException.safeCast((long) index - materializer.materializeSize() + 1));
+      final int wrappedIndex = IndexOverflowException.safeCast(
+          (long) index - materializer.materializeSize() + 1);
+      if (wrappedIndex < 0) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      return wrapped.materializeElement(wrappedIndex);
     }
 
     @Override

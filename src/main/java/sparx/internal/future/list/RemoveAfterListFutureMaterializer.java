@@ -30,6 +30,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.IndexOverflowException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 import sparx.util.function.BinaryFunction;
 
@@ -198,11 +199,9 @@ public class RemoveAfterListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index < numElements) {
+      if (index < numElements) {
         wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
@@ -308,11 +307,9 @@ public class RemoveAfterListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (index < safeSize(numElements, wrappedSize)) {
+      if (index < safeSize(numElements, wrappedSize)) {
         safeConsume(consumer, true, LOGGER);
       } else if (wrappedSize >= 0) {
         safeConsume(consumer, false, LOGGER);

@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
 
 public class CharSequenceToListMaterializer implements ListMaterializer<Character> {
 
@@ -27,8 +28,8 @@ public class CharSequenceToListMaterializer implements ListMaterializer<Characte
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    return index >= 0 && index < elements.length();
+  public boolean canMaterializeElement(@NotNegative final int index) {
+    return index < elements.length();
   }
 
   @Override
@@ -52,7 +53,7 @@ public class CharSequenceToListMaterializer implements ListMaterializer<Characte
   }
 
   @Override
-  public Character materializeElement(final int index) {
+  public Character materializeElement(@NotNegative final int index) {
     return elements.charAt(index);
   }
 

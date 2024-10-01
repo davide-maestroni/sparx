@@ -17,7 +17,6 @@ package sparx.internal.future.list;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 public class ElementToListFutureMaterializer<E> implements ListFutureMaterializer<E> {
 
@@ -83,11 +83,9 @@ public class ElementToListFutureMaterializer<E> implements ListFutureMaterialize
   }
 
   @Override
-  public void materializeElement(final int index,
+  public void materializeElement(@NotNegative final int index,
       @NotNull final IndexedFutureConsumer<E> consumer) {
-    if (index < 0) {
-      safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-    } else if (index != 0) {
+    if (index != 0) {
       safeConsumeComplete(consumer, 1, LOGGER);
     } else {
       safeConsume(consumer, 1, 0, element, LOGGER);
@@ -108,13 +106,13 @@ public class ElementToListFutureMaterializer<E> implements ListFutureMaterialize
   }
 
   @Override
-  public void materializeHasElement(final int index,
+  public void materializeHasElement(@NotNegative final int index,
       @NotNull final FutureConsumer<Boolean> consumer) {
     safeConsume(consumer, index == 0, LOGGER);
   }
 
   @Override
-  public void materializeNextWhile(final int index,
+  public void materializeNextWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     if (index == 0) {
       if (safeConsume(predicate, 1, 0, element, LOGGER)) {
@@ -126,7 +124,7 @@ public class ElementToListFutureMaterializer<E> implements ListFutureMaterialize
   }
 
   @Override
-  public void materializePrevWhile(final int index,
+  public void materializePrevWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     if (safeConsume(predicate, 1, 0, element, LOGGER)) {
       safeConsumeComplete(predicate, 1, LOGGER);

@@ -15,8 +15,6 @@
  */
 package sparx.internal.future.list;
 
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -29,6 +27,7 @@ import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 public class FindIndexOfSliceListFutureMaterializer<E> extends
     AbstractListFutureMaterializer<Integer> {
@@ -125,18 +124,14 @@ public class FindIndexOfSliceListFutureMaterializer<E> extends
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<Integer> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        materialized(new StateConsumer() {
-          @Override
-          public void accept(@NotNull final ListFutureMaterializer<Integer> state) {
-            state.materializeElement(index, consumer);
-          }
-        });
-      }
+      materialized(new StateConsumer() {
+        @Override
+        public void accept(@NotNull final ListFutureMaterializer<Integer> state) {
+          state.materializeElement(index, consumer);
+        }
+      });
     }
 
     @Override
@@ -160,7 +155,7 @@ public class FindIndexOfSliceListFutureMaterializer<E> extends
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
       materialized(new StateConsumer() {
         @Override
@@ -171,7 +166,7 @@ public class FindIndexOfSliceListFutureMaterializer<E> extends
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<Integer> predicate) {
       materialized(new StateConsumer() {
         @Override
@@ -182,7 +177,7 @@ public class FindIndexOfSliceListFutureMaterializer<E> extends
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<Integer> predicate) {
       materialized(new StateConsumer() {
         @Override

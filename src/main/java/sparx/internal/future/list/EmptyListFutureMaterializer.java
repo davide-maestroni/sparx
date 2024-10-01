@@ -17,7 +17,6 @@ package sparx.internal.future.list;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 public class EmptyListFutureMaterializer<E> implements ListFutureMaterializer<E> {
 
@@ -83,13 +83,9 @@ public class EmptyListFutureMaterializer<E> implements ListFutureMaterializer<E>
   }
 
   @Override
-  public void materializeElement(final int index,
+  public void materializeElement(@NotNegative final int index,
       @NotNull final IndexedFutureConsumer<E> consumer) {
-    if (index < 0) {
-      safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-    } else {
-      safeConsumeComplete(consumer, 0, LOGGER);
-    }
+    safeConsumeComplete(consumer, 0, LOGGER);
   }
 
   @Override
@@ -103,19 +99,19 @@ public class EmptyListFutureMaterializer<E> implements ListFutureMaterializer<E>
   }
 
   @Override
-  public void materializeHasElement(final int index,
+  public void materializeHasElement(@NotNegative final int index,
       @NotNull final FutureConsumer<Boolean> consumer) {
     safeConsume(consumer, false, LOGGER);
   }
 
   @Override
-  public void materializeNextWhile(final int index,
+  public void materializeNextWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     safeConsumeComplete(predicate, 0, LOGGER);
   }
 
   @Override
-  public void materializePrevWhile(final int index,
+  public void materializePrevWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     safeConsumeComplete(predicate, 0, LOGGER);
   }

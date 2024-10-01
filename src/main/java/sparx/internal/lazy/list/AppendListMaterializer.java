@@ -55,7 +55,7 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.canMaterializeElement(index)) {
       return wrapped.materializeElement(index);

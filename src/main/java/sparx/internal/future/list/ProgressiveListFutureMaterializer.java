@@ -31,6 +31,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 abstract class ProgressiveListFutureMaterializer<E, F> extends AbstractListFutureMaterializer<F> {
 
@@ -176,17 +177,13 @@ abstract class ProgressiveListFutureMaterializer<E, F> extends AbstractListFutur
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<F> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), logger);
+      final ArrayList<F> elements = this.elements;
+      if (elements.size() > index) {
+        safeConsume(consumer, -1, index, elements.get(index), logger);
       } else {
-        final ArrayList<F> elements = this.elements;
-        if (elements.size() > index) {
-          safeConsume(consumer, -1, index, elements.get(index), logger);
-        } else {
-          materializeUntil(index, consumer);
-        }
+        materializeUntil(index, consumer);
       }
     }
 
@@ -234,37 +231,33 @@ abstract class ProgressiveListFutureMaterializer<E, F> extends AbstractListFutur
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, logger);
+      final ArrayList<F> elements = this.elements;
+      if (elements.size() > index) {
+        safeConsume(consumer, true, logger);
       } else {
-        final ArrayList<F> elements = this.elements;
-        if (elements.size() > index) {
-          safeConsume(consumer, true, logger);
-        } else {
-          materializeUntil(index, new IndexedFutureConsumer<F>() {
-            @Override
-            public void accept(final int size, final int index, final F element) throws Exception {
-              consumer.accept(true);
-            }
+        materializeUntil(index, new IndexedFutureConsumer<F>() {
+          @Override
+          public void accept(final int size, final int index, final F element) throws Exception {
+            consumer.accept(true);
+          }
 
-            @Override
-            public void complete(final int size) throws Exception {
-              consumer.accept(false);
-            }
+          @Override
+          public void complete(final int size) throws Exception {
+            consumer.accept(false);
+          }
 
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
-        }
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       }
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<F> predicate) {
       int i = index;
       while (i < elements.size()) {
@@ -299,7 +292,7 @@ abstract class ProgressiveListFutureMaterializer<E, F> extends AbstractListFutur
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<F> predicate) {
       final int size = elements.size();
       if (index < size) {

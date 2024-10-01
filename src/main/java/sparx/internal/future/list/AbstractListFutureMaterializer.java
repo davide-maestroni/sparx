@@ -30,6 +30,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 public abstract class AbstractListFutureMaterializer<E> implements ListFutureMaterializer<E> {
 
@@ -91,7 +92,7 @@ public abstract class AbstractListFutureMaterializer<E> implements ListFutureMat
   }
 
   @Override
-  public void materializeElement(final int index,
+  public void materializeElement(@NotNegative final int index,
       @NotNull final IndexedFutureConsumer<E> consumer) {
     state.materializeElement(index, consumer);
   }
@@ -107,19 +108,19 @@ public abstract class AbstractListFutureMaterializer<E> implements ListFutureMat
   }
 
   @Override
-  public void materializeHasElement(final int index,
+  public void materializeHasElement(@NotNegative final int index,
       @NotNull final FutureConsumer<Boolean> consumer) {
     state.materializeHasElement(index, consumer);
   }
 
   @Override
-  public void materializeNextWhile(final int index,
+  public void materializeNextWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     state.materializeNextWhile(index, predicate);
   }
 
   @Override
-  public void materializePrevWhile(final int index,
+  public void materializePrevWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     state.materializePrevWhile(index, predicate);
   }
@@ -421,31 +422,27 @@ public abstract class AbstractListFutureMaterializer<E> implements ListFutureMat
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
-          @Override
-          public void cancellableAccept(final int size, final int index, final E element)
-              throws Exception {
-            wrappedSize = Math.max(wrappedSize, size);
-            consumer.accept(size, index, element);
-          }
+      wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
+        @Override
+        public void cancellableAccept(final int size, final int index, final E element)
+            throws Exception {
+          wrappedSize = Math.max(wrappedSize, size);
+          consumer.accept(size, index, element);
+        }
 
-          @Override
-          public void cancellableComplete(final int size) throws Exception {
-            wrappedSize = size;
-            consumer.complete(size);
-          }
+        @Override
+        public void cancellableComplete(final int size) throws Exception {
+          wrappedSize = size;
+          consumer.complete(size);
+        }
 
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
-      }
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
+        }
+      });
     }
 
     @Override
@@ -501,11 +498,9 @@ public abstract class AbstractListFutureMaterializer<E> implements ListFutureMat
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (wrappedSize >= 0) {
+      if (wrappedSize >= 0) {
         safeConsume(consumer, index < wrappedSize, LOGGER);
       } else {
         wrapped.materializeHasElement(index, new CancellableFutureConsumer<Boolean>() {
@@ -523,7 +518,7 @@ public abstract class AbstractListFutureMaterializer<E> implements ListFutureMat
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       wrapped.materializeNextWhile(index, new CancellableIndexedFuturePredicate<E>() {
         @Override
@@ -547,7 +542,7 @@ public abstract class AbstractListFutureMaterializer<E> implements ListFutureMat
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       wrapped.materializePrevWhile(index, new CancellableIndexedFuturePredicate<E>() {
         @Override

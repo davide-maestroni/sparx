@@ -141,11 +141,9 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index >= numElements) {
+      if (index >= numElements) {
         if (wrappedSize >= 0) {
           if (numElements >= wrappedSize) {
             wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
@@ -182,25 +180,30 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
                     }
                   });
             } else {
-              wrapped.materializeElement(
-                  IndexOverflowException.safeCast((long) index - elementsSize + 1),
-                  new CancellableIndexedFutureConsumer<E>() {
-                    @Override
-                    public void cancellableAccept(final int size, final int index, final E element)
-                        throws Exception {
-                      consumer.accept(safeSize(), originalIndex, element);
-                    }
+              final int wrappedIndex = IndexOverflowException.safeCast(
+                  (long) index - elementsSize + 1);
+              if (wrappedIndex < 0) {
+                safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)),
+                    LOGGER);
+              } else {
+                wrapped.materializeElement(wrappedIndex, new CancellableIndexedFutureConsumer<E>() {
+                  @Override
+                  public void cancellableAccept(final int size, final int index, final E element)
+                      throws Exception {
+                    consumer.accept(safeSize(), originalIndex, element);
+                  }
 
-                    @Override
-                    public void cancellableComplete(final int size) throws Exception {
-                      consumer.complete(safeSize());
-                    }
+                  @Override
+                  public void cancellableComplete(final int size) throws Exception {
+                    consumer.complete(safeSize());
+                  }
 
-                    @Override
-                    public void error(@NotNull final Exception error) throws Exception {
-                      consumer.error(error);
-                    }
-                  });
+                  @Override
+                  public void error(@NotNull final Exception error) throws Exception {
+                    consumer.error(error);
+                  }
+                });
+              }
             }
           } else {
             materialized(new FutureConsumer<ListFutureMaterializer<E>>() {
@@ -372,11 +375,9 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (index >= numElements) {
+      if (index >= numElements) {
         if (wrappedSize >= 0) {
           if (numElements >= wrappedSize) {
             wrapped.materializeHasElement(index, new CancellableFutureConsumer<Boolean>() {
@@ -481,13 +482,13 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       new MaterializingNextFuturePredicate(predicate, index).run();
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       new MaterializingPrevFuturePredicate(predicate, index).run();
     }

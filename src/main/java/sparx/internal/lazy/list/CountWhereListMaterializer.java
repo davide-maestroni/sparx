@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedPredicate;
 
 public class CountWhereListMaterializer<E> implements ListMaterializer<Integer> {
@@ -32,7 +33,7 @@ public class CountWhereListMaterializer<E> implements ListMaterializer<Integer> 
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return index == 0;
   }
 
@@ -47,7 +48,7 @@ public class CountWhereListMaterializer<E> implements ListMaterializer<Integer> 
   }
 
   @Override
-  public Integer materializeElement(final int index) {
+  public Integer materializeElement(@NotNegative final int index) {
     if (index != 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }

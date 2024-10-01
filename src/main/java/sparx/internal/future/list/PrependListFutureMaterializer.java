@@ -32,6 +32,7 @@ import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.BinaryFunction;
 
 public class PrependListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
@@ -152,11 +153,9 @@ public class PrependListFutureMaterializer<E> extends AbstractListFutureMaterial
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index == 0) {
+      if (index == 0) {
         safeConsume(consumer, safeSize(wrappedSize), 0, element, LOGGER);
       } else {
         final int originalIndex = index;
@@ -215,11 +214,9 @@ public class PrependListFutureMaterializer<E> extends AbstractListFutureMaterial
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (index == 0 || index <= wrappedSize) {
+      if (index == 0 || index <= wrappedSize) {
         safeConsume(consumer, true, LOGGER);
       } else if (wrappedSize >= 0) {
         safeConsume(consumer, false, LOGGER);
@@ -239,7 +236,7 @@ public class PrependListFutureMaterializer<E> extends AbstractListFutureMaterial
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (index == 0 && !safeConsume(predicate, safeSize(wrappedSize), 0, element, LOGGER)) {
         return;
@@ -266,7 +263,7 @@ public class PrependListFutureMaterializer<E> extends AbstractListFutureMaterial
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (index == 0) {
         if (safeConsume(predicate, safeSize(wrappedSize), 0, element, LOGGER)) {

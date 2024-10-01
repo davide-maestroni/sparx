@@ -31,6 +31,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
 public class DropRightListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
@@ -189,17 +190,38 @@ public class DropRightListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+      if (wrappedSize < 0) {
+        wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            materializeElement(index, consumer);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       } else {
-        if (wrappedSize < 0) {
-          wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
+        final int maxIndex = wrappedSize - maxElements - 1;
+        if (maxIndex < 0) {
+          safeConsumeComplete(consumer, 0, LOGGER);
+        } else if (index > maxIndex) {
+          safeConsumeComplete(consumer, maxIndex + 1, LOGGER);
+        } else {
+          wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
             @Override
-            public void cancellableAccept(final Integer size) {
-              wrappedSize = size;
-              materializeElement(index, consumer);
+            public void cancellableAccept(final int size, final int index, final E element)
+                throws Exception {
+              consumer.accept(maxIndex + 1, index, element);
+            }
+
+            @Override
+            public void cancellableComplete(final int size) throws Exception {
+              consumer.complete(maxIndex + 1);
             }
 
             @Override
@@ -207,31 +229,6 @@ public class DropRightListFutureMaterializer<E> extends AbstractListFutureMateri
               consumer.error(error);
             }
           });
-        } else {
-          final int maxIndex = wrappedSize - maxElements - 1;
-          if (maxIndex < 0) {
-            safeConsumeComplete(consumer, 0, LOGGER);
-          } else if (index > maxIndex) {
-            safeConsumeComplete(consumer, maxIndex + 1, LOGGER);
-          } else {
-            wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
-              @Override
-              public void cancellableAccept(final int size, final int index, final E element)
-                  throws Exception {
-                consumer.accept(maxIndex + 1, index, element);
-              }
-
-              @Override
-              public void cancellableComplete(final int size) throws Exception {
-                consumer.complete(maxIndex + 1);
-              }
-
-              @Override
-              public void error(@NotNull final Exception error) throws Exception {
-                consumer.error(error);
-              }
-            });
-          }
         }
       }
     }
@@ -281,11 +278,9 @@ public class DropRightListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (index < Math.max(0, wrappedSize - maxElements)) {
+      if (index < Math.max(0, wrappedSize - maxElements)) {
         safeConsume(consumer, true, LOGGER);
       } else if (wrappedSize < 0) {
         wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
@@ -307,7 +302,7 @@ public class DropRightListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (wrappedSize < 0) {
         wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
@@ -356,7 +351,7 @@ public class DropRightListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (wrappedSize < 0) {
         wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {

@@ -32,6 +32,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.IndexOverflowException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
 public class DropListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
@@ -175,11 +176,9 @@ public class DropListFutureMaterializer<E> extends AbstractListFutureMaterialize
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (wrappedSize >= 0 && index >= safeSize(wrappedSize)) {
+      if (wrappedSize >= 0 && index >= safeSize(wrappedSize)) {
         safeConsumeComplete(consumer, safeSize(wrappedSize), LOGGER);
       } else {
         final int originalIndex = index;
@@ -269,11 +268,9 @@ public class DropListFutureMaterializer<E> extends AbstractListFutureMaterialize
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (index < safeSize(wrappedSize)) {
+      if (index < safeSize(wrappedSize)) {
         safeConsume(consumer, true, LOGGER);
       } else {
         wrapped.materializeHasElement(safeIndex(index), new CancellableFutureConsumer<Boolean>() {
@@ -291,7 +288,7 @@ public class DropListFutureMaterializer<E> extends AbstractListFutureMaterialize
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       wrapped.materializeNextWhile(safeIndex(index), new CancellableIndexedFuturePredicate<E>() {
         @Override
@@ -314,7 +311,7 @@ public class DropListFutureMaterializer<E> extends AbstractListFutureMaterialize
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       wrapped.materializePrevWhile(safeIndex(index), new CancellableIndexedFuturePredicate<E>() {
         @Override
@@ -413,10 +410,7 @@ public class DropListFutureMaterializer<E> extends AbstractListFutureMaterialize
     }
 
     private int safeIndex(final int index) {
-      if (index >= 0) {
-        return (int) Math.min(Integer.MAX_VALUE, (long) maxElements + index);
-      }
-      return index;
+      return (int) Math.min(Integer.MAX_VALUE, (long) maxElements + index);
     }
 
     private int safeSize(final int wrappedSize) {

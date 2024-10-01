@@ -32,6 +32,7 @@ import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 import sparx.util.function.TernaryFunction;
 
@@ -84,8 +85,8 @@ public class InsertAfterListFutureMaterializer<E> extends AbstractListFutureMate
 
     private int wrappedSize;
 
-    public ImmaterialState(@NotNull final ListFutureMaterializer<E> wrapped, final int numElements,
-        final E element, @NotNull final ExecutionContext context,
+    public ImmaterialState(@NotNull final ListFutureMaterializer<E> wrapped,
+        @Positive final int numElements, final E element, @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> insertFunction) {
       this.wrapped = wrapped;
@@ -174,11 +175,9 @@ public class InsertAfterListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index < numElements) {
+      if (index < numElements) {
         wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
@@ -300,11 +299,9 @@ public class InsertAfterListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (index < wrappedSize || index < safeSize(numElements, wrappedSize)) {
+      if (index < wrappedSize || index < safeSize(numElements, wrappedSize)) {
         safeConsume(consumer, true, LOGGER);
       } else if (wrappedSize >= 0) {
         safeConsume(consumer, false, LOGGER);
@@ -320,6 +317,8 @@ public class InsertAfterListFutureMaterializer<E> extends AbstractListFutureMate
             consumer.error(error);
           }
         });
+      } else if (index == 0) {
+        safeConsume(consumer, false, LOGGER);
       } else {
         wrapped.materializeHasElement(index - 1, new CancellableFutureConsumer<Boolean>() {
           @Override
@@ -336,7 +335,7 @@ public class InsertAfterListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (index > numElements) {
         wrapped.materializeNextWhile(index - 1, new CancellableIndexedFuturePredicate<E>() {
@@ -399,7 +398,7 @@ public class InsertAfterListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (index < numElements) {
         wrapped.materializePrevWhile(index, new CancellableIndexedFuturePredicate<E>() {

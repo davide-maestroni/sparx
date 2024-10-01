@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 public class FailedListFutureMaterializer<E> implements ListFutureMaterializer<E> {
 
@@ -77,7 +78,7 @@ public class FailedListFutureMaterializer<E> implements ListFutureMaterializer<E
   }
 
   @Override
-  public void materializeElement(final int ignored,
+  public void materializeElement(@NotNegative final int ignored,
       @NotNull final IndexedFutureConsumer<E> consumer) {
     safeConsumeError(consumer, error, LOGGER);
   }
@@ -93,19 +94,19 @@ public class FailedListFutureMaterializer<E> implements ListFutureMaterializer<E
   }
 
   @Override
-  public void materializeHasElement(final int index,
+  public void materializeHasElement(@NotNegative final int index,
       @NotNull final FutureConsumer<Boolean> consumer) {
     safeConsumeError(consumer, error, LOGGER);
   }
 
   @Override
-  public void materializeNextWhile(final int index,
+  public void materializeNextWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     safeConsumeError(predicate, error, LOGGER);
   }
 
   @Override
-  public void materializePrevWhile(final int index,
+  public void materializePrevWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     safeConsumeError(predicate, error, LOGGER);
   }

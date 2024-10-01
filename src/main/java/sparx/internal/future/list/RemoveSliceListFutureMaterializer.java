@@ -32,6 +32,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.IndexOverflowException;
+import sparx.util.annotation.NotNegative;
 
 public class RemoveSliceListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
@@ -159,18 +160,14 @@ public class RemoveSliceListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        materialized(new StateConsumer<E>() {
-          @Override
-          public void accept(@NotNull final ListFutureMaterializer<E> state) {
-            state.materializeElement(index, consumer);
-          }
-        });
-      }
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListFutureMaterializer<E> state) {
+          state.materializeElement(index, consumer);
+        }
+      });
     }
 
     @Override
@@ -205,7 +202,7 @@ public class RemoveSliceListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -216,7 +213,7 @@ public class RemoveSliceListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -227,7 +224,7 @@ public class RemoveSliceListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -465,36 +462,32 @@ public class RemoveSliceListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+      final int knownSize = this.knownSize;
+      if (index >= knownSize) {
+        safeConsumeComplete(consumer, knownSize, LOGGER);
       } else {
-        final int knownSize = this.knownSize;
-        if (index >= knownSize) {
-          safeConsumeComplete(consumer, knownSize, LOGGER);
-        } else {
-          final int originalIndex = index;
-          wrapped.materializeElement(
-              index < start ? index : IndexOverflowException.safeCast((long) index + length),
-              new CancellableIndexedFutureConsumer<E>() {
-                @Override
-                public void cancellableAccept(final int size, final int index, final E element)
-                    throws Exception {
-                  consumer.accept(knownSize, originalIndex, element);
-                }
+        final int originalIndex = index;
+        wrapped.materializeElement(
+            index < start ? index : IndexOverflowException.safeCast((long) index + length),
+            new CancellableIndexedFutureConsumer<E>() {
+              @Override
+              public void cancellableAccept(final int size, final int index, final E element)
+                  throws Exception {
+                consumer.accept(knownSize, originalIndex, element);
+              }
 
-                @Override
-                public void cancellableComplete(final int size) throws Exception {
-                  consumer.complete(knownSize);
-                }
+              @Override
+              public void cancellableComplete(final int size) throws Exception {
+                consumer.complete(knownSize);
+              }
 
-                @Override
-                public void error(@NotNull final Exception error) throws Exception {
-                  consumer.error(error);
-                }
-              });
-        }
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                consumer.error(error);
+              }
+            });
       }
     }
 
@@ -550,13 +543,13 @@ public class RemoveSliceListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      safeConsume(consumer, index >= 0 && index < knownSize, LOGGER);
+      safeConsume(consumer, index < knownSize, LOGGER);
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       final int end = start + length - 1;
       wrapped.materializeNextWhile(
@@ -587,7 +580,7 @@ public class RemoveSliceListFutureMaterializer<E> extends AbstractListFutureMate
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (index < start) {
         wrapped.materializePrevWhile(index, new CancellableIndexedFuturePredicate<E>() {

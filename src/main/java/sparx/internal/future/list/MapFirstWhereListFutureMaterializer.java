@@ -29,6 +29,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
 import sparx.util.function.TernaryFunction;
@@ -219,11 +220,9 @@ public class MapFirstWhereListFutureMaterializer<E> extends AbstractListFutureMa
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index <= testedIndex) {
+      if (index <= testedIndex) {
         wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
@@ -327,11 +326,9 @@ public class MapFirstWhereListFutureMaterializer<E> extends AbstractListFutureMa
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (wrappedSize >= 0) {
+      if (wrappedSize >= 0) {
         safeConsume(consumer, index < wrappedSize, LOGGER);
       } else if (index <= testedIndex) {
         safeConsume(consumer, true, LOGGER);
@@ -351,7 +348,7 @@ public class MapFirstWhereListFutureMaterializer<E> extends AbstractListFutureMa
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       final int originalIndex = index;
       wrapped.materializeNextWhile(Math.min(index, testedIndex + 1),
@@ -393,7 +390,7 @@ public class MapFirstWhereListFutureMaterializer<E> extends AbstractListFutureMa
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (index <= testedIndex) {
         wrapped.materializePrevWhile(index, new CancellableIndexedFuturePredicate<E>() {

@@ -34,6 +34,7 @@ import sparx.internal.future.IndexedFuturePredicate;
 import sparx.internal.util.ElementsCache;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
 public class SlidingWindowListFutureMaterializer<E, L extends List<E>> extends
@@ -205,46 +206,42 @@ public class SlidingWindowListFutureMaterializer<E, L extends List<E>> extends
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<L> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        final ElementsCache<L> elements = this.elements;
-        if (elements.has(index)) {
-          safeConsume(consumer, safeSize(wrappedSize, step), index, elements.get(index), LOGGER);
-        } else if (wrappedSize >= 0) {
-          final int size = wrappedSize;
-          final long startIndex = (long) index * step;
-          if (startIndex >= size) {
-            safeConsumeComplete(consumer, safeSize(wrappedSize, step), LOGGER);
-            return;
-          }
-          final L chunk;
-          if (!elements.has(index)) {
-            final int maxSize = this.maxSize;
-            final int endIndex = (int) Math.min(size, startIndex + maxSize);
-            chunk = splitter.getChunk(wrapped, (int) startIndex, endIndex);
-            elements.set(index, chunk);
-          } else {
-            chunk = elements.get(index);
-          }
-          safeConsume(consumer, safeSize(wrappedSize, step), index, chunk, LOGGER);
-        } else {
-          wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
-            @Override
-            public void cancellableAccept(final Integer size) {
-              wrappedSize = size;
-              elements.setSize(safeSize(wrappedSize, step));
-              materializeElement(index, consumer);
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
+      final ElementsCache<L> elements = this.elements;
+      if (elements.has(index)) {
+        safeConsume(consumer, safeSize(wrappedSize, step), index, elements.get(index), LOGGER);
+      } else if (wrappedSize >= 0) {
+        final int size = wrappedSize;
+        final long startIndex = (long) index * step;
+        if (startIndex >= size) {
+          safeConsumeComplete(consumer, safeSize(wrappedSize, step), LOGGER);
+          return;
         }
+        final L chunk;
+        if (!elements.has(index)) {
+          final int maxSize = this.maxSize;
+          final int endIndex = (int) Math.min(size, startIndex + maxSize);
+          chunk = splitter.getChunk(wrapped, (int) startIndex, endIndex);
+          elements.set(index, chunk);
+        } else {
+          chunk = elements.get(index);
+        }
+        safeConsume(consumer, safeSize(wrappedSize, step), index, chunk, LOGGER);
+      } else {
+        wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            elements.setSize(safeSize(wrappedSize, step));
+            materializeElement(index, consumer);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       }
     }
 
@@ -288,38 +285,34 @@ public class SlidingWindowListFutureMaterializer<E, L extends List<E>> extends
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
+      final ElementsCache<L> elements = this.elements;
+      if (elements.has(index)) {
+        safeConsume(consumer, true, LOGGER);
+      } else if (wrappedSize >= 0) {
+        final int size = wrappedSize;
+        final long startIndex = (long) index * step;
+        safeConsume(consumer, startIndex < size, LOGGER);
       } else {
-        final ElementsCache<L> elements = this.elements;
-        if (elements.has(index)) {
-          safeConsume(consumer, true, LOGGER);
-        } else if (wrappedSize >= 0) {
-          final int size = wrappedSize;
-          final long startIndex = (long) index * step;
-          safeConsume(consumer, startIndex < size, LOGGER);
-        } else {
-          wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
-            @Override
-            public void cancellableAccept(final Integer size) {
-              elements.setSize(safeSize(wrappedSize = size, step));
-              final long startIndex = Math.min(Integer.MAX_VALUE, (long) index * step);
-              safeConsume(consumer, startIndex < size, LOGGER);
-            }
+        wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) {
+            elements.setSize(safeSize(wrappedSize = size, step));
+            final long startIndex = Math.min(Integer.MAX_VALUE, (long) index * step);
+            safeConsume(consumer, startIndex < size, LOGGER);
+          }
 
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
-        }
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       }
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<L> predicate) {
       if (wrappedSize >= 0) {
         final int size = wrappedSize;
@@ -362,7 +355,7 @@ public class SlidingWindowListFutureMaterializer<E, L extends List<E>> extends
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<L> predicate) {
       if (wrappedSize >= 0) {
         final int size = wrappedSize;

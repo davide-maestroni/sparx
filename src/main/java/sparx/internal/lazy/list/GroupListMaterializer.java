@@ -26,6 +26,7 @@ import sparx.util.UncheckedException;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
+// TODO: remove
 public class GroupListMaterializer<E, L extends List<E>> implements ListMaterializer<L> {
 
   private volatile ListMaterializer<L> state;
@@ -98,10 +99,7 @@ public class GroupListMaterializer<E, L extends List<E>> implements ListMaterial
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
-      if (index < 0) {
-        return false;
-      }
+    public boolean canMaterializeElement(@NotNegative final int index) {
       final long maxSize = this.maxSize;
       final long wrappedIndex = index * maxSize;
       return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);

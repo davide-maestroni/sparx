@@ -32,6 +32,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.IndexOverflowException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
 public class TakeRightListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
@@ -188,7 +189,7 @@ public class TakeRightListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
       if (index < 0) {
         safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
@@ -280,11 +281,9 @@ public class TakeRightListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (wrappedSize < 0) {
+      if (wrappedSize < 0) {
         wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
           @Override
           public void cancellableAccept(final Integer size) {
@@ -303,7 +302,7 @@ public class TakeRightListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (wrappedSize < 0) {
         wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
@@ -347,7 +346,7 @@ public class TakeRightListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (wrappedSize < 0) {
         wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {

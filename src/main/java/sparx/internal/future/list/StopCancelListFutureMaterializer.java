@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 public class StopCancelListFutureMaterializer<E> implements ListFutureMaterializer<E> {
 
@@ -71,7 +72,7 @@ public class StopCancelListFutureMaterializer<E> implements ListFutureMaterializ
   }
 
   @Override
-  public void materializeElement(final int index,
+  public void materializeElement(@NotNegative final int index,
       @NotNull final IndexedFutureConsumer<E> consumer) {
     wrapped.materializeElement(index, consumer);
   }
@@ -87,19 +88,19 @@ public class StopCancelListFutureMaterializer<E> implements ListFutureMaterializ
   }
 
   @Override
-  public void materializeHasElement(final int index,
+  public void materializeHasElement(@NotNegative final int index,
       @NotNull final FutureConsumer<Boolean> consumer) {
     wrapped.materializeHasElement(index, consumer);
   }
 
   @Override
-  public void materializeNextWhile(final int index,
+  public void materializeNextWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     wrapped.materializeNextWhile(index, predicate);
   }
 
   @Override
-  public void materializePrevWhile(final int index,
+  public void materializePrevWhile(@NotNegative final int index,
       @NotNull final IndexedFuturePredicate<E> predicate) {
     wrapped.materializePrevWhile(index, predicate);
   }

@@ -17,7 +17,6 @@ package sparx.internal.future.list;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +30,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 public abstract class TransformListFutureMaterializer<E, F> extends
     AbstractListFutureMaterializer<F> {
@@ -152,18 +152,14 @@ public abstract class TransformListFutureMaterializer<E, F> extends
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<F> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        materialized(new StateConsumer<F>() {
-          @Override
-          public void accept(@NotNull final ListFutureMaterializer<F> state) {
-            state.materializeElement(index, consumer);
-          }
-        });
-      }
+      materialized(new StateConsumer<F>() {
+        @Override
+        public void accept(@NotNull final ListFutureMaterializer<F> state) {
+          state.materializeElement(index, consumer);
+        }
+      });
     }
 
     @Override
@@ -187,7 +183,7 @@ public abstract class TransformListFutureMaterializer<E, F> extends
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
       materialized(new StateConsumer<F>() {
         @Override
@@ -198,7 +194,7 @@ public abstract class TransformListFutureMaterializer<E, F> extends
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<F> predicate) {
       materialized(new StateConsumer<F>() {
         @Override
@@ -209,7 +205,7 @@ public abstract class TransformListFutureMaterializer<E, F> extends
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<F> predicate) {
       materialized(new StateConsumer<F>() {
         @Override
@@ -364,20 +360,15 @@ public abstract class TransformListFutureMaterializer<E, F> extends
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<F> consumer) {
       try {
         final List<F> elements = this.elements;
-        if (index < 0) {
-          safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)),
-              LOGGER);
+        final int size = elements.size();
+        if (index >= size) {
+          safeConsumeComplete(consumer, size, LOGGER);
         } else {
-          final int size = elements.size();
-          if (index >= size) {
-            safeConsumeComplete(consumer, size, LOGGER);
-          } else {
-            safeConsume(consumer, size, index, elements.get(index), LOGGER);
-          }
+          safeConsume(consumer, size, index, elements.get(index), LOGGER);
         }
       } catch (final Exception error) {
         consumeError(consumer, error);
@@ -399,18 +390,18 @@ public abstract class TransformListFutureMaterializer<E, F> extends
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
       try {
-        safeConsume(consumer, index >= 0 && index < elements.size(), LOGGER);
+        safeConsume(consumer, index < elements.size(), LOGGER);
       } catch (final Exception error) {
         consumeError(consumer, error);
       }
     }
 
     @Override
-    public void materializeNextWhile(final int index,
-        @NotNull IndexedFuturePredicate<F> predicate) {
+    public void materializeNextWhile(@NotNegative final int index,
+        @NotNull final IndexedFuturePredicate<F> predicate) {
       try {
         final List<F> elements = this.elements;
         final int size = elements.size();
@@ -427,8 +418,8 @@ public abstract class TransformListFutureMaterializer<E, F> extends
     }
 
     @Override
-    public void materializePrevWhile(final int index,
-        @NotNull IndexedFuturePredicate<F> predicate) {
+    public void materializePrevWhile(@NotNegative final int index,
+        @NotNull final IndexedFuturePredicate<F> predicate) {
       try {
         final List<F> elements = this.elements;
         final int size = elements.size();

@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 
 public class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Integer> {
 
@@ -33,8 +34,8 @@ public class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Int
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    return index == 0 && state.materialized() >= 0;
+  public boolean canMaterializeElement(@NotNegative final int index) {
+    return state.materialized() >= 0;
   }
 
   @Override
@@ -48,7 +49,7 @@ public class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Int
   }
 
   @Override
-  public Integer materializeElement(final int index) {
+  public Integer materializeElement(@NotNegative final int index) {
     if (index == 0) {
       final int i = state.materialized();
       if (i >= 0) {

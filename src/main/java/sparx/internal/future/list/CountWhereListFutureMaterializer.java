@@ -30,6 +30,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedPredicate;
 
 public class CountWhereListFutureMaterializer<E> extends AbstractListFutureMaterializer<Integer> {
@@ -117,11 +118,9 @@ public class CountWhereListFutureMaterializer<E> extends AbstractListFutureMater
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<Integer> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index > 1) {
+      if (index > 1) {
         safeConsumeComplete(consumer, 1, LOGGER);
       } else {
         materialized(new StateConsumer() {
@@ -149,13 +148,13 @@ public class CountWhereListFutureMaterializer<E> extends AbstractListFutureMater
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
       safeConsume(consumer, index == 0, LOGGER);
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<Integer> predicate) {
       materialized(new StateConsumer() {
         @Override
@@ -166,7 +165,7 @@ public class CountWhereListFutureMaterializer<E> extends AbstractListFutureMater
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<Integer> predicate) {
       materialized(new StateConsumer() {
         @Override

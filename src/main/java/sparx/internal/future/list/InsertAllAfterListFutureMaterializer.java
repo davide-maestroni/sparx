@@ -32,6 +32,7 @@ import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 import sparx.util.function.TernaryFunction;
 
@@ -205,11 +206,9 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index < numElements) {
+      if (index < numElements) {
         wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
           @Override
           public void cancellableAccept(final int size, final int index, final E element)
@@ -242,10 +241,12 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
                 }
 
                 @Override
-                public void cancellableComplete(final int size) {
-                  final int wrappedIndex = index - elementsSize;
+                public void cancellableComplete(final int size) throws Exception {
+                  final int wrappedIndex = index - size;
                   final int knownSize = safeSize(numElements, wrappedSize, elementsSize = size);
-                  if (wrappedIndex < knownSize) {
+                  if (wrappedIndex < 0) {
+                    consumer.error(new IndexOutOfBoundsException(Integer.toString(index)));
+                  } else if (wrappedIndex < knownSize) {
                     wrapped.materializeElement(wrappedIndex,
                         new CancellableIndexedFutureConsumer<E>() {
                           @Override
@@ -265,7 +266,7 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
                           }
                         });
                   } else {
-                    safeConsumeComplete(consumer, knownSize, LOGGER);
+                    consumer.complete(knownSize);
                   }
                 }
 
@@ -292,10 +293,12 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
                   }
 
                   @Override
-                  public void cancellableComplete(final int size) {
+                  public void cancellableComplete(final int size) throws Exception {
                     final int wrappedIndex = originalIndex - elementsSize;
                     final int knownSize = safeSize(numElements, wrappedSize, elementsSize = size);
-                    if (knownSize < 0 || wrappedIndex < knownSize) {
+                    if (wrappedIndex < 0) {
+                      consumer.error(new IndexOutOfBoundsException(Integer.toString(index)));
+                    } else if (knownSize < 0 || wrappedIndex < knownSize) {
                       wrapped.materializeElement(wrappedIndex,
                           new CancellableIndexedFutureConsumer<E>() {
                             @Override
@@ -315,7 +318,7 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
                             }
                           });
                     } else {
-                      safeConsumeComplete(consumer, knownSize, LOGGER);
+                      consumer.complete(knownSize);
                     }
                   }
 
@@ -396,11 +399,9 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (index < wrappedSize || index < safeSize(numElements, wrappedSize, elementsSize)) {
+      if (index < wrappedSize || index < safeSize(numElements, wrappedSize, elementsSize)) {
         safeConsume(consumer, true, LOGGER);
       } else if (wrappedSize >= 0 && elementsSize >= 0) {
         safeConsume(consumer, false, LOGGER);
@@ -496,7 +497,7 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       final boolean initIsWrapped;
       final long initOffset;
@@ -569,7 +570,7 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (index < numElements) {
         wrapped.materializePrevWhile(index, new CancellableIndexedFuturePredicate<E>() {

@@ -31,6 +31,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.internal.util.ElementsCache;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 
 public class MapListFutureMaterializer<E, F> extends AbstractListFutureMaterializer<F> {
@@ -210,48 +211,44 @@ public class MapListFutureMaterializer<E, F> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<F> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+      final ElementsCache<F> elements = this.elements;
+      if (elements.has(index)) {
+        safeConsume(consumer, knownSize, index, elements.get(index), LOGGER);
       } else {
-        final ElementsCache<F> elements = this.elements;
-        if (elements.has(index)) {
-          safeConsume(consumer, knownSize, index, elements.get(index), LOGGER);
-        } else {
-          wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
-            @Override
-            public void cancellableAccept(final int size, final int index, final E element)
-                throws Exception {
-              final ElementsCache<F> elements = ImmaterialState.this.elements;
-              elements.setSize(wrappedSize = Math.max(wrappedSize, size));
-              final F mapped;
-              if (!elements.has(index)) {
-                try {
-                  mapped = mapper.apply(index, element);
-                } catch (final Exception e) {
-                  setError(e);
-                  throw e;
-                }
-                elements.set(index, mapped);
-              } else {
-                mapped = elements.get(index);
+        wrapped.materializeElement(index, new CancellableIndexedFutureConsumer<E>() {
+          @Override
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
+            final ElementsCache<F> elements = ImmaterialState.this.elements;
+            elements.setSize(wrappedSize = Math.max(wrappedSize, size));
+            final F mapped;
+            if (!elements.has(index)) {
+              try {
+                mapped = mapper.apply(index, element);
+              } catch (final Exception e) {
+                setError(e);
+                throw e;
               }
-              consumer.accept(wrappedSize, index, mapped);
+              elements.set(index, mapped);
+            } else {
+              mapped = elements.get(index);
             }
+            consumer.accept(wrappedSize, index, mapped);
+          }
 
-            @Override
-            public void cancellableComplete(final int size) throws Exception {
-              elements.setSize(wrappedSize = size);
-              consumer.complete(size);
-            }
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            elements.setSize(wrappedSize = size);
+            consumer.complete(size);
+          }
 
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
-        }
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
       }
     }
 
@@ -320,11 +317,9 @@ public class MapListFutureMaterializer<E, F> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else if (wrappedSize >= 0) {
+      if (wrappedSize >= 0) {
         safeConsume(consumer, index < wrappedSize, LOGGER);
       } else {
         wrapped.materializeHasElement(index, new CancellableFutureConsumer<Boolean>() {
@@ -342,7 +337,7 @@ public class MapListFutureMaterializer<E, F> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<F> predicate) {
       final ElementsCache<F> elements = this.elements;
       int i = index;
@@ -386,7 +381,7 @@ public class MapListFutureMaterializer<E, F> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<F> predicate) {
       final ElementsCache<F> elements = this.elements;
       int i = index;

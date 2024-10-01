@@ -30,6 +30,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 import sparx.util.function.TernaryFunction;
 
@@ -161,11 +162,9 @@ public class ResizeListFutureMaterializer<E> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index >= numElements) {
+      if (index >= numElements) {
         safeConsumeComplete(consumer, numElements, LOGGER);
       } else if (wrappedSize >= 0 && index >= wrappedSize) {
         safeConsume(consumer, numElements, index, padding, LOGGER);
@@ -249,13 +248,13 @@ public class ResizeListFutureMaterializer<E> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      safeConsume(consumer, index >= 0 && index < numElements, LOGGER);
+      safeConsume(consumer, index < numElements, LOGGER);
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (index >= numElements) {
         safeConsumeComplete(predicate, numElements, LOGGER);
@@ -286,7 +285,7 @@ public class ResizeListFutureMaterializer<E> extends AbstractListFutureMateriali
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (wrappedSize >= 0) {
         int i = Math.min(index, numElements - 1);

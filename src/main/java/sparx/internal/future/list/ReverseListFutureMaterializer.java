@@ -31,6 +31,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.Function;
 
 public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
@@ -142,18 +143,14 @@ public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterial
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        materialized(new StateConsumer<E>() {
-          @Override
-          public void accept(@NotNull final ListFutureMaterializer<E> state) {
-            state.materializeElement(index, consumer);
-          }
-        });
-      }
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListFutureMaterializer<E> state) {
+          state.materializeElement(index, consumer);
+        }
+      });
     }
 
     @Override
@@ -182,27 +179,23 @@ public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterial
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsume(consumer, false, LOGGER);
-      } else {
-        wrapped.materializeHasElement(index, new CancellableFutureConsumer<Boolean>() {
-          @Override
-          public void cancellableAccept(final Boolean hasElement) throws Exception {
-            consumer.accept(hasElement);
-          }
+      wrapped.materializeHasElement(index, new CancellableFutureConsumer<Boolean>() {
+        @Override
+        public void cancellableAccept(final Boolean hasElement) throws Exception {
+          consumer.accept(hasElement);
+        }
 
-          @Override
-          public void error(@NotNull final Exception error) throws Exception {
-            consumer.error(error);
-          }
-        });
-      }
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
+        }
+      });
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -213,7 +206,7 @@ public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterial
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -389,11 +382,9 @@ public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterial
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index >= size) {
+      if (index >= size) {
         safeConsumeComplete(consumer, size, LOGGER);
       } else {
         final int originalIndex = index;
@@ -451,13 +442,13 @@ public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterial
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      safeConsume(consumer, index >= 0 && index < size, LOGGER);
+      safeConsume(consumer, index < size, LOGGER);
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       if (index >= size) {
         safeConsumeComplete(predicate, size, LOGGER);
@@ -484,7 +475,7 @@ public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterial
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       wrapped.materializeNextWhile(Math.max(0, size - index - 1),
           new CancellableIndexedFuturePredicate<E>() {

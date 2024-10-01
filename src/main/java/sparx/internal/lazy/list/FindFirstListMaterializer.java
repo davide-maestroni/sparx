@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedPredicate;
 
 public class FindFirstListMaterializer<E> implements ListMaterializer<E> {
@@ -36,8 +37,8 @@ public class FindFirstListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    return index == 0 && !state.materialized().isEmpty();
+  public boolean canMaterializeElement(@NotNegative final int index) {
+    return !state.materialized().isEmpty();
   }
 
   @Override
@@ -52,7 +53,7 @@ public class FindFirstListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     return state.materialized().get(index);
   }
 

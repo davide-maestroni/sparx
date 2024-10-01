@@ -30,6 +30,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Predicate;
 
@@ -157,13 +158,13 @@ public class FoldLeftWhileListFutureMaterializer<E, F> extends AbstractListFutur
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
       safeConsume(consumer, index == 0, LOGGER);
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<F> predicate) {
       materialized(new StateConsumer<F>() {
         @Override
@@ -174,7 +175,7 @@ public class FoldLeftWhileListFutureMaterializer<E, F> extends AbstractListFutur
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<F> predicate) {
       materialized(new StateConsumer<F>() {
         @Override

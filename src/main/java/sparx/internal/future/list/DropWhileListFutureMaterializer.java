@@ -15,8 +15,6 @@
  */
 package sparx.internal.future.list;
 
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -28,6 +26,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedPredicate;
 
 public class DropWhileListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
@@ -118,18 +117,14 @@ public class DropWhileListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        materialized(new StateConsumer<E>() {
-          @Override
-          public void accept(@NotNull final ListFutureMaterializer<E> state) {
-            state.materializeElement(index, consumer);
-          }
-        });
-      }
+      materialized(new StateConsumer<E>() {
+        @Override
+        public void accept(@NotNull final ListFutureMaterializer<E> state) {
+          state.materializeElement(index, consumer);
+        }
+      });
     }
 
     @Override
@@ -164,7 +159,7 @@ public class DropWhileListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -175,7 +170,7 @@ public class DropWhileListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       materialized(new StateConsumer<E>() {
         @Override
@@ -186,7 +181,7 @@ public class DropWhileListFutureMaterializer<E> extends AbstractListFutureMateri
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       materialized(new StateConsumer<E>() {
         @Override

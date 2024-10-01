@@ -17,7 +17,6 @@ package sparx.internal.future.list;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -86,18 +85,14 @@ public class ListToListFutureMaterializer<E> implements ListFutureMaterializer<E
   }
 
   @Override
-  public void materializeElement(final int index,
+  public void materializeElement(@NotNegative final int index,
       @NotNull final IndexedFutureConsumer<E> consumer) {
     final List<E> elements = this.elements;
-    if (index < 0) {
-      safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
+    final int size = elements.size();
+    if (index >= size) {
+      safeConsumeComplete(consumer, size, LOGGER);
     } else {
-      final int size = elements.size();
-      if (index >= size) {
-        safeConsumeComplete(consumer, size, LOGGER);
-      } else {
-        safeConsume(consumer, size, index, elements.get(index), LOGGER);
-      }
+      safeConsume(consumer, size, index, elements.get(index), LOGGER);
     }
   }
 
@@ -112,9 +107,9 @@ public class ListToListFutureMaterializer<E> implements ListFutureMaterializer<E
   }
 
   @Override
-  public void materializeHasElement(final int index,
+  public void materializeHasElement(@NotNegative final int index,
       @NotNull final FutureConsumer<Boolean> consumer) {
-    safeConsume(consumer, index >= 0 && index < elements.size(), LOGGER);
+    safeConsume(consumer, index < elements.size(), LOGGER);
   }
 
   @Override

@@ -16,7 +16,6 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +29,7 @@ import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
 public class IncludesSliceListFutureMaterializer<E> extends
     AbstractListFutureMaterializer<Boolean> {
@@ -121,18 +121,14 @@ public class IncludesSliceListFutureMaterializer<E> extends
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<Boolean> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        materialized(new StateConsumer() {
-          @Override
-          public void accept(@NotNull final ListFutureMaterializer<Boolean> state) {
-            state.materializeElement(index, consumer);
-          }
-        });
-      }
+      materialized(new StateConsumer() {
+        @Override
+        public void accept(@NotNull final ListFutureMaterializer<Boolean> state) {
+          state.materializeElement(index, consumer);
+        }
+      });
     }
 
     @Override
@@ -151,13 +147,13 @@ public class IncludesSliceListFutureMaterializer<E> extends
     }
 
     @Override
-    public void materializeHasElement(final int index,
+    public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
       safeConsume(consumer, index == 0, LOGGER);
     }
 
     @Override
-    public void materializeNextWhile(final int index,
+    public void materializeNextWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<Boolean> predicate) {
       materialized(new StateConsumer() {
         @Override
@@ -168,7 +164,7 @@ public class IncludesSliceListFutureMaterializer<E> extends
     }
 
     @Override
-    public void materializePrevWhile(final int index,
+    public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<Boolean> predicate) {
       materialized(new StateConsumer() {
         @Override

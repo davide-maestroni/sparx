@@ -3458,7 +3458,7 @@ public class lazy extends Sparx {
     @Override
     public E last() {
       if (isEmpty()) {
-        throw new IndexOutOfBoundsException(Integer.toString(0));
+        throw new IndexOutOfBoundsException("0");
       }
       return materializer.materializeElement(size() - 1);
     }

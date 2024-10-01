@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
 
 public class ElementToListMaterializer<E> implements ListMaterializer<E> {
 
@@ -27,7 +28,7 @@ public class ElementToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return index == 0;
   }
 
@@ -42,7 +43,7 @@ public class ElementToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     if (index != 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }

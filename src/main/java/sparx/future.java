@@ -15,7 +15,6 @@
  */
 package sparx;
 
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
 import static sparx.lazy.indexedIdentity;
 
 import java.util.ArrayList;
@@ -4929,7 +4928,11 @@ class future extends Sparx {
               materializer.materializeSize(new FutureConsumer<Integer>() {
                 @Override
                 public void accept(final Integer size) {
-                  materializer.materializeElement(size - 1, consumer);
+                  if (size > 0) {
+                    materializer.materializeElement(size - 1, consumer);
+                  } else {
+                    consumer.error(new IndexOutOfBoundsException("0"));
+                  }
                 }
 
                 @Override
@@ -6509,14 +6512,9 @@ class future extends Sparx {
         }
 
         @Override
-        public void materializeElement(final int index,
+        public void materializeElement(@NotNegative final int index,
             @NotNull final IndexedFutureConsumer<E> consumer) {
-          if (index < 0) {
-            safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)),
-                LOGGER);
-          } else {
-            materialized().materializeElement(index, consumer);
-          }
+          materialized().materializeElement(index, consumer);
         }
 
         @Override
@@ -6542,19 +6540,19 @@ class future extends Sparx {
         }
 
         @Override
-        public void materializeHasElement(final int index,
+        public void materializeHasElement(@NotNegative final int index,
             @NotNull final FutureConsumer<Boolean> consumer) {
           materialized().materializeHasElement(index, consumer);
         }
 
         @Override
-        public void materializeNextWhile(final int index,
+        public void materializeNextWhile(@NotNegative final int index,
             @NotNull final IndexedFuturePredicate<E> predicate) {
           materialized().materializeNextWhile(index, predicate);
         }
 
         @Override
-        public void materializePrevWhile(final int index,
+        public void materializePrevWhile(@NotNegative final int index,
             @NotNull final IndexedFuturePredicate<E> predicate) {
           materialized().materializePrevWhile(index, predicate);
         }
