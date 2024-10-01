@@ -45,7 +45,9 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
         materializedEnd = Math.min(knownSize, materializedEnd);
       }
       final int materializedLength = Math.max(0, materializedEnd - materializedStart);
-      state = new MaterialState(materializedStart, materializedLength);
+      state = new MaterialState(materializedStart, materializedLength, materializedLength);
+    } else if (start >= 0 && end >= 0) {
+      state = new MaterialState(start, Math.max(0, end - start), -1);
     } else {
       state = new ImmaterialState(start, end);
     }
@@ -121,17 +123,19 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
 
   private static class MaterialState implements State {
 
+    private final int knownLength;
     private final int length;
     private final int start;
 
-    MaterialState(final int start, final int length) {
+    MaterialState(final int start, final int length, final int knownLength) {
       this.start = start;
       this.length = length;
+      this.knownLength = knownLength;
     }
 
     @Override
     public int knownLength() {
-      return length;
+      return knownLength;
     }
 
     @Override
@@ -185,7 +189,8 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
         materializedEnd = Math.min(wrappedSize, materializedEnd);
       }
       final int materializedLength = Math.max(0, materializedEnd - materializedStart);
-      return state = new MaterialState(Math.max(0, materializedStart), materializedLength);
+      return state = new MaterialState(Math.max(0, materializedStart), materializedLength,
+          materializedLength);
     }
   }
 

@@ -41,6 +41,8 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
       final int materializedLength = Math.max(0, materializedEnd - materializedStart);
       setState(
           new MaterialState(wrapped, materializedStart, materializedLength, elementsMaterializer));
+    } else if (start >= 0 && end >= 0) {
+      setState(new MaterialState(wrapped, start, Math.max(0, end - start), elementsMaterializer));
     } else {
       setState(new ImmaterialState(wrapped, start, end, elementsMaterializer));
     }

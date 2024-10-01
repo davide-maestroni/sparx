@@ -24,7 +24,23 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
 
   public SliceIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped, final int start,
       final int end) {
-    if (start >= 0 && end >= 0) {
+    final int knownSize = wrapped.knownSize();
+    if (knownSize >= 0) {
+      int materializedStart = start;
+      if (materializedStart < 0) {
+        materializedStart = Math.max(0, knownSize + materializedStart);
+      } else {
+        materializedStart = Math.min(knownSize, materializedStart);
+      }
+      int materializedEnd = end;
+      if (materializedEnd < 0) {
+        materializedEnd = Math.max(0, knownSize + materializedEnd);
+      } else {
+        materializedEnd = Math.min(knownSize, materializedEnd);
+      }
+      final int materializedLength = Math.max(0, materializedEnd - materializedStart);
+      setState(new MaterialState(wrapped, materializedStart, materializedLength));
+    } else if (start >= 0 && end >= 0) {
       setState(new MaterialState(wrapped, start, Math.max(0, end - start)));
     } else {
       setState(new ImmaterialState(wrapped, start, end));
