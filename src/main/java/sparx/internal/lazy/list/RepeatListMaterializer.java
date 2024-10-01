@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
 public class RepeatListMaterializer<E> implements ListMaterializer<E> {
@@ -30,8 +31,8 @@ public class RepeatListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    return index >= 0 && index < times;
+  public boolean canMaterializeElement(@NotNegative final int index) {
+    return index < times;
   }
 
   @Override
@@ -45,8 +46,8 @@ public class RepeatListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
-    if (index < 0 || index >= times) {
+  public E materializeElement(@NotNegative final int index) {
+    if (index >= times) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return element;

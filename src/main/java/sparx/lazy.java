@@ -4401,8 +4401,8 @@ public class lazy extends Sparx {
       }
 
       @Override
-      public boolean canMaterializeElement(final int index) {
-        return index >= 0 && state.canMaterializeElement(index);
+      public boolean canMaterializeElement(@NotNegative final int index) {
+        return state.canMaterializeElement(index);
       }
 
       @Override

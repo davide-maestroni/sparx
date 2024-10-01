@@ -2825,47 +2825,7 @@ public class FutureListTests {
 
     var atCalled = new AtomicBoolean();
     /* materializeElement */
-    runInContext(trampoline, () -> factory.apply(trampoline)
-        .materializeElement(Integer.MIN_VALUE, new IndexedFutureConsumer<>() {
-          @Override
-          public void accept(final int size, final int index, final E element) {
-            atCalled.set(true);
-          }
-
-          @Override
-          public void complete(final int size) {
-            atCalled.set(true);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            atError.set(error);
-          }
-        }));
-    assertFalse(atCalled.get());
-    assertInstanceOf(IndexOutOfBoundsException.class, atError.get());
-    atError.set(null);
-    runInContext(trampoline,
-        () -> factory.apply(trampoline).materializeElement(-1, new IndexedFutureConsumer<>() {
-          @Override
-          public void accept(final int size, final int index, final E element) {
-            atCalled.set(true);
-          }
-
-          @Override
-          public void complete(final int size) {
-            atCalled.set(true);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            atError.set(error);
-          }
-        }));
-    assertFalse(atCalled.get());
-    assertInstanceOf(IndexOutOfBoundsException.class, atError.get());
-    atError.set(null);
-    var atIndex = new AtomicInteger();
+    var atIndex = new AtomicInteger(-1);
     var atElement = new AtomicReference<E>();
     for (int i = 0; i < expected.size(); i++) {
       final int index = i;
@@ -2938,46 +2898,6 @@ public class FutureListTests {
     atSize.set(-1);
 
     var atMaterializer = new AtomicReference<ListFutureMaterializer<E>>(factory.apply(trampoline));
-    runInContext(trampoline, () -> atMaterializer.get()
-        .materializeElement(Integer.MIN_VALUE, new IndexedFutureConsumer<>() {
-          @Override
-          public void accept(final int size, final int index, final E element) {
-            atCalled.set(true);
-          }
-
-          @Override
-          public void complete(final int size) {
-            atCalled.set(true);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            atError.set(error);
-          }
-        }));
-    assertFalse(atCalled.get());
-    assertInstanceOf(IndexOutOfBoundsException.class, atError.get());
-    atError.set(null);
-    runInContext(trampoline,
-        () -> atMaterializer.get().materializeElement(-1, new IndexedFutureConsumer<>() {
-          @Override
-          public void accept(final int size, final int index, final E element) {
-            atCalled.set(true);
-          }
-
-          @Override
-          public void complete(final int size) {
-            atCalled.set(true);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            atError.set(error);
-          }
-        }));
-    assertFalse(atCalled.get());
-    assertInstanceOf(IndexOutOfBoundsException.class, atError.get());
-    atError.set(null);
     for (int i = 0; i < expected.size(); i++) {
       final int index = i;
       runInContext(trampoline,
@@ -3049,36 +2969,6 @@ public class FutureListTests {
 
     var atHasElement = new AtomicBoolean();
     /* materializeHasElement */
-    runInContext(trampoline, () -> factory.apply(trampoline)
-        .materializeHasElement(Integer.MIN_VALUE, new FutureConsumer<>() {
-          @Override
-          public void accept(final Boolean hasElement) {
-            atHasElement.set(hasElement);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            atError.set(error);
-          }
-        }));
-    assertFalse(atHasElement.get());
-    assertNull(atError.get());
-    atHasElement.set(false);
-    runInContext(trampoline,
-        () -> factory.apply(trampoline).materializeHasElement(-1, new FutureConsumer<>() {
-          @Override
-          public void accept(final Boolean hasElement) {
-            atHasElement.set(hasElement);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            atError.set(error);
-          }
-        }));
-    assertFalse(atHasElement.get());
-    assertNull(atError.get());
-    atHasElement.set(false);
     for (int i = 0; i < expected.size(); i++) {
       final int index = i;
       runInContext(trampoline,
@@ -3158,36 +3048,6 @@ public class FutureListTests {
     atSize.set(-1);
 
     atMaterializer.set(factory.apply(trampoline));
-    runInContext(trampoline,
-        () -> atMaterializer.get().materializeHasElement(Integer.MIN_VALUE, new FutureConsumer<>() {
-          @Override
-          public void accept(final Boolean hasElement) {
-            atHasElement.set(hasElement);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            atError.set(error);
-          }
-        }));
-    assertFalse(atHasElement.get());
-    assertNull(atError.get());
-    atHasElement.set(false);
-    runInContext(trampoline,
-        () -> atMaterializer.get().materializeHasElement(-1, new FutureConsumer<>() {
-          @Override
-          public void accept(final Boolean hasElement) {
-            atHasElement.set(hasElement);
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            atError.set(error);
-          }
-        }));
-    assertFalse(atHasElement.get());
-    assertNull(atError.get());
-    atHasElement.set(false);
     for (int i = 0; i < expected.size(); i++) {
       final int index = i;
       runInContext(trampoline,

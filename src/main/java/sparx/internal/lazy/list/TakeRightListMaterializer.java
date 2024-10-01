@@ -18,6 +18,7 @@ package sparx.internal.lazy.list;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
 public class TakeRightListMaterializer<E> extends AbstractListMaterializer<E> implements
@@ -33,9 +34,9 @@ public class TakeRightListMaterializer<E> extends AbstractListMaterializer<E> im
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     final int maxElements = this.maxElements;
-    if (index < 0 || index >= maxElements) {
+    if (index >= maxElements) {
       return false;
     }
     final ListMaterializer<E> wrapped = this.wrapped;
@@ -53,9 +54,9 @@ public class TakeRightListMaterializer<E> extends AbstractListMaterializer<E> im
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     final int maxElements = this.maxElements;
-    if (index < 0 || index >= maxElements) {
+    if (index >= maxElements) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     final ListMaterializer<E> wrapped = this.wrapped;

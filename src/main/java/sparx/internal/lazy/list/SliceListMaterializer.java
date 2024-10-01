@@ -18,6 +18,8 @@ package sparx.internal.lazy.list;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.IndexOverflowException;
+import sparx.util.annotation.NotNegative;
 
 public class SliceListMaterializer<E> extends AbstractListMaterializer<E> implements
     ListMaterializer<E> {
@@ -51,8 +53,8 @@ public class SliceListMaterializer<E> extends AbstractListMaterializer<E> implem
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    if (index < 0 || index >= state.materializedLength()) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
+    if (index >= state.materializedLength()) {
       return false;
     }
     final long wrappedIndex = (long) index + state.materializedStart();
@@ -75,15 +77,15 @@ public class SliceListMaterializer<E> extends AbstractListMaterializer<E> implem
   }
 
   @Override
-  public E materializeElement(final int index) {
-    if (index < 0 || index >= state.materializedLength()) {
+  public E materializeElement(@NotNegative final int index) {
+    if (index >= state.materializedLength()) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     final long wrappedIndex = (long) index + state.materializedStart();
-    if (wrappedIndex >= Integer.MAX_VALUE) {
+    if (wrappedIndex < 0) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
-    return wrapped.materializeElement((int) wrappedIndex);
+    return wrapped.materializeElement(IndexOverflowException.safeCast(wrappedIndex));
   }
 
   @Override

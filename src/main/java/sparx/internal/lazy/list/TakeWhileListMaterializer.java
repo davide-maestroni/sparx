@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedPredicate;
 
 public class TakeWhileListMaterializer<E> extends AbstractListMaterializer<E> implements
@@ -36,8 +37,8 @@ public class TakeWhileListMaterializer<E> extends AbstractListMaterializer<E> im
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    return index >= 0 && index < state.materialized();
+  public boolean canMaterializeElement(@NotNegative final int index) {
+    return index < state.materialized();
   }
 
   @Override
@@ -55,8 +56,8 @@ public class TakeWhileListMaterializer<E> extends AbstractListMaterializer<E> im
   }
 
   @Override
-  public E materializeElement(final int index) {
-    if (index < 0 || index >= state.materialized()) {
+  public E materializeElement(@NotNegative final int index) {
+    if (index >= state.materialized()) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return wrapped.materializeElement(index);

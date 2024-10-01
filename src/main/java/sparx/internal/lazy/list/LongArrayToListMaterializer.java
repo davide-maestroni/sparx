@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.NotNegative;
 
 public class LongArrayToListMaterializer implements ListMaterializer<Long> {
 
@@ -27,8 +28,8 @@ public class LongArrayToListMaterializer implements ListMaterializer<Long> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    return index >= 0 && index < elements.length;
+  public boolean canMaterializeElement(@NotNegative final int index) {
+    return index < elements.length;
   }
 
   @Override
@@ -50,7 +51,7 @@ public class LongArrayToListMaterializer implements ListMaterializer<Long> {
   }
 
   @Override
-  public Long materializeElement(final int index) {
+  public Long materializeElement(@NotNegative final int index) {
     return elements[index];
   }
 

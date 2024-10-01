@@ -17,7 +17,6 @@ package sparx.internal.future.list;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -126,11 +125,9 @@ public class FoldRightWhileListFutureMaterializer<E, F> extends AbstractListFutu
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<F> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index > 1) {
+      if (index > 1) {
         safeConsumeComplete(consumer, 1, LOGGER);
       } else {
         materialized(new StateConsumer<F>() {

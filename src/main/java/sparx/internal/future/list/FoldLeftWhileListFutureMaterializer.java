@@ -126,11 +126,9 @@ public class FoldLeftWhileListFutureMaterializer<E, F> extends AbstractListFutur
     }
 
     @Override
-    public void materializeElement(final int index,
+    public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<F> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else if (index > 1) {
+      if (index > 1) {
         safeConsumeComplete(consumer, 1, LOGGER);
       } else {
         materialized(new StateConsumer<F>() {

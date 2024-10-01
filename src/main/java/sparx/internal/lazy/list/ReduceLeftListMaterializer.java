@@ -100,7 +100,7 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public E materializeElement(final int index) {
+    public E materializeElement(@NotNegative final int index) {
       if (index != 0) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }

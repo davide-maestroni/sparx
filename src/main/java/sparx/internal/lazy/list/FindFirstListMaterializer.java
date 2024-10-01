@@ -38,7 +38,7 @@ public class FindFirstListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean canMaterializeElement(@NotNegative final int index) {
-    return !state.materialized().isEmpty();
+    return index == 0 && !state.materialized().isEmpty();
   }
 
   @Override

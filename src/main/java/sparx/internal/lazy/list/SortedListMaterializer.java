@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 
 public class SortedListMaterializer<E> implements ListMaterializer<E> {
 
@@ -34,7 +35,7 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return state.canMaterializeElement(index);
   }
 
@@ -49,7 +50,7 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     return state.materialized().get(index);
   }
 
@@ -75,7 +76,7 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
 
   private interface State<E> {
 
-    boolean canMaterializeElement(int index);
+    boolean canMaterializeElement(@NotNegative int index);
 
     int knownSize();
 
@@ -97,8 +98,8 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
-      return index >= 0 && index < elements.size();
+    public boolean canMaterializeElement(@NotNegative final int index) {
+      return index < elements.size();
     }
 
     @Override
@@ -136,7 +137,7 @@ public class SortedListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
+    public boolean canMaterializeElement(@NotNegative final int index) {
       return wrapped.canMaterializeElement(index);
     }
 

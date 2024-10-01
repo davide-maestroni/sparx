@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.internal.util.ElementsCache;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
 public class SlidingWindowListMaterializer<E, L extends List<E>> implements ListMaterializer<L> {
@@ -36,7 +37,7 @@ public class SlidingWindowListMaterializer<E, L extends List<E>> implements List
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return state.canMaterializeElement(index);
   }
 
@@ -51,7 +52,7 @@ public class SlidingWindowListMaterializer<E, L extends List<E>> implements List
   }
 
   @Override
-  public L materializeElement(final int index) {
+  public L materializeElement(@NotNegative final int index) {
     return state.materializeElement(index);
   }
 
@@ -100,10 +101,7 @@ public class SlidingWindowListMaterializer<E, L extends List<E>> implements List
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
-      if (index < 0) {
-        return false;
-      }
+    public boolean canMaterializeElement(@NotNegative final int index) {
       final long step = this.step;
       final long wrappedIndex = index * step;
       return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
@@ -123,10 +121,7 @@ public class SlidingWindowListMaterializer<E, L extends List<E>> implements List
     }
 
     @Override
-    public L materializeElement(final int index) {
-      if (index < 0) {
-        throw new IndexOutOfBoundsException(Integer.toString(index));
-      }
+    public L materializeElement(@NotNegative final int index) {
       final ElementsCache<L> elements = this.elements;
       if (elements.has(index)) {
         return elements.get(index);

@@ -35,7 +35,7 @@ public class FindIndexOfSliceListMaterializer<E> implements ListMaterializer<Int
 
   @Override
   public boolean canMaterializeElement(@NotNegative final int index) {
-    return state.materialized() >= 0;
+    return index == 0 && state.materialized() >= 0;
   }
 
   @Override

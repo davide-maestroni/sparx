@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.NotNegative;
 import sparx.util.function.IndexedFunction;
 
 public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> {
@@ -32,7 +33,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     return state.canMaterializeElement(index);
   }
 
@@ -47,7 +48,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
   }
 
   @Override
-  public F materializeElement(final int index) {
+  public F materializeElement(@NotNegative final int index) {
     return state.materializeElement(index);
   }
 
@@ -84,10 +85,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
     }
 
     @Override
-    public boolean canMaterializeElement(final int index) {
-      if (index < 0) {
-        return false;
-      }
+    public boolean canMaterializeElement(@NotNegative final int index) {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
       }
@@ -122,7 +120,7 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
     }
 
     @Override
-    public F materializeElement(final int index) {
+    public F materializeElement(@NotNegative final int index) {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
       }

@@ -25,11 +25,11 @@ import sparx.util.annotation.NotNegative;
 
 public interface ListFutureMaterializer<E> extends CollectionFutureMaterializer {
 
-  void materializeElement(int index, @NotNull IndexedFutureConsumer<E> consumer);
+  void materializeElement(@NotNegative int index, @NotNull IndexedFutureConsumer<E> consumer);
 
   void materializeElements(@NotNull FutureConsumer<List<E>> consumer);
 
-  void materializeHasElement(int index, @NotNull FutureConsumer<Boolean> consumer);
+  void materializeHasElement(@NotNegative int index, @NotNull FutureConsumer<Boolean> consumer);
 
   void materializeNextWhile(@NotNegative int index, @NotNull IndexedFuturePredicate<E> predicate);
 

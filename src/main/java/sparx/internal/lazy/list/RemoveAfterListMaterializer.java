@@ -33,10 +33,7 @@ public class RemoveAfterListMaterializer<E> extends AbstractListMaterializer<E> 
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    if (index < 0) {
-      return false;
-    }
+  public boolean canMaterializeElement(@NotNegative final int index) {
     if (numElements <= index) {
       final long wrappedIndex = (long) index + 1;
       return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
@@ -69,10 +66,7 @@ public class RemoveAfterListMaterializer<E> extends AbstractListMaterializer<E> 
   }
 
   @Override
-  public E materializeElement(final int index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(Integer.toString(index));
-    }
+  public E materializeElement(@NotNegative final int index) {
     if (numElements <= index) {
       final long wrappedIndex = (long) index + 1;
       if (wrappedIndex >= Integer.MAX_VALUE) {

@@ -52,10 +52,7 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
-    if (index < 0) {
-      return false;
-    }
+  public boolean canMaterializeElement(@NotNegative final int index) {
     if (state.materializedStart() <= index) {
       final long wrappedIndex = (long) index + state.materializedLength();
       return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);

@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
+import sparx.util.annotation.NotNegative;
 
 public class ReverseListMaterializer<E> implements ListMaterializer<E> {
 
@@ -29,10 +30,11 @@ public class ReverseListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean canMaterializeElement(final int index) {
+  public boolean canMaterializeElement(@NotNegative final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
     final long wrappedIndex = wrapped.materializeSize() - index - 1;
-    return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
+    return wrappedIndex >= 0 && wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement(
+        (int) wrappedIndex);
   }
 
   @Override
@@ -46,9 +48,12 @@ public class ReverseListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public E materializeElement(final int index) {
+  public E materializeElement(@NotNegative final int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
     final long wrappedIndex = (long) wrapped.materializeSize() - index - 1;
+    if (wrappedIndex < 0) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
     return wrapped.materializeElement(IndexOverflowException.safeCast(wrappedIndex));
   }
 
