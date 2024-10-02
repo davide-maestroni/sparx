@@ -29,7 +29,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.IndexOverflowException;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 import sparx.util.function.BinaryFunction;
@@ -326,7 +325,7 @@ public class RemoveAfterListFutureMaterializer<E> extends AbstractListFutureMate
           }
         });
       } else {
-        wrapped.materializeHasElement(IndexOverflowException.safeCast((long) index + 1),
+        wrapped.materializeHasElement((int) Math.min(Integer.MAX_VALUE, (long) index + 1),
             new CancellableFutureConsumer<Boolean>() {
               @Override
               public void cancellableAccept(final Boolean hasElement) throws Exception {

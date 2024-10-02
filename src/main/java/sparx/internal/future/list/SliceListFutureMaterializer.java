@@ -31,7 +31,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.IndexOverflowException;
 import sparx.util.annotation.NotNegative;
 
 public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
@@ -66,8 +65,9 @@ public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializ
       if (materializedLength == 0) {
         setDone(EmptyListFutureMaterializer.<E>instance());
       } else {
-        setState(new MaterialState(wrapped, materializedStart, materializedLength, context,
-            cancelException));
+        setState(
+            new MaterialState(wrapped, materializedStart, materializedLength, materializedLength,
+                context, cancelException));
       }
     } else if (start >= 0 && end >= 0) {
       this.knownSize = -1;
@@ -75,7 +75,7 @@ public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializ
       if (size == 0) {
         setDone(EmptyListFutureMaterializer.<E>instance());
       } else {
-        setState(new MaterialState(wrapped, start, size, context, cancelException));
+        setState(new MaterialState(wrapped, start, size, -1, context, cancelException));
       }
     } else {
       this.knownSize = -1;
@@ -326,8 +326,8 @@ public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializ
           }
         } else {
           consumer.accept(setState(
-              new MaterialState(wrapped, materializedStart, materializedLength, context,
-                  cancelException)));
+              new MaterialState(wrapped, materializedStart, materializedLength, materializedLength,
+                  context, cancelException)));
         }
       } else {
         consumer.accept(getState());
@@ -345,16 +345,17 @@ public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializ
     private final int start;
     private final ListFutureMaterializer<E> wrapped;
 
-    private int knownLength = knownSize;
+    private int knownLength;
 
     public MaterialState(@NotNull final ListFutureMaterializer<E> wrapped, final int start,
-        final int length, @NotNull final ExecutionContext context,
+        final int length, final int knownSize, @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
       this.start = start;
       this.length = length;
       this.context = context;
       this.cancelException = cancelException;
+      knownLength = knownSize;
     }
 
     @Override
@@ -402,12 +403,14 @@ public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializ
         wrapped.materializeNextWhile(start, new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
+            updateLength(size);
             consumer.accept(false);
           }
 
           @Override
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
+            updateLength(size);
             if (element == null) {
               consumer.accept(true);
               return false;
@@ -425,12 +428,14 @@ public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializ
         wrapped.materializeNextWhile(start, new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
+            updateLength(size);
             consumer.accept(false);
           }
 
           @Override
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
+            updateLength(size);
             if (other.equals(element)) {
               consumer.accept(true);
               return false;
@@ -454,7 +459,7 @@ public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializ
         safeConsumeComplete(consumer, knownSize, LOGGER);
       } else {
         final int originalIndex = index;
-        wrapped.materializeElement(IndexOverflowException.safeCast((long) index + start),
+        wrapped.materializeElement((int) Math.min(Integer.MAX_VALUE, (long) index + start),
             new CancellableIndexedFutureConsumer<E>() {
               @Override
               public void cancellableAccept(final int size, final int index, final E element)
@@ -552,7 +557,7 @@ public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializ
       } else if (index >= length) {
         safeConsume(consumer, false, LOGGER);
       } else {
-        wrapped.materializeHasElement(IndexOverflowException.safeCast((long) index + start),
+        wrapped.materializeHasElement((int) Math.min(Integer.MAX_VALUE, (long) index + start),
             new CancellableFutureConsumer<Boolean>() {
               @Override
               public void cancellableAccept(final Boolean hasElement) throws Exception {
@@ -575,7 +580,7 @@ public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializ
         safeConsumeComplete(predicate, knownSize, LOGGER);
       } else {
         final int end = start + length - 1;
-        wrapped.materializeNextWhile(IndexOverflowException.safeCast((long) index + start),
+        wrapped.materializeNextWhile((int) Math.min(Integer.MAX_VALUE, (long) index + start),
             new CancellableIndexedFuturePredicate<E>() {
               @Override
               public void cancellableComplete(final int size) throws Exception {
@@ -608,7 +613,7 @@ public class SliceListFutureMaterializer<E> extends AbstractListFutureMaterializ
     public void materializePrevWhile(@NotNegative final int index,
         @NotNull final IndexedFuturePredicate<E> predicate) {
       wrapped.materializePrevWhile(
-          IndexOverflowException.safeCast((long) Math.min(index, length - 1) + start),
+          (int) Math.min(Integer.MAX_VALUE, (long) Math.min(index, length - 1) + start),
           new CancellableIndexedFuturePredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {

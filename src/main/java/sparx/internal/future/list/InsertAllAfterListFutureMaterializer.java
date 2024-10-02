@@ -49,7 +49,17 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, List<E>, List<E>> insertAllFunction) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    this(wrapped, numElements, elementsMaterializer, new AtomicInteger(STATUS_RUNNING), context,
+        cancelException, insertAllFunction);
+  }
+
+  InsertAllAfterListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
+      @Positive final int numElements,
+      @NotNull final ListFutureMaterializer<E> elementsMaterializer,
+      @NotNull final AtomicInteger status, @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
+      @NotNull final TernaryFunction<List<E>, Integer, List<E>, List<E>> insertAllFunction) {
+    super(context, status);
     knownSize = safeSize(numElements, wrapped.knownSize(), elementsMaterializer.knownSize());
     setState(
         new ImmaterialState(wrapped, numElements, elementsMaterializer, context, cancelException,

@@ -32,7 +32,6 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.internal.util.ElementsCache;
-import sparx.util.IndexOverflowException;
 import sparx.util.SizeOverflowException;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
@@ -322,7 +321,7 @@ public class SlidingWindowListFutureMaterializer<E, L extends List<E>> extends
         final ElementsCache<L> elements = this.elements;
         final Splitter<E, ? extends L> splitter = this.splitter;
         final ListFutureMaterializer<E> wrapped = this.wrapped;
-        final int startIndex = IndexOverflowException.safeCast(
+        final int startIndex = (int) Math.min(Integer.MAX_VALUE,
             Math.min(index, elementsSize) * step);
         for (int i = startIndex, n = index; i < size; i += (int) step, ++n) {
           final int endIndex = (int) Math.min(size, i + maxSize);
@@ -366,7 +365,7 @@ public class SlidingWindowListFutureMaterializer<E, L extends List<E>> extends
         final Splitter<E, ? extends L> splitter = this.splitter;
         final ListFutureMaterializer<E> wrapped = this.wrapped;
         final int cappedIndex = Math.min(index, elementsSize - 1);
-        final int startIndex = IndexOverflowException.safeCast(cappedIndex * step);
+        final int startIndex = (int) Math.min(Integer.MAX_VALUE, cappedIndex * step);
         for (int i = startIndex, n = cappedIndex; i >= 0; i -= (int) step, --n) {
           final int endIndex = (int) Math.min(size, i + maxSize);
           if (!elements.has(n)) {

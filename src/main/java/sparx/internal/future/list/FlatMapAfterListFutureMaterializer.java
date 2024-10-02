@@ -180,7 +180,7 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
                     }
                   });
             } else {
-              final int wrappedIndex = IndexOverflowException.safeCast(
+              final int wrappedIndex = (int) Math.min(Integer.MAX_VALUE,
                   (long) index - elementsSize + 1);
               wrapped.materializeElement(wrappedIndex, new CancellableIndexedFutureConsumer<E>() {
                 @Override
@@ -402,7 +402,7 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
                   });
             } else {
               wrapped.materializeHasElement(
-                  IndexOverflowException.safeCast((long) index - elementsSize + 1),
+                  (int) Math.min(Integer.MAX_VALUE, (long) index - elementsSize + 1),
                   new CancellableFutureConsumer<Boolean>() {
                     @Override
                     public void cancellableAccept(final Boolean hasElement) throws Exception {
@@ -899,7 +899,7 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
         } else {
           elementsSize = size;
           isWrapped = true;
-          wrappedIndex = IndexOverflowException.safeCast((long) index - size + 1);
+          wrappedIndex = (int) Math.min(Integer.MAX_VALUE, (long) index - size + 1);
           schedule();
         }
       }

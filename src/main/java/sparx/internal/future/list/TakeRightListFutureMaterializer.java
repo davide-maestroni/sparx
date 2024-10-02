@@ -31,7 +31,6 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.IndexOverflowException;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
@@ -210,7 +209,7 @@ public class TakeRightListFutureMaterializer<E> extends AbstractListFutureMateri
           safeConsumeComplete(consumer, knownSize, LOGGER);
         } else {
           final int originalIndex = index;
-          wrapped.materializeElement(IndexOverflowException.safeCast(
+          wrapped.materializeElement((int) Math.min(Integer.MAX_VALUE,
                   (long) Math.max(0, wrappedSize - maxElements) + index),
               new CancellableIndexedFutureConsumer<E>() {
                 @Override
@@ -319,7 +318,7 @@ public class TakeRightListFutureMaterializer<E> extends AbstractListFutureMateri
           safeConsumeComplete(predicate, knownSize, LOGGER);
         } else {
           final int start = Math.max(0, wrappedSize - maxElements);
-          wrapped.materializeNextWhile(IndexOverflowException.safeCast((long) start + index),
+          wrapped.materializeNextWhile((int) Math.min(Integer.MAX_VALUE, (long) start + index),
               new CancellableIndexedFuturePredicate<E>() {
                 @Override
                 public void cancellableComplete(final int size) throws Exception {

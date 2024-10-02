@@ -182,7 +182,7 @@ public class DropListFutureMaterializer<E> extends AbstractListFutureMaterialize
         safeConsumeComplete(consumer, safeSize(wrappedSize), LOGGER);
       } else {
         final int originalIndex = index;
-        wrapped.materializeElement(IndexOverflowException.safeCast((long) maxElements + index),
+        wrapped.materializeElement((int) Math.min(Integer.MAX_VALUE, (long) maxElements + index),
             new CancellableIndexedFutureConsumer<E>() {
               @Override
               public void cancellableAccept(final int size, final int index, final E element)

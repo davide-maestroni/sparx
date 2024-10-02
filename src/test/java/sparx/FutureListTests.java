@@ -17,7 +17,6 @@ package sparx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -2788,7 +2787,6 @@ public class FutureListTests {
     var atError = new AtomicReference<Exception>();
     var atEmpty = new AtomicBoolean();
     /* materializeEmpty */
-    // TODO: run in trampoline
     runInContext(trampoline,
         () -> factory.apply(trampoline).materializeEmpty(new FutureConsumer<>() {
           @Override
@@ -2823,7 +2821,6 @@ public class FutureListTests {
     assertEquals(expected.size(), atSize.get());
     atSize.set(-1);
 
-    var atCalled = new AtomicBoolean();
     /* materializeElement */
     var atIndex = new AtomicInteger(-1);
     var atElement = new AtomicReference<E>();

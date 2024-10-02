@@ -257,8 +257,7 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
         materializedEnd = Math.min(wrappedSize, materializedEnd);
       }
       final int materializedLength = Math.max(0, materializedEnd - materializedStart);
-      return state = new MaterialState(Math.max(0, materializedStart), materializedLength,
-          materializedLength);
+      return state = new MaterialState(materializedStart, materializedLength, materializedLength);
     }
   }
 
