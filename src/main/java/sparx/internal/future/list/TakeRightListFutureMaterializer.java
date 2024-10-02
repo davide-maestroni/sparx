@@ -191,48 +191,44 @@ public class TakeRightListFutureMaterializer<E> extends AbstractListFutureMateri
     @Override
     public void materializeElement(@NotNegative final int index,
         @NotNull final IndexedFutureConsumer<E> consumer) {
-      if (index < 0) {
-        safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)), LOGGER);
-      } else {
-        if (wrappedSize < 0) {
-          wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
-            @Override
-            public void cancellableAccept(final Integer size) {
-              wrappedSize = size;
-              materializeElement(index, consumer);
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
-        } else {
-          final int knownSize = Math.min(wrappedSize, maxElements);
-          if (index >= knownSize) {
-            safeConsumeComplete(consumer, knownSize, LOGGER);
-          } else {
-            final int originalIndex = index;
-            wrapped.materializeElement(IndexOverflowException.safeCast(
-                    (long) Math.max(0, wrappedSize - maxElements) + index),
-                new CancellableIndexedFutureConsumer<E>() {
-                  @Override
-                  public void cancellableAccept(final int size, final int index, final E element)
-                      throws Exception {
-                    consumer.accept(Math.min(wrappedSize, maxElements), originalIndex, element);
-                  }
-
-                  @Override
-                  public void cancellableComplete(final int size) throws Exception {
-                    consumer.complete(Math.min(wrappedSize, maxElements));
-                  }
-
-                  @Override
-                  public void error(@NotNull final Exception error) throws Exception {
-                    consumer.error(error);
-                  }
-                });
+      if (wrappedSize < 0) {
+        wrapped.materializeSize(new CancellableFutureConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer size) {
+            wrappedSize = size;
+            materializeElement(index, consumer);
           }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      } else {
+        final int knownSize = Math.min(wrappedSize, maxElements);
+        if (index >= knownSize) {
+          safeConsumeComplete(consumer, knownSize, LOGGER);
+        } else {
+          final int originalIndex = index;
+          wrapped.materializeElement(IndexOverflowException.safeCast(
+                  (long) Math.max(0, wrappedSize - maxElements) + index),
+              new CancellableIndexedFutureConsumer<E>() {
+                @Override
+                public void cancellableAccept(final int size, final int index, final E element)
+                    throws Exception {
+                  consumer.accept(Math.min(wrappedSize, maxElements), originalIndex, element);
+                }
+
+                @Override
+                public void cancellableComplete(final int size) throws Exception {
+                  consumer.complete(Math.min(wrappedSize, maxElements));
+                }
+
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  consumer.error(error);
+                }
+              });
         }
       }
     }

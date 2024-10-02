@@ -516,32 +516,28 @@ public class ReplaceSliceListFutureMaterializer<E> extends AbstractListFutureMat
                 }
 
                 @Override
-                public void cancellableComplete(final int size) throws Exception {
+                public void cancellableComplete(final int size) {
                   elementsSize = size;
                   final int wrappedIndex = IndexOverflowException.safeCast(
                       (long) originalIndex - size + length);
-                  if (wrappedIndex < 0) {
-                    consumer.error(new IndexOutOfBoundsException(Integer.toString(index)));
-                  } else {
-                    wrapped.materializeElement(wrappedIndex,
-                        new CancellableIndexedFutureConsumer<E>() {
-                          @Override
-                          public void cancellableAccept(final int size, final int index,
-                              final E element) throws Exception {
-                            consumer.accept(safeSize(elementsSize), originalIndex, element);
-                          }
+                  wrapped.materializeElement(wrappedIndex,
+                      new CancellableIndexedFutureConsumer<E>() {
+                        @Override
+                        public void cancellableAccept(final int size, final int index,
+                            final E element) throws Exception {
+                          consumer.accept(safeSize(elementsSize), originalIndex, element);
+                        }
 
-                          @Override
-                          public void cancellableComplete(final int size) throws Exception {
-                            consumer.complete(safeSize(elementsSize));
-                          }
+                        @Override
+                        public void cancellableComplete(final int size) throws Exception {
+                          consumer.complete(safeSize(elementsSize));
+                        }
 
-                          @Override
-                          public void error(@NotNull final Exception error) throws Exception {
-                            consumer.error(error);
-                          }
-                        });
-                  }
+                        @Override
+                        public void error(@NotNull final Exception error) throws Exception {
+                          consumer.error(error);
+                        }
+                      });
                 }
 
                 @Override

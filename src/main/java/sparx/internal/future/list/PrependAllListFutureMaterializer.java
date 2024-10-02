@@ -205,33 +205,29 @@ public class PrependAllListFutureMaterializer<E> extends AbstractListFutureMater
           }
 
           @Override
-          public void cancellableComplete(final int size) throws Exception {
+          public void cancellableComplete(final int size) {
             elementsSize = size;
             final int originalIndex = index;
-            if (index < size) {
-              consumer.error(new IndexOutOfBoundsException(Integer.toString(index)));
-            } else {
-              wrapped.materializeElement(index - size, new CancellableIndexedFutureConsumer<E>() {
-                @Override
-                public void cancellableAccept(final int size, final int index, final E element)
-                    throws Exception {
-                  final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size),
-                      elementsSize);
-                  consumer.accept(knownSize, originalIndex, element);
-                }
+            wrapped.materializeElement(index - size, new CancellableIndexedFutureConsumer<E>() {
+              @Override
+              public void cancellableAccept(final int size, final int index, final E element)
+                  throws Exception {
+                final int knownSize = safeSize(wrappedSize = Math.max(wrappedSize, size),
+                    elementsSize);
+                consumer.accept(knownSize, originalIndex, element);
+              }
 
-                @Override
-                public void cancellableComplete(final int size) throws Exception {
-                  final int knownSize = safeSize(wrappedSize = size, elementsSize);
-                  consumer.complete(knownSize);
-                }
+              @Override
+              public void cancellableComplete(final int size) throws Exception {
+                final int knownSize = safeSize(wrappedSize = size, elementsSize);
+                consumer.complete(knownSize);
+              }
 
-                @Override
-                public void error(@NotNull final Exception error) throws Exception {
-                  consumer.error(error);
-                }
-              });
-            }
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                consumer.error(error);
+              }
+            });
           }
 
           @Override

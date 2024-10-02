@@ -211,34 +211,30 @@ public class AppendAllListFutureMaterializer<E> extends AbstractListFutureMateri
           }
 
           @Override
-          public void cancellableComplete(final int size) throws Exception {
+          public void cancellableComplete(final int size) {
             wrappedSize = size;
-            if (index < size) {
-              consumer.error(new IndexOutOfBoundsException(Integer.toString(index)));
-            } else {
-              final int originalIndex = index;
-              elementsMaterializer.materializeElement(index - size,
-                  new CancellableIndexedFutureConsumer<E>() {
-                    @Override
-                    public void cancellableAccept(final int size, final int index, final E element)
-                        throws Exception {
-                      final int knownSize = safeSize(wrappedSize,
-                          elementsSize = Math.max(elementsSize, size));
-                      consumer.accept(knownSize, originalIndex, element);
-                    }
+            final int originalIndex = index;
+            elementsMaterializer.materializeElement(index - size,
+                new CancellableIndexedFutureConsumer<E>() {
+                  @Override
+                  public void cancellableAccept(final int size, final int index, final E element)
+                      throws Exception {
+                    final int knownSize = safeSize(wrappedSize,
+                        elementsSize = Math.max(elementsSize, size));
+                    consumer.accept(knownSize, originalIndex, element);
+                  }
 
-                    @Override
-                    public void cancellableComplete(final int size) throws Exception {
-                      final int knownSize = safeSize(wrappedSize, elementsSize = size);
-                      consumer.complete(knownSize);
-                    }
+                  @Override
+                  public void cancellableComplete(final int size) throws Exception {
+                    final int knownSize = safeSize(wrappedSize, elementsSize = size);
+                    consumer.complete(knownSize);
+                  }
 
-                    @Override
-                    public void error(@NotNull final Exception error) throws Exception {
-                      consumer.error(error);
-                    }
-                  });
-            }
+                  @Override
+                  public void error(@NotNull final Exception error) throws Exception {
+                    consumer.error(error);
+                  }
+                });
           }
 
           @Override

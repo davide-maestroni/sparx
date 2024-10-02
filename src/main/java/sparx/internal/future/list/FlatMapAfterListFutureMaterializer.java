@@ -182,28 +182,23 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
             } else {
               final int wrappedIndex = IndexOverflowException.safeCast(
                   (long) index - elementsSize + 1);
-              if (wrappedIndex < 0) {
-                safeConsumeError(consumer, new IndexOutOfBoundsException(Integer.toString(index)),
-                    LOGGER);
-              } else {
-                wrapped.materializeElement(wrappedIndex, new CancellableIndexedFutureConsumer<E>() {
-                  @Override
-                  public void cancellableAccept(final int size, final int index, final E element)
-                      throws Exception {
-                    consumer.accept(safeSize(), originalIndex, element);
-                  }
+              wrapped.materializeElement(wrappedIndex, new CancellableIndexedFutureConsumer<E>() {
+                @Override
+                public void cancellableAccept(final int size, final int index, final E element)
+                    throws Exception {
+                  consumer.accept(safeSize(), originalIndex, element);
+                }
 
-                  @Override
-                  public void cancellableComplete(final int size) throws Exception {
-                    consumer.complete(safeSize());
-                  }
+                @Override
+                public void cancellableComplete(final int size) throws Exception {
+                  consumer.complete(safeSize());
+                }
 
-                  @Override
-                  public void error(@NotNull final Exception error) throws Exception {
-                    consumer.error(error);
-                  }
-                });
-              }
+                @Override
+                public void error(@NotNull final Exception error) throws Exception {
+                  consumer.error(error);
+                }
+              });
             }
           } else {
             materialized(new FutureConsumer<ListFutureMaterializer<E>>() {

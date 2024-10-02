@@ -244,9 +244,7 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
                 public void cancellableComplete(final int size) throws Exception {
                   final int wrappedIndex = index - size;
                   final int knownSize = safeSize(numElements, wrappedSize, elementsSize = size);
-                  if (wrappedIndex < 0) {
-                    consumer.error(new IndexOutOfBoundsException(Integer.toString(index)));
-                  } else if (wrappedIndex < knownSize) {
+                  if (wrappedIndex < knownSize) {
                     wrapped.materializeElement(wrappedIndex,
                         new CancellableIndexedFutureConsumer<E>() {
                           @Override
@@ -296,9 +294,7 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
                   public void cancellableComplete(final int size) throws Exception {
                     final int wrappedIndex = originalIndex - elementsSize;
                     final int knownSize = safeSize(numElements, wrappedSize, elementsSize = size);
-                    if (wrappedIndex < 0) {
-                      consumer.error(new IndexOutOfBoundsException(Integer.toString(index)));
-                    } else if (knownSize < 0 || wrappedIndex < knownSize) {
+                    if (knownSize < 0 || wrappedIndex < knownSize) {
                       wrapped.materializeElement(wrappedIndex,
                           new CancellableIndexedFutureConsumer<E>() {
                             @Override

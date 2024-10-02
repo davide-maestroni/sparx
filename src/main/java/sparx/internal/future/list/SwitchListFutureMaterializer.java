@@ -15,6 +15,7 @@
  */
 package sparx.internal.future.list;
 
+import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.List;
@@ -476,7 +477,7 @@ public class SwitchListFutureMaterializer<E> implements ListFutureMaterializer<E
               safeConsumeError(switchConsumer, e, LOGGER);
             }
           } else {
-            safeConsumeError(switchConsumer, new IndexOutOfBoundsException("0"), LOGGER);
+            safeConsumeComplete(switchConsumer, size, LOGGER);
           }
         }
       });
