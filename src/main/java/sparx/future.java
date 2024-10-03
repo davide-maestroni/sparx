@@ -58,6 +58,7 @@ import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexOfSliceIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindLastIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -550,6 +551,20 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).findIndexOfSlice(elements);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerFindLast(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.wrap(list).findLast(predicate);
         }
       };
     }
@@ -1250,13 +1265,40 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> findLast(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<E> findLast(@NotNull final IndexedPredicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerFindLast(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new FindLastIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<E> findLast(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<E> findLast(@NotNull final Predicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerFindLast(materializer, context, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new FindLastIteratorFutureMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     @Override

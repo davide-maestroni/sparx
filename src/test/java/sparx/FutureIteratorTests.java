@@ -61,6 +61,7 @@ import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexOfSliceIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindLastIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
@@ -509,6 +510,32 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.findIndexWhere(e -> false));
+  }
+
+  @Test
+  public void findLast() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).findLast((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).findLast((Predicate<? super Integer>) null));
+    test(List.of(null), () -> Iterator.of(1, 2, null, 4, 5), it -> it.findLast(Objects::isNull));
+    test(List.of(5), () -> Iterator.of(1, 2, null, 4, 5), it -> it.findLast(Objects::nonNull));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4, 5),
+        it -> it.findLast(i -> i != null && i > 5));
+    test(List.of(), Iterator::of, it -> it.findLast(Objects::isNull));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4, 5)
+        .toFuture(context).flatMap(e -> List.of(e));
+    assertThrows(NullPointerException.class, () -> itr.get().findLast(i -> i < 4).first());
+    assertThrows(NullPointerException.class, () -> itr.get().findLast(i -> i < 5).isEmpty());
+    assertThrows(NullPointerException.class, () -> itr.get().findLast(i -> i < 5).size());
+    assertThrows(NullPointerException.class, () -> itr.get().findLast(i -> i < 5).first());
+
+    testMaterializer(List.of(2), c -> new FindLastIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e < 3, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.findLast(e -> true));
   }
 
   @Test

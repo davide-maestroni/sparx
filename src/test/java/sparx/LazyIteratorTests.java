@@ -314,24 +314,21 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void findLast() {
+  public void findLast() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).findLast((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).findLast((Predicate<? super Integer>) null));
+    test(List.of(null), () -> Iterator.of(1, 2, null, 4, 5).findLast(Objects::isNull));
+    test(List.of(5), () -> Iterator.of(1, 2, null, 4, 5).findLast(Objects::nonNull));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4, 5).findLast(i -> i != null && i > 5));
+    test(List.of(), () -> Iterator.of().findLast(Objects::isNull));
+
     Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4, 5);
-    assertFalse(itr.get().findLast(Objects::isNull).isEmpty());
-    assertEquals(1, itr.get().findLast(Objects::isNull).size());
-    assertNull(itr.get().findLast(Objects::isNull).first());
-    assertEquals(List.of(null), itr.get().findLast(Objects::isNull).toList());
     assertThrows(NullPointerException.class, () -> itr.get().findLast(i -> i < 4).first());
     assertThrows(NullPointerException.class, () -> itr.get().findLast(i -> i < 5).isEmpty());
     assertThrows(NullPointerException.class, () -> itr.get().findLast(i -> i < 5).size());
     assertThrows(NullPointerException.class, () -> itr.get().findLast(i -> i < 5).first());
-    assertTrue(itr.get().findLast(i -> i != null && i > 5).isEmpty());
-    assertEquals(0, itr.get().findLast(i -> i != null && i > 5).size());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().findLast(i -> i != null && i > 5).first());
-    assertEquals(List.of(), itr.get().findLast(i -> i != null && i > 5).toList());
-
-    assertTrue(Iterator.of().findLast(Objects::isNull).isEmpty());
-    assertEquals(0, Iterator.of().findLast(Objects::isNull).size());
   }
 
   @Test
