@@ -61,6 +61,7 @@ import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexOfSliceIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindLastIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindLastIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -536,6 +537,51 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.findLast(e -> true));
+  }
+
+  @Test
+  public void findLastIndexOf() throws Exception {
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4), it -> it.findLastIndexOf(null));
+    test(List.of(3), () -> Iterator.of(1, 2, null, 4), it -> it.findLastIndexOf(4));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.findLastIndexOf(3));
+    test(List.of(), Iterator::of, it -> it.findLastIndexOf(null));
+    test(List.of(), Iterator::of, it -> it.findLastIndexOf(4));
+
+    testMaterializer(List.of(2), c -> new FindLastIndexIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 1, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.findLastIndexOf(null));
+  }
+
+  @Test
+  public void findLastIndexWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .findLastIndexWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .findLastIndexWhere((Predicate<? super Integer>) null));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4),
+        it -> it.findLastIndexWhere(Objects::isNull));
+    test(List.of(0), () -> Iterator.of(null), it -> it.findLastIndexWhere(Objects::isNull));
+    test(List.of(), Iterator::of, it -> it.findLastIndexWhere(Objects::isNull));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4)
+        .toFuture(context).flatMap(e -> List.of(e));
+    assertThrows(NullPointerException.class,
+        () -> itr.get().findLastIndexWhere(i -> i > 1).isEmpty());
+    assertThrows(NullPointerException.class, () -> itr.get().findLastIndexWhere(i -> i > 1).size());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().findLastIndexWhere(i -> i > 1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().findLastIndexWhere(i -> i < 3).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().findLastIndexWhere(i -> i < 3).first());
+
+    testMaterializer(List.of(1), c -> new FindLastIndexIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e < 3, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.findLastIndexWhere(e -> true));
   }
 
   @Test

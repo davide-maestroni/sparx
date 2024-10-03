@@ -332,27 +332,12 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void findLastIndexOf() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().findLastIndexOf(null).isEmpty());
-    assertEquals(1, itr.get().findLastIndexOf(null).size());
-    assertEquals(2, itr.get().findLastIndexOf(null).first());
-    assertEquals(List.of(2), itr.get().findLastIndexOf(null).toList());
-    assertFalse(itr.get().findLastIndexOf(4).isEmpty());
-    assertEquals(1, itr.get().findLastIndexOf(4).size());
-    assertEquals(3, itr.get().findLastIndexOf(4).first());
-    assertEquals(List.of(3), itr.get().findLastIndexOf(4).toList());
-    assertTrue(itr.get().findLastIndexOf(3).isEmpty());
-    assertEquals(0, itr.get().findLastIndexOf(3).size());
-    assertThrows(NoSuchElementException.class, () -> itr.get().findLastIndexOf(3).first());
-    assertEquals(List.of(), itr.get().findLastIndexOf(3).toList());
-
-    assertTrue(Iterator.of().findLastIndexOf(null).isEmpty());
-    assertEquals(0, Iterator.of().findLastIndexOf(null).size());
-    assertFalse(Iterator.of().findLastIndexOfSlice(List.of()).isEmpty());
-    assertEquals(1, Iterator.of().findLastIndexOfSlice(List.of()).size());
-    assertEquals(0, Iterator.of().findLastIndexOfSlice(List.of()).first());
-    assertEquals(List.of(0), Iterator.of().findLastIndexOfSlice(List.of()).toList());
+  public void findLastIndexOf() throws Exception {
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4).findLastIndexOf(null));
+    test(List.of(3), () -> Iterator.of(1, 2, null, 4).findLastIndexOf(4));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).findLastIndexOf(3));
+    test(List.of(), () -> Iterator.of().findLastIndexOf(null));
+    test(List.of(), () -> Iterator.of().findLastIndexOf(4));
   }
 
   @Test
@@ -380,15 +365,24 @@ public class LazyIteratorTests {
 
     assertTrue(Iterator.of().findLastIndexOfSlice(List.of(null)).isEmpty());
     assertEquals(0, Iterator.of().findLastIndexOfSlice(List.of(null)).size());
+    assertEquals(List.of(), Iterator.of().findLastIndexOfSlice(List.of(null)).toList());
+    assertFalse(Iterator.of().findLastIndexOfSlice(List.of()).isEmpty());
+    assertEquals(1, Iterator.of().findLastIndexOfSlice(List.of()).size());
+    assertEquals(0, Iterator.of().findLastIndexOfSlice(List.of()).first());
+    assertEquals(List.of(0), Iterator.of().findLastIndexOfSlice(List.of()).toList());
   }
 
   @Test
-  public void findLastIndexWhere() {
+  public void findLastIndexWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).findLastIndexWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).findLastIndexWhere((Predicate<? super Integer>) null));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4).findLastIndexWhere(Objects::isNull));
+    test(List.of(0), () -> Iterator.of(null).findLastIndexWhere(Objects::isNull));
+    test(List.of(), () -> Iterator.of().findLastIndexWhere(Objects::isNull));
+
     Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().findLastIndexWhere(Objects::isNull).isEmpty());
-    assertEquals(1, itr.get().findLastIndexWhere(Objects::isNull).size());
-    assertEquals(2, itr.get().findLastIndexWhere(Objects::isNull).first());
-    assertEquals(List.of(2), itr.get().findLastIndexWhere(Objects::isNull).toList());
     assertThrows(NullPointerException.class,
         () -> itr.get().findLastIndexWhere(i -> i > 1).isEmpty());
     assertThrows(NullPointerException.class, () -> itr.get().findLastIndexWhere(i -> i > 1).size());
@@ -398,9 +392,6 @@ public class LazyIteratorTests {
         () -> itr.get().findLastIndexWhere(i -> i < 3).isEmpty());
     assertThrows(NullPointerException.class,
         () -> itr.get().findLastIndexWhere(i -> i < 3).first());
-
-    assertTrue(Iterator.of().findLastIndexWhere(Objects::isNull).isEmpty());
-    assertEquals(0, Iterator.of().findLastIndexWhere(Objects::isNull).size());
   }
 
   @Test
