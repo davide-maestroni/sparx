@@ -62,6 +62,7 @@ import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexOfSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindLastIndexIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindLastIndexOfSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindLastIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -552,6 +553,32 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.findLastIndexOf(null));
+  }
+
+  @Test
+  public void findLastIndexOfSlice() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).findLastIndexOfSlice(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).findLastIndexOfSlice(null));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4),
+        it -> it.findLastIndexOfSlice(Iterator.of(2, null)));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4),
+        it -> it.findLastIndexOfSlice(Iterator.of(null)));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4),
+        it -> it.findLastIndexOfSlice(Iterator.of(null, 2)));
+    test(List.of(4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.findLastIndexOfSlice(Iterator.of()));
+    test(List.of(2), () -> Iterator.of(1, 1, 1, 1, 2, 1),
+        it -> it.findLastIndexOfSlice(List.of(1, 1, 2)));
+    test(List.of(), Iterator::of, it -> it.findLastIndexOfSlice(List.of(null)));
+    test(List.of(0), Iterator::of, it -> it.findLastIndexOfSlice(List.of()));
+
+    testMaterializer(List.of(1), c -> new FindLastIndexOfSliceIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(2, 2, 3), c),
+        new ListToListFutureMaterializer<>(List.of(2, 3), c), c, new AtomicReference<>()));
+
+    testCancel(it -> it.findLastIndexOfSlice(List.of(null)));
   }
 
   @Test

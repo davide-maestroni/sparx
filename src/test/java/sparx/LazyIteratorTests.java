@@ -1654,6 +1654,7 @@ public class LazyIteratorTests {
     assertEquals(List.of(1, 2, 4), itr.get().removeSlice(-2, -1).toList());
     assertEquals(2, itr.get().removeSlice(-2, -1).drop(1).first());
 
+    // TODO: add tests
     assertTrue(itr.get().removeSlice(0, Integer.MAX_VALUE).isEmpty());
     assertEquals(0, itr.get().removeSlice(0, Integer.MAX_VALUE).size());
     assertEquals(List.of(), itr.get().removeSlice(0, Integer.MAX_VALUE).toList());

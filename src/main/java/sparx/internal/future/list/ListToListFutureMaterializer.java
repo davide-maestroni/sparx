@@ -36,11 +36,18 @@ public class ListToListFutureMaterializer<E> implements ListFutureMaterializer<E
 
   private final ExecutionContext context;
   private final List<E> elements;
+  private final int knownSize;
 
   public ListToListFutureMaterializer(@NotNull final List<E> elements,
       @NotNull final ExecutionContext context) {
+    this(elements, context, elements.size());
+  }
+
+  public ListToListFutureMaterializer(@NotNull final List<E> elements,
+      @NotNull final ExecutionContext context, final int knownSize) {
     this.elements = elements;
     this.context = context;
+    this.knownSize = knownSize;
   }
 
   @Override
@@ -70,7 +77,7 @@ public class ListToListFutureMaterializer<E> implements ListFutureMaterializer<E
 
   @Override
   public int knownSize() {
-    return elements.size();
+    return knownSize;
   }
 
   @Override

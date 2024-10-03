@@ -219,6 +219,19 @@ public class lazy extends Sparx {
   private lazy() {
   }
 
+  private static int getKnownSize(@NotNull final Iterable<?> elements) {
+    if (elements instanceof List) {
+      return ((List<?>) elements).knownSize();
+    }
+    if (elements instanceof Iterator) {
+      return ((Iterator<?>) elements).knownSize();
+    }
+    if (elements instanceof Collection) {
+      return ((Collection<?>) elements).size();
+    }
+    return -1;
+  }
+
   @NotNull
   @SuppressWarnings("unchecked")
   static <E> IndexedFunction<E, E> indexedIdentity() {
@@ -544,11 +557,13 @@ public class lazy extends Sparx {
     @Override
     public @NotNull Iterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
       final IteratorMaterializer<E> materializer = this.materializer;
+      final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
+          Require.notNull(elements, "elements"));
       if (materializer.knownSize() == 0) {
-        return new Iterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
+        return new Iterator<E>(elementsMaterializer);
       }
-      return new Iterator<E>(new AppendAllIteratorMaterializer<E>(materializer,
-          getElementsMaterializer(Require.notNull(elements, "elements"))));
+      return new Iterator<E>(
+          new AppendAllIteratorMaterializer<E>(materializer, elementsMaterializer));
     }
 
     @Override
@@ -598,12 +613,11 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      final IteratorMaterializer<Object> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return iterator();
       }
-      return new Iterator<E>(new DiffIteratorMaterializer<E>(materializer, elementsMaterializer));
+      return new Iterator<E>(new DiffIteratorMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -824,13 +838,11 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
-      final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return Iterator.of(true);
       }
-      return new Iterator<Boolean>(
-          new EndsWithIteratorMaterializer<E>(materializer, elementsMaterializer));
+      return new Iterator<Boolean>(new EndsWithIteratorMaterializer<E>(materializer,
+          List.getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -916,10 +928,8 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
-      final ListMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      return new Iterator<Integer>(
-          new FindIndexOfSliceIteratorMaterializer<E>(materializer, elementsMaterializer));
+      return new Iterator<Integer>(new FindIndexOfSliceIteratorMaterializer<E>(materializer,
+          List.getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -1286,13 +1296,11 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      final IteratorMaterializer<Object> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return Iterator.of();
       }
-      return new Iterator<E>(
-          new IntersectIteratorMaterializer<E>(materializer, elementsMaterializer));
+      return new Iterator<E>(new IntersectIteratorMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -1519,14 +1527,12 @@ public class lazy extends Sparx {
     public @NotNull Iterator<E> orElse(@NotNull final Iterable<? extends E> elements) {
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
+      final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
+          Require.notNull(elements, "elements"));
       if (knownSize == 0) {
-        return new Iterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
+        return new Iterator<E>(elementsMaterializer);
       }
-      if (knownSize > 0) {
-        return iterator();
-      }
-      return new Iterator<E>(new OrElseIteratorMaterializer<E>(materializer,
-          getElementsMaterializer(Require.notNull(elements, "elements"))));
+      return new Iterator<E>(new OrElseIteratorMaterializer<E>(materializer, elementsMaterializer));
     }
 
     @Override
@@ -1895,13 +1901,11 @@ public class lazy extends Sparx {
           return new Iterator<E>(getElementsMaterializer(Require.notNull(patch, "patch")));
         }
       }
-      final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(patch, "patch"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(patch) == 0) {
         return new Iterator<E>(new RemoveSliceIteratorMaterializer<E>(materializer, start, end));
       }
-      return new Iterator<E>(
-          new ReplaceSliceIteratorMaterializer<E>(materializer, start, end, elementsMaterializer));
+      return new Iterator<E>(new ReplaceSliceIteratorMaterializer<E>(materializer, start, end,
+          getElementsMaterializer(Require.notNull(patch, "patch"))));
     }
 
     @Override
@@ -2047,17 +2051,15 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<Boolean> startsWith(@NotNull final Iterable<?> elements) {
-      final IteratorMaterializer<?> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return Iterator.of(true);
       }
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return Iterator.of(false);
       }
-      return new Iterator<Boolean>(
-          new StartsWithIteratorMaterializer<E>(materializer, elementsMaterializer));
+      return new Iterator<Boolean>(new StartsWithIteratorMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
 
     }
 
@@ -2115,13 +2117,11 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return Iterator.wrap(elements);
       }
-      final ListMaterializer<E> elementsMaterializer = List.getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return this;
       }
-      return new Iterator<E>(
-          new SymmetricDiffIteratorMaterializer<E>(materializer, elementsMaterializer));
+      return new Iterator<E>(new SymmetricDiffIteratorMaterializer<E>(materializer,
+          List.getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -2218,12 +2218,15 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return Iterator.wrap(elements);
       }
-      final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return this;
       }
-      return new Iterator<E>(new UnionIteratorMaterializer<E>(materializer, elementsMaterializer));
+      return new Iterator<E>(new UnionIteratorMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
+    }
+
+    int knownSize() {
+      return materializer.knownSize();
     }
 
     private static class SuppliedMaterializer<E> implements IteratorMaterializer<E> {
@@ -2554,14 +2557,13 @@ public class lazy extends Sparx {
     @Override
     public @NotNull List<E> appendAll(@NotNull final Iterable<? extends E> elements) {
       final ListMaterializer<E> materializer = this.materializer;
-      final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return this;
       } else if (materializer.knownSize() == 0) {
-        return new List<E>(elementsMaterializer);
+        return new List<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
       }
-      return new List<E>(new AppendAllListMaterializer<E>(materializer, elementsMaterializer));
+      return new List<E>(new AppendAllListMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -2625,12 +2627,11 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      final ListMaterializer<Object> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return this;
       }
-      return new List<E>(new DiffListMaterializer<E>(materializer, elementsMaterializer));
+      return new List<E>(new DiffListMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -2908,12 +2909,11 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<Boolean> endsWith(@NotNull final Iterable<?> elements) {
-      final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return TRUE_LIST;
       }
-      return new List<Boolean>(new EndsWithListMaterializer<E>(materializer, elementsMaterializer));
+      return new List<Boolean>(new EndsWithListMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -2999,10 +2999,8 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
-      final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      return new List<Integer>(
-          new FindIndexOfSliceListMaterializer<E>(materializer, elementsMaterializer));
+      return new List<Integer>(new FindIndexOfSliceListMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -3058,16 +3056,14 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
-      final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         final int knownSize = materializer.knownSize();
         if (knownSize >= 0) {
           return List.of(knownSize);
         }
       }
-      return new List<Integer>(
-          new FindLastIndexOfSliceListMaterializer<E>(materializer, elementsMaterializer));
+      return new List<Integer>(new FindLastIndexOfSliceListMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -3353,10 +3349,8 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
-      final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      return new List<Boolean>(
-          new IncludesSliceListMaterializer<E>(materializer, elementsMaterializer));
+      return new List<Boolean>(new IncludesSliceListMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -3437,12 +3431,11 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return this;
       }
-      final ListMaterializer<Object> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return List.of();
       }
-      return new List<E>(new IntersectListMaterializer<E>(materializer, elementsMaterializer));
+      return new List<E>(new IntersectListMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -3727,14 +3720,12 @@ public class lazy extends Sparx {
     public @NotNull List<E> orElse(@NotNull final Iterable<? extends E> elements) {
       final ListMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
+      final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
+          Require.notNull(elements, "elements"));
       if (knownSize == 0) {
-        return new List<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
+        return new List<E>(elementsMaterializer);
       }
-      if (knownSize > 0) {
-        return this;
-      }
-      return new List<E>(new OrElseListMaterializer<E>(materializer,
-          getElementsMaterializer(Require.notNull(elements, "elements"))));
+      return new List<E>(new OrElseListMaterializer<E>(materializer, elementsMaterializer));
     }
 
     @Override
@@ -3773,9 +3764,9 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<E> prependAll(@NotNull final Iterable<? extends E> elements) {
+      final ListMaterializer<E> materializer = this.materializer;
       final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
           Require.notNull(elements, "elements"));
-      final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return new List<E>(elementsMaterializer);
       }
@@ -4109,13 +4100,11 @@ public class lazy extends Sparx {
           return new List<E>(getElementsMaterializer(Require.notNull(patch, "patch")));
         }
       }
-      final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(patch, "patch"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(patch) == 0) {
         return new List<E>(new RemoveSliceListMaterializer<E>(materializer, start, end));
       }
-      return new List<E>(
-          new ReplaceSliceListMaterializer<E>(materializer, start, end, elementsMaterializer));
+      return new List<E>(new ReplaceSliceListMaterializer<E>(materializer, start, end,
+          getElementsMaterializer(Require.notNull(patch, "patch"))));
     }
 
     @Override
@@ -4260,17 +4249,15 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<Boolean> startsWith(@NotNull final Iterable<?> elements) {
-      final ListMaterializer<?> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return TRUE_LIST;
       }
       final ListMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
         return FALSE_LIST;
       }
-      return new List<Boolean>(
-          new StartsWithListMaterializer<E>(materializer, elementsMaterializer));
+      return new List<Boolean>(new StartsWithListMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -4280,12 +4267,11 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return (List<E>) List.from(elements);
       }
-      final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return this;
       }
-      return new List<E>(new SymmetricDiffListMaterializer<E>(materializer, elementsMaterializer));
+      return new List<E>(new SymmetricDiffListMaterializer<E>(materializer,
+          getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
     @Override
@@ -4372,13 +4358,11 @@ public class lazy extends Sparx {
       if (materializer.knownSize() == 0) {
         return (List<E>) List.from(elements);
       }
-      final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return this;
       }
-      return new List<E>(new AppendAllListMaterializer<E>(materializer,
-          new DiffListMaterializer<E>(elementsMaterializer, materializer)));
+      return new List<E>(new AppendAllListMaterializer<E>(materializer, new DiffListMaterializer<E>(
+          getElementsMaterializer(Require.notNull(elements, "elements")), materializer)));
     }
 
     int knownSize() {

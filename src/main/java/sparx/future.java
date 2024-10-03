@@ -17,7 +17,6 @@ package sparx;
 
 import static sparx.lazy.indexedIdentity;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
@@ -59,6 +58,7 @@ import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexOfSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindLastIndexIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindLastIndexOfSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindLastIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
@@ -166,6 +166,11 @@ import sparx.util.function.TernaryFunction;
 class future extends Sparx {
 
   private future() {
+  }
+
+  private static int getKnownSize(@NotNull final Iterable<?> elements) {
+    // TODO: implement
+    return -1;
   }
 
   private static boolean isNotFuture(final Iterable<?> elements) {
@@ -564,8 +569,23 @@ class future extends Sparx {
       return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
-            @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).findLast(predicate);
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).findLast(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Integer> lazyMaterializerFindLastIndexOfSlice(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<?> elements) {
+      return new LazyIteratorFutureMaterializer<E, Integer>(materializer, context, cancelException,
+          -1) {
+        @Override
+        protected @NotNull java.util.Iterator<Integer> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).findLastIndexOfSlice(elements);
         }
       };
     }
@@ -1336,8 +1356,26 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements) {
-      return null;
+    public @NotNull Iterator<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final ListFutureMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+          context, Require.notNull(elements, "elements"));
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (elementsMaterializer.knownSize() == 0) {
+        final int knownSize = materializer.knownSize();
+        if (knownSize >= 0) {
+          return new Iterator<Integer>(context, cancelException,
+              new ElementToIteratorFutureMaterializer<Integer>(knownSize));
+        }
+      }
+      if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
+        return new Iterator<Integer>(context, cancelException,
+            lazyMaterializerFindLastIndexOfSlice(materializer, context, cancelException, elements));
+      }
+      return new Iterator<Integer>(context, cancelException,
+          new FindLastIndexOfSliceIteratorFutureMaterializer<E>(materializer, elementsMaterializer,
+              context, cancelException));
     }
 
     @Override
@@ -2518,19 +2556,15 @@ class future extends Sparx {
             new SwitchIteratorFutureMaterializer<E>(iterator.context, iterator.taskID, context,
                 iterator.materializer));
       }
-      // TODO: wrap iterator???
-      final ArrayList<E> list = new ArrayList<E>();
-      for (final E element : elements) {
-        list.add(element);
-      }
-      final int size = list.size();
-      if (size == 0) {
+      final lazy.List<E> list = lazy.List.wrap(elements);
+      final int knownSize = list.knownSize();
+      if (knownSize == 0) {
         return EmptyListFutureMaterializer.instance();
       }
-      if (size == 1) {
+      if (knownSize == 1) {
         return new ElementToListFutureMaterializer<E>(list.get(0));
       }
-      return new ListToListFutureMaterializer<E>(list, context);
+      return new ListToListFutureMaterializer<E>(list, context, knownSize);
     }
 
     private static @NotNull <E> IndexedFunction<E, ListFutureMaterializer<E>> getElementToMaterializer(

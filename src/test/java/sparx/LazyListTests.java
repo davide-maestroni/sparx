@@ -1191,6 +1191,7 @@ public class LazyListTests {
     test(List.of(1, 2, null), () -> l.removeSlice(-1, 4));
     test(List.of(1, 2, 4), () -> l.removeSlice(-2, -1));
     test(List.of(), () -> l.removeSlice(0, Integer.MAX_VALUE));
+    test(List.of(1, 2), () -> l.removeSlice(2, Integer.MAX_VALUE));
     test(List.of(), () -> List.of().removeSlice(1, -1));
   }
 
@@ -1346,6 +1347,7 @@ public class LazyListTests {
     test(List.of(1, 2, 5, 4), () -> l.replaceSlice(-2, -1, List.of(5)));
     test(List.of(5), () -> l.replaceSlice(0, Integer.MAX_VALUE, List.of(5)));
     test(List.of(), () -> l.replaceSlice(0, Integer.MAX_VALUE, List.of()));
+    test(List.of(1, 2, 3), () -> l.replaceSlice(2, Integer.MAX_VALUE, List.of(3)));
     test(List.of(5), () -> List.of().replaceSlice(0, 0, List.of(5)));
     test(List.of(5), () -> List.of().replaceSlice(1, -1, List.of(5)));
   }
@@ -1421,6 +1423,7 @@ public class LazyListTests {
     test(List.of(4), () -> l.slice(-1, 4));
     test(List.of(null), () -> l.slice(-2, -1));
     test(List.of(1, 2, null, 4), () -> l.slice(0, Integer.MAX_VALUE));
+    test(List.of(null, 4), () -> l.slice(2, Integer.MAX_VALUE));
     test(List.of(), () -> List.of().slice(1, -1));
   }
 
