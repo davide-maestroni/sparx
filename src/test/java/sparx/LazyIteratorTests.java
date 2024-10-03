@@ -341,35 +341,15 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void findLastIndexOfSlice() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().findLastIndexOfSlice(List.of(2, null)).isEmpty());
-    assertEquals(1, itr.get().findLastIndexOfSlice(List.of(2, null)).size());
-    assertEquals(1, itr.get().findLastIndexOfSlice(Iterator.of(2, null)).first());
-    assertEquals(List.of(1), itr.get().findLastIndexOfSlice(List.of(2, null)).toList());
-    assertFalse(itr.get().findLastIndexOfSlice(List.of(null)).isEmpty());
-    assertEquals(1, itr.get().findLastIndexOfSlice(List.of(null)).size());
-    assertEquals(2, itr.get().findLastIndexOfSlice(List.of(null)).first());
-    assertEquals(List.of(2), itr.get().findLastIndexOfSlice(List.of(null)).toList());
-    assertTrue(itr.get().findLastIndexOfSlice(List.of(null, 2)).isEmpty());
-    assertEquals(0, itr.get().findLastIndexOfSlice(List.of(null, 2)).size());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().findLastIndexOfSlice(List.of(null, 2)).first());
-    assertEquals(List.of(), itr.get().findLastIndexOfSlice(List.of(null, 2)).toList());
-    assertFalse(itr.get().findLastIndexOfSlice(List.of()).isEmpty());
-    assertEquals(1, itr.get().findLastIndexOfSlice(List.of()).size());
-    assertEquals(4, itr.get().findLastIndexOfSlice(List.of()).first());
-    assertEquals(List.of(4), itr.get().findLastIndexOfSlice(List.of()).toList());
-
-    assertEquals(2, Iterator.of(1, 1, 1, 1, 2, 1).findLastIndexOfSlice(List.of(1, 1, 2)).first());
-
-    assertTrue(Iterator.of().findLastIndexOfSlice(List.of(null)).isEmpty());
-    assertEquals(0, Iterator.of().findLastIndexOfSlice(List.of(null)).size());
-    assertEquals(List.of(), Iterator.of().findLastIndexOfSlice(List.of(null)).toList());
-    assertFalse(Iterator.of().findLastIndexOfSlice(List.of()).isEmpty());
-    assertEquals(1, Iterator.of().findLastIndexOfSlice(List.of()).size());
-    assertEquals(0, Iterator.of().findLastIndexOfSlice(List.of()).first());
-    assertEquals(List.of(0), Iterator.of().findLastIndexOfSlice(List.of()).toList());
+  public void findLastIndexOfSlice() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).findLastIndexOfSlice(null));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4).findLastIndexOfSlice(Iterator.of(2, null)));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4).findLastIndexOfSlice(Iterator.of(null)));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).findLastIndexOfSlice(Iterator.of(null, 2)));
+    test(List.of(4), () -> Iterator.of(1, 2, null, 4).findLastIndexOfSlice(Iterator.of()));
+    test(List.of(2), () -> Iterator.of(1, 1, 1, 1, 2, 1).findLastIndexOfSlice(List.of(1, 1, 2)));
+    test(List.of(), () -> Iterator.of().findLastIndexOfSlice(List.of(null)));
+    test(List.of(0), () -> Iterator.of().findLastIndexOfSlice(List.of()));
   }
 
   @Test
