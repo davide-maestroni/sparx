@@ -57,6 +57,7 @@ import sparx.internal.future.iterator.ExistsIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindIndexOfSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -534,6 +535,21 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).findIndexWhere(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Integer> lazyMaterializerFindIndexOfSlice(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<?> elements) {
+      return new LazyIteratorFutureMaterializer<E, Integer>(materializer, context, cancelException,
+          -1) {
+        @Override
+        protected @NotNull java.util.Iterator<Integer> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).findIndexOfSlice(elements);
         }
       };
     }
@@ -1176,8 +1192,22 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Integer> findIndexOfSlice(@NotNull Iterable<?> elements) {
-      return null;
+    public @NotNull Iterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final ListFutureMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
+          context, Require.notNull(elements, "elements"));
+      if (elementsMaterializer.knownSize() == 0) {
+        return zeroIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
+        return new Iterator<Integer>(context, cancelException,
+            lazyMaterializerFindIndexOfSlice(materializer, context, cancelException, elements));
+      }
+      return new Iterator<Integer>(context, cancelException,
+          new FindIndexOfSliceIteratorFutureMaterializer<E>(materializer, elementsMaterializer,
+              context, cancelException));
     }
 
     @Override

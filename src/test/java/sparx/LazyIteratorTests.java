@@ -286,34 +286,15 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void findIndexOfSlice() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().findIndexOfSlice(List.of(2, null)).isEmpty());
-    assertEquals(1, itr.get().findIndexOfSlice(List.of(2, null)).size());
-    assertEquals(1, itr.get().findIndexOfSlice(List.of(2, null)).first());
-    assertEquals(List.of(1), itr.get().findIndexOfSlice(List.of(2, null)).toList());
-    assertFalse(itr.get().findIndexOfSlice(List.of(null)).isEmpty());
-    assertEquals(1, itr.get().findIndexOfSlice(List.of(null)).size());
-    assertEquals(2, itr.get().findIndexOfSlice(List.of(null)).first());
-    assertEquals(List.of(2), itr.get().findIndexOfSlice(List.of(null)).toList());
-    assertTrue(itr.get().findIndexOfSlice(List.of(null, 2)).isEmpty());
-    assertEquals(0, itr.get().findIndexOfSlice(List.of(null, 2)).size());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().findIndexOfSlice(List.of(null, 2)).first());
-    assertEquals(List.of(), itr.get().findIndexOfSlice(List.of(null, 2)).toList());
-    assertFalse(itr.get().findIndexOfSlice(List.of()).isEmpty());
-    assertEquals(1, itr.get().findIndexOfSlice(List.of()).size());
-    assertEquals(0, itr.get().findIndexOfSlice(List.of()).first());
-    assertEquals(List.of(0), itr.get().findIndexOfSlice(List.of()).toList());
-
-    assertEquals(2, Iterator.of(1, 1, 1, 1, 2, 1).findIndexOfSlice(List.of(1, 1, 2)).first());
-
-    assertTrue(Iterator.of().findIndexOfSlice(List.of(null)).isEmpty());
-    assertEquals(0, Iterator.of().findIndexOfSlice(List.of(null)).size());
-    assertFalse(Iterator.of().findIndexOfSlice(List.of()).isEmpty());
-    assertEquals(1, Iterator.of().findIndexOfSlice(List.of()).size());
-    assertEquals(0, Iterator.of().findIndexOfSlice(List.of()).first());
-    assertEquals(List.of(0), Iterator.of().findIndexOfSlice(List.of()).toList());
+  public void findIndexOfSlice() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).findIndexOfSlice(null));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4).findIndexOfSlice(List.of(2, null)));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4).findIndexOfSlice(List.of(null)));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).findIndexOfSlice(List.of(null, 2)));
+    test(List.of(0), () -> Iterator.of(1, 2, null, 4).findIndexOfSlice(List.of()));
+    test(List.of(2), () -> Iterator.of(1, 1, 1, 1, 2, 1).findIndexOfSlice(List.of(1, 1, 2)));
+    test(List.of(), () -> Iterator.of().findIndexOfSlice(List.of(null)));
+    test(List.of(0), () -> Iterator.of().findIndexOfSlice(List.of()));
   }
 
   @Test

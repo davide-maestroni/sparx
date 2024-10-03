@@ -60,6 +60,7 @@ import sparx.internal.future.iterator.ExistsIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FindIndexOfSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
@@ -462,6 +463,28 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.findIndexOf(null));
+  }
+
+  @Test
+  public void findIndexOfSlice() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).findIndexOfSlice(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).findIndexOfSlice(null));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4), it -> it.findIndexOfSlice(List.of(2, null)));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4), it -> it.findIndexOfSlice(List.of(null)));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.findIndexOfSlice(List.of(null, 2)));
+    test(List.of(0), () -> Iterator.of(1, 2, null, 4), it -> it.findIndexOfSlice(List.of()));
+    test(List.of(2), () -> Iterator.of(1, 1, 1, 1, 2, 1),
+        it -> it.findIndexOfSlice(List.of(1, 1, 2)));
+    test(List.of(), Iterator::of, it -> it.findIndexOfSlice(List.of(null)));
+    test(List.of(0), Iterator::of, it -> it.findIndexOfSlice(List.of()));
+
+    testMaterializer(List.of(1), c -> new FindIndexOfSliceIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(2, 2, 3), c),
+        new ListToListFutureMaterializer<>(List.of(2, 3), c), c, new AtomicReference<>()));
+
+    testCancel(it -> it.findIndexOfSlice(List.of(null)));
   }
 
   @Test
