@@ -168,9 +168,14 @@ class future extends Sparx {
   private future() {
   }
 
-  private static int getKnownSize(@NotNull final Iterable<?> elements) {
-    // TODO: implement
-    return -1;
+  static int getKnownSize(final Iterable<?> elements) {
+    if (elements instanceof List) {
+      return ((List<?>) elements).materializer.knownSize();
+    }
+    if (elements instanceof Iterator) {
+      return ((Iterator<?>) elements).materializer.knownSize();
+    }
+    return lazy.getKnownSize(elements);
   }
 
   private static boolean isNotFuture(final Iterable<?> elements) {
@@ -654,24 +659,24 @@ class future extends Sparx {
     public @NotNull Iterator<E> appendAll(@NotNull final Iterable<? extends E> elements) {
       final ExecutionContext context = this.context;
       final IteratorFutureMaterializer<E> materializer = this.materializer;
-      final IteratorFutureMaterializer<E> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
-      final int elementsKnownSize = elementsMaterializer.knownSize();
+      final int elementsKnownSize = getKnownSize(elements);
       if (elementsKnownSize == 0) {
         return cloneIterator(context, materializer);
       }
       final long knownSize = materializer.knownSize();
       if (knownSize == 0) {
-        return cloneIterator(context, elementsMaterializer);
+        return cloneIterator(context,
+            getElementsMaterializer(context, Require.notNull(elements, "elements")));
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new Iterator<E>(context, cancelException,
-            lazyMaterializerAppendAll(materializer, context, cancelException, elements,
-                elementsKnownSize));
+            lazyMaterializerAppendAll(materializer, context, cancelException,
+                Require.notNull(elements, "elements"), elementsKnownSize));
       }
       return new Iterator<E>(context, cancelException,
-          new AppendAllIteratorFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new AppendAllIteratorFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException, List.<E>appendAllFunction()));
     }
 
@@ -783,9 +788,7 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         return cloneIterator(context, materializer);
       }
-      final IteratorFutureMaterializer<Object> elementsMaterializer = getElementsMaterializer(
-          context, Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return cloneIterator(context, materializer);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
@@ -795,7 +798,8 @@ class future extends Sparx {
                 Require.notNull(elements, "elements")));
       }
       return new Iterator<E>(context, cancelException,
-          new DiffIteratorFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new DiffIteratorFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException));
     }
 
@@ -1087,19 +1091,19 @@ class future extends Sparx {
     @Override
     public @NotNull Iterator<Boolean> endsWith(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
-      final ListFutureMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
-          context, Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return trueIterator(context);
       }
       final IteratorFutureMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new Iterator<Boolean>(context, cancelException,
-            lazyMaterializerEndsWith(materializer, context, cancelException, elements));
+            lazyMaterializerEndsWith(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
       }
       return new Iterator<Boolean>(context, cancelException,
-          new EndsWithIteratorFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new EndsWithIteratorFutureMaterializer<E>(materializer,
+              List.getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException));
     }
 
@@ -1246,19 +1250,19 @@ class future extends Sparx {
     public @NotNull Iterator<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
       final IteratorFutureMaterializer<E> materializer = this.materializer;
-      final ListFutureMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
-          context, Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return zeroIterator(context);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new Iterator<Integer>(context, cancelException,
-            lazyMaterializerFindIndexOfSlice(materializer, context, cancelException, elements));
+            lazyMaterializerFindIndexOfSlice(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
       }
       return new Iterator<Integer>(context, cancelException,
-          new FindIndexOfSliceIteratorFutureMaterializer<E>(materializer, elementsMaterializer,
-              context, cancelException));
+          new FindIndexOfSliceIteratorFutureMaterializer<E>(materializer,
+              List.getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+              cancelException));
     }
 
     @Override
@@ -1359,10 +1363,8 @@ class future extends Sparx {
     public @NotNull Iterator<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
       final IteratorFutureMaterializer<E> materializer = this.materializer;
-      final ListFutureMaterializer<Object> elementsMaterializer = List.getElementsMaterializer(
-          context, Require.notNull(elements, "elements"));
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         final int knownSize = materializer.knownSize();
         if (knownSize >= 0) {
           return new Iterator<Integer>(context, cancelException,
@@ -1371,11 +1373,13 @@ class future extends Sparx {
       }
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new Iterator<Integer>(context, cancelException,
-            lazyMaterializerFindLastIndexOfSlice(materializer, context, cancelException, elements));
+            lazyMaterializerFindLastIndexOfSlice(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
       }
       return new Iterator<Integer>(context, cancelException,
-          new FindLastIndexOfSliceIteratorFutureMaterializer<E>(materializer, elementsMaterializer,
-              context, cancelException));
+          new FindLastIndexOfSliceIteratorFutureMaterializer<E>(materializer,
+              List.getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+              cancelException));
     }
 
     @Override
@@ -3545,24 +3549,24 @@ class future extends Sparx {
     public @NotNull List<E> appendAll(@NotNull final Iterable<? extends E> elements) {
       final ExecutionContext context = this.context;
       final ListFutureMaterializer<E> materializer = this.materializer;
-      final ListFutureMaterializer<E> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
-      final int elementsKnownSize = elementsMaterializer.knownSize();
+      final int elementsKnownSize = getKnownSize(elements);
       if (elementsKnownSize == 0) {
         return cloneList(context, materializer);
       }
       final long knownSize = materializer.knownSize();
       if (knownSize == 0) {
-        return cloneList(context, elementsMaterializer);
+        return cloneList(context,
+            getElementsMaterializer(context, Require.notNull(elements, "elements")));
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new List<E>(context, cancelException,
-            lazyMaterializerAppendAll(materializer, context, cancelException, elements,
-                elementsKnownSize));
+            lazyMaterializerAppendAll(materializer, context, cancelException,
+                Require.notNull(elements, "elements"), elementsKnownSize));
       }
       return new List<E>(context, cancelException,
-          new AppendAllListFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new AppendAllListFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException, List.<E>appendAllFunction()));
     }
 
@@ -3720,9 +3724,7 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         return cloneList(context, materializer);
       }
-      final ListFutureMaterializer<?> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return cloneList(context, materializer);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
@@ -3731,9 +3733,9 @@ class future extends Sparx {
             lazyMaterializerDiff(materializer, context, cancelException,
                 Require.notNull(elements, "elements")));
       }
-      return new List<E>(context, cancelException,
-          new DiffListFutureMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException));
+      return new List<E>(context, cancelException, new DiffListFutureMaterializer<E>(materializer,
+          getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+          cancelException));
     }
 
     @Override
@@ -4022,19 +4024,19 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> endsWith(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
-      final ListFutureMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return trueList(context);
       }
       final ListFutureMaterializer<E> materializer = this.materializer;
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new List<Boolean>(context, cancelException,
-            lazyMaterializerEndsWith(materializer, context, cancelException, elements));
+            lazyMaterializerEndsWith(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
       }
       return new List<Boolean>(context, cancelException,
-          new EndsWithListFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new EndsWithListFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException));
     }
 
@@ -4179,18 +4181,18 @@ class future extends Sparx {
     public @NotNull List<Integer> findIndexOfSlice(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
       final ListFutureMaterializer<E> materializer = this.materializer;
-      final ListFutureMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return zeroList(context);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new List<Integer>(context, cancelException,
-            lazyMaterializerFindIndexOfSlice(materializer, context, cancelException, elements));
+            lazyMaterializerFindIndexOfSlice(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
       }
       return new List<Integer>(context, cancelException,
-          new FindIndexOfSliceListFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new FindIndexOfSliceListFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException));
     }
 
@@ -4291,10 +4293,8 @@ class future extends Sparx {
     public @NotNull List<Integer> findLastIndexOfSlice(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
       final ListFutureMaterializer<E> materializer = this.materializer;
-      final ListFutureMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         final int knownSize = materializer.knownSize();
         if (knownSize >= 0) {
           return new List<Integer>(context, cancelException,
@@ -4303,11 +4303,13 @@ class future extends Sparx {
       }
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new List<Integer>(context, cancelException,
-            lazyMaterializerFindLastIndexOfSlice(materializer, context, cancelException, elements));
+            lazyMaterializerFindLastIndexOfSlice(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
       }
       return new List<Integer>(context, cancelException,
-          new FindLastIndexOfSliceListFutureMaterializer<E>(materializer, elementsMaterializer,
-              context, cancelException));
+          new FindLastIndexOfSliceListFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+              cancelException));
     }
 
     @Override
@@ -4802,18 +4804,18 @@ class future extends Sparx {
     public @NotNull List<Boolean> includesAll(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
       final ListFutureMaterializer<E> materializer = this.materializer;
-      final ListFutureMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return trueList(context);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new List<Boolean>(context, cancelException,
-            lazyMaterializerIncludesAll(materializer, context, cancelException, elements));
+            lazyMaterializerIncludesAll(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
       }
       return new List<Boolean>(context, cancelException,
-          new IncludesAllListFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new IncludesAllListFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException));
     }
 
@@ -4821,18 +4823,18 @@ class future extends Sparx {
     public @NotNull List<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
       final ListFutureMaterializer<E> materializer = this.materializer;
-      final ListFutureMaterializer<Object> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return trueList(context);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new List<Boolean>(context, cancelException,
-            lazyMaterializerIncludesSlice(materializer, context, cancelException, elements));
+            lazyMaterializerIncludesSlice(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
       }
       return new List<Boolean>(context, cancelException,
-          new IncludesSliceListFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new IncludesSliceListFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException));
     }
 
@@ -4965,9 +4967,7 @@ class future extends Sparx {
       if (materializer.knownSize() == 0) {
         return cloneList(context, materializer);
       }
-      final ListFutureMaterializer<?> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return emptyList(context);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
@@ -4977,7 +4977,8 @@ class future extends Sparx {
                 Require.notNull(elements, "elements")));
       }
       return new List<E>(context, cancelException,
-          new IntersectListFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new IntersectListFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException));
     }
 
@@ -5608,24 +5609,24 @@ class future extends Sparx {
     public @NotNull List<E> prependAll(@NotNull final Iterable<? extends E> elements) {
       final ExecutionContext context = this.context;
       final ListFutureMaterializer<E> materializer = this.materializer;
-      final ListFutureMaterializer<E> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
-      final int elementsKnownSize = elementsMaterializer.knownSize();
+      final int elementsKnownSize = getKnownSize(elements);
       if (elementsKnownSize == 0) {
         return cloneList(context, materializer);
       }
       final long knownSize = materializer.knownSize();
       if (knownSize == 0) {
-        return cloneList(context, elementsMaterializer);
+        return cloneList(context,
+            getElementsMaterializer(context, Require.notNull(elements, "elements")));
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new List<E>(context, cancelException,
-            lazyMaterializerPrependAll(materializer, context, cancelException, elements,
-                elementsKnownSize));
+            lazyMaterializerPrependAll(materializer, context, cancelException,
+                Require.notNull(elements, "elements"), elementsKnownSize));
       }
       return new List<E>(context, cancelException,
-          new PrependAllListFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new PrependAllListFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException, List.<E>prependAllFunction()));
     }
 
@@ -6102,20 +6103,19 @@ class future extends Sparx {
               getElementsMaterializer(context, Require.notNull(patch, "patch")));
         }
       }
-      final ListFutureMaterializer<E> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(patch, "patch"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(patch) == 0) {
         return removeSlice(start, end);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(patch)) {
         return new List<E>(context, cancelException,
             lazyMaterializerReplaceSlice(materializer, context, cancelException, start, end,
-                patch));
+                Require.notNull(patch, "patch")));
       }
       return new List<E>(context, cancelException,
-          new ReplaceSliceListFutureMaterializer<E>(materializer, start, end, elementsMaterializer,
-              context, cancelException));
+          new ReplaceSliceListFutureMaterializer<E>(materializer, start, end,
+              getElementsMaterializer(context, Require.notNull(patch, "patch")), context,
+              cancelException));
     }
 
     @Override
@@ -6351,9 +6351,7 @@ class future extends Sparx {
     @Override
     public @NotNull List<Boolean> startsWith(@NotNull final Iterable<?> elements) {
       final ExecutionContext context = this.context;
-      final IteratorFutureMaterializer<Object> elementsMaterializer = Iterator.getElementsMaterializer(
-          context, Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return trueList(context);
       }
       final ListFutureMaterializer<E> materializer = this.materializer;
@@ -6362,8 +6360,9 @@ class future extends Sparx {
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new List<Boolean>(context, cancelException,
-          new StartsWithListFutureMaterializer<E>(materializer, elementsMaterializer, context,
-              cancelException));
+          new StartsWithListFutureMaterializer<E>(materializer,
+              Iterator.getElementsMaterializer(context, Require.notNull(elements, "elements")),
+              context, cancelException));
     }
 
     // TODO: extra
@@ -6383,9 +6382,7 @@ class future extends Sparx {
         return cloneList(context,
             getElementsMaterializer(context, Require.notNull(elements, "elements")));
       }
-      final ListFutureMaterializer<E> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return cloneList(context, materializer);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
@@ -6395,7 +6392,8 @@ class future extends Sparx {
                 Require.notNull(elements, "elements")));
       }
       return new List<E>(context, cancelException,
-          new SymmetricDiffListFutureMaterializer<E>(materializer, elementsMaterializer, context,
+          new SymmetricDiffListFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
               cancelException));
     }
 
@@ -6566,23 +6564,23 @@ class future extends Sparx {
     public @NotNull List<E> union(@NotNull final Iterable<? extends E> elements) {
       final ExecutionContext context = this.context;
       final ListFutureMaterializer<E> materializer = this.materializer;
-      final ListFutureMaterializer<E> elementsMaterializer = getElementsMaterializer(context,
-          Require.notNull(elements, "elements"));
       if (materializer.knownSize() == 0) {
-        return cloneList(context, elementsMaterializer);
+        return cloneList(context,
+            getElementsMaterializer(context, Require.notNull(elements, "elements")));
       }
-      if (elementsMaterializer.knownSize() == 0) {
+      if (getKnownSize(elements) == 0) {
         return cloneList(context, materializer);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
         return new List<E>(context, cancelException,
-            lazyMaterializerUnion(materializer, context, cancelException, elements));
+            lazyMaterializerUnion(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
       }
       return new List<E>(context, cancelException,
-          new AppendAllListFutureMaterializer<E>(materializer,
-              new DiffListFutureMaterializer<E>(elementsMaterializer, materializer, context,
-                  cancelException), context, cancelException, List.<E>appendAllFunction()));
+          new AppendAllListFutureMaterializer<E>(materializer, new DiffListFutureMaterializer<E>(
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), materializer,
+              context, cancelException), context, cancelException, List.<E>appendAllFunction()));
     }
 
     private static abstract class LazyListFutureMaterializer<E, F> extends

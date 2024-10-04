@@ -219,7 +219,7 @@ public class lazy extends Sparx {
   private lazy() {
   }
 
-  private static int getKnownSize(@NotNull final Iterable<?> elements) {
+  static int getKnownSize(final Iterable<?> elements) {
     if (elements instanceof List) {
       return ((List<?>) elements).knownSize();
     }
