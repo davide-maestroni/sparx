@@ -155,35 +155,21 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
                   setDone(EmptyIteratorFutureMaterializer.<E>instance());
                   consumeElements(Collections.<E>emptyList());
                 } else {
-                  setDone(new ListToIteratorFutureMaterializer<E>(materialized, context));
+                  setDone(new ListToIteratorFutureMaterializer<E>(materialized, context, index));
                   consumeElements(materialized);
                 }
               }
 
               @Override
               public void error(@NotNull final Exception error) {
-                final CancellationException exception = cancelException.get();
-                if (exception != null) {
-                  setCancelled(exception);
-                  consumeError(exception);
-                } else {
-                  setFailed(error);
-                  consumeError(error);
-                }
+                setError(error);
               }
             });
           }
 
           @Override
           public void error(@NotNull final Exception error) {
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              setCancelled(exception);
-              consumeError(exception);
-            } else {
-              setFailed(error);
-              consumeError(error);
-            }
+            setError(error);
           }
         });
       }
@@ -350,6 +336,22 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
         safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
+    }
+
+    private int safeSize(final int wrappedSize, final int elementsSize) {
+      final int size = AppendAllIteratorFutureMaterializer.safeSize(wrappedSize, elementsSize);
+      return size >= 0 ? size - index : size;
+    }
+
+    private void setError(@NotNull final Exception error) {
+      final CancellationException exception = cancelException.get();
+      if (exception != null) {
+        setCancelled(exception);
+        consumeError(exception);
+      } else {
+        setFailed(error);
+        consumeError(error);
+      }
     }
   }
 }

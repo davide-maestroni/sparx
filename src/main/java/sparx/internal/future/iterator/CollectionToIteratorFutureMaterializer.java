@@ -41,13 +41,20 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
   private final ExecutionContext context;
   private final Collection<E> elements;
   private final Iterator<E> iterator;
+  private final int offset;
 
   private int pos;
 
   public CollectionToIteratorFutureMaterializer(@NotNull final Collection<E> elements,
       @NotNull final ExecutionContext context) {
+    this(elements, context, 0);
+  }
+
+  public CollectionToIteratorFutureMaterializer(@NotNull final Collection<E> elements,
+      @NotNull final ExecutionContext context, final int offset) {
     this.elements = elements;
     this.context = context;
+    this.offset = offset;
     iterator = elements.iterator();
   }
 
@@ -129,7 +136,7 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
     final Iterator<E> iterator = this.iterator;
     if (iterator.hasNext()) {
       final int i = pos++;
-      safeConsume(consumer, elements.size() - i, i, iterator.next(), LOGGER);
+      safeConsume(consumer, elements.size() - i, offset + i, iterator.next(), LOGGER);
     } else {
       safeConsumeComplete(consumer, 0, LOGGER);
     }
@@ -145,7 +152,7 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
       final Iterator<E> iterator = this.iterator;
       while (iterator.hasNext()) {
         final int i = pos++;
-        if (!safeConsume(predicate, elements.size() - i, i, iterator.next(), LOGGER)) {
+        if (!safeConsume(predicate, elements.size() - i, offset + i, iterator.next(), LOGGER)) {
           return;
         }
       }
@@ -229,7 +236,7 @@ public class CollectionToIteratorFutureMaterializer<E> implements IteratorFuture
       final int size = elements.size();
       for (int n = 0; n < throughput && iterator.hasNext(); ++n) {
         final int i = pos++;
-        if (!safeConsume(predicate, size - i, i, iterator.next(), LOGGER)) {
+        if (!safeConsume(predicate, size - i, offset + i, iterator.next(), LOGGER)) {
           return;
         }
       }

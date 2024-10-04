@@ -38,13 +38,20 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
 
   private final ExecutionContext context;
   private final List<E> elements;
+  private final int offset;
 
   private int pos;
 
   public ListToIteratorFutureMaterializer(@NotNull final List<E> elements,
       @NotNull final ExecutionContext context) {
+    this(elements, context, 0);
+  }
+
+  public ListToIteratorFutureMaterializer(@NotNull final List<E> elements,
+      @NotNull final ExecutionContext context, final int offset) {
     this.elements = elements;
     this.context = context;
+    this.offset = offset;
   }
 
   @Override
@@ -120,7 +127,7 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
     final List<E> elements = this.elements;
     if (pos < elements.size()) {
       final int i = pos++;
-      safeConsume(consumer, elements.size() - i, i, elements.get(i), LOGGER);
+      safeConsume(consumer, elements.size() - i, offset + i, elements.get(i), LOGGER);
     } else {
       safeConsumeComplete(consumer, 0, LOGGER);
     }
@@ -135,7 +142,7 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
       final List<E> elements = this.elements;
       while (pos < elements.size()) {
         final int i = pos++;
-        if (!safeConsume(predicate, elements.size() - i, i, elements.get(i), LOGGER)) {
+        if (!safeConsume(predicate, elements.size() - i, offset + i, elements.get(i), LOGGER)) {
           return;
         }
       }
@@ -213,7 +220,7 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
       final int size = elements.size();
       for (int n = 0; n < throughput && pos < size; ++n) {
         final int i = pos++;
-        if (!safeConsume(predicate, size - i, i, elements.get(i), LOGGER)) {
+        if (!safeConsume(predicate, size - i, offset + i, elements.get(i), LOGGER)) {
           return;
         }
       }

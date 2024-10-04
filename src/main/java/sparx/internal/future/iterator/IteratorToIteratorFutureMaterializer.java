@@ -39,13 +39,20 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
 
   private final ExecutionContext context;
   private final Iterator<E> elements;
+  private final int offset;
 
   private int pos;
 
   public IteratorToIteratorFutureMaterializer(@NotNull final Iterator<E> elements,
       @NotNull final ExecutionContext context) {
+    this(elements, context, 0);
+  }
+
+  public IteratorToIteratorFutureMaterializer(@NotNull final Iterator<E> elements,
+      @NotNull final ExecutionContext context, final int offset) {
     this.elements = elements;
     this.context = context;
+    this.offset = offset;
   }
 
   @Override
@@ -124,7 +131,7 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
   @Override
   public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
     if (elements.hasNext()) {
-      safeConsume(consumer, -1, pos++, elements.next(), LOGGER);
+      safeConsume(consumer, -1, offset + pos++, elements.next(), LOGGER);
     } else {
       safeConsumeComplete(consumer, 0, LOGGER);
     }
@@ -138,7 +145,7 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
     } else {
       final Iterator<E> elements = this.elements;
       while (elements.hasNext()) {
-        if (!safeConsume(predicate, -1, pos++, elements.next(), LOGGER)) {
+        if (!safeConsume(predicate, -1, offset + pos++, elements.next(), LOGGER)) {
           return;
         }
       }
@@ -219,7 +226,7 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
       final IndexedFuturePredicate<E> predicate = this.predicate;
       final Iterator<E> iterator = elements;
       for (int n = 0; n < throughput && iterator.hasNext(); ++n) {
-        if (!safeConsume(predicate, -1, pos++, iterator.next(), LOGGER)) {
+        if (!safeConsume(predicate, -1, offset + pos++, iterator.next(), LOGGER)) {
           return;
         }
       }

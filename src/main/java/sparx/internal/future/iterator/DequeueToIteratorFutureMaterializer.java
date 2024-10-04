@@ -40,13 +40,20 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
   private final ExecutionContext context;
   private final DequeueList<E> elements;
   private final int knownSize;
+  private final int offset;
 
   private int pos;
 
   public DequeueToIteratorFutureMaterializer(@NotNull final DequeueList<E> elements,
       @NotNull final ExecutionContext context) {
+    this(elements, context, 0);
+  }
+
+  public DequeueToIteratorFutureMaterializer(@NotNull final DequeueList<E> elements,
+      @NotNull final ExecutionContext context, final int offset) {
     this.elements = elements;
     this.context = context;
+    this.offset = offset;
     knownSize = elements.size();
   }
 
@@ -121,7 +128,7 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
   public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
     final DequeueList<E> elements = this.elements;
     if (!elements.isEmpty()) {
-      safeConsume(consumer, elements.size(), pos++, elements.removeFirst(), LOGGER);
+      safeConsume(consumer, elements.size(), offset + pos++, elements.removeFirst(), LOGGER);
     } else {
       safeConsumeComplete(consumer, 0, LOGGER);
     }
@@ -135,7 +142,8 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
     } else {
       final DequeueList<E> elements = this.elements;
       while (!elements.isEmpty()) {
-        if (!safeConsume(predicate, elements.size(), pos++, elements.removeFirst(), LOGGER)) {
+        if (!safeConsume(predicate, elements.size(), offset + pos++, elements.removeFirst(),
+            LOGGER)) {
           return;
         }
       }
@@ -216,7 +224,8 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
       final IndexedFuturePredicate<E> predicate = this.predicate;
       final DequeueList<E> elements = DequeueToIteratorFutureMaterializer.this.elements;
       for (int n = 0; n < throughput && !elements.isEmpty(); ++n) {
-        if (!safeConsume(predicate, elements.size(), pos++, elements.removeFirst(), LOGGER)) {
+        if (!safeConsume(predicate, elements.size(), offset + pos++, elements.removeFirst(),
+            LOGGER)) {
           return;
         }
       }
