@@ -67,6 +67,11 @@ public class FindLastIndexOfSliceIteratorFutureMaterializer<E> extends
     }
 
     @Override
+    public int weightElements() {
+      return isMaterializing() ? 1 : wrapped.weightNext();
+    }
+
+    @Override
     void materialize() {
       new MaterializingFutureConsumer().run();
     }

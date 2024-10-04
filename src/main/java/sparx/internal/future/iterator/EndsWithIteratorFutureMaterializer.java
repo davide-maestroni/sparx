@@ -82,6 +82,11 @@ public class EndsWithIteratorFutureMaterializer<E> extends
     }
 
     @Override
+    public int weightElements() {
+      return isMaterializing() ? 1 : elementsMaterializer.weightSize();
+    }
+
+    @Override
     public int weightSkip() {
       return isMaterializing() ? weightElements() : 1;
     }

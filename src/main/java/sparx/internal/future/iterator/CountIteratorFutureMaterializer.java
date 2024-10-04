@@ -76,6 +76,11 @@ public class CountIteratorFutureMaterializer<E> extends
     }
 
     @Override
+    public int weightElements() {
+      return isMaterializing() ? 1 : wrapped.weightSkip();
+    }
+
+    @Override
     public int weightSkip() {
       return isMaterializing() ? weightElements() : 1;
     }

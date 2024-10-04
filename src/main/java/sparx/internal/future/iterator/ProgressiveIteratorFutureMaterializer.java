@@ -122,7 +122,7 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
                 setDone(EmptyIteratorFutureMaterializer.<F>instance());
                 consumeElements(Collections.<F>emptyList());
               } else {
-                setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context));
+                setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context, index));
                 consumeElements(elements);
               }
             } else {

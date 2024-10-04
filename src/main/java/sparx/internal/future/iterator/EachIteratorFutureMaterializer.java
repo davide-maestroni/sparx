@@ -83,6 +83,11 @@ public class EachIteratorFutureMaterializer<E> extends
     }
 
     @Override
+    public int weightElements() {
+      return isMaterializing() ? 1 : wrapped.weightNextWhile();
+    }
+
+    @Override
     public int weightSkip() {
       return isMaterializing() ? weightElements() : 1;
     }

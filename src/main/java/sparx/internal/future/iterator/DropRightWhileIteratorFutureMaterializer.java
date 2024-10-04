@@ -71,8 +71,8 @@ public class DropRightWhileIteratorFutureMaterializer<E> extends
     }
 
     @Override
-    public int knownSize() {
-      return 1;
+    public int weightElements() {
+      return isMaterializing() ? 1 : wrapped.weightElements();
     }
 
     @Override

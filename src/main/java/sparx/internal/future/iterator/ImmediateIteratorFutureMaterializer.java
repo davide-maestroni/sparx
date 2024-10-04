@@ -180,11 +180,6 @@ abstract class ImmediateIteratorFutureMaterializer<E, F> extends
     }
 
     @Override
-    public int weightElements() {
-      return elementsConsumers.isEmpty() ? wrapped.weightSkip() : 1;
-    }
-
-    @Override
     public int weightHasNext() {
       return weightElements();
     }

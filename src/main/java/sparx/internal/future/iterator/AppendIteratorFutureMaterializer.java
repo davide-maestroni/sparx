@@ -149,7 +149,7 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
                 setDone(EmptyIteratorFutureMaterializer.<E>instance());
                 consumeElements(Collections.<E>emptyList());
               } else {
-                setDone(new ListToIteratorFutureMaterializer<E>(materialized, context));
+                setDone(new ListToIteratorFutureMaterializer<E>(materialized, context, index));
                 consumeElements(materialized);
               }
             }

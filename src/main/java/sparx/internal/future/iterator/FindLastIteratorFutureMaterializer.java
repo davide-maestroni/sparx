@@ -63,6 +63,11 @@ public class FindLastIteratorFutureMaterializer<E> extends
     }
 
     @Override
+    public int weightElements() {
+      return isMaterializing() ? 1 : wrapped.weightNextWhile();
+    }
+
+    @Override
     void materialize() {
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         private E element;

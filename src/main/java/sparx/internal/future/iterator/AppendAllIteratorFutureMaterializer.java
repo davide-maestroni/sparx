@@ -338,11 +338,6 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       elementsConsumers.clear();
     }
 
-    private int safeSize(final int wrappedSize, final int elementsSize) {
-      final int size = AppendAllIteratorFutureMaterializer.safeSize(wrappedSize, elementsSize);
-      return size >= 0 ? size - index : size;
-    }
-
     private void setError(@NotNull final Exception error) {
       final CancellationException exception = cancelException.get();
       if (exception != null) {

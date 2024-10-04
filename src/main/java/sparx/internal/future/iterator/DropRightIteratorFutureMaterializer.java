@@ -165,7 +165,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
                   setDone(EmptyIteratorFutureMaterializer.<E>instance());
                   consumeElements(Collections.<E>emptyList());
                 } else {
-                  setDone(new DequeueToIteratorFutureMaterializer<E>(materialized, context));
+                  setDone(new DequeueToIteratorFutureMaterializer<E>(materialized, context, index));
                   consumeElements(materialized);
                 }
               }
