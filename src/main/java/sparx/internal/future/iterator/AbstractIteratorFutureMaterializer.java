@@ -320,6 +320,56 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
     }
   }
 
+  protected abstract class CancellableMultiFuturePredicate<P1, P2> extends ContextTask implements
+      FutureConsumer<P1>, IndexedFuturePredicate<P2> {
+
+    protected CancellableMultiFuturePredicate() {
+      super(context);
+    }
+
+    @Override
+    public void accept(final P1 param) throws Exception {
+      final CancellationException cancelException = AbstractIteratorFutureMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+      } else {
+        cancellableAccept(param);
+      }
+    }
+
+    @Override
+    public void complete(final int size) throws Exception {
+      final CancellationException cancelException = AbstractIteratorFutureMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+      } else {
+        cancellableComplete(size);
+      }
+    }
+
+    @Override
+    public boolean test(final int size, final int index, final P2 param) throws Exception {
+      final CancellationException cancelException = AbstractIteratorFutureMaterializer.this.cancelException;
+      if (cancelException != null) {
+        error(cancelException);
+      } else {
+        return cancellableTest(size, index, param);
+      }
+      return false;
+    }
+
+    public void cancellableAccept(final P1 param) throws Exception {
+    }
+
+    public void cancellableComplete(final int size) throws Exception {
+    }
+
+    public boolean cancellableTest(final int size, final int index, final P2 param)
+        throws Exception {
+      return false;
+    }
+  }
+
   protected class WrappingState implements IteratorFutureMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;

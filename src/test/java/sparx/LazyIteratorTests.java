@@ -386,52 +386,20 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void flatMapAfter() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2);
-    assertFalse(itr.get().flatMapAfter(-1, i -> List.of(i, i)).isEmpty());
-    assertEquals(2, itr.get().flatMapAfter(-1, i -> List.of(i, i)).size());
-    assertEquals(List.of(1, 2), itr.get().flatMapAfter(-1, i -> List.of(i, i)).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapAfter(2, i -> List.of(i, i)).drop(2).first());
-    assertFalse(itr.get().flatMapAfter(0, i -> List.of(i, i)).isEmpty());
-    assertEquals(3, itr.get().flatMapAfter(0, i -> List.of(i, i)).size());
-    assertEquals(List.of(1, 1, 2), itr.get().flatMapAfter(0, i -> List.of(i, i)).toList());
-    assertEquals(2, itr.get().flatMapAfter(0, i -> List.of(i, i)).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapAfter(0, i -> List.of(i, i)).drop(3).first());
-    assertFalse(itr.get().flatMapAfter(1, i -> List.of(i, i)).isEmpty());
-    assertEquals(3, itr.get().flatMapAfter(1, i -> List.of(i, i)).size());
-    assertEquals(List.of(1, 2, 2), itr.get().flatMapAfter(1, i -> List.of(i, i)).toList());
-    assertEquals(2, itr.get().flatMapAfter(1, i -> List.of(i, i)).drop(2).first());
-    assertFalse(itr.get().flatMapAfter(2, i -> List.of(i, i)).isEmpty());
-    assertEquals(2, itr.get().flatMapAfter(2, i -> List.of(i, i)).size());
-    assertEquals(List.of(1, 2), itr.get().flatMapAfter(2, i -> List.of(i, i)).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapAfter(2, i -> List.of(i, i)).drop(2).first());
-
-    assertFalse(itr.get().flatMapAfter(0, i -> List.of()).isEmpty());
-    assertEquals(1, itr.get().flatMapAfter(0, i -> List.of()).size());
-    assertEquals(List.of(2), itr.get().flatMapAfter(0, i -> List.of()).toList());
-    assertEquals(2, itr.get().flatMapAfter(0, i -> List.of()).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapAfter(0, i -> List.of()).drop(1).first());
-    assertFalse(itr.get().flatMapAfter(1, i -> List.of()).isEmpty());
-    assertEquals(1, itr.get().flatMapAfter(1, i -> List.of()).size());
-    assertEquals(List.of(1), itr.get().flatMapAfter(1, i -> List.of()).toList());
-    assertEquals(1, itr.get().flatMapAfter(1, i -> List.of()).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapAfter(1, i -> List.of()).drop(1).first());
-    assertFalse(itr.get().flatMapAfter(2, i -> List.of()).isEmpty());
-    assertEquals(2, itr.get().flatMapAfter(2, i -> List.of()).size());
-    assertEquals(List.of(1, 2), itr.get().flatMapAfter(2, i -> List.of()).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapAfter(2, i -> List.of()).drop(2).first());
-
-    assertTrue(Iterator.of().flatMapAfter(0, i -> List.of(i, i)).isEmpty());
-    assertEquals(0, Iterator.of().flatMapAfter(0, i -> List.of(i, i)).size());
-    assertEquals(List.of(), Iterator.of().flatMapAfter(0, i -> List.of(i, i)).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.of().flatMapAfter(0, i -> List.of(i, i)).first());
+  public void flatMapAfter() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).flatMapAfter(0, (Function<? super Integer, List<Integer>>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0)
+        .flatMapAfter(0, (IndexedFunction<? super Integer, List<Integer>>) null));
+    test(List.of(1, 2), () -> Iterator.of(1, 2).flatMapAfter(-1, i -> List.of(i, i)));
+    test(List.of(1, 1, 2), () -> Iterator.of(1, 2).flatMapAfter(0, i -> List.of(i, i)));
+    test(List.of(1, 2, 2), () -> Iterator.of(1, 2).flatMapAfter(1, i -> List.of(i, i)));
+    test(List.of(1, 2), () -> Iterator.of(1, 2).flatMapAfter(2, i -> List.of(i, i)));
+    test(List.of(1, 2), () -> Iterator.of(1, 2).flatMapAfter(-1, i -> List.of()));
+    test(List.of(2), () -> Iterator.of(1, 2).flatMapAfter(0, i -> List.of()));
+    test(List.of(1), () -> Iterator.of(1, 2).flatMapAfter(1, i -> List.of()));
+    test(List.of(1, 2), () -> Iterator.of(1, 2).flatMapAfter(2, i -> List.of()));
+    test(List.of(), () -> Iterator.of().flatMapAfter(0, i -> List.of(i, i)));
   }
 
   @Test
@@ -1654,7 +1622,7 @@ public class LazyIteratorTests {
     assertEquals(List.of(1, 2, 4), itr.get().removeSlice(-2, -1).toList());
     assertEquals(2, itr.get().removeSlice(-2, -1).drop(1).first());
 
-    // TODO: add tests
+    // TODO: add tests with Integer.MAX_VALUE, Integer.MIN_VALUE
     assertTrue(itr.get().removeSlice(0, Integer.MAX_VALUE).isEmpty());
     assertEquals(0, itr.get().removeSlice(0, Integer.MAX_VALUE).size());
     assertEquals(List.of(), itr.get().removeSlice(0, Integer.MAX_VALUE).toList());

@@ -64,6 +64,7 @@ import sparx.internal.future.iterator.FindIndexOfSliceIteratorFutureMaterializer
 import sparx.internal.future.iterator.FindLastIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindLastIndexOfSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindLastIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FlatMapAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
@@ -627,6 +628,30 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.flatMap(e -> List.of(e)));
+  }
+
+  @Test
+  public void flatMapAfter() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .flatMapAfter(0, (Function<? super Integer, List<Integer>>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .flatMapAfter(0, (IndexedFunction<? super Integer, List<Integer>>) null));
+    test(List.of(1, 2), () -> Iterator.of(1, 2), it -> it.flatMapAfter(-1, i -> List.of(i, i)));
+    test(List.of(1, 1, 2), () -> Iterator.of(1, 2), it -> it.flatMapAfter(0, i -> List.of(i, i)));
+    test(List.of(1, 2, 2), () -> Iterator.of(1, 2), it -> it.flatMapAfter(1, i -> List.of(i, i)));
+    test(List.of(1, 2), () -> Iterator.of(1, 2), it -> it.flatMapAfter(2, i -> List.of(i, i)));
+    test(List.of(1, 2), () -> Iterator.of(1, 2), it -> it.flatMapAfter(-1, i -> List.of()));
+    test(List.of(2), () -> Iterator.of(1, 2), it -> it.flatMapAfter(0, i -> List.of()));
+    test(List.of(1), () -> Iterator.of(1, 2), it -> it.flatMapAfter(1, i -> List.of()));
+    test(List.of(1, 2), () -> Iterator.of(1, 2), it -> it.flatMapAfter(2, i -> List.of()));
+    test(List.of(), Iterator::of, it -> it.flatMapAfter(0, i -> List.of(i, i)));
+
+    testMaterializer(List.of(1, 1, 2), c -> new FlatMapAfterIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), 1,
+        (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.flatMapAfter(0, e -> List.of(e)));
   }
 
   @Test
