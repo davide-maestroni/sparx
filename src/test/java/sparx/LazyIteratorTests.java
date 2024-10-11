@@ -403,64 +403,34 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void flatMapFirstWhere() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().flatMapFirstWhere(i -> false, i -> List.of(i, i)).isEmpty());
-    assertEquals(4, itr.get().flatMapFirstWhere(i -> false, i -> List.of(i, i)).size());
-    assertEquals(List.of(1, 2, null, 4),
-        itr.get().flatMapFirstWhere(i -> false, i -> List.of(i, i)).toList());
-    assertNull(itr.get().flatMapFirstWhere(i -> false, i -> List.of(i, i)).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapFirstWhere(i -> false, i -> List.of(i, i)).drop(4).first());
-    assertFalse(itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).isEmpty());
-    assertEquals(5, itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).size());
-    assertEquals(List.of(1, 1, 2, null, 4),
-        itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).toList());
-    assertEquals(1, itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).drop(1).first());
-    assertNull(itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).drop(3).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapFirstWhere(i -> true, i -> List.of(i, i)).drop(5).first());
-    assertFalse(itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).isEmpty());
-    assertEquals(4, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).size());
-    assertEquals(List.of(1, 2, 3, 4),
-        itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).toList());
-    assertEquals(2, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).drop(1).first());
-    assertEquals(3, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of(3)).drop(4).first());
+  public void flatMapFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).flatMapFirstWhere(null, (i, e) -> Iterator.of(e)));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).flatMapFirstWhere(null, e -> Iterator.of(e)));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).flatMapFirstWhere((i, e) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).flatMapFirstWhere(e -> false, null));
+    test(List.of(1, 2, null, 4),
+        () -> Iterator.of(1, 2, null, 4).flatMapFirstWhere(i -> false, i -> List.of(i, i)));
+    test(List.of(1, 1, 2, null, 4),
+        () -> Iterator.of(1, 2, null, 4).flatMapFirstWhere(i -> true, i -> List.of(i, i)));
+    test(List.of(1, 2, 3, 4),
+        () -> Iterator.of(1, 2, null, 4).flatMapFirstWhere(Objects::isNull, i -> List.of(3)));
+    test(List.of(1, 2, null, 4),
+        () -> Iterator.of(1, 2, null, 4).flatMapFirstWhere(i -> false, i -> List.of()));
+    test(List.of(2, null, 4),
+        () -> Iterator.of(1, 2, null, 4).flatMapFirstWhere(i -> true, i -> List.of()));
+    test(List.of(1, 2, 4),
+        () -> Iterator.of(1, 2, null, 4).flatMapFirstWhere(Objects::isNull, i -> List.of()));
+    test(List.of(1, 1, 2, null, 4),
+        () -> Iterator.of(1, 2, null, 4).flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)));
+    test(List.of(), () -> Iterator.of().flatMapFirstWhere(i -> false, i -> List.of()));
+    test(List.of(), () -> Iterator.of().flatMapFirstWhere(i -> true, i -> List.of()));
 
-    assertFalse(itr.get().flatMapFirstWhere(i -> false, i -> List.of()).isEmpty());
-    assertEquals(4, itr.get().flatMapFirstWhere(i -> false, i -> List.of()).size());
-    assertEquals(List.of(1, 2, null, 4),
-        itr.get().flatMapFirstWhere(i -> false, i -> List.of()).toList());
-    assertNull(itr.get().flatMapFirstWhere(i -> false, i -> List.of()).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapFirstWhere(i -> false, i -> List.of()).drop(4).first());
-    assertFalse(itr.get().flatMapFirstWhere(i -> true, i -> List.of()).isEmpty());
-    assertEquals(3, itr.get().flatMapFirstWhere(i -> true, i -> List.of()).size());
-    assertEquals(List.of(2, null, 4),
-        itr.get().flatMapFirstWhere(i -> true, i -> List.of()).toList());
-    assertEquals(4, itr.get().flatMapFirstWhere(i -> true, i -> List.of()).drop(2).first());
-    assertNull(itr.get().flatMapFirstWhere(i -> true, i -> List.of()).drop(1).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapFirstWhere(i -> true, i -> List.of()).drop(3).first());
-    assertFalse(itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).isEmpty());
-    assertEquals(3, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).size());
-    assertEquals(List.of(1, 2, 4),
-        itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).toList());
-    assertEquals(2, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).drop(1).first());
-    assertEquals(4, itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapFirstWhere(Objects::isNull, i -> List.of()).drop(3).first());
-
-    assertFalse(itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).isEmpty());
-    assertEquals(5, itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).size());
-    assertEquals(List.of(1, 1, 2, null, 4),
-        itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).toList());
-    assertEquals(1, itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).drop(1).first());
-    assertNull(itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).drop(3).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)).drop(5).first());
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4)
+        .flatMapFirstWhere(i -> i > 2, i -> List.of(i, i));
     assertFalse(itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).isEmpty());
     assertThrows(NullPointerException.class,
         () -> itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).size());
@@ -468,17 +438,6 @@ public class LazyIteratorTests {
     assertEquals(2, itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).drop(1).first());
     assertThrows(NullPointerException.class,
         () -> itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).drop(2).first());
-
-    assertTrue(Iterator.of().flatMapFirstWhere(i -> false, i -> List.of()).isEmpty());
-    assertEquals(0, Iterator.of().flatMapFirstWhere(i -> false, i -> List.of()).size());
-    assertEquals(List.of(), Iterator.of().flatMapFirstWhere(i -> false, i -> List.of()).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.of().flatMapFirstWhere(i -> false, i -> List.of()).drop(2).first());
-    assertTrue(Iterator.of().flatMapFirstWhere(i -> true, i -> List.of()).isEmpty());
-    assertEquals(0, Iterator.of().flatMapFirstWhere(i -> true, i -> List.of()).size());
-    assertEquals(List.of(), Iterator.of().flatMapFirstWhere(i -> true, i -> List.of()).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.of().flatMapFirstWhere(i -> true, i -> List.of()).drop(2).first());
   }
 
   @Test
@@ -710,48 +669,14 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void insert() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.<Integer>of().insert(1).insert(2).insert(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(3, 2, 1), itr.get().toList());
-
-    itr = () -> Iterator.<Integer>of().insert(1).insert(null).insert(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(3, null, 1), itr.get().toList());
-
-    itr = () -> Iterator.of(1).insert(2).insert(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(3, 2, 1), itr.get().toList());
-
-    itr = () -> Iterator.of(1).insert(null).insert(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(3, null, 1), itr.get().toList());
-
-    itr = () -> Iterator.of(1, 2).insert(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(3, 1, 2), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null).insert(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(3, 1, null), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null).drop(1).insert(2);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(2, null), itr.get().toList());
+  public void insert() throws Exception {
+    test(List.of(3, 2, 1), () -> Iterator.<Integer>of().insert(1).insert(2).insert(3));
+    test(List.of(3, null, 1), () -> Iterator.<Integer>of().insert(1).insert(null).insert(3));
+    test(List.of(3, 2, 1), () -> Iterator.of(1).insert(2).insert(3));
+    test(List.of(3, null, 1), () -> Iterator.of(1).insert(null).insert(3));
+    test(List.of(3, 1, 2), () -> Iterator.of(1, 2).insert(3));
+    test(List.of(3, 1, null), () -> Iterator.of(1, null).insert(3));
+    test(List.of(2, null), () -> Iterator.of(1, null).drop(1).insert(2));
   }
 
   @Test
@@ -793,49 +718,16 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void insertAll() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.<Integer>of()
-        .insertAll(Arrays.asList(1, 2, 3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
-
-    itr = () -> Iterator.<Integer>of().insertAll(List.of(1, null, 3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
-
-    itr = () -> Iterator.of(1).insertAll(new LinkedHashSet<>(List.of(2, 3)));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(2, 3, 1), itr.get().toList());
-
-    itr = () -> Iterator.of(1).insertAll(List.of(null, 3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(null, 3, 1), itr.get().toList());
-
-    itr = () -> Iterator.of(1, 2).insertAll(Set.of(3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(3, 1, 2), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null).insertAll(Set.of(3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(3, 1, null), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null).drop(1).insertAll(Iterator.of(2, 3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(2, 3, null), itr.get().toList());
+  public void insertAll() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).insertAll(null));
+    test(List.of(1, 2, 3), () -> Iterator.<Integer>of().insertAll(Arrays.asList(1, 2, 3)));
+    test(List.of(1, null, 3), () -> Iterator.<Integer>of().insertAll(Arrays.asList(1, null, 3)));
+    test(List.of(2, 3, 1), () -> Iterator.of(1).insertAll(new LinkedHashSet<>(List.of(2, 3))));
+    test(List.of(null, 3, 1),
+        () -> Iterator.of(1).insertAll(new LinkedHashSet<>(List.of(null, 3))));
+    test(List.of(3, 1, 2), () -> Iterator.of(1, 2).insertAll(Set.of(3)));
+    test(List.of(3, 1, null), () -> Iterator.of(1, null).insertAll(Set.of(3)));
+    test(List.of(2, 3, null), () -> Iterator.of(1, null).drop(1).insertAll(Iterator.of(2, 3)));
   }
 
   @Test

@@ -67,7 +67,7 @@ public class DropIteratorFutureMaterializer<E> extends AbstractIteratorFutureMat
   private class ImmaterialState implements IteratorFutureMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
-    final int maxElements;
+    private final int maxElements;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final IteratorFutureMaterializer<E> wrapped;
 

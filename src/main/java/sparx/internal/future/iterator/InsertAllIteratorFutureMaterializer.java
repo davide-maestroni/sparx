@@ -35,25 +35,34 @@ import sparx.util.SizeOverflowException;
 import sparx.util.annotation.Positive;
 import sparx.util.function.BinaryFunction;
 
-public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
+public class InsertAllIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      AppendAllIteratorFutureMaterializer.class.getName());
+      InsertAllIteratorFutureMaterializer.class.getName());
 
   private final int knownSize;
   private final boolean isMaterializedAtOnce;
 
-  public AppendAllIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
+  public InsertAllIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
       @NotNull final IteratorFutureMaterializer<E> elementsMaterializer,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final BinaryFunction<List<E>, List<E>, List<E>> appendFunction) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+      @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction) {
+    this(wrapped, elementsMaterializer, new AtomicInteger(STATUS_RUNNING), context, cancelException,
+        prependFunction, 0);
+  }
+
+  InsertAllIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
+      @NotNull final IteratorFutureMaterializer<E> elementsMaterializer,
+      @NotNull final AtomicInteger status, @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
+      @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction, final int offset) {
+    super(context, status);
     knownSize = safeSize(wrapped.knownSize(), elementsMaterializer.knownSize());
     isMaterializedAtOnce =
         wrapped.isMaterializedAtOnce() && elementsMaterializer.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
-        appendFunction));
+        prependFunction, offset));
   }
 
   private static int safeSize(final int wrappedSize, final int elementsSize) {
@@ -78,12 +87,12 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
   private class ImmaterialState implements IteratorFutureMaterializer<E> {
 
-    private final BinaryFunction<List<E>, List<E>, List<E>> appendFunction;
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final ArrayList<FutureConsumer<List<E>>> elementsConsumers = new ArrayList<FutureConsumer<List<E>>>(
         2);
     private final IteratorFutureMaterializer<E> elementsMaterializer;
+    private final BinaryFunction<List<E>, List<E>, List<E>> prependFunction;
     private final IteratorFutureMaterializer<E> wrapped;
 
     private int index;
@@ -92,12 +101,14 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
         @NotNull final IteratorFutureMaterializer<E> elementsMaterializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final BinaryFunction<List<E>, List<E>, List<E>> appendFunction) {
+        @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction,
+        final int offset) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
       this.context = context;
       this.cancelException = cancelException;
-      this.appendFunction = appendFunction;
+      this.prependFunction = prependFunction;
+      index = offset;
     }
 
     @Override
@@ -150,7 +161,7 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
             elementsMaterializer.materializeElements(new CancellableFutureConsumer<List<E>>() {
               @Override
               public void cancellableAccept(final List<E> elements) throws Exception {
-                final List<E> materialized = appendFunction.apply(wrappedElements, elements);
+                final List<E> materialized = prependFunction.apply(wrappedElements, elements);
                 if (materialized.isEmpty()) {
                   setDone(EmptyIteratorFutureMaterializer.<E>instance());
                   consumeElements(Collections.<E>emptyList());
@@ -177,14 +188,13 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
     @Override
     public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-      wrapped.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
+      elementsMaterializer.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
         @Override
         public void cancellableAccept(final Boolean hasNext) throws Exception {
           if (hasNext) {
             consumer.accept(true);
           } else {
-            setState(
-                new WrappingState(elementsMaterializer, cancelException, index)).materializeHasNext(
+            setState(new WrappingState(wrapped, cancelException, index)).materializeHasNext(
                 consumer);
           }
         }
@@ -213,7 +223,7 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
     @Override
     public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
-      wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
+      elementsMaterializer.materializeNext(new CancellableIndexedFutureConsumer<E>() {
         @Override
         public void cancellableAccept(final int size, final int index, final E element)
             throws Exception {
@@ -222,8 +232,7 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
         @Override
         public void cancellableComplete(final int size) {
-          setState(new WrappingState(elementsMaterializer, cancelException, index)).materializeNext(
-              consumer);
+          setState(new WrappingState(wrapped, cancelException, index)).materializeNext(consumer);
         }
 
         @Override
@@ -235,11 +244,10 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
     @Override
     public void materializeNextWhile(@NotNull final IndexedFuturePredicate<E> predicate) {
-      wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+      elementsMaterializer.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
         public void cancellableComplete(final int size) {
-          setState(
-              new WrappingState(elementsMaterializer, cancelException, index)).materializeNextWhile(
+          setState(new WrappingState(wrapped, cancelException, index)).materializeNextWhile(
               predicate);
         }
 
@@ -259,19 +267,18 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
     @Override
     public void materializeSkip(@Positive final int count,
         @NotNull final FutureConsumer<Integer> consumer) {
-      wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
+      elementsMaterializer.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
         @Override
         public void cancellableAccept(final Integer skipped) throws Exception {
           index += skipped;
           if (skipped < count) {
-            final int wrappedSkipped = skipped;
-            setState(
-                new WrappingState(elementsMaterializer, cancelException, index)).materializeSkip(
+            final int elementsSkipped = skipped;
+            setState(new WrappingState(wrapped, cancelException, index)).materializeSkip(
                 count - skipped, new CancellableFutureConsumer<Integer>() {
                   @Override
                   public void cancellableAccept(final Integer skipped) throws Exception {
                     index += skipped;
-                    consumer.accept(wrappedSkipped + skipped);
+                    consumer.accept(elementsSkipped + skipped);
                   }
 
                   @Override
