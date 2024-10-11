@@ -65,7 +65,10 @@ import sparx.internal.future.iterator.FindLastIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindLastIndexOfSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindLastIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapAfterIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FlatMapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
+import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
+import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
@@ -347,7 +350,7 @@ public class FutureIteratorTests {
 
     testMaterializer(List.of(3), c -> new DropWhileIteratorFutureMaterializer<>(
         new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e < 3, c,
-        new AtomicReference<>()));
+        new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prepend(e)));
 
     testCancel(it -> it.dropWhile(e -> false));
   }
@@ -655,6 +658,51 @@ public class FutureIteratorTests {
   }
 
   @Test
+  public void flatMapFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMapFirstWhere(null, (i, e) -> Iterator.of(e)));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMapFirstWhere(null, e -> Iterator.of(e)));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMapFirstWhere((i, e) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMapFirstWhere(e -> false, null));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapFirstWhere(i -> false, i -> List.of(i, i)));
+    test(List.of(1, 1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapFirstWhere(i -> true, i -> List.of(i, i)));
+    test(List.of(1, 2, 3, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapFirstWhere(Objects::isNull, i -> List.of(3)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapFirstWhere(i -> false, i -> List.of()));
+    test(List.of(2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapFirstWhere(i -> true, i -> List.of()));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapFirstWhere(Objects::isNull, i -> List.of()));
+    test(List.of(1, 1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)));
+    test(List.of(), Iterator::of, it -> it.flatMapFirstWhere(i -> false, i -> List.of()));
+    test(List.of(), Iterator::of, it -> it.flatMapFirstWhere(i -> true, i -> List.of()));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4)
+        .toFuture(context).flatMapFirstWhere(i -> i > 2, i -> List.of(i, i));
+    assertFalse(itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).size());
+    assertEquals(1, itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).first());
+    assertEquals(2, itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).drop(1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).drop(2).first());
+
+    testMaterializer(List.of(1, 1, 2), c -> new FlatMapFirstWhereIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), (i, e) -> e > 1,
+        (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
+        new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prependAll(e)));
+
+    testCancel(it -> it.flatMapFirstWhere(e -> true, List::of));
+  }
+
+  @Test
   public void flatMapWhere() throws Exception {
     assertThrows(NullPointerException.class,
         () -> Iterator.of(0).toFuture(context).flatMapWhere(null, e -> List.of()));
@@ -693,6 +741,48 @@ public class FutureIteratorTests {
         () -> itr.get().flatMapWhere(i -> i > 2, i -> List.of(i, i)).drop(1).first());
 
     testCancel(it -> it.flatMapWhere(e -> true, List::of));
+  }
+
+  @Test
+  public void insert() throws Exception {
+    test(List.of(3, 2, 1), Iterator::<Integer>of, it -> it.insert(1).insert(2).insert(3));
+    test(List.of(3, null, 1), Iterator::<Integer>of, it -> it.insert(1).insert(null).insert(3));
+    test(List.of(3, 2, 1), () -> Iterator.of(1), it -> it.insert(2).insert(3));
+    test(List.of(3, null, 1), () -> Iterator.of(1), it -> it.insert(null).insert(3));
+    test(List.of(3, 1, 2), () -> Iterator.of(1, 2), it -> it.insert(3));
+    test(List.of(3, 1, null), () -> Iterator.of(1, null), it -> it.insert(3));
+    test(List.of(2, null), () -> Iterator.of(1, null), it -> it.drop(1).insert(2));
+
+    testMaterializer(List.of(1, 1, 2), c -> new InsertIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), 1, c, new AtomicReference<>(),
+        (l, e) -> lazy.List.wrap(l).prepend(e)));
+
+    testCancel(it -> it.insert(null));
+  }
+
+  @Test
+  public void insertAll() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).insertAll(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).insertAll(null));
+    test(List.of(1, 2, 3), Iterator::<Integer>of, it -> it.insertAll(Arrays.asList(1, 2, 3)));
+    test(List.of(1, null, 3), Iterator::<Integer>of, it -> it.insertAll(Arrays.asList(1, null, 3)));
+    test(List.of(2, 3, 1), () -> Iterator.of(1),
+        it -> it.insertAll(new LinkedHashSet<>(List.of(2, 3))));
+    test(List.of(null, 3, 1), () -> Iterator.of(1),
+        it -> it.insertAll(new LinkedHashSet<>(List.of(null, 3))));
+    test(List.of(3, 1, 2), () -> Iterator.of(1, 2), it -> it.insertAll(Set.of(3)));
+    test(List.of(3, 1, null), () -> Iterator.of(1, null), it -> it.insertAll(Set.of(3)));
+    test(List.of(2, 3, null), () -> Iterator.of(1, null),
+        it -> it.drop(1).insertAll(Iterator.of(2, 3)));
+
+    testMaterializer(List.of(1, 1, 2), c -> new InsertAllIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
+        new ListToIteratorFutureMaterializer<>(List.of(1), c), c, new AtomicReference<>(),
+        (l, e) -> lazy.List.wrap(l).prependAll(e)));
+
+    testCancel(it -> it.insertAll(List.of(null)));
   }
 
   @Test

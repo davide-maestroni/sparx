@@ -388,7 +388,8 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
             materializeUntilConsumed();
             return;
           }
-          safeConsume(elementConsumers.removeFirst(), nextElements, LOGGER);
+          safeConsume(elementConsumers.getFirst(), nextElements, LOGGER);
+          elementConsumers.removeFirst();
         }
       } else {
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
@@ -411,7 +412,8 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
                   new InsertAllIteratorFutureMaterializer<E>(wrapped, elementsMaterializer, status,
                       context, cancelException, prependFunction, ImmaterialState.this.index));
               while (!elementConsumers.isEmpty()) {
-                safeConsume(elementConsumers.removeFirst(), nextElements, LOGGER);
+                safeConsume(elementConsumers.getFirst(), nextElements, LOGGER);
+                elementConsumers.removeFirst();
               }
             } else {
               nextElements.add(element);
@@ -419,7 +421,8 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
                 if (nextElements.isEmpty()) {
                   return true;
                 }
-                safeConsume(elementConsumers.removeFirst(), nextElements, LOGGER);
+                safeConsume(elementConsumers.getFirst(), nextElements, LOGGER);
+                elementConsumers.removeFirst();
               }
             }
             return false;

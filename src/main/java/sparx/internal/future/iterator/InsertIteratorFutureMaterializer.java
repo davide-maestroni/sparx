@@ -282,9 +282,9 @@ public class InsertIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
         if (count == 1) {
           safeConsume(consumer, 1, LOGGER);
         } else {
-          state.materializeSkip(count - 1, new CancellableFutureConsumer<Integer>() {
+          state.materializeSkip(count - 1, new FutureConsumer<Integer>() {
             @Override
-            public void cancellableAccept(final Integer skipped) throws Exception {
+            public void accept(final Integer skipped) throws Exception {
               index += skipped;
               consumer.accept(skipped + 1);
             }

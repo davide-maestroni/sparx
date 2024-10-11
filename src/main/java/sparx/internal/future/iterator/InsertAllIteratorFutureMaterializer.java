@@ -274,9 +274,9 @@ public class InsertAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           if (skipped < count) {
             final int elementsSkipped = skipped;
             setState(new WrappingState(wrapped, cancelException, index)).materializeSkip(
-                count - skipped, new CancellableFutureConsumer<Integer>() {
+                count - skipped, new FutureConsumer<Integer>() {
                   @Override
-                  public void cancellableAccept(final Integer skipped) throws Exception {
+                  public void accept(final Integer skipped) throws Exception {
                     index += skipped;
                     consumer.accept(elementsSkipped + skipped);
                   }

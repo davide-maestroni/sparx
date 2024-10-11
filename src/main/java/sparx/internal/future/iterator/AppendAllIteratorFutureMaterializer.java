@@ -267,9 +267,9 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
             final int wrappedSkipped = skipped;
             setState(
                 new WrappingState(elementsMaterializer, cancelException, index)).materializeSkip(
-                count - skipped, new CancellableFutureConsumer<Integer>() {
+                count - skipped, new FutureConsumer<Integer>() {
                   @Override
-                  public void cancellableAccept(final Integer skipped) throws Exception {
+                  public void accept(final Integer skipped) throws Exception {
                     index += skipped;
                     consumer.accept(wrappedSkipped + skipped);
                   }

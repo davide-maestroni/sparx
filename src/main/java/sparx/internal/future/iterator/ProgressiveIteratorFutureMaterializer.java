@@ -277,7 +277,8 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
             materializeUntilConsumed();
             return;
           }
-          safeConsume(elementConsumers.removeFirst(), nextElements, logger);
+          safeConsume(elementConsumers.getFirst(), nextElements, logger);
+          elementConsumers.removeFirst();
         }
       } else {
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
@@ -298,7 +299,8 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
                 if (nextElements.isEmpty()) {
                   return true;
                 }
-                safeConsume(elementConsumers.removeFirst(), nextElements, logger);
+                safeConsume(elementConsumers.getFirst(), nextElements, logger);
+                elementConsumers.removeFirst();
               }
               return false;
             }
@@ -316,7 +318,8 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
     void setNextError(@NotNull final Exception error) {
       final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
       while (!elementConsumers.isEmpty()) {
-        safeConsumeError(elementConsumers.removeFirst(), error, logger);
+        safeConsumeError(elementConsumers.getFirst(), error, logger);
+        elementConsumers.removeFirst();
       }
     }
 
