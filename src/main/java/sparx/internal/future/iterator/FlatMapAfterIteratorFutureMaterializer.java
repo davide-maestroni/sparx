@@ -46,15 +46,7 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
       @NotNull final IndexedFunction<? super E, ? extends IteratorFutureMaterializer<E>> mapper,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    this(wrapped, numElements, mapper, new AtomicInteger(STATUS_RUNNING), context, cancelException);
-  }
-
-  FlatMapAfterIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
-      @Positive final int numElements,
-      @NotNull final IndexedFunction<? super E, ? extends IteratorFutureMaterializer<E>> mapper,
-      @NotNull final AtomicInteger status, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, status);
+    super(context, new AtomicInteger(STATUS_RUNNING));
     setState(new ImmaterialState(wrapped, numElements, mapper, context, cancelException));
   }
 

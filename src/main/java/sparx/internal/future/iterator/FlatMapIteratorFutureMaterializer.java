@@ -243,7 +243,6 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
             for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
               safeConsume(materializerConsumer, elementsMaterializer, LOGGER);
             }
-            materializerConsumers.clear();
           }
 
           @Override
@@ -253,7 +252,6 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
             for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
               safeConsume(materializerConsumer, null, LOGGER);
             }
-            materializerConsumers.clear();
           }
 
           @Override
@@ -263,7 +261,6 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
             for (final FutureConsumer<IteratorFutureMaterializer<F>> materializerConsumer : materializerConsumers) {
               safeConsumeError(materializerConsumer, error, LOGGER);
             }
-            materializerConsumers.clear();
           }
         });
       }

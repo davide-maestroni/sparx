@@ -44,15 +44,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
   public DropRightIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
       @Positive final int maxElements, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    this(wrapped, maxElements, new AtomicInteger(STATUS_RUNNING), context, cancelException);
-  }
-
-  // TODO: needed?
-  DropRightIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
-      @Positive final int maxElements, @NotNull final AtomicInteger status,
-      @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, status);
+    super(context, new AtomicInteger(STATUS_RUNNING));
     final int wrappedSize = wrapped.knownSize();
     knownSize = wrappedSize >= 0 ? Math.max(0, wrappedSize - maxElements) : -1;
     setState(new ImmaterialState(wrapped, maxElements, context, cancelException));
