@@ -67,6 +67,7 @@ import sparx.internal.future.iterator.FindLastIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FlatMapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -700,6 +701,65 @@ public class FutureIteratorTests {
         new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prependAll(e)));
 
     testCancel(it -> it.flatMapFirstWhere(e -> true, List::of));
+  }
+
+  @Test
+  public void flatMapLastWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMapFirstWhere(null, (i, e) -> Iterator.of(e)));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMapFirstWhere(null, e -> Iterator.of(e)));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMapFirstWhere((i, e) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMapFirstWhere(e -> false, null));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapLastWhere(i -> false, i -> List.of(i, i)));
+    test(List.of(1, 2, null, 4, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapLastWhere(i -> true, i -> List.of(i, i)));
+    test(List.of(1, 2, 3, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapLastWhere(Objects::isNull, i -> List.of(3)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapLastWhere(i -> false, i -> List.of()));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapLastWhere(i -> true, i -> List.of()));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapLastWhere(Objects::isNull, i -> List.of()));
+    test(List.of(), Iterator::of, it -> it.flatMapLastWhere(i -> false, i -> List.of()));
+    test(List.of(), Iterator::of, it -> it.flatMapLastWhere(i -> true, i -> List.of()));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4)
+        .toFuture(context);
+    assertFalse(itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).isEmpty());
+//    assertEquals(5, itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).size());
+//    assertEquals(List.of(1, 2, null, 4, 4),
+//        itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).toList());
+//    assertEquals(2, itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).drop(1).first());
+//    assertNull(itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).drop(2).first());
+//    assertThrows(NoSuchElementException.class,
+//        () -> itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).drop(5).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).size());
+    assertEquals(2, itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).drop(1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).drop(5).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i == 4, i -> List.of(i, i)).drop(5).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).size());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).drop(3).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).drop(2).first());
+
+    testMaterializer(List.of(1, 1, 2), c -> new FlatMapLastWhereIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), (i, e) -> e > 0,
+        (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
+        new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prependAll(e)));
+
+    testCancel(it -> it.flatMapLastWhere(e -> true, List::of));
   }
 
   @Test

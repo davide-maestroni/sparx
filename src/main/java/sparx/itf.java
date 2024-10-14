@@ -2490,7 +2490,7 @@ class itf {
     Sequence<E> union(@NotNull Iterable<? extends E> elements);
 
     // TODO: isMemoized, isSorted, etc.
-    // TODO: split??
+    // TODO: splitWhere, splitLastWhere
 
     // TODO: toArray, toString(StringBuilder/StringJoiner), collect
     // TODO: zip, merge, combine

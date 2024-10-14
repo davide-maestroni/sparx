@@ -63,6 +63,7 @@ import sparx.internal.future.iterator.FindLastIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FlatMapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
@@ -1565,15 +1566,36 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> flatMapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
-        @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-      return null;
+    public @NotNull Iterator<E> flatMapLastWhere(
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<E>(context, cancelException,
+          new FlatMapLastWhereIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"),
+              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
+              cancelException, List.<E>prependAllFunction()));
     }
 
     @Override
-    public @NotNull Iterator<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
-        @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
-      return null;
+    public @NotNull Iterator<E> flatMapLastWhere(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends Iterable<? extends E>> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<E>(context, cancelException,
+          new FlatMapLastWhereIteratorFutureMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
+              cancelException, List.<E>prependAllFunction()));
     }
 
     @Override
