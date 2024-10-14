@@ -68,6 +68,8 @@ import sparx.internal.future.iterator.FlatMapAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapLastWhereIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FoldLeftIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FoldLeftWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -801,6 +803,52 @@ public class FutureIteratorTests {
         () -> itr.get().flatMapWhere(i -> i > 2, i -> List.of(i, i)).drop(1).first());
 
     testCancel(it -> it.flatMapWhere(e -> true, List::of));
+  }
+
+  @Test
+  public void foldLeft() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).foldLeft(null, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).foldLeft(null, null));
+    test(List.of(16), () -> Iterator.of(1, 2, 3, 4, 5), it -> it.foldLeft(1, Integer::sum));
+    test(List.of(List.of(1, 2)), () -> Iterator.of(1, 2),
+        it -> it.foldLeft(List.of(), List::append));
+    test(List.of(1), Iterator::<Integer>of, it -> it.foldLeft(1, Integer::sum));
+    test(List.of(List.of()), Iterator::of, it -> it.foldLeft(List.of(), List::append));
+
+    testMaterializer(List.of(6), c -> new FoldLeftIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 0, Integer::sum, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.foldLeft(null, (a, e) -> e));
+  }
+
+  @Test
+  public void foldLeftWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).foldLeftWhile(null, e -> true, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).foldLeftWhile(null, null, (a, e) -> a));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .foldLeftWhile(null, e -> true, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .foldLeftWhile(null, null, (a, e) -> a));
+    test(List.of(7), () -> Iterator.of(1, 2, 3, 4, 5),
+        it -> it.foldLeftWhile(1, s -> s < 5, Integer::sum));
+    test(List.of(List.of(1)), () -> Iterator.of(1, 2),
+        it -> it.foldLeftWhile(List.of(), List::isEmpty, List::append));
+    test(List.of(1), Iterator::<Integer>of, it -> it.foldLeftWhile(1, s -> s < 4, Integer::sum));
+    test(List.of(List.of()), Iterator::of,
+        it -> it.foldLeftWhile(List.of(), List::isEmpty, List::append));
+
+    testMaterializer(List.of(3), c -> new FoldLeftWhileIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 0, s -> s < 2, Integer::sum, c,
+        new AtomicReference<>()));
+
+    testCancel(it -> it.foldLeftWhile(null, a -> true, (a, e) -> e));
   }
 
   @Test
