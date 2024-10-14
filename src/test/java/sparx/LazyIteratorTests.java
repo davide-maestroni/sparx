@@ -553,21 +553,27 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void foldRight() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, 5);
-    assertFalse(itr.get().foldRight(1, Integer::sum).isEmpty());
-    assertEquals(1, itr.get().foldRight(1, Integer::sum).size());
-    assertEquals(List.of(16), itr.get().foldRight(1, Integer::sum).toList());
-    assertEquals(16, itr.get().foldRight(1, Integer::sum).first());
+  public void foldRight() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).foldRight(null, null));
+    test(List.of(16), () -> Iterator.of(1, 2, 3, 4, 5).foldRight(1, Integer::sum));
+    test(List.of(List.of(2, 1)),
+        () -> Iterator.of(1, 2).foldRight(List.of(), (i, l) -> l.append(i)));
+    test(List.of(1), () -> Iterator.<Integer>of().foldRight(1, Integer::sum));
+    test(List.of(List.of()), () -> Iterator.of().foldRight(List.of(), (i, l) -> l.append(i)));
+  }
 
-    assertEquals(List.of(2, 1),
-        Iterator.of(1, 2).foldRight(List.of(), (i, li) -> li.append(i)).first());
-
-    assertFalse(Iterator.<Integer>of().foldRight(1, Integer::sum).isEmpty());
-    assertEquals(1, Iterator.<Integer>of().foldRight(1, Integer::sum).size());
-    assertEquals(List.of(1), Iterator.<Integer>of().foldRight(1, Integer::sum).toList());
-    assertEquals(1, Iterator.<Integer>of().foldRight(1, Integer::sum).first());
-    assertEquals(List.of(), Iterator.of().foldRight(List.of(), (i, li) -> li.append(i)).first());
+  @Test
+  public void foldRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).foldRightWhile(null, e -> true, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).foldRightWhile(null, null, (a, e) -> a));
+    test(List.of(6), () -> Iterator.of(1, 2, 3, 4, 5).foldRightWhile(1, s -> s < 5, Integer::sum));
+    test(List.of(List.of(2)),
+        () -> Iterator.of(1, 2).foldRightWhile(List.of(), List::isEmpty, (i, l) -> l.append(i)));
+    test(List.of(1), () -> Iterator.<Integer>of().foldRightWhile(1, s -> s < 4, Integer::sum));
+    test(List.of(List.of()),
+        () -> Iterator.of().foldRightWhile(List.of(), List::isEmpty, (i, l) -> l.append(i)));
   }
 
   @Test

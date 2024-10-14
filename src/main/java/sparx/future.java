@@ -66,6 +66,8 @@ import sparx.internal.future.iterator.FlatMapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FlatMapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldLeftIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldLeftWhileIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FoldRightIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FoldRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
@@ -642,6 +644,35 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> list) {
           return lazy.Iterator.wrap(list).foldLeftWhile(identity, predicate, operation);
+        }
+      };
+    }
+
+    private static @NotNull <E, F> LazyIteratorFutureMaterializer<E, F> lazyMaterializerFoldRight(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException, final F identity,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      return new LazyIteratorFutureMaterializer<E, F>(materializer, context, cancelException, 1) {
+        @Override
+        protected @NotNull java.util.Iterator<F> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.wrap(list).foldRight(identity, operation);
+        }
+      };
+    }
+
+    private static @NotNull <E, F> LazyIteratorFutureMaterializer<E, F> lazyMaterializerFoldRightWhile(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException, final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      return new LazyIteratorFutureMaterializer<E, F>(materializer, context, cancelException, 1) {
+        @Override
+        protected @NotNull java.util.Iterator<F> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.wrap(list).foldRightWhile(identity, predicate, operation);
         }
       };
     }
@@ -1708,16 +1739,45 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull <F> Iterator<F> foldRight(F identity,
-        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation) {
-      return null;
+    public @NotNull <F> Iterator<F> foldRight(final F identity,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new Iterator<F>(context, cancelException,
+            new ElementToIteratorFutureMaterializer<F>(identity));
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<F>(context, cancelException,
+            lazyMaterializerFoldRight(materializer, context, cancelException, identity,
+                Require.notNull(operation, "operation")));
+      }
+      return new Iterator<F>(context, cancelException,
+          new FoldRightIteratorFutureMaterializer<E, F>(materializer, identity,
+              Require.notNull(operation, "operation"), context, cancelException));
     }
 
     @Override
-    public @NotNull <F> Iterator<F> foldRightWhile(F identity,
-        @NotNull Predicate<? super F> predicate,
-        @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation) {
-      return null;
+    public @NotNull <F> Iterator<F> foldRightWhile(final F identity,
+        @NotNull final Predicate<? super F> predicate,
+        @NotNull final BinaryFunction<? super E, ? super F, ? extends F> operation) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.knownSize() == 0) {
+        return new Iterator<F>(context, cancelException,
+            new ElementToIteratorFutureMaterializer<F>(identity));
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<F>(context, cancelException,
+            lazyMaterializerFoldRightWhile(materializer, context, cancelException, identity,
+                Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
+      }
+      return new Iterator<F>(context, cancelException,
+          new FoldRightWhileIteratorFutureMaterializer<E, F>(materializer, identity,
+              Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation"),
+              context, cancelException));
     }
 
     @Override
