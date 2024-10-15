@@ -16,7 +16,6 @@
 package sparx.internal.future.iterator;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -77,22 +76,26 @@ public class DropRightWhileIteratorFutureMaterializer<E> extends
 
     @Override
     void materialize() {
-      wrapped.materializeElements(new CancellableFutureConsumer<List<E>>() {
+      final DequeueList<E> elements = new DequeueList<E>();
+      wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
-        public void cancellableAccept(final List<E> elements) throws Exception {
-          final DequeueList<E> materialized = new DequeueList<E>(Math.max(1, elements.size()));
-          materialized.addAll(elements);
-          while (!materialized.isEmpty() && predicate.test(materialized.size() - 1,
-              materialized.getLast())) {
-            materialized.removeLast();
+        public void cancellableComplete(final int size) throws Exception {
+          while (!elements.isEmpty() && predicate.test(elements.size() - 1, elements.getLast())) {
+            elements.removeLast();
           }
-          if (materialized.isEmpty()) {
+          if (elements.isEmpty()) {
             setDone(EmptyIteratorFutureMaterializer.<E>instance());
             consumeElements(Collections.<E>emptyList());
           } else {
-            setDone(new DequeueToIteratorFutureMaterializer<E>(materialized, context));
-            consumeElements(materialized);
+            setDone(new DequeueToIteratorFutureMaterializer<E>(elements, context));
+            consumeElements(elements);
           }
+        }
+
+        @Override
+        public boolean cancellableTest(final int size, final int index, final E element) {
+          elements.add(element);
+          return true;
         }
 
         @Override

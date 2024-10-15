@@ -17,8 +17,8 @@ package sparx.internal.future.iterator;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -94,15 +94,22 @@ public class FoldRightIteratorFutureMaterializer<E, F> extends
 
     @Override
     void materialize() {
-      wrapped.materializeElements(new CancellableFutureConsumer<List<E>>() {
+      final ArrayList<E> elements = new ArrayList<E>();
+      wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
-        public void cancellableAccept(final List<E> elements) throws Exception {
+        public void cancellableComplete(final int size) throws Exception {
           F current = identity;
           for (int i = elements.size() - 1; i >= 0; --i) {
             current = operation.apply(elements.get(i), current);
           }
           setDone(new ElementToIteratorFutureMaterializer<F>(current));
           consumeElements(Collections.singletonList(current));
+        }
+
+        @Override
+        public boolean cancellableTest(final int size, final int index, final E element) {
+          elements.add(element);
+          return true;
         }
 
         @Override

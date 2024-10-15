@@ -138,29 +138,37 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
         final ArrayList<FutureConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
         elementsConsumers.add(consumer);
         if (elementsConsumers.size() == 1) {
-          wrapped.materializeElements(new CancellableFutureConsumer<List<E>>() {
+          final ArrayList<E> elements = new ArrayList<E>();
+          wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
             @Override
-            public void cancellableAccept(final List<E> elements) {
-              final int size = elements.size();
-              if (size == 0) {
+            public void cancellableComplete(final int size) {
+              final int elementsSize = elements.size();
+              if (elementsSize == 0) {
                 setDone(EmptyIteratorFutureMaterializer.<E>instance());
                 consumeElements(Collections.<E>emptyList());
               } else {
-                final DequeueList<E> materialized = new DequeueList<E>(size);
-                if (size > maxElements) {
-                  materialized.addAll(buffer);
-                  materialized.addAll(elements.subList(0, size - maxElements));
+                final DequeueList<E> buffer = ImmaterialState.this.buffer;
+                if (elementsSize > maxElements) {
+                  buffer.addAll(elements.subList(0, elementsSize - maxElements));
                 } else {
-                  materialized.addAll(buffer.subList(0, size));
+                  while (buffer.size() > elementsSize) {
+                    buffer.removeLast();
+                  }
                 }
-                if (materialized.isEmpty()) {
+                if (buffer.isEmpty()) {
                   setDone(EmptyIteratorFutureMaterializer.<E>instance());
                   consumeElements(Collections.<E>emptyList());
                 } else {
-                  setDone(new DequeueToIteratorFutureMaterializer<E>(materialized, context, index));
-                  consumeElements(materialized);
+                  setDone(new DequeueToIteratorFutureMaterializer<E>(buffer, context, index));
+                  consumeElements(buffer);
                 }
               }
+            }
+
+            @Override
+            public boolean cancellableTest(final int size, final int index, final E element) {
+              elements.add(element);
+              return true;
             }
 
             @Override
