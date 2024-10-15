@@ -72,6 +72,7 @@ import sparx.internal.future.iterator.FoldLeftIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldLeftWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldRightWhileIteratorFutureMaterializer;
+import sparx.internal.future.iterator.IncludesAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -900,6 +901,36 @@ public class FutureIteratorTests {
   }
 
   @Test
+  public void includes() throws Exception {
+    test(List.of(true), () -> Iterator.of(1, 2, 3, null, 5), it -> it.includes(null));
+    test(List.of(false), () -> Iterator.of(1, 2, 3, null, 5), it -> it.includes(0));
+    test(List.of(false), Iterator::of, it -> it.includes(null));
+    test(List.of(false), Iterator::of, it -> it.includes(0));
+
+    testCancel(it -> it.includes(null));
+  }
+
+  @Test
+  public void includesAll() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).includesAll(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).includesAll(null));
+    test(List.of(true), () -> Iterator.of(1, 2, 3, null, 5),
+        it -> it.includesAll(List.of(null, 1)));
+    test(List.of(false), () -> Iterator.of(1, 2, 3, null, 5), it -> it.includesAll(List.of(0, 1)));
+    test(List.of(true), () -> Iterator.of(1, 2, 3, null, 5), it -> it.includesAll(List.of()));
+    test(List.of(false), Iterator::of, it -> it.includesAll(List.of(null, 1)));
+    test(List.of(true), Iterator::of, it -> it.includesAll(List.of()));
+
+    testMaterializer(List.of(false), c -> new IncludesAllIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        new ListToIteratorFutureMaterializer<>(List.of(2, 3, 4), c), c, new AtomicReference<>()));
+
+    testCancel(it -> it.includesAll(List.of(null)));
+  }
+
+  @Test
   public void insert() throws Exception {
     test(List.of(3, 2, 1), Iterator::<Integer>of, it -> it.insert(1).insert(2).insert(3));
     test(List.of(3, null, 1), Iterator::<Integer>of, it -> it.insert(1).insert(null).insert(3));
@@ -997,7 +1028,7 @@ public class FutureIteratorTests {
     itr = actualSupplier.get();
     assertFalse(itr.isCancelled());
     assertFalse(itr.isFailed());
-    assertEquals(expected, Iterator.wrap(itr.get()).toList());
+    assertEquals(expected, itr.get().toList());
     assertTrue(itr.isDone());
     assertFalse(itr.isCancelled());
     assertFalse(itr.isFailed());
@@ -1515,7 +1546,7 @@ public class FutureIteratorTests {
           () -> atMaterializer.get().materializeIterator(new FutureConsumer<>() {
             @Override
             public void accept(final java.util.Iterator<E> elements) {
-              elementList.addAll(lazy.Iterator.wrap(elements).toList());
+              elementList.addAll(lazy.Iterator.ofIterator(elements).toList());
             }
 
             @Override
@@ -1565,7 +1596,7 @@ public class FutureIteratorTests {
     runInContext(trampoline, () -> atMaterializer.get().materializeIterator(new FutureConsumer<>() {
       @Override
       public void accept(final java.util.Iterator<E> elements) {
-        elementList.addAll(lazy.Iterator.wrap(elements).toList());
+        elementList.addAll(lazy.Iterator.ofIterator(elements).toList());
       }
 
       @Override

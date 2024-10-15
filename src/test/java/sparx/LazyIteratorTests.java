@@ -577,45 +577,21 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void includes() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, null, 5);
-    assertFalse(itr.get().includes(null).isEmpty());
-    assertEquals(1, itr.get().includes(null).size());
-    assertTrue(itr.get().includes(null).first());
-    assertEquals(List.of(true), itr.get().includes(null).toList());
-    assertFalse(itr.get().includes(0).isEmpty());
-    assertEquals(1, itr.get().includes(0).size());
-    assertFalse(itr.get().includes(0).first());
-    assertEquals(List.of(false), itr.get().includes(0).toList());
-    assertFalse(Iterator.of().includes(0).isEmpty());
-    assertEquals(1, Iterator.of().includes(0).size());
-    assertFalse(Iterator.of().includes(0).first());
-    assertEquals(List.of(false), Iterator.of().includes(null).toList());
+  public void includes() throws Exception {
+    test(List.of(true), () -> Iterator.of(1, 2, 3, null, 5).includes(null));
+    test(List.of(false), () -> Iterator.of(1, 2, 3, null, 5).includes(0));
+    test(List.of(false), () -> Iterator.of().includes(null));
+    test(List.of(false), () -> Iterator.of().includes(0));
   }
 
   @Test
-  public void includesAll() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, null, 5);
-    assertFalse(itr.get().includesAll(List.of(null, 1)).isEmpty());
-    assertEquals(1, itr.get().includesAll(List.of(null, 1)).size());
-    assertTrue(itr.get().includesAll(List.of(null, 1)).first());
-    assertEquals(List.of(true), itr.get().includesAll(List.of(null, 1)).toList());
-    assertFalse(itr.get().includesAll(List.of(0, 1)).isEmpty());
-    assertEquals(1, itr.get().includesAll(List.of(0, 1)).size());
-    assertFalse(itr.get().includesAll(List.of(0, 1)).first());
-    assertEquals(List.of(false), itr.get().includesAll(List.of(0, 1)).toList());
-    assertFalse(itr.get().includesAll(List.of()).isEmpty());
-    assertEquals(1, itr.get().includesAll(List.of()).size());
-    assertTrue(itr.get().includesAll(List.of()).first());
-    assertEquals(List.of(true), itr.get().includesAll(List.of()).toList());
-    assertFalse(Iterator.of().includesAll(List.of(null, 1)).isEmpty());
-    assertEquals(1, Iterator.of().includesAll(List.of(null, 1)).size());
-    assertFalse(Iterator.of().includesAll(List.of(null, 1)).first());
-    assertEquals(List.of(false), Iterator.of().includesAll(List.of(null, 1)).toList());
-    assertFalse(Iterator.of().includesAll(List.of()).isEmpty());
-    assertEquals(1, Iterator.of().includesAll(List.of()).size());
-    assertTrue(Iterator.of().includesAll(List.of()).first());
-    assertEquals(List.of(true), Iterator.of().includesAll(List.of()).toList());
+  public void includesAll() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).includesAll(null));
+    test(List.of(true), () -> Iterator.of(1, 2, 3, null, 5).includesAll(List.of(null, 1)));
+    test(List.of(false), () -> Iterator.of(1, 2, 3, null, 5).includesAll(List.of(0, 1)));
+    test(List.of(true), () -> Iterator.of(1, 2, 3, null, 5).includesAll(List.of()));
+    test(List.of(false), () -> Iterator.of().includesAll(List.of(null, 1)));
+    test(List.of(true), () -> Iterator.of().includesAll(List.of()));
   }
 
   @Test

@@ -382,6 +382,16 @@ public class lazy extends Sparx {
           new IntArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
     }
 
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> ofIterator(
+        @NotNull final java.util.Iterator<? extends E> elements) {
+      if (elements instanceof Iterator) {
+        return (Iterator<E>) elements;
+      }
+      return new Iterator<E>(
+          new IteratorToIteratorMaterializer<E>(Require.notNull(elements, "elements")));
+    }
+
     private static @NotNull Iterator<String> ofLines(@NotNull final BufferedReader reader) {
       return new Iterator<String>(new LinesIteratorMaterializer(Require.notNull(reader, "reader")));
     }
@@ -442,16 +452,6 @@ public class lazy extends Sparx {
         return (Iterator<E>) elements;
       }
       return new Iterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
-    }
-
-    @SuppressWarnings("unchecked")
-    public static @NotNull <E> Iterator<E> wrap(
-        @NotNull final java.util.Iterator<? extends E> elements) {
-      if (elements instanceof Iterator) {
-        return (Iterator<E>) elements;
-      }
-      return new Iterator<E>(
-          new IteratorToIteratorMaterializer<E>(Require.notNull(elements, "elements")));
     }
 
     @SuppressWarnings("unchecked")

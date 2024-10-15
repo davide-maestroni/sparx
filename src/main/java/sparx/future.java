@@ -68,6 +68,7 @@ import sparx.internal.future.iterator.FoldLeftIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldLeftWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldRightWhileIteratorFutureMaterializer;
+import sparx.internal.future.iterator.IncludesAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
@@ -191,7 +192,7 @@ class future extends Sparx {
     return !(elements instanceof List || elements instanceof Iterator);
   }
 
-  public static class Iterator<E> implements itf.Future<E, java.util.Iterator<E>>, itf.Iterator<E> {
+  public static class Iterator<E> implements itf.Future<E, Iterator<E>>, itf.Iterator<E> {
 
     private static final Logger LOGGER = Logger.getLogger(Iterator.class.getName());
 
@@ -333,7 +334,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).append(element);
+          return lazy.Iterator.ofIterator(iterator).append(element);
         }
       };
     }
@@ -350,7 +351,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).appendAll(elements);
+          return lazy.Iterator.ofIterator(iterator).appendAll(elements);
         }
       };
     }
@@ -364,7 +365,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).count();
+          return lazy.Iterator.ofIterator(iterator).count();
         }
       };
     }
@@ -379,7 +380,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).countWhere(predicate);
+          return lazy.Iterator.ofIterator(iterator).countWhere(predicate);
         }
       };
     }
@@ -393,7 +394,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).diff(elements);
+          return lazy.Iterator.ofIterator(iterator).diff(elements);
         }
       };
     }
@@ -407,7 +408,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).distinctBy(keyExtractor);
+          return lazy.Iterator.ofIterator(iterator).distinctBy(keyExtractor);
         }
       };
     }
@@ -423,7 +424,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).drop(maxElements);
+          return lazy.Iterator.ofIterator(iterator).drop(maxElements);
         }
       };
     }
@@ -439,7 +440,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).dropRight(maxElements);
+          return lazy.Iterator.ofIterator(iterator).dropRight(maxElements);
         }
       };
     }
@@ -453,7 +454,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).dropRightWhile(predicate);
+          return lazy.Iterator.ofIterator(list).dropRightWhile(predicate);
         }
       };
     }
@@ -467,7 +468,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).dropWhile(predicate);
+          return lazy.Iterator.ofIterator(list).dropWhile(predicate);
         }
       };
     }
@@ -482,7 +483,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).each(predicate);
+          return lazy.Iterator.ofIterator(list).each(predicate);
         }
       };
     }
@@ -497,7 +498,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).endsWith(elements);
+          return lazy.Iterator.ofIterator(iterator).endsWith(elements);
         }
       };
     }
@@ -512,7 +513,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).exists(predicate);
+          return lazy.Iterator.ofIterator(list).exists(predicate);
         }
       };
     }
@@ -526,7 +527,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).filter(predicate);
+          return lazy.Iterator.ofIterator(list).filter(predicate);
         }
       };
     }
@@ -540,7 +541,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).findFirst(predicate);
+          return lazy.Iterator.ofIterator(list).findFirst(predicate);
         }
       };
     }
@@ -555,7 +556,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).findIndexWhere(predicate);
+          return lazy.Iterator.ofIterator(iterator).findIndexWhere(predicate);
         }
       };
     }
@@ -570,7 +571,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).findIndexOfSlice(elements);
+          return lazy.Iterator.ofIterator(iterator).findIndexOfSlice(elements);
         }
       };
     }
@@ -584,7 +585,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).findLast(predicate);
+          return lazy.Iterator.ofIterator(iterator).findLast(predicate);
         }
       };
     }
@@ -599,7 +600,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).findLastIndexOfSlice(elements);
+          return lazy.Iterator.ofIterator(iterator).findLastIndexOfSlice(elements);
         }
       };
     }
@@ -614,7 +615,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).findLastIndexWhere(predicate);
+          return lazy.Iterator.ofIterator(list).findLastIndexWhere(predicate);
         }
       };
     }
@@ -628,7 +629,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).foldLeft(identity, operation);
+          return lazy.Iterator.ofIterator(list).foldLeft(identity, operation);
         }
       };
     }
@@ -643,7 +644,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).foldLeftWhile(identity, predicate, operation);
+          return lazy.Iterator.ofIterator(list).foldLeftWhile(identity, predicate, operation);
         }
       };
     }
@@ -657,7 +658,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).foldRight(identity, operation);
+          return lazy.Iterator.ofIterator(list).foldRight(identity, operation);
         }
       };
     }
@@ -672,7 +673,22 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> list) {
-          return lazy.Iterator.wrap(list).foldRightWhile(identity, predicate, operation);
+          return lazy.Iterator.ofIterator(list).foldRightWhile(identity, predicate, operation);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Boolean> lazyMaterializerIncludesAll(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<?> elements) {
+      return new LazyIteratorFutureMaterializer<E, Boolean>(materializer, context, cancelException,
+          1) {
+        @Override
+        protected @NotNull java.util.Iterator<Boolean> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.ofIterator(list).includesAll(elements);
         }
       };
     }
@@ -687,7 +703,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).insert(element);
+          return lazy.Iterator.ofIterator(iterator).insert(element);
         }
       };
     }
@@ -704,7 +720,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).insertAll(elements);
+          return lazy.Iterator.ofIterator(iterator).insertAll(elements);
         }
       };
     }
@@ -720,7 +736,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).map(mapper);
+          return lazy.Iterator.ofIterator(iterator).map(mapper);
         }
       };
     }
@@ -1781,7 +1797,7 @@ class future extends Sparx {
     }
 
     @Override
-    public java.util.Iterator<E> get() throws InterruptedException, ExecutionException {
+    public Iterator<E> get() throws InterruptedException, ExecutionException {
       final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
           cancelException);
       final ExecutionContext context = this.context;
@@ -1827,7 +1843,7 @@ class future extends Sparx {
     }
 
     @Override
-    public java.util.Iterator<E> get(final long timeout, @NotNull final TimeUnit unit)
+    public Iterator<E> get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
       final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
           cancelException);
@@ -1916,13 +1932,40 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Boolean> includes(Object element) {
-      return null;
+    public @NotNull Iterator<Boolean> includes(final Object element) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return falseIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Boolean>(context, cancelException,
+            lazyMaterializerExists(materializer, context, cancelException,
+                Sparx.<E>equalsElement(element)));
+      }
+      return new Iterator<Boolean>(context, cancelException,
+          new ExistsIteratorFutureMaterializer<E>(materializer, Sparx.<E>equalsElement(element),
+              false, context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<Boolean> includesAll(@NotNull Iterable<?> elements) {
-      return null;
+    public @NotNull Iterator<Boolean> includesAll(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (getKnownSize(elements) == 0) {
+        return trueIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
+        return new Iterator<Boolean>(context, cancelException,
+            lazyMaterializerIncludesAll(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
+      }
+      return new Iterator<Boolean>(context, cancelException,
+          new IncludesAllIteratorFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+              cancelException));
     }
 
     @Override
@@ -2644,8 +2687,8 @@ class future extends Sparx {
     }
   }
 
-  public static class List<E> extends AbstractListSequence<E> implements
-      itf.Future<E, java.util.List<E>>, itf.List<E> {
+  public static class List<E> extends AbstractListSequence<E> implements itf.Future<E, List<E>>,
+      itf.List<E> {
 
     private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> APPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {
       @Override
@@ -4909,7 +4952,7 @@ class future extends Sparx {
     }
 
     @Override
-    public java.util.List<E> get() throws InterruptedException, ExecutionException {
+    public List<E> get() throws InterruptedException, ExecutionException {
       final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
           cancelException);
       final ExecutionContext context = this.context;
@@ -4942,7 +4985,8 @@ class future extends Sparx {
         });
       }
       try {
-        return consumer.get();
+        consumer.get();
+        return this;
       } catch (final InterruptedException e) {
         throw e;
       } catch (final Exception e) {
@@ -4997,7 +5041,7 @@ class future extends Sparx {
     }
 
     @Override
-    public java.util.List<E> get(final long timeout, @NotNull final TimeUnit unit)
+    public List<E> get(final long timeout, @NotNull final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
       final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
           cancelException);
@@ -5031,7 +5075,8 @@ class future extends Sparx {
         });
       }
       try {
-        return consumer.get(timeout, unit);
+        consumer.get(timeout, unit);
+        return this;
       } catch (final InterruptedException e) {
         throw e;
       } catch (final Exception e) {
