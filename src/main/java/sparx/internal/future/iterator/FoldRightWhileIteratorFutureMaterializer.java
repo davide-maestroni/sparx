@@ -90,7 +90,7 @@ public class FoldRightWhileIteratorFutureMaterializer<E, F> extends
 
     @Override
     public int weightElements() {
-      return isMaterializing() ? 1 : wrapped.weightSkip();
+      return isMaterializing() ? 1 : wrapped.weightNextWhile();
     }
 
     @Override

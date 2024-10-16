@@ -69,6 +69,7 @@ import sparx.internal.future.iterator.FoldLeftWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IncludesAllIteratorFutureMaterializer;
+import sparx.internal.future.iterator.IncludesSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
@@ -689,6 +690,21 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> list) {
           return lazy.Iterator.ofIterator(list).includesAll(elements);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Boolean> lazyMaterializerIncludesSlice(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<?> elements) {
+      return new LazyIteratorFutureMaterializer<E, Boolean>(materializer, context, cancelException,
+          1) {
+        @Override
+        protected @NotNull java.util.Iterator<Boolean> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.ofIterator(list).includesSlice(elements);
         }
       };
     }
@@ -1969,8 +1985,22 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Boolean> includesSlice(@NotNull Iterable<?> elements) {
-      return null;
+    public @NotNull Iterator<Boolean> includesSlice(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (getKnownSize(elements) == 0) {
+        return trueIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
+        return new Iterator<Boolean>(context, cancelException,
+            lazyMaterializerIncludesSlice(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
+      }
+      return new Iterator<Boolean>(context, cancelException,
+          new IncludesSliceIteratorFutureMaterializer<E>(materializer,
+              List.getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+              cancelException));
     }
 
     @Override

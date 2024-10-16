@@ -87,8 +87,7 @@ public class FlatMapWhereListFutureMaterializer<E> extends ProgressiveListFuture
       return taskID != null ? taskID : "";
     }
 
-    private class MaterializingFutureConsumer extends CancellableIndexedFutureConsumer<E> implements
-        Task {
+    private class MaterializingFutureConsumer extends CancellableIndexedFutureConsumer<E> {
 
       private String taskID;
 

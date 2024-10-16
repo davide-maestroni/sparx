@@ -595,28 +595,13 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void includesSlice() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, null, 5);
-    assertFalse(itr.get().includesSlice(List.of(3, null)).isEmpty());
-    assertEquals(1, itr.get().includesSlice(List.of(3, null)).size());
-    assertTrue(itr.get().includesSlice(List.of(3, null)).first());
-    assertEquals(List.of(true), itr.get().includesSlice(List.of(3, null)).toList());
-    assertFalse(itr.get().includesSlice(List.of(null, 3)).isEmpty());
-    assertEquals(1, itr.get().includesSlice(List.of(null, 3)).size());
-    assertFalse(itr.get().includesSlice(List.of(null, 3)).first());
-    assertEquals(List.of(false), itr.get().includesSlice(List.of(null, 3)).toList());
-    assertFalse(itr.get().includesSlice(List.of()).isEmpty());
-    assertEquals(1, itr.get().includesSlice(List.of()).size());
-    assertTrue(itr.get().includesSlice(List.of()).first());
-    assertEquals(List.of(true), itr.get().includesSlice(List.of()).toList());
-    assertFalse(Iterator.of().includesSlice(List.of(null, 1)).isEmpty());
-    assertEquals(1, Iterator.of().includesSlice(List.of(null, 1)).size());
-    assertFalse(Iterator.of().includesSlice(List.of(null, 1)).first());
-    assertEquals(List.of(false), Iterator.of().includesSlice(List.of(null, 1)).toList());
-    assertFalse(Iterator.of().includesSlice(List.of()).isEmpty());
-    assertEquals(1, Iterator.of().includesSlice(List.of()).size());
-    assertTrue(Iterator.of().includesSlice(List.of()).first());
-    assertEquals(List.of(true), Iterator.of().includesSlice(List.of()).toList());
+  public void includesSlice() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).includesSlice(null));
+    test(List.of(true), () -> Iterator.of(1, 2, 3, null, 5).includesSlice(List.of(3, null)));
+    test(List.of(false), () -> Iterator.of(1, 2, 3, null, 5).includesSlice(List.of(null, 3)));
+    test(List.of(true), () -> Iterator.of(1, 2, 3, null, 5).includesSlice(List.of()));
+    test(List.of(false), () -> Iterator.of().includesSlice(List.of(null, 1)));
+    test(List.of(true), () -> Iterator.of().includesSlice(List.of()));
   }
 
   @Test

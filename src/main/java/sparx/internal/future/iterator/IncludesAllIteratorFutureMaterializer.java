@@ -82,7 +82,8 @@ public class IncludesAllIteratorFutureMaterializer<E> extends
 
     @Override
     public int weightElements() {
-      return isMaterializing() ? 1 : wrapped.weightSkip();
+      return isMaterializing() ? 1 : (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightNextWhile() + elementsMaterializer.weightNextWhile());
     }
 
     @Override

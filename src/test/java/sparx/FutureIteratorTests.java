@@ -73,6 +73,7 @@ import sparx.internal.future.iterator.FoldLeftWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IncludesAllIteratorFutureMaterializer;
+import sparx.internal.future.iterator.IncludesSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -928,6 +929,27 @@ public class FutureIteratorTests {
         new ListToIteratorFutureMaterializer<>(List.of(2, 3, 4), c), c, new AtomicReference<>()));
 
     testCancel(it -> it.includesAll(List.of(null)));
+  }
+
+  @Test
+  public void includesSlice() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).includesSlice(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).includesSlice(null));
+    test(List.of(true), () -> Iterator.of(1, 2, 3, null, 5),
+        it -> it.includesSlice(List.of(3, null)));
+    test(List.of(false), () -> Iterator.of(1, 2, 3, null, 5),
+        it -> it.includesSlice(List.of(null, 3)));
+    test(List.of(true), () -> Iterator.of(1, 2, 3, null, 5), it -> it.includesSlice(List.of()));
+    test(List.of(false), Iterator::of, it -> it.includesSlice(List.of(null, 1)));
+    test(List.of(true), Iterator::of, it -> it.includesSlice(List.of()));
+
+    testMaterializer(List.of(true), c -> new IncludesSliceIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 1, 1, 2, 3), c),
+        new ListToListFutureMaterializer<>(List.of(1, 1, 2), c), c, new AtomicReference<>()));
+
+    testCancel(it -> it.includesSlice(List.of(null)));
   }
 
   @Test
