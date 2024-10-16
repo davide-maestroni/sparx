@@ -71,6 +71,7 @@ import sparx.internal.future.iterator.FoldRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IncludesAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IncludesSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAfterIteratorFutureMaterializer;
+import sparx.internal.future.iterator.InsertAllAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
@@ -747,6 +748,33 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> list) {
           return lazy.Iterator.ofIterator(list).insertAfter(numElements, element);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerInsertAllAfter(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        final int numElements, @NotNull final Iterable<? extends E> elements,
+        final int elementsKnownSize) {
+      final long knownSize = materializer.knownSize();
+      final int size;
+      if (knownSize > 0 && elementsKnownSize >= 0) {
+        if (numElements <= knownSize) {
+          size = SizeOverflowException.safeCast(knownSize + elementsKnownSize);
+        } else {
+          size = (int) knownSize;
+        }
+      } else {
+        size = -1;
+      }
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          size) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.ofIterator(list).insertAllAfter(numElements, elements);
         }
       };
     }
@@ -2116,13 +2144,53 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> insertAllAfter(int numElements,
-        @NotNull Iterable<? extends E> elements) {
-      return null;
+    public @NotNull Iterator<E> insertAllAfter(final int numElements,
+        @NotNull final Iterable<? extends E> elements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final long knownSize = materializer.knownSize();
+      if (numElements < 0 || numElements == Integer.MAX_VALUE || (knownSize >= 0
+          && numElements > knownSize)) {
+        return cloneIterator(context, materializer);
+      }
+      final IteratorFutureMaterializer<E> elementsMaterializer = getElementsMaterializer(context,
+          Require.notNull(elements, "elements"));
+      if (knownSize == 0) {
+        return cloneIterator(context, elementsMaterializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (numElements == 0) {
+        if (materializer.isMaterializedAtOnce()) {
+          return new Iterator<E>(context, cancelException,
+              lazyMaterializerInsertAll(materializer, context, cancelException, elements,
+                  elementsMaterializer.knownSize()));
+        }
+        return new Iterator<E>(context, cancelException,
+            new InsertAllIteratorFutureMaterializer<E>(materializer, elementsMaterializer, context,
+                cancelException, List.<E>prependAllFunction()));
+      } else if (numElements == knownSize) {
+        if (materializer.isMaterializedAtOnce()) {
+          return new Iterator<E>(context, cancelException,
+              lazyMaterializerAppendAll(materializer, context, cancelException, elements,
+                  elementsMaterializer.knownSize()));
+        }
+        return new Iterator<E>(context, cancelException,
+            new AppendAllIteratorFutureMaterializer<E>(materializer, elementsMaterializer, context,
+                cancelException, List.<E>appendAllFunction()));
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerInsertAllAfter(materializer, context, cancelException, numElements,
+                elements, elementsMaterializer.knownSize()));
+      }
+      return new Iterator<E>(context, cancelException,
+          new InsertAllAfterIteratorFutureMaterializer<E>(materializer, numElements,
+              elementsMaterializer, context, cancelException, List.<E>insertAllAfterFunction()));
     }
 
     @Override
     public @NotNull Iterator<E> intersect(@NotNull Iterable<?> elements) {
+      // TODO: knownSize() + safeSize() + complete -> setDone(empty)
       return null;
     }
 

@@ -75,6 +75,7 @@ import sparx.internal.future.iterator.FoldRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IncludesAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IncludesSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAfterIteratorFutureMaterializer;
+import sparx.internal.future.iterator.InsertAllAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
@@ -971,6 +972,27 @@ public class FutureIteratorTests {
   }
 
   @Test
+  public void insertAfter() throws Exception {
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(5, null));
+    test(List.of(1, 2, 3, null), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(3, null));
+    test(List.of(1, 2, null, 3), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(2, null));
+    test(List.of(1, null, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(1, null));
+    test(List.of(null, 1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(0, null));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(-7, null));
+    test(List.of(), Iterator::of, it -> it.insertAfter(5, null));
+    test(List.of(null), Iterator::of, it -> it.insertAfter(0, null));
+    test(List.of(), () -> Iterator.wrap(() -> List.of().iterator()), it -> it.insertAfter(5, null));
+    test(List.of(null), () -> Iterator.wrap(() -> List.of().iterator()),
+        it -> it.insertAfter(0, null));
+
+    testMaterializer(List.of(1, 2, 3), c -> new InsertAfterIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 3), c), 1, 2, c, new AtomicReference<>(),
+        (l, n, e) -> lazy.List.wrap(l).insertAfter(n, e)));
+
+    testCancel(it -> it.insertAfter(1, null));
+  }
+
+  @Test
   public void insertAll() throws Exception {
     assertThrows(NullPointerException.class,
         () -> Iterator.of(0).toFuture(context).insertAll(null));
@@ -996,24 +1018,36 @@ public class FutureIteratorTests {
   }
 
   @Test
-  public void insertAfter() throws Exception {
-    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(5, null));
-    test(List.of(1, 2, 3, null), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(3, null));
-    test(List.of(1, 2, null, 3), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(2, null));
-    test(List.of(1, null, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(1, null));
-    test(List.of(null, 1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(0, null));
-    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.insertAfter(-7, null));
-    test(List.of(), Iterator::of, it -> it.insertAfter(5, null));
-    test(List.of(null), Iterator::of, it -> it.insertAfter(0, null));
-    test(List.of(), () -> Iterator.wrap(() -> List.of().iterator()), it -> it.insertAfter(5, null));
-    test(List.of(null), () -> Iterator.wrap(() -> List.of().iterator()),
-        it -> it.insertAfter(0, null));
+  public void insertAllAfter() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).insertAllAfter(0, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).insertAllAfter(0, null));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3),
+        it -> it.insertAllAfter(5, List.of(null, 5)));
+    test(List.of(1, 2, 3, null, 5), () -> Iterator.of(1, 2, 3),
+        it -> it.insertAllAfter(3, List.of(null, 5)));
+    test(List.of(1, 2, null, 5, 3), () -> Iterator.of(1, 2, 3),
+        it -> it.insertAllAfter(2, List.of(null, 5)));
+    test(List.of(1, null, 5, 2, 3), () -> Iterator.of(1, 2, 3),
+        it -> it.insertAllAfter(1, List.of(null, 5)));
+    test(List.of(null, 5, 1, 2, 3), () -> Iterator.of(1, 2, 3),
+        it -> it.insertAllAfter(0, List.of(null, 5)));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3),
+        it -> it.insertAllAfter(-7, List.of(null, 5)));
+    test(List.of(), Iterator::of, it -> it.insertAllAfter(5, List.of(null, 5)));
+    test(List.of(null, 5), Iterator::of, it -> it.insertAllAfter(0, List.of(null, 5)));
+    test(List.of(), () -> Iterator.wrap(() -> List.of().iterator()),
+        it -> it.insertAllAfter(5, List.of(null, 5)));
+    test(List.of(null, 5), () -> Iterator.wrap(() -> List.of().iterator()),
+        it -> it.insertAllAfter(0, List.of(null, 5)));
 
-    testMaterializer(List.of(1, 2, 3), c -> new InsertAfterIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 3), c), 1, 2, c, new AtomicReference<>(),
-        (l, n, e) -> lazy.List.wrap(l).insertAfter(n, e)));
+    testMaterializer(List.of(1, 1, 2), c -> new InsertAllAfterIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), 1,
+        new ListToIteratorFutureMaterializer<>(List.of(1), c), c, new AtomicReference<>(),
+        (l, n, e) -> lazy.List.wrap(l).insertAllAfter(n, e)));
 
-    testCancel(it -> it.insertAfter(1, null));
+    testCancel(it -> it.insertAllAfter(0, List.of(null)));
   }
 
   @Test

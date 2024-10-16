@@ -643,42 +643,20 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void insertAllAfter() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3);
-    assertFalse(itr.get().insertAllAfter(5, List.of(null, 5)).isEmpty());
-    assertEquals(3, itr.get().insertAllAfter(5, List.of(null, 5)).size());
-    assertEquals(List.of(1, 2, 3), itr.get().insertAllAfter(5, List.of(null, 5)).toList());
-    assertFalse(itr.get().insertAllAfter(3, List.of(null, 5)).isEmpty());
-    assertEquals(5, itr.get().insertAllAfter(3, List.of(null, 5)).size());
-    assertEquals(List.of(1, 2, 3, null, 5), itr.get().insertAllAfter(3, List.of(null, 5)).toList());
-    assertFalse(itr.get().insertAllAfter(2, List.of(null, 5)).isEmpty());
-    assertEquals(5, itr.get().insertAllAfter(2, List.of(null, 5)).size());
-    assertEquals(List.of(1, 2, null, 5, 3), itr.get().insertAllAfter(2, List.of(null, 5)).toList());
-    assertFalse(itr.get().insertAllAfter(1, List.of(null, 5)).isEmpty());
-    assertEquals(5, itr.get().insertAllAfter(1, List.of(null, 5)).size());
-    assertEquals(List.of(1, null, 5, 2, 3), itr.get().insertAllAfter(1, List.of(null, 5)).toList());
-    assertFalse(itr.get().insertAllAfter(0, List.of(null, 5)).isEmpty());
-    assertEquals(5, itr.get().insertAllAfter(0, List.of(null, 5)).size());
-    assertEquals(List.of(null, 5, 1, 2, 3), itr.get().insertAllAfter(0, List.of(null, 5)).toList());
-    assertFalse(itr.get().insertAllAfter(-7, List.of(null, 5)).isEmpty());
-    assertEquals(3, itr.get().insertAllAfter(-7, List.of(null, 5)).size());
-    assertEquals(List.of(1, 2, 3), itr.get().insertAllAfter(-7, List.of(null, 5)).toList());
-
-    assertTrue(Iterator.of().insertAllAfter(5, List.of(null, 5)).isEmpty());
-    assertEquals(0, Iterator.of().insertAllAfter(5, List.of(null, 5)).size());
-    assertEquals(List.of(), Iterator.of().insertAllAfter(5, List.of(null, 5)).toList());
-    assertFalse(Iterator.of().insertAllAfter(0, List.of(null, 5)).isEmpty());
-    assertEquals(2, Iterator.of().insertAllAfter(0, List.of(null, 5)).size());
-    assertEquals(List.of(null, 5), Iterator.of().insertAllAfter(0, List.of(null, 5)).toList());
-
-    Iterable<Object> iterable = () -> List.of().iterator();
-    assertTrue(Iterator.wrap(iterable).insertAllAfter(5, List.of(null, 5)).isEmpty());
-    assertEquals(0, Iterator.wrap(iterable).insertAllAfter(5, List.of(null, 5)).size());
-    assertEquals(List.of(), Iterator.wrap(iterable).insertAllAfter(5, List.of(null, 5)).toList());
-    assertFalse(Iterator.wrap(iterable).insertAllAfter(0, List.of(null, 5)).isEmpty());
-    assertEquals(2, Iterator.wrap(iterable).insertAllAfter(0, List.of(null, 5)).size());
-    assertEquals(List.of(null, 5),
-        Iterator.wrap(iterable).insertAllAfter(0, List.of(null, 5)).toList());
+  public void insertAllAfter() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).insertAllAfter(0, null));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).insertAllAfter(5, List.of(null, 5)));
+    test(List.of(1, 2, 3, null, 5), () -> Iterator.of(1, 2, 3).insertAllAfter(3, List.of(null, 5)));
+    test(List.of(1, 2, null, 5, 3), () -> Iterator.of(1, 2, 3).insertAllAfter(2, List.of(null, 5)));
+    test(List.of(1, null, 5, 2, 3), () -> Iterator.of(1, 2, 3).insertAllAfter(1, List.of(null, 5)));
+    test(List.of(null, 5, 1, 2, 3), () -> Iterator.of(1, 2, 3).insertAllAfter(0, List.of(null, 5)));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).insertAllAfter(-7, List.of(null, 5)));
+    test(List.of(), () -> Iterator.of().insertAllAfter(5, List.of(null, 5)));
+    test(List.of(null, 5), () -> Iterator.of().insertAllAfter(0, List.of(null, 5)));
+    test(List.of(),
+        () -> Iterator.wrap(() -> List.of().iterator()).insertAllAfter(5, List.of(null, 5)));
+    test(List.of(null, 5),
+        () -> Iterator.wrap(() -> List.of().iterator()).insertAllAfter(0, List.of(null, 5)));
   }
 
   @Test
