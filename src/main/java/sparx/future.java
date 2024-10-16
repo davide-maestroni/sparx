@@ -70,6 +70,7 @@ import sparx.internal.future.iterator.FoldRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FoldRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IncludesAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IncludesSliceIteratorFutureMaterializer;
+import sparx.internal.future.iterator.InsertAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
@@ -720,6 +721,32 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.ofIterator(iterator).insert(element);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerInsertAfter(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        final int numElements, final E element) {
+      final long knownSize = materializer.knownSize();
+      final int size;
+      if (knownSize > 0) {
+        if (numElements <= knownSize) {
+          size = SizeOverflowException.safeCast(knownSize + 1);
+        } else {
+          size = (int) knownSize;
+        }
+      } else {
+        size = -1;
+      }
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          size) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> list) {
+          return lazy.Iterator.ofIterator(list).insertAfter(numElements, element);
         }
       };
     }
@@ -2023,8 +2050,44 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> insertAfter(int numElements, E element) {
-      return null;
+    public @NotNull Iterator<E> insertAfter(final int numElements, final E element) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final long knownSize = materializer.knownSize();
+      if (numElements < 0 || numElements == Integer.MAX_VALUE || (knownSize >= 0
+          && numElements > knownSize)) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (knownSize == 0) {
+        return new Iterator<E>(context, cancelException,
+            new ElementToIteratorFutureMaterializer<E>(element));
+      }
+      if (numElements == 0) {
+        if (materializer.isMaterializedAtOnce()) {
+          return new Iterator<E>(context, cancelException,
+              lazyMaterializerInsert(materializer, context, cancelException, element));
+        }
+        return new Iterator<E>(context, cancelException,
+            new InsertIteratorFutureMaterializer<E>(materializer, element, context, cancelException,
+                List.<E>prependFunction()));
+      } else if (numElements == knownSize) {
+        if (materializer.isMaterializedAtOnce()) {
+          return new Iterator<E>(context, cancelException,
+              lazyMaterializerAppend(materializer, context, cancelException, element));
+        }
+        return new Iterator<E>(context, cancelException,
+            new AppendIteratorFutureMaterializer<E>(materializer, element, context, cancelException,
+                List.<E>appendFunction()));
+      }
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerInsertAfter(materializer, context, cancelException, numElements,
+                element));
+      }
+      return new Iterator<E>(context, cancelException,
+          new InsertAfterIteratorFutureMaterializer<E>(materializer, numElements, element, context,
+              cancelException, List.<E>insertAfterFunction()));
     }
 
     @Override
