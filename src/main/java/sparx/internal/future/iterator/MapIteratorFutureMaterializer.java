@@ -190,6 +190,7 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
 
         @Override
         public void cancellableComplete(final int size) throws Exception {
+          setDone(EmptyIteratorFutureMaterializer.<F>instance());
           consumer.complete(0);
         }
 
@@ -205,6 +206,7 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
         public void cancellableComplete(final int size) throws Exception {
+          setDone(EmptyIteratorFutureMaterializer.<F>instance());
           predicate.complete(0);
         }
 

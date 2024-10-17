@@ -31,7 +31,6 @@ import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DequeueList;
-import sparx.util.SizeOverflowException;
 import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
@@ -289,8 +288,7 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
                 @Override
                 public void cancellableAccept(final int size, final int index, final E element)
                     throws Exception {
-                  consumer.accept(safeSizeWithElements(size), ImmaterialState.this.index++,
-                      element);
+                  consumer.accept(-1, ImmaterialState.this.index++, element);
                 }
 
                 @Override
@@ -321,11 +319,12 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
           public void cancellableAccept(final int size, final int index, final E element)
               throws Exception {
             ++wrappedIndex;
-            consumer.accept(safeSizeWithWrapped(size), ImmaterialState.this.index++, element);
+            consumer.accept(safeSize(size), ImmaterialState.this.index++, element);
           }
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
             consumer.complete(0);
           }
 
@@ -447,15 +446,7 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
       }
     }
 
-    private int safeSizeWithElements(final int elementsSize) {
-      final int wrappedSize = wrapped.knownSize();
-      if (wrappedSize >= 0 && elementsSize >= 0) {
-        return SizeOverflowException.safeCast((long) wrappedSize - numElements - 1 + elementsSize);
-      }
-      return -1;
-    }
-
-    private int safeSizeWithWrapped(final int wrappedSize) {
+    private int safeSize(final int wrappedSize) {
       if (wrappedIndex > numElements) {
         return wrappedSize;
       }
@@ -499,7 +490,7 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
       @Override
       public void cancellableComplete(final int size) throws Exception {
         if (isWrapped) {
-          setState(EmptyIteratorFutureMaterializer.<E>instance());
+          setDone(EmptyIteratorFutureMaterializer.<E>instance());
           predicate.complete(0);
         } else {
           if (elementsMaterializer != null) {
@@ -515,13 +506,13 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
           throws Exception {
         if (isWrapped) {
           if (++wrappedIndex == numElements) {
-            if (predicate.test(safeSizeWithWrapped(size), ImmaterialState.this.index++, element)) {
+            if (predicate.test(safeSize(size), ImmaterialState.this.index++, element)) {
               schedule();
             }
             return false;
           }
         }
-        return predicate.test(safeSizeWithElements(size), ImmaterialState.this.index++, element);
+        return predicate.test(-1, ImmaterialState.this.index++, element);
       }
 
       @Override

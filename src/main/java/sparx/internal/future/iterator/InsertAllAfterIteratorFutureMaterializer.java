@@ -312,6 +312,7 @@ public class InsertAllAfterIteratorFutureMaterializer<E> extends
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
             predicate.complete(size);
           }
 

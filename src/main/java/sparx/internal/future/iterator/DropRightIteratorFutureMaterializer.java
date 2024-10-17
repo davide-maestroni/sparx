@@ -264,6 +264,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
           @Override
           public void cancellableComplete(final int size) throws Exception {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
             consumer.complete(0);
           }
 
@@ -297,6 +298,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
             predicate.complete(0);
           }
 
