@@ -24,12 +24,13 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 
-public class DiffIteratorFutureMaterializer<E> extends ProgressiveIteratorFutureMaterializer<E, E> {
+public class IntersectIteratorFutureMaterializer<E> extends
+    ProgressiveIteratorFutureMaterializer<E, E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      DiffIteratorFutureMaterializer.class.getName());
+      IntersectIteratorFutureMaterializer.class.getName());
 
-  public DiffIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
+  public IntersectIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
       @NotNull final IteratorFutureMaterializer<Object> elementsMaterializer,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
@@ -57,7 +58,7 @@ public class DiffIteratorFutureMaterializer<E> extends ProgressiveIteratorFuture
       final HashMap<Object, Integer> elementsBag = ImmaterialState.this.elementsBag;
       final Integer count = elementsBag.get(element);
       if (count == null) {
-        return true;
+        return false;
       }
       final int decCount = count - 1;
       if (decCount == 0) {
@@ -65,7 +66,7 @@ public class DiffIteratorFutureMaterializer<E> extends ProgressiveIteratorFuture
       } else {
         elementsBag.put(element, decCount);
       }
-      return false;
+      return true;
     }
 
     @Override

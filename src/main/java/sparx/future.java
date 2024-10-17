@@ -74,6 +74,7 @@ import sparx.internal.future.iterator.InsertAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
+import sparx.internal.future.iterator.IntersectIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorForFuture;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorGetFuture;
@@ -767,6 +768,20 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.ofIterator(iterator).insertAll(elements);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerIntersect(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<?> elements) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.ofIterator(iterator).intersect(elements);
         }
       };
     }
@@ -2134,9 +2149,25 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> intersect(@NotNull Iterable<?> elements) {
-      // TODO: knownSize() + safeSize() + complete -> setDone(empty)
-      return null;
+    public @NotNull Iterator<E> intersect(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      if (getKnownSize(elements) == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerIntersect(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new IntersectIteratorFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+              cancelException));
     }
 
     @Override

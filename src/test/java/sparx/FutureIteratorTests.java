@@ -78,6 +78,7 @@ import sparx.internal.future.iterator.InsertAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
+import sparx.internal.future.iterator.IntersectIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
@@ -1048,6 +1049,31 @@ public class FutureIteratorTests {
         (l, n, e) -> lazy.List.wrap(l).insertAllAfter(n, e)));
 
     testCancel(it -> it.insertAllAfter(0, List.of(null)));
+  }
+
+  @Test
+  public void intersect() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).intersect(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).intersect(null));
+    test(List.of(1, null), () -> Iterator.of(1, 2, null, 4), it -> it.intersect(List.of(1, null)));
+    test(List.of(1, 4), () -> Iterator.of(1, 2, null, 4), it -> it.intersect(Iterator.of(1, 4)));
+    test(List.of(1, 4), () -> Iterator.of(1, 2, null, 4), it -> it.intersect(List.of(1, 3, 4)));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4), it -> it.intersect(Iterator.of(3, 1, 3)));
+    test(List.of(null), () -> Iterator.of(1, 2, null, 4), it -> it.intersect(List.of(null, null)));
+    test(List.of(1, null), () -> Iterator.of(1, null),
+        it -> it.intersect(Iterator.of(1, 2, null, 4)));
+    test(List.of(1, 2), () -> Iterator.of(1, 2, null, 4), it -> it.intersect(List.of(2, 1)));
+    test(List.of(), () -> Iterator.of(1, null), it -> it.intersect(Iterator.of(2, 4)));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.intersect(Iterator.of()));
+    test(List.of(), Iterator::of, it -> it.intersect(Iterator.of(1, 2, null, 4)));
+
+    testMaterializer(List.of(1, 2), c -> new IntersectIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 1, 2), c),
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), c, new AtomicReference<>()));
+
+    testCancel(it -> it.intersect(List.of(null)));
   }
 
   @Test

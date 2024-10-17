@@ -660,19 +660,18 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void intersect() {
-    assertEquals(List.of(1, null), Iterator.of(1, 2, null, 4).intersect(List.of(1, null)).toList());
-    assertEquals(List.of(1, 4), Iterator.of(1, 2, null, 4).intersect(Iterator.of(1, 4)).toList());
-    assertEquals(List.of(1, 4), Iterator.of(1, 2, null, 4).intersect(List.of(1, 3, 4)).toList());
-    assertEquals(List.of(1), Iterator.of(1, 2, null, 4).intersect(Iterator.of(3, 1, 3)).toList());
-    assertEquals(List.of(null), Iterator.of(1, 2, null, 4).intersect(List.of(null, null)).toList());
-    assertEquals(List.of(1, null),
-        Iterator.of(1, null).intersect(Iterator.of(1, 2, null, 4)).toList());
-    assertEquals(List.of(1, 2), Iterator.of(1, 2, null, 4).intersect(List.of(2, 1)).toList());
-    assertEquals(List.of(), Iterator.of(1, null).intersect(Iterator.of(2, 4)).toList());
-
-    assertEquals(List.of(), Iterator.of(1, 2, null, 4).intersect(Iterator.of()).toList());
-    assertEquals(List.of(), Iterator.of().intersect(Iterator.of(1, 2, null, 4)).toList());
+  public void intersect() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).intersect(null));
+    test(List.of(1, null), () -> Iterator.of(1, 2, null, 4).intersect(List.of(1, null)));
+    test(List.of(1, 4), () -> Iterator.of(1, 2, null, 4).intersect(Iterator.of(1, 4)));
+    test(List.of(1, 4), () -> Iterator.of(1, 2, null, 4).intersect(List.of(1, 3, 4)));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4).intersect(Iterator.of(3, 1, 3)));
+    test(List.of(null), () -> Iterator.of(1, 2, null, 4).intersect(List.of(null, null)));
+    test(List.of(1, null), () -> Iterator.of(1, null).intersect(Iterator.of(1, 2, null, 4)));
+    test(List.of(1, 2), () -> Iterator.of(1, 2, null, 4).intersect(List.of(2, 1)));
+    test(List.of(), () -> Iterator.of(1, null).intersect(Iterator.of(2, 4)));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).intersect(Iterator.of()));
+    test(List.of(), () -> Iterator.of().intersect(Iterator.of(1, 2, null, 4)));
   }
 
   @Test
