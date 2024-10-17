@@ -82,6 +82,7 @@ import sparx.internal.future.iterator.IntersectIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapAfterIteratorFutureMaterializer;
+import sparx.internal.future.iterator.MapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
@@ -1137,6 +1138,44 @@ public class FutureIteratorTests {
         new AtomicReference<>(), (l, n, e) -> lazy.List.wrap(l).replaceAfter(n, e)));
 
     testCancel(it -> it.mapAfter(0, e -> e));
+  }
+
+  @Test
+  public void mapFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapFirstWhere(null, (i, e) -> e));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapFirstWhere(null, e -> e));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapFirstWhere((i, e) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapFirstWhere(e -> false, null));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.mapFirstWhere(i -> false, i -> i + 1));
+    test(List.of(2, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.mapFirstWhere(i -> true, i -> i + 1));
+    test(List.of(1, 2, 3, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.mapFirstWhere(Objects::isNull, i -> 3));
+    test(List.of(2, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.mapFirstWhere(i -> i == 1, i -> i + 1));
+    test(List.of(), Iterator::<Integer>of, it -> it.mapFirstWhere(i -> false, i -> i + 1));
+    test(List.of(), Iterator::<Integer>of, it -> it.mapFirstWhere(i -> true, i -> i + 1));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4)
+        .toFuture(context).flatMap(e -> List.of(e));
+    assertFalse(itr.get().mapFirstWhere(i -> i > 2, i -> 1).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().mapFirstWhere(i -> i > 2, i -> 1).size());
+    assertEquals(1, itr.get().mapFirstWhere(i -> i > 2, i -> 1).first());
+    assertEquals(2, itr.get().mapFirstWhere(i -> i > 2, i -> 1).drop(1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().mapFirstWhere(i -> i > 2, i -> 1).drop(2).first());
+
+    testMaterializer(List.of(1, 1, 3), c -> new MapFirstWhereIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e == 2, (i, e) -> i,
+        c, new AtomicReference<>(), (l, n, e) -> lazy.List.wrap(l).replaceAfter(n, e)));
+
+    testCancel(it -> it.mapFirstWhere(e -> false, e -> e));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

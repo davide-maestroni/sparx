@@ -715,36 +715,24 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void mapFirstWhere() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().mapFirstWhere(i -> false, i -> i + 1).isEmpty());
-    assertEquals(4, itr.get().mapFirstWhere(i -> false, i -> i + 1).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().mapFirstWhere(i -> false, i -> i + 1).toList());
-    assertNull(itr.get().mapFirstWhere(i -> false, i -> i + 1).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().mapFirstWhere(i -> false, i -> i + 1).drop(4).first());
-    assertFalse(itr.get().mapFirstWhere(i -> true, i -> i + 1).isEmpty());
-    assertEquals(4, itr.get().mapFirstWhere(i -> true, i -> i + 1).size());
-    assertEquals(List.of(2, 2, null, 4), itr.get().mapFirstWhere(i -> true, i -> i + 1).toList());
-    assertEquals(2, itr.get().mapFirstWhere(i -> true, i -> i + 1).drop(1).first());
-    assertNull(itr.get().mapFirstWhere(i -> true, i -> i + 1).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().mapFirstWhere(i -> true, i -> i + 1).drop(5).first());
-    assertFalse(itr.get().mapFirstWhere(Objects::isNull, i -> 3).isEmpty());
-    assertEquals(4, itr.get().mapFirstWhere(Objects::isNull, i -> 3).size());
-    assertEquals(List.of(1, 2, 3, 4), itr.get().mapFirstWhere(Objects::isNull, i -> 3).toList());
-    assertEquals(2, itr.get().mapFirstWhere(Objects::isNull, i -> 3).drop(1).first());
-    assertEquals(3, itr.get().mapFirstWhere(Objects::isNull, i -> 3).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().mapFirstWhere(Objects::isNull, i -> 3).drop(4).first());
+  public void mapFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).mapFirstWhere(null, (i, e) -> e));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).mapFirstWhere(null, e -> e));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).mapFirstWhere((i, e) -> false, null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).mapFirstWhere(e -> false, null));
+    test(List.of(1, 2, null, 4),
+        () -> Iterator.of(1, 2, null, 4).mapFirstWhere(i -> false, i -> i + 1));
+    test(List.of(2, 2, null, 4),
+        () -> Iterator.of(1, 2, null, 4).mapFirstWhere(i -> true, i -> i + 1));
+    test(List.of(1, 2, 3, 4),
+        () -> Iterator.of(1, 2, null, 4).mapFirstWhere(Objects::isNull, i -> 3));
+    test(List.of(2, 2, null, 4),
+        () -> Iterator.of(1, 2, null, 4).mapFirstWhere(i -> i == 1, i -> i + 1));
+    test(List.of(), () -> Iterator.<Integer>of().mapFirstWhere(i -> false, i -> i + 1));
+    test(List.of(), () -> Iterator.<Integer>of().mapFirstWhere(i -> true, i -> i + 1));
 
-    assertFalse(itr.get().mapFirstWhere(i -> i == 1, i -> i + 1).isEmpty());
-    assertEquals(4, itr.get().mapFirstWhere(i -> i == 1, i -> i + 1).size());
-    assertEquals(List.of(2, 2, null, 4), itr.get().mapFirstWhere(i -> i == 1, i -> i + 1).toList());
-    assertEquals(2, itr.get().mapFirstWhere(i -> i == 1, i -> i + 1).drop(1).first());
-    assertNull(itr.get().mapFirstWhere(i -> i == 1, i -> i + 1).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().mapFirstWhere(i -> i == 1, i -> i + 1).drop(5).first());
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
     assertFalse(itr.get().mapFirstWhere(i -> i > 2, i -> 1).isEmpty());
     assertThrows(NullPointerException.class,
         () -> itr.get().mapFirstWhere(i -> i > 2, i -> 1).size());
@@ -752,17 +740,6 @@ public class LazyIteratorTests {
     assertEquals(2, itr.get().mapFirstWhere(i -> i > 2, i -> 1).drop(1).first());
     assertThrows(NullPointerException.class,
         () -> itr.get().mapFirstWhere(i -> i > 2, i -> 1).drop(2).first());
-
-    assertTrue(Iterator.<Integer>of().mapFirstWhere(i -> false, i -> i + 1).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().mapFirstWhere(i -> false, i -> i + 1).size());
-    assertEquals(List.of(), Iterator.<Integer>of().mapFirstWhere(i -> false, i -> i + 1).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().mapFirstWhere(i -> false, i -> i + 1).drop(2).first());
-    assertTrue(Iterator.<Integer>of().mapFirstWhere(i -> true, i -> i + 1).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().mapFirstWhere(i -> true, i -> i + 1).size());
-    assertEquals(List.of(), Iterator.<Integer>of().mapFirstWhere(i -> true, i -> i + 1).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().mapFirstWhere(i -> true, i -> i + 1).drop(2).first());
   }
 
   @Test
