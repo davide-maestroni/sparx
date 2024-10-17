@@ -88,7 +88,7 @@ public class InsertAfterIteratorFutureMaterializer<E> extends
     private final E element;
     private final ArrayList<FutureConsumer<List<E>>> elementsConsumers = new ArrayList<FutureConsumer<List<E>>>(
         2);
-    private TernaryFunction<List<E>, Integer, E, List<E>> insertFunction;
+    private final TernaryFunction<List<E>, Integer, E, List<E>> insertFunction;
     private final int numElements;
     private final IteratorFutureMaterializer<E> wrapped;
 
@@ -219,9 +219,8 @@ public class InsertAfterIteratorFutureMaterializer<E> extends
     @Override
     public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
       if (index == numElements) {
-        final int wrappedIndex = index++;
-        setState(new WrappingState(wrapped, cancelException, index));
-        safeConsume(consumer, -1, wrappedIndex, element, LOGGER);
+        setState(new WrappingState(wrapped, cancelException, ++index));
+        safeConsume(consumer, -1, numElements, element, LOGGER);
       } else {
         wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
           @Override
@@ -247,10 +246,9 @@ public class InsertAfterIteratorFutureMaterializer<E> extends
     @Override
     public void materializeNextWhile(@NotNull final IndexedFuturePredicate<E> predicate) {
       if (index == numElements) {
-        final int wrappedIndex = index++;
         final IteratorFutureMaterializer<E> state = setState(
-            new WrappingState(wrapped, cancelException, index));
-        if (safeConsume(predicate, -1, wrappedIndex, element, LOGGER)) {
+            new WrappingState(wrapped, cancelException, ++index));
+        if (safeConsume(predicate, -1, numElements, element, LOGGER)) {
           state.materializeNextWhile(predicate);
         }
       } else {

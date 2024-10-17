@@ -81,6 +81,7 @@ import sparx.internal.future.iterator.InsertIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IntersectIteratorFutureMaterializer;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
+import sparx.internal.future.iterator.MapAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
@@ -1099,6 +1100,43 @@ public class FutureIteratorTests {
         new AtomicReference<>()));
 
     testCancel(it -> it.map(e -> e));
+  }
+
+  @Test
+  public void mapAfter() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .mapAfter(0, (Function<? super Integer, ? extends Integer>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .mapAfter(0, (IndexedFunction<? super Integer, ? extends Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .mapAfter(0, (Function<? super Integer, ? extends Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .mapAfter(0, (IndexedFunction<? super Integer, ? extends Integer>) null));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.mapAfter(-1, x -> x + 1));
+    test(List.of(2, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.mapAfter(0, x -> x + 1));
+    test(List.of(1, 3, 3), () -> Iterator.of(1, 2, 3), it -> it.mapAfter(1, x -> x + 1));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, 3), it -> it.mapAfter(2, x -> x + 1));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.mapAfter(3, x -> x + 1));
+    test(List.of(1, 2, 3, null), () -> Iterator.of(1, 2, 3).append(null),
+        it -> it.mapAfter(-1, x -> x + 1));
+    test(List.of(1, 3, 3, null), () -> Iterator.of(1, 2, 3).append(null),
+        it -> it.mapAfter(1, x -> x + 1));
+    test(List.of(), Iterator::<Integer>of, it -> it.mapAfter(0, x -> x + 1));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3)
+        .toFuture(context).flatMap(e -> List.of(e));
+    assertEquals(4, itr.get().append(null).mapAfter(3, x -> x + 1).size());
+    assertEquals(2, itr.get().append(null).mapAfter(3, x -> x + 1).drop(1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().append(null).mapAfter(3, x -> x + 1).drop(3).first());
+
+    testMaterializer(List.of(1, 1, 3), c -> new MapAfterIteratorFutureMaterializer<>(
+        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 1, (i, e) -> i, c,
+        new AtomicReference<>(), (l, n, e) -> lazy.List.wrap(l).replaceAfter(n, e)));
+
+    testCancel(it -> it.mapAfter(0, e -> e));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

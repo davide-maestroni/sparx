@@ -693,48 +693,25 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void mapAfter() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3);
-    assertFalse(itr.get().mapAfter(-1, x -> x + 1).isEmpty());
-    assertEquals(3, itr.get().mapAfter(-1, x -> x + 1).size());
-    assertEquals(List.of(1, 2, 3), itr.get().mapAfter(-1, x -> x + 1).toList());
-    assertEquals(2, itr.get().mapAfter(-1, x -> x + 1).drop(1).first());
-    assertFalse(itr.get().mapAfter(0, x -> x + 1).isEmpty());
-    assertEquals(3, itr.get().mapAfter(0, x -> x + 1).size());
-    assertEquals(List.of(2, 2, 3), itr.get().mapAfter(0, x -> x + 1).toList());
-    assertEquals(2, itr.get().mapAfter(0, x -> x + 1).drop(1).first());
-    assertFalse(itr.get().mapAfter(1, x -> x + 1).isEmpty());
-    assertEquals(3, itr.get().mapAfter(1, x -> x + 1).size());
-    assertEquals(List.of(1, 3, 3), itr.get().mapAfter(1, x -> x + 1).toList());
-    assertEquals(3, itr.get().mapAfter(1, x -> x + 1).drop(1).first());
-    assertFalse(itr.get().mapAfter(2, x -> x + 1).isEmpty());
-    assertEquals(3, itr.get().mapAfter(2, x -> x + 1).size());
-    assertEquals(List.of(1, 2, 4), itr.get().mapAfter(2, x -> x + 1).toList());
-    assertEquals(2, itr.get().mapAfter(2, x -> x + 1).drop(1).first());
-    assertFalse(itr.get().mapAfter(3, x -> x + 1).isEmpty());
-    assertEquals(3, itr.get().mapAfter(3, x -> x + 1).size());
-    assertEquals(List.of(1, 2, 3), itr.get().mapAfter(3, x -> x + 1).toList());
-    assertEquals(2, itr.get().mapAfter(3, x -> x + 1).drop(1).first());
+  public void mapAfter() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).mapAfter(0, (Function<? super Integer, ? extends Integer>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0)
+        .mapAfter(0, (IndexedFunction<? super Integer, ? extends Integer>) null));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).mapAfter(-1, x -> x + 1));
+    test(List.of(2, 2, 3), () -> Iterator.of(1, 2, 3).mapAfter(0, x -> x + 1));
+    test(List.of(1, 3, 3), () -> Iterator.of(1, 2, 3).mapAfter(1, x -> x + 1));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, 3).mapAfter(2, x -> x + 1));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).mapAfter(3, x -> x + 1));
+    test(List.of(1, 2, 3, null), () -> Iterator.of(1, 2, 3).append(null).mapAfter(-1, x -> x + 1));
+    test(List.of(1, 3, 3, null), () -> Iterator.of(1, 2, 3).append(null).mapAfter(1, x -> x + 1));
+    test(List.of(), () -> Iterator.<Integer>of().mapAfter(0, x -> x + 1));
 
-    assertFalse(itr.get().append(null).mapAfter(-1, x -> x + 1).isEmpty());
-    assertEquals(4, itr.get().append(null).mapAfter(-1, x -> x + 1).size());
-    assertEquals(List.of(1, 2, 3, null), itr.get().append(null).mapAfter(-1, x -> x + 1).toList());
-    assertEquals(2, itr.get().append(null).mapAfter(-1, x -> x + 1).drop(1).first());
-    assertFalse(itr.get().append(null).mapAfter(1, x -> x + 1).isEmpty());
-    assertEquals(4, itr.get().append(null).mapAfter(1, x -> x + 1).size());
-    assertEquals(List.of(1, 3, 3, null), itr.get().append(null).mapAfter(1, x -> x + 1).toList());
-    assertEquals(3, itr.get().append(null).mapAfter(1, x -> x + 1).drop(1).first());
-    assertFalse(itr.get().append(null).mapAfter(3, x -> x + 1).isEmpty());
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3);
     assertEquals(4, itr.get().append(null).mapAfter(3, x -> x + 1).size());
     assertEquals(2, itr.get().append(null).mapAfter(3, x -> x + 1).drop(1).first());
     assertThrows(NullPointerException.class,
         () -> itr.get().append(null).mapAfter(3, x -> x + 1).drop(3).first());
-
-    assertTrue(Iterator.<Integer>of().mapAfter(0, x -> x + 1).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().mapAfter(0, x -> x + 1).size());
-    assertEquals(List.of(), Iterator.<Integer>of().mapAfter(0, x -> x + 1).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().mapAfter(0, x -> x + 1).first());
   }
 
   @Test
