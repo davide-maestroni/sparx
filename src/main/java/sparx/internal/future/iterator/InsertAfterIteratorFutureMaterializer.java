@@ -48,16 +48,7 @@ public class InsertAfterIteratorFutureMaterializer<E> extends
       @Positive final int numElements, final E element, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> insertFunction) {
-    this(wrapped, numElements, element, new AtomicInteger(STATUS_RUNNING), context, cancelException,
-        insertFunction);
-  }
-
-  InsertAfterIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
-      @Positive final int numElements, final E element, @NotNull final AtomicInteger status,
-      @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> insertFunction) {
-    super(context, status);
+    super(context, new AtomicInteger(STATUS_RUNNING));
     knownSize = safeSize(wrapped.knownSize(), numElements);
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, numElements, element, context, cancelException,

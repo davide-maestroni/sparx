@@ -73,6 +73,7 @@ public class MapFirstWhereIteratorFutureMaterializer<E> extends
     private final TernaryFunction<List<E>, Integer, E, List<E>> replaceFunction;
     private final IteratorFutureMaterializer<E> wrapped;
 
+    private boolean found;
     private int index;
 
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
@@ -138,15 +139,17 @@ public class MapFirstWhereIteratorFutureMaterializer<E> extends
               setDone(EmptyIteratorFutureMaterializer.<E>instance());
               consumeElements(Collections.<E>emptyList());
             } else {
-              final int size = elements.size();
-              for (int i = 0; i < size; ++i) {
-                final E element = elements.get(i);
-                if (predicate.test(index + i, element)) {
-                  final List<E> materialized = replaceFunction.apply(elements, i,
-                      mapper.apply(index + i, element));
-                  setDone(new ListToIteratorFutureMaterializer<E>(materialized, context, index));
-                  consumeElements(materialized);
-                  return;
+              if (!found) {
+                final int size = elements.size();
+                for (int i = 0; i < size; ++i) {
+                  final E element = elements.get(i);
+                  if (predicate.test(index + i, element)) {
+                    final List<E> materialized = replaceFunction.apply(elements, i,
+                        mapper.apply(index + i, element));
+                    setDone(new ListToIteratorFutureMaterializer<E>(materialized, context, index));
+                    consumeElements(materialized);
+                    return;
+                  }
                 }
               }
               setDone(new ListToIteratorFutureMaterializer<E>(elements, context, index));
@@ -201,106 +204,157 @@ public class MapFirstWhereIteratorFutureMaterializer<E> extends
 
     @Override
     public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
-      wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
-        @Override
-        public void cancellableAccept(final int size, final int index, final E element)
-            throws Exception {
-          if (predicate.test(ImmaterialState.this.index, element)) {
-            final int wrappedIndex = ImmaterialState.this.index++;
-            setState(new WrappingState(wrapped, cancelException, ImmaterialState.this.index));
-            consumer.accept(size, wrappedIndex, mapper.apply(wrappedIndex, element));
-          } else {
+      if (found) {
+        wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
+          @Override
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
             consumer.accept(size, ImmaterialState.this.index++, element);
           }
-        }
 
-        @Override
-        public void cancellableComplete(final int size) throws Exception {
-          setDone(EmptyIteratorFutureMaterializer.<E>instance());
-          consumer.complete(0);
-        }
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+            consumer.complete(0);
+          }
 
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      } else {
+        wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
+          @Override
+          public void cancellableAccept(final int size, final int index, final E element)
+              throws Exception {
+            if (!found && predicate.test(ImmaterialState.this.index, element)) {
+              found = true;
+              final int wrappedIndex = ImmaterialState.this.index++;
+              consumer.accept(size, wrappedIndex, mapper.apply(wrappedIndex, element));
+            } else {
+              consumer.accept(size, ImmaterialState.this.index++, element);
+            }
+          }
+
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+            consumer.complete(0);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      }
     }
 
     @Override
     public void materializeNextWhile(@NotNull final IndexedFuturePredicate<E> predicate) {
-      wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
-        @Override
-        public void cancellableComplete(final int size) throws Exception {
-          setDone(EmptyIteratorFutureMaterializer.<E>instance());
-          predicate.complete(0);
-        }
-
-        @Override
-        public boolean cancellableTest(final int size, final int index, final E element)
-            throws Exception {
-          // TODO: concurrent nextWhile
-          if (ImmaterialState.this.predicate.test(ImmaterialState.this.index, element)) {
-            final int wrappedIndex = ImmaterialState.this.index++;
-            final IteratorFutureMaterializer<E> state = setState(
-                new WrappingState(wrapped, cancelException, ImmaterialState.this.index));
-            if (predicate.test(size, wrappedIndex, mapper.apply(wrappedIndex, element))) {
-              state.materializeNextWhile(predicate);
-            }
-            return false;
+      if (found) {
+        wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+            predicate.complete(0);
           }
-          return predicate.test(size, ImmaterialState.this.index++, element);
-        }
 
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          predicate.error(error);
-        }
-      });
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            return predicate.test(size, ImmaterialState.this.index++, element);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            predicate.error(error);
+          }
+        });
+      } else {
+        wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) throws Exception {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+            predicate.complete(0);
+          }
+
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            if (!found && ImmaterialState.this.predicate.test(ImmaterialState.this.index,
+                element)) {
+              found = true;
+              final int wrappedIndex = ImmaterialState.this.index++;
+              return predicate.test(size, wrappedIndex, mapper.apply(wrappedIndex, element));
+            }
+            return predicate.test(size, ImmaterialState.this.index++, element);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            predicate.error(error);
+          }
+        });
+      }
     }
 
     @Override
     public void materializeSkip(@Positive final int count,
         @NotNull final FutureConsumer<Integer> consumer) {
-      materializeNextWhile(new IndexedFuturePredicate<E>() {
-        private int skipped;
-
-        @Override
-        public void complete(final int size) throws Exception {
-          consumer.accept(skipped);
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-
-        @Override
-        public boolean test(final int size, final int index, final E element) throws Exception {
-          if (++skipped < count) {
-            final IteratorFutureMaterializer<E> state = getState();
-            if (state == ImmaterialState.this) {
-              return true;
-            } else {
-              final int offset = skipped;
-              state.materializeSkip(count - skipped, new FutureConsumer<Integer>() {
-                @Override
-                public void accept(final Integer skipped) throws Exception {
-                  consumer.accept(offset + skipped);
-                }
-
-                @Override
-                public void error(@NotNull final Exception error) throws Exception {
-                  consumer.error(error);
-                }
-              });
-              return false;
-            }
+      if (found) {
+        wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
+          @Override
+          public void cancellableAccept(final Integer skipped) throws Exception {
+            consumer.accept(skipped);
           }
-          consumer.accept(skipped);
-          return false;
-        }
-      });
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      } else {
+        materializeNextWhile(new IndexedFuturePredicate<E>() {
+          private int skipped;
+
+          @Override
+          public void complete(final int size) throws Exception {
+            consumer.accept(skipped);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+
+          @Override
+          public boolean test(final int size, final int index, final E element) throws Exception {
+            if (++skipped < count) {
+              if (!found) {
+                return true;
+              } else {
+                final int offset = skipped;
+                wrapped.materializeSkip(count - skipped, new FutureConsumer<Integer>() {
+                  @Override
+                  public void accept(final Integer skipped) throws Exception {
+                    consumer.accept(offset + skipped);
+                  }
+
+                  @Override
+                  public void error(@NotNull final Exception error) throws Exception {
+                    consumer.error(error);
+                  }
+                });
+                return false;
+              }
+            }
+            consumer.accept(skipped);
+            return false;
+          }
+        });
+      }
     }
 
     @Override
@@ -325,7 +379,7 @@ public class MapFirstWhereIteratorFutureMaterializer<E> extends
 
     @Override
     public int weightSkip() {
-      return weightNextWhile();
+      return found ? wrapped.weightSkip() : weightNextWhile();
     }
 
     private void consumeElements(@NotNull final List<E> elements) {
