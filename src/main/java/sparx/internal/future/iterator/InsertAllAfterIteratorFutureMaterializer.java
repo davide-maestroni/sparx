@@ -279,32 +279,27 @@ public class InsertAllAfterIteratorFutureMaterializer<E> extends
 
     @Override
     public int weightElements() {
-      return elementsConsumers.isEmpty() ? (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightElements() + elementsMaterializer.weightElements()) : 1;
+      return elementsConsumers.isEmpty() ? weightNextElements() : 1;
     }
 
     @Override
     public int weightHasNext() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightHasNext() + elementsMaterializer.weightHasNext());
+      return weightNextElements();
     }
 
     @Override
     public int weightNext() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightNext() + elementsMaterializer.weightNext());
+      return weightNextElements();
     }
 
     @Override
     public int weightNextWhile() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightNextWhile() + elementsMaterializer.weightNextWhile());
+      return weightNextElements();
     }
 
     @Override
     public int weightSkip() {
-      return (int) Math.min(Integer.MAX_VALUE,
-          (long) wrapped.weightSkip() + elementsMaterializer.weightSkip());
+      return weightNextElements();
     }
 
     private void consumeElements(@NotNull final List<E> elements) {
@@ -405,7 +400,23 @@ public class InsertAllAfterIteratorFutureMaterializer<E> extends
             while (!elementConsumers.isEmpty()) {
               if (nextElements.isEmpty()) {
                 if (wrappedIndex == numElements) {
-                  materializeUntilConsumed();
+                  final String taskID = context.currentTaskID();
+                  context.scheduleAfter(new ContextTask(context) {
+                    @Override
+                    protected void runWithContext() {
+                      materializeUntilConsumed();
+                    }
+
+                    @Override
+                    public @NotNull String taskID() {
+                      return taskID != null ? taskID : "";
+                    }
+
+                    @Override
+                    public int weight() {
+                      return elementsMaterializer.weightNextWhile();
+                    }
+                  });
                   return false;
                 }
                 return true;
@@ -436,6 +447,11 @@ public class InsertAllAfterIteratorFutureMaterializer<E> extends
         setFailed(error);
         consumeError(error);
       }
+    }
+
+    private int weightNextElements() {
+      return nextElementConsumers.isEmpty() ? (int) Math.min(Integer.MAX_VALUE,
+          (long) wrapped.weightNextWhile() + elementsMaterializer.weightNextWhile()) : 1;
     }
   }
 }
