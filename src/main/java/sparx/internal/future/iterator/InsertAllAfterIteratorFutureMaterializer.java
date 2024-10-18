@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
@@ -347,7 +348,23 @@ public class InsertAllAfterIteratorFutureMaterializer<E> extends
           @Override
           public void cancellableComplete(final int size) {
             ++wrappedIndex;
-            materializeUntilConsumed();
+            final String taskID = context.currentTaskID();
+            context.scheduleAfter(new ContextTask(context) {
+              @Override
+              protected void runWithContext() {
+                materializeUntilConsumed();
+              }
+
+              @Override
+              public @NotNull String taskID() {
+                return taskID != null ? taskID : "";
+              }
+
+              @Override
+              public int weight() {
+                return wrapped.weightNextWhile();
+              }
+            });
           }
 
           @Override
