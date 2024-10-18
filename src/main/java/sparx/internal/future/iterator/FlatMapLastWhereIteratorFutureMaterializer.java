@@ -242,6 +242,7 @@ public class FlatMapLastWhereIteratorFutureMaterializer<E> extends
           if (nextElements.isEmpty()) {
             final IteratorFutureMaterializer<E> state = getState();
             if (state == ImmaterialState.this) {
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
               consumer.complete(0);
             } else {
               state.materializeNext(consumer);
