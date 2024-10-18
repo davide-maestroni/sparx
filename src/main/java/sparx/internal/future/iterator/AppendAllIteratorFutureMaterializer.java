@@ -183,9 +183,17 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           if (hasNext) {
             consumer.accept(true);
           } else {
-            setState(
-                new WrappingState(elementsMaterializer, cancelException, index)).materializeHasNext(
-                consumer);
+            elementsMaterializer.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
+              @Override
+              public void cancellableAccept(final Boolean hasNext) throws Exception {
+                consumer.accept(hasNext);
+              }
+
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                consumer.error(error);
+              }
+            });
           }
         }
 
@@ -222,8 +230,24 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
         @Override
         public void cancellableComplete(final int size) {
-          setState(new WrappingState(elementsMaterializer, cancelException, index)).materializeNext(
-              consumer);
+          elementsMaterializer.materializeNext(new CancellableIndexedFutureConsumer<E>() {
+            @Override
+            public void cancellableAccept(final int size, final int index, final E element)
+                throws Exception {
+              consumer.accept(size, ImmaterialState.this.index++, element);
+            }
+
+            @Override
+            public void cancellableComplete(final int size) throws Exception {
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
+              consumer.complete(size);
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              consumer.error(error);
+            }
+          });
         }
 
         @Override
@@ -238,9 +262,24 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
         public void cancellableComplete(final int size) {
-          setState(
-              new WrappingState(elementsMaterializer, cancelException, index)).materializeNextWhile(
-              predicate);
+          elementsMaterializer.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+            @Override
+            public void cancellableComplete(final int size) throws Exception {
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
+              predicate.complete(size);
+            }
+
+            @Override
+            public boolean cancellableTest(final int size, final int index, final E element)
+                throws Exception {
+              return predicate.test(size, ImmaterialState.this.index++, element);
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) throws Exception {
+              predicate.error(error);
+            }
+          });
         }
 
         @Override
@@ -265,20 +304,18 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           index += skipped;
           if (skipped < count) {
             final int wrappedSkipped = skipped;
-            setState(
-                new WrappingState(elementsMaterializer, cancelException, index)).materializeSkip(
-                count - skipped, new FutureConsumer<Integer>() {
-                  @Override
-                  public void accept(final Integer skipped) throws Exception {
-                    index += skipped;
-                    consumer.accept(wrappedSkipped + skipped);
-                  }
+            elementsMaterializer.materializeSkip(count - skipped, new FutureConsumer<Integer>() {
+              @Override
+              public void accept(final Integer skipped) throws Exception {
+                index += skipped;
+                consumer.accept(wrappedSkipped + skipped);
+              }
 
-                  @Override
-                  public void error(@NotNull final Exception error) throws Exception {
-                    consumer.error(error);
-                  }
-                });
+              @Override
+              public void error(@NotNull final Exception error) throws Exception {
+                consumer.error(error);
+              }
+            });
           } else {
             consumer.accept(skipped);
           }

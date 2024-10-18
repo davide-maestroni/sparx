@@ -27,13 +27,17 @@ import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +59,7 @@ import sparx.internal.future.iterator.DropRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EachIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EndsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ExistsIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
@@ -87,9 +92,11 @@ import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
+import sparx.util.DequeueList;
 import sparx.util.UncheckedException;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Action;
+import sparx.util.function.BinaryFunction;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedConsumer;
@@ -128,9 +135,10 @@ public class FutureIteratorTests {
     test(List.of(1, 2, 3), () -> Iterator.of(1, 2), it -> it.append(3));
     test(List.of(1, null, 3), () -> Iterator.of(1, null), it -> it.append(3));
 
-    testMaterializer(List.of(1, 2, 3), c -> new AppendIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), 3, c, new AtomicReference<>(),
-        (l, e) -> List.wrap(l).append(e)));
+    testMaterializer(List.of(1, 2, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
+        (c, m) -> new AppendIteratorFutureMaterializer<>(m, 3, c, new AtomicReference<>(),
+            (l, e) -> List.wrap(l).append(e)));
 
     testCancel(it -> it.append(null));
   }
@@ -149,10 +157,11 @@ public class FutureIteratorTests {
     test(List.of(1, null, 3), () -> Iterator.of(1, null), it -> it.appendAll(Set.of(3)));
     test(List.of(1, null, 3), () -> Iterator.of(1, null), it -> it.appendAll(Iterator.of(3)));
 
-    testMaterializer(List.of(1, 2, 3, 4), c -> new AppendAllIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
-        new ListToIteratorFutureMaterializer<>(List.of(3, 4), c), c, new AtomicReference<>(),
-        (l, e) -> List.wrap(l).appendAll(e)));
+    testMaterializer(List.of(1, 2, 3, 4),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
+        (c, m) -> new AppendAllIteratorFutureMaterializer<>(m,
+            new ListToIteratorFutureMaterializer<>(List.of(3, 4), c), c, new AtomicReference<>(),
+            (l, e) -> List.wrap(l).appendAll(e)));
 
     testCancel(it -> it.appendAll(List.of(null)));
   }
@@ -163,8 +172,8 @@ public class FutureIteratorTests {
     test(List.of(3), () -> Iterator.of(1, 2, 3), future.Iterator::count);
     test(List.of(3), () -> Iterator.of(1, null, 3), future.Iterator::count);
 
-    testMaterializer(List.of(3), c -> new CountIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), c, new AtomicReference<>()));
+    testMaterializer(List.of(3), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new CountIteratorFutureMaterializer<>(m, c, new AtomicReference<>()));
 
     testCancel(future.Iterator::count);
   }
@@ -183,9 +192,9 @@ public class FutureIteratorTests {
         .countWhere(i -> i > 0);
     assertThrows(NullPointerException.class, itr::first);
 
-    testMaterializer(List.of(2), c -> new CountWhereIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (n, i) -> i < 3, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(2), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new CountWhereIteratorFutureMaterializer<>(m, (n, i) -> i < 3, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.countWhere(e -> true));
   }
@@ -203,9 +212,9 @@ public class FutureIteratorTests {
     test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.diff(Iterator.of()));
     test(List.of(), Iterator::of, it -> it.diff(Iterator.of(1, 2, null, 4)));
 
-    testMaterializer(List.of(1), c -> new DiffIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 1, 3), c),
-        new ListToIteratorFutureMaterializer<>(List.of(1, 3), c), c, new AtomicReference<>()));
+    testMaterializer(List.of(1), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 1, 3), c),
+        (c, m) -> new DiffIteratorFutureMaterializer<>(m,
+            new ListToIteratorFutureMaterializer<>(List.of(1, 3), c), c, new AtomicReference<>()));
 
     testCancel(it -> it.diff(List.of(null)));
   }
@@ -222,9 +231,10 @@ public class FutureIteratorTests {
     test(List.of(1, null), () -> Iterator.of(1, 1, null, 2, null, 1),
         it -> it.distinctBy(e -> e == null ? 2 : e));
 
-    testMaterializer(List.of(1, 2), c -> new DistinctByIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e / 2, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new DistinctByIteratorFutureMaterializer<>(m, (i, e) -> e / 2, c,
+            new AtomicReference<>()));
 
     testCancel(future.Iterator::distinct);
   }
@@ -291,9 +301,9 @@ public class FutureIteratorTests {
     test(List.of(), () -> Iterator.of(1, null, 3), it -> it.drop(3));
     test(List.of(), () -> Iterator.of(1, null, 3), it -> it.drop(4));
 
-    testMaterializer(List.of(2, 3), c -> new DropIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 1, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(2, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new DropIteratorFutureMaterializer<>(m, 1, c, new AtomicReference<>()));
 
     testCancel(it -> it.drop(1));
   }
@@ -310,9 +320,9 @@ public class FutureIteratorTests {
     test(List.of(), () -> Iterator.of(1, null, 3), it -> it.dropRight(3));
     test(List.of(), () -> Iterator.of(1, null, 3), it -> it.dropRight(4));
 
-    testMaterializer(List.of(1, 2), c -> new DropRightIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 1, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new DropRightIteratorFutureMaterializer<>(m, 1, c, new AtomicReference<>()));
 
     testCancel(it -> it.dropRight(1));
   }
@@ -336,9 +346,9 @@ public class FutureIteratorTests {
         () -> Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
             .dropRightWhile(e -> e > 0).size());
 
-    testMaterializer(List.of(1), c -> new DropRightWhileIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 1, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(1), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new DropRightWhileIteratorFutureMaterializer<>(m, (i, e) -> e > 1, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.dropRightWhile(e -> false));
   }
@@ -360,9 +370,9 @@ public class FutureIteratorTests {
         () -> Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
             .dropWhile(e -> e > 0).size());
 
-    testMaterializer(List.of(3), c -> new DropWhileIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e < 3, c,
-        new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prepend(e)));
+    testMaterializer(List.of(3), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new DropWhileIteratorFutureMaterializer<>(m, (i, e) -> e < 3, c,
+            new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prepend(e)));
 
     testCancel(it -> it.dropWhile(e -> false));
   }
@@ -380,9 +390,10 @@ public class FutureIteratorTests {
     var itr = Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e)).each(i -> i > 0);
     assertThrows(NullPointerException.class, itr::first);
 
-    testMaterializer(List.of(false), c -> new EachIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e < 3, false, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(false),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new EachIteratorFutureMaterializer<>(m, (i, e) -> e < 3, false, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.each(e -> true));
   }
@@ -400,9 +411,10 @@ public class FutureIteratorTests {
     test(List.of(true), () -> Iterator.of(1, null, 3), it -> it.endsWith(List.of(1, null, 3)));
     test(List.of(false), () -> Iterator.of(1, null, 3), it -> it.endsWith(List.of(null, null, 3)));
 
-    testMaterializer(List.of(false), c -> new EndsWithIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
-        new ListToListFutureMaterializer<>(List.of(2, 2), c), c, new AtomicReference<>()));
+    testMaterializer(List.of(false),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new EndsWithIteratorFutureMaterializer<>(m,
+            new ListToListFutureMaterializer<>(List.of(2, 2), c), c, new AtomicReference<>()));
 
     testCancel(it -> it.endsWith(List.of(null)));
   }
@@ -420,9 +432,10 @@ public class FutureIteratorTests {
     var itr = Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e)).exists(i -> i > 1);
     assertThrows(NullPointerException.class, itr::first);
 
-    testMaterializer(List.of(true), c -> new ExistsIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 2, false, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(true),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new ExistsIteratorFutureMaterializer<>(m, (i, e) -> e > 2, false, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.exists(e -> false));
   }
@@ -446,9 +459,10 @@ public class FutureIteratorTests {
         () -> Iterator.of(1, 2, null, 4).toFuture(context).flatMap(e -> List.of(e))
             .filter(i -> i > 4).size());
 
-    testMaterializer(List.of(1, 3), c -> new FilterIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e % 2 == 1, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(1, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FilterIteratorFutureMaterializer<>(m, (i, e) -> e % 2 == 1, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.filter(e -> true));
   }
@@ -463,9 +477,9 @@ public class FutureIteratorTests {
     test(List.of(1), () -> Iterator.of(1, 2, null, 4), it -> it.findAny(i -> i < 4));
     test(List.of(), Iterator::of, it -> it.findAny(Objects::isNull));
 
-    testMaterializer(List.of(3), c -> new FindFirstIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 2, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(3), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FindFirstIteratorFutureMaterializer<>(m, (i, e) -> e > 2, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.findAny(e -> false));
   }
@@ -477,9 +491,9 @@ public class FutureIteratorTests {
     test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.findIndexOf(3));
     test(List.of(), Iterator::of, it -> it.findIndexOf(null));
 
-    testMaterializer(List.of(1), c -> new FindIndexIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 1, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(1), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FindIndexIteratorFutureMaterializer<>(m, (i, e) -> e > 1, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.findIndexOf(null));
   }
@@ -499,9 +513,9 @@ public class FutureIteratorTests {
     test(List.of(), Iterator::of, it -> it.findIndexOfSlice(List.of(null)));
     test(List.of(0), Iterator::of, it -> it.findIndexOfSlice(List.of()));
 
-    testMaterializer(List.of(1), c -> new FindIndexOfSliceIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(2, 2, 3), c),
-        new ListToListFutureMaterializer<>(List.of(2, 3), c), c, new AtomicReference<>()));
+    testMaterializer(List.of(1), c -> new ListToIteratorFutureMaterializer<>(List.of(2, 2, 3), c),
+        (c, m) -> new FindIndexOfSliceIteratorFutureMaterializer<>(m,
+            new ListToListFutureMaterializer<>(List.of(2, 3), c), c, new AtomicReference<>()));
 
     testCancel(it -> it.findIndexOfSlice(List.of(null)));
   }
@@ -523,9 +537,9 @@ public class FutureIteratorTests {
         () -> Iterator.of(1, 2, null, 4).toFuture(context).flatMap(e -> List.of(e))
             .findIndexWhere(i -> i > 3).first());
 
-    testMaterializer(List.of(), c -> new FindIndexIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 3, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FindIndexIteratorFutureMaterializer<>(m, (i, e) -> e > 3, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.findIndexWhere(e -> false));
   }
@@ -549,9 +563,9 @@ public class FutureIteratorTests {
     assertThrows(NullPointerException.class, () -> itr.get().findLast(i -> i < 5).size());
     assertThrows(NullPointerException.class, () -> itr.get().findLast(i -> i < 5).first());
 
-    testMaterializer(List.of(2), c -> new FindLastIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e < 3, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(2), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FindLastIteratorFutureMaterializer<>(m, (i, e) -> e < 3, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.findLast(e -> true));
   }
@@ -564,9 +578,9 @@ public class FutureIteratorTests {
     test(List.of(), Iterator::of, it -> it.findLastIndexOf(null));
     test(List.of(), Iterator::of, it -> it.findLastIndexOf(4));
 
-    testMaterializer(List.of(2), c -> new FindLastIndexIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e > 1, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(2), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FindLastIndexIteratorFutureMaterializer<>(m, (i, e) -> e > 1, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.findLastIndexOf(null));
   }
@@ -590,9 +604,9 @@ public class FutureIteratorTests {
     test(List.of(), Iterator::of, it -> it.findLastIndexOfSlice(List.of(null)));
     test(List.of(0), Iterator::of, it -> it.findLastIndexOfSlice(List.of()));
 
-    testMaterializer(List.of(1), c -> new FindLastIndexOfSliceIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(2, 2, 3), c),
-        new ListToListFutureMaterializer<>(List.of(2, 3), c), c, new AtomicReference<>()));
+    testMaterializer(List.of(1), c -> new ListToIteratorFutureMaterializer<>(List.of(2, 2, 3), c),
+        (c, m) -> new FindLastIndexOfSliceIteratorFutureMaterializer<>(m,
+            new ListToListFutureMaterializer<>(List.of(2, 3), c), c, new AtomicReference<>()));
 
     testCancel(it -> it.findLastIndexOfSlice(List.of(null)));
   }
@@ -620,9 +634,9 @@ public class FutureIteratorTests {
     assertThrows(NullPointerException.class,
         () -> itr.get().findLastIndexWhere(i -> i < 3).first());
 
-    testMaterializer(List.of(1), c -> new FindLastIndexIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e < 3, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(1), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FindLastIndexIteratorFutureMaterializer<>(m, (i, e) -> e < 3, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.findLastIndexWhere(e -> true));
   }
@@ -637,10 +651,11 @@ public class FutureIteratorTests {
     test(List.of(), () -> Iterator.of(1, 2), it -> it.flatMap(i -> List.of()));
     test(List.of(null, null), () -> Iterator.of(1, 2), it -> it.flatMap(i -> List.of(null)));
 
-    testMaterializer(List.of(0, 1, 1, 2), c -> new FlatMapIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
-        (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(0, 1, 1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
+        (c, m) -> new FlatMapIteratorFutureMaterializer<>(m,
+            (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.flatMap(e -> List.of(e)));
   }
@@ -661,10 +676,11 @@ public class FutureIteratorTests {
     test(List.of(1, 2), () -> Iterator.of(1, 2), it -> it.flatMapAfter(2, i -> List.of()));
     test(List.of(), Iterator::of, it -> it.flatMapAfter(0, i -> List.of(i, i)));
 
-    testMaterializer(List.of(1, 1, 2), c -> new FlatMapAfterIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), 1,
-        (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(1, 1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
+        (c, m) -> new FlatMapAfterIteratorFutureMaterializer<>(m, 1,
+            (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.flatMapAfter(0, e -> List.of(e)));
   }
@@ -706,10 +722,11 @@ public class FutureIteratorTests {
     assertThrows(NullPointerException.class,
         () -> itr.get().flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).drop(2).first());
 
-    testMaterializer(List.of(1, 1, 2), c -> new FlatMapFirstWhereIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), (i, e) -> e > 1,
-        (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
-        new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prependAll(e)));
+    testMaterializer(List.of(1, 1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
+        (c, m) -> new FlatMapFirstWhereIteratorFutureMaterializer<>(m, (i, e) -> e > 1,
+            (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
+            new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prependAll(e)));
 
     testCancel(it -> it.flatMapFirstWhere(e -> true, List::of));
   }
@@ -765,10 +782,11 @@ public class FutureIteratorTests {
     assertThrows(NullPointerException.class,
         () -> itr.get().flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).drop(2).first());
 
-    testMaterializer(List.of(1, 1, 2), c -> new FlatMapLastWhereIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), (i, e) -> e > 0,
-        (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
-        new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prependAll(e)));
+    testMaterializer(List.of(1, 1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
+        (c, m) -> new FlatMapLastWhereIteratorFutureMaterializer<>(m, (i, e) -> e > 0,
+            (i, e) -> new ListToIteratorFutureMaterializer<>(List.of(i, e), c), c,
+            new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prependAll(e)));
 
     testCancel(it -> it.flatMapLastWhere(e -> true, List::of));
   }
@@ -826,9 +844,9 @@ public class FutureIteratorTests {
     test(List.of(1), Iterator::<Integer>of, it -> it.foldLeft(1, Integer::sum));
     test(List.of(List.of()), Iterator::of, it -> it.foldLeft(List.of(), List::append));
 
-    testMaterializer(List.of(6), c -> new FoldLeftIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 0, Integer::sum, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(6), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FoldLeftIteratorFutureMaterializer<>(m, 0, Integer::sum, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.foldLeft(null, (a, e) -> e));
   }
@@ -853,9 +871,9 @@ public class FutureIteratorTests {
     test(List.of(List.of()), Iterator::of,
         it -> it.foldLeftWhile(List.of(), List::isEmpty, List::append));
 
-    testMaterializer(List.of(3), c -> new FoldLeftWhileIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 0, s -> s < 2, Integer::sum, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(3), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FoldLeftWhileIteratorFutureMaterializer<>(m, 0, s -> s < 2, Integer::sum, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.foldLeftWhile(null, a -> true, (a, e) -> e));
   }
@@ -872,9 +890,9 @@ public class FutureIteratorTests {
     test(List.of(1), Iterator::<Integer>of, it -> it.foldRight(1, Integer::sum));
     test(List.of(List.of()), Iterator::of, it -> it.foldRight(List.of(), (i, l) -> l.append(i)));
 
-    testMaterializer(List.of(6), c -> new FoldRightIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 0, Integer::sum, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(6), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FoldRightIteratorFutureMaterializer<>(m, 0, Integer::sum, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.foldRight(null, (e, a) -> e));
   }
@@ -899,9 +917,9 @@ public class FutureIteratorTests {
     test(List.of(List.of()), Iterator::of,
         it -> it.foldRightWhile(List.of(), List::isEmpty, (i, l) -> l.append(i)));
 
-    testMaterializer(List.of(5), c -> new FoldRightWhileIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 0, s -> s < 4, Integer::sum, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(5), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FoldRightWhileIteratorFutureMaterializer<>(m, 0, s -> s < 4, Integer::sum, c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.foldRightWhile(null, a -> true, (e, a) -> e));
   }
@@ -929,9 +947,11 @@ public class FutureIteratorTests {
     test(List.of(false), Iterator::of, it -> it.includesAll(List.of(null, 1)));
     test(List.of(true), Iterator::of, it -> it.includesAll(List.of()));
 
-    testMaterializer(List.of(false), c -> new IncludesAllIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
-        new ListToIteratorFutureMaterializer<>(List.of(2, 3, 4), c), c, new AtomicReference<>()));
+    testMaterializer(List.of(false),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new IncludesAllIteratorFutureMaterializer<>(m,
+            new ListToIteratorFutureMaterializer<>(List.of(2, 3, 4), c), c,
+            new AtomicReference<>()));
 
     testCancel(it -> it.includesAll(List.of(null)));
   }
@@ -950,9 +970,10 @@ public class FutureIteratorTests {
     test(List.of(false), Iterator::of, it -> it.includesSlice(List.of(null, 1)));
     test(List.of(true), Iterator::of, it -> it.includesSlice(List.of()));
 
-    testMaterializer(List.of(true), c -> new IncludesSliceIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 1, 1, 2, 3), c),
-        new ListToListFutureMaterializer<>(List.of(1, 1, 2), c), c, new AtomicReference<>()));
+    testMaterializer(List.of(true),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 1, 1, 2, 3), c),
+        (c, m) -> new IncludesSliceIteratorFutureMaterializer<>(m,
+            new ListToListFutureMaterializer<>(List.of(1, 1, 2), c), c, new AtomicReference<>()));
 
     testCancel(it -> it.includesSlice(List.of(null)));
   }
@@ -967,9 +988,10 @@ public class FutureIteratorTests {
     test(List.of(3, 1, null), () -> Iterator.of(1, null), it -> it.insert(3));
     test(List.of(2, null), () -> Iterator.of(1, null), it -> it.drop(1).insert(2));
 
-    testMaterializer(List.of(1, 1, 2), c -> new InsertIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), 1, c, new AtomicReference<>(),
-        (l, e) -> lazy.List.wrap(l).prepend(e)));
+    testMaterializer(List.of(1, 1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
+        (c, m) -> new InsertIteratorFutureMaterializer<>(m, 1, c, new AtomicReference<>(),
+            (l, e) -> lazy.List.wrap(l).prepend(e)));
 
     testCancel(it -> it.insert(null));
   }
@@ -988,9 +1010,10 @@ public class FutureIteratorTests {
     test(List.of(null), () -> Iterator.wrap(() -> List.of().iterator()),
         it -> it.insertAfter(0, null));
 
-    testMaterializer(List.of(1, 2, 3), c -> new InsertAfterIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 3), c), 1, 2, c, new AtomicReference<>(),
-        (l, n, e) -> lazy.List.wrap(l).insertAfter(n, e)));
+    testMaterializer(List.of(1, 2, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 3), c),
+        (c, m) -> new InsertAfterIteratorFutureMaterializer<>(m, 1, 2, c, new AtomicReference<>(),
+            (l, n, e) -> lazy.List.wrap(l).insertAfter(n, e)));
 
     testCancel(it -> it.insertAfter(1, null));
   }
@@ -1012,10 +1035,11 @@ public class FutureIteratorTests {
     test(List.of(2, 3, null), () -> Iterator.of(1, null),
         it -> it.drop(1).insertAll(Iterator.of(2, 3)));
 
-    testMaterializer(List.of(1, 1, 2), c -> new InsertAllIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
-        new ListToIteratorFutureMaterializer<>(List.of(1), c), c, new AtomicReference<>(),
-        (l, e) -> lazy.List.wrap(l).prependAll(e)));
+    testMaterializer(List.of(1, 1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
+        (c, m) -> new InsertAllIteratorFutureMaterializer<>(m,
+            new ListToIteratorFutureMaterializer<>(List.of(1), c), c, new AtomicReference<>(),
+            (l, e) -> lazy.List.wrap(l).prependAll(e)));
 
     testCancel(it -> it.insertAll(List.of(null)));
   }
@@ -1045,10 +1069,10 @@ public class FutureIteratorTests {
     test(List.of(null, 5), () -> Iterator.wrap(() -> List.of().iterator()),
         it -> it.insertAllAfter(0, List.of(null, 5)));
 
-    testMaterializer(List.of(1, 1, 2), c -> new InsertAllAfterIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), 1,
-        new ListToIteratorFutureMaterializer<>(List.of(1), c), c, new AtomicReference<>(),
-        (l, n, e) -> lazy.List.wrap(l).insertAllAfter(n, e)));
+    testMaterializer(List.of(1, 1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2), c),
+        (c, m) -> new InsertAllAfterIteratorFutureMaterializer<>(m, 1,
+            new ListToIteratorFutureMaterializer<>(List.of(1), c), c, new AtomicReference<>()));
 
     testCancel(it -> it.insertAllAfter(0, List.of(null)));
   }
@@ -1071,9 +1095,10 @@ public class FutureIteratorTests {
     test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.intersect(Iterator.of()));
     test(List.of(), Iterator::of, it -> it.intersect(Iterator.of(1, 2, null, 4)));
 
-    testMaterializer(List.of(1, 2), c -> new IntersectIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 1, 2), c),
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), c, new AtomicReference<>()));
+    testMaterializer(List.of(1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 1, 2), c),
+        (c, m) -> new IntersectIteratorFutureMaterializer<>(m,
+            new ListToIteratorFutureMaterializer<>(List.of(1, 2), c), c, new AtomicReference<>()));
 
     testCancel(it -> it.intersect(List.of(null)));
   }
@@ -1096,9 +1121,9 @@ public class FutureIteratorTests {
     assertThrows(NullPointerException.class,
         () -> itr.get().append(null).map(x -> x + 1).drop(3).first());
 
-    testMaterializer(List.of(0, 1, 2), c -> new MapIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> i, c,
-        new AtomicReference<>()));
+    testMaterializer(List.of(0, 1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new MapIteratorFutureMaterializer<>(m, (i, e) -> i, c, new AtomicReference<>()));
 
     testCancel(it -> it.map(e -> e));
   }
@@ -1133,9 +1158,10 @@ public class FutureIteratorTests {
     assertThrows(NullPointerException.class,
         () -> itr.get().append(null).mapAfter(3, x -> x + 1).drop(3).first());
 
-    testMaterializer(List.of(1, 1, 3), c -> new MapAfterIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), 1, (i, e) -> i, c,
-        new AtomicReference<>(), (l, n, e) -> lazy.List.wrap(l).replaceAfter(n, e)));
+    testMaterializer(List.of(1, 1, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new MapAfterIteratorFutureMaterializer<>(m, 1, (i, e) -> i, c,
+            new AtomicReference<>(), (l, n, e) -> lazy.List.wrap(l).replaceAfter(n, e)));
 
     testCancel(it -> it.mapAfter(0, e -> e));
   }
@@ -1171,9 +1197,10 @@ public class FutureIteratorTests {
     assertThrows(NullPointerException.class,
         () -> itr.get().mapFirstWhere(i -> i > 2, i -> 1).drop(2).first());
 
-    testMaterializer(List.of(1, 1, 3), c -> new MapFirstWhereIteratorFutureMaterializer<>(
-        new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), (i, e) -> e == 2, (i, e) -> i,
-        c, new AtomicReference<>(), (l, n, e) -> lazy.List.wrap(l).replaceAfter(n, e)));
+    testMaterializer(List.of(1, 1, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new MapFirstWhereIteratorFutureMaterializer<>(m, (i, e) -> e == 2, (i, e) -> i, c,
+            new AtomicReference<>(), (l, n, e) -> lazy.List.wrap(l).replaceAfter(n, e)));
 
     testCancel(it -> it.mapFirstWhere(e -> false, e -> e));
   }
@@ -1266,6 +1293,16 @@ public class FutureIteratorTests {
         assertFalse(((future.List<?>) f).isSucceeded());
       }
     }
+  }
+
+  private <E, F> void testMaterializer(@NotNull final java.util.List<F> expected,
+      @NotNull final Function<ExecutorContext, ? extends IteratorFutureMaterializer<E>> sourceFactory,
+      @NotNull final BinaryFunction<ExecutorContext, IteratorFutureMaterializer<E>, ? extends IteratorFutureMaterializer<F>> materializerFactory)
+      throws Exception {
+    testMaterializer(expected, c -> materializerFactory.apply(c, sourceFactory.apply(c)));
+    testMaterializer(expected, c -> materializerFactory.apply(c,
+        new FlatMapIteratorFutureMaterializer<>(sourceFactory.apply(c),
+            (i, e) -> new ElementToIteratorFutureMaterializer<>(e), c, new AtomicReference<>())));
   }
 
   private <E> void testMaterializer(@NotNull final java.util.List<E> expected,
@@ -1801,5 +1838,58 @@ public class FutureIteratorTests {
     }));
     assertNull(atError.get());
     assertFalse(atHasNext.get());
+
+    /* materializeNextWhile (concurrent) */
+    var testExecutor = new TestExecutor();
+    var testContext = ExecutorContext.of(testExecutor, 1);
+    var elementMap = new TreeMap<Integer, E>();
+    var atCompleted = new AtomicInteger();
+    atMaterializer.set(factory.apply(testContext));
+    for (int i = 0; i < 3; i++) {
+      runInContext(testContext,
+          () -> atMaterializer.get().materializeNextWhile(new IndexedFuturePredicate<>() {
+            @Override
+            public void complete(final int size) {
+              atCompleted.incrementAndGet();
+            }
+
+            @Override
+            public void error(@NotNull final Exception error) {
+              atError.set(error);
+            }
+
+            @Override
+            public boolean test(final int size, final int index, final E element) {
+              elementMap.put(index, element);
+              return true;
+            }
+          }));
+    }
+    testExecutor.run(Integer.MAX_VALUE);
+    assertEquals(IntStream.range(0, expected.size()).boxed().collect(Collectors.toList()),
+        List.wrap(elementMap.keySet()));
+    assertEquals(expected, List.wrap(elementMap.values()));
+    assertEquals(3, atCompleted.get());
+    assertNull(atError.get());
+  }
+
+  private static class TestExecutor implements Executor {
+
+    private final DequeueList<Runnable> commands = new DequeueList<>();
+
+    @SuppressWarnings("UnusedReturnValue")
+    public int run(final int maxCommands) {
+      int count = 0;
+      while (count < maxCommands && !commands.isEmpty()) {
+        commands.removeFirst().run();
+        ++count;
+      }
+      return count;
+    }
+
+    @Override
+    public void execute(@NotNull final Runnable command) {
+      commands.add(command);
+    }
   }
 }

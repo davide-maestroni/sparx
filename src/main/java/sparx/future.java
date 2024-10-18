@@ -2178,7 +2178,7 @@ class future extends Sparx {
       }
       return new Iterator<E>(context, cancelException,
           new InsertAllAfterIteratorFutureMaterializer<E>(materializer, numElements,
-              elementsMaterializer, context, cancelException, List.<E>insertAllAfterFunction()));
+              elementsMaterializer, context, cancelException));
     }
 
     @Override
