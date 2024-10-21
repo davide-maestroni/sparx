@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +49,7 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(
         new ImmaterialState(wrapped, predicate, mapper, context, cancelException, prependFunction));
   }
@@ -74,6 +73,7 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
     private final BinaryFunction<List<E>, List<E>, List<E>> prependFunction;
     private final IteratorFutureMaterializer<E> wrapped;
 
+    private IteratorFutureMaterializer<E> elementsMaterializer;
     private int index;
     private int wrappedIndex;
 
@@ -138,41 +138,12 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
           @Override
           public void accept(final DequeueList<E> nextElements) {
             if (nextElements.isEmpty()) {
-              final IteratorFutureMaterializer<E> state = getState();
-              if (state == ImmaterialState.this) {
-                if (elements.isEmpty()) {
-                  setDone(EmptyIteratorFutureMaterializer.<E>instance());
-                  consumeElements(Collections.<E>emptyList());
-                } else {
-                  setDone(new DequeueToIteratorFutureMaterializer<E>(elements, context, index));
-                  consumeElements(elements);
-                }
-              } else if (elements.isEmpty()) {
-                state.materializeElements(consumer);
+              if (elements.isEmpty()) {
+                setDone(EmptyIteratorFutureMaterializer.<E>instance());
+                consumeElements(Collections.<E>emptyList());
               } else {
-                state.materializeNextWhile(new IndexedFuturePredicate<E>() {
-                  @Override
-                  public void complete(final int size) {
-                    if (elements.isEmpty()) {
-                      setDone(EmptyIteratorFutureMaterializer.<E>instance());
-                      consumeElements(Collections.<E>emptyList());
-                    } else {
-                      setDone(new DequeueToIteratorFutureMaterializer<E>(elements, context, index));
-                      consumeElements(elements);
-                    }
-                  }
-
-                  @Override
-                  public void error(@NotNull final Exception error) {
-                    setError(error);
-                  }
-
-                  @Override
-                  public boolean test(final int size, final int index, final E element) {
-                    elements.add(element);
-                    return true;
-                  }
-                });
+                setDone(new DequeueToIteratorFutureMaterializer<E>(elements, context, index));
+                consumeElements(elements);
               }
             } else {
               elements.addAll(nextElements);
@@ -195,12 +166,8 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
         @Override
         public void accept(final DequeueList<E> nextElements) throws Exception {
           if (nextElements.isEmpty()) {
-            final IteratorFutureMaterializer<E> state = getState();
-            if (state == ImmaterialState.this) {
-              consumer.accept(false);
-            } else {
-              state.materializeHasNext(consumer);
-            }
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+            consumer.accept(false);
           } else {
             consumer.accept(true);
           }
@@ -217,13 +184,8 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
     public void materializeIterator(@NotNull final FutureConsumer<Iterator<E>> consumer) {
       materializeElements(new FutureConsumer<List<E>>() {
         @Override
-        public void accept(final List<E> elements) throws Exception {
-          final IteratorFutureMaterializer<E> state = getState();
-          if (state == ImmaterialState.this) {
-            consumer.accept(Collections.<E>emptyList().iterator());
-          } else {
-            state.materializeIterator(consumer);
-          }
+        public void accept(final List<E> elements) {
+          getState().materializeIterator(consumer);
         }
 
         @Override
@@ -239,13 +201,8 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
         @Override
         public void accept(final DequeueList<E> nextElements) throws Exception {
           if (nextElements.isEmpty()) {
-            final IteratorFutureMaterializer<E> state = getState();
-            if (state == ImmaterialState.this) {
-              setDone(EmptyIteratorFutureMaterializer.<E>instance());
-              consumer.complete(0);
-            } else {
-              state.materializeNext(consumer);
-            }
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+            consumer.complete(0);
           } else {
             consumer.accept(-1, ImmaterialState.this.index++, nextElements.removeFirst());
           }
@@ -264,12 +221,8 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
         @Override
         public void accept(final DequeueList<E> nextElements) throws Exception {
           if (nextElements.isEmpty()) {
-            final IteratorFutureMaterializer<E> state = getState();
-            if (state == ImmaterialState.this) {
-              predicate.complete(0);
-            } else {
-              state.materializeNextWhile(predicate);
-            }
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+            predicate.complete(0);
           } else if (predicate.test(-1, ImmaterialState.this.index++, nextElements.removeFirst())) {
             materializeNext(this);
           }
@@ -291,25 +244,7 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
         @Override
         public void accept(final DequeueList<E> nextElements) throws Exception {
           if (nextElements.isEmpty()) {
-            final int wrappedSkipped = skipped;
-            final IteratorFutureMaterializer<E> state = getState();
-            if (state == ImmaterialState.this) {
-              consumer.accept(skipped);
-            } else {
-              state.materializeSkip(count - skipped, new FutureConsumer<Integer>() {
-                @Override
-                public void accept(final Integer skipped) throws Exception {
-                  index += skipped;
-                  consumer.accept(
-                      (int) Math.min(Integer.MAX_VALUE, (long) wrappedSkipped + skipped));
-                }
-
-                @Override
-                public void error(@NotNull final Exception error) throws Exception {
-                  consumer.error(error);
-                }
-              });
-            }
+            consumer.accept(skipped);
           } else {
             while (skipped < count && !nextElements.isEmpty()) {
               nextElements.removeFirst();
@@ -392,6 +327,37 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
           safeConsume(elementConsumers.getFirst(), nextElements, LOGGER);
           elementConsumers.removeFirst();
         }
+      } else if (elementsMaterializer != null) {
+        elementsMaterializer.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+          @Override
+          public void cancellableComplete(final int size) {
+            for (final FutureConsumer<DequeueList<E>> consumer : elementConsumers) {
+              safeConsume(consumer, nextElements, LOGGER);
+            }
+            elementConsumers.clear();
+          }
+
+          @Override
+          public boolean cancellableTest(final int size, final int index, final E element) {
+            nextElements.add(element);
+            while (!elementConsumers.isEmpty()) {
+              if (nextElements.isEmpty()) {
+                return true;
+              }
+              safeConsume(elementConsumers.getFirst(), nextElements, LOGGER);
+              elementConsumers.removeFirst();
+            }
+            return false;
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) {
+            for (final FutureConsumer<DequeueList<E>> consumer : elementConsumers) {
+              safeConsumeError(consumer, error, LOGGER);
+            }
+            elementConsumers.clear();
+          }
+        });
       } else {
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
@@ -407,15 +373,12 @@ public class FlatMapFirstWhereIteratorFutureMaterializer<E> extends
               throws Exception {
             final int wrappedIndex = ImmaterialState.this.wrappedIndex++;
             if (predicate.test(wrappedIndex, element)) {
-              final IteratorFutureMaterializer<E> elementsMaterializer = mapper.apply(wrappedIndex,
+              final IteratorFutureMaterializer<E> materializer = mapper.apply(wrappedIndex,
                   element);
-              setState(
-                  new InsertAllIteratorFutureMaterializer<E>(wrapped, elementsMaterializer, status,
-                      context, cancelException, prependFunction, ImmaterialState.this.index));
-              while (!elementConsumers.isEmpty()) {
-                safeConsume(elementConsumers.getFirst(), nextElements, LOGGER);
-                elementConsumers.removeFirst();
-              }
+              elementsMaterializer = new InsertAllIteratorFutureMaterializer<E>(wrapped,
+                  materializer, context, cancelException, prependFunction,
+                  ImmaterialState.this.index);
+              materializeUntilConsumed();
             } else {
               nextElements.add(element);
               while (!elementConsumers.isEmpty()) {

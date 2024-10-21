@@ -47,12 +47,20 @@ public class InsertAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction) {
+    this(wrapped, elementsMaterializer, context, cancelException, prependFunction, 0);
+  }
+
+  InsertAllIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
+      @NotNull final IteratorFutureMaterializer<E> elementsMaterializer,
+      @NotNull final ExecutionContext context,
+      @NotNull final AtomicReference<CancellationException> cancelException,
+      @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction, final int offset) {
     super(context);
     knownSize = safeSize(wrapped.knownSize(), elementsMaterializer.knownSize());
     isMaterializedAtOnce =
         wrapped.isMaterializedAtOnce() && elementsMaterializer.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException,
-        prependFunction));
+        prependFunction, offset));
   }
 
   private static int safeSize(final int wrappedSize, final int elementsSize) {
@@ -91,12 +99,14 @@ public class InsertAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
         @NotNull final IteratorFutureMaterializer<E> elementsMaterializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction) {
+        @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction,
+        final int offset) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
       this.context = context;
       this.cancelException = cancelException;
       this.prependFunction = prependFunction;
+      index = offset;
     }
 
     @Override
