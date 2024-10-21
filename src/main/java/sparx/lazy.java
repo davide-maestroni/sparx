@@ -2522,7 +2522,7 @@ public class lazy extends Sparx {
         }
         return new CollectionToListMaterializer<E>(collection);
       }
-      return new IteratorToListMaterializer<E>((Iterator<E>) elements.iterator());
+      return new IteratorToListMaterializer<E>((java.util.Iterator<E>) elements.iterator());
     }
 
     private static @NotNull <E, F> IndexedFunction<E, ListMaterializer<F>> getElementToMaterializer(
