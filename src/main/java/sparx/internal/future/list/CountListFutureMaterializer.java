@@ -21,7 +21,6 @@ import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +38,7 @@ public class CountListFutureMaterializer<E> extends AbstractListFutureMaterializ
   public CountListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, cancelException));
   }
 

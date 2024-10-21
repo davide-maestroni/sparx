@@ -16,12 +16,10 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +40,7 @@ public class TakeWhileListFutureMaterializer<E> extends AbstractListFutureMateri
   public TakeWhileListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, predicate, context, cancelException));
   }
@@ -504,7 +502,7 @@ public class TakeWhileListFutureMaterializer<E> extends AbstractListFutureMateri
         state = setDone(EmptyListFutureMaterializer.<E>instance());
       } else {
         state = TakeWhileListFutureMaterializer.this.setState(
-            new TakeListFutureMaterializer<E>(wrapped, index, status, context, cancelException));
+            new TakeListFutureMaterializer<E>(wrapped, index, context, cancelException));
       }
       consumeState(state);
       return state;

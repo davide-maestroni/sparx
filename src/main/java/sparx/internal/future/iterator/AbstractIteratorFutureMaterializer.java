@@ -45,15 +45,14 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
   protected static final int STATUS_RUNNING = 0;
 
   final ExecutionContext context;
-  final AtomicInteger status;
+
+  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
   private CancellationException cancelException;
   private IteratorFutureMaterializer<E> state;
 
-  public AbstractIteratorFutureMaterializer(@NotNull final ExecutionContext context,
-      @NotNull final AtomicInteger status) {
+  public AbstractIteratorFutureMaterializer(@NotNull final ExecutionContext context) {
     this.context = context;
-    this.status = status;
   }
 
   @Override
@@ -472,6 +471,9 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
       wrapped.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
         @Override
         public void cancellableAccept(final Boolean hasNext) throws Exception {
+          if (!hasNext) {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+          }
           consumer.accept(hasNext);
         }
 
@@ -508,6 +510,7 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
 
         @Override
         public void cancellableComplete(final int size) throws Exception {
+          setDone(EmptyIteratorFutureMaterializer.<E>instance());
           consumer.complete(size);
         }
 
@@ -523,6 +526,7 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
         public void cancellableComplete(final int size) throws Exception {
+          setDone(EmptyIteratorFutureMaterializer.<E>instance());
           predicate.complete(size);
         }
 

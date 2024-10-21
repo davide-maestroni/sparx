@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -35,9 +34,8 @@ import sparx.util.annotation.NotNegative;
 
 abstract class ProgressiveListFutureMaterializer<E, F> extends AbstractListFutureMaterializer<F> {
 
-  ProgressiveListFutureMaterializer(@NotNull final ExecutionContext context,
-      @NotNull final AtomicInteger status) {
-    super(context, status);
+  ProgressiveListFutureMaterializer(@NotNull final ExecutionContext context) {
+    super(context);
   }
 
   @Override

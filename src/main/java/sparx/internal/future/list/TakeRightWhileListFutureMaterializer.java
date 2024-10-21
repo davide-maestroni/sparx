@@ -18,9 +18,7 @@ package sparx.internal.future.list;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
@@ -31,13 +29,10 @@ import sparx.util.function.IndexedPredicate;
 
 public class TakeRightWhileListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
-  private static final Logger LOGGER = Logger.getLogger(
-      TakeRightWhileListFutureMaterializer.class.getName());
-
   public TakeRightWhileListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, predicate, context, cancelException));
   }
 
@@ -277,7 +272,7 @@ public class TakeRightWhileListFutureMaterializer<E> extends AbstractListFutureM
               consumeState(setDone(EmptyListFutureMaterializer.<E>instance()));
             } else {
               consumeState(setState(
-                  new TakeRightListFutureMaterializer<E>(wrapped, maxElements, status, context,
+                  new TakeRightListFutureMaterializer<E>(wrapped, maxElements, context,
                       cancelException)));
             }
           }

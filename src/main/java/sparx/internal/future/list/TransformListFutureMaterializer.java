@@ -21,7 +21,6 @@ import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,7 +43,7 @@ public abstract class TransformListFutureMaterializer<E, F> extends
   public TransformListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException, final int knownSize) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     this.cancelException = cancelException;
     this.knownSize = knownSize;
     setState(new ImmaterialState(wrapped, cancelException));

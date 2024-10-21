@@ -19,7 +19,6 @@ import static sparx.internal.future.FutureConsumers.safeConsume;
 
 import java.util.Collections;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +37,7 @@ public class EachIteratorFutureMaterializer<E> extends
       @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, predicate, defaultResult, cancelException));
   }
 

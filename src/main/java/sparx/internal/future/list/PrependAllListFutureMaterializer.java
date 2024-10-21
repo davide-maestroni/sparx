@@ -21,7 +21,6 @@ import static sparx.internal.future.FutureConsumers.safeConsumeError;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -47,7 +46,7 @@ public class PrependAllListFutureMaterializer<E> extends AbstractListFutureMater
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     knownSize = safeSize(wrapped.knownSize(), elementsMaterializer.knownSize());
     isMaterializedAtOnce =
         wrapped.isMaterializedAtOnce() && elementsMaterializer.isMaterializedAtOnce();

@@ -43,15 +43,14 @@ public abstract class AbstractListFutureMaterializer<E> implements ListFutureMat
   protected static final int STATUS_RUNNING = 0;
 
   final ExecutionContext context;
-  final AtomicInteger status;
+
+  private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
 
   private CancellationException cancelException;
   private ListFutureMaterializer<E> state;
 
-  public AbstractListFutureMaterializer(@NotNull final ExecutionContext context,
-      @NotNull final AtomicInteger status) {
+  public AbstractListFutureMaterializer(@NotNull final ExecutionContext context) {
     this.context = context;
-    this.status = status;
   }
 
   @Override

@@ -18,9 +18,7 @@ package sparx.internal.future.list;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
@@ -30,9 +28,6 @@ import sparx.util.annotation.NotNegative;
 
 public class OrElseListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
-  private static final Logger LOGGER = Logger.getLogger(
-      OrElseListFutureMaterializer.class.getName());
-
   private final int knownSize;
   private final boolean isMaterializedAtOnce;
 
@@ -40,7 +35,7 @@ public class OrElseListFutureMaterializer<E> extends AbstractListFutureMateriali
       @NotNull final ListFutureMaterializer<E> elementsMaterializer,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     final int knownSize = wrapped.knownSize();
     this.knownSize = knownSize == 0 ? elementsMaterializer.knownSize() : knownSize;
     isMaterializedAtOnce = knownSize == 0 ? elementsMaterializer.isMaterializedAtOnce()

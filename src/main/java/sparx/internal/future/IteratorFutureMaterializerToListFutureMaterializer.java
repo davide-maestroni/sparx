@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +44,7 @@ public class IteratorFutureMaterializerToListFutureMaterializer<E> extends
   public IteratorFutureMaterializerToListFutureMaterializer(@NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final IteratorFutureMaterializer<E> materializer) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     knownSize = materializer.knownSize();
     setState(new ImmaterialState(materializer, context, cancelException));
   }

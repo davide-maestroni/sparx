@@ -20,7 +20,6 @@ import static sparx.internal.future.FutureConsumers.safeConsume;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +40,7 @@ public class RemoveLastWhereListFutureMaterializer<E> extends AbstractListFuture
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, Integer, List<E>> removeFunction) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, predicate, context, cancelException, removeFunction));
   }
 
@@ -297,8 +296,8 @@ public class RemoveLastWhereListFutureMaterializer<E> extends AbstractListFuture
               throws Exception {
             if (predicate.test(index, element)) {
               consumeState(setState(
-                  new RemoveAfterListFutureMaterializer<E>(wrapped, index, status, context,
-                      cancelException, removeFunction)));
+                  new RemoveAfterListFutureMaterializer<E>(wrapped, index, context, cancelException,
+                      removeFunction)));
               return false;
             }
             return true;

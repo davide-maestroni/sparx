@@ -19,7 +19,6 @@ import static sparx.internal.future.FutureConsumers.safeConsume;
 
 import java.util.Collections;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +37,7 @@ public class FoldLeftIteratorFutureMaterializer<E, F> extends
       final F identity, @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, identity, operation, cancelException));
   }
 

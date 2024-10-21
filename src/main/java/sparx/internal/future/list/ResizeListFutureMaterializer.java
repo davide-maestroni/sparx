@@ -22,7 +22,6 @@ import static sparx.internal.future.FutureConsumers.safeConsumeError;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +44,7 @@ public class ResizeListFutureMaterializer<E> extends AbstractListFutureMateriali
       @Positive final int numElements, final E padding, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> resizeFunction) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, numElements, padding, context, cancelException,
         resizeFunction));
     size = numElements;

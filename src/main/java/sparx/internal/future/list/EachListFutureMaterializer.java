@@ -21,7 +21,6 @@ import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -40,7 +39,7 @@ public class EachListFutureMaterializer<E> extends AbstractListFutureMaterialize
       @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, predicate, defaultResult, cancelException));
   }
 
@@ -235,7 +234,7 @@ public class EachListFutureMaterializer<E> extends AbstractListFutureMaterialize
       if (stateConsumers.size() == 1) {
         wrapped.materializeNextWhile(0, new CancellableIndexedFuturePredicate<E>() {
           @Override
-          public void cancellableComplete(final int size) throws Exception {
+          public void cancellableComplete(final int size) {
             setState(size != 0 || defaultResult);
           }
 

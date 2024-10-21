@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -44,14 +43,7 @@ public class TakeListFutureMaterializer<E> extends AbstractListFutureMaterialize
   public TakeListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @Positive final int maxElements, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    this(wrapped, maxElements, new AtomicInteger(STATUS_RUNNING), context, cancelException);
-  }
-
-  TakeListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
-      @Positive final int maxElements, @NotNull final AtomicInteger status,
-      @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, status);
+    super(context);
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     knownSize = Math.min(wrapped.knownSize(), maxElements);
     setState(new ImmaterialState(wrapped, maxElements, context, cancelException));

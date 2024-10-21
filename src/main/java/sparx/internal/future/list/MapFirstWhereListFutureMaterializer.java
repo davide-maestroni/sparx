@@ -16,12 +16,10 @@
 package sparx.internal.future.list;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -47,7 +45,7 @@ public class MapFirstWhereListFutureMaterializer<E> extends AbstractListFutureMa
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, E, List<E>> replaceFunction) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     knownSize = wrapped.knownSize();
     setState(
         new ImmaterialState(wrapped, predicate, mapper, context, cancelException, replaceFunction));
@@ -532,8 +530,8 @@ public class MapFirstWhereListFutureMaterializer<E> extends AbstractListFutureMa
 
     private @NotNull ListFutureMaterializer<E> setState(final int index) {
       final ListFutureMaterializer<E> state = MapFirstWhereListFutureMaterializer.this.setState(
-          new MapAfterListFutureMaterializer<E>(wrapped, index, mapper, status, context,
-              cancelException, replaceFunction));
+          new MapAfterListFutureMaterializer<E>(wrapped, index, mapper, context, cancelException,
+              replaceFunction));
       consumeState(state);
       return state;
     }

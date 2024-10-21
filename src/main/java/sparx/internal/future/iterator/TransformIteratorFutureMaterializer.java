@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,7 +45,7 @@ public abstract class TransformIteratorFutureMaterializer<E, F> extends
   public TransformIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException, final int knownSize) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     this.knownSize = knownSize;
     setState(new ImmaterialState(wrapped, cancelException));
   }

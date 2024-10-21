@@ -18,9 +18,7 @@ package sparx.internal.future.list;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
@@ -31,14 +29,11 @@ import sparx.util.function.BinaryFunction;
 
 public class ReduceLeftListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
-  private static final Logger LOGGER = Logger.getLogger(
-      ReduceLeftListFutureMaterializer.class.getName());
-
   public ReduceLeftListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, operation, cancelException));
   }
 

@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -37,9 +36,8 @@ import sparx.util.annotation.Positive;
 abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
     AbstractIteratorFutureMaterializer<F> {
 
-  ProgressiveIteratorFutureMaterializer(@NotNull final ExecutionContext context,
-      @NotNull final AtomicInteger status) {
-    super(context, status);
+  ProgressiveIteratorFutureMaterializer(@NotNull final ExecutionContext context) {
+    super(context);
   }
 
   @Override

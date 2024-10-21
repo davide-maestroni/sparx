@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
@@ -36,7 +35,7 @@ public class DropIteratorFutureMaterializer<E> extends AbstractIteratorFutureMat
   public DropIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
       @Positive final int maxElements, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     knownSize = safeSize(wrapped.knownSize(), maxElements);
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, maxElements, cancelException));

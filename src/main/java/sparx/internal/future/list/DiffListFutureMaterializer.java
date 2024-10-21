@@ -18,7 +18,6 @@ package sparx.internal.future.list;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -32,7 +31,7 @@ public class DiffListFutureMaterializer<E> extends ProgressiveListFutureMaterial
       @NotNull final ListFutureMaterializer<?> elementsMaterializer,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException));
   }
 

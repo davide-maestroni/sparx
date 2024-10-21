@@ -21,7 +21,6 @@ import static sparx.internal.future.FutureConsumers.safeConsumeError;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -44,16 +43,7 @@ public class RemoveAfterListFutureMaterializer<E> extends AbstractListFutureMate
       @Positive final int numElements, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, Integer, List<E>> removeFunction) {
-    this(wrapped, numElements, new AtomicInteger(STATUS_RUNNING), context, cancelException,
-        removeFunction);
-  }
-
-  RemoveAfterListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
-      @Positive final int numElements, @NotNull final AtomicInteger status,
-      @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final BinaryFunction<List<E>, Integer, List<E>> removeFunction) {
-    super(context, status);
+    super(context);
     knownSize = safeSize(numElements, wrapped.knownSize());
     setState(new ImmaterialState(wrapped, numElements, context, cancelException, removeFunction));
   }

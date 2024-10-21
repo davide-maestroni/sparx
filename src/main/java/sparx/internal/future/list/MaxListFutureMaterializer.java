@@ -19,9 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
@@ -31,12 +29,10 @@ import sparx.util.annotation.NotNegative;
 
 public class MaxListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
-  private static final Logger LOGGER = Logger.getLogger(MaxListFutureMaterializer.class.getName());
-
   public MaxListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final Comparator<? super E> comparator, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, comparator, cancelException));
   }
 

@@ -20,7 +20,6 @@ import static sparx.internal.future.FutureConsumers.safeConsume;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +41,7 @@ public class FlatMapLastWhereListFutureMaterializer<E> extends AbstractListFutur
       @NotNull final IndexedFunction<? super E, ? extends ListFutureMaterializer<E>> mapper,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, predicate, mapper, context, cancelException));
   }
 
@@ -296,7 +295,7 @@ public class FlatMapLastWhereListFutureMaterializer<E> extends AbstractListFutur
             throws Exception {
           if (predicate.test(index, element)) {
             consumeState(setState(
-                new FlatMapAfterListFutureMaterializer<E>(wrapped, index, mapper, status, context,
+                new FlatMapAfterListFutureMaterializer<E>(wrapped, index, mapper, context,
                     cancelException)));
           } else if (index > 0) {
             return true;

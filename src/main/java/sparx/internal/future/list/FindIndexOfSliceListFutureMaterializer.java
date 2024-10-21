@@ -18,9 +18,7 @@ package sparx.internal.future.list;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.concurrent.ExecutionContext.Task;
@@ -32,14 +30,11 @@ import sparx.util.annotation.NotNegative;
 public class FindIndexOfSliceListFutureMaterializer<E> extends
     AbstractListFutureMaterializer<Integer> {
 
-  private static final Logger LOGGER = Logger.getLogger(
-      FindIndexOfSliceListFutureMaterializer.class.getName());
-
   public FindIndexOfSliceListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final ListFutureMaterializer<Object> elementsMaterializer,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException));
   }
 

@@ -22,7 +22,6 @@ import static sparx.internal.future.FutureConsumers.safeConsumeError;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +44,7 @@ public class ReverseListFutureMaterializer<E> extends AbstractListFutureMaterial
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final Function<List<E>, List<E>> reverseFunction) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     final int knownSize = this.knownSize = wrapped.knownSize();
     if (knownSize == 0) {
       try {

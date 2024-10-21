@@ -22,7 +22,6 @@ import static sparx.internal.future.FutureConsumers.safeConsumeError;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -49,17 +48,7 @@ public class InsertAllAfterListFutureMaterializer<E> extends AbstractListFutureM
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final TernaryFunction<List<E>, Integer, List<E>, List<E>> insertAllFunction) {
-    this(wrapped, numElements, elementsMaterializer, new AtomicInteger(STATUS_RUNNING), context,
-        cancelException, insertAllFunction);
-  }
-
-  InsertAllAfterListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
-      @Positive final int numElements,
-      @NotNull final ListFutureMaterializer<E> elementsMaterializer,
-      @NotNull final AtomicInteger status, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final TernaryFunction<List<E>, Integer, List<E>, List<E>> insertAllFunction) {
-    super(context, status);
+    super(context);
     knownSize = safeSize(numElements, wrapped.knownSize(), elementsMaterializer.knownSize());
     setState(
         new ImmaterialState(wrapped, numElements, elementsMaterializer, context, cancelException,

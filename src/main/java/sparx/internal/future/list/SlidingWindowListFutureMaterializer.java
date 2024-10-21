@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +47,7 @@ public class SlidingWindowListFutureMaterializer<E, L extends List<E>> extends
       @Positive final int maxSize, @Positive final int step,
       @NotNull final Splitter<E, ? extends L> splitter, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     knownSize = safeSize(wrapped.knownSize(), step);
     setState(new ImmaterialState(wrapped, maxSize, step, splitter, context, cancelException));
   }

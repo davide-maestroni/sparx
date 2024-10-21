@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +45,7 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
       @NotNull final IndexedFunction<? super E, ? extends F> mapper,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     knownSize = wrapped.knownSize();
     setState(new ImmaterialState(wrapped, mapper, context, cancelException));
   }

@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -46,15 +45,7 @@ public class FlatMapAfterListFutureMaterializer<E> extends AbstractListFutureMat
       @NotNull final IndexedFunction<? super E, ? extends ListFutureMaterializer<E>> mapper,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    this(wrapped, numElements, mapper, new AtomicInteger(STATUS_RUNNING), context, cancelException);
-  }
-
-  FlatMapAfterListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
-      @NotNegative final int numElements,
-      @NotNull final IndexedFunction<? super E, ? extends ListFutureMaterializer<E>> mapper,
-      @NotNull final AtomicInteger status, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, status);
+    super(context);
     setState(new ImmaterialState(wrapped, numElements, mapper, context, cancelException));
   }
 

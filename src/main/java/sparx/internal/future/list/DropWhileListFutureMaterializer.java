@@ -18,9 +18,7 @@ package sparx.internal.future.list;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
@@ -31,13 +29,10 @@ import sparx.util.function.IndexedPredicate;
 
 public class DropWhileListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
-  private static final Logger LOGGER = Logger.getLogger(
-      DropWhileListFutureMaterializer.class.getName());
-
   public DropWhileListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, predicate, context, cancelException));
   }
 
@@ -269,8 +264,7 @@ public class DropWhileListFutureMaterializer<E> extends AbstractListFutureMateri
                 consumeState(setState(new WrappingState(wrapped, cancelException)));
               } else {
                 consumeState(setState(
-                    new DropListFutureMaterializer<E>(wrapped, index, status, context,
-                        cancelException)));
+                    new DropListFutureMaterializer<E>(wrapped, index, context, cancelException)));
               }
             }
             return false;

@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
@@ -38,7 +37,7 @@ public class DropWhileIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, E, List<E>> prependFunction) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, predicate, context, cancelException, prependFunction));
   }
@@ -225,9 +224,9 @@ public class DropWhileIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
             if (!predicate.test(wrappedIndex++, element)) {
-              consumeState(setState(
-                  new InsertIteratorFutureMaterializer<E>(wrapped, element, status, context,
-                      cancelException, prependFunction)));
+              consumeState(setState(new WrappingState(
+                  new InsertIteratorFutureMaterializer<E>(wrapped, element, context,
+                      cancelException, prependFunction), cancelException)));
               return false;
             }
             return true;

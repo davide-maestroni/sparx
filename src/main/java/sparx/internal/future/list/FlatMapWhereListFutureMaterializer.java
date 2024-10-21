@@ -16,12 +16,10 @@
 package sparx.internal.future.list;
 
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
-import sparx.concurrent.ExecutionContext.Task;
 import sparx.internal.future.iterator.IteratorFutureMaterializer;
 import sparx.util.function.IndexedFunction;
 import sparx.util.function.IndexedPredicate;
@@ -36,7 +34,7 @@ public class FlatMapWhereListFutureMaterializer<E> extends ProgressiveListFuture
       @NotNull final IndexedFunction<? super E, ? extends IteratorFutureMaterializer<E>> mapper,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     setState(new ImmaterialState(wrapped, predicate, mapper, context, cancelException));
   }
 

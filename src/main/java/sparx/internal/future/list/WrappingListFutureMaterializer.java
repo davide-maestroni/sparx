@@ -16,7 +16,6 @@
 package sparx.internal.future.list;
 
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
@@ -29,7 +28,7 @@ public class WrappingListFutureMaterializer<E> extends AbstractListFutureMateria
   public WrappingListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
-    super(context, new AtomicInteger(STATUS_RUNNING));
+    super(context);
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     knownSize = wrapped.knownSize();
     setState(new WrappingState(wrapped, cancelException));

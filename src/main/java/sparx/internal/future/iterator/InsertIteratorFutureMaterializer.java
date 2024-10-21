@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -47,15 +46,7 @@ public class InsertIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
       final E element, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final BinaryFunction<List<E>, E, List<E>> prependFunction) {
-    this(wrapped, element, new AtomicInteger(STATUS_RUNNING), context, cancelException,
-        prependFunction);
-  }
-
-  InsertIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
-      final E element, @NotNull final AtomicInteger status, @NotNull final ExecutionContext context,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final BinaryFunction<List<E>, E, List<E>> prependFunction) {
-    super(context, status);
+    super(context);
     knownSize = safeSize(wrapped.knownSize());
     isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
     setState(new ImmaterialState(wrapped, element, context, cancelException, prependFunction));
