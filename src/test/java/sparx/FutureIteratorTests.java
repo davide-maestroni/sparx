@@ -89,6 +89,7 @@ import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
+import sparx.internal.future.iterator.MapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -1203,6 +1204,46 @@ public class FutureIteratorTests {
             new AtomicReference<>(), (l, n, e) -> lazy.List.wrap(l).replaceAfter(n, e)));
 
     testCancel(it -> it.mapFirstWhere(e -> false, e -> e));
+  }
+
+  @Test
+  public void mapLastWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapLastWhere(null, (i, e) -> e));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapLastWhere(null, e -> e));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapLastWhere((i, e) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapLastWhere(e -> false, null));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.mapLastWhere(i -> false, i -> i + 1));
+    test(List.of(1, 2, null, 5), () -> Iterator.of(1, 2, null, 4),
+        it -> it.mapLastWhere(i -> true, i -> i + 1));
+    test(List.of(1, 2, 3, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.mapLastWhere(Objects::isNull, i -> 3));
+    test(List.of(), Iterator::<Integer>of, it -> it.mapLastWhere(i -> false, i -> i + 1));
+    test(List.of(), Iterator::<Integer>of, it -> it.mapLastWhere(i -> true, i -> i + 1));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4)
+        .toFuture(context).flatMap(e -> List.of(e));
+    assertFalse(itr.get().mapLastWhere(i -> i == 4, i -> i + 1).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().mapLastWhere(i -> i == 4, i -> i + 1).size());
+    assertEquals(1, itr.get().mapLastWhere(i -> i == 4, i -> i + 1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().mapLastWhere(i -> i < 2, i -> 1).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().mapLastWhere(i -> i < 2, i -> 1).size());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().mapLastWhere(i -> i < 2, i -> 1).first());
+
+    testMaterializer(List.of(1, 1, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new MapLastWhereIteratorFutureMaterializer<>(m, (i, e) -> e == 2, (i, e) -> i, c,
+            new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prepend(e)));
+
+    testCancel(it -> it.mapLastWhere(e -> false, e -> e));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

@@ -83,6 +83,7 @@ import sparx.internal.future.iterator.ListToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
+import sparx.internal.future.iterator.MapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
 import sparx.internal.future.iterator.WrappingIteratorFutureMaterializer;
@@ -829,6 +830,22 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.ofIterator(iterator).mapFirstWhere(predicate, mapper);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerMapLastWhere(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          materializer.knownSize()) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.ofIterator(iterator).mapLastWhere(predicate, mapper);
         }
       };
     }
@@ -2405,27 +2422,87 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> mapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
-        @NotNull IndexedFunction<? super E, ? extends E> mapper) {
-      return null;
+    public @NotNull Iterator<E> mapLastWhere(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerMapLastWhere(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new MapLastWhereIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), Require.notNull(mapper, "mapper"), context,
+              cancelException, List.<E>prependFunction()));
     }
 
     @Override
-    public @NotNull Iterator<E> mapLastWhere(@NotNull Predicate<? super E> predicate,
-        @NotNull Function<? super E, ? extends E> mapper) {
-      return null;
+    public @NotNull Iterator<E> mapLastWhere(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends E> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerMapLastWhere(materializer, context, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate")),
+                toIndexedFunction(Require.notNull(mapper, "mapper"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new MapLastWhereIteratorFutureMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")),
+              toIndexedFunction(Require.notNull(mapper, "mapper")), context, cancelException,
+              List.<E>prependFunction()));
     }
 
     @Override
-    public @NotNull Iterator<E> mapWhere(@NotNull IndexedPredicate<? super E> predicate,
-        @NotNull IndexedFunction<? super E, ? extends E> mapper) {
-      return null;
+    public @NotNull Iterator<E> mapWhere(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final IndexedFunction<? super E, ? extends E> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerMap(materializer, context, cancelException,
+                filteredMapper(Require.notNull(predicate, "predicate"),
+                    Require.notNull(mapper, "mapper"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new MapIteratorFutureMaterializer<E, E>(materializer,
+              filteredMapper(Require.notNull(predicate, "predicate"),
+                  Require.notNull(mapper, "mapper")), context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<E> mapWhere(@NotNull Predicate<? super E> predicate,
-        @NotNull Function<? super E, ? extends E> mapper) {
-      return null;
+    public @NotNull Iterator<E> mapWhere(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Function<? super E, ? extends E> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerMap(materializer, context, cancelException,
+                filteredMapper(Require.notNull(predicate, "predicate"),
+                    Require.notNull(mapper, "mapper"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new MapIteratorFutureMaterializer<E, E>(materializer,
+              filteredMapper(Require.notNull(predicate, "predicate"),
+                  Require.notNull(mapper, "mapper")), context, cancelException));
     }
 
     @Override
