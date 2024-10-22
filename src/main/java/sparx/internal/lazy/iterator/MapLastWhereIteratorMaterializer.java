@@ -32,7 +32,10 @@ public class MapLastWhereIteratorMaterializer<E> extends StatefulAutoSkipIterato
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
+    private final DequeueList<E> elements = new DequeueList<E>();
     private final IndexedFunction<? super E, ? extends E> mapper;
+    private final IteratorMaterializer<E> materializer = new DequeueToIteratorMaterializer<E>(
+        elements);
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
@@ -64,22 +67,50 @@ public class MapLastWhereIteratorMaterializer<E> extends StatefulAutoSkipIterato
     }
 
     private @NotNull IteratorMaterializer<E> materializer() {
+      // TODO: processing vs memory
+//      final IteratorMaterializer<E> wrapped = this.wrapped;
+//      if (wrapped.materializeHasNext()) {
+//        final DequeueList<E> elements = new DequeueList<E>();
+//        do {
+//          elements.add(wrapped.materializeNext());
+//        } while (wrapped.materializeHasNext());
+//        try {
+//          final int pos = this.pos;
+//          final IndexedPredicate<? super E> predicate = this.predicate;
+//          for (int i = elements.size() - 1; i >= 0; --i) {
+//            if (predicate.test(pos + i, elements.get(i))) {
+//              return setState(new MapAfterIteratorMaterializer<E>(
+//                  new DequeueToIteratorMaterializer<E>(elements), i, mapper));
+//            }
+//          }
+//          return setState(new DequeueToIteratorMaterializer<E>(elements));
+//        } catch (final Exception e) {
+//          throw UncheckedException.throwUnchecked(e);
+//        }
+//      }
+      final DequeueList<E> elements = this.elements;
+      if (!elements.isEmpty()) {
+        return materializer;
+      }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        final DequeueList<E> elements = new DequeueList<E>();
-        do {
-          elements.add(wrapped.materializeNext());
-        } while (wrapped.materializeHasNext());
+        E element = wrapped.materializeNext();
+        elements.add(element);
         try {
-          final int pos = this.pos;
+          int pos = this.pos;
           final IndexedPredicate<? super E> predicate = this.predicate;
-          for (int i = elements.size() - 1; i >= 0; --i) {
-            if (predicate.test(pos + i, elements.get(i))) {
-              return setState(new MapAfterIteratorMaterializer<E>(
-                  new DequeueToIteratorMaterializer<E>(elements), i, mapper));
-            }
+          if (!predicate.test(pos, element)) {
+            return materializer;
           }
-          return setState(new DequeueToIteratorMaterializer<E>(elements));
+          int index = 0;
+          while (wrapped.materializeHasNext()) {
+            element = wrapped.materializeNext();
+            if (predicate.test(++pos, element)) {
+              index = pos - this.pos;
+            }
+            elements.add(element);
+          }
+          return setState(new MapAfterIteratorMaterializer<E>(materializer, index, mapper));
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }

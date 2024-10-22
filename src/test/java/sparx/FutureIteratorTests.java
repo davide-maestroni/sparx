@@ -1246,6 +1246,39 @@ public class FutureIteratorTests {
     testCancel(it -> it.mapLastWhere(e -> false, e -> e));
   }
 
+  @Test
+  public void mapWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapWhere(null, (i, e) -> e));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapWhere(null, e -> e));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapWhere((i, e) -> false, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).mapWhere(e -> false, null));
+    test(List.of(1, 2, 3, 4), () -> Iterator.of(1, 2, 3, 4),
+        it -> it.mapWhere(i -> false, i -> i + 1));
+    test(List.of(2, 3, 4, 5), () -> Iterator.of(1, 2, 3, 4),
+        it -> it.mapWhere(i -> true, i -> i + 1));
+    test(List.of(1, 3, 3, 4), () -> Iterator.of(1, 2, 3, 4),
+        it -> it.mapWhere(i -> i == 2, i -> 3));
+    test(List.of(), Iterator::<Integer>of, it -> it.mapLastWhere(i -> false, i -> i + 1));
+    test(List.of(), Iterator::<Integer>of, it -> it.mapLastWhere(i -> true, i -> i + 1));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, null)
+        .toFuture(context).flatMap(e -> List.of(e));
+    assertFalse(itr.get().mapWhere(i -> i == 4, i -> i + 1).isEmpty());
+    assertEquals(3, itr.get().mapWhere(i -> i == 4, i -> i + 1).size());
+    assertEquals(1, itr.get().mapWhere(i -> i == 4, i -> i + 1).first());
+    assertEquals(2, itr.get().mapWhere(i -> i == 4, i -> i + 1).drop(1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().mapWhere(i -> i == 4, i -> i + 1).drop(2).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().mapWhere(i -> i == 4, i -> i + 1).drop(3).first());
+
+    testCancel(it -> it.mapWhere(e -> false, e -> e));
+  }
+
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {
     context.scheduleAfter(new ContextTask(context) {
       @Override
