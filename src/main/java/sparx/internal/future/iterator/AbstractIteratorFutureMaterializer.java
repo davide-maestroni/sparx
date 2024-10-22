@@ -548,6 +548,9 @@ public abstract class AbstractIteratorFutureMaterializer<E> implements
       wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
         @Override
         public void cancellableAccept(final Integer skipped) throws Exception {
+          if (skipped < count) {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+          }
           index += skipped;
           consumer.accept(skipped);
         }

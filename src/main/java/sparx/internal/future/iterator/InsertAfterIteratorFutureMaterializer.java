@@ -180,6 +180,9 @@ public class InsertAfterIteratorFutureMaterializer<E> extends
         wrapped.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
           @Override
           public void cancellableAccept(final Boolean hasNext) throws Exception {
+            if (!hasNext) {
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
+            }
             consumer.accept(hasNext);
           }
 
@@ -326,6 +329,9 @@ public class InsertAfterIteratorFutureMaterializer<E> extends
           wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
             @Override
             public void cancellableAccept(final Integer skipped) throws Exception {
+              if (skipped < count) {
+                setDone(EmptyIteratorFutureMaterializer.<E>instance());
+              }
               index += skipped;
               consumer.accept(skipped);
             }

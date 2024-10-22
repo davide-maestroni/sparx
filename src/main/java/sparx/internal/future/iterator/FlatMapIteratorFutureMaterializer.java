@@ -287,6 +287,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
         public void cancellableAccept(final IteratorFutureMaterializer<F> materializer)
             throws Exception {
           if (materializer == null) {
+            setDone(EmptyIteratorFutureMaterializer.<F>instance());
             consumer.accept(false);
           } else {
             materializer.materializeHasNext(HasNextFutureConsumer.this);
@@ -428,6 +429,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
         public void cancellableAccept(final IteratorFutureMaterializer<F> materializer)
             throws Exception {
           if (materializer == null) {
+            setDone(EmptyIteratorFutureMaterializer.<F>instance());
             consumer.complete(0);
           } else {
             materializer.materializeNext(NextFutureConsumer.this);
@@ -499,6 +501,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
         public void cancellableAccept(final IteratorFutureMaterializer<F> materializer)
             throws Exception {
           if (materializer == null) {
+            setDone(EmptyIteratorFutureMaterializer.<F>instance());
             predicate.complete(0);
           } else {
             materializer.materializeNextWhile(NextWhileFutureConsumer.this);
@@ -572,6 +575,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
         public void cancellableAccept(final IteratorFutureMaterializer<F> materializer)
             throws Exception {
           if (materializer == null) {
+            setDone(EmptyIteratorFutureMaterializer.<F>instance());
             consumer.accept(count - toSkip);
           } else {
             materializer.materializeSkip(toSkip, SkipFutureConsumer.this);

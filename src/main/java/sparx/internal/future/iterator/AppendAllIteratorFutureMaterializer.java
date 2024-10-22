@@ -185,6 +185,9 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
             elementsMaterializer.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
               @Override
               public void cancellableAccept(final Boolean hasNext) throws Exception {
+                if (!hasNext) {
+                  setDone(EmptyIteratorFutureMaterializer.<E>instance());
+                }
                 consumer.accept(hasNext);
               }
 
@@ -306,6 +309,9 @@ public class AppendAllIteratorFutureMaterializer<E> extends AbstractIteratorFutu
             elementsMaterializer.materializeSkip(count - skipped, new FutureConsumer<Integer>() {
               @Override
               public void accept(final Integer skipped) throws Exception {
+                if (skipped < count - wrappedSkipped) {
+                  setDone(EmptyIteratorFutureMaterializer.<E>instance());
+                }
                 index += skipped;
                 consumer.accept(wrappedSkipped + skipped);
               }

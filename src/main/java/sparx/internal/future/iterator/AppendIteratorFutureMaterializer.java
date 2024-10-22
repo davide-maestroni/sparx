@@ -170,7 +170,12 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
 
     @Override
     public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-      safeConsume(consumer, !consumed, LOGGER);
+      if (consumed) {
+        setDone(EmptyIteratorFutureMaterializer.<E>instance());
+        safeConsume(consumer, false, LOGGER);
+      } else {
+        safeConsume(consumer, true, LOGGER);
+      }
     }
 
     @Override
@@ -247,6 +252,7 @@ public class AppendIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
     public void materializeSkip(@Positive final int count,
         @NotNull final FutureConsumer<Integer> consumer) {
       if (consumed) {
+        setDone(EmptyIteratorFutureMaterializer.<E>instance());
         safeConsume(consumer, 0, LOGGER);
       } else {
         wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {

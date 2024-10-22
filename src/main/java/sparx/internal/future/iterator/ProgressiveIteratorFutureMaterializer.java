@@ -143,7 +143,12 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
       materializeNext(new FutureConsumer<DequeueList<F>>() {
         @Override
         public void accept(final DequeueList<F> nextElements) throws Exception {
-          consumer.accept(!nextElements.isEmpty());
+          if (nextElements.isEmpty()) {
+            setDone(EmptyIteratorFutureMaterializer.<F>instance());
+            consumer.accept(false);
+          } else {
+            consumer.accept(true);
+          }
         }
 
         @Override
@@ -217,6 +222,7 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
         @Override
         public void accept(final DequeueList<F> nextElements) throws Exception {
           if (nextElements.isEmpty()) {
+            setDone(EmptyIteratorFutureMaterializer.<F>instance());
             consumer.accept(skipped);
           } else {
             while (skipped < count && !nextElements.isEmpty()) {

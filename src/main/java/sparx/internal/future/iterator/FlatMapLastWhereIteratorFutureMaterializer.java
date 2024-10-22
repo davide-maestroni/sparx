@@ -245,6 +245,7 @@ public class FlatMapLastWhereIteratorFutureMaterializer<E> extends
         @Override
         public void accept(final DequeueList<E> nextElements) throws Exception {
           if (nextElements.isEmpty()) {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
             consumer.accept(skipped);
           } else {
             while (skipped < count && !nextElements.isEmpty()) {

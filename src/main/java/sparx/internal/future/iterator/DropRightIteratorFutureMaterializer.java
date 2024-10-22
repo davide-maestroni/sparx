@@ -193,6 +193,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           @Override
           public void accept(final DequeueList<E> buffer) throws Exception {
             if (buffer.isEmpty()) {
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
               consumer.accept(false);
             } else {
               materializeHasNext(consumer);
@@ -208,6 +209,9 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
         wrapped.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
           @Override
           public void cancellableAccept(final Boolean hasNext) throws Exception {
+            if (!hasNext) {
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
+            }
             consumer.accept(hasNext);
           }
 
@@ -282,6 +286,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           @Override
           public void accept(final DequeueList<E> buffer) throws Exception {
             if (buffer.isEmpty()) {
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
               predicate.complete(0);
             } else {
               materializeNextWhile(predicate);

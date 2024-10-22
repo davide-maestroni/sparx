@@ -180,7 +180,12 @@ public class InsertAllAfterIteratorFutureMaterializer<E> extends
       materializeNext(new FutureConsumer<DequeueList<E>>() {
         @Override
         public void accept(final DequeueList<E> nextElements) throws Exception {
-          consumer.accept(!nextElements.isEmpty());
+          if (nextElements.isEmpty()) {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
+            consumer.accept(false);
+          } else {
+            consumer.accept(true);
+          }
         }
 
         @Override
@@ -254,6 +259,7 @@ public class InsertAllAfterIteratorFutureMaterializer<E> extends
         @Override
         public void accept(final DequeueList<E> nextElements) throws Exception {
           if (nextElements.isEmpty()) {
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
             consumer.accept(skipped);
           } else {
             while (skipped < count && !nextElements.isEmpty()) {

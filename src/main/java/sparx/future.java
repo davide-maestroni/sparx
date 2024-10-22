@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -7187,7 +7186,7 @@ class future extends Sparx {
       public SuppliedMaterializer(@NotNull final Supplier<? extends Iterable<? extends E>> supplier,
           @NotNull final ExecutionContext context,
           @NotNull final AtomicReference<CancellationException> cancelException) {
-        super(context, new AtomicInteger(STATUS_RUNNING));
+        super(context);
         setState(new ImmaterialState(supplier, context, cancelException));
       }
 

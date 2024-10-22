@@ -151,6 +151,9 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
       wrapped.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
         @Override
         public void cancellableAccept(final Boolean hasNext) throws Exception {
+          if (!hasNext) {
+            setDone(EmptyIteratorFutureMaterializer.<F>instance());
+          }
           consumer.accept(hasNext);
         }
 
@@ -230,6 +233,9 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
       wrapped.materializeSkip(count, new CancellableFutureConsumer<Integer>() {
         @Override
         public void cancellableAccept(final Integer skipped) throws Exception {
+          if (skipped < count) {
+            setDone(EmptyIteratorFutureMaterializer.<F>instance());
+          }
           wrappedIndex += skipped;
           consumer.accept(skipped);
         }
