@@ -1333,6 +1333,28 @@ public class FutureIteratorTests {
     testCancel(it -> it.min(Comparator.comparingInt(Object::hashCode)));
   }
 
+  @Test
+  public void none() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).none((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).none((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .none((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .none((Predicate<? super Integer>) null));
+    test(List.of(true), Iterator::of, it -> it.none(Objects::nonNull));
+    test(List.of(false), () -> Iterator.of(1, 2, 3), it -> it.none(i -> i < 3));
+    test(List.of(true), () -> Iterator.of(1, 2, 3), it -> it.none(i -> i < 0));
+
+    var itr = Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e)).none(i -> i < 0);
+    assertThrows(NullPointerException.class, itr::first);
+
+    testCancel(it -> it.none(Objects::isNull));
+  }
+
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {
     context.scheduleAfter(new ContextTask(context) {
       @Override

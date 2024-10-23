@@ -833,13 +833,15 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void none() {
-    assertFalse(Iterator.of().none(Objects::nonNull).isEmpty());
-    assertTrue(Iterator.of().none(Objects::nonNull).notEmpty());
-    assertEquals(1, Iterator.of().none(Objects::nonNull).size());
-    assertTrue(Iterator.of().none(Objects::nonNull).first());
-    assertFalse(Iterator.of(1, 2, 3).none(i -> i < 3).first());
-    assertTrue(Iterator.of(1, 2, 3).none(i -> i < 0).first());
+  public void none() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).none((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).none((Predicate<? super Integer>) null));
+    test(List.of(true), () -> Iterator.of().none(Objects::nonNull));
+    test(List.of(false), () -> Iterator.of(1, 2, 3).none(i -> i < 3));
+    test(List.of(true), () -> Iterator.of(1, 2, 3).none(i -> i < 0));
+
     var itr = Iterator.of(1, null, 3).none(i -> i < 0);
     assertThrows(NullPointerException.class, itr::first);
   }
