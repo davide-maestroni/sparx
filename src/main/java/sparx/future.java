@@ -84,6 +84,7 @@ import sparx.internal.future.iterator.MapAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapLastWhereIteratorFutureMaterializer;
+import sparx.internal.future.iterator.MaxIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
 import sparx.internal.future.iterator.WrappingIteratorFutureMaterializer;
@@ -846,6 +847,20 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.ofIterator(iterator).mapLastWhere(predicate, mapper);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerMax(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Comparator<? super E> comparator) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.ofIterator(iterator).max(comparator);
         }
       };
     }
@@ -2506,13 +2521,39 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> max(@NotNull Comparator<? super E> comparator) {
-      return null;
+    public @NotNull Iterator<E> max(@NotNull final Comparator<? super E> comparator) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerMax(materializer, context, cancelException,
+                Require.notNull(comparator, "comparator")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new MaxIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(comparator, "comparator"), context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<E> min(@NotNull Comparator<? super E> comparator) {
-      return null;
+    public @NotNull Iterator<E> min(@NotNull final Comparator<? super E> comparator) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerMax(materializer, context, cancelException,
+                reversed(Require.notNull(comparator, "comparator"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new MaxIteratorFutureMaterializer<E>(materializer,
+              reversed(Require.notNull(comparator, "comparator")), context, cancelException));
     }
 
     @Override

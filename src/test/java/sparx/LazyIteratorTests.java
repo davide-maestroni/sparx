@@ -803,13 +803,10 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void max() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 4, 2, 3);
-    assertFalse(itr.get().max(Integer::compareTo).isEmpty());
-    assertTrue(itr.get().max(Integer::compareTo).notEmpty());
-    assertEquals(1, itr.get().max(Integer::compareTo).size());
-    assertEquals(4, itr.get().max(Integer::compareTo).first());
-    assertEquals(List.of(4), itr.get().max(Integer::compareTo).toList());
+  public void max() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).max(null));
+    test(List.of(4), () -> Iterator.of(1, 4, 2, 3).max(Integer::compare));
+    test(List.of(), () -> Iterator.<Integer>of().max(Integer::compare));
 
     assertThrows(NullPointerException.class,
         () -> Iterator.of(1, null).max(Integer::compareTo).isEmpty());
@@ -818,23 +815,13 @@ public class LazyIteratorTests {
     assertEquals(1, Iterator.of(1, null).max(Integer::compareTo).size());
     assertThrows(NullPointerException.class,
         () -> Iterator.of(1, null).max(Integer::compareTo).first());
-
-    assertTrue(Iterator.<Integer>of().max(Integer::compareTo).isEmpty());
-    assertFalse(Iterator.<Integer>of().max(Integer::compareTo).notEmpty());
-    assertEquals(0, Iterator.<Integer>of().max(Integer::compareTo).size());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().max(Integer::compareTo).first());
-    assertEquals(List.of(), Iterator.<Integer>of().max(Integer::compareTo).toList());
   }
 
   @Test
-  public void min() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 4, 2, 3);
-    assertFalse(itr.get().min(Integer::compareTo).isEmpty());
-    assertTrue(itr.get().min(Integer::compareTo).notEmpty());
-    assertEquals(1, itr.get().min(Integer::compareTo).size());
-    assertEquals(1, itr.get().min(Integer::compareTo).first());
-    assertEquals(List.of(1), itr.get().min(Integer::compareTo).toList());
+  public void min() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).min(null));
+    test(List.of(1), () -> Iterator.of(1, 4, 2, 3).min(Integer::compare));
+    test(List.of(), () -> Iterator.<Integer>of().min(Integer::compare));
 
     assertThrows(NullPointerException.class,
         () -> Iterator.of(1, null).min(Integer::compareTo).isEmpty());
@@ -843,13 +830,6 @@ public class LazyIteratorTests {
     assertEquals(1, Iterator.of(1, null).min(Integer::compareTo).size());
     assertThrows(NullPointerException.class,
         () -> Iterator.of(1, null).min(Integer::compareTo).first());
-
-    assertTrue(Iterator.<Integer>of().min(Integer::compareTo).isEmpty());
-    assertFalse(Iterator.<Integer>of().min(Integer::compareTo).notEmpty());
-    assertEquals(0, Iterator.<Integer>of().min(Integer::compareTo).size());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().min(Integer::compareTo).first());
-    assertEquals(List.of(), Iterator.<Integer>of().min(Integer::compareTo).toList());
   }
 
   @Test

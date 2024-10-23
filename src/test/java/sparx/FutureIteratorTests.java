@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -90,6 +91,7 @@ import sparx.internal.future.iterator.MapAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapLastWhereIteratorFutureMaterializer;
+import sparx.internal.future.iterator.MaxIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -1277,6 +1279,58 @@ public class FutureIteratorTests {
         () -> itr.get().mapWhere(i -> i == 4, i -> i + 1).drop(3).first());
 
     testCancel(it -> it.mapWhere(e -> false, e -> e));
+  }
+
+  @Test
+  public void max() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context).max(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).max(null));
+    test(List.of(4), () -> Iterator.of(1, 4, 2, 3), it -> it.max(Integer::compare));
+    test(List.of(), Iterator::<Integer>of, it -> it.max(Integer::compare));
+
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null).toFuture(context).flatMap(e -> List.of(e))
+            .max(Integer::compareTo).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null).toFuture(context).flatMap(e -> List.of(e))
+            .max(Integer::compareTo).notEmpty());
+    assertEquals(1,
+        Iterator.of(1, null).toFuture(context).flatMap(e -> List.of(e)).max(Integer::compareTo)
+            .size());
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null).toFuture(context).flatMap(e -> List.of(e))
+            .max(Integer::compareTo).first());
+
+    testMaterializer(List.of(3), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new MaxIteratorFutureMaterializer<>(m, Integer::compare, c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.max(Comparator.comparingInt(Object::hashCode)));
+  }
+
+  @Test
+  public void min() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context).min(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).min(null));
+    test(List.of(1), () -> Iterator.of(1, 4, 2, 3), it -> it.min(Integer::compare));
+    test(List.of(), Iterator::<Integer>of, it -> it.min(Integer::compare));
+
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null).toFuture(context).flatMap(e -> List.of(e))
+            .min(Integer::compareTo).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null).toFuture(context).flatMap(e -> List.of(e))
+            .min(Integer::compareTo).notEmpty());
+    assertEquals(1,
+        Iterator.of(1, null).toFuture(context).flatMap(e -> List.of(e)).min(Integer::compareTo)
+            .size());
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null).toFuture(context).flatMap(e -> List.of(e))
+            .min(Integer::compareTo).first());
+
+    testCancel(it -> it.min(Comparator.comparingInt(Object::hashCode)));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {
