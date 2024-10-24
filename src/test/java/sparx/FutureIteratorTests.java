@@ -1914,7 +1914,7 @@ public class FutureIteratorTests {
           () -> atMaterializer.get().materializeIterator(new FutureConsumer<>() {
             @Override
             public void accept(final java.util.Iterator<E> elements) {
-              elementList.addAll(lazy.Iterator.ofIterator(elements).toList());
+              elementList.addAll(lazy.Iterator.wrap(elements).toList());
             }
 
             @Override
@@ -1964,7 +1964,7 @@ public class FutureIteratorTests {
     runInContext(trampoline, () -> atMaterializer.get().materializeIterator(new FutureConsumer<>() {
       @Override
       public void accept(final java.util.Iterator<E> elements) {
-        elementList.addAll(lazy.Iterator.ofIterator(elements).toList());
+        elementList.addAll(lazy.Iterator.wrap(elements).toList());
       }
 
       @Override

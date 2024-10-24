@@ -341,7 +341,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).append(element);
+          return lazy.Iterator.wrap(iterator).append(element);
         }
       };
     }
@@ -358,7 +358,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).appendAll(elements);
+          return lazy.Iterator.wrap(iterator).appendAll(elements);
         }
       };
     }
@@ -372,7 +372,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).count();
+          return lazy.Iterator.wrap(iterator).count();
         }
       };
     }
@@ -387,7 +387,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).countWhere(predicate);
+          return lazy.Iterator.wrap(iterator).countWhere(predicate);
         }
       };
     }
@@ -401,7 +401,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).diff(elements);
+          return lazy.Iterator.wrap(iterator).diff(elements);
         }
       };
     }
@@ -415,7 +415,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).distinctBy(keyExtractor);
+          return lazy.Iterator.wrap(iterator).distinctBy(keyExtractor);
         }
       };
     }
@@ -431,7 +431,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).drop(maxElements);
+          return lazy.Iterator.wrap(iterator).drop(maxElements);
         }
       };
     }
@@ -447,7 +447,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).dropRight(maxElements);
+          return lazy.Iterator.wrap(iterator).dropRight(maxElements);
         }
       };
     }
@@ -461,7 +461,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).dropRightWhile(predicate);
+          return lazy.Iterator.wrap(iterator).dropRightWhile(predicate);
         }
       };
     }
@@ -475,7 +475,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).dropWhile(predicate);
+          return lazy.Iterator.wrap(iterator).dropWhile(predicate);
         }
       };
     }
@@ -490,7 +490,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).each(predicate);
+          return lazy.Iterator.wrap(iterator).each(predicate);
         }
       };
     }
@@ -505,7 +505,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).endsWith(elements);
+          return lazy.Iterator.wrap(iterator).endsWith(elements);
         }
       };
     }
@@ -520,7 +520,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).exists(predicate);
+          return lazy.Iterator.wrap(iterator).exists(predicate);
         }
       };
     }
@@ -534,7 +534,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).filter(predicate);
+          return lazy.Iterator.wrap(iterator).filter(predicate);
         }
       };
     }
@@ -548,7 +548,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).findFirst(predicate);
+          return lazy.Iterator.wrap(iterator).findFirst(predicate);
         }
       };
     }
@@ -563,7 +563,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).findIndexWhere(predicate);
+          return lazy.Iterator.wrap(iterator).findIndexWhere(predicate);
         }
       };
     }
@@ -578,7 +578,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).findIndexOfSlice(elements);
+          return lazy.Iterator.wrap(iterator).findIndexOfSlice(elements);
         }
       };
     }
@@ -592,7 +592,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).findLast(predicate);
+          return lazy.Iterator.wrap(iterator).findLast(predicate);
         }
       };
     }
@@ -607,7 +607,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).findLastIndexOfSlice(elements);
+          return lazy.Iterator.wrap(iterator).findLastIndexOfSlice(elements);
         }
       };
     }
@@ -622,7 +622,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Integer> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).findLastIndexWhere(predicate);
+          return lazy.Iterator.wrap(iterator).findLastIndexWhere(predicate);
         }
       };
     }
@@ -636,7 +636,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).foldLeft(identity, operation);
+          return lazy.Iterator.wrap(iterator).foldLeft(identity, operation);
         }
       };
     }
@@ -651,7 +651,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).foldLeftWhile(identity, predicate, operation);
+          return lazy.Iterator.wrap(iterator).foldLeftWhile(identity, predicate, operation);
         }
       };
     }
@@ -665,7 +665,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).foldRight(identity, operation);
+          return lazy.Iterator.wrap(iterator).foldRight(identity, operation);
         }
       };
     }
@@ -680,7 +680,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).foldRightWhile(identity, predicate, operation);
+          return lazy.Iterator.wrap(iterator).foldRightWhile(identity, predicate, operation);
         }
       };
     }
@@ -695,7 +695,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).includesAll(elements);
+          return lazy.Iterator.wrap(iterator).includesAll(elements);
         }
       };
     }
@@ -710,7 +710,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).includesSlice(elements);
+          return lazy.Iterator.wrap(iterator).includesSlice(elements);
         }
       };
     }
@@ -725,7 +725,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).insert(element);
+          return lazy.Iterator.wrap(iterator).insert(element);
         }
       };
     }
@@ -739,7 +739,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).insertAfter(numElements, element);
+          return lazy.Iterator.wrap(iterator).insertAfter(numElements, element);
         }
       };
     }
@@ -753,7 +753,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).insertAllAfter(numElements, elements);
+          return lazy.Iterator.wrap(iterator).insertAllAfter(numElements, elements);
         }
       };
     }
@@ -770,7 +770,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).insertAll(elements);
+          return lazy.Iterator.wrap(iterator).insertAll(elements);
         }
       };
     }
@@ -784,7 +784,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).intersect(elements);
+          return lazy.Iterator.wrap(iterator).intersect(elements);
         }
       };
     }
@@ -799,7 +799,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<F> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).map(mapper);
+          return lazy.Iterator.wrap(iterator).map(mapper);
         }
       };
     }
@@ -814,7 +814,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).mapAfter(numElements, mapper);
+          return lazy.Iterator.wrap(iterator).mapAfter(numElements, mapper);
         }
       };
     }
@@ -830,7 +830,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).mapFirstWhere(predicate, mapper);
+          return lazy.Iterator.wrap(iterator).mapFirstWhere(predicate, mapper);
         }
       };
     }
@@ -846,7 +846,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).mapLastWhere(predicate, mapper);
+          return lazy.Iterator.wrap(iterator).mapLastWhere(predicate, mapper);
         }
       };
     }
@@ -860,7 +860,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).max(comparator);
+          return lazy.Iterator.wrap(iterator).max(comparator);
         }
       };
     }
@@ -875,7 +875,7 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.ofIterator(iterator).none(predicate);
+          return lazy.Iterator.wrap(iterator).none(predicate);
         }
       };
     }
@@ -3127,13 +3127,13 @@ class future extends Sparx {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam,
           final java.util.List<?> secondParam) {
-        return lazy.List.wrap(firstParam).appendAll(secondParam).materialized();
+        return lazy.List.wrap(firstParam).appendAll(secondParam).clone();
       }
     };
     private static final BinaryFunction<? extends java.util.List<?>, ?, ? extends java.util.List<?>> APPEND_FUNCTION = new BinaryFunction<java.util.List<?>, Object, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Object secondParam) {
-        return lazy.List.wrap(firstParam).append(secondParam).materialized();
+        return lazy.List.wrap(firstParam).append(secondParam).clone();
       }
     };
     private static final ElementToListFutureMaterializer<Boolean> FALSE_MATERIALIZER = new ElementToListFutureMaterializer<Boolean>(
@@ -3142,54 +3142,54 @@ class future extends Sparx {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
           final Object thirdParam) {
-        return lazy.List.wrap(firstParam).insertAfter(secondParam, thirdParam).materialized();
+        return lazy.List.wrap(firstParam).insertAfter(secondParam, thirdParam).clone();
       }
     };
     private static final TernaryFunction<? extends java.util.List<?>, Integer, ? extends java.util.List<?>, ? extends java.util.List<?>> INSERT_ALL_AFTER_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, java.util.List<?>, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
           final java.util.List<?> thirdParam) {
-        return lazy.List.wrap(firstParam).insertAllAfter(secondParam, thirdParam).materialized();
+        return lazy.List.wrap(firstParam).insertAllAfter(secondParam, thirdParam).clone();
       }
     };
     private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> PREPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam,
           final java.util.List<?> secondParam) {
-        return lazy.List.wrap(firstParam).prependAll(secondParam).materialized();
+        return lazy.List.wrap(firstParam).prependAll(secondParam).clone();
       }
     };
     private static final BinaryFunction<? extends java.util.List<?>, ?, ? extends java.util.List<?>> PREPEND_FUNCTION = new BinaryFunction<java.util.List<?>, Object, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Object secondParam) {
-        return lazy.List.wrap(firstParam).prepend(secondParam).materialized();
+        return lazy.List.wrap(firstParam).prepend(secondParam).clone();
       }
     };
     private static final BinaryFunction<? extends java.util.List<?>, Integer, ? extends java.util.List<?>> REMOVE_AFTER_FUNCTION = new BinaryFunction<java.util.List<?>, Integer, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam,
           final Integer secondParam) {
-        return lazy.List.wrap(firstParam).removeAfter(secondParam).materialized();
+        return lazy.List.wrap(firstParam).removeAfter(secondParam).clone();
       }
     };
     private static final TernaryFunction<? extends java.util.List<?>, Integer, ?, ? extends java.util.List<?>> REPLACE_AFTER_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, Object, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
           final Object thirdParam) {
-        return lazy.List.wrap(firstParam).replaceAfter(secondParam, thirdParam).materialized();
+        return lazy.List.wrap(firstParam).replaceAfter(secondParam, thirdParam).clone();
       }
     };
     private static final TernaryFunction<? extends java.util.List<?>, Integer, ?, ? extends java.util.List<?>> RESIZE_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, Object, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
           final Object thirdParam) {
-        return lazy.List.wrap(firstParam).resizeTo(secondParam, thirdParam).materialized();
+        return lazy.List.wrap(firstParam).resizeTo(secondParam, thirdParam).clone();
       }
     };
     private static final Function<? extends java.util.List<?>, ? extends java.util.List<?>> REVERSE_FUNCTION = new Function<java.util.List<?>, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> param) {
-        return lazy.List.wrap(param).reverse().materialized();
+        return lazy.List.wrap(param).reverse().clone();
       }
     };
     private static final ElementToListFutureMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListFutureMaterializer<Boolean>(
@@ -3252,16 +3252,8 @@ class future extends Sparx {
             list.materializer);
       }
       if (elements instanceof lazy.List) {
-        // TODO: materialized????
-        final lazy.List<E> materialized = ((lazy.List<E>) elements).materialized();
-        final int size = materialized.size();
-        if (size == 0) {
-          return EmptyListFutureMaterializer.instance();
-        }
-        if (size == 1) {
-          return new ElementToListFutureMaterializer<E>(materialized.first());
-        }
-        return new ListToListFutureMaterializer<E>(materialized, context);
+        final lazy.List<E> list = (lazy.List<E>) elements;
+        return new ListToListFutureMaterializer<E>(list, context);
       }
       if (elements instanceof java.util.List) {
         final java.util.List<E> list = (java.util.List<E>) elements;
@@ -7332,10 +7324,11 @@ class future extends Sparx {
       }
 
       @Override
-      protected void materialize(@NotNull final java.util.List<F> list) {
+      protected java.util.List<F> materialize(@NotNull final java.util.List<F> list) {
         if (list instanceof lazy.List) {
-          ((lazy.List<?>) list).materialized();
+          return ((lazy.List<F>) list).clone();
         }
+        return list;
       }
     }
 

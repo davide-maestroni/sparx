@@ -382,16 +382,6 @@ public class lazy extends Sparx {
           new IntArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
     }
 
-    @SuppressWarnings("unchecked")
-    public static @NotNull <E> Iterator<E> ofIterator(
-        @NotNull final java.util.Iterator<? extends E> elements) {
-      if (elements instanceof Iterator) {
-        return (Iterator<E>) elements;
-      }
-      return new Iterator<E>(
-          new IteratorToIteratorMaterializer<E>(Require.notNull(elements, "elements")));
-    }
-
     private static @NotNull Iterator<String> ofLines(@NotNull final BufferedReader reader) {
       return new Iterator<String>(new LinesIteratorMaterializer(Require.notNull(reader, "reader")));
     }
@@ -452,6 +442,16 @@ public class lazy extends Sparx {
         return (Iterator<E>) elements;
       }
       return new Iterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> wrap(
+        @NotNull final java.util.Iterator<? extends E> elements) {
+      if (elements instanceof Iterator) {
+        return (Iterator<E>) elements;
+      }
+      return new Iterator<E>(
+          new IteratorToIteratorMaterializer<E>(Require.notNull(elements, "elements")));
     }
 
     @SuppressWarnings("unchecked")
@@ -2340,6 +2340,14 @@ public class lazy extends Sparx {
       return new List<E>(new ListToListMaterializer<E>(list));
     }
 
+    public static @NotNull <E> List<E> from(@NotNull final java.util.Iterator<E> elements) {
+      final ArrayList<E> list = new ArrayList<E>();
+      while (elements.hasNext()) {
+        list.add(elements.next());
+      }
+      return new List<E>(new ListToListMaterializer<E>(list));
+    }
+
     @SuppressWarnings("unchecked")
     public static @NotNull <E> List<E> of() {
       return (List<E>) EMPTY_LIST;
@@ -2577,10 +2585,11 @@ public class lazy extends Sparx {
       return (List<F>) this;
     }
 
-    public @NotNull future.List<E> asFuture(@NotNull final ExecutionContext context) {
-      return new future.List<E>(Require.notNull(context, "context"),
-          new AtomicReference<CancellationException>(),
-          new ListToListFutureMaterializer<E>(this, context));
+    @Override
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    public List<E> clone() {
+      materializer.materializeElements();
+      return new List<E>(materializer);
     }
 
     @Override
@@ -4348,7 +4357,7 @@ public class lazy extends Sparx {
     public @NotNull future.List<E> toFuture(@NotNull final ExecutionContext context) {
       return new future.List<E>(Require.notNull(context, "context"),
           new AtomicReference<CancellationException>(),
-          new ListToListFutureMaterializer<E>(materialized(), context));
+          new ListToListFutureMaterializer<E>(this, context));
     }
 
     @Override
@@ -4367,12 +4376,6 @@ public class lazy extends Sparx {
 
     int knownSize() {
       return materializer.knownSize();
-    }
-
-    @NotNull
-    List<E> materialized() {
-      materializer.materializeElements();
-      return this;
     }
 
     private static class SuppliedMaterializer<E> implements ListMaterializer<E> {

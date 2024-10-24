@@ -1574,11 +1574,12 @@ public class LazyIteratorTests {
         () -> itr.get().replaceLastWhere(Objects::isNull, 3).drop(4).first());
 
     assertFalse(itr.get().replaceLastWhere(i -> i == 4, 5).isEmpty());
-    assertEquals(4, itr.get().replaceLastWhere(i -> i == 4, 5).size());
-    assertEquals(List.of(1, 2, null, 5), itr.get().replaceLastWhere(i -> i == 4, 5).toList());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceLastWhere(i -> i == 4, 5).size());
     assertEquals(2, itr.get().replaceLastWhere(i -> i == 4, 5).drop(1).first());
-    assertNull(itr.get().replaceLastWhere(i -> i == 4, 5).drop(2).first());
-    assertThrows(NoSuchElementException.class,
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceLastWhere(i -> i == 4, 5).drop(2).first());
+    assertThrows(NullPointerException.class,
         () -> itr.get().replaceLastWhere(i -> i == 4, 5).drop(5).first());
     assertThrows(NullPointerException.class,
         () -> itr.get().replaceLastWhere(i -> i < 2, 1).isEmpty());

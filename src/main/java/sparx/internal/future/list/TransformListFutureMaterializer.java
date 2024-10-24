@@ -64,9 +64,9 @@ public abstract class TransformListFutureMaterializer<E, F> extends
     super.materializeElements(new FutureConsumer<List<F>>() {
       @Override
       public void accept(final List<F> elements) throws Exception {
-        materialize(elements);
-        setDone(new ListToListFutureMaterializer<F>(elements, context));
-        consumer.accept(elements);
+        final List<F> materialized = materialize(elements);
+        setDone(new ListToListFutureMaterializer<F>(materialized, context));
+        consumer.accept(materialized);
       }
 
       @Override
@@ -83,7 +83,7 @@ public abstract class TransformListFutureMaterializer<E, F> extends
     });
   }
 
-  protected abstract void materialize(@NotNull List<F> list);
+  protected abstract java.util.List<F> materialize(@NotNull List<F> list);
 
   protected abstract @NotNull List<F> transform(@NotNull List<E> list);
 
