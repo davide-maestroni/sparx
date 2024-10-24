@@ -61,6 +61,7 @@ import sparx.internal.future.iterator.DropRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EachIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ElementToIteratorFutureMaterializer;
+import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EndsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ExistsIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
@@ -92,6 +93,7 @@ import sparx.internal.future.iterator.MapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MaxIteratorFutureMaterializer;
+import sparx.internal.future.iterator.OrElseIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -1353,6 +1355,74 @@ public class FutureIteratorTests {
     assertThrows(NullPointerException.class, itr::first);
 
     testCancel(it -> it.none(Objects::isNull));
+  }
+
+  @Test
+  public void notAll() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).notAll((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).notAll((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .notAll((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .notAll((Predicate<? super Integer>) null));
+    test(List.of(true), Iterator::of, it -> it.notAll(Objects::isNull));
+    test(List.of(false), () -> Iterator.of(1, 2, 3), it -> it.notAll(i -> i < 4));
+    test(List.of(true), () -> Iterator.of(1, 2, 3), it -> it.notAll(i -> i > 1));
+    var itr = Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e)).notAll(i -> i > 0);
+    assertThrows(NullPointerException.class, itr::first);
+
+    testCancel(it -> it.notAll(Objects::nonNull));
+  }
+
+  @Test
+  public void orElse() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of().toFuture(context).orElse(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of().toFuture(context).flatMap(e -> List.of(e)).orElse(null));
+    test(List.of(1), () -> Iterator.of(1), it -> it.orElse(Iterator.of(2)));
+    test(List.of(1), () -> Iterator.of(1), it -> it.orElse(Iterator.of()));
+    test(List.of(2), Iterator::of, it -> it.orElse(Iterator.of(2)));
+    test(List.of(), Iterator::of, it -> it.orElse(Iterator.of()));
+
+    testMaterializer(List.of(1, 2, 3), c -> EmptyIteratorFutureMaterializer.instance(),
+        (c, m) -> new OrElseIteratorFutureMaterializer<>(m,
+            new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.orElse(Iterator.of(null)));
+  }
+
+  @Test
+  public void orElseGet() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of().toFuture(context).orElseGet(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of().toFuture(context).flatMap(e -> List.of(e)).orElseGet(null));
+    test(List.of(1), () -> Iterator.of(1), it -> it.orElseGet(() -> Iterator.of(2)));
+    test(List.of(1), () -> Iterator.of(1), it -> it.orElseGet(List::of));
+    test(List.of(1), () -> Iterator.of(1), it -> it.orElseGet(Iterator::of));
+    test(List.of(2), Iterator::of, it -> it.orElseGet(() -> Iterator.of(2)));
+    test(List.of(), Iterator::of, it -> it.orElseGet(Iterator::of));
+
+    sparx.util.function.Supplier<Iterator<Integer>> throwing = () -> {
+      throw new IllegalStateException();
+    };
+    test(List.of(1), () -> Iterator.of(1), it -> it.orElseGet(throwing));
+    assertThrows(IllegalStateException.class,
+        () -> Iterator.of().toFuture(context).flatMap(e -> List.of(e)).orElseGet(throwing)
+            .isEmpty());
+    assertThrows(IllegalStateException.class,
+        () -> Iterator.of().toFuture(context).flatMap(e -> List.of(e)).orElseGet(throwing)
+            .notEmpty());
+    assertThrows(IllegalStateException.class,
+        () -> Iterator.of().toFuture(context).flatMap(e -> List.of(e)).orElseGet(throwing).size());
+    assertThrows(IllegalStateException.class,
+        () -> Iterator.of().toFuture(context).flatMap(e -> List.of(e)).orElseGet(throwing).first());
+
+    testCancel(it -> it.orElseGet(() -> Iterator.of(null)));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

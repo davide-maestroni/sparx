@@ -85,10 +85,11 @@ import sparx.internal.future.iterator.MapFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MaxIteratorFutureMaterializer;
+import sparx.internal.future.iterator.OrElseIteratorFutureMaterializer;
+import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
 import sparx.internal.future.iterator.WrappingIteratorFutureMaterializer;
-import sparx.internal.future.list.AbstractListFutureMaterializer;
 import sparx.internal.future.list.AppendAllListFutureMaterializer;
 import sparx.internal.future.list.AppendListFutureMaterializer;
 import sparx.internal.future.list.CountListFutureMaterializer;
@@ -154,6 +155,7 @@ import sparx.internal.future.list.SlidingWindowListFutureMaterializer.Splitter;
 import sparx.internal.future.list.SortedListFutureMaterializer;
 import sparx.internal.future.list.StartsWithListFutureMaterializer;
 import sparx.internal.future.list.StopCancelListFutureMaterializer;
+import sparx.internal.future.list.SuppliedListFutureMaterializer;
 import sparx.internal.future.list.SwitchListFutureMaterializer;
 import sparx.internal.future.list.SymmetricDiffListFutureMaterializer;
 import sparx.internal.future.list.TakeListFutureMaterializer;
@@ -327,6 +329,17 @@ class future extends Sparx {
             return getElementsMaterializer(context, mapper.apply(element));
           }
           return new ElementToIteratorFutureMaterializer<E>(element);
+        }
+      };
+    }
+
+    private static @NotNull <E> Supplier<IteratorFutureMaterializer<E>> getIterableToIteratorMaterializer(
+        @NotNull final ExecutionContext context,
+        @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+      return new Supplier<IteratorFutureMaterializer<E>>() {
+        @Override
+        public IteratorFutureMaterializer<E> get() throws Exception {
+          return getElementsMaterializer(context, supplier.get());
         }
       };
     }
@@ -876,6 +889,37 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<Boolean> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).none(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, Boolean> lazyMaterializerNotAll(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyIteratorFutureMaterializer<E, Boolean>(materializer, context, cancelException,
+          1) {
+        @Override
+        protected @NotNull java.util.Iterator<Boolean> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).notAll(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerOrElse(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<? extends E> elements) {
+      final int knownSize = materializer.knownSize();
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          knownSize > 0 ? knownSize : -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).orElse(elements);
         }
       };
     }
@@ -2697,13 +2741,40 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<Boolean> notAll(@NotNull final IndexedPredicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return trueIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Boolean>(context, cancelException,
+            lazyMaterializerNotAll(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      return new Iterator<Boolean>(context, cancelException,
+          new ExistsIteratorFutureMaterializer<E>(materializer,
+              negated(Require.notNull(predicate, "predicate")), true, context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<Boolean> notAll(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<Boolean> notAll(@NotNull final Predicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return trueIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<Boolean>(context, cancelException,
+            lazyMaterializerNotAll(materializer, context, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      return new Iterator<Boolean>(context, cancelException,
+          new ExistsIteratorFutureMaterializer<E>(materializer,
+              toNegatedIndexedPredicate(Require.notNull(predicate, "predicate")), true, context,
+              cancelException));
     }
 
     @Override
@@ -2712,14 +2783,49 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> orElse(@NotNull Iterable<? extends E> elements) {
-      return null;
+    public @NotNull Iterator<E> orElse(@NotNull final Iterable<? extends E> elements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return cloneIterator(context,
+            getElementsMaterializer(context, Require.notNull(elements, "elements")));
+      }
+      if (knownSize > 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerOrElse(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new OrElseIteratorFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+              cancelException));
     }
 
     @Override
     public @NotNull Iterator<E> orElseGet(
-        @NotNull Supplier<? extends Iterable<? extends E>> supplier) {
-      return null;
+        @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize > 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (knownSize == 0) {
+        return new Iterator<E>(context, cancelException, new SuppliedIteratorFutureMaterializer<E>(
+            getIterableToIteratorMaterializer(context, Require.notNull(supplier, "supplier")),
+            context, cancelException));
+      }
+      return new Iterator<E>(context, cancelException,
+          new OrElseIteratorFutureMaterializer<E>(materializer,
+              new SuppliedIteratorFutureMaterializer<E>(
+                  getIterableToIteratorMaterializer(context, Require.notNull(supplier, "supplier")),
+                  context, cancelException), context, cancelException));
     }
 
     @Override
@@ -2744,13 +2850,13 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> plus(E element) {
-      return null;
+    public @NotNull Iterator<E> plus(final E element) {
+      return append(element);
     }
 
     @Override
-    public @NotNull Iterator<E> plusAll(@NotNull Iterable<? extends E> elements) {
-      return null;
+    public @NotNull Iterator<E> plusAll(@NotNull final Iterable<? extends E> elements) {
+      return appendAll(elements);
     }
 
     @Override
@@ -3355,6 +3461,17 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> Supplier<ListFutureMaterializer<E>> getIterableToListMaterializer(
+        @NotNull final ExecutionContext context,
+        @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+      return new Supplier<ListFutureMaterializer<E>>() {
+        @Override
+        public ListFutureMaterializer<E> get() throws Exception {
+          return getElementsMaterializer(context, supplier.get());
+        }
+      };
+    }
+
     private static @NotNull <E> Splitter<E, List<E>> getSplitter(
         @NotNull final ExecutionContext context, @NotNull final String taskID,
         @NotNull final AtomicReference<CancellationException> cancelException, final int size,
@@ -3915,7 +4032,7 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> LazyListFutureMaterializer<E, Boolean> lazyMaterializerNotExists(
+    private static @NotNull <E> LazyListFutureMaterializer<E, Boolean> lazyMaterializerNotAll(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
@@ -6236,7 +6353,7 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
-            lazyMaterializerNotExists(materializer, context, cancelException,
+            lazyMaterializerNotAll(materializer, context, cancelException,
                 Require.notNull(predicate, "predicate")));
       }
       return new List<Boolean>(context, cancelException,
@@ -6254,7 +6371,7 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {
         return new List<Boolean>(context, cancelException,
-            lazyMaterializerNotExists(materializer, context, cancelException,
+            lazyMaterializerNotAll(materializer, context, cancelException,
                 toIndexedPredicate(Require.notNull(predicate, "predicate"))));
       }
       return new List<Boolean>(context, cancelException,
@@ -6297,13 +6414,14 @@ class future extends Sparx {
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (knownSize == 0) {
-        return new List<E>(context, cancelException,
-            new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier"), context,
-                cancelException));
+        return new List<E>(context, cancelException, new SuppliedListFutureMaterializer<E>(
+            getIterableToListMaterializer(context, Require.notNull(supplier, "supplier")), context,
+            cancelException));
       }
       return new List<E>(context, cancelException, new OrElseListFutureMaterializer<E>(materializer,
-          new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier"), context,
-              cancelException), context, cancelException));
+          new SuppliedListFutureMaterializer<E>(
+              getIterableToListMaterializer(context, Require.notNull(supplier, "supplier")),
+              context, cancelException), context, cancelException));
     }
 
     @Override
@@ -7329,186 +7447,6 @@ class future extends Sparx {
           return ((lazy.List<F>) list).clone();
         }
         return list;
-      }
-    }
-
-    private static class SuppliedMaterializer<E> extends AbstractListFutureMaterializer<E> {
-
-      private static final Logger LOGGER = Logger.getLogger(SuppliedMaterializer.class.getName());
-
-      public SuppliedMaterializer(@NotNull final Supplier<? extends Iterable<? extends E>> supplier,
-          @NotNull final ExecutionContext context,
-          @NotNull final AtomicReference<CancellationException> cancelException) {
-        super(context);
-        setState(new ImmaterialState(supplier, context, cancelException));
-      }
-
-      @Override
-      public int knownSize() {
-        return -1;
-      }
-
-      private class ImmaterialState implements ListFutureMaterializer<E> {
-
-        private final AtomicReference<CancellationException> cancelException;
-        private final ExecutionContext context;
-        private final Supplier<? extends Iterable<? extends E>> supplier;
-
-        private ImmaterialState(@NotNull final Supplier<? extends Iterable<? extends E>> supplier,
-            @NotNull final ExecutionContext context,
-            @NotNull final AtomicReference<CancellationException> cancelException) {
-          this.supplier = supplier;
-          this.context = context;
-          this.cancelException = cancelException;
-        }
-
-        @Override
-        public boolean isCancelled() {
-          return false;
-        }
-
-        @Override
-        public boolean isDone() {
-          return false;
-        }
-
-        @Override
-        public boolean isFailed() {
-          return false;
-        }
-
-        @Override
-        public boolean isMaterializedAtOnce() {
-          return false;
-        }
-
-        @Override
-        public boolean isSucceeded() {
-          return false;
-        }
-
-        @Override
-        public int knownSize() {
-          return -1;
-        }
-
-        @Override
-        public void materializeCancel(@NotNull final CancellationException exception) {
-          setCancelled(exception);
-        }
-
-        @Override
-        public void materializeContains(final Object element,
-            @NotNull final FutureConsumer<Boolean> consumer) {
-          materialized().materializeContains(element, consumer);
-        }
-
-        @Override
-        public void materializeElement(@NotNegative final int index,
-            @NotNull final IndexedFutureConsumer<E> consumer) {
-          materialized().materializeElement(index, consumer);
-        }
-
-        @Override
-        public void materializeElements(@NotNull final FutureConsumer<java.util.List<E>> consumer) {
-          final ListFutureMaterializer<E> state = materialized();
-          state.materializeElements(new FutureConsumer<java.util.List<E>>() {
-            @Override
-            public void accept(final java.util.List<E> elements) throws Exception {
-              setDone(state);
-              consumer.accept(elements);
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) throws Exception {
-              consumer.error(error);
-            }
-          });
-        }
-
-        @Override
-        public void materializeEmpty(@NotNull final FutureConsumer<Boolean> consumer) {
-          materialized().materializeEmpty(consumer);
-        }
-
-        @Override
-        public void materializeHasElement(@NotNegative final int index,
-            @NotNull final FutureConsumer<Boolean> consumer) {
-          materialized().materializeHasElement(index, consumer);
-        }
-
-        @Override
-        public void materializeNextWhile(@NotNegative final int index,
-            @NotNull final IndexedFuturePredicate<E> predicate) {
-          materialized().materializeNextWhile(index, predicate);
-        }
-
-        @Override
-        public void materializePrevWhile(@NotNegative final int index,
-            @NotNull final IndexedFuturePredicate<E> predicate) {
-          materialized().materializePrevWhile(index, predicate);
-        }
-
-        @Override
-        public void materializeSize(@NotNull final FutureConsumer<Integer> consumer) {
-          materialized().materializeSize(consumer);
-        }
-
-        @Override
-        public int weightContains() {
-          return weightElements();
-        }
-
-        @Override
-        public int weightElement() {
-          return weightElements();
-        }
-
-        @Override
-        public int weightElements() {
-          return 1;
-        }
-
-        @Override
-        public int weightEmpty() {
-          return weightElements();
-        }
-
-        @Override
-        public int weightHasElement() {
-          return weightElements();
-        }
-
-        @Override
-        public int weightNextWhile() {
-          return weightElements();
-        }
-
-        @Override
-        public int weightPrevWhile() {
-          return weightElements();
-        }
-
-        @Override
-        public int weightSize() {
-          return weightElements();
-        }
-
-        private @NotNull ListFutureMaterializer<E> materialized() {
-          try {
-            return getElementsMaterializer(context, supplier.get());
-          } catch (final Exception e) {
-            if (e instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-            }
-            final CancellationException exception = cancelException.get();
-            if (exception != null) {
-              return setCancelled(exception);
-            } else {
-              return setFailed(e);
-            }
-          }
-        }
       }
     }
 

@@ -847,80 +847,40 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void notAll() {
-    assertFalse(Iterator.of().notAll(Objects::isNull).isEmpty());
-    assertTrue(Iterator.of().notAll(Objects::isNull).notEmpty());
-    assertEquals(1, Iterator.of().notAll(Objects::isNull).size());
-    assertTrue(Iterator.of().notAll(Objects::isNull).first());
-    assertFalse(Iterator.of(1, 2, 3).notAll(i -> i < 4).first());
-    assertTrue(Iterator.of(1, 2, 3).notAll(i -> i > 1).first());
+  public void notAll() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).notAll((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).notAll((Predicate<? super Integer>) null));
+    test(List.of(true), () -> Iterator.of().notAll(Objects::isNull));
+    test(List.of(false), () -> Iterator.of(1, 2, 3).notAll(i -> i < 4));
+    test(List.of(true), () -> Iterator.of(1, 2, 3).notAll(i -> i > 1));
     var itr = Iterator.of(1, null, 3).notAll(i -> i > 0);
     assertThrows(NullPointerException.class, itr::first);
   }
 
   @Test
-  public void orElse() {
-    assertFalse(Iterator.of(1).orElse(List.of(2)).isEmpty());
-    assertTrue(Iterator.of(1).orElse(Iterator.of(2)).notEmpty());
-    assertEquals(1, Iterator.of(1).orElse(Iterator.of(2)).size());
-    assertEquals(1, Iterator.of(1).orElse(List.of(2)).first());
-    assertEquals(List.of(1), Iterator.of(1).orElse(Iterator.of(2)).toList());
-
-    assertFalse(Iterator.of(1).orElse(Iterator.of()).isEmpty());
-    assertTrue(Iterator.of(1).orElse(List.of()).notEmpty());
-    assertEquals(1, Iterator.of(1).orElse(List.of()).size());
-    assertEquals(1, Iterator.of(1).orElse(Iterator.of()).first());
-    assertEquals(List.of(1), Iterator.of(1).orElse(Iterator.of()).toList());
-
-    assertFalse(Iterator.of().orElse(List.of(2)).isEmpty());
-    assertTrue(Iterator.of().orElse(Iterator.of(2)).notEmpty());
-    assertEquals(1, Iterator.of().orElse(Iterator.of(2)).size());
-    assertEquals(2, Iterator.of().orElse(List.of(2)).first());
-    assertEquals(List.of(2), Iterator.of().orElse(List.of(2)).toList());
-
-    assertTrue(Iterator.of().orElse(Iterator.of()).isEmpty());
-    assertFalse(Iterator.of().orElse(List.of()).notEmpty());
-    assertEquals(0, Iterator.of().orElse(List.of()).size());
-    assertThrows(NoSuchElementException.class, () -> Iterator.of().orElse(Iterator.of()).first());
-    assertEquals(List.of(), Iterator.of().orElse(Iterator.of()).toList());
+  public void orElse() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of().orElse(null));
+    test(List.of(1), () -> Iterator.of(1).orElse(Iterator.of(2)));
+    test(List.of(1), () -> Iterator.of(1).orElse(Iterator.of()));
+    test(List.of(2), () -> Iterator.of().orElse(Iterator.of(2)));
+    test(List.of(), () -> Iterator.of().orElse(Iterator.of()));
   }
 
   @Test
-  public void orElseGet() {
-    sparx.util.function.Supplier<Iterator<Integer>> supplier = () -> Iterator.of(2);
-    assertFalse(Iterator.of(1).orElseGet(supplier).isEmpty());
-    assertTrue(Iterator.of(1).orElseGet(supplier).notEmpty());
-    assertEquals(1, Iterator.of(1).orElseGet(supplier).size());
-    assertEquals(1, Iterator.of(1).orElseGet(supplier).first());
-    assertEquals(List.of(1), Iterator.of(1).orElseGet(supplier).toList());
-
-    assertFalse(Iterator.of(1).orElseGet(List::of).isEmpty());
-    assertTrue(Iterator.of(1).orElseGet(Iterator::of).notEmpty());
-    assertEquals(1, Iterator.of(1).orElseGet(Iterator::of).size());
-    assertEquals(1, Iterator.of(1).orElseGet(List::of).first());
-    assertEquals(List.of(1), Iterator.of(1).orElseGet(Iterator::of).toList());
-
-    assertFalse(Iterator.of().orElseGet(supplier).isEmpty());
-    assertTrue(Iterator.of().orElseGet(supplier).notEmpty());
-    assertEquals(1, Iterator.of().orElseGet(supplier).size());
-    assertEquals(2, Iterator.of().orElseGet(supplier).first());
-    assertEquals(List.of(2), Iterator.of().orElseGet(supplier).toList());
-
-    assertTrue(Iterator.of().orElseGet(Iterator::of).isEmpty());
-    assertFalse(Iterator.of().orElseGet(List::of).notEmpty());
-    assertEquals(0, Iterator.of().orElseGet(Iterator::of).size());
-    assertThrows(NoSuchElementException.class, () -> Iterator.of().orElseGet(List::of).first());
-    assertEquals(List.of(), Iterator.of().orElseGet(Iterator::of).toList());
+  public void orElseGet() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of().orElseGet(null));
+    test(List.of(1), () -> Iterator.of(1).orElseGet(() -> Iterator.of(2)));
+    test(List.of(1), () -> Iterator.of(1).orElseGet(List::of));
+    test(List.of(1), () -> Iterator.of(1).orElseGet(Iterator::of));
+    test(List.of(2), () -> Iterator.of().orElseGet(() -> Iterator.of(2)));
+    test(List.of(), () -> Iterator.of().orElseGet(Iterator::of));
 
     sparx.util.function.Supplier<Iterator<Integer>> throwing = () -> {
       throw new IllegalStateException();
     };
-    assertFalse(Iterator.of(1).orElseGet(throwing).isEmpty());
-    assertTrue(Iterator.of(1).orElseGet(throwing).notEmpty());
-    assertEquals(1, Iterator.of(1).orElseGet(throwing).size());
-    assertEquals(1, Iterator.of(1).orElseGet(throwing).first());
-    assertEquals(List.of(1), Iterator.of(1).orElseGet(throwing).toList());
-
+    test(List.of(1), () -> Iterator.of(1).orElseGet(throwing));
     assertThrows(IllegalStateException.class, () -> Iterator.of().orElseGet(throwing).isEmpty());
     assertThrows(IllegalStateException.class, () -> Iterator.of().orElseGet(throwing).notEmpty());
     assertThrows(IllegalStateException.class, () -> Iterator.of().orElseGet(throwing).size());
