@@ -145,8 +145,7 @@ public class SuppliedIteratorFutureMaterializer<E> extends AbstractIteratorFutur
       return weightElements();
     }
 
-    @NotNull
-    private IteratorFutureMaterializer<E> materialized() {
+    private @NotNull IteratorFutureMaterializer<E> materialized() {
       try {
         return setState(new WrappingState(supplier.get(), cancelException));
       } catch (final Exception e) {

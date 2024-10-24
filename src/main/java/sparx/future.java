@@ -4426,6 +4426,18 @@ class future extends Sparx {
       return (List<F>) this;
     }
 
+    @Override
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    public @NotNull List<E> clone() {
+      nonBlockingGet();
+      return new List<E>(context, cancelException, materializer);
+    }
+
+    @Override
+    public @NotNull List<E> clone(@NotNull final Function<? super E, ? extends E> cloner) {
+      return map(cloner).<E>as().clone();
+    }
+
     // TODO: extra
     public @NotNull lazy.List<E> asLazy() {
       return lazy.List.wrap(this);
@@ -7693,6 +7705,19 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     public @NotNull <F> ListIterator<F> as() {
       return (ListIterator<F>) this;
+    }
+
+    @Override
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    public @NotNull ListIterator<E> clone() {
+      final int pos = safePos();
+      return new ListIterator<E>(context, list.clone(), pos);
+    }
+
+    @Override
+    public @NotNull ListIterator<E> clone(@NotNull final Function<? super E, ? extends E> cloner) {
+      final int pos = safePos();
+      return new ListIterator<E>(context, list.clone(cloner), pos);
     }
 
     // TODO: extra

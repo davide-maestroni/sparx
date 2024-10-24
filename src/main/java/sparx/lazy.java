@@ -2587,9 +2587,31 @@ public class lazy extends Sparx {
 
     @Override
     @SuppressWarnings("MethodDoesntCallSuperMethod")
-    public List<E> clone() {
+    public @NotNull List<E> clone() {
       materializer.materializeElements();
       return new List<E>(materializer);
+    }
+
+    @Override
+    public @NotNull List<E> clone(@NotNull final Function<? super E, ? extends E> cloner) {
+      final ArrayList<E> elements;
+      final ListMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize >= 0) {
+        elements = new ArrayList<E>(knownSize);
+      } else {
+        elements = new ArrayList<E>();
+      }
+      try {
+        int i = 0;
+        while (materializer.canMaterializeElement(i)) {
+          elements.add(cloner.apply(materializer.materializeElement(i)));
+          ++i;
+        }
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+      return new List<E>(new ListToListMaterializer<E>(elements));
     }
 
     @Override
@@ -4698,6 +4720,17 @@ public class lazy extends Sparx {
     @SuppressWarnings("unchecked")
     public @NotNull <F> ListIterator<F> as() {
       return (ListIterator<F>) this;
+    }
+
+    @Override
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    public @NotNull ListIterator<E> clone() {
+      return new ListIterator<E>(list.clone(), pos);
+    }
+
+    @Override
+    public @NotNull ListIterator<E> clone(@NotNull final Function<? super E, ? extends E> cloner) {
+      return new ListIterator<E>(list.clone(cloner), pos);
     }
 
     @Override

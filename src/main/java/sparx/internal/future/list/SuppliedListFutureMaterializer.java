@@ -171,8 +171,7 @@ public class SuppliedListFutureMaterializer<E> extends AbstractListFutureMateria
       return weightElements();
     }
 
-    @NotNull
-    private ListFutureMaterializer<E> materialized() {
+    private @NotNull ListFutureMaterializer<E> materialized() {
       try {
         return setState(new WrappingState(supplier.get(), cancelException));
       } catch (final Exception e) {
