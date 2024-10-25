@@ -24,7 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
@@ -94,6 +97,7 @@ import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MaxIteratorFutureMaterializer;
 import sparx.internal.future.iterator.OrElseIteratorFutureMaterializer;
+import sparx.internal.future.iterator.PeekIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -1423,6 +1427,51 @@ public class FutureIteratorTests {
         () -> Iterator.of().toFuture(context).flatMap(e -> List.of(e)).orElseGet(throwing).first());
 
     testCancel(it -> it.orElseGet(() -> Iterator.of(null)));
+  }
+
+  @Test
+  public void peek() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).peek((Consumer<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).peek((IndexedConsumer<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .peek((Consumer<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .peek((IndexedConsumer<? super Integer>) null));
+    var set = new HashSet<Integer>();
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.peek(set::add));
+    assertEquals(Set.of(1, 2, 3), set);
+    set.clear();
+    test(List.of(), Iterator::<Integer>of, it -> it.peek(set::add));
+    assertEquals(Set.of(), set);
+
+    var list = new ArrayList<Integer>();
+    assertEquals(List.of(1, 2, 3),
+        Iterator.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).peek(i -> list.add(i))
+            .toList());
+    assertEquals(List.of(1, 2, 3), list);
+    list.clear();
+    assertEquals(1,
+        Iterator.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).peek(i -> list.add(i))
+            .next());
+    assertEquals(List.of(1), list);
+    list.clear();
+    assertEquals(List.of(3),
+        Iterator.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).peek(i -> list.add(i))
+            .drop(2).toList());
+    assertEquals(List.of(3), list);
+
+    var map = new HashMap<Integer, Integer>();
+    testMaterializer(List.of(1, 2, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new PeekIteratorFutureMaterializer<>(m, map::put, c, new AtomicReference<>()));
+    assertEquals(Map.of(0, 1, 1, 2, 2, 3), map);
+
+    testCancel(it -> it.peek(e -> {
+    }));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

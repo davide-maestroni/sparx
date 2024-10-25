@@ -30,24 +30,29 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
 import sparx.util.annotation.Positive;
-import sparx.util.function.IndexedFunction;
+import sparx.util.function.IndexedConsumer;
 
-public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureMaterializer<F> {
+public class PeekIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      MapIteratorFutureMaterializer.class.getName());
+      PeekIteratorFutureMaterializer.class.getName());
 
+  private final boolean isMaterializedAtOnce;
   private final int knownSize;
 
-  public MapIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
-      @NotNull final IndexedFunction<? super E, ? extends F> mapper,
-      @NotNull final ExecutionContext context,
+  public PeekIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
+      @NotNull final IndexedConsumer<? super E> consumer, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context);
     knownSize = wrapped.knownSize();
-    setState(new ImmaterialState(wrapped, mapper, context, cancelException));
+    isMaterializedAtOnce = wrapped.isMaterializedAtOnce();
+    setState(new ImmaterialState(wrapped, consumer, context, cancelException));
+  }
+
+  @Override
+  public boolean isMaterializedAtOnce() {
+    return isMaterializedAtOnce || super.isMaterializedAtOnce();
   }
 
   @Override
@@ -55,23 +60,22 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
     return knownSize;
   }
 
-  private class ImmaterialState implements IteratorFutureMaterializer<F> {
+  private class ImmaterialState implements IteratorFutureMaterializer<E> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final ArrayList<FutureConsumer<List<F>>> elementsConsumers = new ArrayList<FutureConsumer<List<F>>>(
+    private final ArrayList<FutureConsumer<List<E>>> elementsConsumers = new ArrayList<FutureConsumer<List<E>>>(
         2);
-    private final IndexedFunction<? super E, ? extends F> mapper;
+    private final IndexedConsumer<? super E> consumer;
     private final IteratorFutureMaterializer<E> wrapped;
 
     private int wrappedIndex;
 
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
-        @NotNull final IndexedFunction<? super E, ? extends F> mapper,
-        @NotNull final ExecutionContext context,
+        @NotNull final IndexedConsumer<? super E> consumer, @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
-      this.mapper = mapper;
+      this.consumer = consumer;
       this.context = context;
       this.cancelException = cancelException;
     }
@@ -114,28 +118,23 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
     }
 
     @Override
-    public void materializeElements(@NotNull final FutureConsumer<List<F>> consumer) {
-      final ArrayList<FutureConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
+    public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
+      final ArrayList<FutureConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
-        final DequeueList<F> elements = new DequeueList<F>();
-        wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+        wrapped.materializeElements(new CancellableFutureConsumer<List<E>>() {
           @Override
-          public void cancellableComplete(final int size) {
+          public void cancellableAccept(final List<E> elements) throws Exception {
             if (elements.isEmpty()) {
-              setDone(EmptyIteratorFutureMaterializer.<F>instance());
-              consumeElements(Collections.<F>emptyList());
+              setDone(EmptyIteratorFutureMaterializer.<E>instance());
+              consumeElements(Collections.<E>emptyList());
             } else {
-              setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context, wrappedIndex));
+              for (final E element : elements) {
+                ImmaterialState.this.consumer.accept(wrappedIndex++, element);
+              }
+              setDone(new ListToIteratorFutureMaterializer<E>(elements, context, wrappedIndex));
               consumeElements(elements);
             }
-          }
-
-          @Override
-          public boolean cancellableTest(final int size, final int index, final E element)
-              throws Exception {
-            elements.add(getMapped(element));
-            return true;
           }
 
           @Override
@@ -152,7 +151,7 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
         @Override
         public void cancellableAccept(final Boolean hasNext) throws Exception {
           if (!hasNext) {
-            setDone(EmptyIteratorFutureMaterializer.<F>instance());
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
           }
           consumer.accept(hasNext);
         }
@@ -165,10 +164,10 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
     }
 
     @Override
-    public void materializeIterator(@NotNull final FutureConsumer<Iterator<F>> consumer) {
-      materializeElements(new FutureConsumer<List<F>>() {
+    public void materializeIterator(@NotNull final FutureConsumer<Iterator<E>> consumer) {
+      materializeElements(new FutureConsumer<List<E>>() {
         @Override
-        public void accept(final List<F> elements) {
+        public void accept(final List<E> elements) {
           getState().materializeIterator(consumer);
         }
 
@@ -180,19 +179,19 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
     }
 
     @Override
-    public void materializeNext(@NotNull final IndexedFutureConsumer<F> consumer) {
+    public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
       wrapped.materializeNext(new CancellableIndexedFutureConsumer<E>() {
         @Override
         public void cancellableAccept(final int size, final int index, final E element)
             throws Exception {
-          final int currentIndex = wrappedIndex;
-          final F mapped = getMapped(element);
-          consumer.accept(size, currentIndex, mapped);
+          final int currentIndex = wrappedIndex++;
+          ImmaterialState.this.consumer.accept(currentIndex, element);
+          consumer.accept(size, currentIndex, element);
         }
 
         @Override
         public void cancellableComplete(final int size) throws Exception {
-          setDone(EmptyIteratorFutureMaterializer.<F>instance());
+          setDone(EmptyIteratorFutureMaterializer.<E>instance());
           consumer.complete(0);
         }
 
@@ -204,20 +203,20 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
     }
 
     @Override
-    public void materializeNextWhile(@NotNull final IndexedFuturePredicate<F> predicate) {
+    public void materializeNextWhile(@NotNull final IndexedFuturePredicate<E> predicate) {
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
         public void cancellableComplete(final int size) throws Exception {
-          setDone(EmptyIteratorFutureMaterializer.<F>instance());
+          setDone(EmptyIteratorFutureMaterializer.<E>instance());
           predicate.complete(0);
         }
 
         @Override
         public boolean cancellableTest(final int size, final int index, final E element)
             throws Exception {
-          final int currentIndex = wrappedIndex;
-          final F mapped = getMapped(element);
-          return predicate.test(size, currentIndex, mapped);
+          final int currentIndex = wrappedIndex++;
+          ImmaterialState.this.consumer.accept(currentIndex, element);
+          return predicate.test(size, currentIndex, element);
         }
 
         @Override
@@ -234,7 +233,7 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
         @Override
         public void cancellableAccept(final Integer skipped) throws Exception {
           if (skipped < count) {
-            setDone(EmptyIteratorFutureMaterializer.<F>instance());
+            setDone(EmptyIteratorFutureMaterializer.<E>instance());
           }
           wrappedIndex += skipped;
           consumer.accept(skipped);
@@ -272,29 +271,20 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
       return wrapped.weightSkip();
     }
 
-    private void consumeElements(@NotNull final List<F> elements) {
-      final ArrayList<FutureConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
-      for (final FutureConsumer<List<F>> elementsConsumer : elementsConsumers) {
+    private void consumeElements(@NotNull final List<E> elements) {
+      final ArrayList<FutureConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
+      for (final FutureConsumer<List<E>> elementsConsumer : elementsConsumers) {
         safeConsume(elementsConsumer, elements, LOGGER);
       }
       elementsConsumers.clear();
     }
 
     private void consumeError(@NotNull final Exception error) {
-      final ArrayList<FutureConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
-      for (final FutureConsumer<List<F>> elementsConsumer : elementsConsumers) {
+      final ArrayList<FutureConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
+      for (final FutureConsumer<List<E>> elementsConsumer : elementsConsumers) {
         safeConsumeError(elementsConsumer, error, LOGGER);
       }
       elementsConsumers.clear();
-    }
-
-    private F getMapped(final E element) throws Exception {
-      try {
-        return mapper.apply(wrappedIndex++, element);
-      } catch (final Exception e) {
-        setError(e);
-        throw e;
-      }
     }
 
     private void setError(@NotNull final Exception error) {

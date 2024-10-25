@@ -86,6 +86,7 @@ import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MaxIteratorFutureMaterializer;
 import sparx.internal.future.iterator.OrElseIteratorFutureMaterializer;
+import sparx.internal.future.iterator.PeekIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
@@ -924,6 +925,21 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerPeek(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedConsumer<? super E> consumer) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          materializer.knownSize()) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).peek(consumer);
+        }
+      };
+    }
+
     private static @NotNull Iterator<Boolean> trueIterator(
         @NotNull final ExecutionContext context) {
       return new Iterator<Boolean>(context, new AtomicReference<CancellationException>(),
@@ -1151,9 +1167,9 @@ class future extends Sparx {
       try {
         nonBlockingFor(consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -1165,9 +1181,9 @@ class future extends Sparx {
       try {
         nonBlockingFor(consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -1179,9 +1195,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(predicate).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -1194,9 +1210,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(condition, consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -1208,9 +1224,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(predicate).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -1223,9 +1239,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(condition, consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -2829,13 +2845,39 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> peek(@NotNull Consumer<? super E> consumer) {
-      return null;
+    public @NotNull Iterator<E> peek(@NotNull final Consumer<? super E> consumer) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerPeek(materializer, context, cancelException,
+                toIndexedConsumer(Require.notNull(consumer, "consumer"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new PeekIteratorFutureMaterializer<E>(materializer,
+              toIndexedConsumer(Require.notNull(consumer, "consumer")), context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<E> peek(@NotNull IndexedConsumer<? super E> consumer) {
-      return null;
+    public @NotNull Iterator<E> peek(@NotNull final IndexedConsumer<? super E> consumer) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerPeek(materializer, context, cancelException,
+                Require.notNull(consumer, "consumer")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new PeekIteratorFutureMaterializer<E>(materializer, Require.notNull(consumer, "consumer"),
+              context, cancelException));
     }
 
     @Override
@@ -3178,6 +3220,22 @@ class future extends Sparx {
     @Override
     public @NotNull Iterator<E> takeWhile(@NotNull Predicate<? super E> predicate) {
       return null;
+    }
+
+    // TODO: extra
+    public @NotNull Iterator<E> toContext(@NotNull final ExecutionContext context) {
+      return new Iterator<E>(context, new AtomicReference<CancellationException>(),
+          new SwitchIteratorFutureMaterializer<E>(this.context, taskID, context, materializer));
+    }
+
+    // TODO: extra
+    public @NotNull Iterator<E> toFuture(@NotNull final ExecutionContext context) {
+      return context.equals(this.context) ? this : toContext(context);
+    }
+
+    // TODO: extra
+    public @NotNull lazy.Iterator<E> toLazy() {
+      return lazy.Iterator.wrap((java.util.Iterator<E>) this);
     }
 
     // TODO: extra
@@ -4427,23 +4485,6 @@ class future extends Sparx {
     }
 
     @Override
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
-    public @NotNull List<E> clone() {
-      nonBlockingGet();
-      return new List<E>(context, cancelException, materializer);
-    }
-
-    @Override
-    public @NotNull List<E> clone(@NotNull final Function<? super E, ? extends E> cloner) {
-      return map(cloner).<E>as().clone();
-    }
-
-    // TODO: extra
-    public @NotNull lazy.List<E> asLazy() {
-      return lazy.List.wrap(this);
-    }
-
-    @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
       if (!materializer.isDone() && cancelException.compareAndSet(null,
           new CancellationException())) {
@@ -4472,6 +4513,18 @@ class future extends Sparx {
         return true;
       }
       return false;
+    }
+
+    @Override
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    public @NotNull List<E> clone() {
+      nonBlockingGet();
+      return new List<E>(context, cancelException, materializer);
+    }
+
+    @Override
+    public @NotNull List<E> clone(@NotNull final Function<? super E, ? extends E> cloner) {
+      return map(cloner).<E>as().clone();
     }
 
     @Override
@@ -4648,9 +4701,9 @@ class future extends Sparx {
       try {
         nonBlockingFor(consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -4662,9 +4715,9 @@ class future extends Sparx {
       try {
         nonBlockingFor(consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -4676,9 +4729,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(predicate).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -4691,9 +4744,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(condition, consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -4705,9 +4758,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(predicate).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -4720,9 +4773,9 @@ class future extends Sparx {
       try {
         nonBlockingWhile(condition, consumer).get();
       } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(e.getCause());
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
     }
 
@@ -7370,54 +7423,20 @@ class future extends Sparx {
               cancelException));
     }
 
-    // TODO: toFuture(context) ???
     // TODO: extra
     public @NotNull List<E> toContext(@NotNull final ExecutionContext context) {
-      if (context.equals(this.context)) {
-        return this;
-      }
       return new List<E>(context, new AtomicReference<CancellationException>(),
           new SwitchListFutureMaterializer<E>(this.context, taskID, context, materializer));
     }
 
     // TODO: extra
+    public @NotNull List<E> toFuture(@NotNull final ExecutionContext context) {
+      return context.equals(this.context) ? this : toContext(context);
+    }
+
+    // TODO: extra
     public @NotNull lazy.List<E> toLazy() {
-      final BlockingConsumer<java.util.List<E>> consumer = new BlockingConsumer<java.util.List<E>>(
-          cancelException);
-      final ExecutionContext context = this.context;
-      final ListFutureMaterializer<E> materializer = this.materializer;
-      if (context.isCurrent()) {
-        if (!materializer.isDone()) {
-          throw new DeadLockException("cannot wait on the future own execution context");
-        }
-        materializer.materializeElements(consumer);
-      } else {
-        context.scheduleAfter(new ContextTask(context) {
-          @Override
-          public @NotNull String taskID() {
-            return taskID;
-          }
-
-          @Override
-          public int weight() {
-            return materializer.weightElements();
-          }
-
-          @Override
-          protected void runWithContext() {
-            try {
-              materializer.materializeElements(consumer);
-            } catch (final Exception e) {
-              consumer.error(e);
-            }
-          }
-        });
-      }
-      try {
-        return lazy.List.wrap(consumer.get());
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
+      return lazy.List.wrap(this);
     }
 
     @Override
@@ -7708,6 +7727,11 @@ class future extends Sparx {
     }
 
     @Override
+    public boolean cancel(final boolean mayInterruptIfRunning) {
+      return list.cancel(mayInterruptIfRunning);
+    }
+
+    @Override
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     public @NotNull ListIterator<E> clone() {
       final int pos = safePos();
@@ -7718,17 +7742,6 @@ class future extends Sparx {
     public @NotNull ListIterator<E> clone(@NotNull final Function<? super E, ? extends E> cloner) {
       final int pos = safePos();
       return new ListIterator<E>(context, list.clone(cloner), pos);
-    }
-
-    // TODO: extra
-    public @NotNull lazy.ListIterator<E> asLazy() {
-      final int pos = safePos();
-      return list.asLazy().listIterator(pos);
-    }
-
-    @Override
-    public boolean cancel(final boolean mayInterruptIfRunning) {
-      return list.cancel(mayInterruptIfRunning);
     }
 
     @Override
@@ -7904,7 +7917,6 @@ class future extends Sparx {
       if (atEnd(pos)) {
         return falseIterator();
       }
-      final ExecutionContext context = this.context;
       return new ListIterator<Boolean>(context, nextList(pos).each(predicate));
     }
 
@@ -9113,9 +9125,25 @@ class future extends Sparx {
     }
 
     // TODO: extra
+    public @NotNull ListIterator<E> toContext(@NotNull final ExecutionContext context) {
+      final int pos = safePos();
+      return new ListIterator<E>(context, list.toContext(context), pos);
+    }
+
+    // TODO: extra
+    public @NotNull ListIterator<E> toFuture(@NotNull final ExecutionContext context) {
+      return context.equals(this.context) ? this : toContext(context);
+    }
+
+    // TODO: extra
     public @NotNull lazy.ListIterator<E> toLazy() {
       final int pos = safePos();
       return list.toLazy().listIterator(pos);
+    }
+
+    // TODO: extra
+    public @NotNull List<E> toList() {
+      return nextList();
     }
 
     @Override

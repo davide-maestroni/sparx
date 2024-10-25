@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -888,22 +889,26 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void peek() {
+  public void peek() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).peek((Consumer<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).peek((IndexedConsumer<? super Integer>) null));
+    var set = new HashSet<Integer>();
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).peek(set::add));
+    assertEquals(Set.of(1, 2, 3), set);
+    set.clear();
+    test(List.of(), () -> Iterator.<Integer>of().peek(set::add));
+    assertEquals(Set.of(), set);
+
     var list = new ArrayList<Integer>();
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3).peek(i -> list.add(i));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(list.isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertTrue(list.isEmpty());
-    assertEquals(3, itr.get().size());
-    assertTrue(list.isEmpty());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
+    assertEquals(List.of(1, 2, 3), Iterator.of(1, 2, 3).peek(i -> list.add(i)).toList());
     assertEquals(List.of(1, 2, 3), list);
     list.clear();
-    itr.get().next();
+    assertEquals(1, Iterator.of(1, 2, 3).peek(i -> list.add(i)).next());
     assertEquals(List.of(1), list);
     list.clear();
-    assertEquals(List.of(3), itr.get().drop(2).toList());
+    assertEquals(List.of(3), Iterator.of(1, 2, 3).peek(i -> list.add(i)).drop(2).toList());
     assertEquals(List.of(3), list);
   }
 
