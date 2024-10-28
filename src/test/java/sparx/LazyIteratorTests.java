@@ -914,6 +914,10 @@ public class LazyIteratorTests {
 
   @Test
   public void peekExceptionally() {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).peekExceptionally((Consumer<? super Throwable>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).peekExceptionally((IndexedConsumer<? super Throwable>) null));
     var ex = new AtomicReference<Throwable>();
     assertThrows(NullPointerException.class,
         () -> Iterator.of(1, null, 3).filter(i -> i > 0).drop(1).peekExceptionally(ex::set).next());
@@ -921,99 +925,36 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void plus() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.<Integer>of().plus(1).plus(2).plus(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
-
-    itr = () -> Iterator.<Integer>of().plus(1).plus(null).plus(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
-
-    itr = () -> Iterator.of(1).plus(2).plus(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
-
-    itr = () -> Iterator.of(1).plus(null).plus(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
-
-    itr = () -> Iterator.of(1, 2).plus(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null).plus(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
+  public void plus() throws Exception {
+    test(List.of(1, 2, 3), () -> Iterator.<Integer>of().plus(1).plus(2).plus(3));
+    test(List.of(1, null, 3), () -> Iterator.<Integer>of().plus(1).plus(null).plus(3));
+    test(List.of(1, 2, 3), () -> Iterator.of(1).plus(2).plus(3));
+    test(List.of(1, null, 3), () -> Iterator.of(1).plus(null).plus(3));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2).plus(3));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null).plus(3));
   }
 
   @Test
-  public void plusAll() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.<Integer>of().plusAll(Arrays.asList(1, 2, 3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
-
-    itr = () -> Iterator.<Integer>of().plusAll(List.of(1, null, 3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
-
-    itr = () -> Iterator.of(1).plusAll(new LinkedHashSet<>(List.of(2, 3)));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
-
-    itr = () -> Iterator.of(1).plusAll(List.of(null, 3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
-
-    itr = () -> Iterator.of(1, 2).plusAll(Set.of(3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null).plusAll(Set.of(3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
+  public void plusAll() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of().plusAll(null));
+    test(List.of(1, 2, 3), () -> Iterator.<Integer>of().plusAll(Arrays.asList(1, 2, 3)));
+    test(List.of(1, null, 3), () -> Iterator.<Integer>of().plusAll(List.of(1, null, 3)));
+    test(List.of(1, null, 3), () -> Iterator.<Integer>of().plusAll(Iterator.of(1, null, 3)));
+    test(List.of(1, 2, 3), () -> Iterator.of(1).plusAll(new LinkedHashSet<>(List.of(2, 3))));
+    test(List.of(1, null, 3), () -> Iterator.of(1).plusAll(List.of(null, 3)));
+    test(List.of(1, null, 3), () -> Iterator.of(1).plusAll(Iterator.of(null, 3)));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2).plusAll(Set.of(3)));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null).plusAll(Set.of(3)));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null).plusAll(Iterator.of(3)));
   }
 
   @Test
-  public void reduceLeft() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, 5);
-    assertFalse(itr.get().reduceLeft(Integer::sum).isEmpty());
-    assertEquals(1, itr.get().reduceLeft(Integer::sum).size());
-    assertEquals(List.of(15), itr.get().reduceLeft(Integer::sum).toList());
-    assertEquals(15, itr.get().reduceLeft(Integer::sum).first());
-
+  public void reduceLeft() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).reduceLeft(null));
+    test(List.of(15), () -> Iterator.of(1, 2, 3, 4, 5).reduceLeft(Integer::sum));
+    test(List.of(), () -> Iterator.<Integer>of().reduceLeft(Integer::sum));
     assertThrows(NullPointerException.class,
-        () -> itr.get().append(null).reduceLeft(Integer::sum).first());
-
-    assertTrue(Iterator.<Integer>of().reduceLeft(Integer::sum).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().reduceLeft(Integer::sum).size());
-    assertEquals(List.of(), Iterator.<Integer>of().reduceLeft(Integer::sum).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().reduceLeft(Integer::sum).first());
+        () -> Iterator.of(1, 2, null).reduceLeft(Integer::sum).first());
   }
 
   @Test

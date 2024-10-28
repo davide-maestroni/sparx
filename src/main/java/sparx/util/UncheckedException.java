@@ -15,13 +15,13 @@
  */
 package sparx.util;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 import org.jetbrains.annotations.NotNull;
 
 public class UncheckedException extends RuntimeException {
 
+  private static final String ADD_STACK_METHOD_NAME = "addCurrentStack";
   private static final String CLASS_NAME = UncheckedException.class.getName();
 
   public static @NotNull Throwable addCurrentStack(@NotNull final Throwable error) {
@@ -29,7 +29,7 @@ public class UncheckedException extends RuntimeException {
     int offset = 0;
     for (; offset < currentStack.length; ++offset) {
       final StackTraceElement traceElement = currentStack[offset];
-      if (CLASS_NAME.equals(traceElement.getClassName()) && "addCurrentStack".equals(
+      if (CLASS_NAME.equals(traceElement.getClassName()) && ADD_STACK_METHOD_NAME.equals(
           traceElement.getMethodName())) {
         ++offset;
         break;
@@ -38,7 +38,8 @@ public class UncheckedException extends RuntimeException {
     final StackTraceElement[] errorStack = error.getStackTrace();
     final StackTraceElement[] stackTrace = Arrays.copyOf(errorStack,
         errorStack.length + currentStack.length - offset);
-    System.arraycopy(currentStack, offset, stackTrace, errorStack.length, currentStack.length - offset);
+    System.arraycopy(currentStack, offset, stackTrace, errorStack.length,
+        currentStack.length - offset);
     error.setStackTrace(stackTrace);
     return error;
   }

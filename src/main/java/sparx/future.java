@@ -86,7 +86,9 @@ import sparx.internal.future.iterator.MapIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MaxIteratorFutureMaterializer;
 import sparx.internal.future.iterator.OrElseIteratorFutureMaterializer;
+import sparx.internal.future.iterator.PeekExceptionallyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.PeekIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ReduceLeftIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
@@ -936,6 +938,35 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).peek(consumer);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerPeekExceptionally(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedConsumer<? super Throwable> consumer) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          materializer.knownSize()) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).peekExceptionally(consumer);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerReduceLeft(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).reduceLeft(operation);
         }
       };
     }
@@ -2881,14 +2912,41 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> peekExceptionally(@NotNull Consumer<? super Throwable> consumer) {
-      return null;
+    public @NotNull Iterator<E> peekExceptionally(
+        @NotNull final Consumer<? super Throwable> consumer) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerPeekExceptionally(materializer, context, cancelException,
+                toIndexedConsumer(Require.notNull(consumer, "consumer"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new PeekExceptionallyIteratorFutureMaterializer<E>(materializer,
+              toIndexedConsumer(Require.notNull(consumer, "consumer")), context, cancelException));
     }
 
     @Override
     public @NotNull Iterator<E> peekExceptionally(
-        @NotNull IndexedConsumer<? super Throwable> consumer) {
-      return null;
+        @NotNull final IndexedConsumer<? super Throwable> consumer) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerPeekExceptionally(materializer, context, cancelException,
+                Require.notNull(consumer, "consumer")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new PeekExceptionallyIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(consumer, "consumer"), context, cancelException));
     }
 
     @Override
@@ -2903,19 +2961,32 @@ class future extends Sparx {
 
     @Override
     public @NotNull Iterator<E> reduce(
-        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-      return null;
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return reduceLeft(operation);
     }
 
     @Override
     public @NotNull Iterator<E> reduceLeft(
-        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-      return null;
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerReduceLeft(materializer, context, cancelException,
+                Require.notNull(operation, "operation")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new ReduceLeftIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(operation, "operation"), context, cancelException));
     }
 
     @Override
     public @NotNull Iterator<E> reduceRight(
-        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       return null;
     }
 

@@ -71,7 +71,7 @@ public class ReduceLeftIteratorMaterializer<E> extends StatefulIteratorMateriali
     @Override
     public int materializeSkip(@Positive final int count) {
       setEmptyState();
-      return 1;
+      return wrapped.materializeHasNext() ? 1 : 0;
     }
   }
 }

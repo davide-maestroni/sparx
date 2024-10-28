@@ -17,6 +17,7 @@ package sparx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -98,6 +99,7 @@ import sparx.internal.future.iterator.MapLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.MaxIteratorFutureMaterializer;
 import sparx.internal.future.iterator.OrElseIteratorFutureMaterializer;
 import sparx.internal.future.iterator.PeekIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ReduceLeftIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -1474,6 +1476,56 @@ public class FutureIteratorTests {
     }));
   }
 
+  @Test
+  @SuppressWarnings("CallToPrintStackTrace")
+  public void peekExceptionally() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .peekExceptionally((Consumer<? super Throwable>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .peekExceptionally((IndexedConsumer<? super Throwable>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .peekExceptionally((Consumer<? super Throwable>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .peekExceptionally((IndexedConsumer<? super Throwable>) null));
+    var ex = new AtomicReference<Throwable>();
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null, 3).filter(i -> i > 0).flatMap(e -> List.of(e)).drop(1)
+            .peekExceptionally(ex::set).next());
+    assertInstanceOf(NullPointerException.class, ex.get());
+
+    // TODO: switchExceptionally
+//    ex.set(null);
+//    testMaterializer(List.of(1, 2, 3),
+//        c -> new ListToIteratorFutureMaterializer<>(List.of(null, 2, 3), c),
+//        (c, m) -> new PeekExceptionallyIteratorFutureMaterializer<>(
+//            new FilterIteratorFutureMaterializer<>(m, (i, e) -> e > 0, c, new AtomicReference<>()),
+//            (i, t) -> ex.set(t), c, new AtomicReference<>()));
+//    assertInstanceOf(NullPointerException.class, ex.get());
+
+    testCancel(it -> it.peekExceptionally(t -> t.printStackTrace()));
+  }
+
+  @Test
+  public void reduceLeft() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).reduceLeft(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).reduceLeft(null));
+    test(List.of(15), () -> Iterator.of(1, 2, 3, 4, 5), it -> it.reduceLeft(Integer::sum));
+    test(List.of(), Iterator::<Integer>of, it -> it.reduceLeft(Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null).toFuture(context).flatMap(e -> List.of(e))
+            .reduceLeft(Integer::sum).first());
+
+    testMaterializer(List.of(6), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new ReduceLeftIteratorFutureMaterializer<>(m, Integer::sum, c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.reduceLeft((a, e) -> e));
+  }
+
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {
     context.scheduleAfter(new ContextTask(context) {
       @Override
@@ -1490,10 +1542,10 @@ public class FutureIteratorTests {
   private <E> void test(@NotNull final java.util.List<E> expected,
       @NotNull final Supplier<? extends future.Iterator<? extends E>> actualSupplier)
       throws Exception {
-//    assertEquals(expected.isEmpty(), actualSupplier.get().isEmpty());
-//    assertEquals(!expected.isEmpty(), actualSupplier.get().notEmpty());
-//    assertEquals(expected.size(), actualSupplier.get().size());
-//    assertEquals(expected, actualSupplier.get().toList());
+    assertEquals(expected.isEmpty(), actualSupplier.get().isEmpty());
+    assertEquals(!expected.isEmpty(), actualSupplier.get().notEmpty());
+    assertEquals(expected.size(), actualSupplier.get().size());
+    assertEquals(expected, actualSupplier.get().toList());
     var itr = actualSupplier.get();
     for (final E element : expected) {
       assertTrue(itr.hasNext());
