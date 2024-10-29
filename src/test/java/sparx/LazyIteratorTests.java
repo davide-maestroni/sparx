@@ -958,21 +958,12 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void reduceRight() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, 5);
-    assertFalse(itr.get().reduceRight(Integer::sum).isEmpty());
-    assertEquals(1, itr.get().reduceRight(Integer::sum).size());
-    assertEquals(List.of(15), itr.get().reduceRight(Integer::sum).toList());
-    assertEquals(15, itr.get().reduceRight(Integer::sum).first());
-
+  public void reduceRight() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).reduceRight(null));
+    test(List.of(15), () -> Iterator.of(1, 2, 3, 4, 5).reduceRight(Integer::sum));
+    test(List.of(), () -> Iterator.<Integer>of().reduceRight(Integer::sum));
     assertThrows(NullPointerException.class,
-        () -> itr.get().insert(null).reduceRight(Integer::sum).first());
-
-    assertTrue(Iterator.<Integer>of().reduceRight(Integer::sum).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().reduceRight(Integer::sum).size());
-    assertEquals(List.of(), Iterator.<Integer>of().reduceRight(Integer::sum).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().reduceRight(Integer::sum).first());
+        () -> Iterator.of(1, 2, null).reduceRight(Integer::sum).first());
   }
 
   @Test

@@ -100,6 +100,7 @@ import sparx.internal.future.iterator.MaxIteratorFutureMaterializer;
 import sparx.internal.future.iterator.OrElseIteratorFutureMaterializer;
 import sparx.internal.future.iterator.PeekIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReduceLeftIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ReduceRightIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -1524,6 +1525,25 @@ public class FutureIteratorTests {
             new AtomicReference<>()));
 
     testCancel(it -> it.reduceLeft((a, e) -> e));
+  }
+
+  @Test
+  public void reduceRight() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).reduceRight(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).flatMap(e -> List.of(e)).reduceRight(null));
+    test(List.of(15), () -> Iterator.of(1, 2, 3, 4, 5), it -> it.reduceRight(Integer::sum));
+    test(List.of(), Iterator::<Integer>of, it -> it.reduceRight(Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null).toFuture(context).flatMap(e -> List.of(e))
+            .reduceRight(Integer::sum).first());
+
+    testMaterializer(List.of(6), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new ReduceRightIteratorFutureMaterializer<>(m, Integer::sum, c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.reduceRight((e, a) -> e));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {
