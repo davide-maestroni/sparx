@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.internal.future.list;
+package sparx.internal.future.iterator;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -22,62 +22,42 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.util.function.IndexedPredicate;
 
-public class RemoveWhereListFutureMaterializer<E> extends ProgressiveListFutureMaterializer<E, E> {
+public class RemoveWhereIteratorFutureMaterializer<E> extends
+    ProgressiveIteratorFutureMaterializer<E, E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      RemoveWhereListFutureMaterializer.class.getName());
+      RemoveWhereIteratorFutureMaterializer.class.getName());
 
-  public RemoveWhereListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
+  public RemoveWhereIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context);
     setState(new ImmaterialState(wrapped, predicate, context, cancelException));
   }
 
-  private class ImmaterialState extends ProgressiveListFutureMaterializer<E, E>.ImmaterialState {
+  private class ImmaterialState extends
+      ProgressiveIteratorFutureMaterializer<E, E>.ImmaterialState {
 
     private final IndexedPredicate<? super E> predicate;
-    private final ListFutureMaterializer<E> wrapped;
 
-    private int nextIndex;
+    private int wrappedIndex;
 
-    public ImmaterialState(@NotNull final ListFutureMaterializer<E> wrapped,
+    public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       super(wrapped, context, cancelException, LOGGER);
-      this.wrapped = wrapped;
       this.predicate = predicate;
     }
 
     @Override
-    public int weightElements() {
-      return needsMaterializing() ? wrapped.weightNextWhile() : 1;
+    boolean addElement(final E element) throws Exception {
+      return !predicate.test(wrappedIndex++, element);
     }
 
     @Override
-    void materializeNext() {
-      wrapped.materializeNextWhile(nextIndex, new CancellableIndexedFuturePredicate<E>() {
-        @Override
-        public void cancellableComplete(final int size) throws Exception {
-          setComplete();
-        }
-
-        @Override
-        public boolean cancellableTest(final int size, final int index, final E element)
-            throws Exception {
-          nextIndex = index + 1;
-          if (!predicate.test(index, element)) {
-            return setNextElement(element);
-          }
-          return true;
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) {
-          setError(error);
-        }
-      });
+    E mapElement(final E element) {
+      return element;
     }
   }
 }

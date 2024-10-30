@@ -980,29 +980,13 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void removeEach() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4, 2);
-    assertFalse(itr.get().removeEach(1).isEmpty());
-    assertEquals(4, itr.get().removeEach(1).size());
-    assertEquals(List.of(2, null, 4, 2), itr.get().removeEach(1).toList());
-    assertNull(itr.get().removeEach(1).drop(1).first());
-    assertFalse(itr.get().removeEach(null).isEmpty());
-    assertEquals(4, itr.get().removeEach(null).size());
-    assertEquals(List.of(1, 2, 4, 2), itr.get().removeEach(null).toList());
-    assertEquals(4, itr.get().removeEach(null).drop(2).first());
-    assertFalse(itr.get().removeEach(2).isEmpty());
-    assertEquals(3, itr.get().removeEach(2).size());
-    assertEquals(List.of(1, null, 4), itr.get().removeEach(2).toList());
-    assertNull(itr.get().removeEach(2).drop(1).first());
-
-    assertFalse(itr.get().removeEach(0).isEmpty());
-    assertEquals(5, itr.get().removeEach(0).size());
-    assertEquals(List.of(1, 2, null, 4, 2), itr.get().removeEach(0).toList());
-    assertNull(itr.get().removeEach(0).drop(2).first());
-
-    assertTrue(Iterator.of().removeEach(1).isEmpty());
-    assertEquals(0, Iterator.of().removeEach(1).size());
-    assertEquals(List.of(), Iterator.of().removeEach(1).toList());
+  public void removeEach() throws Exception {
+    test(List.of(2, null, 4, 2), () -> Iterator.of(1, 2, null, 4, 2).removeEach(1));
+    test(List.of(1, 2, 4, 2), () -> Iterator.of(1, 2, null, 4, 2).removeEach(null));
+    test(List.of(1, null, 4), () -> Iterator.of(1, 2, null, 4, 2).removeEach(2));
+    test(List.of(1, 2, null, 4, 2), () -> Iterator.of(1, 2, null, 4, 2).removeEach(0));
+    test(List.of(), () -> Iterator.of().removeEach(1));
+    test(List.of(), () -> Iterator.of().removeEach(null));
   }
 
   @Test
@@ -1203,33 +1187,18 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void removeWhere() {
+  public void removeWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).removeWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).removeWhere((Predicate<? super Integer>) null));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).removeWhere(i -> false));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).removeWhere(i -> true));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null, 4).removeWhere(Objects::isNull));
+    test(List.of(null), () -> Iterator.of(1, 2, null, 4).removeWhere(Objects::nonNull));
+    test(List.of(), () -> Iterator.of().removeWhere(i -> false));
+
     Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().removeWhere(i -> false).isEmpty());
-    assertEquals(4, itr.get().removeWhere(i -> false).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeWhere(i -> false).toList());
-    assertEquals(2, itr.get().removeWhere(i -> false).drop(1).first());
-    assertTrue(itr.get().removeWhere(i -> true).isEmpty());
-    assertEquals(0, itr.get().removeWhere(i -> true).size());
-    assertEquals(List.of(), itr.get().removeWhere(i -> true).toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().removeWhere(i -> true).first());
-
-    assertFalse(itr.get().removeWhere(Objects::isNull).isEmpty());
-    assertEquals(3, itr.get().removeWhere(Objects::isNull).size());
-    assertEquals(List.of(1, 2, 4), itr.get().removeWhere(Objects::isNull).toList());
-    assertEquals(2, itr.get().removeWhere(Objects::isNull).drop(1).first());
-    assertFalse(itr.get().removeWhere(Objects::nonNull).isEmpty());
-    assertEquals(1, itr.get().removeWhere(Objects::nonNull).size());
-    assertEquals(List.of(null), itr.get().removeWhere(Objects::nonNull).toList());
-    assertNull(itr.get().removeWhere(Objects::nonNull).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().removeWhere(Objects::nonNull).drop(1).first());
-
-    assertTrue(Iterator.of().removeWhere(i -> false).isEmpty());
-    assertEquals(0, Iterator.of().removeWhere(i -> false).size());
-    assertEquals(List.of(), Iterator.of().removeWhere(i -> false).toList());
-    assertThrows(NoSuchElementException.class, () -> Iterator.of().removeWhere(i -> false).first());
-
     assertFalse(itr.get().removeWhere(i -> i < 2).isEmpty());
     assertThrows(NullPointerException.class, () -> itr.get().removeWhere(i -> i < 2).size());
     assertEquals(2, itr.get().removeWhere(i -> i < 2).first());

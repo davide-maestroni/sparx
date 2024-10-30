@@ -102,6 +102,7 @@ import sparx.internal.future.iterator.PeekIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReduceLeftIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReduceRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveAfterIteratorFutureMaterializer;
+import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -1565,6 +1566,53 @@ public class FutureIteratorTests {
             (l, n) -> List.wrap(l).removeAfter(n)));
 
     testCancel(it -> it.removeAfter(1));
+  }
+
+  @Test
+  public void removeEach() throws Exception {
+    test(List.of(2, null, 4, 2), () -> Iterator.of(1, 2, null, 4, 2), it -> it.removeEach(1));
+    test(List.of(1, 2, 4, 2), () -> Iterator.of(1, 2, null, 4, 2), it -> it.removeEach(null));
+    test(List.of(1, null, 4), () -> Iterator.of(1, 2, null, 4, 2), it -> it.removeEach(2));
+    test(List.of(1, 2, null, 4, 2), () -> Iterator.of(1, 2, null, 4, 2), it -> it.removeEach(0));
+    test(List.of(), Iterator::of, it -> it.removeEach(1));
+    test(List.of(), Iterator::of, it -> it.removeEach(null));
+
+    testCancel(it -> it.removeEach(null));
+  }
+
+  @Test
+  public void removeWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .removeWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).removeWhere((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .removeWhere((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .removeWhere((Predicate<? super Integer>) null));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.removeWhere(i -> false));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.removeWhere(i -> true));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeWhere(Objects::isNull));
+    test(List.of(null), () -> Iterator.of(1, 2, null, 4), it -> it.removeWhere(Objects::nonNull));
+    test(List.of(), Iterator::of, it -> it.removeWhere(i -> false));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4)
+        .toFuture(context).flatMap(e -> List.of(e));
+    assertFalse(itr.get().removeWhere(i -> i < 2).isEmpty());
+    assertThrows(NullPointerException.class, () -> itr.get().removeWhere(i -> i < 2).size());
+    assertEquals(2, itr.get().removeWhere(i -> i < 2).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().removeWhere(i -> i < 2).drop(1).first());
+
+    testMaterializer(List.of(1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new RemoveWhereIteratorFutureMaterializer<>(m, (i, e) -> e > 2, c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.removeWhere(e -> false));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {
