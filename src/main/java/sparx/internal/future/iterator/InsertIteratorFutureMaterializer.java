@@ -39,8 +39,8 @@ public class InsertIteratorFutureMaterializer<E> extends AbstractIteratorFutureM
   private static final Logger LOGGER = Logger.getLogger(
       InsertIteratorFutureMaterializer.class.getName());
 
-  private final int knownSize;
   private final boolean isMaterializedAtOnce;
+  private final int knownSize;
 
   public InsertIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
       final E element, @NotNull final ExecutionContext context,

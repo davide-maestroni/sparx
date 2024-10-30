@@ -967,35 +967,16 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void removeAfter() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3);
-    assertFalse(itr.get().removeAfter(5).isEmpty());
-    assertEquals(3, itr.get().removeAfter(5).size());
-    assertEquals(List.of(1, 2, 3), itr.get().removeAfter(5).toList());
-    assertFalse(itr.get().removeAfter(3).isEmpty());
-    assertEquals(3, itr.get().removeAfter(3).size());
-    assertEquals(List.of(1, 2, 3), itr.get().removeAfter(3).toList());
-    assertFalse(itr.get().removeAfter(2).isEmpty());
-    assertEquals(2, itr.get().removeAfter(2).size());
-    assertEquals(List.of(1, 2), itr.get().removeAfter(2).toList());
-    assertFalse(itr.get().removeAfter(1).isEmpty());
-    assertEquals(2, itr.get().removeAfter(1).size());
-    assertEquals(List.of(1, 3), itr.get().removeAfter(1).toList());
-    assertFalse(itr.get().removeAfter(0).isEmpty());
-    assertEquals(2, itr.get().removeAfter(0).size());
-    assertEquals(List.of(2, 3), itr.get().removeAfter(0).toList());
-    assertFalse(itr.get().removeAfter(-7).isEmpty());
-    assertEquals(3, itr.get().removeAfter(-7).size());
-    assertEquals(List.of(1, 2, 3), itr.get().removeAfter(-7).toList());
-
-    assertTrue(Iterator.of().removeAfter(5).isEmpty());
-    assertEquals(0, Iterator.of().removeAfter(5).size());
-    assertEquals(List.of(), Iterator.of().removeAfter(5).toList());
-
-    Iterable<Object> iterable = () -> List.of().iterator();
-    assertTrue(Iterator.wrap(iterable).removeAfter(5).isEmpty());
-    assertEquals(0, Iterator.wrap(iterable).removeAfter(5).size());
-    assertEquals(List.of(), Iterator.wrap(iterable).removeAfter(5).toList());
+  public void removeAfter() throws Exception {
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).removeAfter(5));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).removeAfter(3));
+    test(List.of(1, 2), () -> Iterator.of(1, 2, 3).removeAfter(2));
+    test(List.of(1, 3), () -> Iterator.of(1, 2, 3).removeAfter(1));
+    test(List.of(2, 3), () -> Iterator.of(1, 2, 3).removeAfter(0));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).removeAfter(-7));
+    test(List.of(), () -> Iterator.of().removeAfter(5));
+    test(List.of(), () -> Iterator.of().removeAfter(0));
+    test(List.of(), () -> Iterator.of().removeAfter(-7));
   }
 
   @Test

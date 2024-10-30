@@ -37,8 +37,8 @@ public class AppendListFutureMaterializer<E> extends AbstractListFutureMateriali
   private static final Logger LOGGER = Logger.getLogger(
       AppendListFutureMaterializer.class.getName());
 
-  private final int knownSize;
   private final boolean isMaterializedAtOnce;
+  private final int knownSize;
 
   public AppendListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       final E element, @NotNull final ExecutionContext context,

@@ -40,8 +40,8 @@ public class InsertAfterIteratorFutureMaterializer<E> extends
   private static final Logger LOGGER = Logger.getLogger(
       InsertAfterIteratorFutureMaterializer.class.getName());
 
-  private final int knownSize;
   private final boolean isMaterializedAtOnce;
+  private final int knownSize;
 
   public InsertAfterIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
       @Positive final int numElements, final E element, @NotNull final ExecutionContext context,

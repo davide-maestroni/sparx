@@ -29,8 +29,8 @@ import sparx.util.annotation.Positive;
 
 public class DropIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
 
-  private final int knownSize;
   private final boolean isMaterializedAtOnce;
+  private final int knownSize;
 
   public DropIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
       @Positive final int maxElements, @NotNull final ExecutionContext context,

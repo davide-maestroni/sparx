@@ -90,6 +90,7 @@ import sparx.internal.future.iterator.PeekExceptionallyIteratorFutureMaterialize
 import sparx.internal.future.iterator.PeekIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReduceLeftIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReduceRightIteratorFutureMaterializer;
+import sparx.internal.future.iterator.RemoveAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
@@ -982,6 +983,20 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).reduceRight(operation);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerRemoveAfter(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        final int numElement) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).removeAfter(numElement);
         }
       };
     }
@@ -3024,8 +3039,27 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> removeAfter(int numElements) {
-      return null;
+    public @NotNull Iterator<E> removeAfter(final int numElements) {
+      if (numElements == 0) {
+        return drop(1);
+      }
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+        return cloneIterator(context, materializer);
+      }
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerRemoveAfter(materializer, context, cancelException, numElements));
+      }
+      return new Iterator<E>(context, cancelException,
+          new RemoveAfterIteratorFutureMaterializer<E>(materializer, numElements, context,
+              cancelException, List.<E>removeAfterFunction()));
     }
 
     @Override
@@ -6690,6 +6724,9 @@ class future extends Sparx {
 
     @Override
     public @NotNull List<E> removeAfter(final int numElements) {
+      if (numElements == 0) {
+        return drop(1);
+      }
       final ExecutionContext context = this.context;
       final ListFutureMaterializer<E> materializer = this.materializer;
       if (numElements < 0 || numElements == Integer.MAX_VALUE) {
@@ -6698,9 +6735,6 @@ class future extends Sparx {
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
         return cloneList(context, materializer);
-      }
-      if (numElements == 0 && knownSize == 1) {
-        return emptyList(context);
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       if (materializer.isMaterializedAtOnce()) {

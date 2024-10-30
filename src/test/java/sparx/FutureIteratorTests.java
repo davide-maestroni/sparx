@@ -101,6 +101,7 @@ import sparx.internal.future.iterator.OrElseIteratorFutureMaterializer;
 import sparx.internal.future.iterator.PeekIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReduceLeftIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReduceRightIteratorFutureMaterializer;
+import sparx.internal.future.iterator.RemoveAfterIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -1544,6 +1545,26 @@ public class FutureIteratorTests {
             new AtomicReference<>()));
 
     testCancel(it -> it.reduceRight((e, a) -> e));
+  }
+
+  @Test
+  public void removeAfter() throws Exception {
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.removeAfter(5));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.removeAfter(3));
+    test(List.of(1, 2), () -> Iterator.of(1, 2, 3), it -> it.removeAfter(2));
+    test(List.of(1, 3), () -> Iterator.of(1, 2, 3), it -> it.removeAfter(1));
+    test(List.of(2, 3), () -> Iterator.of(1, 2, 3), it -> it.removeAfter(0));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.removeAfter(-7));
+    test(List.of(), Iterator::of, it -> it.removeAfter(5));
+    test(List.of(), Iterator::of, it -> it.removeAfter(0));
+    test(List.of(), Iterator::of, it -> it.removeAfter(-7));
+
+    testMaterializer(List.of(1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new RemoveAfterIteratorFutureMaterializer<>(m, 2, c, new AtomicReference<>(),
+            (l, n) -> List.wrap(l).removeAfter(n)));
+
+    testCancel(it -> it.removeAfter(1));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

@@ -28,8 +28,8 @@ import sparx.util.annotation.NotNegative;
 
 public class OrElseListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
-  private final int knownSize;
   private final boolean isMaterializedAtOnce;
+  private final int knownSize;
 
   public OrElseListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final ListFutureMaterializer<E> elementsMaterializer,
