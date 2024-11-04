@@ -15,28 +15,17 @@
  */
 package sparx.internal.future.iterator;
 
-import static sparx.internal.future.FutureConsumers.safeConsume;
-import static sparx.internal.future.FutureConsumers.safeConsumeError;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
-import sparx.internal.future.FutureConsumer;
-import sparx.internal.future.IndexedFutureConsumer;
-import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
 import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
 public class FlatMapAfterIteratorFutureMaterializer<E> extends
-    AbstractIteratorFutureMaterializer<E> {
+    ProgressiveIteratorFutureMaterializer<E, E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       FlatMapAfterIteratorFutureMaterializer.class.getName());
@@ -50,26 +39,15 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
     setState(new ImmaterialState(wrapped, numElements, mapper, context, cancelException));
   }
 
-  @Override
-  public int knownSize() {
-    return -1;
-  }
+  private class ImmaterialState extends
+      ProgressiveIteratorFutureMaterializer<E, E>.ImmaterialState {
 
-  private class ImmaterialState implements IteratorFutureMaterializer<E> {
-
-    private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final ArrayList<FutureConsumer<List<E>>> elementsConsumers = new ArrayList<FutureConsumer<List<E>>>(
-        2);
     private final IndexedFunction<? super E, ? extends IteratorFutureMaterializer<E>> mapper;
-    private final DequeueList<FutureConsumer<DequeueList<E>>> nextElementConsumers = new DequeueList<FutureConsumer<DequeueList<E>>>(
-        2);
-    private final DequeueList<E> nextElements = new DequeueList<E>(1);
     private final int numElements;
     private final IteratorFutureMaterializer<E> wrapped;
 
     private IteratorFutureMaterializer<E> elementsMaterializer;
-    private int index;
     private int wrappedIndex;
 
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
@@ -77,255 +55,35 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
         @NotNull final IndexedFunction<? super E, ? extends IteratorFutureMaterializer<E>> mapper,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
+      super(wrapped, context, cancelException, LOGGER);
       this.wrapped = wrapped;
       this.numElements = numElements;
       this.mapper = mapper;
       this.context = context;
-      this.cancelException = cancelException;
-    }
-
-    @Override
-    public boolean isCancelled() {
-      return false;
-    }
-
-    @Override
-    public boolean isDone() {
-      return false;
-    }
-
-    @Override
-    public boolean isFailed() {
-      return false;
-    }
-
-    @Override
-    public boolean isMaterializedAtOnce() {
-      return false;
-    }
-
-    @Override
-    public boolean isSucceeded() {
-      return false;
-    }
-
-    @Override
-    public int knownSize() {
-      return -1;
     }
 
     @Override
     public void materializeCancel(@NotNull final CancellationException exception) {
-      wrapped.materializeCancel(exception);
       final IteratorFutureMaterializer<E> elementsMaterializer = this.elementsMaterializer;
       if (elementsMaterializer != null) {
         elementsMaterializer.materializeCancel(exception);
       }
-      setCancelled(exception);
-      consumeError(exception);
+      super.materializeCancel(exception);
     }
 
     @Override
-    public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
-      final ArrayList<FutureConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
-      elementsConsumers.add(consumer);
-      if (elementsConsumers.size() == 1) {
-        final DequeueList<E> elements = new DequeueList<E>();
-        materializeNext(new FutureConsumer<DequeueList<E>>() {
-          @Override
-          public void accept(final DequeueList<E> nextElements) {
-            if (nextElements.isEmpty()) {
-              if (elements.isEmpty()) {
-                setDone(EmptyIteratorFutureMaterializer.<E>instance());
-                consumeElements(Collections.<E>emptyList());
-              } else {
-                setDone(new DequeueToIteratorFutureMaterializer<E>(elements, context, index));
-                consumeElements(elements);
-              }
-            } else {
-              elements.addAll(nextElements);
-              nextElements.clear();
-              materializeNext(this);
-            }
-          }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            setError(error);
-          }
-        });
-      }
+    boolean addElement(final E element) {
+      return true;
     }
 
     @Override
-    public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-      materializeNext(new FutureConsumer<DequeueList<E>>() {
-        @Override
-        public void accept(final DequeueList<E> nextElements) throws Exception {
-          if (nextElements.isEmpty()) {
-            setDone(EmptyIteratorFutureMaterializer.<E>instance());
-            consumer.accept(false);
-          } else {
-            consumer.accept(true);
-          }
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
+    E mapElement(final E element) {
+      return element;
     }
 
     @Override
-    public void materializeIterator(@NotNull final FutureConsumer<Iterator<E>> consumer) {
-      materializeElements(new FutureConsumer<List<E>>() {
-        @Override
-        public void accept(final List<E> elements) {
-          getState().materializeIterator(consumer);
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
-    }
-
-    @Override
-    public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
-      materializeNext(new FutureConsumer<DequeueList<E>>() {
-        @Override
-        public void accept(final DequeueList<E> nextElements) throws Exception {
-          if (nextElements.isEmpty()) {
-            setDone(EmptyIteratorFutureMaterializer.<E>instance());
-            consumer.complete(0);
-          } else {
-            consumer.accept(-1, ImmaterialState.this.index++, nextElements.removeFirst());
-          }
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
-    }
-
-    @Override
-    public void materializeNextWhile(@NotNull final IndexedFuturePredicate<E> predicate) {
-      materializeNext(new FutureConsumer<DequeueList<E>>() {
-        @Override
-        public void accept(final DequeueList<E> nextElements) throws Exception {
-          if (nextElements.isEmpty()) {
-            setDone(EmptyIteratorFutureMaterializer.<E>instance());
-            predicate.complete(0);
-          } else if (predicate.test(-1, ImmaterialState.this.index++, nextElements.removeFirst())) {
-            materializeNext(this);
-          }
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          predicate.error(error);
-        }
-      });
-    }
-
-    @Override
-    public void materializeSkip(@Positive final int count,
-        @NotNull final FutureConsumer<Integer> consumer) {
-      materializeNext(new FutureConsumer<DequeueList<E>>() {
-        private int skipped;
-
-        @Override
-        public void accept(final DequeueList<E> nextElements) throws Exception {
-          if (nextElements.isEmpty()) {
-            setDone(EmptyIteratorFutureMaterializer.<E>instance());
-            consumer.accept(skipped);
-          } else {
-            while (skipped < count && !nextElements.isEmpty()) {
-              nextElements.removeFirst();
-              ++index;
-              ++skipped;
-            }
-            if (skipped < count) {
-              materializeNext(this);
-            } else {
-              consumer.accept(skipped);
-            }
-          }
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) throws Exception {
-          consumer.error(error);
-        }
-      });
-    }
-
-    @Override
-    public int weightElements() {
-      return elementsConsumers.isEmpty() ? weightNextElements() : 1;
-    }
-
-    @Override
-    public int weightHasNext() {
-      return weightNextElements();
-    }
-
-    @Override
-    public int weightNext() {
-      return weightNextElements();
-    }
-
-    @Override
-    public int weightNextWhile() {
-      return weightNextElements();
-    }
-
-    @Override
-    public int weightSkip() {
-      return weightNextElements();
-    }
-
-    private void consumeElements(@NotNull final List<E> elements) {
-      final ArrayList<FutureConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
-      for (final FutureConsumer<List<E>> elementsConsumer : elementsConsumers) {
-        safeConsume(elementsConsumer, elements, LOGGER);
-      }
-      elementsConsumers.clear();
-    }
-
-    private void consumeError(@NotNull final Exception error) {
-      final ArrayList<FutureConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
-      for (final FutureConsumer<List<E>> elementsConsumer : elementsConsumers) {
-        safeConsumeError(elementsConsumer, error, LOGGER);
-      }
-      elementsConsumers.clear();
-    }
-
-    private void materializeNext(@NotNull final FutureConsumer<DequeueList<E>> consumer) {
-      final DequeueList<FutureConsumer<DequeueList<E>>> elementConsumers = this.nextElementConsumers;
-      elementConsumers.add(consumer);
-      if (elementConsumers.size() == 1) {
-        materializeUntilConsumed();
-      }
-    }
-
-    private void materializeUntilConsumed() {
-      final DequeueList<E> nextElements = this.nextElements;
-      final DequeueList<FutureConsumer<DequeueList<E>>> elementConsumers = this.nextElementConsumers;
-      if (!nextElements.isEmpty()) {
-        while (!elementConsumers.isEmpty()) {
-          if (nextElements.isEmpty()) {
-            materializeUntilConsumed();
-            return;
-          }
-          safeConsume(elementConsumers.getFirst(), nextElements, LOGGER);
-          elementConsumers.removeFirst();
-        }
-      } else if (elementsMaterializer != null) {
+    void materializeNext() {
+      if (elementsMaterializer != null) {
         elementsMaterializer.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
@@ -350,34 +108,21 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
           }
 
           @Override
-          public boolean cancellableTest(final int size, final int index, final E element) {
-            nextElements.add(element);
-            while (!elementConsumers.isEmpty()) {
-              if (nextElements.isEmpty()) {
-                return true;
-              }
-              safeConsume(elementConsumers.getFirst(), nextElements, LOGGER);
-              elementConsumers.removeFirst();
-            }
-            return false;
+          public boolean cancellableTest(final int size, final int index, final E element)
+              throws Exception {
+            return setNextElement(element);
           }
 
           @Override
           public void error(@NotNull final Exception error) {
-            while (!elementConsumers.isEmpty()) {
-              safeConsumeError(elementConsumers.getFirst(), error, LOGGER);
-              elementConsumers.removeFirst();
-            }
+            setNextError(error);
           }
         });
       } else {
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
-            for (final FutureConsumer<DequeueList<E>> consumer : elementConsumers) {
-              safeConsume(consumer, nextElements, LOGGER);
-            }
-            elementConsumers.clear();
+            setComplete();
           }
 
           @Override
@@ -385,12 +130,7 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
               throws Exception {
             final int wrappedIndex = ImmaterialState.this.wrappedIndex++;
             if (wrappedIndex == numElements) {
-              try {
-                elementsMaterializer = mapper.apply(wrappedIndex, element);
-              } catch (final Exception e) {
-                setError(e);
-                throw e;
-              }
+              elementsMaterializer = mapper.apply(wrappedIndex, element);
               final String taskID = context.currentTaskID();
               context.scheduleAfter(new ContextTask(context) {
                 @Override
@@ -408,47 +148,25 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
                   return elementsMaterializer.weightNextWhile();
                 }
               });
-            } else {
-              nextElements.add(element);
-              while (!elementConsumers.isEmpty()) {
-                if (nextElements.isEmpty()) {
-                  return true;
-                }
-                safeConsume(elementConsumers.getFirst(), nextElements, LOGGER);
-                elementConsumers.removeFirst();
-              }
+              return false;
             }
-            return false;
+            return setNextElement(element);
           }
 
           @Override
           public void error(@NotNull final Exception error) {
-            while (!elementConsumers.isEmpty()) {
-              safeConsumeError(elementConsumers.getFirst(), error, LOGGER);
-              elementConsumers.removeFirst();
-            }
+            setNextError(error);
           }
         });
       }
     }
 
-    private void setError(@NotNull final Exception error) {
-      final CancellationException exception = cancelException.get();
-      if (exception != null) {
-        setCancelled(exception);
-        consumeError(exception);
-      } else {
-        setFailed(error);
-        consumeError(error);
-      }
-    }
-
-    private int weightNextElements() {
-      return nextElementConsumers.isEmpty() ? elementsMaterializer != null ? (int) Math.min(
-          Integer.MAX_VALUE,
+    @Override
+    int weightNextElements() {
+      return elementsMaterializer != null ? (int) Math.min(Integer.MAX_VALUE,
           (long) wrapped.weightNextWhile() + elementsMaterializer.weightNextWhile())
           : (int) Math.min(Integer.MAX_VALUE,
-              (long) wrapped.weightNext() + wrapped.weightNextWhile()) : 1;
+              (long) wrapped.weightNext() + wrapped.weightNextWhile());
     }
   }
 }

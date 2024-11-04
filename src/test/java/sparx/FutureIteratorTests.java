@@ -709,8 +709,8 @@ public class FutureIteratorTests {
         () -> Iterator.of(0).toFuture(context).flatMapFirstWhere((i, e) -> false, null));
     assertThrows(NullPointerException.class,
         () -> Iterator.of(0).toFuture(context).flatMapFirstWhere(e -> false, null));
-//    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.flatMapFirstWhere(i -> false, i -> List.of(i, i)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.flatMapFirstWhere(i -> false, i -> List.of(i, i)));
     test(List.of(1, 1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
         it -> it.flatMapFirstWhere(i -> true, i -> List.of(i, i)));
     test(List.of(1, 2, 3, 4), () -> Iterator.of(1, 2, null, 4),

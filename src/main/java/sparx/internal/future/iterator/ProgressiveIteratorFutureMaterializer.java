@@ -247,30 +247,34 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
 
     @Override
     public int weightElements() {
-      return elementsConsumers.isEmpty() ? weightNextElements() : 1;
+      return elementsConsumers.isEmpty() ? weightUntilConsumed() : 1;
     }
 
     @Override
     public int weightHasNext() {
-      return weightNextElements();
+      return weightUntilConsumed();
     }
 
     @Override
     public int weightNext() {
-      return weightNextElements();
+      return weightUntilConsumed();
     }
 
     @Override
     public int weightNextWhile() {
-      return weightNextElements();
+      return weightUntilConsumed();
     }
 
     @Override
     public int weightSkip() {
-      return weightNextElements();
+      return weightUntilConsumed();
     }
 
     abstract boolean addElement(E element) throws Exception;
+
+    int currentIndex() {
+      return index;
+    }
 
     abstract F mapElement(E element) throws Exception;
 
@@ -287,38 +291,74 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
           elementConsumers.removeFirst();
         }
       } else {
-        wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
-          @Override
-          public void cancellableComplete(final int size) {
-            for (final FutureConsumer<DequeueList<F>> consumer : elementConsumers) {
-              safeConsume(consumer, nextElements, logger);
-            }
-            elementConsumers.clear();
-          }
+        materializeNext();
+      }
+    }
 
-          @Override
-          public boolean cancellableTest(final int size, final int index, final E element)
-              throws Exception {
-            if (addElement(element)) {
-              nextElements.add(mapElement(element));
-              while (!elementConsumers.isEmpty()) {
-                if (nextElements.isEmpty()) {
-                  return true;
-                }
-                safeConsume(elementConsumers.getFirst(), nextElements, logger);
-                elementConsumers.removeFirst();
-              }
-              return false;
-            }
+    void materializeNext() {
+      wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+        @Override
+        public void cancellableComplete(final int size) {
+          setComplete();
+        }
+
+        @Override
+        public boolean cancellableTest(final int size, final int index, final E element)
+            throws Exception {
+          return setNextElement(element);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) {
+          setNextError(error);
+        }
+      });
+    }
+
+    void setComplete() {
+      final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
+      for (final FutureConsumer<DequeueList<F>> consumer : elementConsumers) {
+        safeConsume(consumer, nextElements, logger);
+      }
+      elementConsumers.clear();
+    }
+
+    boolean setNextElement(final E element) throws Exception {
+      if (addElement(element)) {
+        final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
+        nextElements.add(mapElement(element));
+        while (!elementConsumers.isEmpty()) {
+          if (nextElements.isEmpty()) {
             return true;
           }
-
-          @Override
-          public void error(@NotNull final Exception error) {
-            setNextError(error);
-          }
-        });
+          safeConsume(elementConsumers.getFirst(), nextElements, logger);
+          elementConsumers.removeFirst();
+        }
+        return false;
       }
+      return true;
+    }
+
+    boolean setNextElements(@NotNull final Iterable<E> elements) throws Exception {
+      boolean added = false;
+      for (final E element : elements) {
+        if (addElement(element)) {
+          added = true;
+          nextElements.add(mapElement(element));
+        }
+      }
+      if (added) {
+        final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
+        while (!elementConsumers.isEmpty()) {
+          if (nextElements.isEmpty()) {
+            return true;
+          }
+          safeConsume(elementConsumers.getFirst(), nextElements, logger);
+          elementConsumers.removeFirst();
+        }
+        return false;
+      }
+      return true;
     }
 
     void setNextError(@NotNull final Exception error) {
@@ -329,7 +369,7 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
       }
     }
 
-    int weightUntilConsumed() {
+    int weightNextElements() {
       return wrapped.weightNextWhile();
     }
 
@@ -368,8 +408,8 @@ abstract class ProgressiveIteratorFutureMaterializer<E, F> extends
       }
     }
 
-    private int weightNextElements() {
-      return nextElementConsumers.isEmpty() ? weightUntilConsumed() : 1;
+    private int weightUntilConsumed() {
+      return nextElementConsumers.isEmpty() ? weightNextElements() : 1;
     }
   }
 }

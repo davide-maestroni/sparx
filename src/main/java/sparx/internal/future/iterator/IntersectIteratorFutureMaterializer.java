@@ -101,12 +101,12 @@ public class IntersectIteratorFutureMaterializer<E> extends
     }
 
     @Override
-    int weightUntilConsumed() {
+    int weightNextElements() {
       if (elementsBag == null) {
         return (int) Math.min(Integer.MAX_VALUE,
-            (long) elementsMaterializer.weightElements() + super.weightUntilConsumed());
+            (long) elementsMaterializer.weightElements() + super.weightNextElements());
       }
-      return super.weightUntilConsumed();
+      return super.weightNextElements();
     }
   }
 }
