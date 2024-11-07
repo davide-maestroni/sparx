@@ -1009,7 +1009,8 @@ public class LazyIteratorTests {
         () -> Iterator.of(1, 2, null, 4, 2).removeFirstWhere(Objects::isNull));
     test(List.of(1, null, 4, 2), () -> Iterator.of(1, 2, null, 4, 2).removeFirstWhere(i -> i == 2));
     test(List.of(1, null, 4, 2), () -> Iterator.of(1, 2, null, 4, 2).removeFirstWhere(i -> i > 1));
-    test(List.of(1, 2, null, 4, 2), () -> Iterator.of(1, 2, null, 4, 2).removeFirstWhere(i -> false));
+    test(List.of(1, 2, null, 4, 2),
+        () -> Iterator.of(1, 2, null, 4, 2).removeFirstWhere(i -> false));
     test(List.of(), () -> Iterator.<Integer>of().removeFirstWhere(i -> i == 1));
 
     Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4, 2);
@@ -1019,61 +1020,37 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void removeLast() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4, 2);
-    assertFalse(itr.get().removeLast(1).isEmpty());
-    assertEquals(4, itr.get().removeLast(1).size());
-    assertEquals(List.of(2, null, 4, 2), itr.get().removeLast(1).toList());
-    assertNull(itr.get().removeLast(1).drop(1).first());
-    assertFalse(itr.get().removeLast(null).isEmpty());
-    assertEquals(4, itr.get().removeLast(null).size());
-    assertEquals(List.of(1, 2, 4, 2), itr.get().removeLast(null).toList());
-    assertEquals(4, itr.get().removeLast(null).drop(2).first());
-    assertFalse(itr.get().removeLast(2).isEmpty());
-    assertEquals(4, itr.get().removeLast(2).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeLast(2).toList());
-    assertNull(itr.get().removeLast(2).drop(2).first());
-
-    assertFalse(itr.get().removeLast(0).isEmpty());
-    assertEquals(5, itr.get().removeLast(0).size());
-    assertEquals(List.of(1, 2, null, 4, 2), itr.get().removeLast(0).toList());
-    assertNull(itr.get().removeLast(0).drop(2).first());
-
-    assertTrue(Iterator.of().removeLast(1).isEmpty());
-    assertEquals(0, Iterator.of().removeLast(1).size());
-    assertEquals(List.of(), Iterator.of().removeLast(1).toList());
+  public void removeLast() throws Exception {
+    test(List.of(2, null, 4, 2), () -> Iterator.of(1, 2, null, 4, 2).removeLast(1));
+    test(List.of(1, 2, 4, 2), () -> Iterator.of(1, 2, null, 4, 2).removeLast(null));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4, 2).removeLast(2));
+    test(List.of(1, 2, null, 4, 2), () -> Iterator.of(1, 2, null, 4, 2).removeLast(0));
+    test(List.of(), () -> Iterator.of().removeLast(1));
   }
 
   @Test
-  public void removeLastWhere() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4, 2);
-    assertFalse(itr.get().removeLastWhere(Objects::isNull).isEmpty());
-    assertEquals(4, itr.get().removeLastWhere(Objects::isNull).size());
-    assertEquals(List.of(1, 2, 4, 2), itr.get().removeLastWhere(Objects::isNull).toList());
-    assertEquals(4, itr.get().removeLastWhere(Objects::isNull).drop(2).first());
-    assertFalse(itr.get().removeLastWhere(i -> i == 2).isEmpty());
-    assertEquals(4, itr.get().removeLastWhere(i -> i == 2).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeLastWhere(i -> i == 2).toList());
-    assertEquals(2, itr.get().removeLastWhere(i -> i == 2).drop(1).first());
-
-    assertFalse(itr.get().removeLastWhere(i -> i > 2).isEmpty());
-    assertEquals(4, itr.get().removeLastWhere(i -> i > 2).size());
-    assertEquals(List.of(1, 2, null, 2), itr.get().removeLastWhere(i -> i > 2).toList());
-    assertNull(itr.get().removeLastWhere(i -> i > 2).drop(2).first());
-
-    assertFalse(itr.get().removeLastWhere(i -> false).isEmpty());
-    assertEquals(5, itr.get().removeLastWhere(i -> false).size());
-    assertEquals(List.of(1, 2, null, 4, 2), itr.get().removeLastWhere(i -> false).toList());
-    assertNull(itr.get().removeLastWhere(i -> false).drop(2).first());
-
-    assertThrows(NullPointerException.class, () -> itr.get().removeLastWhere(i -> i > 4).isEmpty());
-    assertThrows(NullPointerException.class, () -> itr.get().removeLastWhere(i -> i > 4).size());
+  public void removeLastWhere() throws Exception {
     assertThrows(NullPointerException.class,
-        () -> itr.get().removeLastWhere(i -> i > 4).drop(1).first());
+        () -> Iterator.of(0).removeLastWhere((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).removeLastWhere((IndexedPredicate<? super Integer>) null));
+    test(List.of(2, null, 4, 2),
+        () -> Iterator.of(1, 2, null, 4, 2).removeLastWhere(Integer.valueOf(1)::equals));
+    test(List.of(1, 2, 4, 2), () -> Iterator.of(1, 2, null, 4, 2).removeLastWhere(Objects::isNull));
+    test(List.of(1, 2, null, 4),
+        () -> Iterator.of(1, 2, null, 4, 2).removeLastWhere(Integer.valueOf(2)::equals));
+    test(List.of(1, 2, null, 4),
+        () -> Iterator.of(1, 2, null, 4, 2).removeLastWhere(i -> i != null && i > 1));
+    test(List.of(1, 2, null, 2),
+        () -> Iterator.of(1, 2, null, 4, 2).removeLastWhere(i -> i != null && i > 2));
+    test(List.of(1, 2, null, 4, 2),
+        () -> Iterator.of(1, 2, null, 4, 2).removeLastWhere(i -> false));
+    test(List.of(), () -> Iterator.<Integer>of().removeLastWhere(i -> i == 1));
 
-    assertTrue(Iterator.<Integer>of().removeLastWhere(i -> i == 1).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().removeLastWhere(i -> i == 1).size());
-    assertEquals(List.of(), Iterator.<Integer>of().removeLastWhere(i -> i == 1).toList());
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4, 2);
+    assertFalse(itr.get().removeLastWhere(i -> i > 2).isEmpty());
+    assertThrows(NullPointerException.class, () -> itr.get().removeLastWhere(i -> i > 2).size());
+    assertEquals(2, itr.get().removeLastWhere(i -> i > 2).drop(1).first());
   }
 
   @Test

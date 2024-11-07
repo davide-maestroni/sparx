@@ -31,8 +31,13 @@ public class RemoveLastWhereIteratorMaterializer<E> extends
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
+    private final DequeueList<E> elements = new DequeueList<E>();
+    private final IteratorMaterializer<E> materializer = new DequeueToIteratorMaterializer<E>(
+        elements);
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
+
+    private int pos;
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate) {
@@ -52,25 +57,55 @@ public class RemoveLastWhereIteratorMaterializer<E> extends
 
     @Override
     public E materializeNext() {
-      return materializer().materializeNext();
+      final IteratorMaterializer<E> materializer = materializer();
+      ++pos;
+      return materializer.materializeNext();
     }
 
     private @NotNull IteratorMaterializer<E> materializer() {
+      // TODO: processing vs memory
+//      final IteratorMaterializer<E> wrapped = this.wrapped;
+//      if (wrapped.materializeHasNext()) {
+//        final DequeueList<E> elements = new DequeueList<E>();
+//        do {
+//          elements.add(wrapped.materializeNext());
+//        } while (wrapped.materializeHasNext());
+//        try {
+//          final IndexedPredicate<? super E> predicate = this.predicate;
+//          for (int i = elements.size() - 1; i >= 0; --i) {
+//            if (predicate.test(i, elements.get(i))) {
+//              return setState(new RemoveAfterIteratorMaterializer<E>(
+//                  new DequeueToIteratorMaterializer<E>(elements), i));
+//            }
+//          }
+//          return setState(new DequeueToIteratorMaterializer<E>(elements));
+//        } catch (final Exception e) {
+//          throw UncheckedException.throwUnchecked(e);
+//        }
+//      }
+      final DequeueList<E> elements = this.elements;
+      if (!elements.isEmpty()) {
+        return materializer;
+      }
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        final DequeueList<E> elements = new DequeueList<E>();
-        do {
-          elements.add(wrapped.materializeNext());
-        } while (wrapped.materializeHasNext());
+        E element = wrapped.materializeNext();
+        elements.add(element);
         try {
+          int pos = this.pos;
           final IndexedPredicate<? super E> predicate = this.predicate;
-          for (int i = elements.size() - 1; i >= 0; --i) {
-            if (predicate.test(i, elements.get(i))) {
-              return setState(new RemoveAfterIteratorMaterializer<E>(
-                  new DequeueToIteratorMaterializer<E>(elements), i));
-            }
+          if (!predicate.test(pos, element)) {
+            return materializer;
           }
-          return setState(new DequeueToIteratorMaterializer<E>(elements));
+          int index = 0;
+          while (wrapped.materializeHasNext()) {
+            element = wrapped.materializeNext();
+            if (predicate.test(++pos, element)) {
+              index = pos - this.pos;
+            }
+            elements.add(element);
+          }
+          return setState(new RemoveAfterIteratorMaterializer<E>(materializer, index));
         } catch (final Exception e) {
           throw UncheckedException.throwUnchecked(e);
         }
