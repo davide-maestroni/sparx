@@ -1054,81 +1054,25 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void removeSlice() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().removeSlice(1, 1).isEmpty());
-    assertEquals(4, itr.get().removeSlice(1, 1).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeSlice(1, 1).toList());
-    assertEquals(2, itr.get().removeSlice(1, 1).drop(1).first());
-    assertFalse(itr.get().removeSlice(1, 0).isEmpty());
-    assertEquals(4, itr.get().removeSlice(1, 0).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeSlice(1, 0).toList());
-    assertEquals(2, itr.get().removeSlice(1, 0).drop(1).first());
-    assertFalse(itr.get().removeSlice(1, -3).isEmpty());
-    assertEquals(4, itr.get().removeSlice(1, -3).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeSlice(1, -3).toList());
-    assertEquals(2, itr.get().removeSlice(1, -3).drop(1).first());
-    assertFalse(itr.get().removeSlice(1, -4).isEmpty());
-    assertEquals(4, itr.get().removeSlice(1, -4).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeSlice(1, -4).toList());
-    assertEquals(2, itr.get().removeSlice(1, -4).drop(1).first());
-    assertFalse(itr.get().removeSlice(1, -5).isEmpty());
-    assertEquals(4, itr.get().removeSlice(1, -5).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeSlice(1, -5).toList());
-    assertEquals(2, itr.get().removeSlice(1, -5).drop(1).first());
-    assertFalse(itr.get().removeSlice(-1, 1).isEmpty());
-    assertEquals(4, itr.get().removeSlice(-1, 1).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeSlice(-1, 1).toList());
-    assertEquals(2, itr.get().removeSlice(-1, 1).drop(1).first());
-    assertFalse(itr.get().removeSlice(-1, 3).isEmpty());
-    assertEquals(4, itr.get().removeSlice(-1, 3).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeSlice(-1, 3).toList());
-    assertEquals(2, itr.get().removeSlice(-1, 3).drop(1).first());
-    assertFalse(itr.get().removeSlice(-1, -1).isEmpty());
-    assertEquals(4, itr.get().removeSlice(-1, -1).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeSlice(-1, -1).toList());
-    assertEquals(2, itr.get().removeSlice(-1, -1).drop(1).first());
-    assertFalse(itr.get().removeSlice(-1, -4).isEmpty());
-    assertEquals(4, itr.get().removeSlice(-1, -4).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().removeSlice(-1, -4).toList());
-    assertEquals(2, itr.get().removeSlice(-1, -4).drop(1).first());
-
-    assertFalse(itr.get().removeSlice(1, -1).isEmpty());
-    assertEquals(2, itr.get().removeSlice(1, -1).size());
-    assertEquals(List.of(1, 4), itr.get().removeSlice(1, -1).toList());
-    assertEquals(4, itr.get().removeSlice(1, -1).drop(1).first());
-    assertFalse(itr.get().removeSlice(1, -2).isEmpty());
-    assertEquals(3, itr.get().removeSlice(1, -2).size());
-    assertEquals(List.of(1, null, 4), itr.get().removeSlice(1, -2).toList());
-    assertNull(itr.get().removeSlice(1, -2).drop(1).first());
-    assertFalse(itr.get().removeSlice(1, 3).isEmpty());
-    assertEquals(2, itr.get().removeSlice(1, 3).size());
-    assertEquals(List.of(1, 4), itr.get().removeSlice(1, 3).toList());
-    assertEquals(4, itr.get().removeSlice(1, 3).drop(1).first());
-    assertFalse(itr.get().removeSlice(1, 2).isEmpty());
-    assertEquals(3, itr.get().removeSlice(1, 2).size());
-    assertEquals(List.of(1, null, 4), itr.get().removeSlice(1, 2).toList());
-    assertNull(itr.get().removeSlice(1, 2).drop(1).first());
-    assertFalse(itr.get().removeSlice(-1, 4).isEmpty());
-    assertEquals(3, itr.get().removeSlice(-1, 4).size());
-    assertEquals(List.of(1, 2, null), itr.get().removeSlice(-1, 4).toList());
-    assertEquals(2, itr.get().removeSlice(-1, 4).drop(1).first());
-    assertFalse(itr.get().removeSlice(-2, -1).isEmpty());
-    assertEquals(3, itr.get().removeSlice(-2, -1).size());
-    assertEquals(List.of(1, 2, 4), itr.get().removeSlice(-2, -1).toList());
-    assertEquals(2, itr.get().removeSlice(-2, -1).drop(1).first());
-
+  public void removeSlice() throws Exception {
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(1, 1));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(1, 0));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(1, -3));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(1, -4));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(1, -5));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(-1, 1));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(-1, 3));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(-1, -1));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(-1, -4));
+    test(List.of(1, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(1, -1));
+    test(List.of(1, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(1, -2));
+    test(List.of(1, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(1, 3));
+    test(List.of(1, null, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(1, 2));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null, 4).removeSlice(-1, 4));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null, 4).removeSlice(-2, -1));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).removeSlice(0, Integer.MAX_VALUE));
+    test(List.of(), () -> Iterator.of().removeSlice(1, -1));
     // TODO: add tests with Integer.MAX_VALUE, Integer.MIN_VALUE
-    assertTrue(itr.get().removeSlice(0, Integer.MAX_VALUE).isEmpty());
-    assertEquals(0, itr.get().removeSlice(0, Integer.MAX_VALUE).size());
-    assertEquals(List.of(), itr.get().removeSlice(0, Integer.MAX_VALUE).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().removeSlice(0, Integer.MAX_VALUE).drop(1).first());
-
-    assertTrue(Iterator.of().removeSlice(1, -1).isEmpty());
-    assertEquals(0, Iterator.of().removeSlice(1, -1).size());
-    assertEquals(List.of(), Iterator.of().removeSlice(1, -1).toList());
-    assertThrows(NoSuchElementException.class, () -> Iterator.of().removeSlice(1, -1).first());
   }
 
   @Test

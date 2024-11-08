@@ -45,6 +45,12 @@ class itf {
     @NotNull
     <F> Collection<F> as();
 
+    @NotNull
+    Collection<E> clone();
+
+    @NotNull
+    Collection<E> clone(@NotNull Function<? super E, ? extends E> cloner);
+
     @Override
     @NotNull
     Collection<Integer> count();
@@ -1091,6 +1097,14 @@ class itf {
 
     @Override
     @NotNull
+    List<E> clone();
+
+    @Override
+    @NotNull
+    List<E> clone(@NotNull Function<? super E, ? extends E> cloner);
+
+    @Override
+    @NotNull
     List<Integer> count();
 
     @Override
@@ -1594,6 +1608,12 @@ class itf {
     @Override
     @NotNull
     <F> ListIterator<F> as();
+
+    @NotNull
+    ListIterator<E> clone();
+
+    @NotNull
+    ListIterator<E> clone(@NotNull Function<? super E, ? extends E> cloner);
 
     @Override
     @NotNull
@@ -2110,6 +2130,9 @@ class itf {
     @NotNull
     <F> Sequence<F> as();
 
+    // TODO: clone() [lazy.Iterator??]
+    // TODO: Collection collect(Collection)
+
     @NotNull
     Sequence<Integer> count();
 
@@ -2375,8 +2398,12 @@ class itf {
     @NotNull
     Sequence<E> reduceLeft(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
+    // TODO: reduceLeftWhile
+
     @NotNull
     Sequence<E> reduceRight(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    // TODO: reduceRightWhile
 
     @NotNull
     Sequence<E> removeAfter(int numElements);
@@ -2486,14 +2513,15 @@ class itf {
     @NotNull
     Sequence<E> takeWhile(@NotNull Predicate<? super E> predicate);
 
+    // TODO: toList(), toIterator(), [toSet(), etc.]
+
     @NotNull
     Sequence<E> union(@NotNull Iterable<? extends E> elements);
 
-    // TODO: isMemoized, isSorted, etc.
+    // TODO: toArray, toString(StringBuilder/StringJoiner)
     // TODO: splitWhere, splitLastWhere
-
-    // TODO: toArray, toString(StringBuilder/StringJoiner), collect
-    // TODO: zip, merge, combine
+    // TODO: zipWith(iterables, <padding>), combineWith(iterables, Function<Integer, Element, Integer>)
+    // TODO: isMemoized, isSorted, etc.
 
     // TODO: combinations
   }

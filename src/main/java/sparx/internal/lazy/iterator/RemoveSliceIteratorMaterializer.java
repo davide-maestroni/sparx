@@ -40,8 +40,12 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
       }
       final int materializedLength = Math.max(0, materializedEnd - materializedStart);
       setState(new MaterialState(wrapped, materializedStart, materializedLength));
-    } else if (start >= 0 && end >= 0) {
-      setState(new MaterialState(wrapped, start, Math.max(0, end - start)));
+    } else if (start >= 0) {
+      if (end >= 0) {
+        setState(new MaterialState(wrapped, start, Math.max(0, end - start)));
+      } else {
+        setState(new PendingState(wrapped, start, end));
+      }
     } else {
       setState(new ImmaterialState(wrapped, start, end));
     }
@@ -88,8 +92,11 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
         } else {
           materializedLength = 0;
         }
-        return setState(new MaterialState(new DequeueToIteratorMaterializer<E>(elements),
-            Math.max(0, materializedStart), materializedLength)).materializeHasNext();
+        setState(new MaterialState(new DequeueToIteratorMaterializer<E>(elements),
+            Math.max(0, materializedStart), materializedLength));
+      }
+      if (getState().materializeHasNext()) {
+        return true;
       }
       setEmptyState();
       return false;
@@ -160,6 +167,68 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
 
     @Override
     public int materializeSkip(final int count) {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private class PendingState implements IteratorMaterializer<E> {
+
+    private final int end;
+    private final int start;
+    private final IteratorMaterializer<E> wrapped;
+
+    private int pos;
+
+    private PendingState(@NotNull final IteratorMaterializer<E> wrapped, final int start,
+        final int end) {
+      this.wrapped = wrapped;
+      this.start = start;
+      this.end = end;
+    }
+
+    @Override
+    public int knownSize() {
+      final int knownSize = wrapped.knownSize();
+      if (knownSize >= 0) {
+        if (knownSize == 0) {
+          return 0;
+        }
+        final int materializedEnd = knownSize + pos + end;
+        return Math.max(start - pos, knownSize - Math.max(0, materializedEnd - start));
+      }
+      return -1;
+    }
+
+    @Override
+    public boolean materializeHasNext() {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (pos == start) {
+        final DequeueList<E> elements = new DequeueList<E>();
+        while (wrapped.materializeHasNext()) {
+          elements.add(wrapped.materializeNext());
+        }
+        final int materializedEnd = elements.size() + pos + end;
+        setState(new DequeueToIteratorMaterializer<E>(elements)).materializeSkip(
+            Math.max(0, materializedEnd - start));
+      }
+      if (getState().materializeHasNext()) {
+        return true;
+      }
+      setEmptyState();
+      return false;
+    }
+
+    @Override
+    public E materializeNext() {
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
+      ++pos;
+      return getState().materializeNext();
+    }
+
+    @Override
+    public int materializeSkip(int count) {
       throw new UnsupportedOperationException();
     }
   }
