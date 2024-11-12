@@ -28,7 +28,7 @@ import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedPredicate;
 
 public class CountWhereIteratorFutureMaterializer<E> extends
-    ImmediateIteratorFutureMaterializer<E, Integer> {
+    AbstractIteratorFutureMaterializer<Integer> {
 
   private static final Logger LOGGER = Logger.getLogger(
       CountWhereIteratorFutureMaterializer.class.getName());
@@ -45,8 +45,7 @@ public class CountWhereIteratorFutureMaterializer<E> extends
     return 1;
   }
 
-  private class ImmaterialState extends
-      ImmediateIteratorFutureMaterializer<E, Integer>.ImmaterialState {
+  private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, Integer> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final IndexedPredicate<? super E> predicate;
@@ -55,7 +54,7 @@ public class CountWhereIteratorFutureMaterializer<E> extends
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, LOGGER);
+      super(CountWhereIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.cancelException = cancelException;

@@ -27,7 +27,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.util.annotation.Positive;
 
 public class CountIteratorFutureMaterializer<E> extends
-    ImmediateIteratorFutureMaterializer<E, Integer> {
+    AbstractIteratorFutureMaterializer<Integer> {
 
   private static final Logger LOGGER = Logger.getLogger(
       CountIteratorFutureMaterializer.class.getName());
@@ -44,15 +44,14 @@ public class CountIteratorFutureMaterializer<E> extends
     return 1;
   }
 
-  private class ImmaterialState extends
-      ImmediateIteratorFutureMaterializer<E, Integer>.ImmaterialState {
+  private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, Integer> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final IteratorFutureMaterializer<E> wrapped;
 
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, LOGGER);
+      super(CountIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
       this.cancelException = cancelException;
     }

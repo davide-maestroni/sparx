@@ -24,7 +24,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.util.function.IndexedPredicate;
 
 public class FindIndexIteratorFutureMaterializer<E> extends
-    ImmediateIteratorFutureMaterializer<E, Integer> {
+    AbstractIteratorFutureMaterializer<Integer> {
 
   private static final Logger LOGGER = Logger.getLogger(
       FindIndexIteratorFutureMaterializer.class.getName());
@@ -41,8 +41,12 @@ public class FindIndexIteratorFutureMaterializer<E> extends
     return true;
   }
 
-  private class ImmaterialState extends
-      ImmediateIteratorFutureMaterializer<E, Integer>.ImmaterialState {
+  @Override
+  public int knownSize() {
+    return -1;
+  }
+
+  private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, Integer> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final IndexedPredicate<? super E> predicate;
@@ -51,7 +55,7 @@ public class FindIndexIteratorFutureMaterializer<E> extends
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, LOGGER);
+      super(FindIndexIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.cancelException = cancelException;

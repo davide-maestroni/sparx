@@ -25,7 +25,7 @@ import sparx.internal.future.list.ListFutureMaterializer;
 import sparx.util.DequeueList;
 
 public class FindIndexOfSliceIteratorFutureMaterializer<E> extends
-    ImmediateIteratorFutureMaterializer<E, Integer> {
+    AbstractIteratorFutureMaterializer<Integer> {
 
   private static final Logger LOGGER = Logger.getLogger(
       FindIndexOfSliceIteratorFutureMaterializer.class.getName());
@@ -44,8 +44,12 @@ public class FindIndexOfSliceIteratorFutureMaterializer<E> extends
     return true;
   }
 
-  private class ImmaterialState extends
-      ImmediateIteratorFutureMaterializer<E, Integer>.ImmaterialState {
+  @Override
+  public int knownSize() {
+    return -1;
+  }
+
+  private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, Integer> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final ListFutureMaterializer<Object> elementsMaterializer;
@@ -54,7 +58,7 @@ public class FindIndexOfSliceIteratorFutureMaterializer<E> extends
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final ListFutureMaterializer<Object> elementsMaterializer,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, LOGGER);
+      super(FindIndexOfSliceIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
       this.cancelException = cancelException;

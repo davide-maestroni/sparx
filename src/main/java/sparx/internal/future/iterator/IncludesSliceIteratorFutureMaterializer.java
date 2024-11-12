@@ -30,7 +30,7 @@ import sparx.util.DequeueList;
 import sparx.util.annotation.Positive;
 
 public class IncludesSliceIteratorFutureMaterializer<E> extends
-    ImmediateIteratorFutureMaterializer<E, Boolean> {
+    AbstractIteratorFutureMaterializer<Boolean> {
 
   private static final Logger LOGGER = Logger.getLogger(
       IncludesSliceIteratorFutureMaterializer.class.getName());
@@ -49,8 +49,7 @@ public class IncludesSliceIteratorFutureMaterializer<E> extends
     return 1;
   }
 
-  private class ImmaterialState extends
-      ImmediateIteratorFutureMaterializer<E, Boolean>.ImmaterialState {
+  private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, Boolean> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final ListFutureMaterializer<Object> elementsMaterializer;
@@ -59,7 +58,7 @@ public class IncludesSliceIteratorFutureMaterializer<E> extends
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final ListFutureMaterializer<Object> elementsMaterializer,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, LOGGER);
+      super(IncludesSliceIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
       this.cancelException = cancelException;

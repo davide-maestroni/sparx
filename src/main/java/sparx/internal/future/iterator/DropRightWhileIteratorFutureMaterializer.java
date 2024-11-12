@@ -25,7 +25,7 @@ import sparx.util.DequeueList;
 import sparx.util.function.IndexedPredicate;
 
 public class DropRightWhileIteratorFutureMaterializer<E> extends
-    ImmediateIteratorFutureMaterializer<E, E> {
+    AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       DropRightWhileIteratorFutureMaterializer.class.getName());
@@ -48,7 +48,7 @@ public class DropRightWhileIteratorFutureMaterializer<E> extends
     return 1;
   }
 
-  private class ImmaterialState extends ImmediateIteratorFutureMaterializer<E, E>.ImmaterialState {
+  private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, E> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final IndexedPredicate<? super E> predicate;
@@ -57,7 +57,7 @@ public class DropRightWhileIteratorFutureMaterializer<E> extends
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, LOGGER);
+      super(DropRightWhileIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.cancelException = cancelException;

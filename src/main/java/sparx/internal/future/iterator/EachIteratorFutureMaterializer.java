@@ -27,8 +27,7 @@ import sparx.internal.future.FutureConsumer;
 import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedPredicate;
 
-public class EachIteratorFutureMaterializer<E> extends
-    ImmediateIteratorFutureMaterializer<E, Boolean> {
+public class EachIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<Boolean> {
 
   private static final Logger LOGGER = Logger.getLogger(
       EachIteratorFutureMaterializer.class.getName());
@@ -46,8 +45,7 @@ public class EachIteratorFutureMaterializer<E> extends
     return 1;
   }
 
-  private class ImmaterialState extends
-      ImmediateIteratorFutureMaterializer<E, Boolean>.ImmaterialState {
+  private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, Boolean> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final boolean defaultResult;
@@ -57,7 +55,7 @@ public class EachIteratorFutureMaterializer<E> extends
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, LOGGER);
+      super(EachIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.defaultResult = defaultResult;

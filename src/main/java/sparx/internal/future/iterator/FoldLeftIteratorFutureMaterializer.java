@@ -28,7 +28,7 @@ import sparx.util.annotation.Positive;
 import sparx.util.function.BinaryFunction;
 
 public class FoldLeftIteratorFutureMaterializer<E, F> extends
-    ImmediateIteratorFutureMaterializer<E, F> {
+    AbstractIteratorFutureMaterializer<F> {
 
   private static final Logger LOGGER = Logger.getLogger(
       FoldLeftIteratorFutureMaterializer.class.getName());
@@ -46,7 +46,7 @@ public class FoldLeftIteratorFutureMaterializer<E, F> extends
     return 1;
   }
 
-  private class ImmaterialState extends ImmediateIteratorFutureMaterializer<E, F>.ImmaterialState {
+  private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, F> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final F identity;
@@ -56,7 +56,7 @@ public class FoldLeftIteratorFutureMaterializer<E, F> extends
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped, final F identity,
         @NotNull final BinaryFunction<? super F, ? super E, ? extends F> operation,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, LOGGER);
+      super(FoldLeftIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
       this.identity = identity;
       this.operation = operation;

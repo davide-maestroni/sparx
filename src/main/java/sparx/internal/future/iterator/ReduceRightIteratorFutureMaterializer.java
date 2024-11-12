@@ -25,7 +25,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.util.function.BinaryFunction;
 
 public class ReduceRightIteratorFutureMaterializer<E> extends
-    ImmediateIteratorFutureMaterializer<E, E> {
+    AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       ReduceRightIteratorFutureMaterializer.class.getName());
@@ -43,7 +43,12 @@ public class ReduceRightIteratorFutureMaterializer<E> extends
     return true;
   }
 
-  private class ImmaterialState extends ImmediateIteratorFutureMaterializer<E, E>.ImmaterialState {
+  @Override
+  public int knownSize() {
+    return -1;
+  }
+
+  private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, E> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final BinaryFunction<? super E, ? super E, ? extends E> operation;
@@ -52,7 +57,7 @@ public class ReduceRightIteratorFutureMaterializer<E> extends
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, LOGGER);
+      super(ReduceRightIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
       this.operation = operation;
       this.cancelException = cancelException;

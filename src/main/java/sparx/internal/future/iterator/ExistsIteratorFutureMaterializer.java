@@ -28,7 +28,7 @@ import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedPredicate;
 
 public class ExistsIteratorFutureMaterializer<E> extends
-    ImmediateIteratorFutureMaterializer<E, Boolean> {
+    AbstractIteratorFutureMaterializer<Boolean> {
 
   private static final Logger LOGGER = Logger.getLogger(
       ExistsIteratorFutureMaterializer.class.getName());
@@ -46,8 +46,7 @@ public class ExistsIteratorFutureMaterializer<E> extends
     return 1;
   }
 
-  private class ImmaterialState extends
-      ImmediateIteratorFutureMaterializer<E, Boolean>.ImmaterialState {
+  private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, Boolean> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final boolean defaultResult;
@@ -57,7 +56,7 @@ public class ExistsIteratorFutureMaterializer<E> extends
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate, final boolean defaultResult,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, LOGGER);
+      super(ExistsIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.defaultResult = defaultResult;
