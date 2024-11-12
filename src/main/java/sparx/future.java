@@ -93,6 +93,7 @@ import sparx.internal.future.iterator.ReduceRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveLastWhereIteratorFutureMaterializer;
+import sparx.internal.future.iterator.RemoveSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
@@ -1028,6 +1029,20 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).removeLastWhere(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerRemoveSlice(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException, final int start,
+        final int end) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).removeSlice(start, end);
         }
       };
     }
@@ -3239,8 +3254,27 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> removeSlice(int start, int end) {
-      return null;
+    public @NotNull Iterator<E> removeSlice(final int start, final int end) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (end >= 0 && start >= end) {
+        return cloneIterator(context, materializer);
+      }
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return cloneIterator(context, materializer);
+      }
+      if (start == 0 && end > start) {
+        return drop(end);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerRemoveSlice(materializer, context, cancelException, start, end));
+      }
+      return new Iterator<E>(context, cancelException,
+          new RemoveSliceIteratorFutureMaterializer<E>(materializer, start, end, context,
+              cancelException, List.<E>removeSliceFunction()));
     }
 
     @Override
@@ -3635,6 +3669,13 @@ class future extends Sparx {
       public java.util.List<?> apply(final java.util.List<?> firstParam,
           final Integer secondParam) {
         return lazy.List.wrap(firstParam).removeAfter(secondParam).clone();
+      }
+    };
+    private static final TernaryFunction<? extends java.util.List<?>, Integer, Integer, ? extends java.util.List<?>> REMOVE_SLICE_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, Integer, java.util.List<?>>() {
+      @Override
+      public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
+          final Integer thirdParam) {
+        return lazy.List.wrap(firstParam).removeSlice(secondParam, thirdParam).clone();
       }
     };
     private static final TernaryFunction<? extends java.util.List<?>, Integer, ?, ? extends java.util.List<?>> REPLACE_AFTER_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, Object, java.util.List<?>>() {
@@ -4703,6 +4744,11 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     private static @NotNull <E> BinaryFunction<java.util.List<E>, Integer, java.util.List<E>> removeAfterFunction() {
       return (BinaryFunction<java.util.List<E>, Integer, java.util.List<E>>) REMOVE_AFTER_FUNCTION;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static @NotNull <E> TernaryFunction<java.util.List<E>, Integer, Integer, java.util.List<E>> removeSliceFunction() {
+      return (TernaryFunction<java.util.List<E>, Integer, Integer, java.util.List<E>>) REMOVE_SLICE_FUNCTION;
     }
 
     @SuppressWarnings("unchecked")
@@ -7054,6 +7100,9 @@ class future extends Sparx {
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
         return cloneList(context, materializer);
+      }
+      if (start == 0 && end > start) {
+        return drop(end);
       }
       if (knownSize > 0) {
         final int knownStart;

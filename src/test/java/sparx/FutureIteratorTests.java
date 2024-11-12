@@ -104,6 +104,7 @@ import sparx.internal.future.iterator.ReduceRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveLastWhereIteratorFutureMaterializer;
+import sparx.internal.future.iterator.RemoveSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
@@ -1680,6 +1681,43 @@ public class FutureIteratorTests {
             new AtomicReference<>(), (l, e) -> lazy.List.wrap(l).prependAll(e)));
 
     testCancel(it -> it.removeLastWhere(e -> false));
+  }
+
+  @Test
+  public void removeSlice() throws Exception {
+//    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(1, 1));
+//    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(1, 0));
+//    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(1, -3));
+//    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(1, -4));
+//    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(1, -5));
+//    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(-1, 1));
+//    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(-1, 3));
+//    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(-1, -1));
+//    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(-1, -4));
+//    test(List.of(1, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(1, -1));
+//    test(List.of(1, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(1, -2));
+    test(List.of(1, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(1, 3));
+    test(List.of(1, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(1, 2));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(-1, 4));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(-2, -1));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.removeSlice(0, Integer.MAX_VALUE));
+    test(List.of(), Iterator::of, it -> it.removeSlice(1, -1));
+    // TODO: add tests with Integer.MAX_VALUE, Integer.MIN_VALUE
+
+    testMaterializer(List.of(1, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new RemoveSliceIteratorFutureMaterializer<>(m, 1, 2, c, new AtomicReference<>(),
+            (l, s, e) -> lazy.List.wrap(l).removeSlice(s, e)));
+    testMaterializer(List.of(1, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new RemoveSliceIteratorFutureMaterializer<>(m, 1, -1, c, new AtomicReference<>(),
+            (l, s, e) -> lazy.List.wrap(l).removeSlice(s, e)));
+    testMaterializer(List.of(1, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new RemoveSliceIteratorFutureMaterializer<>(m, -2, -1, c, new AtomicReference<>(),
+            (l, s, e) -> lazy.List.wrap(l).removeSlice(s, e)));
+
+    testCancel(it -> it.removeSlice(1, 2));
   }
 
   @Test

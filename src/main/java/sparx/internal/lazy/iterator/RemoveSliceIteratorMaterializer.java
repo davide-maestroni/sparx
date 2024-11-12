@@ -92,11 +92,8 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
         } else {
           materializedLength = 0;
         }
-        setState(new MaterialState(new DequeueToIteratorMaterializer<E>(elements),
-            Math.max(0, materializedStart), materializedLength));
-      }
-      if (getState().materializeHasNext()) {
-        return true;
+        return setState(new MaterialState(new DequeueToIteratorMaterializer<E>(elements),
+            Math.max(0, materializedStart), materializedLength)).materializeHasNext();
       }
       setEmptyState();
       return false;
@@ -208,10 +205,12 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
           elements.add(wrapped.materializeNext());
         }
         final int materializedEnd = elements.size() + pos + end;
-        setState(new DequeueToIteratorMaterializer<E>(elements)).materializeSkip(
-            Math.max(0, materializedEnd - start));
+        final IteratorMaterializer<E> materializer = setState(
+            new DequeueToIteratorMaterializer<E>(elements));
+        materializer.materializeSkip(Math.max(0, materializedEnd - start));
+        return materializer.materializeHasNext();
       }
-      if (getState().materializeHasNext()) {
+      if (wrapped.materializeHasNext()) {
         return true;
       }
       setEmptyState();
@@ -224,7 +223,8 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
         throw new NoSuchElementException();
       }
       ++pos;
-      return getState().materializeNext();
+      final IteratorMaterializer<E> materializer = getState();
+      return materializer == this ? wrapped.materializeNext() : materializer.materializeNext();
     }
 
     @Override
