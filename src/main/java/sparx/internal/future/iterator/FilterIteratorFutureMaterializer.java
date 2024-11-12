@@ -22,8 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.util.function.IndexedPredicate;
 
-public class FilterIteratorFutureMaterializer<E> extends
-    ProgressiveIteratorFutureMaterializer<E, E> {
+public class FilterIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       FilterIteratorFutureMaterializer.class.getName());
@@ -35,8 +34,12 @@ public class FilterIteratorFutureMaterializer<E> extends
     setState(new ImmaterialState(wrapped, predicate, context, cancelException));
   }
 
-  private class ImmaterialState extends
-      ProgressiveIteratorFutureMaterializer<E, E>.ImmaterialState {
+  @Override
+  public int knownSize() {
+    return -1;
+  }
+
+  private class ImmaterialState extends ProgressiveIteratorFutureMaterializerState<E, E> {
 
     private final IndexedPredicate<? super E> predicate;
 
@@ -46,7 +49,7 @@ public class FilterIteratorFutureMaterializer<E> extends
         @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, context, cancelException, LOGGER);
+      super(FilterIteratorFutureMaterializer.this, wrapped, context, cancelException, LOGGER);
       this.predicate = predicate;
     }
 

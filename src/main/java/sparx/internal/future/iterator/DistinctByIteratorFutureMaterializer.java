@@ -24,7 +24,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.util.function.IndexedFunction;
 
 public class DistinctByIteratorFutureMaterializer<E, K> extends
-    ProgressiveIteratorFutureMaterializer<E, E> {
+    AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       DistinctByIteratorFutureMaterializer.class.getName());
@@ -37,8 +37,12 @@ public class DistinctByIteratorFutureMaterializer<E, K> extends
     setState(new ImmaterialState(wrapped, keyExtractor, context, cancelException));
   }
 
-  private class ImmaterialState extends
-      ProgressiveIteratorFutureMaterializer<E, E>.ImmaterialState {
+  @Override
+  public int knownSize() {
+    return -1;
+  }
+
+  private class ImmaterialState extends ProgressiveIteratorFutureMaterializerState<E, E> {
 
     private final IndexedFunction<? super E, K> keyExtractor;
     private final HashSet<K> keys = new HashSet<K>();
@@ -49,7 +53,7 @@ public class DistinctByIteratorFutureMaterializer<E, K> extends
         @NotNull final IndexedFunction<? super E, K> keyExtractor,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, context, cancelException, LOGGER);
+      super(DistinctByIteratorFutureMaterializer.this, wrapped, context, cancelException, LOGGER);
       this.keyExtractor = keyExtractor;
     }
 

@@ -25,7 +25,7 @@ import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
 public class FlatMapAfterIteratorFutureMaterializer<E> extends
-    ProgressiveIteratorFutureMaterializer<E, E> {
+    AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       FlatMapAfterIteratorFutureMaterializer.class.getName());
@@ -39,8 +39,12 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
     setState(new ImmaterialState(wrapped, numElements, mapper, context, cancelException));
   }
 
-  private class ImmaterialState extends
-      ProgressiveIteratorFutureMaterializer<E, E>.ImmaterialState {
+  @Override
+  public int knownSize() {
+    return -1;
+  }
+
+  private class ImmaterialState extends ProgressiveIteratorFutureMaterializerState<E, E> {
 
     private final ExecutionContext context;
     private final IndexedFunction<? super E, ? extends IteratorFutureMaterializer<E>> mapper;
@@ -55,7 +59,7 @@ public class FlatMapAfterIteratorFutureMaterializer<E> extends
         @NotNull final IndexedFunction<? super E, ? extends IteratorFutureMaterializer<E>> mapper,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, context, cancelException, LOGGER);
+      super(FlatMapAfterIteratorFutureMaterializer.this, wrapped, context, cancelException, LOGGER);
       this.wrapped = wrapped;
       this.numElements = numElements;
       this.mapper = mapper;

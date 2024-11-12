@@ -26,7 +26,7 @@ import sparx.util.function.BinaryFunction;
 import sparx.util.function.IndexedPredicate;
 
 public class RemoveLastWhereIteratorFutureMaterializer<E> extends
-    ProgressiveIteratorFutureMaterializer<E, E> {
+    AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       RemoveLastWhereIteratorFutureMaterializer.class.getName());
@@ -40,8 +40,12 @@ public class RemoveLastWhereIteratorFutureMaterializer<E> extends
     setState(new ImmaterialState(wrapped, predicate, context, cancelException, prependFunction));
   }
 
-  private class ImmaterialState extends
-      ProgressiveIteratorFutureMaterializer<E, E>.ImmaterialState {
+  @Override
+  public int knownSize() {
+    return -1;
+  }
+
+  private class ImmaterialState extends ProgressiveIteratorFutureMaterializerState<E, E> {
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
@@ -58,7 +62,8 @@ public class RemoveLastWhereIteratorFutureMaterializer<E> extends
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
         @NotNull final BinaryFunction<List<E>, List<E>, List<E>> prependFunction) {
-      super(wrapped, context, cancelException, LOGGER);
+      super(RemoveLastWhereIteratorFutureMaterializer.this, wrapped, context, cancelException,
+          LOGGER);
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.context = context;

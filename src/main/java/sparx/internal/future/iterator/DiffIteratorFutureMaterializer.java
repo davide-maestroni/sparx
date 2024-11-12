@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 
-public class DiffIteratorFutureMaterializer<E> extends ProgressiveIteratorFutureMaterializer<E, E> {
+public class DiffIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       DiffIteratorFutureMaterializer.class.getName());
@@ -36,8 +36,12 @@ public class DiffIteratorFutureMaterializer<E> extends ProgressiveIteratorFuture
     setState(new ImmaterialState(wrapped, elementsMaterializer, context, cancelException));
   }
 
-  private class ImmaterialState extends
-      ProgressiveIteratorFutureMaterializer<E, E>.ImmaterialState {
+  @Override
+  public int knownSize() {
+    return -1;
+  }
+
+  private class ImmaterialState extends ProgressiveIteratorFutureMaterializerState<E, E> {
 
     private final IteratorFutureMaterializer<Object> elementsMaterializer;
 
@@ -47,7 +51,7 @@ public class DiffIteratorFutureMaterializer<E> extends ProgressiveIteratorFuture
         @NotNull final IteratorFutureMaterializer<Object> elementsMaterializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, context, cancelException, LOGGER);
+      super(DiffIteratorFutureMaterializer.this, wrapped, context, cancelException, LOGGER);
       this.elementsMaterializer = elementsMaterializer;
     }
 

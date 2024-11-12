@@ -25,7 +25,7 @@ import sparx.util.SizeOverflowException;
 import sparx.util.annotation.Positive;
 
 public class InsertAllAfterIteratorFutureMaterializer<E> extends
-    ProgressiveIteratorFutureMaterializer<E, E> {
+    AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
       InsertAllAfterIteratorFutureMaterializer.class.getName());
@@ -66,8 +66,7 @@ public class InsertAllAfterIteratorFutureMaterializer<E> extends
     return knownSize;
   }
 
-  private class ImmaterialState extends
-      ProgressiveIteratorFutureMaterializer<E, E>.ImmaterialState {
+  private class ImmaterialState extends ProgressiveIteratorFutureMaterializerState<E, E> {
 
     private final ExecutionContext context;
     private final IteratorFutureMaterializer<E> elementsMaterializer;
@@ -81,7 +80,8 @@ public class InsertAllAfterIteratorFutureMaterializer<E> extends
         @NotNull final IteratorFutureMaterializer<E> elementsMaterializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(wrapped, context, cancelException, LOGGER);
+      super(InsertAllAfterIteratorFutureMaterializer.this, wrapped, context, cancelException,
+          LOGGER);
       this.wrapped = wrapped;
       this.numElements = numElements;
       this.elementsMaterializer = elementsMaterializer;
