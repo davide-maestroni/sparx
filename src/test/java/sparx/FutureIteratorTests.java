@@ -1755,6 +1755,167 @@ public class FutureIteratorTests {
     testCancel(it -> it.removeWhere(e -> false));
   }
 
+  @Test
+  public void replaceAfter() throws Exception {
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceAfter(-1, 4));
+    test(List.of(4, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceAfter(0, 4));
+    test(List.of(1, 4, null), () -> Iterator.of(1, 2, null), it -> it.replaceAfter(1, 4));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null), it -> it.replaceAfter(2, 4));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceAfter(3, 4));
+    test(List.of(), Iterator::of, it -> it.replaceAfter(0, 4));
+
+    testCancel(it -> it.replaceAfter(0, null));
+  }
+
+  @Test
+  public void replaceEach() throws Exception {
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceEach(-1, 4));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceEach(0, 4));
+    test(List.of(4, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceEach(1, 4));
+    test(List.of(1, 4, null), () -> Iterator.of(1, 2, null), it -> it.replaceEach(2, 4));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null), it -> it.replaceEach(null, 4));
+    test(List.of(4, 2, null, 4), () -> Iterator.of(1, 2, null, 1), it -> it.replaceEach(1, 4));
+    test(List.of(), Iterator::of, it -> it.replaceEach(0, 4));
+
+    testCancel(it -> it.replaceEach(null, null));
+  }
+
+  @Test
+  public void replaceFirst() throws Exception {
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceFirst(-1, 4));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceFirst(0, 4));
+    test(List.of(4, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceFirst(1, 4));
+    test(List.of(1, 4, null), () -> Iterator.of(1, 2, null), it -> it.replaceFirst(2, 4));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null), it -> it.replaceFirst(null, 4));
+    test(List.of(4, 2, null, 1), () -> Iterator.of(1, 2, null, 1), it -> it.replaceFirst(1, 4));
+    test(List.of(), Iterator::of, it -> it.replaceFirst(0, 4));
+
+    testCancel(it -> it.replaceFirst(null, null));
+  }
+
+  @Test
+  public void replaceFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .replaceFirstWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .replaceFirstWhere((Predicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceFirstWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceFirstWhere((Predicate<? super Integer>) null, 0));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceFirstWhere(i -> false, 4));
+    test(List.of(4, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceFirstWhere(i -> true, 4));
+    test(List.of(1, 2, 4, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceFirstWhere(Objects::isNull, 4));
+    test(List.of(2, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceFirstWhere(i -> i == 1, 2));
+    test(List.of(), Iterator::of, it -> it.replaceFirstWhere(i -> false, 4));
+    test(List.of(), Iterator::of, it -> it.replaceFirstWhere(i -> true, 4));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4)
+        .toFuture(context).flatMap(e -> List.of(e));
+    assertFalse(itr.get().replaceFirstWhere(i -> i > 2, 1).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceFirstWhere(i -> i > 2, 1).size());
+    assertEquals(1, itr.get().replaceFirstWhere(i -> i > 2, 1).first());
+    assertEquals(2, itr.get().replaceFirstWhere(i -> i > 2, 1).drop(1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceFirstWhere(i -> i > 2, 1).drop(2).first());
+
+    testCancel(it -> it.replaceFirstWhere(e -> true, null));
+  }
+
+  @Test
+  public void replaceLast() throws Exception {
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceLast(-1, 4));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceLast(0, 4));
+    test(List.of(4, 2, null), () -> Iterator.of(1, 2, null), it -> it.replaceLast(1, 4));
+    test(List.of(1, 4, null), () -> Iterator.of(1, 2, null), it -> it.replaceLast(2, 4));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null), it -> it.replaceLast(null, 4));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 1), it -> it.replaceLast(1, 4));
+    test(List.of(), Iterator::of, it -> it.replaceLast(0, 4));
+
+    testCancel(it -> it.replaceLast(null, null));
+  }
+
+  @Test
+  public void replaceLastWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .replaceLastWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .replaceLastWhere((Predicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceLastWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceLastWhere((Predicate<? super Integer>) null, 0));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceLastWhere(i -> false, 5));
+    test(List.of(1, 2, null, 5), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceLastWhere(i -> true, 5));
+    test(List.of(1, 2, 3, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceLastWhere(Objects::isNull, 3));
+    test(List.of(), Iterator::of, it -> it.replaceLastWhere(i -> false, 4));
+    test(List.of(), Iterator::of, it -> it.replaceLastWhere(i -> true, 4));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4)
+        .toFuture(context).flatMap(e -> List.of(e));
+    assertFalse(itr.get().replaceLastWhere(i -> i == 4, 5).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceLastWhere(i -> i == 4, 5).size());
+    assertEquals(2, itr.get().replaceLastWhere(i -> i == 4, 5).drop(1).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceLastWhere(i -> i == 4, 5).drop(2).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceLastWhere(i -> i == 4, 5).drop(5).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceLastWhere(i -> i < 2, 1).isEmpty());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceLastWhere(i -> i < 2, 1).size());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceLastWhere(i -> i < 2, 1).first());
+
+    testCancel(it -> it.replaceLastWhere(e -> true, null));
+  }
+
+  @Test
+  public void replaceWhere() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .replaceWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).replaceWhere((Predicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .replaceWhere((Predicate<? super Integer>) null, 0));
+    test(List.of(1, 2, 3, 4), () -> Iterator.of(1, 2, 3, 4), it -> it.replaceWhere(i -> false, 5));
+    test(List.of(5, 5, 5, 5), () -> Iterator.of(1, 2, 3, 4), it -> it.replaceWhere(i -> true, 5));
+    test(List.of(1, 3, 3, 4), () -> Iterator.of(1, 2, 3, 4), it -> it.replaceWhere(i -> i == 2, 3));
+    test(List.of(), Iterator::of, it -> it.replaceWhere(i -> false, 4));
+    test(List.of(), Iterator::of, it -> it.replaceWhere(i -> true, 4));
+
+    java.util.function.Supplier<future.Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, null)
+        .toFuture(context).flatMap(e -> List.of(e));
+    assertFalse(itr.get().replaceWhere(i -> i == 4, 5).isEmpty());
+    assertEquals(5, itr.get().replaceWhere(i -> i == 4, 5).size());
+    assertEquals(2, itr.get().replaceWhere(i -> i == 4, 5).drop(1).first());
+    assertEquals(3, itr.get().replaceWhere(i -> i == 4, 5).drop(2).first());
+    assertEquals(5, itr.get().replaceWhere(i -> i == 4, 5).drop(3).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceWhere(i -> i == 4, 5).drop(4).first());
+    assertThrows(NoSuchElementException.class,
+        () -> itr.get().replaceWhere(i -> i == 4, 5).drop(5).first());
+
+    testCancel(it -> it.replaceWhere(e -> false, null));
+  }
+
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {
     context.scheduleAfter(new ContextTask(context) {
       @Override

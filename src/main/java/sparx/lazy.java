@@ -1737,6 +1737,9 @@ public class lazy extends Sparx {
       if (knownSize == 0) {
         return this;
       }
+      if (start == 0 && end > start) {
+        return drop(end);
+      }
       if (knownSize > 0) {
         final int knownStart;
         if (start < 0) {
@@ -3928,6 +3931,9 @@ public class lazy extends Sparx {
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
         return this;
+      }
+      if (start == 0 && end > start) {
+        return drop(end);
       }
       if (knownSize > 0) {
         final int knownStart;

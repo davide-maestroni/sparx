@@ -1096,139 +1096,53 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void replaceAfter() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null);
-    assertFalse(itr.get().replaceAfter(-1, 4).isEmpty());
-    assertEquals(3, itr.get().replaceAfter(-1, 4).size());
-    assertEquals(List.of(1, 2, null), itr.get().replaceAfter(-1, 4).toList());
-    assertEquals(2, itr.get().replaceAfter(-1, 4).drop(1).first());
-    assertFalse(itr.get().replaceAfter(0, 4).isEmpty());
-    assertEquals(3, itr.get().replaceAfter(0, 4).size());
-    assertEquals(List.of(4, 2, null), itr.get().replaceAfter(0, 4).toList());
-    assertEquals(2, itr.get().replaceAfter(0, 4).drop(1).first());
-    assertFalse(itr.get().replaceAfter(1, 4).isEmpty());
-    assertEquals(3, itr.get().replaceAfter(1, 4).size());
-    assertEquals(List.of(1, 4, null), itr.get().replaceAfter(1, 4).toList());
-    assertEquals(4, itr.get().replaceAfter(1, 4).drop(1).first());
-    assertFalse(itr.get().replaceAfter(2, 4).isEmpty());
-    assertEquals(3, itr.get().replaceAfter(2, 4).size());
-    assertEquals(List.of(1, 2, 4), itr.get().replaceAfter(2, 4).toList());
-    assertEquals(2, itr.get().replaceAfter(2, 4).drop(1).first());
-    assertFalse(itr.get().replaceAfter(3, 4).isEmpty());
-    assertEquals(3, itr.get().replaceAfter(3, 4).size());
-    assertEquals(List.of(1, 2, null), itr.get().replaceAfter(3, 4).toList());
-    assertEquals(2, itr.get().replaceAfter(3, 4).drop(1).first());
-
-    assertTrue(Iterator.<Integer>of().replaceAfter(0, 4).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().replaceAfter(0, 4).size());
-    assertEquals(List.of(), Iterator.<Integer>of().replaceAfter(0, 4).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().replaceAfter(0, 4).first());
+  public void replaceAfter() throws Exception {
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null).replaceAfter(-1, 4));
+    test(List.of(4, 2, null), () -> Iterator.of(1, 2, null).replaceAfter(0, 4));
+    test(List.of(1, 4, null), () -> Iterator.of(1, 2, null).replaceAfter(1, 4));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null).replaceAfter(2, 4));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null).replaceAfter(3, 4));
+    test(List.of(), () -> Iterator.of().replaceAfter(0, 4));
   }
 
   @Test
-  public void replaceEach() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null);
-    assertFalse(itr.get().replaceEach(-1, 4).isEmpty());
-    assertEquals(3, itr.get().replaceEach(-1, 4).size());
-    assertEquals(List.of(1, 2, null), itr.get().replaceEach(-1, 4).toList());
-    assertEquals(2, itr.get().replaceEach(-1, 4).drop(1).first());
-    assertFalse(itr.get().replaceEach(0, 4).isEmpty());
-    assertEquals(3, itr.get().replaceEach(0, 4).size());
-    assertEquals(List.of(1, 2, null), itr.get().replaceEach(0, 4).toList());
-    assertEquals(2, itr.get().replaceEach(0, 4).drop(1).first());
-    assertFalse(itr.get().replaceEach(1, 4).isEmpty());
-    assertEquals(3, itr.get().replaceEach(1, 4).size());
-    assertEquals(List.of(4, 2, null), itr.get().replaceEach(1, 4).toList());
-    assertEquals(2, itr.get().replaceEach(1, 4).drop(1).first());
-    assertFalse(itr.get().replaceEach(2, 4).isEmpty());
-    assertEquals(3, itr.get().replaceEach(2, 4).size());
-    assertEquals(List.of(1, 4, null), itr.get().replaceEach(2, 4).toList());
-    assertEquals(4, itr.get().replaceEach(2, 4).drop(1).first());
-    assertFalse(itr.get().replaceEach(null, 4).isEmpty());
-    assertEquals(3, itr.get().replaceEach(null, 4).size());
-    assertEquals(List.of(1, 2, 4), itr.get().replaceEach(null, 4).toList());
-    assertEquals(2, itr.get().replaceEach(null, 4).drop(1).first());
-
-    assertFalse(itr.get().append(1).replaceEach(1, 4).isEmpty());
-    assertEquals(4, itr.get().append(1).replaceEach(1, 4).size());
-    assertEquals(List.of(4, 2, null, 4), itr.get().append(1).replaceEach(1, 4).toList());
-    assertEquals(2, itr.get().append(1).replaceEach(1, 4).drop(1).first());
-
-    assertTrue(Iterator.<Integer>of().replaceEach(0, 4).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().replaceEach(0, 4).size());
-    assertEquals(List.of(), Iterator.<Integer>of().replaceEach(0, 4).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().replaceEach(0, 4).first());
+  public void replaceEach() throws Exception {
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null).replaceEach(-1, 4));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null).replaceEach(0, 4));
+    test(List.of(4, 2, null), () -> Iterator.of(1, 2, null).replaceEach(1, 4));
+    test(List.of(1, 4, null), () -> Iterator.of(1, 2, null).replaceEach(2, 4));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null).replaceEach(null, 4));
+    test(List.of(4, 2, null, 4), () -> Iterator.of(1, 2, null, 1).replaceEach(1, 4));
+    test(List.of(), () -> Iterator.of().replaceEach(0, 4));
   }
 
   @Test
-  public void replaceFirst() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null);
-    assertFalse(itr.get().replaceFirst(-1, 4).isEmpty());
-    assertEquals(3, itr.get().replaceFirst(-1, 4).size());
-    assertEquals(List.of(1, 2, null), itr.get().replaceFirst(-1, 4).toList());
-    assertEquals(2, itr.get().replaceFirst(-1, 4).drop(1).first());
-    assertFalse(itr.get().replaceFirst(0, 4).isEmpty());
-    assertEquals(3, itr.get().replaceFirst(0, 4).size());
-    assertEquals(List.of(1, 2, null), itr.get().replaceFirst(0, 4).toList());
-    assertEquals(2, itr.get().replaceFirst(0, 4).drop(1).first());
-    assertFalse(itr.get().replaceFirst(1, 4).isEmpty());
-    assertEquals(3, itr.get().replaceFirst(1, 4).size());
-    assertEquals(List.of(4, 2, null), itr.get().replaceFirst(1, 4).toList());
-    assertEquals(2, itr.get().replaceFirst(1, 4).drop(1).first());
-    assertFalse(itr.get().replaceFirst(2, 4).isEmpty());
-    assertEquals(3, itr.get().replaceFirst(2, 4).size());
-    assertEquals(List.of(1, 4, null), itr.get().replaceFirst(2, 4).toList());
-    assertEquals(4, itr.get().replaceFirst(2, 4).drop(1).first());
-    assertFalse(itr.get().replaceFirst(null, 4).isEmpty());
-    assertEquals(3, itr.get().replaceFirst(null, 4).size());
-    assertEquals(List.of(1, 2, 4), itr.get().replaceFirst(null, 4).toList());
-    assertEquals(2, itr.get().replaceFirst(null, 4).drop(1).first());
-
-    assertFalse(itr.get().append(1).replaceFirst(1, 4).isEmpty());
-    assertEquals(4, itr.get().append(1).replaceFirst(1, 4).size());
-    assertEquals(List.of(4, 2, null, 1), itr.get().append(1).replaceFirst(1, 4).toList());
-    assertEquals(2, itr.get().append(1).replaceFirst(1, 4).drop(1).first());
-
-    assertTrue(Iterator.<Integer>of().replaceFirst(0, 4).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().replaceFirst(0, 4).size());
-    assertEquals(List.of(), Iterator.<Integer>of().replaceFirst(0, 4).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().replaceFirst(0, 4).first());
+  public void replaceFirst() throws Exception {
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null).replaceFirst(-1, 4));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null).replaceFirst(0, 4));
+    test(List.of(4, 2, null), () -> Iterator.of(1, 2, null).replaceFirst(1, 4));
+    test(List.of(1, 4, null), () -> Iterator.of(1, 2, null).replaceFirst(2, 4));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null).replaceFirst(null, 4));
+    test(List.of(4, 2, null, 1), () -> Iterator.of(1, 2, null, 1).replaceFirst(1, 4));
+    test(List.of(), () -> Iterator.of().replaceFirst(0, 4));
   }
 
   @Test
-  public void replaceFirstWhere() {
+  public void replaceFirstWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).replaceFirstWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).replaceFirstWhere((Predicate<? super Integer>) null, 0));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).replaceFirstWhere(i -> false, 4));
+    test(List.of(4, 2, null, 4), () -> Iterator.of(1, 2, null, 4).replaceFirstWhere(i -> true, 4));
+    test(List.of(1, 2, 4, 4),
+        () -> Iterator.of(1, 2, null, 4).replaceFirstWhere(Objects::isNull, 4));
+    test(List.of(2, 2, null, 4),
+        () -> Iterator.of(1, 2, null, 4).replaceFirstWhere(i -> i == 1, 2));
+    test(List.of(), () -> Iterator.of().replaceFirstWhere(i -> false, 4));
+    test(List.of(), () -> Iterator.of().replaceFirstWhere(i -> true, 4));
+
     Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().replaceFirstWhere(i -> false, 4).isEmpty());
-    assertEquals(4, itr.get().replaceFirstWhere(i -> false, 4).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().replaceFirstWhere(i -> false, 4).toList());
-    assertNull(itr.get().replaceFirstWhere(i -> false, 4).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().replaceFirstWhere(i -> false, 4).drop(4).first());
-    assertFalse(itr.get().replaceFirstWhere(i -> true, 4).isEmpty());
-    assertEquals(4, itr.get().replaceFirstWhere(i -> true, 4).size());
-    assertEquals(List.of(4, 2, null, 4), itr.get().replaceFirstWhere(i -> true, 4).toList());
-    assertEquals(2, itr.get().replaceFirstWhere(i -> true, 4).drop(1).first());
-    assertNull(itr.get().replaceFirstWhere(i -> true, 4).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().replaceFirstWhere(i -> true, 4).drop(5).first());
-    assertFalse(itr.get().replaceFirstWhere(Objects::isNull, 3).isEmpty());
-    assertEquals(4, itr.get().replaceFirstWhere(Objects::isNull, 3).size());
-    assertEquals(List.of(1, 2, 3, 4), itr.get().replaceFirstWhere(Objects::isNull, 3).toList());
-    assertEquals(2, itr.get().replaceFirstWhere(Objects::isNull, 3).drop(1).first());
-    assertEquals(3, itr.get().replaceFirstWhere(Objects::isNull, 3).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().replaceFirstWhere(Objects::isNull, 3).drop(4).first());
-
-    assertFalse(itr.get().replaceFirstWhere(i -> i == 1, 2).isEmpty());
-    assertEquals(4, itr.get().replaceFirstWhere(i -> i == 1, 2).size());
-    assertEquals(List.of(2, 2, null, 4), itr.get().replaceFirstWhere(i -> i == 1, 2).toList());
-    assertEquals(2, itr.get().replaceFirstWhere(i -> i == 1, 2).drop(1).first());
-    assertNull(itr.get().replaceFirstWhere(i -> i == 1, 2).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().replaceFirstWhere(i -> i == 1, 2).drop(5).first());
     assertFalse(itr.get().replaceFirstWhere(i -> i > 2, 1).isEmpty());
     assertThrows(NullPointerException.class,
         () -> itr.get().replaceFirstWhere(i -> i > 2, 1).size());
@@ -1236,79 +1150,33 @@ public class LazyIteratorTests {
     assertEquals(2, itr.get().replaceFirstWhere(i -> i > 2, 1).drop(1).first());
     assertThrows(NullPointerException.class,
         () -> itr.get().replaceFirstWhere(i -> i > 2, 1).drop(2).first());
-
-    assertTrue(Iterator.<Integer>of().replaceFirstWhere(i -> false, 4).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().replaceFirstWhere(i -> false, 4).size());
-    assertEquals(List.of(), Iterator.<Integer>of().replaceFirstWhere(i -> false, 4).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().replaceFirstWhere(i -> false, 4).drop(2).first());
-    assertTrue(Iterator.<Integer>of().replaceFirstWhere(i -> true, 4).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().replaceFirstWhere(i -> true, 4).size());
-    assertEquals(List.of(), Iterator.<Integer>of().replaceFirstWhere(i -> true, 4).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().replaceFirstWhere(i -> true, 4).drop(2).first());
   }
 
   @Test
-  public void replaceLast() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null);
-    assertFalse(itr.get().replaceLast(-1, 4).isEmpty());
-    assertEquals(3, itr.get().replaceLast(-1, 4).size());
-    assertEquals(List.of(1, 2, null), itr.get().replaceLast(-1, 4).toList());
-    assertEquals(2, itr.get().replaceLast(-1, 4).drop(1).first());
-    assertFalse(itr.get().replaceLast(0, 4).isEmpty());
-    assertEquals(3, itr.get().replaceLast(0, 4).size());
-    assertEquals(List.of(1, 2, null), itr.get().replaceLast(0, 4).toList());
-    assertEquals(2, itr.get().replaceLast(0, 4).drop(1).first());
-    assertFalse(itr.get().replaceLast(1, 4).isEmpty());
-    assertEquals(3, itr.get().replaceLast(1, 4).size());
-    assertEquals(List.of(4, 2, null), itr.get().replaceLast(1, 4).toList());
-    assertEquals(2, itr.get().replaceLast(1, 4).drop(1).first());
-    assertFalse(itr.get().replaceLast(2, 4).isEmpty());
-    assertEquals(3, itr.get().replaceLast(2, 4).size());
-    assertEquals(List.of(1, 4, null), itr.get().replaceLast(2, 4).toList());
-    assertEquals(4, itr.get().replaceLast(2, 4).drop(1).first());
-    assertFalse(itr.get().replaceLast(null, 4).isEmpty());
-    assertEquals(3, itr.get().replaceLast(null, 4).size());
-    assertEquals(List.of(1, 2, 4), itr.get().replaceLast(null, 4).toList());
-    assertEquals(2, itr.get().replaceLast(null, 4).drop(1).first());
-
-    assertFalse(itr.get().append(1).replaceLast(1, 4).isEmpty());
-    assertEquals(4, itr.get().append(1).replaceLast(1, 4).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().append(1).replaceLast(1, 4).toList());
-    assertEquals(2, itr.get().append(1).replaceLast(1, 4).drop(1).first());
-
-    assertTrue(Iterator.<Integer>of().replaceLast(0, 4).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().replaceLast(0, 4).size());
-    assertEquals(List.of(), Iterator.<Integer>of().replaceLast(0, 4).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().replaceLast(0, 4).first());
+  public void replaceLast() throws Exception {
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null).replaceLast(-1, 4));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null).replaceLast(0, 4));
+    test(List.of(4, 2, null), () -> Iterator.of(1, 2, null).replaceLast(1, 4));
+    test(List.of(1, 4, null), () -> Iterator.of(1, 2, null).replaceLast(2, 4));
+    test(List.of(1, 2, 4), () -> Iterator.of(1, 2, null).replaceLast(null, 4));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 1).replaceLast(1, 4));
+    test(List.of(), () -> Iterator.of().replaceLast(0, 4));
   }
 
   @Test
-  public void replaceLastWhere() {
+  public void replaceLastWhere() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).replaceLastWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).replaceLastWhere((Predicate<? super Integer>) null, 0));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).replaceLastWhere(i -> false, 5));
+    test(List.of(1, 2, null, 5), () -> Iterator.of(1, 2, null, 4).replaceLastWhere(i -> true, 5));
+    test(List.of(1, 2, 3, 4),
+        () -> Iterator.of(1, 2, null, 4).replaceLastWhere(Objects::isNull, 3));
+    test(List.of(), () -> Iterator.of().replaceLastWhere(i -> false, 4));
+    test(List.of(), () -> Iterator.of().replaceLastWhere(i -> true, 4));
+
     Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertFalse(itr.get().replaceLastWhere(i -> false, 5).isEmpty());
-    assertEquals(4, itr.get().replaceLastWhere(i -> false, 5).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().replaceLastWhere(i -> false, 5).toList());
-    assertNull(itr.get().replaceLastWhere(i -> false, 5).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().replaceLastWhere(i -> false, 5).drop(4).first());
-    assertFalse(itr.get().replaceLastWhere(i -> true, 5).isEmpty());
-    assertEquals(4, itr.get().replaceLastWhere(i -> true, 5).size());
-    assertEquals(List.of(1, 2, null, 5), itr.get().replaceLastWhere(i -> true, 5).toList());
-    assertEquals(2, itr.get().replaceLastWhere(i -> true, 5).drop(1).first());
-    assertNull(itr.get().replaceLastWhere(i -> true, 5).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().replaceLastWhere(i -> true, 5).drop(5).first());
-    assertFalse(itr.get().replaceLastWhere(Objects::isNull, 3).isEmpty());
-    assertEquals(4, itr.get().replaceLastWhere(Objects::isNull, 3).size());
-    assertEquals(List.of(1, 2, 3, 4), itr.get().replaceLastWhere(Objects::isNull, 3).toList());
-    assertEquals(2, itr.get().replaceLastWhere(Objects::isNull, 3).drop(1).first());
-    assertEquals(3, itr.get().replaceLastWhere(Objects::isNull, 3).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().replaceLastWhere(Objects::isNull, 3).drop(4).first());
-
     assertFalse(itr.get().replaceLastWhere(i -> i == 4, 5).isEmpty());
     assertThrows(NullPointerException.class,
         () -> itr.get().replaceLastWhere(i -> i == 4, 5).size());
@@ -1323,17 +1191,6 @@ public class LazyIteratorTests {
         () -> itr.get().replaceLastWhere(i -> i < 2, 1).size());
     assertThrows(NullPointerException.class,
         () -> itr.get().replaceLastWhere(i -> i < 2, 1).first());
-
-    assertTrue(Iterator.<Integer>of().replaceLastWhere(i -> false, 5).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().replaceLastWhere(i -> false, 5).size());
-    assertEquals(List.of(), Iterator.<Integer>of().replaceLastWhere(i -> false, 5).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().replaceLastWhere(i -> false, 5).drop(2).first());
-    assertTrue(Iterator.<Integer>of().replaceLastWhere(i -> true, 5).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().replaceLastWhere(i -> true, 5).size());
-    assertEquals(List.of(), Iterator.<Integer>of().replaceLastWhere(i -> true, 5).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().replaceLastWhere(i -> true, 5).drop(2).first());
   }
 
   @Test
@@ -1426,48 +1283,27 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void replaceWhere() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4);
-    assertFalse(itr.get().replaceWhere(i -> false, 5).isEmpty());
-    assertEquals(4, itr.get().replaceWhere(i -> false, 5).size());
-    assertEquals(List.of(1, 2, 3, 4), itr.get().replaceWhere(i -> false, 5).toList());
-    assertEquals(3, itr.get().replaceWhere(i -> false, 5).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().replaceWhere(i -> false, 5).drop(4).first());
-    assertFalse(itr.get().replaceWhere(i -> true, 5).isEmpty());
-    assertEquals(4, itr.get().replaceWhere(i -> true, 5).size());
-    assertEquals(List.of(5, 5, 5, 5), itr.get().replaceWhere(i -> true, 5).toList());
-    assertEquals(5, itr.get().replaceWhere(i -> true, 5).drop(1).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().replaceWhere(i -> true, 5).drop(5).first());
-    assertFalse(itr.get().replaceWhere(i -> i == 2, 3).isEmpty());
-    assertEquals(4, itr.get().replaceWhere(i -> i == 2, 3).size());
-    assertEquals(List.of(1, 3, 3, 4), itr.get().replaceWhere(i -> i == 2, 3).toList());
-    assertEquals(3, itr.get().replaceWhere(i -> i == 2, 3).drop(1).first());
-    assertEquals(3, itr.get().replaceWhere(i -> i == 2, 3).drop(2).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().replaceWhere(i -> i == 2, 3).drop(4).first());
-
-    assertFalse(itr.get().append(null).replaceWhere(i -> i == 4, 5).isEmpty());
-    assertEquals(5, itr.get().append(null).replaceWhere(i -> i == 4, 5).size());
-    assertEquals(2, itr.get().append(null).replaceWhere(i -> i == 4, 5).drop(1).first());
-    assertEquals(3, itr.get().append(null).replaceWhere(i -> i == 4, 5).drop(2).first());
-    assertEquals(5, itr.get().append(null).replaceWhere(i -> i == 4, 5).drop(3).first());
+  public void replaceWhere() throws Exception {
     assertThrows(NullPointerException.class,
-        () -> itr.get().append(null).replaceWhere(i -> i == 4, 5).drop(4).first());
-    assertThrows(NoSuchElementException.class,
-        () -> itr.get().append(null).replaceWhere(i -> i == 4, 5).drop(5).first());
+        () -> Iterator.of(0).replaceWhere((IndexedPredicate<? super Integer>) null, 0));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).replaceWhere((Predicate<? super Integer>) null, 0));
+    test(List.of(1, 2, 3, 4), () -> Iterator.of(1, 2, 3, 4).replaceWhere(i -> false, 5));
+    test(List.of(5, 5, 5, 5), () -> Iterator.of(1, 2, 3, 4).replaceWhere(i -> true, 5));
+    test(List.of(1, 3, 3, 4), () -> Iterator.of(1, 2, 3, 4).replaceWhere(i -> i == 2, 3));
+    test(List.of(), () -> Iterator.of().replaceWhere(i -> false, 4));
+    test(List.of(), () -> Iterator.of().replaceWhere(i -> true, 4));
 
-    assertTrue(Iterator.<Integer>of().replaceWhere(i -> false, 5).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().replaceWhere(i -> false, 5).size());
-    assertEquals(List.of(), Iterator.<Integer>of().replaceWhere(i -> false, 5).toList());
+    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, 3, 4, null);
+    assertFalse(itr.get().replaceWhere(i -> i == 4, 5).isEmpty());
+    assertEquals(5, itr.get().replaceWhere(i -> i == 4, 5).size());
+    assertEquals(2, itr.get().replaceWhere(i -> i == 4, 5).drop(1).first());
+    assertEquals(3, itr.get().replaceWhere(i -> i == 4, 5).drop(2).first());
+    assertEquals(5, itr.get().replaceWhere(i -> i == 4, 5).drop(3).first());
+    assertThrows(NullPointerException.class,
+        () -> itr.get().replaceWhere(i -> i == 4, 5).drop(4).first());
     assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().replaceWhere(i -> false, 5).drop(2).first());
-    assertTrue(Iterator.<Integer>of().replaceWhere(i -> true, 5).isEmpty());
-    assertEquals(0, Iterator.<Integer>of().replaceWhere(i -> true, 5).size());
-    assertEquals(List.of(), Iterator.<Integer>of().replaceWhere(i -> true, 5).toList());
-    assertThrows(NoSuchElementException.class,
-        () -> Iterator.<Integer>of().replaceWhere(i -> true, 5).drop(2).first());
+        () -> itr.get().replaceWhere(i -> i == 4, 5).drop(5).first());
   }
 
   @Test
