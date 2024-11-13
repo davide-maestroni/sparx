@@ -140,7 +140,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           final ArrayList<E> elements = new ArrayList<E>();
           wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
             @Override
-            public void cancellableComplete(final int size) {
+            public void cancellableComplete(final int size) throws Exception {
               final int elementsSize = elements.size();
               if (elementsSize == 0) {
                 setDone(EmptyIteratorFutureMaterializer.<E>instance());
@@ -159,7 +159,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
                   consumeElements(Collections.<E>emptyList());
                 } else {
                   setDone(new DequeueToIteratorFutureMaterializer<E>(buffer, context, index));
-                  consumeElements(buffer);
+                  consumeElements(buffer.clone());
                 }
               }
             }

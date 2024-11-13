@@ -87,7 +87,7 @@ public class DropRightWhileIteratorFutureMaterializer<E> extends
             consumeElements(Collections.<E>emptyList());
           } else {
             setDone(new DequeueToIteratorFutureMaterializer<E>(elements, context));
-            consumeElements(elements);
+            consumeElements(elements.clone());
           }
         }
 

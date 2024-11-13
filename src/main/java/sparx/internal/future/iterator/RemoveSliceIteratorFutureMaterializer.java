@@ -171,8 +171,8 @@ public class RemoveSliceIteratorFutureMaterializer<E> extends
                   }
 
                   @Override
-                  public void error(@NotNull final Exception error) throws Exception {
-                    setNextElement(element);
+                  public void error(@NotNull final Exception error) {
+                    setNextError(error);
                   }
                 });
               }

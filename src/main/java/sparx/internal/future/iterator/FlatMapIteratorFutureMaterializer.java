@@ -354,14 +354,15 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
 
       private final CancellableFutureConsumer<IteratorFutureMaterializer<F>> elementsMaterializerConsumer = new CancellableFutureConsumer<IteratorFutureMaterializer<F>>() {
         @Override
-        public void cancellableAccept(final IteratorFutureMaterializer<F> materializer) {
+        public void cancellableAccept(final IteratorFutureMaterializer<F> materializer)
+            throws Exception {
           if (materializer == null) {
             if (elements.isEmpty()) {
               setDone(EmptyIteratorFutureMaterializer.<F>instance());
               consumeElements(Collections.<F>emptyList());
             } else {
               setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context, index));
-              consumeElements(elements);
+              consumeElements(elements.clone());
             }
           } else {
             materializer.materializeNextWhile(MaterializingFutureConsumer.this);

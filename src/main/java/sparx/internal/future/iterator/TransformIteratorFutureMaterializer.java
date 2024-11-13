@@ -19,6 +19,7 @@ import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -308,10 +309,11 @@ public abstract class TransformIteratorFutureMaterializer<E, F> extends
         }
         if (elements.isEmpty()) {
           setDone(EmptyIteratorFutureMaterializer.<F>instance());
+          safeConsume(consumer, Collections.<F>emptyList(), LOGGER);
         } else {
           setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context));
+          safeConsume(consumer, elements.clone(), LOGGER);
         }
-        safeConsume(consumer, elements, LOGGER);
       } catch (final Exception error) {
         consumeError(consumer, error);
       }

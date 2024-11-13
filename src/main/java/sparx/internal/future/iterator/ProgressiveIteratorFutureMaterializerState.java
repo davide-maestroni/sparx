@@ -106,14 +106,14 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
       final DequeueList<F> elements = new DequeueList<F>();
       materializeNext(new FutureConsumer<DequeueList<F>>() {
         @Override
-        public void accept(final DequeueList<F> nextElements) {
+        public void accept(final DequeueList<F> nextElements) throws Exception {
           if (nextElements.isEmpty()) {
             if (elements.isEmpty()) {
               parent.setDone(EmptyIteratorFutureMaterializer.<F>instance());
               consumeElements(Collections.<F>emptyList());
             } else {
               parent.setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context, index));
-              consumeElements(elements);
+              consumeElements(elements.clone());
             }
           } else {
             elements.addAll(nextElements);

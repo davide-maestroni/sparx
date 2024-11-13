@@ -121,13 +121,13 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
         final DequeueList<F> elements = new DequeueList<F>();
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
-          public void cancellableComplete(final int size) {
+          public void cancellableComplete(final int size) throws Exception {
             if (elements.isEmpty()) {
               setDone(EmptyIteratorFutureMaterializer.<F>instance());
               consumeElements(Collections.<F>emptyList());
             } else {
               setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context, wrappedIndex));
-              consumeElements(elements);
+              consumeElements(elements.clone());
             }
           }
 
