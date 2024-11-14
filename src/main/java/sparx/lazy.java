@@ -1961,14 +1961,6 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public int skip(final int maxElements) {
-      if (maxElements > 0) {
-        return materializer.materializeSkip(maxElements);
-      }
-      return 0;
-    }
-
-    @Override
     public @NotNull Iterator<E> runFinally(@NotNull final Action action) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
@@ -1986,6 +1978,14 @@ public class lazy extends Sparx {
     @Override
     public int size() {
       return materializer.materializeSkip(Integer.MAX_VALUE);
+    }
+
+    @Override
+    public int skip(final int maxElements) {
+      if (maxElements > 0) {
+        return materializer.materializeSkip(maxElements);
+      }
+      return 0;
     }
 
     @Override

@@ -69,6 +69,7 @@ import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EndsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ExistsIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FinallyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexOfSliceIteratorFutureMaterializer;
@@ -107,6 +108,7 @@ import sparx.internal.future.iterator.RemoveLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReplaceSliceIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ResizeIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -1890,41 +1892,41 @@ public class FutureIteratorTests {
         () -> Iterator.of(0).toFuture(context).replaceSlice(0, 1, null));
     assertThrows(NullPointerException.class,
         () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).replaceSlice(0, 1, null));
-//    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(1, 1, List.of(5)));
-//    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(1, 0, List.of(5)));
-//    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(1, -3, List.of(5)));
-//    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(1, -4, List.of(5)));
-//    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(1, -5, List.of(5)));
-//    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(-1, 1, List.of(5)));
-//    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(-1, 3, List.of(5)));
-//    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(-1, -1, List.of(5)));
-//    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(-1, -4, List.of(5)));
-//    test(List.of(1, 5, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(1, -1, List.of(5)));
-//    test(List.of(1, 5, null, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(1, -2, List.of(5)));
-//    test(List.of(1, 5, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(1, 3, List.of(5)));
-//    test(List.of(1, 5, null, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(1, 2, List.of(5)));
-//    test(List.of(1, 2, null, 5), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(-1, 4, List.of(5)));
-//    test(List.of(1, 2, 5, 4), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(-2, -1, List.of(5)));
-//    test(List.of(5), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(0, Integer.MAX_VALUE, List.of(5)));
-//    test(List.of(), () -> Iterator.of(1, 2, null, 4),
-//        it -> it.replaceSlice(0, Integer.MAX_VALUE, List.of()));
-//    test(List.of(5), Iterator::of, it -> it.replaceSlice(0, 0, List.of(5)));
+    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(1, 1, List.of(5)));
+    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(1, 0, List.of(5)));
+    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(1, -3, List.of(5)));
+    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(1, -4, List.of(5)));
+    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(1, -5, List.of(5)));
+    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(-1, 1, List.of(5)));
+    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(-1, 3, List.of(5)));
+    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(-1, -1, List.of(5)));
+    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(-1, -4, List.of(5)));
+    test(List.of(1, 5, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(1, -1, List.of(5)));
+    test(List.of(1, 5, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(1, -2, List.of(5)));
+    test(List.of(1, 5, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(1, 3, List.of(5)));
+    test(List.of(1, 5, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(1, 2, List.of(5)));
+    test(List.of(1, 2, null, 5), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(-1, 4, List.of(5)));
+    test(List.of(1, 2, 5, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(-2, -1, List.of(5)));
+    test(List.of(5), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(0, Integer.MAX_VALUE, List.of(5)));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4),
+        it -> it.replaceSlice(0, Integer.MAX_VALUE, List.of()));
+    test(List.of(5), Iterator::of, it -> it.replaceSlice(0, 0, List.of(5)));
     test(List.of(5), Iterator::of, it -> it.replaceSlice(1, -1, List.of(5)));
 
     testMaterializer(List.of(1, 5, 3),
@@ -1977,6 +1979,72 @@ public class FutureIteratorTests {
         () -> itr.get().replaceWhere(i -> i == 4, 5).drop(5).first());
 
     testCancel(it -> it.replaceWhere(e -> false, null));
+  }
+
+  @Test
+  public void resizeTo() throws Exception {
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(1, 2, null, 4).toFuture(context).resizeTo(-1, 5));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.resizeTo(0, 5));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4), it -> it.resizeTo(1, 5));
+    test(List.of(1, 2), () -> Iterator.of(1, 2, null, 4), it -> it.resizeTo(2, 5));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null, 4), it -> it.resizeTo(3, 5));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.resizeTo(4, 5));
+    test(List.of(1, 2, null, 4, 5), () -> Iterator.of(1, 2, null, 4), it -> it.resizeTo(5, 5));
+    test(List.of(1, 2, null, 4, 5, 5), () -> Iterator.of(1, 2, null, 4), it -> it.resizeTo(6, 5));
+
+    testMaterializer(List.of(1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new ResizeIteratorFutureMaterializer<>(m, 2, -1, c, new AtomicReference<>(),
+            (l, n, p) -> lazy.List.wrap(l).resizeTo(n, p)));
+    testMaterializer(List.of(1, 2, 3, 4),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new ResizeIteratorFutureMaterializer<>(m, 4, 4, c, new AtomicReference<>(),
+            (l, n, p) -> lazy.List.wrap(l).resizeTo(n, p)));
+
+    testCancel(it -> it.resizeTo(5, null));
+  }
+
+  @Test
+  public void runFinally() throws Exception {
+    var called = new AtomicBoolean();
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null, 3).toFuture(context).filter(i -> i > 0).drop(1)
+            .runFinally(() -> called.set(true)).next());
+    assertTrue(called.get());
+    called.set(false);
+    assertEquals(3,
+        Iterator.of(1, null, 3).toFuture(context).runFinally(() -> called.set(true)).size());
+    assertTrue(called.get());
+    called.set(false);
+    Iterator.of(1, null, 3).toFuture(context).runFinally(() -> called.set(true)).doFor(i -> {
+    });
+    assertTrue(called.get());
+    called.set(false);
+    Iterator.of(1, null, 3).toFuture(context).runFinally(() -> called.set(true))
+        .doWhile((i, v) -> i < 1);
+    assertFalse(called.get());
+    called.set(false);
+    assertEquals(3, Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
+        .runFinally(() -> called.set(true)).size());
+    assertTrue(called.get());
+    called.set(false);
+    Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
+        .runFinally(() -> called.set(true)).doFor(i -> {
+        });
+    assertTrue(called.get());
+    called.set(false);
+    Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
+        .runFinally(() -> called.set(true)).doWhile((i, v) -> i < 1);
+    assertFalse(called.get());
+
+    testMaterializer(List.of(1, 2, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new FinallyIteratorFutureMaterializer<>(m, () -> {
+        }, c, new AtomicReference<>()));
+
+    testCancel(it -> it.runFinally(() -> {
+    }));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

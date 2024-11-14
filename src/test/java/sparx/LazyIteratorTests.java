@@ -1252,15 +1252,15 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void resizeTo() {
+  public void resizeTo() throws Exception {
     assertThrows(IllegalArgumentException.class, () -> Iterator.of(1, 2, null, 4).resizeTo(-1, 5));
-    assertEquals(List.of(), Iterator.of(1, 2, null, 4).resizeTo(0, 5).toList());
-    assertEquals(List.of(1), Iterator.of(1, 2, null, 4).resizeTo(1, 5).toList());
-    assertEquals(List.of(1, 2), Iterator.of(1, 2, null, 4).resizeTo(2, 5).toList());
-    assertEquals(List.of(1, 2, null), Iterator.of(1, 2, null, 4).resizeTo(3, 5).toList());
-    assertEquals(List.of(1, 2, null, 4), Iterator.of(1, 2, null, 4).resizeTo(4, 5).toList());
-    assertEquals(List.of(1, 2, null, 4, 5), Iterator.of(1, 2, null, 4).resizeTo(5, 5).toList());
-    assertEquals(List.of(1, 2, null, 4, 5, 5), Iterator.of(1, 2, null, 4).resizeTo(6, 5).toList());
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).resizeTo(0, 5));
+    test(List.of(1), () -> Iterator.of(1, 2, null, 4).resizeTo(1, 5));
+    test(List.of(1, 2), () -> Iterator.of(1, 2, null, 4).resizeTo(2, 5));
+    test(List.of(1, 2, null), () -> Iterator.of(1, 2, null, 4).resizeTo(3, 5));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).resizeTo(4, 5));
+    test(List.of(1, 2, null, 4, 5), () -> Iterator.of(1, 2, null, 4).resizeTo(5, 5));
+    test(List.of(1, 2, null, 4, 5, 5), () -> Iterator.of(1, 2, null, 4).resizeTo(6, 5));
   }
 
   @Test

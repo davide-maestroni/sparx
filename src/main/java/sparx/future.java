@@ -53,6 +53,7 @@ import sparx.internal.future.iterator.EmptyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.EndsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ExistsIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FilterIteratorFutureMaterializer;
+import sparx.internal.future.iterator.FinallyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindFirstIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexIteratorFutureMaterializer;
 import sparx.internal.future.iterator.FindIndexOfSliceIteratorFutureMaterializer;
@@ -96,6 +97,7 @@ import sparx.internal.future.iterator.RemoveLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReplaceSliceIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ResizeIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
@@ -1072,6 +1074,36 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).replaceSlice(start, end, patch);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerResizeTo(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNegative final int numElements, final E padding) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          numElements) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).resizeTo(numElements, padding);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerRunFinally(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Action action) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          materializer.knownSize()) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).runFinally(action);
         }
       };
     }
@@ -3557,13 +3589,60 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> resizeTo(int numElements, E padding) {
-      return null;
+    public @NotNull Iterator<E> resizeTo(final int numElements, final E padding) {
+      Require.notNegative(numElements, "numElements");
+      if (numElements == 0) {
+        return emptyIterator(context);
+      }
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize >= 0) {
+        if (knownSize == 0) {
+          final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+          return new Iterator<E>(context, cancelException,
+              new ListToIteratorFutureMaterializer<E>(lazy.List.times(numElements, padding),
+                  context));
+        }
+        if (knownSize == numElements) {
+          return cloneIterator(context, materializer);
+        }
+        if (knownSize > numElements) {
+          return take(numElements);
+        }
+        return appendAll(lazy.List.times(numElements - knownSize, padding));
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerResizeTo(materializer, context, cancelException, numElements, padding));
+      }
+      return new Iterator<E>(context, cancelException,
+          new ResizeIteratorFutureMaterializer<E>(materializer, numElements, padding, context,
+              cancelException, List.<E>resizeFunction()));
     }
 
     @Override
-    public @NotNull Iterator<E> runFinally(@NotNull Action action) {
-      return null;
+    public @NotNull Iterator<E> runFinally(@NotNull final Action action) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        try {
+          action.run();
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerRunFinally(materializer, context, cancelException,
+                Require.notNull(action, "action")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new FinallyIteratorFutureMaterializer<E>(materializer, Require.notNull(action, "action"),
+              context, cancelException));
     }
 
     @Override
@@ -3652,6 +3731,7 @@ class future extends Sparx {
 
     @Override
     public @NotNull Iterator<E> slice(int start) {
+      // TODO: lay => PendingState
       return null;
     }
 

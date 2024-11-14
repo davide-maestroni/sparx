@@ -74,6 +74,7 @@ public class ResizeIteratorMaterializer<E> extends StatefulIteratorMaterializer<
         skipped += setState(new RepeatIteratorMaterializer<E>(remaining, padding)).materializeSkip(
             toSkip - skipped);
       }
+      pos += skipped;
       return skipped;
     }
   }
