@@ -41,8 +41,12 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
       final int materializedLength = Math.max(0, materializedEnd - materializedStart);
       setState(
           new MaterialState(wrapped, materializedStart, materializedLength, elementsMaterializer));
-    } else if (start >= 0 && end >= 0) {
-      setState(new MaterialState(wrapped, start, Math.max(0, end - start), elementsMaterializer));
+    } else if (start >= 0) {
+      if (end >= 0) {
+        setState(new MaterialState(wrapped, start, Math.max(0, end - start), elementsMaterializer));
+      } else {
+        setState(new PendingState(wrapped, start, end, elementsMaterializer));
+      }
     } else {
       setState(new ImmaterialState(wrapped, start, end, elementsMaterializer));
     }
@@ -165,6 +169,71 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
 
     @Override
     public int materializeSkip(final int count) {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private class PendingState implements IteratorMaterializer<E> {
+
+    private final IteratorMaterializer<E> elementsMaterializer;
+    private final int end;
+    private final int start;
+    private final IteratorMaterializer<E> wrapped;
+
+    private int pos;
+
+    private PendingState(@NotNull final IteratorMaterializer<E> wrapped, final int start,
+        final int end, @NotNull final IteratorMaterializer<E> elementsMaterializer) {
+      this.wrapped = wrapped;
+      this.start = start;
+      this.end = end;
+      this.elementsMaterializer = elementsMaterializer;
+    }
+
+    @Override
+    public int knownSize() {
+      return -1;
+    }
+
+    @Override
+    public boolean materializeHasNext() {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (pos < start) {
+        if (!wrapped.materializeHasNext()) {
+          return setState(elementsMaterializer).materializeHasNext();
+        }
+        return true;
+      }
+      if (wrapped.materializeHasNext()) {
+        final DequeueList<E> elements = new DequeueList<E>();
+        do {
+          elements.add(wrapped.materializeNext());
+        } while (wrapped.materializeHasNext());
+        final int materializedEnd = elements.size() + pos + end;
+        final int toSkip = Math.max(0, materializedEnd - start);
+        for (int i = 0; i < toSkip; ++i) {
+          elements.removeFirst();
+        }
+        return setState(
+            new InsertAllIteratorMaterializer<E>(new DequeueToIteratorMaterializer<E>(elements),
+                elementsMaterializer)).materializeHasNext();
+      }
+      setEmptyState();
+      return false;
+    }
+
+    @Override
+    public E materializeNext() {
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
+      ++pos;
+      final IteratorMaterializer<E> state = getState();
+      return (state == this ? wrapped : state).materializeNext();
+    }
+
+    @Override
+    public int materializeSkip(@Positive final int count) {
       throw new UnsupportedOperationException();
     }
   }

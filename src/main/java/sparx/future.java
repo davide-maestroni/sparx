@@ -95,6 +95,7 @@ import sparx.internal.future.iterator.RemoveFirstWhereIteratorFutureMaterializer
 import sparx.internal.future.iterator.RemoveLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ReplaceSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
@@ -1057,6 +1058,20 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).removeWhere(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerReplaceSlice(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException, final int start,
+        final int end, @NotNull final Iterable<? extends E> patch) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).replaceSlice(start, end, patch);
         }
       };
     }
@@ -3257,7 +3272,7 @@ class future extends Sparx {
     public @NotNull Iterator<E> removeSlice(final int start, final int end) {
       final ExecutionContext context = this.context;
       final IteratorFutureMaterializer<E> materializer = this.materializer;
-      if (end >= 0 && start >= end) {
+      if ((end >= 0 || start < 0) && start >= end) {
         return cloneIterator(context, materializer);
       }
       final int knownSize = materializer.knownSize();
@@ -3479,7 +3494,24 @@ class future extends Sparx {
     @Override
     public @NotNull Iterator<E> replaceSlice(final int start, final int end,
         @NotNull final Iterable<? extends E> patch) {
-      return null;
+      if (end >= 0 && start >= end) {
+        return insertAllAfter(start, patch);
+      }
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (getKnownSize(patch) == 0) {
+        return removeSlice(start, end);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce() && isNotFuture(patch)) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerReplaceSlice(materializer, context, cancelException, start, end,
+                Require.notNull(patch, "patch")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new ReplaceSliceIteratorFutureMaterializer<E>(materializer, start, end,
+              getElementsMaterializer(context, Require.notNull(patch, "patch")), context,
+              cancelException, List.<E>prependAllFunction()));
     }
 
     @Override
@@ -7242,7 +7274,7 @@ class future extends Sparx {
     public @NotNull List<E> removeSlice(final int start, final int end) {
       final ExecutionContext context = this.context;
       final ListFutureMaterializer<E> materializer = this.materializer;
-      if (end >= 0 && start >= end) {
+      if ((end >= 0 || start < 0) && start >= end) {
         return cloneList(context, materializer);
       }
       final int knownSize = materializer.knownSize();
@@ -7489,6 +7521,9 @@ class future extends Sparx {
     @Override
     public @NotNull List<E> replaceSlice(final int start, final int end,
         @NotNull final Iterable<? extends E> patch) {
+      if (end >= 0 && start >= end) {
+        return insertAllAfter(start, patch);
+      }
       final ExecutionContext context = this.context;
       final ListFutureMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
@@ -7672,7 +7707,7 @@ class future extends Sparx {
       if (start == 0 && end >= 0) {
         return take(end);
       }
-      if ((start == end) || (end >= 0 && start >= end)) {
+      if ((end >= 0 || start < 0) && start >= end) {
         return emptyList(context);
       }
       final ExecutionContext context = this.context;

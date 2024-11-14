@@ -207,7 +207,10 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
         final int materializedEnd = elements.size() + pos + end;
         final IteratorMaterializer<E> materializer = setState(
             new DequeueToIteratorMaterializer<E>(elements));
-        materializer.materializeSkip(Math.max(0, materializedEnd - start));
+        final int toSkip = Math.max(0, materializedEnd - start);
+        if (toSkip > 0) {
+          materializer.materializeSkip(toSkip);
+        }
         return materializer.materializeHasNext();
       }
       if (wrapped.materializeHasNext()) {
@@ -223,8 +226,8 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
         throw new NoSuchElementException();
       }
       ++pos;
-      final IteratorMaterializer<E> materializer = getState();
-      return materializer == this ? wrapped.materializeNext() : materializer.materializeNext();
+      final IteratorMaterializer<E> state = getState();
+      return (state == this ? wrapped : state).materializeNext();
     }
 
     @Override

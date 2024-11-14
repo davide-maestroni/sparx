@@ -233,7 +233,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   public @NotNull Iterator<E> iterator() {
-    return new AscendingIterator();
+    return new AscendingIterator(0);
   }
 
   /**
@@ -269,7 +269,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   public @NotNull ListIterator<E> listIterator(final int index) {
-    return new DequeueListIterator();
+    if ((index < 0) || (index >= size)) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
+    return new DequeueListIterator(index);
   }
 
   /**
@@ -657,7 +660,11 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
     protected int expectedModCount = modCount;
     protected boolean isRemoved = true;
-    protected int pointer = first;
+    protected int pointer;
+
+    private AscendingIterator(final int offset) {
+      pointer = first + offset & mask;
+    }
 
     @Override
     public boolean hasNext() {
@@ -703,6 +710,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   private class DequeueListIterator extends AscendingIterator implements ListIterator<E> {
 
     private boolean isForward = true;
+
+    private DequeueListIterator(final int offset) {
+      super(offset);
+    }
 
     @Override
     public void add(final E e) {

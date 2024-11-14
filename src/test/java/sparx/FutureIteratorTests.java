@@ -106,6 +106,7 @@ import sparx.internal.future.iterator.RemoveFirstWhereIteratorFutureMaterializer
 import sparx.internal.future.iterator.RemoveLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ReplaceSliceIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -1881,6 +1882,68 @@ public class FutureIteratorTests {
         () -> itr.get().replaceLastWhere(i -> i < 2, 1).first());
 
     testCancel(it -> it.replaceLastWhere(e -> true, null));
+  }
+
+  @Test
+  public void replaceSlice() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).replaceSlice(0, 1, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).replaceSlice(0, 1, null));
+//    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(1, 1, List.of(5)));
+//    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(1, 0, List.of(5)));
+//    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(1, -3, List.of(5)));
+//    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(1, -4, List.of(5)));
+//    test(List.of(1, 5, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(1, -5, List.of(5)));
+//    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(-1, 1, List.of(5)));
+//    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(-1, 3, List.of(5)));
+//    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(-1, -1, List.of(5)));
+//    test(List.of(1, 2, null, 5, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(-1, -4, List.of(5)));
+//    test(List.of(1, 5, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(1, -1, List.of(5)));
+//    test(List.of(1, 5, null, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(1, -2, List.of(5)));
+//    test(List.of(1, 5, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(1, 3, List.of(5)));
+//    test(List.of(1, 5, null, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(1, 2, List.of(5)));
+//    test(List.of(1, 2, null, 5), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(-1, 4, List.of(5)));
+//    test(List.of(1, 2, 5, 4), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(-2, -1, List.of(5)));
+//    test(List.of(5), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(0, Integer.MAX_VALUE, List.of(5)));
+//    test(List.of(), () -> Iterator.of(1, 2, null, 4),
+//        it -> it.replaceSlice(0, Integer.MAX_VALUE, List.of()));
+//    test(List.of(5), Iterator::of, it -> it.replaceSlice(0, 0, List.of(5)));
+    test(List.of(5), Iterator::of, it -> it.replaceSlice(1, -1, List.of(5)));
+
+    testMaterializer(List.of(1, 5, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new ReplaceSliceIteratorFutureMaterializer<>(m, 1, 2,
+            new ListToIteratorFutureMaterializer<>(List.of(5), c), c, new AtomicReference<>(),
+            (l, e) -> lazy.List.wrap(l).prependAll(e)));
+    testMaterializer(List.of(1, 5, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new ReplaceSliceIteratorFutureMaterializer<>(m, 1, -1,
+            new ListToIteratorFutureMaterializer<>(List.of(5), c), c, new AtomicReference<>(),
+            (l, e) -> lazy.List.wrap(l).prependAll(e)));
+    testMaterializer(List.of(1, 5, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new ReplaceSliceIteratorFutureMaterializer<>(m, -2, -1,
+            new ListToIteratorFutureMaterializer<>(List.of(5), c), c, new AtomicReference<>(),
+            (l, e) -> lazy.List.wrap(l).prependAll(e)));
+
+    testCancel(it -> it.replaceSlice(1, 2, List.of()));
   }
 
   @Test

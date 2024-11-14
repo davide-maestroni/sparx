@@ -1729,7 +1729,7 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull Iterator<E> removeSlice(final int start, final int end) {
-      if (end >= 0 && start >= end) {
+      if ((end >= 0 || start < 0) && start >= end) {
         return iterator();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
@@ -1881,6 +1881,9 @@ public class lazy extends Sparx {
     @Override
     public @NotNull Iterator<E> replaceSlice(final int start, final int end,
         @NotNull final Iterable<? extends E> patch) {
+      if (end >= 0 && start >= end) {
+        return insertAllAfter(start, patch);
+      }
       final IteratorMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
       if (knownSize >= 0) {
@@ -1998,7 +2001,7 @@ public class lazy extends Sparx {
       if (start == 0 && end >= 0) {
         return take(end);
       }
-      if ((start == end) || (end >= 0 && start >= end)) {
+      if ((end >= 0 || start < 0) && start >= end) {
         return Iterator.of();
       }
       final IteratorMaterializer<E> materializer = this.materializer;
@@ -3924,7 +3927,7 @@ public class lazy extends Sparx {
 
     @Override
     public @NotNull List<E> removeSlice(final int start, final int end) {
-      if (end >= 0 && start >= end) {
+      if ((end >= 0 || start < 0) && start >= end) {
         return this;
       }
       final ListMaterializer<E> materializer = this.materializer;
@@ -4114,6 +4117,9 @@ public class lazy extends Sparx {
     @Override
     public @NotNull List<E> replaceSlice(final int start, final int end,
         @NotNull final Iterable<? extends E> patch) {
+      if (end >= 0 && start >= end) {
+        return insertAllAfter(start, patch);
+      }
       final ListMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
       if (knownSize >= 0) {
@@ -4218,7 +4224,7 @@ public class lazy extends Sparx {
       if (start == 0 && end >= 0) {
         return take(end);
       }
-      if ((start == end) || (end >= 0 && start >= end)) {
+      if ((end >= 0 || start < 0) && start >= end) {
         return List.of();
       }
       final ListMaterializer<E> materializer = this.materializer;
