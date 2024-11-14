@@ -18,7 +18,6 @@ package sparx;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1283,79 +1282,24 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void slice() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, 2, null, 4);
-    assertTrue(itr.get().slice(1, 1).isEmpty());
-    assertEquals(0, itr.get().slice(1, 1).size());
-    assertEquals(List.of(), itr.get().slice(1, 1).toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().slice(1, 1).first());
-    assertTrue(itr.get().slice(1, 0).isEmpty());
-    assertEquals(0, itr.get().slice(1, 0).size());
-    assertEquals(List.of(), itr.get().slice(1, 0).toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().slice(1, 0).first());
-    assertTrue(itr.get().slice(1, -3).isEmpty());
-    assertEquals(0, itr.get().slice(1, -3).size());
-    assertEquals(List.of(), itr.get().slice(1, -3).toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().slice(1, -3).first());
-    assertTrue(itr.get().slice(1, -4).isEmpty());
-    assertEquals(0, itr.get().slice(1, -4).size());
-    assertEquals(List.of(), itr.get().slice(1, -4).toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().slice(1, -4).first());
-    assertTrue(itr.get().slice(1, -5).isEmpty());
-    assertEquals(0, itr.get().slice(1, -5).size());
-    assertEquals(List.of(), itr.get().slice(1, -5).toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().slice(1, -5).first());
-    assertTrue(itr.get().slice(-1, 1).isEmpty());
-    assertEquals(0, itr.get().slice(-1, 1).size());
-    assertEquals(List.of(), itr.get().slice(-1, 1).toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().slice(-1, 1).first());
-    assertTrue(itr.get().slice(-1, 3).isEmpty());
-    assertEquals(0, itr.get().slice(-1, 3).size());
-    assertEquals(List.of(), itr.get().slice(-1, 3).toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().slice(-1, 3).first());
-    assertTrue(itr.get().slice(-1, -1).isEmpty());
-    assertEquals(0, itr.get().slice(-1, -1).size());
-    assertEquals(List.of(), itr.get().slice(-1, -1).toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().slice(-1, -1).first());
-    assertTrue(itr.get().slice(-1, -4).isEmpty());
-    assertEquals(0, itr.get().slice(-1, -4).size());
-    assertEquals(List.of(), itr.get().slice(-1, -4).toList());
-    assertThrows(NoSuchElementException.class, () -> itr.get().slice(-1, -4).first());
-
-    assertFalse(itr.get().slice(1, -1).isEmpty());
-    assertEquals(2, itr.get().slice(1, -1).size());
-    assertEquals(List.of(2, null), itr.get().slice(1, -1).toList());
-    assertNull(itr.get().slice(1, -1).drop(1).first());
-    assertFalse(itr.get().slice(1, -2).isEmpty());
-    assertEquals(1, itr.get().slice(1, -2).size());
-    assertEquals(List.of(2), itr.get().slice(1, -2).toList());
-    assertEquals(2, itr.get().slice(1, -2).first());
-    assertFalse(itr.get().slice(1, 3).isEmpty());
-    assertEquals(2, itr.get().slice(1, 3).size());
-    assertEquals(List.of(2, null), itr.get().slice(1, 3).toList());
-    assertNull(itr.get().slice(1, 3).drop(1).first());
-    assertFalse(itr.get().slice(1, 2).isEmpty());
-    assertEquals(1, itr.get().slice(1, 2).size());
-    assertEquals(List.of(2), itr.get().slice(1, 2).toList());
-    assertEquals(2, itr.get().slice(1, 2).first());
-    assertFalse(itr.get().slice(-1, 4).isEmpty());
-    assertEquals(1, itr.get().slice(-1, 4).size());
-    assertEquals(List.of(4), itr.get().slice(-1, 4).toList());
-    assertEquals(4, itr.get().slice(-1, 4).first());
-    assertFalse(itr.get().slice(-2, -1).isEmpty());
-    assertEquals(1, itr.get().slice(-2, -1).size());
-    assertEquals(List.of(null), itr.get().slice(-2, -1).toList());
-    assertNull(itr.get().slice(-2, -1).first());
-
-    assertFalse(itr.get().slice(0, Integer.MAX_VALUE).isEmpty());
-    assertEquals(4, itr.get().slice(0, Integer.MAX_VALUE).size());
-    assertEquals(List.of(1, 2, null, 4), itr.get().slice(0, Integer.MAX_VALUE).toList());
-    assertEquals(2, itr.get().slice(0, Integer.MAX_VALUE).drop(1).first());
-
-    assertTrue(Iterator.of().slice(1, -1).isEmpty());
-    assertEquals(0, Iterator.of().slice(1, -1).size());
-    assertEquals(List.of(), Iterator.of().slice(1, -1).toList());
-    assertThrows(NoSuchElementException.class, () -> Iterator.of().slice(1, -1).first());
+  public void slice() throws Exception {
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).slice(1, 1));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).slice(1, 0));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).slice(1, -3));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).slice(1, -4));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).slice(1, -5));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).slice(-1, 1));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).slice(-1, 3));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).slice(-1, -1));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4).slice(-1, -4));
+    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4).slice(1, -1));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4).slice(1, -2));
+    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4).slice(1, 3));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4).slice(1, 2));
+    test(List.of(4), () -> Iterator.of(1, 2, null, 4).slice(-1, 4));
+    test(List.of(null), () -> Iterator.of(1, 2, null, 4).slice(-2, -1));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).slice(0, Integer.MAX_VALUE));
+    test(List.of(), () -> Iterator.of().slice(1, -1));
   }
 
   @Test

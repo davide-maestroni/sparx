@@ -98,6 +98,7 @@ import sparx.internal.future.iterator.RemoveSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReplaceSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ResizeIteratorFutureMaterializer;
+import sparx.internal.future.iterator.SliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
@@ -1089,6 +1090,20 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).resizeTo(numElements, padding);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerSlice(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException, final int start,
+        final int end) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).slice(start, end);
         }
       };
     }
@@ -3730,23 +3745,44 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> slice(int start) {
-      // TODO: lay => PendingState
+    public @NotNull Iterator<E> slice(final int start) {
+      return slice(start, Integer.MAX_VALUE);
+    }
+
+    @Override
+    public @NotNull Iterator<E> slice(final int start, final int end) {
+      if (end == Integer.MAX_VALUE && start >= 0) {
+        return drop(start);
+      }
+      if (start == 0 && end >= 0) {
+        return take(end);
+      }
+      if ((end >= 0 || start < 0) && start >= end) {
+        return emptyIterator(context);
+      }
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerSlice(materializer, context, cancelException, start, end));
+      }
+      return new Iterator<E>(context, cancelException,
+          new SliceIteratorFutureMaterializer<E>(materializer, start, end, context, cancelException,
+              List.<E>sliceFunction()));
+    }
+
+    @Override
+    public @NotNull Iterator<? extends Iterator<E>> slidingWindow(int maxSize, int step) {
       return null;
     }
 
     @Override
-    public @NotNull Iterator<E> slice(int start, int end) {
-      return null;
-    }
-
-    @Override
-    public @NotNull Iterator<? extends itf.Iterator<E>> slidingWindow(int maxSize, int step) {
-      return null;
-    }
-
-    @Override
-    public @NotNull Iterator<? extends itf.Iterator<E>> slidingWindowWithPadding(int size, int step,
+    public @NotNull Iterator<? extends Iterator<E>> slidingWindowWithPadding(int size, int step,
         E padding) {
       return null;
     }
@@ -3938,6 +3974,7 @@ class future extends Sparx {
         return lazy.List.wrap(firstParam).removeSlice(secondParam, thirdParam).clone();
       }
     };
+
     private static final TernaryFunction<? extends java.util.List<?>, Integer, ?, ? extends java.util.List<?>> REPLACE_AFTER_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, Object, java.util.List<?>>() {
       @Override
       public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
@@ -3956,6 +3993,13 @@ class future extends Sparx {
       @Override
       public java.util.List<?> apply(final java.util.List<?> param) {
         return lazy.List.wrap(param).reverse().clone();
+      }
+    };
+    private static final TernaryFunction<? extends java.util.List<?>, Integer, Integer, ? extends java.util.List<?>> SLICE_FUNCTION = new TernaryFunction<java.util.List<?>, Integer, Integer, java.util.List<?>>() {
+      @Override
+      public java.util.List<?> apply(final java.util.List<?> firstParam, final Integer secondParam,
+          final Integer thirdParam) {
+        return lazy.List.wrap(firstParam).slice(secondParam, thirdParam).clone();
       }
     };
     private static final ElementToListFutureMaterializer<Boolean> TRUE_MATERIALIZER = new ElementToListFutureMaterializer<Boolean>(
@@ -5024,6 +5068,11 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     private static @NotNull <E> Function<java.util.List<E>, java.util.List<E>> reverseFunction() {
       return (Function<java.util.List<E>, java.util.List<E>>) REVERSE_FUNCTION;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static @NotNull <E> TernaryFunction<java.util.List<E>, Integer, Integer, java.util.List<E>> sliceFunction() {
+      return (TernaryFunction<java.util.List<E>, Integer, Integer, java.util.List<E>>) SLICE_FUNCTION;
     }
 
     private static @NotNull List<Boolean> trueList(@NotNull final ExecutionContext context) {
