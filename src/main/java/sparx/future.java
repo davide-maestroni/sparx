@@ -3777,13 +3777,14 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<? extends Iterator<E>> slidingWindow(int maxSize, int step) {
+    public @NotNull Iterator<? extends Iterator<E>> slidingWindow(@Positive final int maxSize,
+        @Positive final int step) {
       return null;
     }
 
     @Override
-    public @NotNull Iterator<? extends Iterator<E>> slidingWindowWithPadding(int size, int step,
-        E padding) {
+    public @NotNull Iterator<? extends Iterator<E>> slidingWindowWithPadding(
+        @Positive final int size, @Positive final int step, final E padding) {
       return null;
     }
 

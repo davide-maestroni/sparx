@@ -16,6 +16,7 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.Positive;
 
 abstract class StatefulIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
@@ -37,7 +38,7 @@ abstract class StatefulIteratorMaterializer<E> implements IteratorMaterializer<E
   }
 
   @Override
-  public int materializeSkip(final int count) {
+  public int materializeSkip(@Positive final int count) {
     return state.materializeSkip(count);
   }
 

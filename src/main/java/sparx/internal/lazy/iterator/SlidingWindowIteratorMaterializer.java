@@ -107,53 +107,50 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        final DequeueList<E> elements = this.elements;
-        final int maxSize = this.maxSize;
-        final int skip = this.skip;
-        int skipped = 0;
-        while (skipped < count) {
-          if (elements.isEmpty()) {
-            if (!wrapped.materializeHasNext()) {
-              return skipped;
-            }
-            for (int i = 0; i < maxSize; ++i) {
-              if (!wrapped.materializeHasNext()) {
-                break;
-              }
-              elements.add(wrapped.materializeNext());
-            }
-          } else if (skip > 0) {
-            elements.clear();
-            wrapped.materializeSkip(skip);
-            if (!wrapped.materializeHasNext()) {
-              return skipped;
-            }
-            for (int i = 0; i < maxSize; ++i) {
-              if (!wrapped.materializeHasNext()) {
-                break;
-              }
-              elements.add(wrapped.materializeNext());
-            }
-          } else {
-            final int step = this.step;
-            for (int i = 0; i < step; ++i) {
-              if (wrapped.materializeHasNext()) {
-                elements.add(wrapped.materializeNext());
-              }
-              if (elements.size() <= 1) {
-                return skipped;
-              }
-              elements.removeFirst();
-            }
+    public int materializeSkip(@Positive final int count) {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      final DequeueList<E> elements = this.elements;
+      final int maxSize = this.maxSize;
+      final int skip = this.skip;
+      int skipped = 0;
+      while (skipped < count) {
+        if (elements.isEmpty()) {
+          if (!wrapped.materializeHasNext()) {
+            return skipped;
           }
-          ++skipped;
+          for (int i = 0; i < maxSize; ++i) {
+            if (!wrapped.materializeHasNext()) {
+              break;
+            }
+            elements.add(wrapped.materializeNext());
+          }
+        } else if (skip > 0) {
+          elements.clear();
+          wrapped.materializeSkip(skip);
+          if (!wrapped.materializeHasNext()) {
+            return skipped;
+          }
+          for (int i = 0; i < maxSize; ++i) {
+            if (!wrapped.materializeHasNext()) {
+              break;
+            }
+            elements.add(wrapped.materializeNext());
+          }
+        } else {
+          final int step = this.step;
+          for (int i = 0; i < step; ++i) {
+            if (wrapped.materializeHasNext()) {
+              elements.add(wrapped.materializeNext());
+            }
+            if (elements.size() <= 1) {
+              return skipped;
+            }
+            elements.removeFirst();
+          }
         }
-        return skipped;
+        ++skipped;
       }
-      return 0;
+      return skipped;
     }
 
     private boolean advance() {

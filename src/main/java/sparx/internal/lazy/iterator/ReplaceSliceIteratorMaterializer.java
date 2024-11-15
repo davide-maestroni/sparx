@@ -144,11 +144,16 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
       if (pos == start) {
         final IteratorMaterializer<E> elementsMaterializer = this.elementsMaterializer;
         if (elementsMaterializer.materializeHasNext()) {
-          wrapped.materializeSkip(length);
+          if (length > 0) {
+            wrapped.materializeSkip(length);
+          }
           return setState(new AppendAllIteratorMaterializer<E>(elementsMaterializer,
               wrapped)).materializeHasNext();
         }
-        setState(wrapped).materializeSkip(length);
+        final IteratorMaterializer<E> state = setState(wrapped);
+        if (length > 0) {
+          state.materializeSkip(length);
+        }
       }
       if (wrapped.materializeHasNext()) {
         return true;
@@ -168,7 +173,7 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
     }
 
     @Override
-    public int materializeSkip(final int count) {
+    public int materializeSkip(@Positive final int count) {
       throw new UnsupportedOperationException();
     }
   }

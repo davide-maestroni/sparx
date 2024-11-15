@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
+import sparx.util.annotation.Positive;
 
 public class LinesIteratorMaterializer extends AutoSkipIteratorMaterializer<String> {
 
@@ -64,7 +65,7 @@ public class LinesIteratorMaterializer extends AutoSkipIteratorMaterializer<Stri
   }
 
   @Override
-  public int materializeSkip(final int count) {
+  public int materializeSkip(@Positive final int count) {
     final int skipped = super.materializeSkip(count);
     pos += skipped;
     return skipped;

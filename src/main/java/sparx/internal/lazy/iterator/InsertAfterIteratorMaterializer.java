@@ -81,7 +81,9 @@ public class InsertAfterIteratorMaterializer<E> extends StatefulIteratorMaterial
       int skipped = wrapped.materializeSkip(remaining);
       pos += skipped;
       if (skipped == remaining) {
-        return skipped + setState(wrapped).materializeSkip(count - remaining - 1) + 1;
+        final IteratorMaterializer<E> state = setState(wrapped);
+        final int toSkip = count - remaining - 1;
+        return skipped + (toSkip > 0 ? state.materializeSkip(toSkip) : 0) + 1;
       }
       return skipped;
     }

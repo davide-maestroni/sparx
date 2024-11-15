@@ -16,6 +16,7 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
+import sparx.util.annotation.Positive;
 
 public class IntArrayToIteratorMaterializer implements IteratorMaterializer<Integer> {
 
@@ -43,12 +44,9 @@ public class IntArrayToIteratorMaterializer implements IteratorMaterializer<Inte
   }
 
   @Override
-  public int materializeSkip(final int count) {
-    if (count > 0) {
-      final int skipped = Math.min(elements.length - pos, count);
-      pos += skipped;
-      return skipped;
-    }
-    return 0;
+  public int materializeSkip(@Positive final int count) {
+    final int skipped = Math.min(elements.length - pos, count);
+    pos += skipped;
+    return skipped;
   }
 }

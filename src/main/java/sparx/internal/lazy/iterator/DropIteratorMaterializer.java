@@ -31,7 +31,8 @@ public class DropIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
     private final int maxElements;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int maxElements) {
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
+        @Positive final int maxElements) {
       this.wrapped = wrapped;
       this.maxElements = maxElements;
     }

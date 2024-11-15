@@ -144,7 +144,10 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (pos == start) {
-        setState(wrapped).materializeSkip(length);
+        final IteratorMaterializer<E> state = setState(wrapped);
+        if (length > 0) {
+          state.materializeSkip(length);
+        }
       }
       if (wrapped.materializeHasNext()) {
         return true;
@@ -163,7 +166,7 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
     }
 
     @Override
-    public int materializeSkip(final int count) {
+    public int materializeSkip(@Positive final int count) {
       throw new UnsupportedOperationException();
     }
   }
@@ -231,7 +234,7 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
     }
 
     @Override
-    public int materializeSkip(int count) {
+    public int materializeSkip(@Positive final int count) {
       throw new UnsupportedOperationException();
     }
   }

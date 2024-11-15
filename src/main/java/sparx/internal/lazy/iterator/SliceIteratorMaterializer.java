@@ -142,7 +142,9 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
     @Override
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      wrapped.materializeSkip(start);
+      if (start > 0) {
+        wrapped.materializeSkip(start);
+      }
       return setState(new TakeIteratorMaterializer<E>(wrapped, length)).materializeHasNext();
     }
 
@@ -155,25 +157,23 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      // TODO: positive
-      if (count > 0) {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
+    public int materializeSkip(@Positive final int count) {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (start > 0) {
         wrapped.materializeSkip(start);
-        final int length = this.length;
-        if (count < length) {
-          final int skipped = wrapped.materializeSkip(count);
-          if (skipped == count) {
-            setState(new TakeIteratorMaterializer<E>(wrapped, length - count));
-          } else {
-            setEmptyState();
-          }
-          return skipped;
-        }
-        setEmptyState();
-        return wrapped.materializeSkip(length);
       }
-      return 0;
+      final int length = this.length;
+      if (count < length) {
+        final int skipped = wrapped.materializeSkip(count);
+        if (skipped == count) {
+          setState(new TakeIteratorMaterializer<E>(wrapped, length - count));
+        } else {
+          setEmptyState();
+        }
+        return skipped;
+      }
+      setEmptyState();
+      return length > 0 ? wrapped.materializeSkip(length) : 0;
     }
   }
 
@@ -241,31 +241,28 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
     }
 
     @Override
-    public int materializeSkip(final int count) {
-      if (count > 0) {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
-        if (start > 0) {
-          wrapped.materializeSkip(start);
-        }
-        final DequeueList<E> elements = new DequeueList<E>();
-        while (wrapped.materializeHasNext()) {
-          elements.add(wrapped.materializeNext());
-        }
-        final int materializeLength = Math.max(0, elements.size() + end);
-        if (materializeLength == 0) {
-          setEmptyState();
-          return 0;
-        }
-        while (elements.size() > materializeLength) {
-          elements.removeLast();
-        }
-        if (count < elements.size()) {
-          return setState(new DequeueToIteratorMaterializer<E>(elements)).materializeSkip(count);
-        }
-        setEmptyState();
-        return elements.size();
+    public int materializeSkip(@Positive final int count) {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (start > 0) {
+        wrapped.materializeSkip(start);
       }
-      return 0;
+      final DequeueList<E> elements = new DequeueList<E>();
+      while (wrapped.materializeHasNext()) {
+        elements.add(wrapped.materializeNext());
+      }
+      final int materializeLength = Math.max(0, elements.size() + end);
+      if (materializeLength == 0) {
+        setEmptyState();
+        return 0;
+      }
+      while (elements.size() > materializeLength) {
+        elements.removeLast();
+      }
+      if (count < elements.size()) {
+        return setState(new DequeueToIteratorMaterializer<E>(elements)).materializeSkip(count);
+      }
+      setEmptyState();
+      return elements.size();
     }
   }
 }
