@@ -43,6 +43,7 @@ import sparx.internal.lazy.iterator.CharSequenceToIteratorMaterializer;
 import sparx.internal.lazy.iterator.CollectionToIteratorMaterializer;
 import sparx.internal.lazy.iterator.CountIteratorMaterializer;
 import sparx.internal.lazy.iterator.CountWhereIteratorMaterializer;
+import sparx.internal.lazy.iterator.DequeueToIteratorMaterializer;
 import sparx.internal.lazy.iterator.DiffIteratorMaterializer;
 import sparx.internal.lazy.iterator.DistinctByIteratorMaterializer;
 import sparx.internal.lazy.iterator.DoubleArrayToIteratorMaterializer;
@@ -193,6 +194,7 @@ import sparx.internal.lazy.list.TakeListMaterializer;
 import sparx.internal.lazy.list.TakeRightListMaterializer;
 import sparx.internal.lazy.list.TakeRightWhileListMaterializer;
 import sparx.internal.lazy.list.TakeWhileListMaterializer;
+import sparx.util.DequeueList;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
 import sparx.util.annotation.NotNegative;
@@ -242,10 +244,10 @@ public class lazy extends Sparx {
 
     private static final Iterator<?> EMPTY_ITERATOR = new Iterator<Object>(
         EmptyIteratorMaterializer.instance());
-    private static final Function<? extends java.util.List<?>, ? extends Iterator<?>> FROM_JAVA_LIST = new Function<java.util.List<Object>, Iterator<Object>>() {
+    private static final Function<? extends DequeueList<?>, ? extends Iterator<?>> FROM_DEQUEUE_LIST = new Function<DequeueList<Object>, Iterator<Object>>() {
       @Override
-      public Iterator<Object> apply(final java.util.List<Object> param) {
-        return new Iterator<Object>(new ListToIteratorMaterializer<Object>(param));
+      public Iterator<Object> apply(final DequeueList<Object> list) {
+        return new Iterator<Object>(new DequeueToIteratorMaterializer<Object>(list));
       }
     };
 
@@ -2038,8 +2040,9 @@ public class lazy extends Sparx {
         return Iterator.of();
       }
       return new Iterator<Iterator<E>>(
-          new SlidingWindowIteratorMaterializer<E, Iterator<E>>(materializer, maxSize, step,
-              (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
+          new SlidingWindowIteratorMaterializer<E, Iterator<E>>(materializer,
+              Require.positive(maxSize, "maxSize"), Require.positive(step, "step"),
+              (Function<? super DequeueList<E>, ? extends Iterator<E>>) FROM_DEQUEUE_LIST));
     }
 
     @Override
@@ -2051,8 +2054,9 @@ public class lazy extends Sparx {
         return Iterator.of();
       }
       return new Iterator<Iterator<E>>(
-          new SlidingWindowIteratorMaterializer<E, Iterator<E>>(materializer, size, step, padding,
-              (Function<? super java.util.List<E>, ? extends Iterator<E>>) FROM_JAVA_LIST));
+          new SlidingWindowIteratorMaterializer<E, Iterator<E>>(materializer,
+              Require.positive(size, "size"), Require.positive(step, "step"), padding,
+              (Function<? super DequeueList<E>, ? extends Iterator<E>>) FROM_DEQUEUE_LIST));
     }
 
     @Override

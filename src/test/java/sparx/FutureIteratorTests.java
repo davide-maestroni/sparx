@@ -110,6 +110,7 @@ import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReplaceSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ResizeIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SliceIteratorFutureMaterializer;
+import sparx.internal.future.iterator.SlidingWindowIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -2007,43 +2008,6 @@ public class FutureIteratorTests {
   }
 
   @Test
-  public void slice() throws Exception {
-    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, 1));
-    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, 0));
-    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, -3));
-    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, -4));
-    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, -5));
-    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-1, 1));
-    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-1, 3));
-    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-1, -1));
-    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-1, -4));
-    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, -1));
-    test(List.of(2), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, -2));
-    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, 3));
-    test(List.of(2), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, 2));
-    test(List.of(4), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-1, 4));
-    test(List.of(null), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-2, -1));
-    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
-        it -> it.slice(0, Integer.MAX_VALUE));
-    test(List.of(), Iterator::of, it -> it.slice(1, -1));
-
-    testMaterializer(List.of(2, 3),
-        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
-        (c, m) -> new SliceIteratorFutureMaterializer<>(m, 1, 3, c, new AtomicReference<>(),
-            (l, s, e) -> lazy.List.wrap(l).slice(s, e)));
-    testMaterializer(List.of(2, 3),
-        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
-        (c, m) -> new SliceIteratorFutureMaterializer<>(m, 1, -1, c, new AtomicReference<>(),
-            (l, s, e) -> lazy.List.wrap(l).slice(s, e)));
-    testMaterializer(List.of(2, 3),
-        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
-        (c, m) -> new SliceIteratorFutureMaterializer<>(m, -3, -1, c, new AtomicReference<>(),
-            (l, s, e) -> lazy.List.wrap(l).slice(s, e)));
-
-    testCancel(it -> it.slice(1, 2));
-  }
-
-  @Test
   public void runFinally() throws Exception {
     var called = new AtomicBoolean();
     assertThrows(NullPointerException.class,
@@ -2083,6 +2047,208 @@ public class FutureIteratorTests {
 
     testCancel(it -> it.runFinally(() -> {
     }));
+  }
+
+  @Test
+  public void slice() throws Exception {
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, 1));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, 0));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, -3));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, -4));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, -5));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-1, 1));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-1, 3));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-1, -1));
+    test(List.of(), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-1, -4));
+    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, -1));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, -2));
+    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, 3));
+    test(List.of(2), () -> Iterator.of(1, 2, null, 4), it -> it.slice(1, 2));
+    test(List.of(4), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-1, 4));
+    test(List.of(null), () -> Iterator.of(1, 2, null, 4), it -> it.slice(-2, -1));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.slice(0, Integer.MAX_VALUE));
+    test(List.of(), Iterator::of, it -> it.slice(1, -1));
+
+    testMaterializer(List.of(2, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new SliceIteratorFutureMaterializer<>(m, 1, 3, c, new AtomicReference<>(),
+            (l, s, e) -> lazy.List.wrap(l).slice(s, e)));
+    testMaterializer(List.of(2, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new SliceIteratorFutureMaterializer<>(m, 1, -1, c, new AtomicReference<>(),
+            (l, s, e) -> lazy.List.wrap(l).slice(s, e)));
+    testMaterializer(List.of(2, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new SliceIteratorFutureMaterializer<>(m, -3, -1, c, new AtomicReference<>(),
+            (l, s, e) -> lazy.List.wrap(l).slice(s, e)));
+
+    testCancel(it -> it.slice(1, 2));
+  }
+
+  @Test
+  public void slidingWindow() throws Exception {
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).toFuture(context).slidingWindow(-1, 1));
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).toFuture(context).slidingWindow(0, 1));
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).toFuture(context).slidingWindow(1, -1));
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).toFuture(context).slidingWindow(1, 0));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
+            List.of(5, 6), List.of(6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(3, 1).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(3, 2).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, 6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(3, 3).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(5, 6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(3, 4).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(3, 5).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(3, 6).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
+            List.of(6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(2, 1).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(2, 2).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(4, 5)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(2, 3).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(5, 6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(2, 4).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(2, 5).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(2, 6).map(future.Iterator::toList));
+    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(1, 1).map(future.Iterator::toList));
+    test(List.of(List.of(1), List.of(3), List.of(5)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(1, 2).map(future.Iterator::toList));
+    test(List.of(List.of(1), List.of(4)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(1, 3).map(future.Iterator::toList));
+    test(List.of(List.of(1), List.of(5)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(1, 4).map(future.Iterator::toList));
+    test(List.of(List.of(1), List.of(6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(1, 5).map(future.Iterator::toList));
+    test(List.of(List.of(1)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindow(1, 6).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3), List.of(3)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindow(3, 1).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(3)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindow(3, 2).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindow(3, 3).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3), List.of(3)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindow(4, 1).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(3)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindow(4, 2).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindow(4, 3).map(future.Iterator::toList));
+
+    IndexedFunction<future.Iterator<Integer>, java.util.List<Integer>> mapper = (n, it) -> {
+      var elements = new ArrayList<Integer>();
+      it.nonBlockingFor(e -> elements.add(e));
+      return elements;
+    };
+    testMaterializer(List.of(List.of(1, 2, 3), List.of(3, 4)),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new MapIteratorFutureMaterializer<>(
+            new SlidingWindowIteratorFutureMaterializer<>(m, 3, 2, c, new AtomicReference<>(),
+                l -> lazy.Iterator.wrap(l).toFuture(c)), mapper, c, new AtomicReference<>()));
+    testMaterializer(List.of(List.of(1, 2), List.of(4)),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new MapIteratorFutureMaterializer<>(
+            new SlidingWindowIteratorFutureMaterializer<>(m, 2, 3, c, new AtomicReference<>(),
+                l -> lazy.Iterator.wrap(l).toFuture(c)), mapper, c, new AtomicReference<>()));
+
+    testCancel(it -> it.slidingWindow(2, 1));
+  }
+
+  @Test
+  public void slidingWindowWithPadding() throws Exception {
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).toFuture(context).slidingWindowWithPadding(-1, 1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).toFuture(context).slidingWindowWithPadding(0, 1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).toFuture(context).slidingWindowWithPadding(1, -1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).toFuture(context).slidingWindowWithPadding(1, 0, 0));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
+            List.of(5, 6, 0), List.of(6, 0, 0)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(3, 1, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6, 0)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(3, 2, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, 6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(3, 3, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(5, 6, 0)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(3, 4, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(6, 0, 0)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(3, 5, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(3, 6, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
+            List.of(6, 0)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(2, 1, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(2, 2, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(4, 5)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(2, 3, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(5, 6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(2, 4, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(6, 0)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(2, 5, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(2, 6, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(1, 1, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1), List.of(3), List.of(5)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(1, 2, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1), List.of(4)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(1, 3, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1), List.of(5)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(1, 4, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1), List.of(6)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(1, 5, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1)), () -> Iterator.of(1, 2, 3, 4, 5, 6),
+        it -> it.slidingWindowWithPadding(1, 6, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 0), List.of(3, 0, 0)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindowWithPadding(3, 1, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(3, 0, 0)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindowWithPadding(3, 2, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindowWithPadding(3, 3, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3, 0), List.of(2, 3, 0, 0), List.of(3, 0, 0, 0)),
+        () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindowWithPadding(4, 1, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3, 0), List.of(3, 0, 0, 0)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindowWithPadding(4, 2, 0).map(future.Iterator::toList));
+    test(List.of(List.of(1, 2, 3, 0)), () -> Iterator.of(1, 2, 3),
+        it -> it.slidingWindowWithPadding(4, 3, 0).map(future.Iterator::toList));
+
+    IndexedFunction<future.Iterator<Integer>, java.util.List<Integer>> mapper = (n, it) -> {
+      var elements = new ArrayList<Integer>();
+      it.nonBlockingFor(e -> elements.add(e));
+      return elements;
+    };
+    testMaterializer(List.of(List.of(1, 2, 3), List.of(3, 4, 0)),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new MapIteratorFutureMaterializer<>(
+            new SlidingWindowIteratorFutureMaterializer<>(m, 3, 2, 0, c, new AtomicReference<>(),
+                l -> lazy.Iterator.wrap(l).toFuture(c)), mapper, c, new AtomicReference<>()));
+    testMaterializer(List.of(List.of(1, 2), List.of(4, 0)),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new MapIteratorFutureMaterializer<>(
+            new SlidingWindowIteratorFutureMaterializer<>(m, 2, 3, 0, c, new AtomicReference<>(),
+                l -> lazy.Iterator.wrap(l).toFuture(c)), mapper, c, new AtomicReference<>()));
+
+    testCancel(it -> it.slidingWindowWithPadding(2, 1, null));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

@@ -41,6 +41,7 @@ import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CollectionToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountWhereIteratorFutureMaterializer;
+import sparx.internal.future.iterator.DequeueToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DistinctByIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
@@ -99,6 +100,7 @@ import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReplaceSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ResizeIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SliceIteratorFutureMaterializer;
+import sparx.internal.future.iterator.SlidingWindowIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
@@ -179,6 +181,7 @@ import sparx.internal.future.list.TransformListFutureMaterializer;
 import sparx.internal.future.list.WrappingListFutureMaterializer;
 import sparx.itf.Sequence;
 import sparx.util.DeadLockException;
+import sparx.util.DequeueList;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
@@ -342,6 +345,18 @@ class future extends Sparx {
             return getElementsMaterializer(context, mapper.apply(element));
           }
           return new ElementToIteratorFutureMaterializer<E>(element);
+        }
+      };
+    }
+
+    private static @NotNull <E> Function<DequeueList<E>, Iterator<E>> getDequeueToIteratorFunction(
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      return new Function<DequeueList<E>, Iterator<E>>() {
+        @Override
+        public Iterator<E> apply(final DequeueList<E> list) {
+          return new Iterator<E>(context, cancelException,
+              new DequeueToIteratorFutureMaterializer<E>(list, context));
         }
       };
     }
@@ -3779,13 +3794,34 @@ class future extends Sparx {
     @Override
     public @NotNull Iterator<? extends Iterator<E>> slidingWindow(@Positive final int maxSize,
         @Positive final int step) {
-      return null;
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<Iterator<E>>(context, cancelException,
+          new SlidingWindowIteratorFutureMaterializer<E, Iterator<E>>(materializer,
+              Require.positive(maxSize, "maxSize"), Require.positive(step, "step"), context,
+              cancelException, Iterator.<E>getDequeueToIteratorFunction(context, cancelException)));
     }
 
     @Override
     public @NotNull Iterator<? extends Iterator<E>> slidingWindowWithPadding(
         @Positive final int size, @Positive final int step, final E padding) {
-      return null;
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return emptyIterator(context);
+      }
+      if (size == 1) {
+        return slidingWindow(1, step);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<Iterator<E>>(context, cancelException,
+          new SlidingWindowIteratorFutureMaterializer<E, Iterator<E>>(materializer, size,
+              Require.positive(step, "step"), padding, context, cancelException,
+              Iterator.<E>getDequeueToIteratorFunction(context, cancelException)));
     }
 
     @Override
@@ -8341,8 +8377,8 @@ class future extends Sparx {
 
     private static final Function<? extends List<?>, ? extends ListIterator<?>> LIST_TO_ITERATOR = new Function<List<?>, ListIterator<?>>() {
       @Override
-      public ListIterator<?> apply(final List<?> param) {
-        return param.listIterator();
+      public ListIterator<?> apply(final List<?> list) {
+        return list.listIterator();
       }
     };
 

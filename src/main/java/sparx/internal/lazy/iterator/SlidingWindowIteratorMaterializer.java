@@ -16,7 +16,6 @@
 package sparx.internal.lazy.iterator;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.DequeueList;
@@ -30,20 +29,20 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
 
   public SlidingWindowIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @Positive final int maxSize, @Positive final int step,
-      @NotNull final Function<? super List<E>, ? extends I> mapper) {
+      @NotNull final Function<? super DequeueList<E>, ? extends I> mapper) {
     setState(new ImmaterialState(wrapped, maxSize, 0, step, null, mapper));
   }
 
   public SlidingWindowIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @Positive final int size, @Positive final int step, final E padding,
-      @NotNull final Function<? super List<E>, ? extends I> mapper) {
+      @NotNull final Function<? super DequeueList<E>, ? extends I> mapper) {
     setState(new ImmaterialState(wrapped, size, size, step, padding, mapper));
   }
 
   private class ImmaterialState implements IteratorMaterializer<I> {
 
     private final DequeueList<E> elements;
-    private final Function<? super List<E>, ? extends I> mapper;
+    private final Function<? super DequeueList<E>, ? extends I> mapper;
     private final int maxSize;
     private final int size;
     private final int skip;
@@ -55,7 +54,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int maxSize,
         final int size, final int step, final E padding,
-        @NotNull final Function<? super List<E>, ? extends I> mapper) {
+        @NotNull final Function<? super DequeueList<E>, ? extends I> mapper) {
       this.wrapped = wrapped;
       this.maxSize = maxSize;
       this.size = size;

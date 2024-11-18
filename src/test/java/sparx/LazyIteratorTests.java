@@ -1303,322 +1303,138 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void slidingWindow() {
-    Supplier<Iterator<? extends Iterator<Integer>>> itr = () -> Iterator.of(1, 2, 3, 4, 5, 6)
-        .slidingWindow(3, 1);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(6, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
-        List.of(5, 6), List.of(6)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 2);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(4, 5, 6)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 4);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(5, 6)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 5);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(6)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 6);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 1);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(6, itr.get().size());
-    assertEquals(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
-        List.of(6)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 2);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2), List.of(4, 5)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 4);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2), List.of(5, 6)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 5);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2), List.of(6)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 6);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(List.of(1, 2)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 1);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(6, itr.get().size());
-    assertEquals(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 2);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(List.of(1), List.of(3), List.of(5)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1), List.of(4)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 4);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1), List.of(5)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 5);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1), List.of(6)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 6);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(List.of(1)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(3, 1);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(2, 3), List.of(3)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(3, 2);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(3)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(3, 3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(4, 1);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(2, 3), List.of(3)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(4, 2);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(3)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindow(4, 3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3)), itr.get().map(Iterator::toList).toList());
+  public void slidingWindow() throws Exception {
+    assertThrows(IllegalArgumentException.class, () -> Iterator.of(0).slidingWindow(-1, 1));
+    assertThrows(IllegalArgumentException.class, () -> Iterator.of(0).slidingWindow(0, 1));
+    assertThrows(IllegalArgumentException.class, () -> Iterator.of(0).slidingWindow(1, -1));
+    assertThrows(IllegalArgumentException.class, () -> Iterator.of(0).slidingWindow(1, 0));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
+            List.of(5, 6), List.of(6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 1).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 2).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, 6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 3).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(5, 6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 4).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 5).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(3, 6).map(Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
+        List.of(6)), () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 1).map(Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 2).map(Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(4, 5)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 3).map(Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(5, 6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 4).map(Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 5).map(Iterator::toList));
+    test(List.of(List.of(1, 2)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(2, 6).map(Iterator::toList));
+    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 1).map(Iterator::toList));
+    test(List.of(List.of(1), List.of(3), List.of(5)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 2).map(Iterator::toList));
+    test(List.of(List.of(1), List.of(4)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 3).map(Iterator::toList));
+    test(List.of(List.of(1), List.of(5)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 4).map(Iterator::toList));
+    test(List.of(List.of(1), List.of(6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 5).map(Iterator::toList));
+    test(List.of(List.of(1)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindow(1, 6).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3), List.of(3)),
+        () -> Iterator.of(1, 2, 3).slidingWindow(3, 1).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(3)),
+        () -> Iterator.of(1, 2, 3).slidingWindow(3, 2).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3)),
+        () -> Iterator.of(1, 2, 3).slidingWindow(3, 3).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3), List.of(3)),
+        () -> Iterator.of(1, 2, 3).slidingWindow(4, 1).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(3)),
+        () -> Iterator.of(1, 2, 3).slidingWindow(4, 2).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3)),
+        () -> Iterator.of(1, 2, 3).slidingWindow(4, 3).map(Iterator::toList));
   }
 
   @Test
-  public void slidingWindowWithPadding() {
-    Supplier<Iterator<? extends Iterator<Integer>>> itr = () -> Iterator.of(1, 2, 3, 4, 5, 6)
-        .slidingWindowWithPadding(3, 1, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(6, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
-        List.of(5, 6, 0), List.of(6, 0, 0)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 2, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6, 0)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 3, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(4, 5, 6)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 4, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(5, 6, 0)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 5, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(6, 0, 0)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 6, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 1, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(6, itr.get().size());
-    assertEquals(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
-        List.of(6, 0)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 2, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 3, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2), List.of(4, 5)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 4, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2), List.of(5, 6)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 5, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2), List.of(6, 0)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 6, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(List.of(1, 2)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 1, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(6, itr.get().size());
-    assertEquals(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 2, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(List.of(1), List.of(3), List.of(5)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 3, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1), List.of(4)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 4, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1), List.of(5)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 5, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1), List.of(6)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 6, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(List.of(1)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(3, 1, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(2, 3, 0), List.of(3, 0, 0)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(3, 2, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3), List.of(3, 0, 0)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(3, 3, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3)), itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(4, 1, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3, 0), List.of(2, 3, 0, 0), List.of(3, 0, 0, 0)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(4, 2, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3, 0), List.of(3, 0, 0, 0)),
-        itr.get().map(Iterator::toList).toList());
-
-    itr = () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(4, 3, 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(List.of(1, 2, 3, 0)), itr.get().map(Iterator::toList).toList());
+  public void slidingWindowWithPadding() throws Exception {
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).slidingWindowWithPadding(-1, 1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).slidingWindowWithPadding(0, 1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).slidingWindowWithPadding(1, -1, 0));
+    assertThrows(IllegalArgumentException.class,
+        () -> Iterator.of(0).slidingWindowWithPadding(1, 0, 0));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 4), List.of(3, 4, 5), List.of(4, 5, 6),
+            List.of(5, 6, 0), List.of(6, 0, 0)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 1, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(3, 4, 5), List.of(5, 6, 0)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 2, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(4, 5, 6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 3, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(5, 6, 0)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 4, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(6, 0, 0)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 5, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(3, 6, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(2, 3), List.of(3, 4), List.of(4, 5), List.of(5, 6),
+        List.of(6, 0)), () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 1, 0)
+        .map(Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(3, 4), List.of(5, 6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 2, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(4, 5)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 3, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(5, 6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 4, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1, 2), List.of(6, 0)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 5, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1, 2)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(2, 6, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1), List.of(2), List.of(3), List.of(4), List.of(5), List.of(6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 1, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1), List.of(3), List.of(5)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 2, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1), List.of(4)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 3, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1), List.of(5)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 4, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1), List.of(6)),
+        () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 5, 0)
+            .map(Iterator::toList));
+    test(List.of(List.of(1)), () -> Iterator.of(1, 2, 3, 4, 5, 6).slidingWindowWithPadding(1, 6, 0)
+        .map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(2, 3, 0), List.of(3, 0, 0)),
+        () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(3, 1, 0).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3), List.of(3, 0, 0)),
+        () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(3, 2, 0).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3)),
+        () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(3, 3, 0).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3, 0), List.of(2, 3, 0, 0), List.of(3, 0, 0, 0)),
+        () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(4, 1, 0).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3, 0), List.of(3, 0, 0, 0)),
+        () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(4, 2, 0).map(Iterator::toList));
+    test(List.of(List.of(1, 2, 3, 0)),
+        () -> Iterator.of(1, 2, 3).slidingWindowWithPadding(4, 3, 0).map(Iterator::toList));
   }
 
   @Test
