@@ -1438,60 +1438,16 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void startsWith() {
-    Supplier<Iterator<Boolean>> itr = () -> Iterator.<Integer>of().startsWith(List.of());
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertTrue(itr.get().first());
-
-    itr = () -> Iterator.<Integer>of().startsWith(List.of(1));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertFalse(itr.get().first());
-
-    itr = () -> Iterator.of(1, null, 3).startsWith(List.of());
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertTrue(itr.get().first());
-
-    itr = () -> Iterator.of(1, null, 3).startsWith(List.of(1));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertTrue(itr.get().first());
-
-    itr = () -> Iterator.of(1, null, 3).startsWith(List.of(null));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertFalse(itr.get().first());
-
-    itr = () -> Iterator.of(1, null, 3).startsWith(List.of(1, null));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertTrue(itr.get().first());
-
-    itr = () -> Iterator.of(1, null, 3).startsWith(List.of(null, 3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertFalse(itr.get().first());
-
-    itr = () -> Iterator.of(1, null, 3).startsWith(List.of(1, null, 3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertTrue(itr.get().first());
-
-    itr = () -> Iterator.of(1, null, 3).startsWith(List.of(null, null, 3));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertFalse(itr.get().first());
+  public void startsWith() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).startsWith(null));
+    test(List.of(true), () -> Iterator.<Integer>of().startsWith(List.of()));
+    test(List.of(false), () -> Iterator.<Integer>of().startsWith(List.of(1)));
+    test(List.of(true), () -> Iterator.of(1, null, 3).startsWith(List.of()));
+    test(List.of(true), () -> Iterator.of(1, null, 3).startsWith(List.of(1)));
+    test(List.of(false), () -> Iterator.of(1, null, 3).startsWith(List.of(null)));
+    test(List.of(true), () -> Iterator.of(1, null, 3).startsWith(List.of(1, null)));
+    test(List.of(true), () -> Iterator.of(1, null, 3).startsWith(List.of(1, null, 3)));
+    test(List.of(false), () -> Iterator.of(1, null, 3).startsWith(List.of(null, null, 3)));
   }
 
   @Test

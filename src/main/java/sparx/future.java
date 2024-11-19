@@ -101,6 +101,7 @@ import sparx.internal.future.iterator.ReplaceSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ResizeIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SlidingWindowIteratorFutureMaterializer;
+import sparx.internal.future.iterator.StartsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
@@ -3825,8 +3826,20 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<Boolean> startsWith(@NotNull Iterable<?> elements) {
-      return null;
+    public @NotNull Iterator<Boolean> startsWith(@NotNull final Iterable<?> elements) {
+      final ExecutionContext context = this.context;
+      if (getKnownSize(elements) == 0) {
+        return trueIterator(context);
+      }
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return falseIterator(context);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<Boolean>(context, cancelException,
+          new StartsWithIteratorFutureMaterializer<E>(materializer,
+              Iterator.getElementsMaterializer(context, Require.notNull(elements, "elements")),
+              context, cancelException));
     }
 
     @Override

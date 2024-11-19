@@ -111,6 +111,7 @@ import sparx.internal.future.iterator.ReplaceSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ResizeIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SlidingWindowIteratorFutureMaterializer;
+import sparx.internal.future.iterator.StartsWithIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -2249,6 +2250,31 @@ public class FutureIteratorTests {
                 l -> lazy.Iterator.wrap(l).toFuture(c)), mapper, c, new AtomicReference<>()));
 
     testCancel(it -> it.slidingWindowWithPadding(2, 1, null));
+  }
+
+  @Test
+  public void startsWith() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).startsWith(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).startsWith(null));
+    test(List.of(true), Iterator::<Integer>of, it -> it.startsWith(List.of()));
+    test(List.of(false), Iterator::<Integer>of, it -> it.startsWith(List.of(1)));
+    test(List.of(true), () -> Iterator.of(1, null, 3), it -> it.startsWith(List.of()));
+    test(List.of(true), () -> Iterator.of(1, null, 3), it -> it.startsWith(List.of(1)));
+    test(List.of(false), () -> Iterator.of(1, null, 3), it -> it.startsWith(List.of(null)));
+    test(List.of(true), () -> Iterator.of(1, null, 3), it -> it.startsWith(List.of(1, null)));
+    test(List.of(true), () -> Iterator.of(1, null, 3), it -> it.startsWith(List.of(1, null, 3)));
+    test(List.of(false), () -> Iterator.of(1, null, 3),
+        it -> it.startsWith(List.of(null, null, 3)));
+
+    testMaterializer(List.of(true),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new StartsWithIteratorFutureMaterializer<>(m,
+            new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c), c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.startsWith(List.of(null)));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {
