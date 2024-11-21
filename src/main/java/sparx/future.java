@@ -105,6 +105,7 @@ import sparx.internal.future.iterator.SlidingWindowIteratorFutureMaterializer;
 import sparx.internal.future.iterator.StartsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchExceptionallyIteratorFutureMaterializer;
+import sparx.internal.future.iterator.SymmetricDiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
 import sparx.internal.future.iterator.WrappingIteratorFutureMaterializer;
 import sparx.internal.future.list.AppendAllListFutureMaterializer;
@@ -1149,6 +1150,21 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerRunFinally(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Action action) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          materializer.knownSize()) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).runFinally(action);
+        }
+      };
+    }
+
     private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerSlice(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
@@ -1163,17 +1179,16 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerRunFinally(
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerSymmetricDiff(
         @NotNull final IteratorFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException,
-        @NotNull final Action action) {
-      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
-          materializer.knownSize()) {
+        @NotNull final Iterable<? extends E> elements) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
         @Override
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
-          return lazy.Iterator.wrap(iterator).runFinally(action);
+          return lazy.Iterator.wrap(iterator).symmetricDiff(elements);
         }
       };
     }
@@ -3950,8 +3965,26 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> symmetricDiff(@NotNull Iterable<? extends E> elements) {
-      return null;
+    public @NotNull Iterator<E> symmetricDiff(@NotNull final Iterable<? extends E> elements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context,
+            getElementsMaterializer(context, Require.notNull(elements, "elements")));
+      }
+      if (getKnownSize(elements) == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerSymmetricDiff(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new SymmetricDiffIteratorFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+              cancelException));
     }
 
     @Override

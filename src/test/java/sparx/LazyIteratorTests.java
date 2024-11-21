@@ -1494,7 +1494,6 @@ public class LazyIteratorTests {
     test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).symmetricDiff(List.of()));
     test(List.of(1, 1, 2, null, 4), () -> Iterator.of(1, 1, 2, null, 4).symmetricDiff(List.of()));
     test(List.of(1, 2, null, 4), () -> Iterator.of().symmetricDiff(List.of(1, 2, null, 4)));
-
   }
 
   @Test

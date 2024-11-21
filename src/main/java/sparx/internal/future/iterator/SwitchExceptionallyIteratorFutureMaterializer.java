@@ -64,8 +64,9 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
     private final IndexedFunction<? super Throwable, ? extends IteratorFutureMaterializer<E>> mapper;
     private final IteratorFutureMaterializer<E> wrapped;
 
-    private int index;
     private IteratorFutureMaterializer<E> elementsMaterializer;
+    private int index;
+    private boolean isMaterialized;
 
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
         @NotNull final IndexedFunction<? super Throwable, ? extends IteratorFutureMaterializer<E>> mapper,
@@ -194,7 +195,7 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
         public void error(@NotNull final Exception error) {
           final IteratorFutureMaterializer<E> materializer = mapError(error);
           if (materializer != null) {
-            setState(new WrappingState(materializer, cancelException)).materializeHasNext(consumer);
+            setMaterializer(materializer).materializeHasNext(consumer);
           }
         }
       });
@@ -234,7 +235,7 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
         public void error(@NotNull final Exception error) throws Exception {
           final IteratorFutureMaterializer<E> materializer = mapError(error);
           if (materializer != null) {
-            setState(new WrappingState(materializer, cancelException)).materializeNext(consumer);
+            setMaterializer(materializer).materializeNext(consumer);
           } else {
             consumer.error(error);
           }
@@ -261,8 +262,7 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
         public void error(@NotNull final Exception error) throws Exception {
           final IteratorFutureMaterializer<E> materializer = mapError(error);
           if (materializer != null) {
-            setState(new WrappingState(materializer, cancelException)).materializeNextWhile(
-                predicate);
+            setMaterializer(materializer).materializeNextWhile(predicate);
           } else {
             predicate.error(error);
           }
@@ -284,6 +284,7 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
         @Override
         public boolean cancellableTest(final int size, final int index, final E element)
             throws Exception {
+          ++ImmaterialState.this.index;
           if (++skipped >= count) {
             consumer.accept(skipped);
             return false;
@@ -295,7 +296,7 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
         public void error(@NotNull final Exception error) throws Exception {
           final IteratorFutureMaterializer<E> materializer = mapError(error);
           if (materializer != null) {
-            setState(new WrappingState(materializer, cancelException));
+            setMaterializer(materializer);
             if (skipped < count) {
               final int offset = skipped;
               getState().materializeSkip(count - skipped, new FutureConsumer<Integer>() {
@@ -374,6 +375,16 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
         }
       }
       return null;
+    }
+
+    private @NotNull IteratorFutureMaterializer<E> setMaterializer(
+        @NotNull final IteratorFutureMaterializer<E> materializer) {
+      if (isMaterialized) {
+        return getState();
+      } else {
+        isMaterialized = true;
+        return setState(new WrappingState(materializer, cancelException, index));
+      }
     }
   }
 }

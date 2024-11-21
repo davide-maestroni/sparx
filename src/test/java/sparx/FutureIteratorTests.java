@@ -112,6 +112,8 @@ import sparx.internal.future.iterator.ResizeIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SlidingWindowIteratorFutureMaterializer;
 import sparx.internal.future.iterator.StartsWithIteratorFutureMaterializer;
+import sparx.internal.future.iterator.SwitchExceptionallyIteratorFutureMaterializer;
+import sparx.internal.future.iterator.SymmetricDiffIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -2307,6 +2309,47 @@ public class FutureIteratorTests {
     assertThrows(NullPointerException.class,
         () -> Iterator.of(1, null, 3).filter(i -> i > 0).toFuture(context)
             .switchExceptionally(SizeOverflowException.class, t -> List.of(4)).size());
+
+    testMaterializer(List.of(1, 2, 3, 4),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, null, 4), c),
+        (c, m) -> new SwitchExceptionallyIteratorFutureMaterializer<>(
+            new FilterIteratorFutureMaterializer<>(m, (n, e) -> e > 0, c, new AtomicReference<>()),
+            (n, t) -> new ListToIteratorFutureMaterializer<>(List.of(3, 4), c), c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.switchExceptionally(t -> List.of(null)));
+  }
+
+  @Test
+  public void symmetricDiff() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).symmetricDiff(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e)).symmetricDiff(null));
+    test(List.of(2, 4), () -> Iterator.of(1, 2, null, 4), it -> it.symmetricDiff(List.of(1, null)));
+    test(List.of(2, null), () -> Iterator.of(1, 2, null, 4), it -> it.symmetricDiff(List.of(1, 4)));
+    test(List.of(2, null, 3), () -> Iterator.of(1, 2, null, 4),
+        it -> it.symmetricDiff(List.of(1, 3, 4)));
+    test(List.of(2, null, 4, 3, 3), () -> Iterator.of(1, 2, null, 4),
+        it -> it.symmetricDiff(List.of(3, 1, 3)));
+    test(List.of(1, 2, 4, null), () -> Iterator.of(1, 2, null, 4),
+        it -> it.symmetricDiff(List.of(null, null)));
+    test(List.of(1, 2, 4, null), () -> Iterator.of(1, 1, 2, null, 4),
+        it -> it.symmetricDiff(List.of(null, null, 1)));
+    test(List.of(), () -> Iterator.of(1, null), it -> it.symmetricDiff(List.of(1, null)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.symmetricDiff(List.of()));
+    test(List.of(1, 1, 2, null, 4), () -> Iterator.of(1, 1, 2, null, 4),
+        it -> it.symmetricDiff(List.of()));
+    test(List.of(1, 2, null, 4), Iterator::of, it -> it.symmetricDiff(List.of(1, 2, null, 4)));
+
+    testMaterializer(List.of(1, 5),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new SymmetricDiffIteratorFutureMaterializer<>(m,
+            new ListToIteratorFutureMaterializer<>(List.of(2, 3, 4, 5), c), c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.symmetricDiff(List.of(null)));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {
