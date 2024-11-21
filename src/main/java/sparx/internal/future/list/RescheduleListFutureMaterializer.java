@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx.internal.future.iterator;
+package sparx.internal.future.list;
 
+import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
 import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Level;
@@ -30,20 +30,21 @@ import sparx.internal.future.ContextIndexedFutureConsumer;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.util.annotation.NotNegative;
 
-public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMaterializer<E> {
+public class RescheduleListFutureMaterializer<E> implements ListFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      SwitchIteratorFutureMaterializer.class.getName());
+      RescheduleListFutureMaterializer.class.getName());
 
   private final ExecutionContext fromContext;
   private final String fromTaskID;
   private final ExecutionContext toContext;
-  private final IteratorFutureMaterializer<E> wrapped;
+  private final ListFutureMaterializer<E> wrapped;
 
-  public SwitchIteratorFutureMaterializer(@NotNull final ExecutionContext fromContext,
+  public RescheduleListFutureMaterializer(@NotNull final ExecutionContext fromContext,
       @NotNull final String fromTaskID, @NotNull final ExecutionContext toContext,
-      @NotNull final IteratorFutureMaterializer<E> wrapped) {
+      @NotNull final ListFutureMaterializer<E> wrapped) {
     this.fromContext = fromContext;
     this.fromTaskID = fromTaskID;
     this.toContext = toContext;
@@ -100,6 +101,60 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
   }
 
   @Override
+  public void materializeContains(final Object element,
+      @NotNull final FutureConsumer<Boolean> consumer) {
+    final ContextFutureConsumer<Boolean> switchConsumer = new ContextFutureConsumer<Boolean>(
+        toContext, getTaskID(), consumer, LOGGER);
+    fromContext.scheduleAfter(new ContextTask(fromContext) {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElements();
+      }
+
+      @Override
+      protected void runWithContext() {
+        try {
+          wrapped.materializeContains(element, switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void materializeElement(@NotNegative final int index,
+      @NotNull final IndexedFutureConsumer<E> consumer) {
+    final ContextIndexedFutureConsumer<E> switchConsumer = new ContextIndexedFutureConsumer<E>(
+        toContext, getTaskID(), consumer, LOGGER);
+    fromContext.scheduleAfter(new ContextTask(fromContext) {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElement();
+      }
+
+      @Override
+      protected void runWithContext() {
+        try {
+          wrapped.materializeElement(index, switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+    });
+  }
+
+  @Override
   public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
     final ContextFutureConsumer<List<E>> switchConsumer = new ContextFutureConsumer<List<E>>(
         toContext, getTaskID(), consumer, LOGGER);
@@ -126,7 +181,7 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
   }
 
   @Override
-  public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
+  public void materializeEmpty(@NotNull final FutureConsumer<Boolean> consumer) {
     final ContextFutureConsumer<Boolean> switchConsumer = new ContextFutureConsumer<Boolean>(
         toContext, getTaskID(), consumer, LOGGER);
     fromContext.scheduleAfter(new ContextTask(fromContext) {
@@ -137,13 +192,13 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
 
       @Override
       public int weight() {
-        return wrapped.weightElements();
+        return wrapped.weightEmpty();
       }
 
       @Override
       protected void runWithContext() {
         try {
-          wrapped.materializeHasNext(switchConsumer);
+          wrapped.materializeEmpty(switchConsumer);
         } catch (final Exception e) {
           safeConsumeError(switchConsumer, e, LOGGER);
         }
@@ -152,8 +207,9 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
   }
 
   @Override
-  public void materializeIterator(@NotNull final FutureConsumer<Iterator<E>> consumer) {
-    final ContextFutureConsumer<Iterator<E>> switchConsumer = new ContextFutureConsumer<Iterator<E>>(
+  public void materializeHasElement(@NotNegative final int index,
+      @NotNull final FutureConsumer<Boolean> consumer) {
+    final ContextFutureConsumer<Boolean> switchConsumer = new ContextFutureConsumer<Boolean>(
         toContext, getTaskID(), consumer, LOGGER);
     fromContext.scheduleAfter(new ContextTask(fromContext) {
       @Override
@@ -163,13 +219,13 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
 
       @Override
       public int weight() {
-        return wrapped.weightElements();
+        return wrapped.weightHasElement();
       }
 
       @Override
       protected void runWithContext() {
         try {
-          wrapped.materializeIterator(switchConsumer);
+          wrapped.materializeHasElement(index, switchConsumer);
         } catch (final Exception e) {
           safeConsumeError(switchConsumer, e, LOGGER);
         }
@@ -178,33 +234,8 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
   }
 
   @Override
-  public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
-    final ContextIndexedFutureConsumer<E> switchConsumer = new ContextIndexedFutureConsumer<E>(
-        toContext, getTaskID(), consumer, LOGGER);
-    fromContext.scheduleAfter(new ContextTask(fromContext) {
-      @Override
-      public @NotNull String taskID() {
-        return fromTaskID;
-      }
-
-      @Override
-      public int weight() {
-        return wrapped.weightElements();
-      }
-
-      @Override
-      protected void runWithContext() {
-        try {
-          wrapped.materializeNext(switchConsumer);
-        } catch (final Exception e) {
-          safeConsumeError(switchConsumer, e, LOGGER);
-        }
-      }
-    });
-  }
-
-  @Override
-  public void materializeNextWhile(@NotNull final IndexedFuturePredicate<E> predicate) {
+  public void materializeNextWhile(@NotNegative final int index,
+      @NotNull final IndexedFuturePredicate<E> predicate) {
     final NextIndexedFutureConsumer nextConsumer = new NextIndexedFutureConsumer(toContext,
         getTaskID(), predicate, LOGGER);
     final ContextIndexedFutureConsumer<E> switchConsumer = nextConsumer.switchConsumer();
@@ -216,13 +247,13 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
 
       @Override
       public int weight() {
-        return wrapped.weightNext();
+        return wrapped.weightElement();
       }
 
       @Override
       protected void runWithContext() {
         try {
-          wrapped.materializeNext(switchConsumer);
+          wrapped.materializeElement(index, switchConsumer);
         } catch (final Exception e) {
           safeConsumeError(switchConsumer, e, LOGGER);
         }
@@ -231,7 +262,35 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
   }
 
   @Override
-  public void materializeSkip(final int count, @NotNull final FutureConsumer<Integer> consumer) {
+  public void materializePrevWhile(@NotNegative final int index,
+      @NotNull final IndexedFuturePredicate<E> predicate) {
+    final PrevIndexedFutureConsumer nextConsumer = new PrevIndexedFutureConsumer(toContext,
+        getTaskID(), predicate, LOGGER);
+    final ContextIndexedFutureConsumer<E> switchConsumer = nextConsumer.switchConsumer();
+    fromContext.scheduleAfter(new ContextTask(fromContext) {
+      @Override
+      public @NotNull String taskID() {
+        return fromTaskID;
+      }
+
+      @Override
+      public int weight() {
+        return wrapped.weightElement();
+      }
+
+      @Override
+      protected void runWithContext() {
+        try {
+          wrapped.materializeElement(index, switchConsumer);
+        } catch (final Exception e) {
+          safeConsumeError(switchConsumer, e, LOGGER);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void materializeSize(@NotNull final FutureConsumer<Integer> consumer) {
     final ContextFutureConsumer<Integer> switchConsumer = new ContextFutureConsumer<Integer>(
         toContext, getTaskID(), consumer, LOGGER);
     fromContext.scheduleAfter(new ContextTask(fromContext) {
@@ -242,13 +301,13 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
 
       @Override
       public int weight() {
-        return wrapped.weightElements();
+        return wrapped.weightSize();
       }
 
       @Override
       protected void runWithContext() {
         try {
-          wrapped.materializeSkip(count, switchConsumer);
+          wrapped.materializeSize(switchConsumer);
         } catch (final Exception e) {
           safeConsumeError(switchConsumer, e, LOGGER);
         }
@@ -257,17 +316,27 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
   }
 
   @Override
+  public int weightContains() {
+    return 1;
+  }
+
+  @Override
+  public int weightElement() {
+    return 1;
+  }
+
+  @Override
   public int weightElements() {
     return 1;
   }
 
   @Override
-  public int weightHasNext() {
+  public int weightEmpty() {
     return 1;
   }
 
   @Override
-  public int weightNext() {
+  public int weightHasElement() {
     return 1;
   }
 
@@ -277,7 +346,12 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
   }
 
   @Override
-  public int weightSkip() {
+  public int weightPrevWhile() {
+    return 1;
+  }
+
+  @Override
+  public int weightSize() {
     return 1;
   }
 
@@ -309,13 +383,13 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
 
           @Override
           public int weight() {
-            return wrapped.weightNext();
+            return wrapped.weightElement();
           }
 
           @Override
           protected void runWithContext() {
             try {
-              wrapped.materializeNext(switchConsumer);
+              wrapped.materializeElement(index + 1, switchConsumer);
             } catch (final Exception e) {
               safeConsumeError(switchConsumer, e, LOGGER);
             }
@@ -327,6 +401,86 @@ public class SwitchIteratorFutureMaterializer<E> implements IteratorFutureMateri
     @Override
     public void complete(final int size) throws Exception {
       predicate.complete(size);
+    }
+
+    @Override
+    public void error(@NotNull final Exception error) throws Exception {
+      predicate.error(error);
+    }
+
+    private @NotNull ContextIndexedFutureConsumer<E> switchConsumer() {
+      return switchConsumer;
+    }
+  }
+
+  private class PrevIndexedFutureConsumer implements IndexedFutureConsumer<E> {
+
+    private final ContextIndexedFutureConsumer<E> switchConsumer;
+    private final IndexedFuturePredicate<E> predicate;
+
+    public PrevIndexedFutureConsumer(@NotNull final ExecutionContext context,
+        @NotNull final String taskID, @NotNull final IndexedFuturePredicate<E> predicate,
+        @NotNull final Logger logger) {
+      this.predicate = predicate;
+      switchConsumer = new ContextIndexedFutureConsumer<E>(context, taskID, this, logger);
+    }
+
+    @Override
+    public void accept(final int size, final int index, final E element) throws Exception {
+      if (predicate.test(size, index, element)) {
+        if (index == 0) {
+          predicate.complete(size);
+        } else {
+          fromContext.scheduleAfter(new ContextTask(fromContext) {
+            @Override
+            public @NotNull String taskID() {
+              return fromTaskID;
+            }
+
+            @Override
+            public int weight() {
+              return wrapped.weightElement();
+            }
+
+            @Override
+            protected void runWithContext() {
+              try {
+                wrapped.materializeElement(index - 1, switchConsumer);
+              } catch (final Exception e) {
+                safeConsumeError(switchConsumer, e, LOGGER);
+              }
+            }
+          });
+        }
+      }
+    }
+
+    @Override
+    public void complete(final int size) {
+      fromContext.scheduleAfter(new ContextTask(fromContext) {
+        @Override
+        public @NotNull String taskID() {
+          return fromTaskID;
+        }
+
+        @Override
+        public int weight() {
+          return wrapped.weightElement();
+        }
+
+        @Override
+        protected void runWithContext() {
+          if (size > 0) {
+            try {
+              wrapped.materializeElement(size - 1, switchConsumer);
+            } catch (final Exception e) {
+              safeConsumeError(switchConsumer, e, LOGGER);
+            }
+          } else {
+            safeConsumeComplete(switchConsumer, size, LOGGER);
+          }
+        }
+      });
     }
 
     @Override

@@ -98,13 +98,13 @@ import sparx.internal.future.iterator.RemoveLastWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveSliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReplaceSliceIteratorFutureMaterializer;
+import sparx.internal.future.iterator.RescheduleIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ResizeIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SlidingWindowIteratorFutureMaterializer;
 import sparx.internal.future.iterator.StartsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchExceptionallyIteratorFutureMaterializer;
-import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
 import sparx.internal.future.iterator.WrappingIteratorFutureMaterializer;
 import sparx.internal.future.list.AppendAllListFutureMaterializer;
@@ -164,6 +164,7 @@ import sparx.internal.future.list.RemoveLastWhereListFutureMaterializer;
 import sparx.internal.future.list.RemoveSliceListFutureMaterializer;
 import sparx.internal.future.list.RemoveWhereListFutureMaterializer;
 import sparx.internal.future.list.ReplaceSliceListFutureMaterializer;
+import sparx.internal.future.list.RescheduleListFutureMaterializer;
 import sparx.internal.future.list.ResizeListFutureMaterializer;
 import sparx.internal.future.list.ReverseListFutureMaterializer;
 import sparx.internal.future.list.SliceListFutureMaterializer;
@@ -173,7 +174,6 @@ import sparx.internal.future.list.SortedListFutureMaterializer;
 import sparx.internal.future.list.StartsWithListFutureMaterializer;
 import sparx.internal.future.list.StopCancelListFutureMaterializer;
 import sparx.internal.future.list.SuppliedListFutureMaterializer;
-import sparx.internal.future.list.SwitchListFutureMaterializer;
 import sparx.internal.future.list.SymmetricDiffListFutureMaterializer;
 import sparx.internal.future.list.TakeListFutureMaterializer;
 import sparx.internal.future.list.TakeRightListFutureMaterializer;
@@ -276,7 +276,7 @@ class future extends Sparx {
           return new ListFutureMaterializerToIteratorFutureMaterializer<E>(list.materializer);
         }
         return new ListFutureMaterializerToIteratorFutureMaterializer<E>(
-            new SwitchListFutureMaterializer<E>(list.context, list.taskID, context,
+            new RescheduleListFutureMaterializer<E>(list.context, list.taskID, context,
                 list.materializer));
       }
       if (elements instanceof java.util.List) {
@@ -297,8 +297,8 @@ class future extends Sparx {
         if (context.equals(iterator.context)) {
           return iterator.materializer;
         }
-        return new SwitchIteratorFutureMaterializer<E>(iterator.context, iterator.taskID, context,
-            iterator.materializer);
+        return new RescheduleIteratorFutureMaterializer<E>(iterator.context, iterator.taskID,
+            context, iterator.materializer);
       }
       if (elements instanceof java.util.Iterator) {
         return new IteratorToIteratorFutureMaterializer<E>((java.util.Iterator<E>) elements,
@@ -3658,6 +3658,12 @@ class future extends Sparx {
                   replacementMapper(replacement)), context, cancelException));
     }
 
+    // TODO: extra
+    public @NotNull Iterator<E> rescheduleTo(@NotNull final ExecutionContext context) {
+      return new Iterator<E>(context, new AtomicReference<CancellationException>(),
+          new RescheduleIteratorFutureMaterializer<E>(this.context, taskID, context, materializer));
+    }
+
     @Override
     public @NotNull Iterator<E> resizeTo(final int numElements, final E padding) {
       Require.notNegative(numElements, "numElements");
@@ -3980,13 +3986,7 @@ class future extends Sparx {
 
     // TODO: extra
     public @NotNull Iterator<E> toContext(@NotNull final ExecutionContext context) {
-      return new Iterator<E>(context, new AtomicReference<CancellationException>(),
-          new SwitchIteratorFutureMaterializer<E>(this.context, taskID, context, materializer));
-    }
-
-    // TODO: extra
-    public @NotNull Iterator<E> toFuture(@NotNull final ExecutionContext context) {
-      return context.equals(this.context) ? this : toContext(context);
+      return context.equals(this.context) ? this : rescheduleTo(context);
     }
 
     // TODO: extra
@@ -4183,7 +4183,7 @@ class future extends Sparx {
         if (context.equals(list.context)) {
           return list.materializer;
         }
-        return new SwitchListFutureMaterializer<E>(list.context, list.taskID, context,
+        return new RescheduleListFutureMaterializer<E>(list.context, list.taskID, context,
             list.materializer);
       }
       if (elements instanceof lazy.List) {
@@ -4220,7 +4220,7 @@ class future extends Sparx {
               iterator.materializer);
         }
         return new IteratorFutureMaterializerToListFutureMaterializer<E>(context, cancelException,
-            new SwitchIteratorFutureMaterializer<E>(iterator.context, iterator.taskID, context,
+            new RescheduleIteratorFutureMaterializer<E>(iterator.context, iterator.taskID, context,
                 iterator.materializer));
       }
       final lazy.List<E> list = lazy.List.wrap(elements);
@@ -7858,6 +7858,12 @@ class future extends Sparx {
           context, cancelException));
     }
 
+    // TODO: extra
+    public @NotNull List<E> rescheduleTo(@NotNull final ExecutionContext context) {
+      return new List<E>(context, new AtomicReference<CancellationException>(),
+          new RescheduleListFutureMaterializer<E>(this.context, taskID, context, materializer));
+    }
+
     @Override
     public @NotNull List<E> resizeTo(@NotNegative final int numElements, final E padding) {
       Require.notNegative(numElements, "numElements");
@@ -8212,13 +8218,7 @@ class future extends Sparx {
 
     // TODO: extra
     public @NotNull List<E> toContext(@NotNull final ExecutionContext context) {
-      return new List<E>(context, new AtomicReference<CancellationException>(),
-          new SwitchListFutureMaterializer<E>(this.context, taskID, context, materializer));
-    }
-
-    // TODO: extra
-    public @NotNull List<E> toFuture(@NotNull final ExecutionContext context) {
-      return context.equals(this.context) ? this : toContext(context);
+      return context.equals(this.context) ? this : rescheduleTo(context);
     }
 
     // TODO: extra
@@ -9767,6 +9767,12 @@ class future extends Sparx {
       return new ListIterator<E>(context, nextList(pos).replaceWhere(predicate, replacement));
     }
 
+    // TODO: extra
+    public @NotNull ListIterator<E> rescheduleTo(@NotNull final ExecutionContext context) {
+      final int pos = safePos();
+      return new ListIterator<E>(context, list.rescheduleTo(context), pos);
+    }
+
     @Override
     public @NotNull ListIterator<E> resizeTo(@NotNegative final int numElements, final E padding) {
       Require.notNegative(numElements, "numElements");
@@ -9913,13 +9919,7 @@ class future extends Sparx {
 
     // TODO: extra
     public @NotNull ListIterator<E> toContext(@NotNull final ExecutionContext context) {
-      final int pos = safePos();
-      return new ListIterator<E>(context, list.toContext(context), pos);
-    }
-
-    // TODO: extra
-    public @NotNull ListIterator<E> toFuture(@NotNull final ExecutionContext context) {
-      return context.equals(this.context) ? this : toContext(context);
+      return context.equals(this.context) ? this : rescheduleTo(context);
     }
 
     // TODO: extra
