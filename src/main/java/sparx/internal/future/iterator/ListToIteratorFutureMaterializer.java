@@ -17,6 +17,7 @@ package sparx.internal.future.iterator;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
+import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.Iterator;
 import java.util.List;
@@ -91,12 +92,20 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
   @Override
   public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
     final List<E> elements = this.elements;
-    safeConsume(consumer, elements.subList(pos, elements.size()), LOGGER);
+    try {
+      safeConsume(consumer, elements.subList(pos, elements.size()), LOGGER);
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
+    }
   }
 
   @Override
   public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-    safeConsume(consumer, pos < elements.size(), LOGGER);
+    try {
+      safeConsume(consumer, pos < elements.size(), LOGGER);
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
+    }
   }
 
   @Override
@@ -125,11 +134,15 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
   @Override
   public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
     final List<E> elements = this.elements;
-    if (pos < elements.size()) {
-      final int i = pos++;
-      safeConsume(consumer, elements.size() - i, offset + i, elements.get(i), LOGGER);
-    } else {
-      safeConsumeComplete(consumer, 0, LOGGER);
+    try {
+      if (pos < elements.size()) {
+        final int i = pos++;
+        safeConsume(consumer, elements.size() - i, offset + i, elements.get(i), LOGGER);
+      } else {
+        safeConsumeComplete(consumer, 0, LOGGER);
+      }
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
     }
   }
 
@@ -140,22 +153,30 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
       new NextTask(predicate, throughput).run();
     } else {
       final List<E> elements = this.elements;
-      while (pos < elements.size()) {
-        final int i = pos++;
-        if (!safeConsume(predicate, elements.size() - i, offset + i, elements.get(i), LOGGER)) {
-          return;
+      try {
+        while (pos < elements.size()) {
+          final int i = pos++;
+          if (!safeConsume(predicate, elements.size() - i, offset + i, elements.get(i), LOGGER)) {
+            return;
+          }
         }
+        safeConsumeComplete(predicate, 0, LOGGER);
+      } catch (final Exception e) {
+        safeConsumeError(predicate, e, LOGGER);
       }
-      safeConsumeComplete(predicate, 0, LOGGER);
     }
   }
 
   @Override
   public void materializeSkip(@Positive final int count,
       @NotNull final FutureConsumer<Integer> consumer) {
-    final int skipped = Math.min(count, elements.size() - pos);
-    pos += skipped;
-    safeConsume(consumer, skipped, LOGGER);
+    try {
+      final int skipped = Math.min(count, elements.size() - pos);
+      pos += skipped;
+      safeConsume(consumer, skipped, LOGGER);
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
+    }
   }
 
   @Override
@@ -217,18 +238,22 @@ public class ListToIteratorFutureMaterializer<E> implements IteratorFutureMateri
       final int throughput = this.throughput;
       final IndexedFuturePredicate<E> predicate = this.predicate;
       final List<E> elements = ListToIteratorFutureMaterializer.this.elements;
-      final int size = elements.size();
-      for (int n = 0; n < throughput && pos < size; ++n) {
-        final int i = pos++;
-        if (!safeConsume(predicate, size - i, offset + i, elements.get(i), LOGGER)) {
-          return;
+      try {
+        final int size = elements.size();
+        for (int n = 0; n < throughput && pos < size; ++n) {
+          final int i = pos++;
+          if (!safeConsume(predicate, size - i, offset + i, elements.get(i), LOGGER)) {
+            return;
+          }
         }
-      }
-      if (pos == size) {
-        safeConsumeComplete(predicate, 0, LOGGER);
-      } else {
-        taskID = getTaskID();
-        context.scheduleAfter(this);
+        if (pos == size) {
+          safeConsumeComplete(predicate, 0, LOGGER);
+        } else {
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      } catch (final Exception e) {
+        safeConsumeError(predicate, e, LOGGER);
       }
     }
   }

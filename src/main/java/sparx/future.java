@@ -103,6 +103,7 @@ import sparx.internal.future.iterator.SliceIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SlidingWindowIteratorFutureMaterializer;
 import sparx.internal.future.iterator.StartsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
+import sparx.internal.future.iterator.SwitchExceptionallyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
 import sparx.internal.future.iterator.WrappingIteratorFutureMaterializer;
@@ -254,6 +255,18 @@ class future extends Sparx {
           new ElementToIteratorFutureMaterializer<Boolean>(false));
     }
 
+    private static @NotNull <E> Function<DequeueList<E>, Iterator<E>> getDequeueToIteratorFunction(
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException) {
+      return new Function<DequeueList<E>, Iterator<E>>() {
+        @Override
+        public Iterator<E> apply(final DequeueList<E> list) {
+          return new Iterator<E>(context, cancelException,
+              new DequeueToIteratorFutureMaterializer<E>(list, context));
+        }
+      };
+    }
+
     @SuppressWarnings("unchecked")
     private static @NotNull <E> IteratorFutureMaterializer<E> getElementsMaterializer(
         @NotNull final ExecutionContext context, @NotNull final Iterable<? extends E> elements) {
@@ -350,14 +363,40 @@ class future extends Sparx {
       };
     }
 
-    private static @NotNull <E> Function<DequeueList<E>, Iterator<E>> getDequeueToIteratorFunction(
-        @NotNull final ExecutionContext context,
-        @NotNull final AtomicReference<CancellationException> cancelException) {
-      return new Function<DequeueList<E>, Iterator<E>>() {
+    private static @NotNull <E, T extends Throwable> IndexedFunction<Throwable, IteratorFutureMaterializer<E>> getExceptionToMaterializer(
+        @NotNull final ExecutionContext context, @NotNull final Class<T> exceptionType,
+        @NotNull final Function<? super T, ? extends Iterable<? extends E>> mapper) {
+      return new IndexedFunction<Throwable, IteratorFutureMaterializer<E>>() {
         @Override
-        public Iterator<E> apply(final DequeueList<E> list) {
-          return new Iterator<E>(context, cancelException,
-              new DequeueToIteratorFutureMaterializer<E>(list, context));
+        @SuppressWarnings("unchecked")
+        public IteratorFutureMaterializer<E> apply(final int index, final Throwable exception)
+            throws Exception {
+          if (exceptionType.isInstance(exception)) {
+            return getElementsMaterializer(context, mapper.apply((T) exception));
+          }
+          if (exception instanceof Exception) {
+            throw (Exception) exception;
+          }
+          throw UncheckedException.throwUnchecked(exception);
+        }
+      };
+    }
+
+    private static @NotNull <E, T extends Throwable> IndexedFunction<Throwable, IteratorFutureMaterializer<E>> getExceptionToMaterializer(
+        @NotNull final ExecutionContext context, @NotNull final Class<T> exceptionType,
+        @NotNull final IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper) {
+      return new IndexedFunction<Throwable, IteratorFutureMaterializer<E>>() {
+        @Override
+        @SuppressWarnings("unchecked")
+        public IteratorFutureMaterializer<E> apply(final int index, final Throwable exception)
+            throws Exception {
+          if (exceptionType.isInstance(exception)) {
+            return getElementsMaterializer(context, mapper.apply(index, (T) exception));
+          }
+          if (exception instanceof Exception) {
+            throw (Exception) exception;
+          }
+          throw UncheckedException.throwUnchecked(exception);
         }
       };
     }
@@ -3838,34 +3877,70 @@ class future extends Sparx {
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new Iterator<Boolean>(context, cancelException,
           new StartsWithIteratorFutureMaterializer<E>(materializer,
-              Iterator.getElementsMaterializer(context, Require.notNull(elements, "elements")),
-              context, cancelException));
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+              cancelException));
     }
 
     @Override
     public @NotNull <T extends Throwable> Iterator<E> switchExceptionally(
-        @NotNull Class<T> exceptionType,
-        @NotNull Function<? super T, ? extends Iterable<? extends E>> mapper) {
-      return null;
+        @NotNull final Class<T> exceptionType,
+        @NotNull final Function<? super T, ? extends Iterable<? extends E>> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<E>(context, cancelException,
+          new SwitchExceptionallyIteratorFutureMaterializer<E>(materializer,
+              getExceptionToMaterializer(context, Require.notNull(exceptionType, "exceptionType"),
+                  Require.notNull(mapper, "mapper")), context, cancelException));
     }
 
     @Override
     public @NotNull <T extends Throwable> Iterator<E> switchExceptionally(
-        @NotNull Class<T> exceptionType,
-        @NotNull IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper) {
-      return null;
+        @NotNull final Class<T> exceptionType,
+        @NotNull final IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<E>(context, cancelException,
+          new SwitchExceptionallyIteratorFutureMaterializer<E>(materializer,
+              getExceptionToMaterializer(context, Require.notNull(exceptionType, "exceptionType"),
+                  Require.notNull(mapper, "mapper")), context, cancelException));
     }
 
     @Override
     public @NotNull Iterator<E> switchExceptionally(
-        @NotNull Function<? super Throwable, ? extends Iterable<? extends E>> mapper) {
-      return null;
+        @NotNull final Function<? super Throwable, ? extends Iterable<? extends E>> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<E>(context, cancelException,
+          new SwitchExceptionallyIteratorFutureMaterializer<E>(materializer,
+              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
+              cancelException));
     }
 
     @Override
     public @NotNull Iterator<E> switchExceptionally(
-        @NotNull IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper) {
-      return null;
+        @NotNull final IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<E>(context, cancelException,
+          new SwitchExceptionallyIteratorFutureMaterializer<E>(materializer,
+              getElementToIteratorMaterializer(context, Require.notNull(mapper, "mapper")), context,
+              cancelException));
     }
 
     @Override

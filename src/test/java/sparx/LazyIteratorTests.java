@@ -1451,40 +1451,31 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void switchExceptionally() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.of(1, null, 3).filter(i -> i > 0)
-        .switchExceptionally(t -> List.of(4));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(1, 4), itr.get().toList());
-
-    itr = () -> Iterator.of(1, 2, 3).filter(i -> i > 0).switchExceptionally(t -> List.of(4));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null, 3).filter(i -> i > 0).drop(1)
-        .switchExceptionally(t -> List.of(4));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(4), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null, 3).filter(i -> i > 0)
-        .switchExceptionally(NullPointerException.class, t -> List.of(4));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(1, 4), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null, 3).filter(i -> i > 0)
-        .switchExceptionally(SizeOverflowException.class, t -> List.of(4));
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    Supplier<Iterator<Integer>> iter = itr;
-    assertThrows(NullPointerException.class, () -> iter.get().size());
+  public void switchExceptionally() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).switchExceptionally(null, e -> List.of()));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).switchExceptionally(null, (n, e) -> List.of()));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0)
+        .switchExceptionally(IllegalStateException.class,
+            (Function<? super IllegalStateException, ? extends Iterable<? extends Integer>>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0)
+        .switchExceptionally(IllegalStateException.class,
+            (IndexedFunction<? super IllegalStateException, ? extends Iterable<? extends Integer>>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).switchExceptionally(
+        (Function<? super Throwable, ? extends Iterable<? extends Integer>>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).switchExceptionally(
+        (IndexedFunction<? super Throwable, ? extends Iterable<? extends Integer>>) null));
+    test(List.of(1, 4),
+        () -> Iterator.of(1, null, 3).filter(i -> i > 0).switchExceptionally(t -> List.of(4)));
+    test(List.of(1, 2, 3),
+        () -> Iterator.of(1, 2, 3).filter(i -> i > 0).switchExceptionally(t -> List.of(4)));
+    test(List.of(4), () -> Iterator.of(1, null, 3).filter(i -> i > 0).drop(1)
+        .switchExceptionally(t -> List.of(4)));
+    test(List.of(1, 4), () -> Iterator.of(1, null, 3).filter(i -> i > 0)
+        .switchExceptionally(NullPointerException.class, t -> List.of(4)));
+    assertThrows(NullPointerException.class, () -> Iterator.of(1, null, 3).filter(i -> i > 0)
+        .switchExceptionally(SizeOverflowException.class, t -> List.of(4)).size());
   }
 
   @Test

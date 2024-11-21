@@ -17,6 +17,7 @@ package sparx.internal.future.iterator;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
+import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -91,17 +92,25 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
 
   @Override
   public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
-    final ArrayList<E> elements = new ArrayList<E>();
     final Iterator<E> iterator = this.elements;
-    while (iterator.hasNext()) {
-      elements.add(iterator.next());
+    try {
+      final ArrayList<E> elements = new ArrayList<E>();
+      while (iterator.hasNext()) {
+        elements.add(iterator.next());
+      }
+      safeConsume(consumer, elements, LOGGER);
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
     }
-    safeConsume(consumer, elements, LOGGER);
   }
 
   @Override
   public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-    safeConsume(consumer, elements.hasNext(), LOGGER);
+    try {
+      safeConsume(consumer, elements.hasNext(), LOGGER);
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
+    }
   }
 
   @Override
@@ -130,10 +139,14 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
 
   @Override
   public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
-    if (elements.hasNext()) {
-      safeConsume(consumer, -1, offset + pos++, elements.next(), LOGGER);
-    } else {
-      safeConsumeComplete(consumer, 0, LOGGER);
+    try {
+      if (elements.hasNext()) {
+        safeConsume(consumer, -1, offset + pos++, elements.next(), LOGGER);
+      } else {
+        safeConsumeComplete(consumer, 0, LOGGER);
+      }
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
     }
   }
 
@@ -144,26 +157,34 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
       new NextTask(predicate, throughput).run();
     } else {
       final Iterator<E> elements = this.elements;
-      while (elements.hasNext()) {
-        if (!safeConsume(predicate, -1, offset + pos++, elements.next(), LOGGER)) {
-          return;
+      try {
+        while (elements.hasNext()) {
+          if (!safeConsume(predicate, -1, offset + pos++, elements.next(), LOGGER)) {
+            return;
+          }
         }
+        safeConsumeComplete(predicate, 0, LOGGER);
+      } catch (final Exception e) {
+        safeConsumeError(predicate, e, LOGGER);
       }
-      safeConsumeComplete(predicate, 0, LOGGER);
     }
   }
 
   @Override
   public void materializeSkip(@Positive final int count,
       @NotNull final FutureConsumer<Integer> consumer) {
-    int skipped = 0;
-    final Iterator<E> elements = this.elements;
-    for (int i = 0; i < count && elements.hasNext(); ++i) {
-      ++skipped;
-      elements.next();
+    try {
+      int skipped = 0;
+      final Iterator<E> elements = this.elements;
+      for (int i = 0; i < count && elements.hasNext(); ++i) {
+        ++skipped;
+        elements.next();
+      }
+      pos += skipped;
+      safeConsume(consumer, skipped, LOGGER);
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
     }
-    pos += skipped;
-    safeConsume(consumer, skipped, LOGGER);
   }
 
   @Override
@@ -225,16 +246,20 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
       final int throughput = this.throughput;
       final IndexedFuturePredicate<E> predicate = this.predicate;
       final Iterator<E> iterator = elements;
-      for (int n = 0; n < throughput && iterator.hasNext(); ++n) {
-        if (!safeConsume(predicate, -1, offset + pos++, iterator.next(), LOGGER)) {
-          return;
+      try {
+        for (int n = 0; n < throughput && iterator.hasNext(); ++n) {
+          if (!safeConsume(predicate, -1, offset + pos++, iterator.next(), LOGGER)) {
+            return;
+          }
         }
-      }
-      if (!iterator.hasNext()) {
-        safeConsumeComplete(predicate, 0, LOGGER);
-      } else {
-        taskID = getTaskID();
-        context.scheduleAfter(this);
+        if (!iterator.hasNext()) {
+          safeConsumeComplete(predicate, 0, LOGGER);
+        } else {
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      } catch (final Exception e) {
+        safeConsumeError(predicate, e, LOGGER);
       }
     }
   }

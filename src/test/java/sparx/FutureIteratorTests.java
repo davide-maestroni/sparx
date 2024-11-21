@@ -116,6 +116,7 @@ import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
 import sparx.util.DequeueList;
+import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
 import sparx.util.function.Action;
@@ -2275,6 +2276,37 @@ public class FutureIteratorTests {
             new AtomicReference<>()));
 
     testCancel(it -> it.startsWith(List.of(null)));
+  }
+
+  @Test
+  public void switchExceptionally() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).switchExceptionally(null, e -> List.of()));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).switchExceptionally(null, (n, e) -> List.of()));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .switchExceptionally(IllegalStateException.class,
+            (Function<? super IllegalStateException, ? extends Iterable<? extends Integer>>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .switchExceptionally(IllegalStateException.class,
+            (IndexedFunction<? super IllegalStateException, ? extends Iterable<? extends Integer>>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .switchExceptionally(
+            (Function<? super Throwable, ? extends Iterable<? extends Integer>>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .switchExceptionally(
+            (IndexedFunction<? super Throwable, ? extends Iterable<? extends Integer>>) null));
+    test(List.of(1, 4), () -> Iterator.of(1, null, 3).filter(i -> i > 0),
+        it -> it.switchExceptionally(t -> List.of(4)));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).filter(i -> i > 0),
+        it -> it.switchExceptionally(t -> List.of(4)));
+    test(List.of(4), () -> Iterator.of(1, null, 3),
+        it -> it.filter(i -> i > 0).drop(1).switchExceptionally(t -> List.of(4)));
+    test(List.of(1, 4), () -> Iterator.of(1, null, 3), it -> it.filter(i -> i > 0)
+        .switchExceptionally(NullPointerException.class, t -> List.of(4)));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null, 3).filter(i -> i > 0).toFuture(context)
+            .switchExceptionally(SizeOverflowException.class, t -> List.of(4)).size());
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

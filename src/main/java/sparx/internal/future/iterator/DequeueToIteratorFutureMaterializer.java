@@ -17,6 +17,7 @@ package sparx.internal.future.iterator;
 
 import static sparx.internal.future.FutureConsumers.safeConsume;
 import static sparx.internal.future.FutureConsumers.safeConsumeComplete;
+import static sparx.internal.future.FutureConsumers.safeConsumeError;
 
 import java.util.Iterator;
 import java.util.List;
@@ -98,7 +99,11 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
 
   @Override
   public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-    safeConsume(consumer, !elements.isEmpty(), LOGGER);
+    try {
+      safeConsume(consumer, !elements.isEmpty(), LOGGER);
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
+    }
   }
 
   @Override
@@ -127,10 +132,14 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
   @Override
   public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
     final DequeueList<E> elements = this.elements;
-    if (!elements.isEmpty()) {
-      safeConsume(consumer, elements.size(), offset + pos++, elements.removeFirst(), LOGGER);
-    } else {
-      safeConsumeComplete(consumer, 0, LOGGER);
+    try {
+      if (!elements.isEmpty()) {
+        safeConsume(consumer, elements.size(), offset + pos++, elements.removeFirst(), LOGGER);
+      } else {
+        safeConsumeComplete(consumer, 0, LOGGER);
+      }
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
     }
   }
 
@@ -141,27 +150,35 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
       new NextTask(predicate, throughput).run();
     } else {
       final DequeueList<E> elements = this.elements;
-      while (!elements.isEmpty()) {
-        if (!safeConsume(predicate, elements.size(), offset + pos++, elements.removeFirst(),
-            LOGGER)) {
-          return;
+      try {
+        while (!elements.isEmpty()) {
+          if (!safeConsume(predicate, elements.size(), offset + pos++, elements.removeFirst(),
+              LOGGER)) {
+            return;
+          }
         }
+        safeConsumeComplete(predicate, 0, LOGGER);
+      } catch (final Exception e) {
+        safeConsumeError(predicate, e, LOGGER);
       }
-      safeConsumeComplete(predicate, 0, LOGGER);
     }
   }
 
   @Override
   public void materializeSkip(@Positive final int count,
       @NotNull final FutureConsumer<Integer> consumer) {
-    int skipped = 0;
-    final DequeueList<E> elements = this.elements;
-    while (skipped < count && !elements.isEmpty()) {
-      elements.removeFirst();
-      ++skipped;
+    try {
+      int skipped = 0;
+      final DequeueList<E> elements = this.elements;
+      while (skipped < count && !elements.isEmpty()) {
+        elements.removeFirst();
+        ++skipped;
+      }
+      pos += skipped;
+      safeConsume(consumer, skipped, LOGGER);
+    } catch (final Exception e) {
+      safeConsumeError(consumer, e, LOGGER);
     }
-    pos += skipped;
-    safeConsume(consumer, skipped, LOGGER);
   }
 
   @Override
@@ -223,17 +240,21 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
       final int throughput = this.throughput;
       final IndexedFuturePredicate<E> predicate = this.predicate;
       final DequeueList<E> elements = DequeueToIteratorFutureMaterializer.this.elements;
-      for (int n = 0; n < throughput && !elements.isEmpty(); ++n) {
-        if (!safeConsume(predicate, elements.size(), offset + pos++, elements.removeFirst(),
-            LOGGER)) {
-          return;
+      try {
+        for (int n = 0; n < throughput && !elements.isEmpty(); ++n) {
+          if (!safeConsume(predicate, elements.size(), offset + pos++, elements.removeFirst(),
+              LOGGER)) {
+            return;
+          }
         }
-      }
-      if (elements.isEmpty()) {
-        safeConsumeComplete(predicate, 0, LOGGER);
-      } else {
-        taskID = getTaskID();
-        context.scheduleAfter(this);
+        if (elements.isEmpty()) {
+          safeConsumeComplete(predicate, 0, LOGGER);
+        } else {
+          taskID = getTaskID();
+          context.scheduleAfter(this);
+        }
+      } catch (final Exception e) {
+        safeConsumeError(predicate, e, LOGGER);
       }
     }
   }
