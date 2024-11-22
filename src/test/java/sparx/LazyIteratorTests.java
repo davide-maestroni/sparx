@@ -1525,34 +1525,12 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void takeRightWhile() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.<Integer>of().takeRightWhile(e -> e > 0);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-
-    itr = () -> Iterator.of(1, null, 3).takeRightWhile(Objects::isNull);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    assertEquals(List.of(), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).takeRightWhile(Objects::nonNull);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(3), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).takeRightWhile(e -> e < 1);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    assertEquals(List.of(), itr.get().toList());
-
-    itr = () -> Iterator.of(1, 2, 3).takeRightWhile(e -> e > 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
-
+  public void takeRightWhile() throws Exception {
+    test(List.of(), () -> Iterator.<Integer>of().takeRightWhile(e -> e > 0));
+    test(List.of(), () -> Iterator.of(1, null, 3).takeRightWhile(Objects::isNull));
+    test(List.of(3), () -> Iterator.of(1, null, 3).takeRightWhile(Objects::nonNull));
+    test(List.of(), () -> Iterator.of(1, 2, 3).takeRightWhile(e -> e < 1));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).takeRightWhile(e -> e > 0));
     assertThrows(NullPointerException.class,
         () -> List.of(1, null, 3).takeRightWhile(e -> e > 0).size());
   }

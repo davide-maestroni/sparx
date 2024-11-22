@@ -49,19 +49,38 @@ public class TakeRightWhileIteratorMaterializer<E> extends StatefulAutoSkipItera
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final DequeueList<E> elements = new DequeueList<E>();
-      while (wrapped.materializeHasNext()) {
-        elements.add(wrapped.materializeNext());
-      }
+      // TODO: processing vs memory
+//      while (wrapped.materializeHasNext()) {
+//        elements.add(wrapped.materializeNext());
+//      }
+//      try {
+//        for (int i = elements.size() - 1; i >= 0; --i) {
+//          if (!predicate.test(i, elements.get(i))) {
+//            return setState(
+//                new DropIteratorMaterializer<E>(new DequeueToIteratorMaterializer<E>(elements),
+//                    i + 1)).materializeHasNext();
+//          }
+//        }
+//      } catch (final Exception e) {
+//        throw UncheckedException.throwUnchecked(e);
+//      }
+//      return setState(new DequeueToIteratorMaterializer<E>(elements)).materializeHasNext();
+      int i = 0;
       try {
-        for (int i = elements.size() - 1; i >= 0; --i) {
-          if (!predicate.test(i, elements.get(i))) {
-            return setState(
-                new DropIteratorMaterializer<E>(new DequeueToIteratorMaterializer<E>(elements),
-                    i + 1)).materializeHasNext();
+        while (wrapped.materializeHasNext()) {
+          final E element = wrapped.materializeNext();
+          if (!predicate.test(i, element)) {
+            elements.clear();
+          } else {
+            elements.add(element);
           }
         }
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
+      }
+      if (elements.isEmpty()) {
+        setEmptyState();
+        return false;
       }
       return setState(new DequeueToIteratorMaterializer<E>(elements)).materializeHasNext();
     }
