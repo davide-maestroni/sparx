@@ -114,6 +114,7 @@ import sparx.internal.future.iterator.SlidingWindowIteratorFutureMaterializer;
 import sparx.internal.future.iterator.StartsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchExceptionallyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SymmetricDiffIteratorFutureMaterializer;
+import sparx.internal.future.iterator.TakeIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -2350,6 +2351,30 @@ public class FutureIteratorTests {
             new AtomicReference<>()));
 
     testCancel(it -> it.symmetricDiff(List.of(null)));
+  }
+
+  @Test
+  public void take() throws Exception {
+    test(List.of(), Iterator::<Integer>of, it -> it.take(1));
+    test(List.of(), Iterator::<Integer>of, it -> it.take(0));
+    test(List.of(), Iterator::<Integer>of, it -> it.take(-1));
+    test(List.of(1), () -> Iterator.of(1, null, 3), it -> it.take(1));
+    test(List.of(1, null), () -> Iterator.of(1, null, 3), it -> it.take(2));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.take(3));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.take(4));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.take(Integer.MAX_VALUE));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.take(0));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.take(-1));
+
+    testMaterializer(List.of(1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new TakeIteratorFutureMaterializer<>(m, 2, c, new AtomicReference<>()));
+    testMaterializer(List.of(1, 2, 3, 4),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new TakeIteratorFutureMaterializer<>(m, Integer.MAX_VALUE, c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.take(3));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

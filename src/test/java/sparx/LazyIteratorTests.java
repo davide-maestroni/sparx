@@ -1497,51 +1497,17 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void take() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.<Integer>of().take(1);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    itr = () -> Iterator.<Integer>of().take(0);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    itr = () -> Iterator.<Integer>of().take(-1);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    assertEquals(List.of(), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null, 3).take(1);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(1), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).take(2);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(1, null), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).take(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).take(4);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).take(0);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    assertEquals(List.of(), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).take(-1);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    assertEquals(List.of(), itr.get().toList());
+  public void take() throws Exception {
+    test(List.of(), () -> Iterator.<Integer>of().take(1));
+    test(List.of(), () -> Iterator.<Integer>of().take(0));
+    test(List.of(), () -> Iterator.<Integer>of().take(-1));
+    test(List.of(1), () -> Iterator.of(1, null, 3).take(1));
+    test(List.of(1, null), () -> Iterator.of(1, null, 3).take(2));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).take(3));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).take(4));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).take(Integer.MAX_VALUE));
+    test(List.of(), () -> Iterator.of(1, null, 3).take(0));
+    test(List.of(), () -> Iterator.of(1, null, 3).take(-1));
   }
 
   @Test
