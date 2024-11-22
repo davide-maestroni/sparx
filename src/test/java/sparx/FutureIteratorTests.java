@@ -115,6 +115,7 @@ import sparx.internal.future.iterator.StartsWithIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchExceptionallyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SymmetricDiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TakeIteratorFutureMaterializer;
+import sparx.internal.future.iterator.TakeRightIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -2375,6 +2376,30 @@ public class FutureIteratorTests {
             new AtomicReference<>()));
 
     testCancel(it -> it.take(3));
+  }
+
+  @Test
+  public void takeRight() throws Exception {
+    test(List.of(), Iterator::<Integer>of, it -> it.takeRight(1));
+    test(List.of(), Iterator::<Integer>of, it -> it.takeRight(0));
+    test(List.of(), Iterator::<Integer>of, it -> it.takeRight(-1));
+    test(List.of(3), () -> Iterator.of(1, null, 3), it -> it.takeRight(1));
+    test(List.of(null, 3), () -> Iterator.of(1, null, 3), it -> it.takeRight(2));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.takeRight(3));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.takeRight(4));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3), it -> it.takeRight(Integer.MAX_VALUE));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.takeRight(0));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.takeRight(-1));
+
+    testMaterializer(List.of(3, 4),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new TakeRightIteratorFutureMaterializer<>(m, 2, c, new AtomicReference<>()));
+    testMaterializer(List.of(1, 2, 3, 4),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new TakeRightIteratorFutureMaterializer<>(m, Integer.MAX_VALUE, c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.takeRight(3));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

@@ -1511,51 +1511,17 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void takeRight() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.<Integer>of().takeRight(1);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    itr = () -> Iterator.<Integer>of().takeRight(0);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    itr = () -> Iterator.<Integer>of().takeRight(-1);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    assertEquals(List.of(), itr.get().toList());
-
-    itr = () -> Iterator.of(1, null, 3).takeRight(1);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(3), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).takeRight(2);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(2, itr.get().size());
-    assertEquals(List.of(null, 3), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).takeRight(3);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).takeRight(4);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, null, 3), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).takeRight(0);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    assertEquals(List.of(), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).takeRight(-1);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    assertEquals(List.of(), itr.get().toList());
+  public void takeRight() throws Exception {
+    test(List.of(), () -> Iterator.<Integer>of().takeRight(1));
+    test(List.of(), () -> Iterator.<Integer>of().takeRight(0));
+    test(List.of(), () -> Iterator.<Integer>of().takeRight(-1));
+    test(List.of(3), () -> Iterator.of(1, null, 3).takeRight(1));
+    test(List.of(null, 3), () -> Iterator.of(1, null, 3).takeRight(2));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).takeRight(3));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).takeRight(4));
+    test(List.of(1, null, 3), () -> Iterator.of(1, null, 3).takeRight(Integer.MAX_VALUE));
+    test(List.of(), () -> Iterator.of(1, null, 3).takeRight(0));
+    test(List.of(), () -> Iterator.of(1, null, 3).takeRight(-1));
   }
 
   @Test

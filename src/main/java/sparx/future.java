@@ -107,6 +107,7 @@ import sparx.internal.future.iterator.SuppliedIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SwitchExceptionallyIteratorFutureMaterializer;
 import sparx.internal.future.iterator.SymmetricDiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TakeIteratorFutureMaterializer;
+import sparx.internal.future.iterator.TakeRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
 import sparx.internal.future.iterator.WrappingIteratorFutureMaterializer;
 import sparx.internal.future.list.AppendAllListFutureMaterializer;
@@ -1206,6 +1207,22 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).take(maxElements);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerTakeRight(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        final int maxElements) {
+      final int knownSize = materializer.knownSize();
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          knownSize >= 0 ? Math.min(knownSize, maxElements) : -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).takeRight(maxElements);
         }
       };
     }
@@ -4025,9 +4042,23 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> takeRight(int maxElements) {
-      // immediate
-      return null;
+    public @NotNull Iterator<E> takeRight(final int maxElements) {
+      if (maxElements <= 0) {
+        return emptyIterator(context);
+      }
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (maxElements == Integer.MAX_VALUE || materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerTakeRight(materializer, context, cancelException, maxElements));
+      }
+      return new Iterator<E>(context, cancelException,
+          new TakeRightIteratorFutureMaterializer<E>(materializer, maxElements, context,
+              cancelException));
     }
 
     @Override
