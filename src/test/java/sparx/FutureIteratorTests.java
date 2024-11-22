@@ -116,6 +116,7 @@ import sparx.internal.future.iterator.SwitchExceptionallyIteratorFutureMateriali
 import sparx.internal.future.iterator.SymmetricDiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TakeIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TakeRightIteratorFutureMaterializer;
+import sparx.internal.future.iterator.TakeRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -2400,6 +2401,37 @@ public class FutureIteratorTests {
             new AtomicReference<>()));
 
     testCancel(it -> it.takeRight(3));
+  }
+
+  @Test
+  public void takeRightWhile() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context)
+        .takeRightWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).takeRightWhile((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .takeRightWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .takeRightWhile((Predicate<? super Integer>) null));
+    test(List.of(), Iterator::<Integer>of, it -> it.takeRightWhile(e -> e > 0));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.takeRightWhile(Objects::isNull));
+    test(List.of(3), () -> Iterator.of(1, null, 3), it -> it.takeRightWhile(Objects::nonNull));
+    test(List.of(), () -> Iterator.of(1, 2, 3), it -> it.takeRightWhile(e -> e < 1));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.takeRightWhile(e -> e > 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).toFuture(context).takeRightWhile(e -> e > 0).size());
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
+            .takeRightWhile(e -> e > 0).size());
+
+    testMaterializer(List.of(3, 4),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new TakeRightWhileIteratorFutureMaterializer<>(m, (n, e) -> e > 2, c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.takeRightWhile(e -> true));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

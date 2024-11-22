@@ -22,28 +22,20 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.util.DequeueList;
-import sparx.util.annotation.Positive;
+import sparx.util.function.IndexedPredicate;
 
-public class TakeRightIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
+public class TakeRightWhileIteratorFutureMaterializer<E> extends
+    AbstractIteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      TakeRightIteratorFutureMaterializer.class.getName());
+      TakeRightWhileIteratorFutureMaterializer.class.getName());
 
-  private final int knownSize;
-
-  public TakeRightIteratorFutureMaterializer(@NotNull final IteratorFutureMaterializer<E> wrapped,
-      @Positive final int maxElements, @NotNull final ExecutionContext context,
+  public TakeRightWhileIteratorFutureMaterializer(
+      @NotNull final IteratorFutureMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context);
-    knownSize = safeSize(wrapped.knownSize(), maxElements);
-    setState(new ImmaterialState(wrapped, maxElements, cancelException));
-  }
-
-  private static int safeSize(final int wrappedSize, final int maxElements) {
-    if (wrappedSize >= 0) {
-      return Math.min(wrappedSize, maxElements);
-    }
-    return -1;
+    setState(new ImmaterialState(wrapped, predicate, cancelException));
   }
 
   @Override
@@ -53,21 +45,21 @@ public class TakeRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
   @Override
   public int knownSize() {
-    return knownSize;
+    return -1;
   }
 
   private class ImmaterialState extends ImmediateIteratorFutureMaterializerState<E, E> {
 
     private final AtomicReference<CancellationException> cancelException;
-    private final int maxElements;
+    private final IndexedPredicate<? super E> predicate;
     private final IteratorFutureMaterializer<E> wrapped;
 
     public ImmaterialState(@NotNull final IteratorFutureMaterializer<E> wrapped,
-        @Positive final int maxElements,
+        @NotNull final IndexedPredicate<? super E> predicate,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      super(TakeRightIteratorFutureMaterializer.this, wrapped, LOGGER);
+      super(TakeRightWhileIteratorFutureMaterializer.this, wrapped, LOGGER);
       this.wrapped = wrapped;
-      this.maxElements = maxElements;
+      this.predicate = predicate;
       this.cancelException = cancelException;
     }
 
@@ -85,6 +77,8 @@ public class TakeRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
     void materialize() {
       final DequeueList<E> elements = new DequeueList<E>();
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
+        private int index;
+
         @Override
         public void cancellableComplete(final int size) throws Exception {
           if (elements.isEmpty()) {
@@ -97,10 +91,12 @@ public class TakeRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
         }
 
         @Override
-        public boolean cancellableTest(final int size, final int index, final E element) {
-          elements.add(element);
-          if (elements.size() > maxElements) {
-            elements.removeFirst();
+        public boolean cancellableTest(final int size, final int index, final E element)
+            throws Exception {
+          if (!predicate.test(this.index++, element)) {
+            elements.clear();
+          } else {
+            elements.add(element);
           }
           return true;
         }

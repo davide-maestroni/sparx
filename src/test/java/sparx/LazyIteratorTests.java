@@ -1526,6 +1526,10 @@ public class LazyIteratorTests {
 
   @Test
   public void takeRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).takeRightWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).takeRightWhile((Predicate<? super Integer>) null));
     test(List.of(), () -> Iterator.<Integer>of().takeRightWhile(e -> e > 0));
     test(List.of(), () -> Iterator.of(1, null, 3).takeRightWhile(Objects::isNull));
     test(List.of(3), () -> Iterator.of(1, null, 3).takeRightWhile(Objects::nonNull));
