@@ -1540,57 +1540,34 @@ public class LazyIteratorTests {
   }
 
   @Test
-  public void takeWhile() {
-    Supplier<Iterator<Integer>> itr = () -> Iterator.<Integer>of().takeWhile(e -> e > 0);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-
-    itr = () -> Iterator.of(1, null, 3).takeWhile(Objects::isNull);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    assertEquals(List.of(), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).takeWhile(Objects::nonNull);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(1, itr.get().size());
-    assertEquals(List.of(1), itr.get().toList());
-    itr = () -> Iterator.of(1, null, 3).takeWhile(e -> e < 1);
-    assertTrue(itr.get().isEmpty());
-    assertFalse(itr.get().notEmpty());
-    assertEquals(0, itr.get().size());
-    assertEquals(List.of(), itr.get().toList());
-
-    itr = () -> Iterator.of(1, 2, 3).takeWhile(e -> e > 0);
-    assertFalse(itr.get().isEmpty());
-    assertTrue(itr.get().notEmpty());
-    assertEquals(3, itr.get().size());
-    assertEquals(List.of(1, 2, 3), itr.get().toList());
-
+  public void takeWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).takeWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).takeWhile((Predicate<? super Integer>) null));
+    test(List.of(), () -> Iterator.<Integer>of().takeWhile(e -> e > 0));
+    test(List.of(), () -> Iterator.of(1, null, 3).takeWhile(Objects::isNull));
+    test(List.of(1), () -> Iterator.of(1, null, 3).takeWhile(Objects::nonNull));
+    test(List.of(), () -> Iterator.of(1, null, 3).takeWhile(e -> e < 1));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3).takeWhile(e -> e > 0));
     assertThrows(NullPointerException.class,
         () -> List.of(1, null, 3).takeWhile(e -> e > 0).size());
   }
 
   @Test
-  public void union() {
-    assertEquals(List.of(1, 2, null, 4),
-        Iterator.of(1, 2, null, 4).union(Iterator.of(1, null)).toList());
-    assertEquals(List.of(1, 2, null, 4), Iterator.of(1, 2, null, 4).union(List.of(1, 4)).toList());
-    assertEquals(List.of(1, 2, null, 4, 3),
-        Iterator.of(1, 2, null, 4).union(Iterator.of(1, 3, 4)).toList());
-    assertEquals(List.of(1, 2, null, 4, 3, 3),
-        Iterator.of(1, 2, null, 4).union(List.of(3, 1, 3)).toList());
-    assertEquals(List.of(1, 2, null, 4, null),
-        Iterator.of(1, 2, null, 4).union(Iterator.of(null, null)).toList());
-    assertEquals(List.of(1, null, 2, 4),
-        Iterator.of(1, null).union(List.of(1, 2, null, 4)).toList());
-    assertEquals(List.of(1, 2, null, 4),
-        Iterator.of(1, 2, null, 4).union(Iterator.of(2, 1)).toList());
-    assertEquals(List.of(1, null, 2, 4), Iterator.of(1, null).union(List.of(2, 4)).toList());
-
-    assertEquals(List.of(1, 2, null, 4), Iterator.of(1, 2, null, 4).union(Iterator.of()).toList());
-    assertEquals(List.of(1, 2, null, 4), Iterator.of().union(Iterator.of(1, 2, null, 4)).toList());
+  public void union() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).union(null));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).union(Iterator.of(1, null)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).union(List.of(1, 4)));
+    test(List.of(1, 2, null, 4, 3), () -> Iterator.of(1, 2, null, 4).union(Iterator.of(1, 3, 4)));
+    test(List.of(1, 2, null, 4, 3, 3), () -> Iterator.of(1, 2, null, 4).union(List.of(3, 1, 3)));
+    test(List.of(1, 2, null, 4, null),
+        () -> Iterator.of(1, 2, null, 4).union(Iterator.of(null, null)));
+    test(List.of(1, null, 2, 4), () -> Iterator.of(1, null).union(List.of(1, 2, null, 4)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).union(Iterator.of(2, 1)));
+    test(List.of(1, null, 2, 4), () -> Iterator.of(1, null).union(List.of(2, 4)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4).union(Iterator.of()));
+    test(List.of(1, 2, null, 4), () -> Iterator.of().union(Iterator.of(1, 2, null, 4)));
   }
 
   private <E> void test(@NotNull final java.util.List<E> expected,

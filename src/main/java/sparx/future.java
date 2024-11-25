@@ -109,7 +109,9 @@ import sparx.internal.future.iterator.SymmetricDiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TakeIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TakeRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TakeRightWhileIteratorFutureMaterializer;
+import sparx.internal.future.iterator.TakeWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TransformIteratorFutureMaterializer;
+import sparx.internal.future.iterator.UnionIteratorFutureMaterializer;
 import sparx.internal.future.iterator.WrappingIteratorFutureMaterializer;
 import sparx.internal.future.list.AppendAllListFutureMaterializer;
 import sparx.internal.future.list.AppendListFutureMaterializer;
@@ -1238,6 +1240,34 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).takeRightWhile(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerTakeWhile(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final IndexedPredicate<? super E> predicate) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).takeWhile(predicate);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerUnion(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Iterable<? extends E> elements) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).union(elements);
         }
       };
     }
@@ -4115,14 +4145,40 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> takeWhile(@NotNull IndexedPredicate<? super E> predicate) {
-      // progressive
-      return null;
+    public @NotNull Iterator<E> takeWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerTakeWhile(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new TakeWhileIteratorFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), context, cancelException));
     }
 
     @Override
-    public @NotNull Iterator<E> takeWhile(@NotNull Predicate<? super E> predicate) {
-      return null;
+    public @NotNull Iterator<E> takeWhile(@NotNull final Predicate<? super E> predicate) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerTakeWhile(materializer, context, cancelException,
+                toIndexedPredicate(Require.notNull(predicate, "predicate"))));
+      }
+      return new Iterator<E>(context, cancelException,
+          new TakeWhileIteratorFutureMaterializer<E>(materializer,
+              toIndexedPredicate(Require.notNull(predicate, "predicate")), context,
+              cancelException));
     }
 
     // TODO: extra
@@ -4151,8 +4207,26 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Iterator<E> union(@NotNull Iterable<? extends E> elements) {
-      return null;
+    public @NotNull Iterator<E> union(@NotNull final Iterable<? extends E> elements) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        return cloneIterator(context,
+            getElementsMaterializer(context, Require.notNull(elements, "elements")));
+      }
+      if (getKnownSize(elements) == 0) {
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce() && isNotFuture(elements)) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerUnion(materializer, context, cancelException,
+                Require.notNull(elements, "elements")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new UnionIteratorFutureMaterializer<E>(materializer,
+              getElementsMaterializer(context, Require.notNull(elements, "elements")), context,
+              cancelException));
     }
 
     private static abstract class LazyIteratorFutureMaterializer<E, F> extends

@@ -16,6 +16,7 @@
 package sparx.internal.lazy.iterator;
 
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 
 public class UnionIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
@@ -57,9 +58,16 @@ public class UnionIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
 
     @Override
     public E materializeNext() {
-      final E next = wrapped.materializeNext();
-      elements.add(next);
-      return next;
+      if (!getState().materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
+      final IteratorMaterializer<E> state = getState();
+      if (state == this) {
+        final E next = wrapped.materializeNext();
+        elements.add(next);
+        return next;
+      }
+      return state.materializeNext();
     }
   }
 }

@@ -117,6 +117,8 @@ import sparx.internal.future.iterator.SymmetricDiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TakeIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TakeRightIteratorFutureMaterializer;
 import sparx.internal.future.iterator.TakeRightWhileIteratorFutureMaterializer;
+import sparx.internal.future.iterator.TakeWhileIteratorFutureMaterializer;
+import sparx.internal.future.iterator.UnionIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
@@ -2432,6 +2434,66 @@ public class FutureIteratorTests {
             new AtomicReference<>()));
 
     testCancel(it -> it.takeRightWhile(e -> true));
+  }
+
+  @Test
+  public void takeWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).takeWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).takeWhile((Predicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .takeWhile((IndexedPredicate<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).flatMap(e -> List.of(e))
+            .takeWhile((Predicate<? super Integer>) null));
+    test(List.of(), Iterator::<Integer>of, it -> it.takeWhile(e -> e > 0));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.takeWhile(Objects::isNull));
+    test(List.of(1), () -> Iterator.of(1, null, 3), it -> it.takeWhile(Objects::nonNull));
+    test(List.of(), () -> Iterator.of(1, null, 3), it -> it.takeWhile(e -> e < 1));
+    test(List.of(1, 2, 3), () -> Iterator.of(1, 2, 3), it -> it.takeWhile(e -> e > 0));
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e)).takeWhile(e -> e > 0)
+            .size());
+
+    testMaterializer(List.of(1, 2),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new TakeWhileIteratorFutureMaterializer<>(m, (n, e) -> e < 3, c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.takeWhile(e -> true));
+  }
+
+  @Test
+  public void union() throws Exception {
+    assertThrows(NullPointerException.class, () -> Iterator.of(0).toFuture(context).union(null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0).toFuture(context).filter(e -> true).union(null));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.union(Iterator.of(1, null)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.union(List.of(1, 4)));
+    test(List.of(1, 2, null, 4, 3), () -> Iterator.of(1, 2, null, 4),
+        it -> it.union(Iterator.of(1, 3, 4)));
+    test(List.of(1, 2, null, 4, 3, 3), () -> Iterator.of(1, 2, null, 4),
+        it -> it.union(List.of(3, 1, 3)));
+    test(List.of(1, 2, null, 4, null), () -> Iterator.of(1, 2, null, 4),
+        it -> it.union(Iterator.of(null, null)));
+    test(List.of(1, null, 2, 4), () -> Iterator.of(1, null),
+        it -> it.union(List.of(1, 2, null, 4)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4),
+        it -> it.union(Iterator.of(2, 1)));
+    test(List.of(1, null, 2, 4), () -> Iterator.of(1, null), it -> it.union(List.of(2, 4)));
+    test(List.of(1, 2, null, 4), () -> Iterator.of(1, 2, null, 4), it -> it.union(Iterator.of()));
+    test(List.of(1, 2, null, 4), Iterator::of, it -> it.union(Iterator.of(1, 2, null, 4)));
+
+    testMaterializer(List.of(1, 2, 3, 4, 5),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3, 4), c),
+        (c, m) -> new UnionIteratorFutureMaterializer<>(m,
+            new ListToIteratorFutureMaterializer<>(List.of(2, 3, 4, 5), c), c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.union(List.of(null)));
   }
 
   private void runInContext(@NotNull final ExecutionContext context, @NotNull final Action action) {

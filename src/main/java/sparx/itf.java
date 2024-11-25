@@ -2406,7 +2406,7 @@ class itf {
     // TODO: reduceRightWhile
 
     @NotNull
-    Sequence<E> removeAfter(int numElements);
+    Sequence<E> removeAfter(int numElements); // TODO: discard??
 
     @NotNull
     Sequence<E> removeEach(E element);

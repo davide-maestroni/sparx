@@ -39,9 +39,9 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
       IteratorToIteratorFutureMaterializer.class.getName());
 
   private final ExecutionContext context;
-  private final Iterator<E> elements;
   private final int offset;
 
+  private Iterator<E> elements;
   private int pos;
 
   public IteratorToIteratorFutureMaterializer(@NotNull final Iterator<E> elements,
@@ -98,6 +98,7 @@ public class IteratorToIteratorFutureMaterializer<E> implements IteratorFutureMa
       while (iterator.hasNext()) {
         elements.add(iterator.next());
       }
+      this.elements = elements.iterator();
       safeConsume(consumer, elements, LOGGER);
     } catch (final Exception e) {
       safeConsumeError(consumer, e, LOGGER);
