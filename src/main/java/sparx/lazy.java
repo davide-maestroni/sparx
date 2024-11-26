@@ -97,7 +97,9 @@ import sparx.internal.lazy.iterator.OrElseIteratorMaterializer;
 import sparx.internal.lazy.iterator.PeekExceptionallyIteratorMaterializer;
 import sparx.internal.lazy.iterator.PeekIteratorMaterializer;
 import sparx.internal.lazy.iterator.ReduceLeftIteratorMaterializer;
+import sparx.internal.lazy.iterator.ReduceLeftWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.ReduceRightIteratorMaterializer;
+import sparx.internal.lazy.iterator.ReduceRightWhileIteratorMaterializer;
 import sparx.internal.lazy.iterator.RemoveAfterIteratorMaterializer;
 import sparx.internal.lazy.iterator.RemoveFirstWhereIteratorMaterializer;
 import sparx.internal.lazy.iterator.RemoveLastWhereIteratorMaterializer;
@@ -194,6 +196,9 @@ import sparx.internal.lazy.list.TakeListMaterializer;
 import sparx.internal.lazy.list.TakeRightListMaterializer;
 import sparx.internal.lazy.list.TakeRightWhileListMaterializer;
 import sparx.internal.lazy.list.TakeWhileListMaterializer;
+import sparx.itf.Iterator;
+import sparx.itf.List;
+import sparx.itf.ListIterator;
 import sparx.util.DequeueList;
 import sparx.util.Require;
 import sparx.util.UncheckedException;
@@ -669,6 +674,19 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public void doFor(@NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
+      try {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        while (materializer.materializeHasNext()) {
+          consumer.accept(materializer.materializeNext());
+        }
+        action.run();
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+
+    @Override
     public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
       try {
         final IteratorMaterializer<E> materializer = this.materializer;
@@ -676,6 +694,21 @@ public class lazy extends Sparx {
         while (materializer.materializeHasNext()) {
           consumer.accept(i++, materializer.materializeNext());
         }
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+
+    @Override
+    public void doFor(@NotNull final IndexedConsumer<? super E> consumer,
+        @NotNull final Action action) {
+      try {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        int i = 0;
+        while (materializer.materializeHasNext()) {
+          consumer.accept(i++, materializer.materializeNext());
+        }
+        action.run();
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
@@ -691,6 +724,23 @@ public class lazy extends Sparx {
             break;
           }
         }
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+
+    @Override
+    public void doWhile(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final Action action) {
+      try {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        int i = 0;
+        while (materializer.materializeHasNext()) {
+          if (!predicate.test(i++, materializer.materializeNext())) {
+            return;
+          }
+        }
+        action.run();
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
@@ -716,6 +766,26 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull final IndexedConsumer<? super E> consumer, @NotNull final Action action) {
+      try {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        int i = 0;
+        while (materializer.materializeHasNext()) {
+          final E next = materializer.materializeNext();
+          if (!condition.test(i, next)) {
+            return;
+          }
+          consumer.accept(i, next);
+          ++i;
+        }
+        action.run();
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+
+    @Override
     public void doWhile(@NotNull final Predicate<? super E> predicate) {
       try {
         final IteratorMaterializer<E> materializer = this.materializer;
@@ -724,6 +794,22 @@ public class lazy extends Sparx {
             break;
           }
         }
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+
+    @Override
+    public void doWhile(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Action action) {
+      try {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        while (materializer.materializeHasNext()) {
+          if (!predicate.test(materializer.materializeNext())) {
+            return;
+          }
+        }
+        action.run();
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
@@ -741,6 +827,24 @@ public class lazy extends Sparx {
           }
           consumer.accept(next);
         }
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+
+    @Override
+    public void doWhile(@NotNull final Predicate<? super E> condition,
+        @NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
+      try {
+        final IteratorMaterializer<E> materializer = this.materializer;
+        while (materializer.materializeHasNext()) {
+          final E next = materializer.materializeNext();
+          if (!condition.test(next)) {
+            return;
+          }
+          consumer.accept(next);
+        }
+        action.run();
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
@@ -1622,6 +1726,21 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull Iterator<E> reduceLeftWhile(@NotNull final Predicate<? super E> predicate,
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return this;
+      }
+      if (knownSize == 1) {
+        return iterator();
+      }
+      return new Iterator<E>(new ReduceLeftWhileIteratorMaterializer<E>(materializer,
+          Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
+    }
+
+    @Override
     public @NotNull Iterator<E> reduceRight(
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       final IteratorMaterializer<E> materializer = this.materializer;
@@ -1634,6 +1753,21 @@ public class lazy extends Sparx {
       }
       return new Iterator<E>(new ReduceRightIteratorMaterializer<E>(materializer,
           Require.notNull(operation, "operation")));
+    }
+
+    @Override
+    public @NotNull Iterator<E> reduceRightWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return this;
+      }
+      if (knownSize == 1) {
+        return iterator();
+      }
+      return new Iterator<E>(new ReduceRightWhileIteratorMaterializer<E>(materializer,
+          Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
     }
 
     @Override
@@ -2212,7 +2346,12 @@ public class lazy extends Sparx {
           new IteratorToIteratorFutureMaterializer<E>(this, context));
     }
 
-    // TODO: extra
+    @Override
+    public @NotNull Iterator<E> toIterator() {
+      return this;
+    }
+
+    @Override
     public @NotNull List<E> toList() {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer instanceof ListMaterializerToIteratorMaterializer) {
@@ -2726,6 +2865,11 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public void doFor(@NotNull Consumer<? super E> consumer, @NotNull Action action) {
+
+    }
+
+    @Override
     public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
       final ListMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
@@ -2745,6 +2889,11 @@ public class lazy extends Sparx {
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
+    }
+
+    @Override
+    public void doFor(@NotNull IndexedConsumer<? super E> consumer, @NotNull Action action) {
+
     }
 
     @Override
@@ -2769,6 +2918,11 @@ public class lazy extends Sparx {
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
+    }
+
+    @Override
+    public void doWhile(@NotNull IndexedPredicate<? super E> predicate, @NotNull Action action) {
+
     }
 
     @Override
@@ -2802,6 +2956,12 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public void doWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedConsumer<? super E> consumer, @NotNull Action action) {
+
+    }
+
+    @Override
     public void doWhile(@NotNull final Predicate<? super E> predicate) {
       final ListMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
@@ -2823,6 +2983,11 @@ public class lazy extends Sparx {
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
+    }
+
+    @Override
+    public void doWhile(@NotNull Predicate<? super E> predicate, @NotNull Action action) {
+
     }
 
     @Override
@@ -2853,6 +3018,12 @@ public class lazy extends Sparx {
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
+    }
+
+    @Override
+    public void doWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Consumer<? super E> consumer, @NotNull Action action) {
+
     }
 
     @Override
@@ -3833,6 +4004,12 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull List<E> reduceLeftWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
+    }
+
+    @Override
     public @NotNull List<E> reduceRight(
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       final ListMaterializer<E> materializer = this.materializer;
@@ -3842,6 +4019,12 @@ public class lazy extends Sparx {
       }
       return new List<E>(new ReduceRightListMaterializer<E>(materializer,
           Require.notNull(operation, "operation")));
+    }
+
+    @Override
+    public @NotNull List<E> reduceRightWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
     }
 
     @Override
@@ -4399,6 +4582,16 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull Iterator<E> toIterator() {
+      return iterator();
+    }
+
+    @Override
+    public @NotNull List<E> toList() {
+      return this;
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public @NotNull List<E> union(@NotNull final Iterable<? extends E> elements) {
       final ListMaterializer<E> materializer = this.materializer;
@@ -4805,6 +4998,11 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public void doFor(@NotNull Consumer<? super E> consumer, @NotNull Action action) {
+
+    }
+
+    @Override
     public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
       if (!atEnd()) {
         nextList().doFor(consumer);
@@ -4812,10 +5010,20 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public void doFor(@NotNull IndexedConsumer<? super E> consumer, @NotNull Action action) {
+
+    }
+
+    @Override
     public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
       if (!atEnd()) {
         nextList().doWhile(predicate);
       }
+    }
+
+    @Override
+    public void doWhile(@NotNull IndexedPredicate<? super E> predicate, @NotNull Action action) {
+
     }
 
     @Override
@@ -4827,10 +5035,21 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public void doWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedConsumer<? super E> consumer, @NotNull Action action) {
+
+    }
+
+    @Override
     public void doWhile(@NotNull final Predicate<? super E> predicate) {
       if (!atEnd()) {
         nextList().doWhile(predicate);
       }
+    }
+
+    @Override
+    public void doWhile(@NotNull Predicate<? super E> predicate, @NotNull Action action) {
+
     }
 
     @Override
@@ -4839,6 +5058,12 @@ public class lazy extends Sparx {
       if (!atEnd()) {
         nextList().doWhile(condition, consumer);
       }
+    }
+
+    @Override
+    public void doWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Consumer<? super E> consumer, @NotNull Action action) {
+
     }
 
     @Override
@@ -5529,12 +5754,24 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull ListIterator<E> reduceLeftWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
+    }
+
+    @Override
     public @NotNull ListIterator<E> reduceRight(
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       if (atEnd()) {
         return ListIterator.of();
       }
       return new ListIterator<E>(nextList().reduceRight(operation));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> reduceRightWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
     }
 
     @Override
@@ -5856,7 +6093,12 @@ public class lazy extends Sparx {
       return new ListIterator<E>(nextList().takeWhile(predicate));
     }
 
-    // TODO: extra
+    @Override
+    public @NotNull Iterator<E> toIterator() {
+      return iterator(); // TODO: ????
+    }
+
+    @Override
     public @NotNull List<E> toList() {
       return nextList();
     }
