@@ -565,7 +565,7 @@ class itf {
         @NotNull Consumer<? super E> consumer);
   }
 
-  public interface Iterator<E> extends java.util.Iterator<E>, Stream<E> {
+  public interface Iterator<E> extends java.util.Iterator<E>, Traverser<E> {
 
     @Override
     @NotNull
@@ -1636,7 +1636,7 @@ class itf {
     List<E> union(@NotNull Iterable<? extends E> elements);
   }
 
-  public interface ListIterator<E> extends java.util.ListIterator<E>, Stream<E> {
+  public interface ListIterator<E> extends java.util.ListIterator<E>, Traverser<E> {
 
     @Override
     @NotNull
@@ -2390,6 +2390,10 @@ class itf {
 
     boolean isEmpty();
 
+    @Override
+    @NotNull
+    Traverser<E> iterator();
+
     E last();
 
     @NotNull
@@ -2586,10 +2590,19 @@ class itf {
     Sequence<E> takeWhile(@NotNull Predicate<? super E> predicate);
 
     @NotNull
+    Collection<E> toCollection();
+
+    @NotNull
     Iterator<E> toIterator();
 
     @NotNull
     List<E> toList();
+
+    @NotNull
+    ListIterator<E> toListIterator();
+
+    @NotNull
+    Traverser<E> toTraverser();
 
     // TODO: toSet(), etc.
 
@@ -3097,512 +3110,508 @@ class itf {
     Set<E> union(@NotNull Iterable<? extends E> elements);
   }
 
-  public interface Stream<E> extends java.util.Iterator<E>, Sequence<E> {
+  public interface Traverser<E> extends java.util.Iterator<E>, Sequence<E> {
 
     @NotNull
-    Stream<E> append(E element);
+    Traverser<E> append(E element);
 
     @NotNull
-    Stream<E> appendAll(@NotNull Iterable<? extends E> elements);
-
-    @Override
-    @NotNull
-    <F> Stream<F> as();
+    Traverser<E> appendAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
-    Stream<Integer> count();
+    <F> Traverser<F> as();
 
     @Override
     @NotNull
-    Stream<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<Integer> count();
 
     @Override
     @NotNull
-    Stream<Integer> countWhere(@NotNull Predicate<? super E> predicate);
+    Traverser<Integer> countWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> diff(@NotNull Iterable<?> elements);
+    Traverser<Integer> countWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> distinct();
+    Traverser<E> diff(@NotNull Iterable<?> elements);
 
     @Override
     @NotNull
-    <K> Stream<E> distinctBy(@NotNull Function<? super E, K> keyExtractor);
+    Traverser<E> distinct();
 
     @Override
     @NotNull
-    <K> Stream<E> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
+    <K> Traverser<E> distinctBy(@NotNull Function<? super E, K> keyExtractor);
 
     @Override
     @NotNull
-    Stream<E> drop(int maxElements);
+    <K> Traverser<E> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @Override
     @NotNull
-    Stream<E> dropRight(int maxElements);
+    Traverser<E> drop(int maxElements);
 
     @Override
     @NotNull
-    Stream<E> dropRightWhile(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<E> dropRight(int maxElements);
 
     @Override
     @NotNull
-    Stream<E> dropRightWhile(@NotNull Predicate<? super E> predicate);
+    Traverser<E> dropRightWhile(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> dropWhile(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<E> dropRightWhile(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> dropWhile(@NotNull Predicate<? super E> predicate);
+    Traverser<E> dropWhile(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Boolean> each(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<E> dropWhile(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Boolean> each(@NotNull Predicate<? super E> predicate);
+    Traverser<Boolean> each(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Boolean> endsWith(@NotNull Iterable<?> elements);
+    Traverser<Boolean> each(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Boolean> exists(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<Boolean> endsWith(@NotNull Iterable<?> elements);
 
     @Override
     @NotNull
-    Stream<Boolean> exists(@NotNull Predicate<? super E> predicate);
+    Traverser<Boolean> exists(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> filter(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<Boolean> exists(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> filter(@NotNull Predicate<? super E> predicate);
+    Traverser<E> filter(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> findAny(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<E> filter(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> findAny(@NotNull Predicate<? super E> predicate);
+    Traverser<E> findAny(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> findFirst(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<E> findAny(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> findFirst(@NotNull Predicate<? super E> predicate);
+    Traverser<E> findFirst(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Integer> findIndexOf(Object element);
+    Traverser<E> findFirst(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
+    Traverser<Integer> findIndexOf(Object element);
 
     @Override
     @NotNull
-    Stream<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<Integer> findIndexOfSlice(@NotNull Iterable<?> elements);
 
     @Override
     @NotNull
-    Stream<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
+    Traverser<Integer> findIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> findLast(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<Integer> findIndexWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> findLast(@NotNull Predicate<? super E> predicate);
+    Traverser<E> findLast(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Integer> findLastIndexOf(Object element);
+    Traverser<E> findLast(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
+    Traverser<Integer> findLastIndexOf(Object element);
 
     @Override
     @NotNull
-    Stream<Integer> findLastIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<Integer> findLastIndexOfSlice(@NotNull Iterable<?> elements);
 
     @Override
     @NotNull
-    Stream<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
+    Traverser<Integer> findLastIndexWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    <F> Stream<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
+    Traverser<Integer> findLastIndexWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    <F> Stream<F> flatMap(@NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper);
+    <F> Traverser<F> flatMap(@NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
     @Override
     @NotNull
-    Stream<E> flatMapAfter(int numElements,
+    <F> Traverser<F> flatMap(@NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper);
+
+    @Override
+    @NotNull
+    Traverser<E> flatMapAfter(int numElements,
         @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
-    Stream<E> flatMapAfter(int numElements,
+    Traverser<E> flatMapAfter(int numElements,
         @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
-    Stream<E> flatMapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
+    Traverser<E> flatMapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
         @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
-    Stream<E> flatMapFirstWhere(@NotNull Predicate<? super E> predicate,
+    Traverser<E> flatMapFirstWhere(@NotNull Predicate<? super E> predicate,
         @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
-    Stream<E> flatMapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
+    Traverser<E> flatMapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
         @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
-    Stream<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
+    Traverser<E> flatMapLastWhere(@NotNull Predicate<? super E> predicate,
         @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
-    Stream<E> flatMapWhere(@NotNull IndexedPredicate<? super E> predicate,
+    Traverser<E> flatMapWhere(@NotNull IndexedPredicate<? super E> predicate,
         @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
-    Stream<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
+    Traverser<E> flatMapWhere(@NotNull Predicate<? super E> predicate,
         @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
-    <F> Stream<F> fold(F identity,
+    <F> Traverser<F> fold(F identity,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
     @Override
     @NotNull
-    <F> Stream<F> foldLeft(F identity,
+    <F> Traverser<F> foldLeft(F identity,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
     @Override
     @NotNull
-    <F> Stream<F> foldLeftWhile(F identity, @NotNull Predicate<? super F> predicate,
+    <F> Traverser<F> foldLeftWhile(F identity, @NotNull Predicate<? super F> predicate,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
     @Override
     @NotNull
-    <F> Stream<F> foldRight(F identity,
+    <F> Traverser<F> foldRight(F identity,
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
     @Override
     @NotNull
-    <F> Stream<F> foldRightWhile(F identity, @NotNull Predicate<? super F> predicate,
+    <F> Traverser<F> foldRightWhile(F identity, @NotNull Predicate<? super F> predicate,
         @NotNull BinaryFunction<? super E, ? super F, ? extends F> operation);
 
     @Override
     @NotNull
-    Stream<Boolean> includes(Object element);
+    Traverser<Boolean> includes(Object element);
 
     @Override
     @NotNull
-    Stream<Boolean> includesAll(@NotNull Iterable<?> elements);
+    Traverser<Boolean> includesAll(@NotNull Iterable<?> elements);
 
     @Override
     @NotNull
-    Stream<Boolean> includesSlice(@NotNull Iterable<?> elements);
+    Traverser<Boolean> includesSlice(@NotNull Iterable<?> elements);
 
     @NotNull
-    Stream<E> insert(E element);
+    Traverser<E> insert(E element);
 
     @NotNull
-    Stream<E> insertAfter(int numElements, E element);
+    Traverser<E> insertAfter(int numElements, E element);
 
     @NotNull
-    Stream<E> insertAll(@NotNull Iterable<? extends E> elements);
+    Traverser<E> insertAll(@NotNull Iterable<? extends E> elements);
 
     @NotNull
-    Stream<E> insertAllAfter(int numElements, @NotNull Iterable<? extends E> elements);
-
-    @Override
-    @NotNull
-    Stream<E> intersect(@NotNull Iterable<?> elements);
+    Traverser<E> insertAllAfter(int numElements, @NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
-    Stream<E> iterator();
+    Traverser<E> intersect(@NotNull Iterable<?> elements);
 
     @Override
     @NotNull
-    <F> Stream<F> map(@NotNull Function<? super E, F> mapper);
+    <F> Traverser<F> map(@NotNull Function<? super E, F> mapper);
 
     @Override
     @NotNull
-    <F> Stream<F> map(@NotNull IndexedFunction<? super E, F> mapper);
+    <F> Traverser<F> map(@NotNull IndexedFunction<? super E, F> mapper);
 
     @Override
     @NotNull
-    Stream<E> mapAfter(int numElements, @NotNull Function<? super E, ? extends E> mapper);
+    Traverser<E> mapAfter(int numElements, @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    Stream<E> mapAfter(int numElements, @NotNull IndexedFunction<? super E, ? extends E> mapper);
+    Traverser<E> mapAfter(int numElements, @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    Stream<E> mapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
+    Traverser<E> mapFirstWhere(@NotNull IndexedPredicate<? super E> predicate,
         @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    Stream<E> mapFirstWhere(@NotNull Predicate<? super E> predicate,
+    Traverser<E> mapFirstWhere(@NotNull Predicate<? super E> predicate,
         @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    Stream<E> mapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
+    Traverser<E> mapLastWhere(@NotNull IndexedPredicate<? super E> predicate,
         @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    Stream<E> mapLastWhere(@NotNull Predicate<? super E> predicate,
+    Traverser<E> mapLastWhere(@NotNull Predicate<? super E> predicate,
         @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    Stream<E> mapWhere(@NotNull IndexedPredicate<? super E> predicate,
+    Traverser<E> mapWhere(@NotNull IndexedPredicate<? super E> predicate,
         @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    Stream<E> mapWhere(@NotNull Predicate<? super E> predicate,
+    Traverser<E> mapWhere(@NotNull Predicate<? super E> predicate,
         @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    Stream<E> max(@NotNull Comparator<? super E> comparator);
+    Traverser<E> max(@NotNull Comparator<? super E> comparator);
 
     @Override
     @NotNull
-    Stream<E> min(@NotNull Comparator<? super E> comparator);
+    Traverser<E> min(@NotNull Comparator<? super E> comparator);
 
     @Override
     @NotNull
-    Stream<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<Boolean> none(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Boolean> none(@NotNull Predicate<? super E> predicate);
+    Traverser<Boolean> none(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<Boolean> notAll(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<Boolean> notAll(@NotNull Predicate<? super E> predicate);
+    Traverser<Boolean> notAll(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> orElse(@NotNull Iterable<? extends E> elements);
+    Traverser<E> orElse(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
-    Stream<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
+    Traverser<E> orElseGet(@NotNull Supplier<? extends Iterable<? extends E>> supplier);
 
     @Override
     @NotNull
-    Stream<E> plus(E element);
+    Traverser<E> plus(E element);
 
     @Override
     @NotNull
-    Stream<E> plusAll(@NotNull Iterable<? extends E> elements);
+    Traverser<E> plusAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
-    Stream<E> reduce(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+    Traverser<E> reduce(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
     @Override
     @NotNull
-    Stream<E> reduceLeft(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+    Traverser<E> reduceLeft(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
     @Override
     @NotNull
-    Stream<E> reduceLeftWhile(@NotNull Predicate<? super E> predicate,
+    Traverser<E> reduceLeftWhile(@NotNull Predicate<? super E> predicate,
         @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
     @Override
     @NotNull
-    Stream<E> reduceRight(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+    Traverser<E> reduceRight(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
     @Override
     @NotNull
-    Stream<E> reduceRightWhile(@NotNull Predicate<? super E> predicate,
+    Traverser<E> reduceRightWhile(@NotNull Predicate<? super E> predicate,
         @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
     @Override
     @NotNull
-    Stream<E> removeAfter(int numElements);
+    Traverser<E> removeAfter(int numElements);
 
     @Override
     @NotNull
-    Stream<E> removeEach(E element);
+    Traverser<E> removeEach(E element);
 
     @Override
     @NotNull
-    Stream<E> removeFirst(E element);
+    Traverser<E> removeFirst(E element);
 
     @Override
     @NotNull
-    Stream<E> removeFirstWhere(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<E> removeFirstWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
+    Traverser<E> removeFirstWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> removeLast(E element);
+    Traverser<E> removeLast(E element);
 
     @Override
     @NotNull
-    Stream<E> removeLastWhere(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<E> removeLastWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
+    Traverser<E> removeLastWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> removeSlice(int start, int end);
+    Traverser<E> removeSlice(int start, int end);
 
     @Override
     @NotNull
-    Stream<E> removeWhere(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<E> removeWhere(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> removeWhere(@NotNull Predicate<? super E> predicate);
+    Traverser<E> removeWhere(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> replaceAfter(int numElements, E replacement);
+    Traverser<E> replaceAfter(int numElements, E replacement);
 
     @Override
     @NotNull
-    Stream<E> replaceEach(E element, E replacement);
+    Traverser<E> replaceEach(E element, E replacement);
 
     @Override
     @NotNull
-    Stream<E> replaceFirst(E element, E replacement);
+    Traverser<E> replaceFirst(E element, E replacement);
 
     @Override
     @NotNull
-    Stream<E> replaceFirstWhere(@NotNull IndexedPredicate<? super E> predicate, E replacement);
+    Traverser<E> replaceFirstWhere(@NotNull IndexedPredicate<? super E> predicate, E replacement);
 
     @Override
     @NotNull
-    Stream<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate, E replacement);
+    Traverser<E> replaceFirstWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
     @Override
     @NotNull
-    Stream<E> replaceLast(E element, E replacement);
+    Traverser<E> replaceLast(E element, E replacement);
 
     @Override
     @NotNull
-    Stream<E> replaceLastWhere(@NotNull IndexedPredicate<? super E> predicate, E replacement);
+    Traverser<E> replaceLastWhere(@NotNull IndexedPredicate<? super E> predicate, E replacement);
 
     @Override
     @NotNull
-    Stream<E> replaceLastWhere(@NotNull Predicate<? super E> predicate, E replacement);
+    Traverser<E> replaceLastWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
     @Override
     @NotNull
-    Stream<E> replaceSlice(int start, int end, @NotNull Iterable<? extends E> patch);
+    Traverser<E> replaceSlice(int start, int end, @NotNull Iterable<? extends E> patch);
 
     @Override
     @NotNull
-    Stream<E> replaceWhere(@NotNull IndexedPredicate<? super E> predicate, E replacement);
+    Traverser<E> replaceWhere(@NotNull IndexedPredicate<? super E> predicate, E replacement);
 
     @Override
     @NotNull
-    Stream<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
+    Traverser<E> replaceWhere(@NotNull Predicate<? super E> predicate, E replacement);
 
     @Override
     @NotNull
-    Stream<E> resizeTo(@NotNegative int numElements, E padding);
+    Traverser<E> resizeTo(@NotNegative int numElements, E padding);
 
     int skip(int maxElements);
 
     @Override
     @NotNull
-    Stream<E> slice(int start);
+    Traverser<E> slice(int start);
 
     @Override
     @NotNull
-    Stream<E> slice(int start, int end);
+    Traverser<E> slice(int start, int end);
 
     @Override
     @NotNull
-    Stream<? extends Stream<E>> slidingWindow(@Positive int maxSize, @Positive int step);
+    Traverser<? extends Traverser<E>> slidingWindow(@Positive int maxSize, @Positive int step);
 
     @Override
     @NotNull
-    Stream<? extends Stream<E>> slidingWindowWithPadding(@Positive int size, @Positive int step,
-        E padding);
+    Traverser<? extends Traverser<E>> slidingWindowWithPadding(@Positive int size,
+        @Positive int step, E padding);
 
     @Override
     @NotNull
-    Stream<Boolean> startsWith(@NotNull Iterable<?> elements);
+    Traverser<Boolean> startsWith(@NotNull Iterable<?> elements);
 
     @Override
     @NotNull
-    Stream<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
+    Traverser<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
 
     @Override
     @NotNull
-    Stream<E> take(int maxElements);
+    Traverser<E> take(int maxElements);
 
     @Override
     @NotNull
-    Stream<E> takeRight(int maxElements);
+    Traverser<E> takeRight(int maxElements);
 
     @Override
     @NotNull
-    Stream<E> takeRightWhile(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<E> takeRightWhile(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> takeRightWhile(@NotNull Predicate<? super E> predicate);
+    Traverser<E> takeRightWhile(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> takeWhile(@NotNull IndexedPredicate<? super E> predicate);
+    Traverser<E> takeWhile(@NotNull IndexedPredicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> takeWhile(@NotNull Predicate<? super E> predicate);
+    Traverser<E> takeWhile(@NotNull Predicate<? super E> predicate);
 
     @Override
     @NotNull
-    Stream<E> union(@NotNull Iterable<? extends E> elements);
+    Traverser<E> union(@NotNull Iterable<? extends E> elements);
   }
 }

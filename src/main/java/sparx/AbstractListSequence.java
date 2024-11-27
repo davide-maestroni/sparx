@@ -19,6 +19,7 @@ import java.util.AbstractList;
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import sparx.itf.Sequence;
+import sparx.itf.Traverser;
 
 public abstract class AbstractListSequence<E> extends AbstractList<E> implements Sequence<E> {
 
@@ -43,13 +44,13 @@ public abstract class AbstractListSequence<E> extends AbstractList<E> implements
   }
 
   @Override
-  public boolean notEmpty() {
-    return !isEmpty();
+  public @NotNull Traverser<E> iterator() {
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public E remove(final int index) {
-    throw new UnsupportedOperationException();
+  public boolean notEmpty() {
+    return !isEmpty();
   }
 
   @Override

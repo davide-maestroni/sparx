@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
 import sparx.util.SizeOverflowException;
+import sparx.util.function.Action;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedConsumer;
@@ -123,6 +124,10 @@ public class LazyIteratorTests {
         () -> Iterator.of(0, 0).doFor((Consumer<? super Integer>) null));
     assertThrows(NullPointerException.class,
         () -> Iterator.of(0, 0).doFor((IndexedConsumer<? super Integer>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doFor(e -> {
+    }, null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doFor((i, e) -> {
+    }, null));
     var list = new ArrayList<>();
     Iterator.of(1, 2, 3).doFor(e -> list.add(e));
     assertEquals(List.of(1, 2, 3), list);
@@ -138,8 +143,14 @@ public class LazyIteratorTests {
     }));
     assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doWhile(null, e -> {
     }));
-    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doWhile((i, e) -> true, null));
-    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).doWhile(e -> true, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).doWhile((i, e) -> true, (Action) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).doWhile(e -> true, (Action) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).doWhile((i, e) -> true, (IndexedConsumer<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).doWhile(e -> true, (Consumer<? super Integer>) null));
     var list = new ArrayList<>();
     Iterator.of(1, 2, 3).doWhile(e -> e < 3, list::add);
     assertEquals(List.of(1, 2), list);
@@ -957,12 +968,38 @@ public class LazyIteratorTests {
   }
 
   @Test
+  public void reduceLeftWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).reduceLeftWhile(null, Integer::sum));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).reduceLeftWhile(
+        Objects::nonNull, null));
+    test(List.of(10), () -> Iterator.of(1, 2, 3, 4, 5).reduceLeftWhile(s -> s < 10, Integer::sum));
+    test(List.of(1), () -> Iterator.of(1, 2, 3, 4, 5).reduceLeftWhile(s -> s < 1, Integer::sum));
+    test(List.of(), () -> Iterator.<Integer>of().reduceLeftWhile(s -> s < 10, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null).reduceLeftWhile(s -> s < 10, Integer::sum).first());
+  }
+
+  @Test
   public void reduceRight() throws Exception {
     assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).reduceRight(null));
     test(List.of(15), () -> Iterator.of(1, 2, 3, 4, 5).reduceRight(Integer::sum));
     test(List.of(), () -> Iterator.<Integer>of().reduceRight(Integer::sum));
     assertThrows(NullPointerException.class,
         () -> Iterator.of(1, 2, null).reduceRight(Integer::sum).first());
+  }
+
+  @Test
+  public void reduceRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).reduceRightWhile(null, Integer::sum));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).reduceRightWhile(
+        Objects::nonNull, null));
+    test(List.of(12), () -> Iterator.of(1, 2, 3, 4, 5).reduceRightWhile(s -> s < 10, Integer::sum));
+    test(List.of(5), () -> Iterator.of(1, 2, 3, 4, 5).reduceRightWhile(s -> s < 1, Integer::sum));
+    test(List.of(), () -> Iterator.<Integer>of().reduceRightWhile(s -> s < 10, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null).reduceRightWhile(s -> s < 10, Integer::sum).first());
   }
 
   @Test

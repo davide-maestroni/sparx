@@ -276,6 +276,11 @@ public class FutureIteratorTests {
         () -> Iterator.of(0, 0).toFuture(context).doFor((Consumer<? super Integer>) null));
     assertThrows(NullPointerException.class,
         () -> Iterator.of(0, 0).toFuture(context).doFor((IndexedConsumer<? super Integer>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).toFuture(context).doFor(e -> {
+    }, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).doFor((i, e) -> {
+        }, null));
     var list = new ArrayList<>();
     Iterator.of(1, 2, 3).toFuture(context).doFor(e -> list.add(e));
     assertEquals(List.of(1, 2, 3), list);
@@ -297,9 +302,13 @@ public class FutureIteratorTests {
         () -> Iterator.of(0, 0).toFuture(context).doWhile(null, e -> {
         }));
     assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).toFuture(context).doWhile((i, e) -> true, null));
+        () -> Iterator.of(0, 0).toFuture(context).doWhile((i, e) -> true, (Action) null));
     assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).toFuture(context).doWhile(e -> true, null));
+        () -> Iterator.of(0, 0).toFuture(context).doWhile(e -> true, (Action) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).toFuture(context)
+        .doWhile((i, e) -> true, (IndexedConsumer<? super Integer>) null));
+    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).toFuture(context)
+        .doWhile(e -> true, (Consumer<? super Integer>) null));
     var list = new ArrayList<>();
     Iterator.of(1, 2, 3).toFuture(context).doWhile(e -> e < 3, list::add);
     assertEquals(List.of(1, 2), list);

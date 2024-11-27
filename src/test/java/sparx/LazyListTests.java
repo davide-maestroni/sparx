@@ -30,6 +30,7 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import sparx.lazy.List;
+import sparx.util.function.Action;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedConsumer;
@@ -128,6 +129,10 @@ public class LazyListTests {
         () -> List.of(0).doFor((Consumer<? super Object>) null));
     assertThrows(NullPointerException.class,
         () -> List.of(0).doFor((IndexedConsumer<? super Object>) null));
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).doFor(e -> {
+    }, null));
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).doFor((i, e) -> {
+    }, null));
     var list = new ArrayList<>();
     List.of(1, 2, 3).doFor(e -> list.add(e));
     assertEquals(List.of(1, 2, 3), list);
@@ -144,10 +149,15 @@ public class LazyListTests {
         () -> List.of(0).doWhile((IndexedPredicate<? super Object>) null));
     assertThrows(NullPointerException.class, () -> List.of(0).doWhile(null, i -> {
     }));
-    assertThrows(NullPointerException.class, () -> List.of(0).doWhile(i -> true, null));
     assertThrows(NullPointerException.class, () -> List.of(0).doWhile(null, (n, i) -> {
     }));
-    assertThrows(NullPointerException.class, () -> List.of(0).doWhile((n, i) -> true, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).doWhile((i, e) -> true, (Action) null));
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).doWhile(e -> true, (Action) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).doWhile((i, e) -> true, (IndexedConsumer<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).doWhile(e -> true, (Consumer<? super Integer>) null));
     var list = new ArrayList<>();
     List.of(1, 2, 3).doWhile(e -> e < 3, list::add);
     assertEquals(List.of(1, 2), list);
@@ -1066,6 +1076,20 @@ public class LazyListTests {
   }
 
   @Test
+  public void reduceLeftWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).reduceLeftWhile(null, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).reduceLeftWhile(Objects::nonNull, null));
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(10), () -> l.reduceLeftWhile(s -> s < 10, Integer::sum));
+    test(List.of(1), () -> l.reduceLeftWhile(s -> s < 1, Integer::sum));
+    test(List.of(), () -> List.<Integer>of().reduceLeftWhile(s -> s < 10, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, 2, null).reduceLeftWhile(s -> s < 10, Integer::sum).first());
+  }
+
+  @Test
   public void reduceRight() throws Exception {
     assertThrows(NullPointerException.class, () -> List.of(0, 0).reduceRight(null));
     var l = List.of(1, 2, 3, 4, 5);
@@ -1073,6 +1097,20 @@ public class LazyListTests {
     assertThrows(NullPointerException.class,
         () -> l.prepend(null).reduceRight(Integer::sum).first());
     test(List.of(), () -> List.<Integer>of().reduceRight(Integer::sum));
+  }
+
+  @Test
+  public void reduceRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).reduceRightWhile(null, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).reduceRightWhile(Objects::nonNull, null));
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(12), () -> l.reduceRightWhile(s -> s < 10, Integer::sum));
+    test(List.of(5), () -> l.reduceRightWhile(s -> s < 1, Integer::sum));
+    test(List.of(), () -> List.<Integer>of().reduceRightWhile(s -> s < 10, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, 2, null).reduceRightWhile(s -> s < 10, Integer::sum).first());
   }
 
   @Test
