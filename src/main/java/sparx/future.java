@@ -17,7 +17,6 @@ package sparx;
 
 import static sparx.lazy.indexedIdentity;
 
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
@@ -187,7 +186,9 @@ import sparx.internal.future.list.TakeRightWhileListFutureMaterializer;
 import sparx.internal.future.list.TakeWhileListFutureMaterializer;
 import sparx.internal.future.list.TransformListFutureMaterializer;
 import sparx.internal.future.list.WrappingListFutureMaterializer;
+import sparx.itf.Collection;
 import sparx.itf.Sequence;
+import sparx.itf.Traverser;
 import sparx.util.DeadLockException;
 import sparx.util.DequeueList;
 import sparx.util.Require;
@@ -207,6 +208,12 @@ import sparx.util.function.Supplier;
 import sparx.util.function.TernaryFunction;
 
 class future extends Sparx {
+
+  private static final Action NOOP = new Action() {
+    @Override
+    public void run() {
+    }
+  };
 
   private future() {
   }
@@ -296,7 +303,8 @@ class future extends Sparx {
         return new ListToIteratorFutureMaterializer<E>(list, context);
       }
       if (elements instanceof java.util.Collection) {
-        return new CollectionToIteratorFutureMaterializer<E>((Collection<E>) elements, context);
+        return new CollectionToIteratorFutureMaterializer<E>((java.util.Collection<E>) elements,
+            context);
       }
       if (elements instanceof Iterator) {
         final Iterator<E> iterator = (Iterator<E>) elements;
@@ -1493,11 +1501,16 @@ class future extends Sparx {
 
     @Override
     public void doFor(@NotNull final Consumer<? super E> consumer) {
+      doFor(consumer, NOOP);
+    }
+
+    @Override
+    public void doFor(@NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
       if (materializer.knownSize() == 0) {
         return;
       }
       try {
-        nonBlockingFor(consumer).get();
+        nonBlockingFor(consumer, action).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -1507,11 +1520,17 @@ class future extends Sparx {
 
     @Override
     public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
+      doFor(consumer, NOOP);
+    }
+
+    @Override
+    public void doFor(@NotNull final IndexedConsumer<? super E> consumer,
+        @NotNull final Action action) {
       if (materializer.knownSize() == 0) {
         return;
       }
       try {
-        nonBlockingFor(consumer).get();
+        nonBlockingFor(consumer, action).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -1521,11 +1540,17 @@ class future extends Sparx {
 
     @Override
     public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+      doWhile(predicate, NOOP);
+    }
+
+    @Override
+    public void doWhile(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final Action action) {
       if (materializer.knownSize() == 0) {
         return;
       }
       try {
-        nonBlockingWhile(predicate).get();
+        nonBlockingWhile(predicate, action).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -1536,11 +1561,17 @@ class future extends Sparx {
     @Override
     public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
         @NotNull final IndexedConsumer<? super E> consumer) {
+      doWhile(condition, consumer, NOOP);
+    }
+
+    @Override
+    public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull final IndexedConsumer<? super E> consumer, @NotNull final Action action) {
       if (materializer.knownSize() == 0) {
         return;
       }
       try {
-        nonBlockingWhile(condition, consumer).get();
+        nonBlockingWhile(condition, consumer, action).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -1550,11 +1581,17 @@ class future extends Sparx {
 
     @Override
     public void doWhile(@NotNull final Predicate<? super E> predicate) {
+      doWhile(predicate, NOOP);
+    }
+
+    @Override
+    public void doWhile(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Action action) {
       if (materializer.knownSize() == 0) {
         return;
       }
       try {
-        nonBlockingWhile(predicate).get();
+        nonBlockingWhile(predicate, action).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -1565,11 +1602,17 @@ class future extends Sparx {
     @Override
     public void doWhile(@NotNull final Predicate<? super E> condition,
         @NotNull final Consumer<? super E> consumer) {
+      doWhile(condition, consumer, NOOP);
+    }
+
+    @Override
+    public void doWhile(@NotNull final Predicate<? super E> condition,
+        @NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
       if (materializer.knownSize() == 0) {
         return;
       }
       try {
-        nonBlockingWhile(condition, consumer).get();
+        nonBlockingWhile(condition, consumer, action).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -3008,47 +3051,93 @@ class future extends Sparx {
 
     @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
+      return nonBlockingFor(consumer, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer,
+        @NotNull final Action action) {
       return new IteratorForFuture<E>(context, taskID, cancelException, materializer,
-          toIndexedConsumer(Require.notNull(consumer, "consumer")));
+          toIndexedConsumer(Require.notNull(consumer, "consumer")),
+          Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
+      return nonBlockingFor(consumer, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer,
+        @NotNull final Action action) {
       return new IteratorForFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(consumer, "consumer"));
+          Require.notNull(consumer, "consumer"), Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingGet() {
-      return new IteratorGetFuture<E>(context, taskID, cancelException, materializer);
+      return nonBlockingGet(NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingGet(@NotNull final Action action) {
+      return new IteratorGetFuture<E>(context, taskID, cancelException, materializer,
+          Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(
         @NotNull final IndexedPredicate<? super E> predicate) {
+      return nonBlockingWhile(predicate, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final Action action) {
       return new IteratorWhileFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(predicate, "predicate"));
+          Require.notNull(predicate, "predicate"), Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
         @NotNull final IndexedConsumer<? super E> consumer) {
+      return nonBlockingWhile(condition, consumer, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull final IndexedConsumer<? super E> consumer, @NotNull final Action action) {
       return new IteratorWhileFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(condition, "condition"), Require.notNull(consumer, "consumer"));
+          Require.notNull(condition, "condition"), Require.notNull(consumer, "consumer"),
+          Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
+      return nonBlockingWhile(predicate, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Action action) {
       return new IteratorWhileFuture<E>(context, taskID, cancelException, materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")));
+          toIndexedPredicate(Require.notNull(predicate, "predicate")),
+          Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
         @NotNull final Consumer<? super E> consumer) {
+      return nonBlockingWhile(condition, consumer, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
+        @NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
       return new IteratorWhileFuture<E>(context, taskID, cancelException, materializer,
           toIndexedPredicate(Require.notNull(condition, "condition")),
-          toIndexedConsumer(Require.notNull(consumer, "consumer")));
+          toIndexedConsumer(Require.notNull(consumer, "consumer")),
+          Require.notNull(action, "action"));
     }
 
     @Override
@@ -3286,6 +3375,12 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull Iterator<E> reduceLeftWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
+    }
+
+    @Override
     public @NotNull Iterator<E> reduceRight(
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       final ExecutionContext context = this.context;
@@ -3302,6 +3397,12 @@ class future extends Sparx {
       return new Iterator<E>(context, cancelException,
           new ReduceRightIteratorFutureMaterializer<E>(materializer,
               Require.notNull(operation, "operation"), context, cancelException));
+    }
+
+    @Override
+    public @NotNull Iterator<E> reduceRightWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
     }
 
     @Override
@@ -3753,7 +3854,7 @@ class future extends Sparx {
     }
 
     // TODO: extra
-    public @NotNull Iterator<E> rescheduleTo(@NotNull final ExecutionContext context) {
+    public @NotNull Iterator<E> rescheduleOn(@NotNull final ExecutionContext context) {
       return new Iterator<E>(context, new AtomicReference<CancellationException>(),
           new RescheduleIteratorFutureMaterializer<E>(this.context, taskID, context, materializer));
     }
@@ -4181,9 +4282,19 @@ class future extends Sparx {
               cancelException));
     }
 
+    @Override
+    public @NotNull Collection<E> toCollection() {
+      return toList();
+    }
+
     // TODO: extra
     public @NotNull Iterator<E> toContext(@NotNull final ExecutionContext context) {
-      return context.equals(this.context) ? this : rescheduleTo(context);
+      return context.equals(this.context) ? this : rescheduleOn(context);
+    }
+
+    @Override
+    public @NotNull Iterator<E> toIterator() {
+      return this;
     }
 
     // TODO: extra
@@ -4191,7 +4302,7 @@ class future extends Sparx {
       return lazy.Iterator.wrap((java.util.Iterator<E>) this);
     }
 
-    // TODO: extra
+    @Override
     public @NotNull List<E> toList() {
       final ExecutionContext context = this.context;
       final IteratorFutureMaterializer<E> materializer = this.materializer;
@@ -4204,6 +4315,16 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new IteratorFutureMaterializerToListFutureMaterializer<E>(context, cancelException,
               materializer));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> toListIterator() {
+      return toList().listIterator();
+    }
+
+    @Override
+    public @NotNull Traverser<E> toTraverser() {
+      return this;
     }
 
     @Override
@@ -5704,6 +5825,11 @@ class future extends Sparx {
     }
 
     @Override
+    public void doFor(@NotNull Consumer<? super E> consumer, @NotNull Action action) {
+
+    }
+
+    @Override
     public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
       if (materializer.knownSize() == 0) {
         return;
@@ -5718,6 +5844,11 @@ class future extends Sparx {
     }
 
     @Override
+    public void doFor(@NotNull IndexedConsumer<? super E> consumer, @NotNull Action action) {
+
+    }
+
+    @Override
     public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
       if (materializer.knownSize() == 0) {
         return;
@@ -5729,6 +5860,11 @@ class future extends Sparx {
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
+    }
+
+    @Override
+    public void doWhile(@NotNull IndexedPredicate<? super E> predicate, @NotNull Action action) {
+
     }
 
     @Override
@@ -5747,6 +5883,12 @@ class future extends Sparx {
     }
 
     @Override
+    public void doWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedConsumer<? super E> consumer, @NotNull Action action) {
+
+    }
+
+    @Override
     public void doWhile(@NotNull final Predicate<? super E> predicate) {
       if (materializer.knownSize() == 0) {
         return;
@@ -5758,6 +5900,11 @@ class future extends Sparx {
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
+    }
+
+    @Override
+    public void doWhile(@NotNull Predicate<? super E> predicate, @NotNull Action action) {
+
     }
 
     @Override
@@ -5773,6 +5920,12 @@ class future extends Sparx {
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
       }
+    }
+
+    @Override
+    public void doWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Consumer<? super E> consumer, @NotNull Action action) {
+
     }
 
     @Override
@@ -6950,9 +7103,9 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull lazy.Iterator<E> iterator() {
-      // TODO: future.Iterator
-      return lazy.Iterator.wrap(this);
+    public @NotNull Iterator<E> iterator() {
+      return new Iterator<E>(context, new AtomicReference<CancellationException>(),
+          new ListFutureMaterializerToIteratorFutureMaterializer<E>(materializer));
     }
 
     @Override
@@ -7324,47 +7477,93 @@ class future extends Sparx {
 
     @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
+      return nonBlockingFor(consumer, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer,
+        @NotNull final Action action) {
       return new ListForFuture<E>(context, taskID, cancelException, materializer,
-          toIndexedConsumer(Require.notNull(consumer, "consumer")));
+          toIndexedConsumer(Require.notNull(consumer, "consumer")),
+          Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
+      return nonBlockingFor(consumer, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer,
+        @NotNull final Action action) {
       return new ListForFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(consumer, "consumer"));
+          Require.notNull(consumer, "consumer"), Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingGet() {
-      return new ListGetFuture<E>(context, taskID, cancelException, materializer);
+      return nonBlockingGet(NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingGet(@NotNull final Action action) {
+      return new ListGetFuture<E>(context, taskID, cancelException, materializer,
+          Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(
         @NotNull final IndexedPredicate<? super E> predicate) {
+      return nonBlockingWhile(predicate, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final Action action) {
       return new ListWhileFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(predicate, "predicate"));
+          Require.notNull(predicate, "predicate"), Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
         @NotNull final IndexedConsumer<? super E> consumer) {
+      return nonBlockingWhile(condition, consumer, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull final IndexedConsumer<? super E> consumer, @NotNull final Action action) {
       return new ListWhileFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(condition, "condition"), Require.notNull(consumer, "consumer"));
+          Require.notNull(condition, "condition"), Require.notNull(consumer, "consumer"),
+          Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
+      return nonBlockingWhile(predicate, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Action action) {
       return new ListWhileFuture<E>(context, taskID, cancelException, materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")));
+          toIndexedPredicate(Require.notNull(predicate, "predicate")),
+          Require.notNull(action, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
         @NotNull final Consumer<? super E> consumer) {
+      return nonBlockingWhile(condition, consumer, NOOP);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
+        @NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
       return new ListWhileFuture<E>(context, taskID, cancelException, materializer,
           toIndexedPredicate(Require.notNull(condition, "condition")),
-          toIndexedConsumer(Require.notNull(consumer, "consumer")));
+          toIndexedConsumer(Require.notNull(consumer, "consumer")),
+          Require.notNull(action, "action"));
     }
 
     @Override
@@ -7566,6 +7765,12 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull List<E> reduceLeftWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
+    }
+
+    @Override
     public @NotNull List<E> reduceRight(
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       final ExecutionContext context = this.context;
@@ -7583,6 +7788,12 @@ class future extends Sparx {
       return new List<E>(context, cancelException,
           new ReduceRightListFutureMaterializer<E>(materializer,
               Require.notNull(operation, "operation"), context, cancelException));
+    }
+
+    @Override
+    public @NotNull List<E> reduceRightWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return null;
     }
 
     @Override
@@ -8074,7 +8285,7 @@ class future extends Sparx {
     }
 
     // TODO: extra
-    public @NotNull List<E> rescheduleTo(@NotNull final ExecutionContext context) {
+    public @NotNull List<E> rescheduleOn(@NotNull final ExecutionContext context) {
       return new List<E>(context, new AtomicReference<CancellationException>(),
           new RescheduleListFutureMaterializer<E>(this.context, taskID, context, materializer));
     }
@@ -8431,14 +8642,39 @@ class future extends Sparx {
               cancelException));
     }
 
+    @Override
+    public @NotNull Collection<E> toCollection() {
+      return this;
+    }
+
     // TODO: extra
     public @NotNull List<E> toContext(@NotNull final ExecutionContext context) {
-      return context.equals(this.context) ? this : rescheduleTo(context);
+      return context.equals(this.context) ? this : rescheduleOn(context);
+    }
+
+    @Override
+    public @NotNull Iterator<E> toIterator() {
+      return iterator();
     }
 
     // TODO: extra
     public @NotNull lazy.List<E> toLazy() {
       return lazy.List.wrap(this);
+    }
+
+    @Override
+    public @NotNull List<E> toList() {
+      return this;
+    }
+
+    @Override
+    public @NotNull ListIterator<E> toListIterator() {
+      return listIterator();
+    }
+
+    @Override
+    public @NotNull Traverser<E> toTraverser() {
+      return iterator();
     }
 
     @Override
@@ -8799,51 +9035,86 @@ class future extends Sparx {
 
     @Override
     public void doFor(@NotNull final Consumer<? super E> consumer) {
+      doFor(consumer, NOOP);
+    }
+
+    @Override
+    public void doFor(@NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        nextList(pos).doFor(consumer);
+        nextList(pos).doFor(consumer, action);
       }
     }
 
     @Override
     public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
+      doFor(consumer, NOOP);
+    }
+
+    @Override
+    public void doFor(@NotNull final IndexedConsumer<? super E> consumer,
+        @NotNull final Action action) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        nextList(pos).doFor(consumer);
+        nextList(pos).doFor(consumer, action);
       }
     }
 
     @Override
     public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+      doWhile(predicate, NOOP);
+    }
+
+    @Override
+    public void doWhile(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final Action action) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        nextList(pos).doWhile(predicate);
+        nextList(pos).doWhile(predicate, action);
       }
     }
 
     @Override
     public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
         @NotNull final IndexedConsumer<? super E> consumer) {
+      doWhile(condition, consumer, NOOP);
+    }
+
+    @Override
+    public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull final IndexedConsumer<? super E> consumer, @NotNull final Action action) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        nextList(pos).doWhile(condition, consumer);
+        nextList(pos).doWhile(condition, consumer, action);
       }
     }
 
     @Override
     public void doWhile(@NotNull final Predicate<? super E> predicate) {
+      doWhile(predicate, NOOP);
+    }
+
+    @Override
+    public void doWhile(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Action action) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        nextList(pos).doWhile(predicate);
+        nextList(pos).doWhile(predicate, action);
       }
     }
 
     @Override
     public void doWhile(@NotNull final Predicate<? super E> condition,
         @NotNull final Consumer<? super E> consumer) {
+      doWhile(condition, consumer, NOOP);
+    }
+
+    @Override
+    public void doWhile(@NotNull final Predicate<? super E> condition,
+        @NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        nextList(pos).doWhile(condition, consumer);
+        nextList(pos).doWhile(condition, consumer, action);
       }
     }
 
@@ -9380,11 +9651,10 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull lazy.Iterator<E> iterator() {
-      // TODO: future.Iterator
+    public @NotNull Iterator<E> iterator() {
       final int pos = safePos();
       if (atEnd(pos)) {
-        return lazy.Iterator.of();
+        return Iterator.emptyIterator(context);
       }
       return nextList(pos).iterator();
     }
@@ -9559,13 +9829,30 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer,
+        @NotNull final Action action) {
+      return nextList().nonBlockingFor(consumer, action);
+    }
+
+    @Override
     public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
       return nextList().nonBlockingFor(consumer);
     }
 
     @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer,
+        @NotNull final Action action) {
+      return nextList().nonBlockingFor(consumer, action);
+    }
+
+    @Override
     public @NotNull Future<?> nonBlockingGet() {
       return list.nonBlockingGet();
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingGet(@NotNull final Action action) {
+      return list.nonBlockingGet(action);
     }
 
     @Override
@@ -9575,9 +9862,21 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> predicate,
+        @NotNull final Action action) {
+      return nextList().nonBlockingWhile(predicate, action);
+    }
+
+    @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
         @NotNull final IndexedConsumer<? super E> consumer) {
       return nextList().nonBlockingWhile(condition, consumer);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
+        @NotNull final IndexedConsumer<? super E> consumer, @NotNull final Action action) {
+      return nextList().nonBlockingWhile(condition, consumer, action);
     }
 
     @Override
@@ -9586,9 +9885,21 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate,
+        @NotNull final Action action) {
+      return nextList().nonBlockingWhile(predicate, action);
+    }
+
+    @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
-        @NotNull Consumer<? super E> consumer) {
+        @NotNull final Consumer<? super E> consumer) {
       return nextList().nonBlockingWhile(condition, consumer);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
+        @NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
+      return nextList().nonBlockingWhile(condition, consumer, action);
     }
 
     @Override
@@ -9759,6 +10070,16 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull ListIterator<E> reduceLeftWhile(@NotNull final Predicate<? super E> predicate,
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      final int pos = safePos();
+      if (atEnd(pos)) {
+        return emptyIterator();
+      }
+      return new ListIterator<E>(context, nextList(pos).reduceLeftWhile(predicate, operation));
+    }
+
+    @Override
     public @NotNull ListIterator<E> reduceRight(
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
       final int pos = safePos();
@@ -9766,6 +10087,16 @@ class future extends Sparx {
         return emptyIterator();
       }
       return new ListIterator<E>(context, nextList(pos).reduceRight(operation));
+    }
+
+    @Override
+    public @NotNull ListIterator<E> reduceRightWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      final int pos = safePos();
+      if (atEnd(pos)) {
+        return emptyIterator();
+      }
+      return new ListIterator<E>(context, nextList(pos).reduceRightWhile(predicate, operation));
     }
 
     @Override
@@ -9983,9 +10314,9 @@ class future extends Sparx {
     }
 
     // TODO: extra
-    public @NotNull ListIterator<E> rescheduleTo(@NotNull final ExecutionContext context) {
+    public @NotNull ListIterator<E> rescheduleOn(@NotNull final ExecutionContext context) {
       final int pos = safePos();
-      return new ListIterator<E>(context, list.rescheduleTo(context), pos);
+      return new ListIterator<E>(context, list.rescheduleOn(context), pos);
     }
 
     @Override
@@ -9996,18 +10327,6 @@ class future extends Sparx {
         return appendAll(lazy.List.times(numElements, padding));
       }
       return new ListIterator<E>(context, nextList(pos).resizeTo(numElements, padding));
-    }
-
-    @Override
-    public int skip(final int maxElements) {
-      if (maxElements > 0) {
-        final int currPos = safePos();
-        final int newPos = (int) Math.min(list.size(), (long) currPos + maxElements);
-        synchronized (posMutex) {
-          return (pos = newPos) - currPos;
-        }
-      }
-      return 0;
     }
 
     @Override
@@ -10028,6 +10347,18 @@ class future extends Sparx {
     public int size() {
       final int pos = safePos();
       return Math.min(0, list.size() - pos);
+    }
+
+    @Override
+    public int skip(final int maxElements) {
+      if (maxElements > 0) {
+        final int currPos = safePos();
+        final int newPos = (int) Math.min(list.size(), (long) currPos + maxElements);
+        synchronized (posMutex) {
+          return (pos = newPos) - currPos;
+        }
+      }
+      return 0;
     }
 
     @Override
@@ -10132,9 +10463,19 @@ class future extends Sparx {
       return new ListIterator<E>(context, nextList(pos).takeWhile(predicate));
     }
 
+    @Override
+    public @NotNull Collection<E> toCollection() {
+      return nextList();
+    }
+
     // TODO: extra
     public @NotNull ListIterator<E> toContext(@NotNull final ExecutionContext context) {
-      return context.equals(this.context) ? this : rescheduleTo(context);
+      return context.equals(this.context) ? this : rescheduleOn(context);
+    }
+
+    @Override
+    public @NotNull Iterator<E> toIterator() {
+      return iterator();
     }
 
     // TODO: extra
@@ -10143,9 +10484,19 @@ class future extends Sparx {
       return list.toLazy().listIterator(pos);
     }
 
-    // TODO: extra
+    @Override
     public @NotNull List<E> toList() {
       return nextList();
+    }
+
+    @Override
+    public @NotNull ListIterator<E> toListIterator() {
+      return this;
+    }
+
+    @Override
+    public @NotNull Traverser<E> toTraverser() {
+      return this;
     }
 
     @Override

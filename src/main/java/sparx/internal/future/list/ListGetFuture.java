@@ -28,6 +28,7 @@ import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.util.DeadLockException;
+import sparx.util.function.Action;
 
 public class ListGetFuture<E> implements FutureConsumer<List<E>>, Future<Void> {
 
@@ -35,6 +36,7 @@ public class ListGetFuture<E> implements FutureConsumer<List<E>>, Future<Void> {
   private static final int STATUS_DONE = 1;
   private static final int STATUS_RUNNING = 0;
 
+  private final Action action;
   private final AtomicReference<CancellationException> cancelException;
   private final ExecutionContext context;
   private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
@@ -44,10 +46,11 @@ public class ListGetFuture<E> implements FutureConsumer<List<E>>, Future<Void> {
 
   public ListGetFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final ListFutureMaterializer<E> materializer) {
+      @NotNull final ListFutureMaterializer<E> materializer, @NotNull final Action action) {
     this.context = context;
     this.taskID = taskID;
     this.cancelException = cancelException;
+    this.action = action;
     if (context.isCurrent() && materializer.isDone()) {
       materializer.materializeElements(this);
     } else {
@@ -71,7 +74,8 @@ public class ListGetFuture<E> implements FutureConsumer<List<E>>, Future<Void> {
   }
 
   @Override
-  public void accept(final List<E> elements) {
+  public void accept(final List<E> elements) throws Exception {
+    action.run();
     synchronized (cancelException) {
       if (isCancelled()) {
         throw getCancelException();

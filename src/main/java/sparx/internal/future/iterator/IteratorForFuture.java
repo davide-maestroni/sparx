@@ -29,6 +29,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DeadLockException;
+import sparx.util.function.Action;
 import sparx.util.function.IndexedConsumer;
 
 public class IteratorForFuture<E> implements Future<Void> {
@@ -47,7 +48,8 @@ public class IteratorForFuture<E> implements Future<Void> {
   public IteratorForFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final IteratorFutureMaterializer<E> materializer,
-      @NotNull final IndexedConsumer<? super E> consumer) {
+      @NotNull final IndexedConsumer<? super E> consumer,
+      @NotNull final Action action) {
     this.context = context;
     this.taskID = taskID;
     this.cancelException = cancelException;
@@ -59,6 +61,7 @@ public class IteratorForFuture<E> implements Future<Void> {
           for (final E element : elements) {
             consumer.accept(i++, element);
           }
+          action.run();
           synchronized (cancelException) {
             status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
             cancelException.notifyAll();
@@ -91,7 +94,8 @@ public class IteratorForFuture<E> implements Future<Void> {
         protected void runWithContext() {
           materializer.materializeNextWhile(new IndexedFuturePredicate<E>() {
             @Override
-            public void complete(final int size) {
+            public void complete(final int size) throws Exception {
+              action.run();
               synchronized (cancelException) {
                 status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
                 cancelException.notifyAll();

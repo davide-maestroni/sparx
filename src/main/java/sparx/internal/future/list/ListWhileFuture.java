@@ -29,6 +29,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DeadLockException;
+import sparx.util.function.Action;
 import sparx.util.function.IndexedConsumer;
 import sparx.util.function.IndexedPredicate;
 
@@ -48,7 +49,7 @@ public class ListWhileFuture<E> implements Future<Void> {
   public ListWhileFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final ListFutureMaterializer<E> materializer,
-      @NotNull final IndexedPredicate<? super E> predicate) {
+      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final Action action) {
     this.context = context;
     this.taskID = taskID;
     this.cancelException = cancelException;
@@ -56,11 +57,16 @@ public class ListWhileFuture<E> implements Future<Void> {
       materializer.materializeElements(new FutureConsumer<List<E>>() {
         @Override
         public void accept(final java.util.List<E> elements) throws Exception {
+          boolean completed = true;
           int i = 0;
           for (final E element : elements) {
             if (!predicate.test(i++, element)) {
+              completed = false;
               break;
             }
+          }
+          if (completed) {
+            action.run();
           }
           synchronized (cancelException) {
             status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
@@ -94,7 +100,8 @@ public class ListWhileFuture<E> implements Future<Void> {
         protected void runWithContext() {
           materializer.materializeNextWhile(0, new IndexedFuturePredicate<E>() {
             @Override
-            public void complete(final int size) {
+            public void complete(final int size) throws Exception {
+              action.run();
               synchronized (cancelException) {
                 status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
                 cancelException.notifyAll();
@@ -135,7 +142,7 @@ public class ListWhileFuture<E> implements Future<Void> {
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final ListFutureMaterializer<E> materializer,
       @NotNull final IndexedPredicate<? super E> condition,
-      @NotNull final IndexedConsumer<? super E> consumer) {
+      @NotNull final IndexedConsumer<? super E> consumer, @NotNull final Action action) {
     this.context = context;
     this.taskID = taskID;
     this.cancelException = cancelException;
@@ -143,13 +150,18 @@ public class ListWhileFuture<E> implements Future<Void> {
       materializer.materializeElements(new FutureConsumer<List<E>>() {
         @Override
         public void accept(final java.util.List<E> elements) throws Exception {
+          boolean completed = true;
           int i = 0;
           for (final E element : elements) {
             if (condition.test(i, element)) {
               consumer.accept(i++, element);
             } else {
+              completed = false;
               break;
             }
+          }
+          if (completed) {
+            action.run();
           }
           synchronized (cancelException) {
             status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
@@ -183,7 +195,8 @@ public class ListWhileFuture<E> implements Future<Void> {
         protected void runWithContext() {
           materializer.materializeNextWhile(0, new IndexedFuturePredicate<E>() {
             @Override
-            public void complete(final int size) {
+            public void complete(final int size) throws Exception {
+              action.run();
               synchronized (cancelException) {
                 status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
                 cancelException.notifyAll();

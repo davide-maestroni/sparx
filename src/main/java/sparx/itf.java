@@ -545,24 +545,51 @@ class itf {
     java.util.concurrent.Future<?> nonBlockingFor(@NotNull Consumer<? super E> consumer);
 
     @NotNull
+    java.util.concurrent.Future<?> nonBlockingFor(@NotNull Consumer<? super E> consumer,
+        @NotNull Action action);
+
+    @NotNull
     java.util.concurrent.Future<?> nonBlockingFor(@NotNull IndexedConsumer<? super E> consumer);
+
+    @NotNull
+    java.util.concurrent.Future<?> nonBlockingFor(@NotNull IndexedConsumer<? super E> consumer,
+        @NotNull Action action);
 
     @NotNull
     java.util.concurrent.Future<?> nonBlockingGet();
 
     @NotNull
+    java.util.concurrent.Future<?> nonBlockingGet(@NotNull Action action);
+
+    @NotNull
     java.util.concurrent.Future<?> nonBlockingWhile(@NotNull IndexedPredicate<? super E> predicate);
+
+    @NotNull
+    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull IndexedPredicate<? super E> predicate,
+        @NotNull Action action);
 
     @NotNull
     java.util.concurrent.Future<?> nonBlockingWhile(@NotNull IndexedPredicate<? super E> condition,
         @NotNull IndexedConsumer<? super E> consumer);
 
     @NotNull
+    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedConsumer<? super E> consumer, @NotNull Action action);
+
+    @NotNull
     java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> predicate);
+
+    @NotNull
+    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> predicate,
+        @NotNull Action action);
 
     @NotNull
     java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> condition,
         @NotNull Consumer<? super E> consumer);
+
+    @NotNull
+    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Consumer<? super E> consumer, @NotNull Action action);
   }
 
   public interface Iterator<E> extends java.util.Iterator<E>, Traverser<E> {
