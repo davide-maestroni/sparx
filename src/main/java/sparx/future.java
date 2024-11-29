@@ -209,9 +209,19 @@ import sparx.util.function.TernaryFunction;
 
 class future extends Sparx {
 
-  private static final Action NOOP = new Action() {
+  private static final Action NOOP_ACTION = new Action() {
     @Override
     public void run() {
+    }
+  };
+  private static final Consumer<?> NOOP_CONSUMER = new Consumer<Object>() {
+    @Override
+    public void accept(final Object param) {
+    }
+  };
+  private static final IndexedConsumer<?> NOOP_INDEXED_CONSUMER = new IndexedConsumer<Object>() {
+    @Override
+    public void accept(final int index, final Object param) {
     }
   };
 
@@ -1500,17 +1510,35 @@ class future extends Sparx {
     }
 
     @Override
-    public void doFor(@NotNull final Consumer<? super E> consumer) {
-      doFor(consumer, NOOP);
+    @SuppressWarnings("unchecked")
+    public void doFor(@NotNull final Consumer<? super E> elementConsumer) {
+      doFor(elementConsumer, NOOP_ACTION, (Consumer<? super Throwable>) NOOP_CONSUMER);
     }
 
     @Override
-    public void doFor(@NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
+    @SuppressWarnings("unchecked")
+    public void doFor(@NotNull final Consumer<? super E> elementConsumer,
+        @NotNull final Action endAction) {
+      doFor(elementConsumer, endAction, (Consumer<? super Throwable>) NOOP_CONSUMER);
+    }
+
+    @Override
+    public void doFor(@NotNull final Consumer<? super E> elementConsumer,
+        @NotNull final Action endAction, @NotNull final Consumer<? super Throwable> errorConsumer) {
       if (materializer.knownSize() == 0) {
+        try {
+          endAction.run();
+        } catch (final Exception e) {
+          try {
+            errorConsumer.accept(e);
+          } catch (final Exception ex) {
+            throw UncheckedException.throwUnchecked(ex);
+          }
+        }
         return;
       }
       try {
-        nonBlockingFor(consumer, action).get();
+        nonBlockingFor(elementConsumer, endAction, errorConsumer).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -1519,18 +1547,38 @@ class future extends Sparx {
     }
 
     @Override
-    public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
-      doFor(consumer, NOOP);
+    @SuppressWarnings("unchecked")
+    public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer) {
+      doFor(elementConsumer, (Consumer<? super Integer>) NOOP_CONSUMER,
+          (IndexedConsumer<? super Throwable>) NOOP_INDEXED_CONSUMER);
     }
 
     @Override
-    public void doFor(@NotNull final IndexedConsumer<? super E> consumer,
-        @NotNull final Action action) {
+    @SuppressWarnings("unchecked")
+    public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer,
+        @NotNull final Consumer<? super Integer> endConsumer) {
+      doFor(elementConsumer, endConsumer,
+          (IndexedConsumer<? super Throwable>) NOOP_INDEXED_CONSUMER);
+    }
+
+    @Override
+    public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer,
+        @NotNull final Consumer<? super Integer> endConsumer,
+        @NotNull final IndexedConsumer<? super Throwable> errorConsumer) {
       if (materializer.knownSize() == 0) {
+        try {
+          endConsumer.accept(0);
+        } catch (final Exception e) {
+          try {
+            errorConsumer.accept(0, e);
+          } catch (final Exception ex) {
+            throw UncheckedException.throwUnchecked(ex);
+          }
+        }
         return;
       }
       try {
-        nonBlockingFor(consumer, action).get();
+        nonBlockingFor(elementConsumer, endConsumer, errorConsumer).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -1539,18 +1587,38 @@ class future extends Sparx {
     }
 
     @Override
-    public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
-      doWhile(predicate, NOOP);
+    @SuppressWarnings("unchecked")
+    public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate) {
+      doWhile(elementPredicate, (Consumer<? super Integer>) NOOP_CONSUMER,
+          (IndexedConsumer<? super Throwable>) NOOP_INDEXED_CONSUMER);
     }
 
     @Override
-    public void doWhile(@NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final Action action) {
+    @SuppressWarnings("unchecked")
+    public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate,
+        @NotNull final Consumer<? super Integer> endConsumer) {
+      doWhile(elementPredicate, endConsumer,
+          (IndexedConsumer<? super Throwable>) NOOP_INDEXED_CONSUMER);
+    }
+
+    @Override
+    public void doWhile(@NotNull IndexedPredicate<? super E> elementPredicate,
+        @NotNull Consumer<? super Integer> endConsumer,
+        @NotNull IndexedConsumer<? super Throwable> errorConsumer) {
       if (materializer.knownSize() == 0) {
+        try {
+          endConsumer.accept(0);
+        } catch (final Exception e) {
+          try {
+            errorConsumer.accept(0, e);
+          } catch (final Exception ex) {
+            throw UncheckedException.throwUnchecked(ex);
+          }
+        }
         return;
       }
       try {
-        nonBlockingWhile(predicate, action).get();
+        nonBlockingWhile(elementPredicate, endConsumer, errorConsumer).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -1559,60 +1627,35 @@ class future extends Sparx {
     }
 
     @Override
-    public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
-        @NotNull final IndexedConsumer<? super E> consumer) {
-      doWhile(condition, consumer, NOOP);
+    @SuppressWarnings("unchecked")
+    public void doWhile(@NotNull final Predicate<? super E> elementPredicate) {
+      doWhile(elementPredicate, NOOP_ACTION, (Consumer<? super Throwable>) NOOP_CONSUMER);
     }
 
     @Override
-    public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
-        @NotNull final IndexedConsumer<? super E> consumer, @NotNull final Action action) {
+    @SuppressWarnings("unchecked")
+    public void doWhile(@NotNull final Predicate<? super E> elementPredicate,
+        @NotNull final Action endAction) {
+      doWhile(elementPredicate, endAction, (Consumer<? super Throwable>) NOOP_CONSUMER);
+    }
+
+    @Override
+    public void doWhile(@NotNull final Predicate<? super E> elementPredicate,
+        @NotNull final Action endAction, @NotNull final Consumer<? super Throwable> errorConsumer) {
       if (materializer.knownSize() == 0) {
+        try {
+          endAction.run();
+        } catch (final Exception e) {
+          try {
+            errorConsumer.accept(e);
+          } catch (final Exception ex) {
+            throw UncheckedException.throwUnchecked(ex);
+          }
+        }
         return;
       }
       try {
-        nonBlockingWhile(condition, consumer, action).get();
-      } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
-      }
-    }
-
-    @Override
-    public void doWhile(@NotNull final Predicate<? super E> predicate) {
-      doWhile(predicate, NOOP);
-    }
-
-    @Override
-    public void doWhile(@NotNull final Predicate<? super E> predicate,
-        @NotNull final Action action) {
-      if (materializer.knownSize() == 0) {
-        return;
-      }
-      try {
-        nonBlockingWhile(predicate, action).get();
-      } catch (final ExecutionException e) {
-        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e));
-      }
-    }
-
-    @Override
-    public void doWhile(@NotNull final Predicate<? super E> condition,
-        @NotNull final Consumer<? super E> consumer) {
-      doWhile(condition, consumer, NOOP);
-    }
-
-    @Override
-    public void doWhile(@NotNull final Predicate<? super E> condition,
-        @NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
-      if (materializer.knownSize() == 0) {
-        return;
-      }
-      try {
-        nonBlockingWhile(condition, consumer, action).get();
+        nonBlockingWhile(elementPredicate, endAction, errorConsumer).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -3050,94 +3093,127 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
-      return nonBlockingFor(consumer, NOOP);
+    @SuppressWarnings("unchecked")
+    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> elementConsumer) {
+      return nonBlockingFor(elementConsumer, NOOP_ACTION,
+          (Consumer<? super Throwable>) NOOP_CONSUMER);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer,
-        @NotNull final Action action) {
+    @SuppressWarnings("unchecked")
+    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> elementConsumer,
+        @NotNull final Action endAction) {
+      return nonBlockingFor(elementConsumer, endAction,
+          (Consumer<? super Throwable>) NOOP_CONSUMER);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingFor(@NotNull Consumer<? super E> elementConsumer,
+        @NotNull Action endAction, @NotNull Consumer<? super Throwable> errorConsumer) {
       return new IteratorForFuture<E>(context, taskID, cancelException, materializer,
-          toIndexedConsumer(Require.notNull(consumer, "consumer")),
-          Require.notNull(action, "action"));
+          toIndexedConsumer(Require.notNull(elementConsumer, "elementConsumer")),
+          toConsumer(Require.notNull(endAction, "endAction")),
+          toIndexedConsumer(Require.notNull(errorConsumer, "errorConsumer")));
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
-      return nonBlockingFor(consumer, NOOP);
+    @SuppressWarnings("unchecked")
+    public @NotNull Future<?> nonBlockingFor(
+        @NotNull final IndexedConsumer<? super E> elementConsumer) {
+      return nonBlockingFor(elementConsumer, (Consumer<? super Integer>) NOOP_CONSUMER,
+          (IndexedConsumer<? super Throwable>) NOOP_INDEXED_CONSUMER);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer,
-        @NotNull final Action action) {
+    @SuppressWarnings("unchecked")
+    public @NotNull Future<?> nonBlockingFor(
+        @NotNull final IndexedConsumer<? super E> elementConsumer,
+        @NotNull final Consumer<? super Integer> endConsumer) {
+      return nonBlockingFor(elementConsumer, endConsumer,
+          (IndexedConsumer<? super Throwable>) NOOP_INDEXED_CONSUMER);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingFor(
+        @NotNull final IndexedConsumer<? super E> elementConsumer,
+        @NotNull final Consumer<? super Integer> endConsumer,
+        @NotNull final IndexedConsumer<? super Throwable> errorConsumer) {
       return new IteratorForFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(consumer, "consumer"), Require.notNull(action, "action"));
+          Require.notNull(elementConsumer, "elementConsumer"),
+          Require.notNull(endConsumer, "endConsumer"),
+          Require.notNull(errorConsumer, "errorConsumer"));
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public @NotNull Future<?> nonBlockingGet() {
-      return nonBlockingGet(NOOP);
+      return nonBlockingGet(NOOP_ACTION, (Consumer<? super Throwable>) NOOP_CONSUMER);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingGet(@NotNull final Action action) {
+    @SuppressWarnings("unchecked")
+    public @NotNull Future<?> nonBlockingGet(@NotNull final Action endAction) {
+      return nonBlockingGet(endAction, (Consumer<? super Throwable>) NOOP_CONSUMER);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingGet(@NotNull final Action endAction,
+        @NotNull final Consumer<? super Throwable> errorConsumer) {
       return new IteratorGetFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(action, "action"));
+          Require.notNull(endAction, "endAction"), Require.notNull(errorConsumer, "errorConsumer"));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull Future<?> nonBlockingWhile(
+        @NotNull final IndexedPredicate<? super E> elementPredicate) {
+      return nonBlockingWhile(elementPredicate, (Consumer<? super Integer>) NOOP_CONSUMER,
+          (IndexedConsumer<? super Throwable>) NOOP_INDEXED_CONSUMER);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public @NotNull Future<?> nonBlockingWhile(
+        @NotNull final IndexedPredicate<? super E> elementPredicate,
+        @NotNull final Consumer<? super Integer> endConsumer) {
+      return nonBlockingWhile(elementPredicate, endConsumer,
+          (IndexedConsumer<? super Throwable>) NOOP_INDEXED_CONSUMER);
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(
-        @NotNull final IndexedPredicate<? super E> predicate) {
-      return nonBlockingWhile(predicate, NOOP);
-    }
-
-    @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final Action action) {
+        @NotNull final IndexedPredicate<? super E> elementPredicate,
+        @NotNull final Consumer<? super Integer> endConsumer,
+        @NotNull final IndexedConsumer<? super Throwable> errorConsumer) {
       return new IteratorWhileFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(predicate, "predicate"), Require.notNull(action, "action"));
+          Require.notNull(elementPredicate, "elementPredicate"),
+          Require.notNull(endConsumer, "endConsumer"),
+          Require.notNull(errorConsumer, "errorConsumer"));
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
-        @NotNull final IndexedConsumer<? super E> consumer) {
-      return nonBlockingWhile(condition, consumer, NOOP);
+    @SuppressWarnings("unchecked")
+    public @NotNull Future<?> nonBlockingWhile(
+        @NotNull final Predicate<? super E> elementPredicate) {
+      return nonBlockingWhile(elementPredicate, NOOP_ACTION,
+          (Consumer<? super Throwable>) NOOP_CONSUMER);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
-        @NotNull final IndexedConsumer<? super E> consumer, @NotNull final Action action) {
+    @SuppressWarnings("unchecked")
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> elementPredicate,
+        @NotNull final Action endAction) {
+      return nonBlockingWhile(elementPredicate, endAction,
+          (Consumer<? super Throwable>) NOOP_CONSUMER);
+    }
+
+    @Override
+    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> elementPredicate,
+        @NotNull final Action endAction, @NotNull final Consumer<? super Throwable> errorConsumer) {
       return new IteratorWhileFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(condition, "condition"), Require.notNull(consumer, "consumer"),
-          Require.notNull(action, "action"));
-    }
-
-    @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
-      return nonBlockingWhile(predicate, NOOP);
-    }
-
-    @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate,
-        @NotNull final Action action) {
-      return new IteratorWhileFuture<E>(context, taskID, cancelException, materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")),
-          Require.notNull(action, "action"));
-    }
-
-    @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
-        @NotNull final Consumer<? super E> consumer) {
-      return nonBlockingWhile(condition, consumer, NOOP);
-    }
-
-    @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
-        @NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
-      return new IteratorWhileFuture<E>(context, taskID, cancelException, materializer,
-          toIndexedPredicate(Require.notNull(condition, "condition")),
-          toIndexedConsumer(Require.notNull(consumer, "consumer")),
-          Require.notNull(action, "action"));
+          toIndexedPredicate(Require.notNull(elementPredicate, "elementPredicate")),
+          toConsumer(Require.notNull(endAction, "endAction")),
+          toIndexedConsumer(Require.notNull(errorConsumer, "errorConsumer")));
     }
 
     @Override
@@ -5811,12 +5887,12 @@ class future extends Sparx {
     }
 
     @Override
-    public void doFor(@NotNull final Consumer<? super E> consumer) {
+    public void doFor(@NotNull final Consumer<? super E> elementConsumer) {
       if (materializer.knownSize() == 0) {
         return;
       }
       try {
-        nonBlockingFor(consumer).get();
+        nonBlockingFor(elementConsumer).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -5825,17 +5901,17 @@ class future extends Sparx {
     }
 
     @Override
-    public void doFor(@NotNull Consumer<? super E> consumer, @NotNull Action action) {
+    public void doFor(@NotNull Consumer<? super E> elementConsumer, @NotNull Action endAction) {
 
     }
 
     @Override
-    public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
+    public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer) {
       if (materializer.knownSize() == 0) {
         return;
       }
       try {
-        nonBlockingFor(consumer).get();
+        nonBlockingFor(elementConsumer).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -5844,17 +5920,18 @@ class future extends Sparx {
     }
 
     @Override
-    public void doFor(@NotNull IndexedConsumer<? super E> consumer, @NotNull Action action) {
+    public void doFor(@NotNull IndexedConsumer<? super E> elementConsumer,
+        @NotNull Consumer<? super Integer> endConsumer) {
 
     }
 
     @Override
-    public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
+    public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate) {
       if (materializer.knownSize() == 0) {
         return;
       }
       try {
-        nonBlockingWhile(predicate).get();
+        nonBlockingWhile(elementPredicate).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -5863,7 +5940,8 @@ class future extends Sparx {
     }
 
     @Override
-    public void doWhile(@NotNull IndexedPredicate<? super E> predicate, @NotNull Action action) {
+    public void doWhile(@NotNull IndexedPredicate<? super E> elementPredicate,
+        @NotNull Consumer<? super Integer> endConsumer) {
 
     }
 
@@ -5889,12 +5967,12 @@ class future extends Sparx {
     }
 
     @Override
-    public void doWhile(@NotNull final Predicate<? super E> predicate) {
+    public void doWhile(@NotNull final Predicate<? super E> elementPredicate) {
       if (materializer.knownSize() == 0) {
         return;
       }
       try {
-        nonBlockingWhile(predicate).get();
+        nonBlockingWhile(elementPredicate).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -5903,7 +5981,7 @@ class future extends Sparx {
     }
 
     @Override
-    public void doWhile(@NotNull Predicate<? super E> predicate, @NotNull Action action) {
+    public void doWhile(@NotNull Predicate<? super E> elementPredicate, @NotNull Action endAction) {
 
     }
 
@@ -7476,58 +7554,58 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
-      return nonBlockingFor(consumer, NOOP);
+    public itf.Future nonBlockingFor(@NotNull final Consumer<? super E> elementConsumer) {
+      return nonBlockingFor(elementConsumer, NOOP_ACTION);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer,
-        @NotNull final Action action) {
+    public itf.Future nonBlockingFor(@NotNull final Consumer<? super E> elementConsumer,
+        @NotNull final Action endAction) {
       return new ListForFuture<E>(context, taskID, cancelException, materializer,
-          toIndexedConsumer(Require.notNull(consumer, "consumer")),
-          Require.notNull(action, "action"));
+          toIndexedConsumer(Require.notNull(elementConsumer, "consumer")),
+          Require.notNull(endAction, "action"));
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
-      return nonBlockingFor(consumer, NOOP);
+    public itf.Future nonBlockingFor(@NotNull final IndexedConsumer<? super E> elementConsumer) {
+      return nonBlockingFor(elementConsumer, NOOP_ACTION);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer,
-        @NotNull final Action action) {
+    public itf.Future nonBlockingFor(@NotNull final IndexedConsumer<? super E> elementConsumer,
+        @NotNull final Consumer<? super Integer> endConsumer) {
       return new ListForFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(consumer, "consumer"), Require.notNull(action, "action"));
+          Require.notNull(elementConsumer, "consumer"), Require.notNull(endConsumer, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingGet() {
-      return nonBlockingGet(NOOP);
+      return nonBlockingGet(NOOP_ACTION);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingGet(@NotNull final Action action) {
+    public itf.Future nonBlockingGet(@NotNull final Action endAction) {
       return new ListGetFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(action, "action"));
+          Require.notNull(endAction, "action"));
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingWhile(
-        @NotNull final IndexedPredicate<? super E> predicate) {
-      return nonBlockingWhile(predicate, NOOP);
+    public itf.Future nonBlockingWhile(
+        @NotNull final IndexedPredicate<? super E> elementPredicate) {
+      return nonBlockingWhile(elementPredicate, NOOP_ACTION);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final Action action) {
+    public itf.Future nonBlockingWhile(@NotNull final IndexedPredicate<? super E> elementPredicate,
+        @NotNull final Consumer<? super Integer> endConsumer) {
       return new ListWhileFuture<E>(context, taskID, cancelException, materializer,
-          Require.notNull(predicate, "predicate"), Require.notNull(action, "action"));
+          Require.notNull(elementPredicate, "predicate"), Require.notNull(endConsumer, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> condition,
         @NotNull final IndexedConsumer<? super E> consumer) {
-      return nonBlockingWhile(condition, consumer, NOOP);
+      return nonBlockingWhile(condition, consumer, NOOP_ACTION);
     }
 
     @Override
@@ -7539,22 +7617,22 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
-      return nonBlockingWhile(predicate, NOOP);
+    public itf.Future nonBlockingWhile(@NotNull final Predicate<? super E> elementPredicate) {
+      return nonBlockingWhile(elementPredicate, NOOP_ACTION);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate,
-        @NotNull final Action action) {
+    public itf.Future nonBlockingWhile(@NotNull final Predicate<? super E> elementPredicate,
+        @NotNull final Action endAction) {
       return new ListWhileFuture<E>(context, taskID, cancelException, materializer,
-          toIndexedPredicate(Require.notNull(predicate, "predicate")),
-          Require.notNull(action, "action"));
+          toIndexedPredicate(Require.notNull(elementPredicate, "predicate")),
+          Require.notNull(endAction, "action"));
     }
 
     @Override
     public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> condition,
         @NotNull final Consumer<? super E> consumer) {
-      return nonBlockingWhile(condition, consumer, NOOP);
+      return nonBlockingWhile(condition, consumer, NOOP_ACTION);
     }
 
     @Override
@@ -9034,50 +9112,51 @@ class future extends Sparx {
     }
 
     @Override
-    public void doFor(@NotNull final Consumer<? super E> consumer) {
-      doFor(consumer, NOOP);
+    public void doFor(@NotNull final Consumer<? super E> elementConsumer) {
+      doFor(elementConsumer, NOOP_ACTION);
     }
 
     @Override
-    public void doFor(@NotNull final Consumer<? super E> consumer, @NotNull final Action action) {
+    public void doFor(@NotNull final Consumer<? super E> elementConsumer,
+        @NotNull final Action endAction) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        nextList(pos).doFor(consumer, action);
+        nextList(pos).doFor(elementConsumer, endAction);
       }
     }
 
     @Override
-    public void doFor(@NotNull final IndexedConsumer<? super E> consumer) {
-      doFor(consumer, NOOP);
+    public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer) {
+      doFor(elementConsumer, NOOP_ACTION);
     }
 
     @Override
-    public void doFor(@NotNull final IndexedConsumer<? super E> consumer,
-        @NotNull final Action action) {
+    public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer,
+        @NotNull final Consumer<? super Integer> endConsumer) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        nextList(pos).doFor(consumer, action);
+        nextList(pos).doFor(elementConsumer, endConsumer);
       }
     }
 
     @Override
-    public void doWhile(@NotNull final IndexedPredicate<? super E> predicate) {
-      doWhile(predicate, NOOP);
+    public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate) {
+      doWhile(elementPredicate, NOOP_ACTION);
     }
 
     @Override
-    public void doWhile(@NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final Action action) {
+    public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate,
+        @NotNull final Consumer<? super Integer> endConsumer) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        nextList(pos).doWhile(predicate, action);
+        nextList(pos).doWhile(elementPredicate, endConsumer);
       }
     }
 
     @Override
     public void doWhile(@NotNull final IndexedPredicate<? super E> condition,
         @NotNull final IndexedConsumer<? super E> consumer) {
-      doWhile(condition, consumer, NOOP);
+      doWhile(condition, consumer, NOOP_ACTION);
     }
 
     @Override
@@ -9090,23 +9169,23 @@ class future extends Sparx {
     }
 
     @Override
-    public void doWhile(@NotNull final Predicate<? super E> predicate) {
-      doWhile(predicate, NOOP);
+    public void doWhile(@NotNull final Predicate<? super E> elementPredicate) {
+      doWhile(elementPredicate, NOOP_ACTION);
     }
 
     @Override
-    public void doWhile(@NotNull final Predicate<? super E> predicate,
-        @NotNull final Action action) {
+    public void doWhile(@NotNull final Predicate<? super E> elementPredicate,
+        @NotNull final Action endAction) {
       final int pos = safePos();
       if (!atEnd(pos)) {
-        nextList(pos).doWhile(predicate, action);
+        nextList(pos).doWhile(elementPredicate, endAction);
       }
     }
 
     @Override
     public void doWhile(@NotNull final Predicate<? super E> condition,
         @NotNull final Consumer<? super E> consumer) {
-      doWhile(condition, consumer, NOOP);
+      doWhile(condition, consumer, NOOP_ACTION);
     }
 
     @Override
@@ -9824,25 +9903,25 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer) {
-      return nextList().nonBlockingFor(consumer);
+    public itf.Future nonBlockingFor(@NotNull final Consumer<? super E> elementConsumer) {
+      return nextList().nonBlockingFor(elementConsumer);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final Consumer<? super E> consumer,
-        @NotNull final Action action) {
-      return nextList().nonBlockingFor(consumer, action);
+    public itf.Future nonBlockingFor(@NotNull final Consumer<? super E> elementConsumer,
+        @NotNull final Action endAction) {
+      return nextList().nonBlockingFor(elementConsumer, endAction);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer) {
-      return nextList().nonBlockingFor(consumer);
+    public itf.Future nonBlockingFor(@NotNull final IndexedConsumer<? super E> elementConsumer) {
+      return nextList().nonBlockingFor(elementConsumer);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingFor(@NotNull final IndexedConsumer<? super E> consumer,
-        @NotNull final Action action) {
-      return nextList().nonBlockingFor(consumer, action);
+    public itf.Future nonBlockingFor(@NotNull final IndexedConsumer<? super E> elementConsumer,
+        @NotNull final Consumer<? super Integer> endConsumer) {
+      return nextList().nonBlockingFor(elementConsumer, endConsumer);
     }
 
     @Override
@@ -9851,20 +9930,20 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingGet(@NotNull final Action action) {
-      return list.nonBlockingGet(action);
+    public itf.Future nonBlockingGet(@NotNull final Action endAction) {
+      return list.nonBlockingGet(endAction);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingWhile(
-        @NotNull final IndexedPredicate<? super E> predicate) {
-      return nextList().nonBlockingWhile(predicate);
+    public itf.Future nonBlockingWhile(
+        @NotNull final IndexedPredicate<? super E> elementPredicate) {
+      return nextList().nonBlockingWhile(elementPredicate);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final IndexedPredicate<? super E> predicate,
-        @NotNull final Action action) {
-      return nextList().nonBlockingWhile(predicate, action);
+    public itf.Future nonBlockingWhile(@NotNull final IndexedPredicate<? super E> elementPredicate,
+        @NotNull final Consumer<? super Integer> endConsumer) {
+      return nextList().nonBlockingWhile(elementPredicate, endConsumer);
     }
 
     @Override
@@ -9880,14 +9959,14 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate) {
-      return nextList().nonBlockingWhile(predicate);
+    public itf.Future nonBlockingWhile(@NotNull final Predicate<? super E> elementPredicate) {
+      return nextList().nonBlockingWhile(elementPredicate);
     }
 
     @Override
-    public @NotNull Future<?> nonBlockingWhile(@NotNull final Predicate<? super E> predicate,
-        @NotNull final Action action) {
-      return nextList().nonBlockingWhile(predicate, action);
+    public itf.Future nonBlockingWhile(@NotNull final Predicate<? super E> elementPredicate,
+        @NotNull final Action endAction) {
+      return nextList().nonBlockingWhile(elementPredicate, endAction);
     }
 
     @Override

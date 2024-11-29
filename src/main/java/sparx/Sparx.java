@@ -18,6 +18,7 @@ package sparx;
 import java.util.Comparator;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
+import sparx.util.function.Action;
 import sparx.util.function.Consumer;
 import sparx.util.function.Function;
 import sparx.util.function.IndexedConsumer;
@@ -151,6 +152,15 @@ class Sparx {
       @Override
       public int compare(final T o1, final T o2) {
         return comparator.compare(o2, o1);
+      }
+    };
+  }
+
+  static @NotNull <E> Consumer<E> toConsumer(@NotNull final Action action) {
+    return new Consumer<E>() {
+      @Override
+      public void accept(final E param) throws Exception {
+        action.run();
       }
     };
   }

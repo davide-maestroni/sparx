@@ -29,6 +29,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.util.DeadLockException;
 import sparx.util.function.Action;
+import sparx.util.function.Consumer;
 
 public class IteratorGetFuture<E> implements FutureConsumer<List<E>>, Future<Void> {
 
@@ -36,9 +37,10 @@ public class IteratorGetFuture<E> implements FutureConsumer<List<E>>, Future<Voi
   private static final int STATUS_DONE = 1;
   private static final int STATUS_RUNNING = 0;
 
-  private final Action action;
   private final AtomicReference<CancellationException> cancelException;
   private final ExecutionContext context;
+  private final Action endAction;
+  private final Consumer<? super Throwable> errorConsumer;
   private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
   private final String taskID;
 
@@ -46,11 +48,13 @@ public class IteratorGetFuture<E> implements FutureConsumer<List<E>>, Future<Voi
 
   public IteratorGetFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final IteratorFutureMaterializer<E> materializer, @NotNull final Action action) {
+      @NotNull final IteratorFutureMaterializer<E> materializer, @NotNull final Action endAction,
+      @NotNull final Consumer<? super Throwable> errorConsumer) {
     this.context = context;
     this.taskID = taskID;
     this.cancelException = cancelException;
-    this.action = action;
+    this.endAction = endAction;
+    this.errorConsumer = errorConsumer;
     if (context.isCurrent() && materializer.isDone()) {
       materializer.materializeElements(this);
     } else {
@@ -75,7 +79,7 @@ public class IteratorGetFuture<E> implements FutureConsumer<List<E>>, Future<Voi
 
   @Override
   public void accept(final List<E> elements) throws Exception {
-    action.run();
+    endAction.run();
     synchronized (cancelException) {
       if (isCancelled()) {
         throw getCancelException();
@@ -101,7 +105,12 @@ public class IteratorGetFuture<E> implements FutureConsumer<List<E>>, Future<Voi
   }
 
   @Override
-  public void error(@NotNull final Exception error) {
+  public void error(@NotNull Exception error) {
+    try {
+      errorConsumer.accept(error);
+    } catch (final Exception e) {
+      error = e;
+    }
     synchronized (cancelException) {
       if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
         IteratorGetFuture.this.error = error;

@@ -542,54 +542,66 @@ class itf {
     boolean isSucceeded();
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingFor(@NotNull Consumer<? super E> consumer);
+    java.util.concurrent.Future<?> nonBlockingFor(@NotNull Consumer<? super E> elementConsumer);
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingFor(@NotNull Consumer<? super E> consumer,
-        @NotNull Action action);
+    java.util.concurrent.Future<?> nonBlockingFor(@NotNull Consumer<? super E> elementConsumer,
+        @NotNull Action endAction);
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingFor(@NotNull IndexedConsumer<? super E> consumer);
+    java.util.concurrent.Future<?> nonBlockingFor(@NotNull Consumer<? super E> elementConsumer,
+        @NotNull Action endAction, @NotNull Consumer<? super Throwable> errorConsumer);
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingFor(@NotNull IndexedConsumer<? super E> consumer,
-        @NotNull Action action);
+    java.util.concurrent.Future<?> nonBlockingFor(
+        @NotNull IndexedConsumer<? super E> elementConsumer);
+
+    @NotNull
+    java.util.concurrent.Future<?> nonBlockingFor(
+        @NotNull IndexedConsumer<? super E> elementConsumer,
+        @NotNull Consumer<? super Integer> endConsumer);
+
+    @NotNull
+    java.util.concurrent.Future<?> nonBlockingFor(
+        @NotNull IndexedConsumer<? super E> elementConsumer,
+        @NotNull Consumer<? super Integer> endConsumer,
+        @NotNull IndexedConsumer<? super Throwable> errorConsumer);
 
     @NotNull
     java.util.concurrent.Future<?> nonBlockingGet();
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingGet(@NotNull Action action);
+    java.util.concurrent.Future<?> nonBlockingGet(@NotNull Action endAction);
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull IndexedPredicate<? super E> predicate);
+    java.util.concurrent.Future<?> nonBlockingGet(@NotNull Action endAction,
+        @NotNull Consumer<? super Throwable> errorConsumer);
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull IndexedPredicate<? super E> predicate,
-        @NotNull Action action);
+    java.util.concurrent.Future<?> nonBlockingWhile(
+        @NotNull IndexedPredicate<? super E> elementPredicate);
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedConsumer<? super E> consumer);
+    java.util.concurrent.Future<?> nonBlockingWhile(
+        @NotNull IndexedPredicate<? super E> elementPredicate,
+        @NotNull Consumer<? super Integer> endConsumer);
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedConsumer<? super E> consumer, @NotNull Action action);
+    java.util.concurrent.Future<?> nonBlockingWhile(
+        @NotNull IndexedPredicate<? super E> elementPredicate,
+        @NotNull Consumer<? super Integer> endConsumer,
+        @NotNull IndexedConsumer<? super Throwable> errorConsumer);
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> predicate);
+    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> elementPredicate);
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> predicate,
-        @NotNull Action action);
+    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> elementPredicate,
+        @NotNull Action endAction);
 
     @NotNull
-    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Consumer<? super E> consumer);
-
-    @NotNull
-    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Consumer<? super E> consumer, @NotNull Action action);
+    java.util.concurrent.Future<?> nonBlockingWhile(@NotNull Predicate<? super E> elementPredicate,
+        @NotNull Action endAction, @NotNull Consumer<? super Throwable> errorConsumer);
   }
 
   public interface Iterator<E> extends java.util.Iterator<E>, Traverser<E> {
@@ -2235,32 +2247,37 @@ class itf {
     @NotNull
     <K> Sequence<E> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
 
-    void doFor(@NotNull Consumer<? super E> consumer);
+    void doFor(@NotNull Consumer<? super E> elementConsumer);
 
-    void doFor(@NotNull Consumer<? super E> consumer, @NotNull Action action);
+    void doFor(@NotNull Consumer<? super E> elementConsumer, @NotNull Action endAction);
 
-    void doFor(@NotNull IndexedConsumer<? super E> consumer);
+    void doFor(@NotNull Consumer<? super E> elementConsumer, @NotNull Action endAction,
+        @NotNull Consumer<? super Throwable> errorConsumer);
 
-    void doFor(@NotNull IndexedConsumer<? super E> consumer, @NotNull Action action);
+    void doFor(@NotNull IndexedConsumer<? super E> elementConsumer);
 
-    void doWhile(@NotNull IndexedPredicate<? super E> predicate);
+    void doFor(@NotNull IndexedConsumer<? super E> elementConsumer,
+        @NotNull Consumer<? super Integer> endConsumer);
 
-    void doWhile(@NotNull IndexedPredicate<? super E> predicate, @NotNull Action action);
+    void doFor(@NotNull IndexedConsumer<? super E> elementConsumer,
+        @NotNull Consumer<? super Integer> endConsumer,
+        @NotNull IndexedConsumer<? super Throwable> errorConsumer);
 
-    void doWhile(@NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedConsumer<? super E> consumer);
+    void doWhile(@NotNull IndexedPredicate<? super E> elementPredicate);
 
-    void doWhile(@NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedConsumer<? super E> consumer, @NotNull Action action);
+    void doWhile(@NotNull IndexedPredicate<? super E> elementPredicate,
+        @NotNull Consumer<? super Integer> endConsumer);
 
-    void doWhile(@NotNull Predicate<? super E> predicate);
+    void doWhile(@NotNull IndexedPredicate<? super E> elementPredicate,
+        @NotNull Consumer<? super Integer> endConsumer,
+        @NotNull IndexedConsumer<? super Throwable> errorConsumer);
 
-    void doWhile(@NotNull Predicate<? super E> predicate, @NotNull Action action);
+    void doWhile(@NotNull Predicate<? super E> elementPredicate);
 
-    void doWhile(@NotNull Predicate<? super E> condition, @NotNull Consumer<? super E> consumer);
+    void doWhile(@NotNull Predicate<? super E> elementPredicate, @NotNull Action endAction);
 
-    void doWhile(@NotNull Predicate<? super E> condition, @NotNull Consumer<? super E> consumer,
-        @NotNull Action action);
+    void doWhile(@NotNull Predicate<? super E> elementPredicate, @NotNull Action endAction,
+        @NotNull Consumer<? super Throwable> errorConsumer);
 
     @NotNull
     Sequence<E> drop(int maxElements);
