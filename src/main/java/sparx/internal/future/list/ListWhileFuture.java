@@ -29,11 +29,12 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.DeadLockException;
-import sparx.util.function.Action;
+import sparx.util.function.Consumer;
 import sparx.util.function.IndexedConsumer;
 import sparx.util.function.IndexedPredicate;
 
-public class ListWhileFuture<E> implements Future<Void> {
+public class ListWhileFuture<E> extends ContextTask implements Future<Void>,
+    FutureConsumer<List<E>>, IndexedFuturePredicate<E> {
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -41,196 +42,52 @@ public class ListWhileFuture<E> implements Future<Void> {
 
   private final AtomicReference<CancellationException> cancelException;
   private final ExecutionContext context;
+  private final IndexedPredicate<? super E> elementPredicate;
+  private final Consumer<? super Integer> endConsumer;
+  private final IndexedConsumer<? super Throwable> errorConsumer;
+  private final ListFutureMaterializer<E> materializer;
   private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
   private final String taskID;
 
   private volatile Exception error;
+  private int index;
 
   public ListWhileFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final AtomicReference<CancellationException> cancelException,
       @NotNull final ListFutureMaterializer<E> materializer,
-      @NotNull final IndexedPredicate<? super E> predicate, @NotNull final Action action) {
+      @NotNull final IndexedPredicate<? super E> elementPredicate,
+      @NotNull final Consumer<? super Integer> endConsumer,
+      @NotNull final IndexedConsumer<? super Throwable> errorConsumer) {
+    super(context);
     this.context = context;
     this.taskID = taskID;
     this.cancelException = cancelException;
+    this.materializer = materializer;
+    this.elementPredicate = elementPredicate;
+    this.endConsumer = endConsumer;
+    this.errorConsumer = errorConsumer;
     if (context.isCurrent() && materializer.isDone()) {
-      materializer.materializeElements(new FutureConsumer<List<E>>() {
-        @Override
-        public void accept(final java.util.List<E> elements) throws Exception {
-          boolean completed = true;
-          int i = 0;
-          for (final E element : elements) {
-            if (!predicate.test(i++, element)) {
-              completed = false;
-              break;
-            }
-          }
-          if (completed) {
-            action.run();
-          }
-          synchronized (cancelException) {
-            status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-            cancelException.notifyAll();
-          }
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) {
-          synchronized (cancelException) {
-            if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-              ListWhileFuture.this.error = error;
-            }
-            cancelException.notifyAll();
-          }
-        }
-      });
+      materializer.materializeElements(this);
     } else {
-      context.scheduleAfter(new ContextTask(context) {
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
-
-        @Override
-        public int weight() {
-          return materializer.weightNextWhile();
-        }
-
-        @Override
-        protected void runWithContext() {
-          materializer.materializeNextWhile(0, new IndexedFuturePredicate<E>() {
-            @Override
-            public void complete(final int size) throws Exception {
-              action.run();
-              synchronized (cancelException) {
-                status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-                cancelException.notifyAll();
-              }
-            }
-
-            @Override
-            public boolean test(final int size, final int index, final E element) throws Exception {
-              if (isCancelled()) {
-                throw getCancelException();
-              }
-              if (predicate.test(index, element)) {
-                return true;
-              }
-              synchronized (cancelException) {
-                status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-                cancelException.notifyAll();
-              }
-              return false;
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) {
-              synchronized (cancelException) {
-                if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-                  ListWhileFuture.this.error = error;
-                }
-                cancelException.notifyAll();
-              }
-            }
-          });
-        }
-      });
+      context.scheduleAfter(this);
     }
   }
 
-  public ListWhileFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
-      @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final ListFutureMaterializer<E> materializer,
-      @NotNull final IndexedPredicate<? super E> condition,
-      @NotNull final IndexedConsumer<? super E> consumer, @NotNull final Action action) {
-    this.context = context;
-    this.taskID = taskID;
-    this.cancelException = cancelException;
-    if (context.isCurrent() && materializer.isDone()) {
-      materializer.materializeElements(new FutureConsumer<List<E>>() {
-        @Override
-        public void accept(final java.util.List<E> elements) throws Exception {
-          boolean completed = true;
-          int i = 0;
-          for (final E element : elements) {
-            if (condition.test(i, element)) {
-              consumer.accept(i++, element);
-            } else {
-              completed = false;
-              break;
-            }
-          }
-          if (completed) {
-            action.run();
-          }
-          synchronized (cancelException) {
-            status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-            cancelException.notifyAll();
-          }
-        }
-
-        @Override
-        public void error(@NotNull final Exception error) {
-          synchronized (cancelException) {
-            if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-              ListWhileFuture.this.error = error;
-            }
-            cancelException.notifyAll();
-          }
-        }
-      });
-    } else {
-      context.scheduleAfter(new ContextTask(context) {
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
-
-        @Override
-        public int weight() {
-          return materializer.weightNextWhile();
-        }
-
-        @Override
-        protected void runWithContext() {
-          materializer.materializeNextWhile(0, new IndexedFuturePredicate<E>() {
-            @Override
-            public void complete(final int size) throws Exception {
-              action.run();
-              synchronized (cancelException) {
-                status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-                cancelException.notifyAll();
-              }
-            }
-
-            @Override
-            public boolean test(final int size, final int index, final E element) throws Exception {
-              if (isCancelled()) {
-                throw getCancelException();
-              }
-              if (condition.test(index, element)) {
-                consumer.accept(index, element);
-                return true;
-              }
-              synchronized (cancelException) {
-                status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
-                cancelException.notifyAll();
-              }
-              return false;
-            }
-
-            @Override
-            public void error(@NotNull final Exception error) {
-              synchronized (cancelException) {
-                if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-                  ListWhileFuture.this.error = error;
-                }
-                cancelException.notifyAll();
-              }
-            }
-          });
-        }
-      });
+  @Override
+  public void accept(final List<E> elements) throws Exception {
+    boolean completed = true;
+    for (final E element : elements) {
+      if (!elementPredicate.test(index++, element)) {
+        completed = false;
+        break;
+      }
+    }
+    if (completed) {
+      endConsumer.accept(index);
+    }
+    synchronized (cancelException) {
+      status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+      cancelException.notifyAll();
     }
   }
 
@@ -247,6 +104,30 @@ public class ListWhileFuture<E> implements Future<Void> {
       return true;
     }
     return false;
+  }
+
+  @Override
+  public void complete(final int size) throws Exception {
+    endConsumer.accept(index);
+    synchronized (cancelException) {
+      status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+      cancelException.notifyAll();
+    }
+  }
+
+  @Override
+  public void error(@NotNull Exception error) {
+    try {
+      errorConsumer.accept(index, error);
+    } catch (final Exception e) {
+      error = e;
+    }
+    synchronized (cancelException) {
+      if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
+        this.error = error;
+      }
+      cancelException.notifyAll();
+    }
   }
 
   @Override
@@ -316,6 +197,36 @@ public class ListWhileFuture<E> implements Future<Void> {
       }
     }
     return null;
+  }
+
+  @Override
+  public @NotNull String taskID() {
+    return taskID;
+  }
+
+  @Override
+  public boolean test(final int size, final int index, final E element) throws Exception {
+    if (isCancelled()) {
+      throw getCancelException();
+    }
+    if (elementPredicate.test(this.index++, element)) {
+      return true;
+    }
+    synchronized (cancelException) {
+      status.compareAndSet(STATUS_RUNNING, STATUS_DONE);
+      cancelException.notifyAll();
+    }
+    return false;
+  }
+
+  @Override
+  public int weight() {
+    return materializer.weightNextWhile();
+  }
+
+  @Override
+  protected void runWithContext() {
+    materializer.materializeNextWhile(0, this);
   }
 
   private @NotNull CancellationException getCancelException() {

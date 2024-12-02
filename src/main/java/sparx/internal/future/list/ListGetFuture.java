@@ -29,16 +29,20 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.util.DeadLockException;
 import sparx.util.function.Action;
+import sparx.util.function.Consumer;
 
-public class ListGetFuture<E> implements FutureConsumer<List<E>>, Future<Void> {
+public class ListGetFuture<E> extends ContextTask implements FutureConsumer<List<E>>, Future<Void> {
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
   private static final int STATUS_RUNNING = 0;
 
-  private final Action action;
+
   private final AtomicReference<CancellationException> cancelException;
   private final ExecutionContext context;
+  private final Action endAction;
+  private final Consumer<? super Throwable> errorConsumer;
+  private final ListFutureMaterializer<E> materializer;
   private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
   private final String taskID;
 
@@ -46,36 +50,25 @@ public class ListGetFuture<E> implements FutureConsumer<List<E>>, Future<Void> {
 
   public ListGetFuture(@NotNull final ExecutionContext context, @NotNull final String taskID,
       @NotNull final AtomicReference<CancellationException> cancelException,
-      @NotNull final ListFutureMaterializer<E> materializer, @NotNull final Action action) {
+      @NotNull final ListFutureMaterializer<E> materializer, @NotNull final Action endAction,
+      @NotNull final Consumer<? super Throwable> errorConsumer) {
+    super(context);
     this.context = context;
     this.taskID = taskID;
     this.cancelException = cancelException;
-    this.action = action;
+    this.materializer = materializer;
+    this.endAction = endAction;
+    this.errorConsumer = errorConsumer;
     if (context.isCurrent() && materializer.isDone()) {
       materializer.materializeElements(this);
     } else {
-      context.scheduleAfter(new ContextTask(context) {
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
-
-        @Override
-        public int weight() {
-          return materializer.weightElements();
-        }
-
-        @Override
-        protected void runWithContext() {
-          materializer.materializeElements(ListGetFuture.this);
-        }
-      });
+      context.scheduleAfter(this);
     }
   }
 
   @Override
   public void accept(final List<E> elements) throws Exception {
-    action.run();
+    endAction.run();
     synchronized (cancelException) {
       if (isCancelled()) {
         throw getCancelException();
@@ -101,10 +94,15 @@ public class ListGetFuture<E> implements FutureConsumer<List<E>>, Future<Void> {
   }
 
   @Override
-  public void error(@NotNull final Exception error) {
+  public void error(@NotNull Exception error) {
+    try {
+      errorConsumer.accept(error);
+    } catch (final Exception e) {
+      error = e;
+    }
     synchronized (cancelException) {
       if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-        ListGetFuture.this.error = error;
+        this.error = error;
       }
       cancelException.notifyAll();
     }
@@ -177,6 +175,21 @@ public class ListGetFuture<E> implements FutureConsumer<List<E>>, Future<Void> {
       }
     }
     return null;
+  }
+
+  @Override
+  public @NotNull String taskID() {
+    return taskID;
+  }
+
+  @Override
+  public int weight() {
+    return materializer.weightElements();
+  }
+
+  @Override
+  protected void runWithContext() {
+    materializer.materializeElements(this);
   }
 
   private @NotNull CancellationException getCancelException() {

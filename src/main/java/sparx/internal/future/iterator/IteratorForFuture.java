@@ -32,8 +32,8 @@ import sparx.util.DeadLockException;
 import sparx.util.function.Consumer;
 import sparx.util.function.IndexedConsumer;
 
-public class IteratorForFuture<E> implements Future<Void>, FutureConsumer<List<E>>,
-    IndexedFuturePredicate<E> {
+public class IteratorForFuture<E> extends ContextTask implements Future<Void>,
+    FutureConsumer<List<E>>, IndexedFuturePredicate<E> {
 
   private static final int STATUS_CANCELLED = 2;
   private static final int STATUS_DONE = 1;
@@ -44,6 +44,7 @@ public class IteratorForFuture<E> implements Future<Void>, FutureConsumer<List<E
   private final IndexedConsumer<? super E> elementConsumer;
   private final Consumer<? super Integer> endConsumer;
   private final IndexedConsumer<? super Throwable> errorConsumer;
+  private final IteratorFutureMaterializer<E> materializer;
   private final AtomicInteger status = new AtomicInteger(STATUS_RUNNING);
   private final String taskID;
 
@@ -56,31 +57,18 @@ public class IteratorForFuture<E> implements Future<Void>, FutureConsumer<List<E
       @NotNull final IndexedConsumer<? super E> elementConsumer,
       @NotNull final Consumer<? super Integer> endConsumer,
       @NotNull final IndexedConsumer<? super Throwable> errorConsumer) {
+    super(context);
     this.context = context;
     this.taskID = taskID;
     this.cancelException = cancelException;
+    this.materializer = materializer;
     this.elementConsumer = elementConsumer;
     this.endConsumer = endConsumer;
     this.errorConsumer = errorConsumer;
     if (context.isCurrent() && materializer.isDone()) {
       materializer.materializeElements(this);
     } else {
-      context.scheduleAfter(new ContextTask(context) {
-        @Override
-        public @NotNull String taskID() {
-          return taskID;
-        }
-
-        @Override
-        public int weight() {
-          return materializer.weightNextWhile();
-        }
-
-        @Override
-        protected void runWithContext() {
-          materializer.materializeNextWhile(IteratorForFuture.this);
-        }
-      });
+      context.scheduleAfter(this);
     }
   }
 
@@ -129,7 +117,7 @@ public class IteratorForFuture<E> implements Future<Void>, FutureConsumer<List<E
     }
     synchronized (cancelException) {
       if (status.compareAndSet(STATUS_RUNNING, STATUS_DONE)) {
-        IteratorForFuture.this.error = error;
+        this.error = error;
       }
       cancelException.notifyAll();
     }
@@ -205,12 +193,27 @@ public class IteratorForFuture<E> implements Future<Void>, FutureConsumer<List<E
   }
 
   @Override
+  public @NotNull String taskID() {
+    return taskID;
+  }
+
+  @Override
   public boolean test(final int size, final int index, final E element) throws Exception {
     if (isCancelled()) {
       throw getCancelException();
     }
     elementConsumer.accept(this.index++, element);
     return true;
+  }
+
+  @Override
+  public int weight() {
+    return materializer.weightNextWhile();
+  }
+
+  @Override
+  protected void runWithContext() {
+    materializer.materializeNextWhile(this);
   }
 
   private @NotNull CancellationException getCancelException() {
