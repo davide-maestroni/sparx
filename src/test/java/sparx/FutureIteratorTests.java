@@ -101,7 +101,9 @@ import sparx.internal.future.iterator.MaxIteratorFutureMaterializer;
 import sparx.internal.future.iterator.OrElseIteratorFutureMaterializer;
 import sparx.internal.future.iterator.PeekIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReduceLeftIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ReduceLeftWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.ReduceRightIteratorFutureMaterializer;
+import sparx.internal.future.iterator.ReduceRightWhileIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveAfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveFirstWhereIteratorFutureMaterializer;
 import sparx.internal.future.iterator.RemoveLastWhereIteratorFutureMaterializer;
@@ -273,13 +275,26 @@ public class FutureIteratorTests {
   @Test
   public void doFor() {
     assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).toFuture(context).doFor((Consumer<? super Integer>) null));
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true)
+            .doFor((Consumer<? super Integer>) null));
     assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).toFuture(context).doFor((IndexedConsumer<? super Integer>) null));
-    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).toFuture(context).doFor(e -> {
-    }, null));
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true).doFor(e -> {
+        }, null));
     assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).toFuture(context).doFor((i, e) -> {
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true).doFor(e -> {
+        }, () -> {
+          throw new IllegalStateException();
+        }, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true)
+            .doFor((IndexedConsumer<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true).doFor((i, e) -> {
+        }, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true).doFor((i, e) -> {
+        }, i -> {
+          throw new IllegalStateException();
         }, null));
     var list = new ArrayList<>();
     Iterator.of(1, 2, 3).toFuture(context).doFor(e -> list.add(e));
@@ -291,30 +306,29 @@ public class FutureIteratorTests {
 
   @Test
   public void doWhile() {
-    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).toFuture(context)
-        .doWhile((IndexedPredicate<? super Integer>) null));
     assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).toFuture(context).doWhile((Predicate<? super Integer>) null));
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true)
+            .doWhile((Predicate<? super Integer>) null));
     assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).toFuture(context).doWhile(null, (i, e) -> {
-        }));
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true).doWhile(e -> true, null));
     assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).toFuture(context).doWhile(null, e -> {
-        }));
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true).doWhile(e -> true, () -> {
+        }, null));
     assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).toFuture(context).doWhile((i, e) -> true, (Action) null));
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true)
+            .doWhile((IndexedPredicate<? super Integer>) null));
     assertThrows(NullPointerException.class,
-        () -> Iterator.of(0, 0).toFuture(context).doWhile(e -> true, (Action) null));
-    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).toFuture(context)
-        .doWhile((i, e) -> true, (IndexedConsumer<? super Integer>) null));
-    assertThrows(NullPointerException.class, () -> Iterator.of(0, 0).toFuture(context)
-        .doWhile(e -> true, (Consumer<? super Integer>) null));
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true).doWhile((i, e) -> true, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true).doWhile((i, e) -> true, e -> {
+        }, null));
     var list = new ArrayList<>();
-    Iterator.of(1, 2, 3).toFuture(context).doWhile(e -> e < 3, list::add);
-    assertEquals(List.of(1, 2), list);
+    Iterator.of(1, 2, 3).toFuture(context).doWhile((i, e) -> e < 3, list::add);
+    assertEquals(List.of(), list);
     list.clear();
-    Iterator.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).doWhile(e -> e < 3, list::add);
-    assertEquals(List.of(1, 2), list);
+    Iterator.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e))
+        .doWhile((i, e) -> e < 3, list::add);
+    assertEquals(List.of(), list);
     list.clear();
     Iterator.of(1, 2, 3).toFuture(context).doWhile(e -> {
       list.add(e);
@@ -327,6 +341,18 @@ public class FutureIteratorTests {
       return e < 2;
     });
     assertEquals(List.of(1, 2), list);
+    list.clear();
+    List.of(1, 2, 3, 4).toFuture(context).doWhile((n, i) -> {
+      list.add(n);
+      return true;
+    }, list::add);
+    assertEquals(List.of(0, 1, 2, 3), list);
+    list.clear();
+    List.of(1, 2, 3, 4).toFuture(context).flatMap(e -> List.of(e)).doWhile((n, i) -> {
+      list.add(n);
+      return true;
+    }, list::add);
+    assertEquals(List.of(0, 1, 2, 3), list);
   }
 
   @Test
@@ -1556,6 +1582,34 @@ public class FutureIteratorTests {
   }
 
   @Test
+  public void reduceLeftWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).reduceLeftWhile(null, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).reduceLeftWhile(Objects::nonNull, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true)
+            .reduceLeftWhile(null, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true)
+            .reduceLeftWhile(Objects::nonNull, null));
+    test(List.of(10), () -> Iterator.of(1, 2, 3, 4, 5),
+        it -> it.reduceLeftWhile(s -> s < 10, Integer::sum));
+    test(List.of(1), () -> Iterator.of(1, 2, 3, 4, 5),
+        it -> it.reduceLeftWhile(s -> s < 1, Integer::sum));
+    test(List.of(), Iterator::<Integer>of, it -> it.reduceLeftWhile(s -> s < 10, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null).toFuture(context).filter(e -> true)
+            .reduceLeftWhile(s -> s < 10, Integer::sum).first());
+
+    testMaterializer(List.of(3), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new ReduceLeftWhileIteratorFutureMaterializer<>(m, i -> i < 2, Integer::sum, c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.reduceLeftWhile(a -> true, (a, e) -> e));
+  }
+
+  @Test
   public void reduceRight() throws Exception {
     assertThrows(NullPointerException.class,
         () -> Iterator.of(0, 0).toFuture(context).reduceRight(null));
@@ -1572,6 +1626,34 @@ public class FutureIteratorTests {
             new AtomicReference<>()));
 
     testCancel(it -> it.reduceRight((e, a) -> e));
+  }
+
+  @Test
+  public void reduceRightWhile() throws Exception {
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).reduceRightWhile(null, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).reduceRightWhile(Objects::nonNull, null));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true)
+            .reduceRightWhile(null, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(0, 0).toFuture(context).filter(e -> true)
+            .reduceRightWhile(Objects::nonNull, null));
+    test(List.of(12), () -> Iterator.of(1, 2, 3, 4, 5),
+        it -> it.reduceRightWhile(s -> s < 10, Integer::sum));
+    test(List.of(5), () -> Iterator.of(1, 2, 3, 4, 5),
+        it -> it.reduceRightWhile(s -> s < 1, Integer::sum));
+    test(List.of(), Iterator::<Integer>of, it -> it.reduceRightWhile(s -> s < 10, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, 2, null).toFuture(context).filter(e -> true)
+            .reduceRightWhile(s -> s < 10, Integer::sum).first());
+
+    testMaterializer(List.of(3), c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new ReduceRightWhileIteratorFutureMaterializer<>(m, i -> i < 2, Integer::sum, c,
+            new AtomicReference<>()));
+
+    testCancel(it -> it.reduceRightWhile(a -> true, (e, a) -> e));
   }
 
   @Test
