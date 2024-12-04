@@ -33,6 +33,11 @@ public class ElementToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }

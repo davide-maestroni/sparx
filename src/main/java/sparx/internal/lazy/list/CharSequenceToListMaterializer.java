@@ -33,6 +33,11 @@ public class CharSequenceToListMaterializer implements ListMaterializer<Characte
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return elements.length();
   }

@@ -40,6 +40,11 @@ public class EndsWithListMaterializer<E> implements ListMaterializer<Boolean> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -125,12 +130,30 @@ public class EndsWithListMaterializer<E> implements ListMaterializer<Boolean> {
           state = FALSE_STATE;
           return false;
         }
-        for (int i = wrappedSize - 1, j = elementsSize - 1; i >= 0 && j >= 0; --i, --j) {
-          final E left = wrapped.materializeElement(i);
-          final Object right = elementsMaterializer.materializeElement(j);
-          if (left != right && (left == null || !left.equals(right))) {
-            state = FALSE_STATE;
-            return false;
+        if (wrapped.isRandomAccess() && elementsMaterializer.isRandomAccess()) {
+          for (int i = wrappedSize - 1, j = elementsSize - 1; i >= 0 && j >= 0; --i, --j) {
+            final E left = wrapped.materializeElement(i);
+            final Object right = elementsMaterializer.materializeElement(j);
+            if (left != right && (left == null || !left.equals(right))) {
+              state = FALSE_STATE;
+              return false;
+            }
+          }
+        } else {
+          final Iterator<E> wrappedIterator = wrapped.materializeIterator();
+          final Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
+          int i = 0;
+          while (i < wrappedSize - elementsSize) {
+            wrappedIterator.next();
+            ++i;
+          }
+          while (wrappedIterator.hasNext() && elementsIterator.hasNext()) {
+            final E left = wrappedIterator.next();
+            final Object right = elementsIterator.next();
+            if (left != right && (left == null || !left.equals(right))) {
+              state = FALSE_STATE;
+              return false;
+            }
           }
         }
         state = TRUE_STATE;

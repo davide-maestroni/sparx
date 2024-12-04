@@ -33,6 +33,11 @@ public class DoubleArrayToListMaterializer implements ListMaterializer<Double> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return elements.length;
   }

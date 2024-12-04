@@ -40,6 +40,11 @@ public class FindLastIndexListMaterializer<E> implements ListMaterializer<Intege
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -144,12 +149,28 @@ public class FindLastIndexListMaterializer<E> implements ListMaterializer<Intege
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        final int wrappedSize = wrapped.materializeSize();
-        for (int i = wrappedSize - 1; i >= 0; --i) {
-          final E element = wrapped.materializeElement(i);
-          if (predicate.test(i, element)) {
-            state = new IndexState(i);
-            return i;
+        if (wrapped.isRandomAccess()) {
+          final int wrappedSize = wrapped.materializeSize();
+          for (int i = wrappedSize - 1; i >= 0; --i) {
+            final E element = wrapped.materializeElement(i);
+            if (predicate.test(i, element)) {
+              state = new IndexState(i);
+              return i;
+            }
+          }
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int i = 0;
+          int index = -1;
+          while (iterator.hasNext()) {
+            final E element = iterator.next();
+            if (predicate.test(i, element)) {
+              index = i;
+            }
+          }
+          if (index >= 0) {
+            state = new IndexState(index);
+            return index;
           }
         }
         state = NOT_FOUND;

@@ -41,6 +41,11 @@ public class ExistsListMaterializer<E> implements ListMaterializer<Boolean> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -125,14 +130,26 @@ public class ExistsListMaterializer<E> implements ListMaterializer<Boolean> {
           return (state = defaultState).materialized();
         }
         final IndexedPredicate<? super E> predicate = this.predicate;
-        int i = 0;
-        do {
-          if (predicate.test(i, wrapped.materializeElement(i))) {
-            state = TRUE_STATE;
-            return true;
-          }
-          ++i;
-        } while (wrapped.canMaterializeElement(i));
+        if (wrapped.isRandomAccess()) {
+          int i = 0;
+          do {
+            if (predicate.test(i, wrapped.materializeElement(i))) {
+              state = TRUE_STATE;
+              return true;
+            }
+            ++i;
+          } while (wrapped.canMaterializeElement(i));
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int i = 0;
+          do {
+            if (predicate.test(i, iterator.next())) {
+              state = TRUE_STATE;
+              return true;
+            }
+            ++i;
+          } while (iterator.hasNext());
+        }
         state = FALSE_STATE;
         return false;
       } catch (final Exception e) {

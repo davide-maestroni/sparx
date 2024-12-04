@@ -33,6 +33,11 @@ public class FailedListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public E materializeElement(@NotNegative final int index) {
     return fail();
   }

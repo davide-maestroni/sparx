@@ -39,6 +39,11 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -95,6 +100,11 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
+    public boolean isRandomAccess() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }
@@ -133,14 +143,27 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
         final int expectedCount = modCount.incrementAndGet();
         final HashMap<Object, Integer> bag = elementsBag = new HashMap<Object, Integer>();
         final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
-        int i = 0;
-        while (elementsMaterializer.canMaterializeElement(i)) {
-          final Object element = elementsMaterializer.materializeElement(i++);
-          final Integer count = bag.get(element);
-          if (count == null) {
-            bag.put(element, 1);
-          } else {
-            bag.put(element, count + 1);
+        if (elementsMaterializer.isRandomAccess()) {
+          int i = 0;
+          while (elementsMaterializer.canMaterializeElement(i)) {
+            final Object element = elementsMaterializer.materializeElement(i++);
+            final Integer count = bag.get(element);
+            if (count == null) {
+              bag.put(element, 1);
+            } else {
+              bag.put(element, count + 1);
+            }
+          }
+        } else {
+          final Iterator<?> iterator = elementsMaterializer.materializeIterator();
+          while (iterator.hasNext()) {
+            final Object element = iterator.next();
+            final Integer count = bag.get(element);
+            if (count == null) {
+              bag.put(element, 1);
+            } else {
+              bag.put(element, count + 1);
+            }
           }
         }
         if (expectedCount != modCount.get()) {
@@ -161,35 +184,70 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
-        int i = pos;
-        while (true) {
-          if (wrapped.canMaterializeElement(i)) {
-            final E element = wrapped.materializeElement(i);
-            final Integer count = elementsBag.get(element);
-            if (count == null) {
-              elements.add(element);
-              if (++currSize > index) {
-                if (expectedCount != modCount.get()) {
-                  throw new ConcurrentModificationException();
+        if (wrapped.isRandomAccess()) {
+          int i = pos;
+          while (true) {
+            if (wrapped.canMaterializeElement(i)) {
+              final E element = wrapped.materializeElement(i);
+              final Integer count = elementsBag.get(element);
+              if (count == null) {
+                elements.add(element);
+                if (++currSize > index) {
+                  if (expectedCount != modCount.get()) {
+                    throw new ConcurrentModificationException();
+                  }
+                  pos = i + 1;
+                  return currSize;
                 }
-                pos = i + 1;
-                return currSize;
-              }
-            } else {
-              final int decCount = count - 1;
-              if (decCount == 0) {
-                elementsBag.remove(element);
               } else {
-                elementsBag.put(element, decCount);
+                final int decCount = count - 1;
+                if (decCount == 0) {
+                  elementsBag.remove(element);
+                } else {
+                  elementsBag.put(element, decCount);
+                }
               }
+              ++i;
+            } else {
+              if (expectedCount != modCount.get()) {
+                throw new ConcurrentModificationException();
+              }
+              state = new ListToListMaterializer<E>(elements);
+              return currSize;
             }
-            ++i;
-          } else {
-            if (expectedCount != modCount.get()) {
-              throw new ConcurrentModificationException();
+          }
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int i = pos;
+          while (true) {
+            if (iterator.hasNext()) {
+              final E element = iterator.next();
+              final Integer count = elementsBag.get(element);
+              if (count == null) {
+                elements.add(element);
+                if (++currSize > index) {
+                  if (expectedCount != modCount.get()) {
+                    throw new ConcurrentModificationException();
+                  }
+                  pos = i + 1;
+                  return currSize;
+                }
+              } else {
+                final int decCount = count - 1;
+                if (decCount == 0) {
+                  elementsBag.remove(element);
+                } else {
+                  elementsBag.put(element, decCount);
+                }
+              }
+              ++i;
+            } else {
+              if (expectedCount != modCount.get()) {
+                throw new ConcurrentModificationException();
+              }
+              state = new ListToListMaterializer<E>(elements);
+              return currSize;
             }
-            state = new ListToListMaterializer<E>(elements);
-            return currSize;
           }
         }
       } catch (final Exception e) {

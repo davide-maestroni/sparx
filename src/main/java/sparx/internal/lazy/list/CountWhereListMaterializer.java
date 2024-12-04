@@ -38,6 +38,11 @@ public class CountWhereListMaterializer<E> implements ListMaterializer<Integer> 
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -117,11 +122,21 @@ public class CountWhereListMaterializer<E> implements ListMaterializer<Integer> 
         final IndexedPredicate<? super E> predicate = this.predicate;
         int i = 0;
         int count = 0;
-        while (wrapped.canMaterializeElement(i)) {
-          if (predicate.test(i, wrapped.materializeElement(i))) {
-            ++count;
+        if (wrapped.isRandomAccess()) {
+          while (wrapped.canMaterializeElement(i)) {
+            if (predicate.test(i, wrapped.materializeElement(i))) {
+              ++count;
+            }
+            ++i;
           }
-          ++i;
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          while (iterator.hasNext()) {
+            if (predicate.test(i, iterator.next())) {
+              ++count;
+            }
+            ++i;
+          }
         }
         state = new CountState(count);
         return count;

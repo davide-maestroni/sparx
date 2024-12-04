@@ -42,6 +42,11 @@ public class DropRightWhileListMaterializer<E> extends AbstractListMaterializer<
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize == 0) {

@@ -22,5 +22,7 @@ public interface ListMaterializer<E> extends CollectionMaterializer<E> {
 
   boolean canMaterializeElement(@NotNegative int index);
 
+  boolean isRandomAccess();
+
   E materializeElement(@NotNegative int index);
 }

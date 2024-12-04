@@ -44,6 +44,11 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -94,6 +99,11 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public boolean canMaterializeElement(@NotNegative final int index) {
       return index < elements.size();
+    }
+
+    @Override
+    public boolean isRandomAccess() {
+      return false;
     }
 
     @Override
@@ -180,6 +190,11 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public boolean canMaterializeElement(@NotNegative final int index) {
       return index < elements.size();
+    }
+
+    @Override
+    public boolean isRandomAccess() {
+      return false;
     }
 
     @Override

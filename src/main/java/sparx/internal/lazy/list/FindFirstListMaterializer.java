@@ -42,6 +42,11 @@ public class FindFirstListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -143,13 +148,25 @@ public class FindFirstListMaterializer<E> implements ListMaterializer<E> {
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        int i = 0;
-        while (wrapped.canMaterializeElement(i)) {
-          final E element = wrapped.materializeElement(i);
-          if (predicate.test(i, element)) {
-            return (state = new ElementState<E>(element)).materialized();
+        if (wrapped.isRandomAccess()) {
+          int i = 0;
+          while (wrapped.canMaterializeElement(i)) {
+            final E element = wrapped.materializeElement(i);
+            if (predicate.test(i, element)) {
+              return (state = new ElementState<E>(element)).materialized();
+            }
+            ++i;
           }
-          ++i;
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int i = 0;
+          while (iterator.hasNext()) {
+            final E element = iterator.next();
+            if (predicate.test(i, element)) {
+              return (state = new ElementState<E>(element)).materialized();
+            }
+            ++i;
+          }
         }
         state = (State<E>) EMPTY_STATE;
         return Collections.emptyList();

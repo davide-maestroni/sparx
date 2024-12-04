@@ -43,6 +43,11 @@ public class AppendAllListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess() && elementsMaterializer.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {

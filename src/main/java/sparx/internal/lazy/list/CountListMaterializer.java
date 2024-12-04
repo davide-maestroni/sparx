@@ -36,6 +36,11 @@ public class CountListMaterializer<E> implements ListMaterializer<Integer> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }

@@ -40,6 +40,11 @@ public class FindIndexListMaterializer<E> implements ListMaterializer<Integer> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -144,13 +149,25 @@ public class FindIndexListMaterializer<E> implements ListMaterializer<Integer> {
       try {
         final ListMaterializer<E> wrapped = this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        int i = 0;
-        while (wrapped.canMaterializeElement(i)) {
-          if (predicate.test(i, wrapped.materializeElement(i))) {
-            state = new IndexState(i);
-            return i;
+        if (wrapped.isRandomAccess()) {
+          int i = 0;
+          while (wrapped.canMaterializeElement(i)) {
+            if (predicate.test(i, wrapped.materializeElement(i))) {
+              state = new IndexState(i);
+              return i;
+            }
+            ++i;
           }
-          ++i;
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int i = 0;
+          while (iterator.hasNext()) {
+            if (predicate.test(i, iterator.next())) {
+              state = new IndexState(i);
+              return i;
+            }
+            ++i;
+          }
         }
         state = NOT_FOUND;
         return -1;
