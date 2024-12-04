@@ -150,8 +150,8 @@ public class DistinctByListMaterializer<E, K> implements ListMaterializer<E> {
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
+        int i = pos;
         if (wrapped.isRandomAccess()) {
-          int i = pos;
           while (true) {
             if (wrapped.canMaterializeElement(i)) {
               final E element = wrapped.materializeElement(i);
@@ -176,7 +176,10 @@ public class DistinctByListMaterializer<E, K> implements ListMaterializer<E> {
           }
         } else {
           final Iterator<E> iterator = wrapped.materializeIterator();
-          int i = pos;
+          int j = 0;
+          while (j++ < i && iterator.hasNext()) {
+            iterator.next();
+          }
           while (true) {
             if (iterator.hasNext()) {
               final E element = iterator.next();

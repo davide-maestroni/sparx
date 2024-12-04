@@ -58,6 +58,11 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return false;
+  }
+
+  @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0 && knownSize <= numElements) {
@@ -71,31 +76,62 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
     final int numElements = this.numElements;
     final ListMaterializer<E> wrapped = this.wrapped;
     int i = 0;
-    if (element == null) {
-      while (wrapped.canMaterializeElement(i)) {
-        if (i != numElements) {
-          if (wrapped.materializeElement(i) == null) {
-            return true;
+    if (wrapped.isRandomAccess()) {
+      if (element == null) {
+        while (wrapped.canMaterializeElement(i)) {
+          if (i != numElements) {
+            if (wrapped.materializeElement(i) == null) {
+              return true;
+            }
+          } else {
+            if (state.materialized().materializeContains(null)) {
+              return true;
+            }
           }
-        } else {
-          if (state.materialized().materializeContains(null)) {
-            return true;
-          }
+          ++i;
         }
-        ++i;
+      } else {
+        while (wrapped.canMaterializeElement(i)) {
+          if (i != numElements) {
+            if (element.equals(wrapped.materializeElement(i))) {
+              return true;
+            }
+          } else {
+            if (state.materialized().materializeContains(element)) {
+              return true;
+            }
+          }
+          ++i;
+        }
       }
     } else {
-      while (wrapped.canMaterializeElement(i)) {
-        if (i != numElements) {
-          if (element.equals(wrapped.materializeElement(i))) {
-            return true;
+      final Iterator<E> iterator = wrapped.materializeIterator();
+      if (element == null) {
+        while (iterator.hasNext()) {
+          if (i != numElements) {
+            if (iterator.next() == null) {
+              return true;
+            }
+          } else {
+            if (state.materialized().materializeContains(null)) {
+              return true;
+            }
           }
-        } else {
-          if (state.materialized().materializeContains(element)) {
-            return true;
-          }
+          ++i;
         }
-        ++i;
+      } else {
+        while (iterator.hasNext()) {
+          if (i != numElements) {
+            if (element.equals(iterator.next())) {
+              return true;
+            }
+          } else {
+            if (state.materialized().materializeContains(element)) {
+              return true;
+            }
+          }
+          ++i;
+        }
       }
     }
     return false;

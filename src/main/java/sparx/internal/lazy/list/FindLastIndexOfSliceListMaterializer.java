@@ -39,6 +39,11 @@ public class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -143,25 +148,55 @@ public class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer
       final ListMaterializer<E> wrapped = this.wrapped;
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       try {
-        final int elements = elementsMaterializer.materializeSize();
-        int i = wrapped.materializeSize();
-        for (; i >= elements; --i) {
-          int j = elements - 1;
-          for (int n = i - 1; j >= 0; --j, --n) {
-            final E left = wrapped.materializeElement(n);
-            final Object right = elementsMaterializer.materializeElement(j);
-            if (left != right && (left == null || !left.equals(right))) {
+        if (wrapped.isRandomAccess() && elementsMaterializer.isRandomAccess()) {
+          final int elements = elementsMaterializer.materializeSize();
+          int i = wrapped.materializeSize();
+          for (; i >= elements; --i) {
+            int j = elements - 1;
+            for (int n = i - 1; j >= 0; --j, --n) {
+              final E left = wrapped.materializeElement(n);
+              final Object right = elementsMaterializer.materializeElement(j);
+              if (left != right && (left == null || !left.equals(right))) {
+                break;
+              }
+            }
+            if (j < 0) {
               break;
             }
           }
-          if (j < 0) {
-            break;
+          final int index = i - elements;
+          if (index >= 0) {
+            state = new IndexState(index);
+            return index;
           }
-        }
-        final int index = i - elements;
-        if (index >= 0) {
-          state = new IndexState(index);
-          return index;
+        } else {
+          Iterator<E> wrappedIterator = wrapped.materializeIterator();
+          Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
+          int i = 0;
+          int index = 0;
+          int matched = -1;
+          while (wrappedIterator.hasNext()) {
+            if (!elementsIterator.hasNext()) {
+              matched = index;
+            }
+            final E left = wrappedIterator.next();
+            final Object right = elementsIterator.next();
+            if (left == right || (left != null && left.equals(right))) {
+              ++i;
+            } else {
+              final int start = ++index;
+              i = 0;
+              wrappedIterator = wrapped.materializeIterator();
+              while (i++ < start) {
+                wrappedIterator.next();
+              }
+              elementsIterator = elementsMaterializer.materializeIterator();
+            }
+          }
+          if (matched >= 0) {
+            state = new IndexState(matched);
+            return matched;
+          }
         }
         state = NOT_FOUND;
         return -1;

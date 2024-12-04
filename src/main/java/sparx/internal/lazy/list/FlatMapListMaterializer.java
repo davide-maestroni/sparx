@@ -40,6 +40,11 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -96,6 +101,11 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
     }
 
     @Override
+    public boolean isRandomAccess() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }
@@ -141,28 +151,60 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
       try {
         Iterator<F> elementIterator = this.elementIterator;
         int i = pos;
-        while (true) {
-          while (elementIterator.hasNext()) {
-            elements.add(elementIterator.next());
-            if (++currSize > index) {
+        if (wrapped.isRandomAccess()) {
+          while (true) {
+            while (elementIterator.hasNext()) {
+              elements.add(elementIterator.next());
+              if (++currSize > index) {
+                if (expectedCount != modCount.get()) {
+                  throw new ConcurrentModificationException();
+                }
+                pos = i;
+                this.elementIterator = elementIterator;
+                return currSize;
+              }
+            }
+            if (wrapped.canMaterializeElement(i)) {
+              final E element = wrapped.materializeElement(i);
+              elementIterator = mapper.apply(i, element).iterator();
+              ++i;
+            } else {
               if (expectedCount != modCount.get()) {
                 throw new ConcurrentModificationException();
               }
-              pos = i;
-              this.elementIterator = elementIterator;
+              state = new ListToListMaterializer<F>(elements);
               return currSize;
             }
           }
-          if (wrapped.canMaterializeElement(i)) {
-            final E element = wrapped.materializeElement(i);
-            elementIterator = mapper.apply(i, element).iterator();
-            ++i;
-          } else {
-            if (expectedCount != modCount.get()) {
-              throw new ConcurrentModificationException();
+        } else {
+          final Iterator<E> wrappedIterator = wrapped.materializeIterator();
+          int j = 0;
+          while (j++ < i && wrappedIterator.hasNext()) {
+            wrappedIterator.next();
+          }
+          while (true) {
+            while (elementIterator.hasNext()) {
+              elements.add(elementIterator.next());
+              if (++currSize > index) {
+                if (expectedCount != modCount.get()) {
+                  throw new ConcurrentModificationException();
+                }
+                pos = i;
+                this.elementIterator = elementIterator;
+                return currSize;
+              }
             }
-            state = new ListToListMaterializer<F>(elements);
-            return currSize;
+            if (wrappedIterator.hasNext()) {
+              final E element = wrappedIterator.next();
+              elementIterator = mapper.apply(i, element).iterator();
+              ++i;
+            } else {
+              if (expectedCount != modCount.get()) {
+                throw new ConcurrentModificationException();
+              }
+              state = new ListToListMaterializer<F>(elements);
+              return currSize;
+            }
           }
         }
       } catch (final Exception e) {

@@ -42,6 +42,11 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -104,6 +109,11 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
     }
 
     @Override
+    public boolean isRandomAccess() {
+      return wrapped.isRandomAccess() && materializer.isRandomAccess();
+    }
+
+    @Override
     public int knownSize() {
       final int knownSize = wrapped.knownSize();
       if (knownSize >= 0) {
@@ -121,31 +131,62 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       final ListMaterializer<E> wrapped = this.wrapped;
       final ListMaterializer<E> materializer = this.materializer;
       int i = 0;
-      if (element == null) {
-        while (wrapped.canMaterializeElement(i)) {
-          if (i != numElements) {
-            if (wrapped.materializeElement(i) == null) {
-              return true;
+      if (wrapped.isRandomAccess()) {
+        if (element == null) {
+          while (wrapped.canMaterializeElement(i)) {
+            if (i != numElements) {
+              if (wrapped.materializeElement(i) == null) {
+                return true;
+              }
+            } else {
+              if (materializer.materializeContains(null)) {
+                return true;
+              }
             }
-          } else {
-            if (materializer.materializeContains(null)) {
-              return true;
-            }
+            ++i;
           }
-          ++i;
+        } else {
+          while (wrapped.canMaterializeElement(i)) {
+            if (i != numElements) {
+              if (element.equals(wrapped.materializeElement(i))) {
+                return true;
+              }
+            } else {
+              if (materializer.materializeContains(element)) {
+                return true;
+              }
+            }
+            ++i;
+          }
         }
       } else {
-        while (wrapped.canMaterializeElement(i)) {
-          if (i != numElements) {
-            if (element.equals(wrapped.materializeElement(i))) {
-              return true;
+        final Iterator<E> iterator = wrapped.materializeIterator();
+        if (element == null) {
+          while (iterator.hasNext()) {
+            if (i != numElements) {
+              if (iterator.next() == null) {
+                return true;
+              }
+            } else {
+              if (materializer.materializeContains(null)) {
+                return true;
+              }
             }
-          } else {
-            if (materializer.materializeContains(element)) {
-              return true;
-            }
+            ++i;
           }
-          ++i;
+        } else {
+          while (iterator.hasNext()) {
+            if (i != numElements) {
+              if (element.equals(iterator.next())) {
+                return true;
+              }
+            } else {
+              if (materializer.materializeContains(element)) {
+                return true;
+              }
+            }
+            ++i;
+          }
         }
       }
       return false;
@@ -235,6 +276,11 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
     }
 
     @Override
+    public boolean isRandomAccess() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       final int knownSize = wrapped.knownSize();
       if (knownSize == 0) {
@@ -247,33 +293,66 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
     public boolean materializeContains(final Object element) {
       final ListMaterializer<E> wrapped = this.wrapped;
       int i = 0;
-      if (element == null) {
-        while (wrapped.canMaterializeElement(i)) {
-          final int numElements = materializeUntil(i);
-          if (i != numElements) {
-            if (wrapped.materializeElement(i) == null) {
-              return true;
+      if (wrapped.isRandomAccess()) {
+        if (element == null) {
+          while (wrapped.canMaterializeElement(i)) {
+            final int numElements = materializeUntil(i);
+            if (i != numElements) {
+              if (wrapped.materializeElement(i) == null) {
+                return true;
+              }
+            } else {
+              if (materialized().materializeContains(null)) {
+                return true;
+              }
             }
-          } else {
-            if (materialized().materializeContains(null)) {
-              return true;
-            }
+            ++i;
           }
-          ++i;
+        } else {
+          while (wrapped.canMaterializeElement(i)) {
+            final int numElements = materializeUntil(i);
+            if (i != numElements) {
+              if (element.equals(wrapped.materializeElement(i))) {
+                return true;
+              }
+            } else {
+              if (materialized().materializeContains(element)) {
+                return true;
+              }
+            }
+            ++i;
+          }
         }
       } else {
-        while (wrapped.canMaterializeElement(i)) {
-          final int numElements = materializeUntil(i);
-          if (i != numElements) {
-            if (element.equals(wrapped.materializeElement(i))) {
-              return true;
+        final Iterator<E> iterator = wrapped.materializeIterator();
+        if (element == null) {
+          while (iterator.hasNext()) {
+            final int numElements = materializeUntil(i);
+            if (i != numElements) {
+              if (iterator.next() == null) {
+                return true;
+              }
+            } else {
+              if (materialized().materializeContains(null)) {
+                return true;
+              }
             }
-          } else {
-            if (materialized().materializeContains(element)) {
-              return true;
-            }
+            ++i;
           }
-          ++i;
+        } else {
+          while (iterator.hasNext()) {
+            final int numElements = materializeUntil(i);
+            if (i != numElements) {
+              if (element.equals(iterator.next())) {
+                return true;
+              }
+            } else {
+              if (materialized().materializeContains(element)) {
+                return true;
+              }
+            }
+            ++i;
+          }
         }
       }
       return false;
@@ -367,15 +446,33 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
         int i = pos;
         final ListMaterializer<E> wrapped = this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        while (i <= index && wrapped.canMaterializeElement(i)) {
-          if (predicate.test(i, wrapped.materializeElement(i))) {
-            if (expectedCount != modCount.get()) {
-              throw new ConcurrentModificationException();
+        if (wrapped.isRandomAccess()) {
+          while (i <= index && wrapped.canMaterializeElement(i)) {
+            if (predicate.test(i, wrapped.materializeElement(i))) {
+              if (expectedCount != modCount.get()) {
+                throw new ConcurrentModificationException();
+              }
+              found = true;
+              return pos = i;
             }
-            found = true;
-            return pos = i;
+            ++i;
           }
-          ++i;
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int j = 0;
+          while (j++ < i && iterator.hasNext()) {
+            iterator.next();
+          }
+          while (i <= index && iterator.hasNext()) {
+            if (predicate.test(i, iterator.next())) {
+              if (expectedCount != modCount.get()) {
+                throw new ConcurrentModificationException();
+              }
+              found = true;
+              return pos = i;
+            }
+            ++i;
+          }
         }
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();
