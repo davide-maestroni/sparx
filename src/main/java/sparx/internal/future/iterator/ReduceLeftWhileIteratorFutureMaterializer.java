@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
+import sparx.internal.future.FutureConsumer;
+import sparx.util.annotation.Positive;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.Predicate;
 
@@ -38,11 +40,6 @@ public class ReduceLeftWhileIteratorFutureMaterializer<E> extends
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context);
     setState(new ImmaterialState(wrapped, predicate, operation, cancelException));
-  }
-
-  @Override
-  public boolean isMaterializedAtOnce() {
-    return true;
   }
 
   @Override
@@ -69,6 +66,28 @@ public class ReduceLeftWhileIteratorFutureMaterializer<E> extends
       this.predicate = predicate;
       this.operation = operation;
       this.cancelException = cancelException;
+    }
+
+    @Override
+    public void materializeSkip(@Positive final int count,
+        @NotNull final FutureConsumer<Integer> consumer) {
+      if (!isMaterializing()) {
+        setDone(EmptyIteratorFutureMaterializer.<E>instance());
+        consumeElements(Collections.<E>emptyList());
+        wrapped.materializeHasNext(new CancellableFutureConsumer<Boolean>() {
+          @Override
+          public void cancellableAccept(final Boolean hasNext) throws Exception {
+            consumer.accept(hasNext ? 1 : 0);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      } else {
+        super.materializeSkip(count, consumer);
+      }
     }
 
     @Override

@@ -164,7 +164,7 @@ public class LazyIteratorTests {
     });
     assertEquals(List.of(1, 2), list);
     list.clear();
-    List.of(1, 2, 3, 4).doWhile((n, i) -> {
+    List.of(1, 2, 3).doWhile((n, i) -> {
       list.add(n);
       return true;
     }, list::add);

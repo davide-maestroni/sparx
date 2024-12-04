@@ -90,7 +90,9 @@ import sparx.internal.future.list.OrElseListFutureMaterializer;
 import sparx.internal.future.list.PrependAllListFutureMaterializer;
 import sparx.internal.future.list.PrependListFutureMaterializer;
 import sparx.internal.future.list.ReduceLeftListFutureMaterializer;
+import sparx.internal.future.list.ReduceLeftWhileListFutureMaterializer;
 import sparx.internal.future.list.ReduceRightListFutureMaterializer;
+import sparx.internal.future.list.ReduceRightWhileListFutureMaterializer;
 import sparx.internal.future.list.RemoveAfterListFutureMaterializer;
 import sparx.internal.future.list.RemoveFirstWhereListFutureMaterializer;
 import sparx.internal.future.list.RemoveLastWhereListFutureMaterializer;
@@ -278,14 +280,24 @@ public class FutureListTests {
 
   @Test
   public void doFor() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context).filter(e -> true)
+        .doFor((Consumer<? super Integer>) null));
     assertThrows(NullPointerException.class,
-        () -> List.of(0).toFuture(context).doFor((Consumer<? super Object>) null));
+        () -> List.of(0, 0).toFuture(context).filter(e -> true).doFor(e -> {
+        }, null));
     assertThrows(NullPointerException.class,
-        () -> List.of(0).toFuture(context).doFor((IndexedConsumer<? super Object>) null));
-    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context).doFor(e -> {
-    }, null));
-    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context).doFor((i, e) -> {
-    }, null));
+        () -> List.of(0, 0).toFuture(context).filter(e -> true).doFor(e -> {
+        }, () -> {
+        }, null));
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context).filter(e -> true)
+        .doFor((IndexedConsumer<? super Integer>) null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).toFuture(context).filter(e -> true).doFor((i, e) -> {
+        }, null));
+    assertThrows(NullPointerException.class,
+        () -> List.of(0, 0).toFuture(context).filter(e -> true).doFor((i, e) -> {
+        }, i -> {
+        }, null));
     var list = new ArrayList<>();
     List.of(1, 2, 3).toFuture(context).doFor(e -> list.add(e));
     assertEquals(List.of(1, 2, 3), list);
@@ -302,28 +314,34 @@ public class FutureListTests {
 
   @Test
   public void doWhile() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context).filter(e -> true)
+        .doWhile((Predicate<? super Integer>) null));
     assertThrows(NullPointerException.class,
-        () -> List.of(0).toFuture(context).doWhile((Predicate<? super Object>) null));
+        () -> List.of(0, 0).toFuture(context).filter(e -> true).doWhile(e -> true, null));
     assertThrows(NullPointerException.class,
-        () -> List.of(0).toFuture(context).doWhile((IndexedPredicate<? super Object>) null));
-    assertThrows(NullPointerException.class, () -> List.of(0).toFuture(context).doWhile(null, i -> {
-    }));
+        () -> List.of(0, 0).toFuture(context).filter(e -> true).doWhile(e -> true, () -> {
+        }, null));
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context).filter(e -> true)
+        .doWhile((IndexedPredicate<? super Integer>) null));
     assertThrows(NullPointerException.class,
-        () -> List.of(0).toFuture(context).doWhile(null, (n, i) -> {
-        }));
+        () -> List.of(0, 0).toFuture(context).filter(e -> true).doWhile((i, e) -> true, null));
     assertThrows(NullPointerException.class,
-        () -> List.of(0, 0).toFuture(context).doWhile((i, e) -> true, (Action) null));
-    assertThrows(NullPointerException.class,
-        () -> List.of(0, 0).toFuture(context).doWhile(e -> true, (Action) null));
-    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context)
-        .doWhile((i, e) -> true, (IndexedConsumer<? super Integer>) null));
-    assertThrows(NullPointerException.class,
-        () -> List.of(0, 0).toFuture(context).doWhile(e -> true, (Consumer<? super Integer>) null));
+        () -> List.of(0, 0).toFuture(context).filter(e -> true).doWhile((i, e) -> true, e -> {
+        }, null));
     var list = new ArrayList<>();
-    List.of(1, 2, 3).toFuture(context).doWhile(e -> e < 3, list::add);
-    assertEquals(List.of(1, 2), list);
+    List.of(1, 2, 3).toFuture(context).doWhile((i, e) -> e < 3, list::add);
+    assertEquals(List.of(), list);
+    list.clear();
+    List.of(1, 2, 3).toFuture(context).filter(e -> true).doWhile((i, e) -> e < 3, list::add);
+    assertEquals(List.of(), list);
     list.clear();
     List.of(1, 2, 3).toFuture(context).doWhile(e -> {
+      list.add(e);
+      return e < 2;
+    });
+    assertEquals(List.of(1, 2), list);
+    list.clear();
+    List.of(1, 2, 3).toFuture(context).filter(e -> true).doWhile(e -> {
       list.add(e);
       return e < 2;
     });
@@ -335,23 +353,29 @@ public class FutureListTests {
     });
     assertEquals(List.of(0, 1, 2), indexes);
     indexes.clear();
+    List.of(1, 2, 3, 4).toFuture(context).filter(e -> true).doWhile((n, i) -> {
+      indexes.add(n);
+      return i < 3;
+    });
+    assertEquals(List.of(0, 1, 2), indexes);
+    indexes.clear();
     List.of(1, 2, 3, 4).toFuture(context).nonBlockingWhile((n, i) -> {
       indexes.add(n);
       return i < 3;
     }).get();
     assertEquals(List.of(0, 1, 2), indexes);
     indexes.clear();
-    List.of(1, 2, 3, 4).toFuture(context).doWhile((n, i) -> {
+    List.of(1, 2, 3).toFuture(context).doWhile((n, i) -> {
       indexes.add(n);
-      return i < 3;
-    }, (n, i) -> indexes.add(n));
-    assertEquals(List.of(0, 0, 1, 1, 2), indexes);
+      return true;
+    }, indexes::add);
+    assertEquals(List.of(0, 1, 2, 3), indexes);
     indexes.clear();
-    List.of(1, 2, 3, 4).toFuture(context).nonBlockingWhile((n, i) -> {
+    List.of(1, 2, 3).toFuture(context).nonBlockingWhile((n, i) -> {
       indexes.add(n);
-      return i < 3;
-    }, (n, i) -> indexes.add(n)).get();
-    assertEquals(List.of(0, 0, 1, 1, 2), indexes);
+      return true;
+    }, indexes::add).get();
+    assertEquals(List.of(0, 1, 2, 3), indexes);
 
     testCancel(f -> f.nonBlockingWhile(e -> true));
   }
@@ -1790,6 +1814,27 @@ public class FutureListTests {
   }
 
   @Test
+  public void reduceLeftWhile() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context).filter(e -> true)
+        .reduceLeftWhile(null, Integer::sum));
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context).filter(e -> true)
+        .reduceLeftWhile(Objects::nonNull, null));
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(10), () -> l, ll -> ll.reduceLeftWhile(s -> s < 10, Integer::sum));
+    test(List.of(1), () -> l, ll -> ll.reduceLeftWhile(s -> s < 1, Integer::sum));
+    test(List.of(), List::<Integer>of, ll -> ll.reduceLeftWhile(s -> s < 10, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, 2, null).toFuture(context).filter(e -> true)
+            .reduceLeftWhile(s -> s < 10, Integer::sum).first());
+
+    testMaterializer(List.of(2), c -> new ReduceLeftWhileListFutureMaterializer<>(
+        new ListToListFutureMaterializer<>(List.of(1, 2, 3), c), e -> e < 2, (lt, rt) -> rt, c,
+        new AtomicReference<>()));
+
+    testCancel(f -> f.reduceLeftWhile(e -> true, (i, e) -> i));
+  }
+
+  @Test
   public void reduceRight() throws Exception {
     assertThrows(NullPointerException.class,
         () -> List.of(0, 0).toFuture(context).reduceRight(null));
@@ -1807,6 +1852,27 @@ public class FutureListTests {
         new AtomicReference<>()));
 
     testCancel(f -> f.reduceRight((i, e) -> i));
+  }
+
+  @Test
+  public void reduceRightWhile() throws Exception {
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context).filter(e -> true)
+        .reduceRightWhile(null, Integer::sum));
+    assertThrows(NullPointerException.class, () -> List.of(0, 0).toFuture(context).filter(e -> true)
+        .reduceRightWhile(Objects::nonNull, null));
+    var l = List.of(1, 2, 3, 4, 5);
+    test(List.of(12), () -> l, ll -> ll.reduceRightWhile(s -> s < 10, Integer::sum));
+    test(List.of(5), () -> l, ll -> ll.reduceRightWhile(s -> s < 1, Integer::sum));
+    test(List.of(), List::<Integer>of, ll -> ll.reduceRightWhile(s -> s < 10, Integer::sum));
+    assertThrows(NullPointerException.class,
+        () -> List.of(1, 2, null).toFuture(context).filter(e -> true)
+            .reduceRightWhile(s -> s < 10, Integer::sum).first());
+
+    testMaterializer(List.of(3), c -> new ReduceRightWhileListFutureMaterializer<>(
+        new ListToListFutureMaterializer<>(List.of(1, 2, 3), c), e -> e < 2, (lt, rt) -> rt, c,
+        new AtomicReference<>()));
+
+    testCancel(f -> f.reduceRightWhile(e -> true, (i, e) -> i));
   }
 
   @Test

@@ -15,10 +15,13 @@
  */
 package sparx.internal.future.list;
 
+import static sparx.internal.future.FutureConsumers.safeConsume;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
@@ -29,17 +32,15 @@ import sparx.util.function.BinaryFunction;
 
 public class ReduceRightListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
+  private static final Logger LOGGER = Logger.getLogger(
+      ReduceRightListFutureMaterializer.class.getName());
+
   public ReduceRightListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context);
     setState(new ImmaterialState(wrapped, operation, cancelException));
-  }
-
-  @Override
-  public boolean isMaterializedAtOnce() {
-    return true;
   }
 
   @Override
@@ -137,10 +138,15 @@ public class ReduceRightListFutureMaterializer<E> extends AbstractListFutureMate
 
     @Override
     public void materializeEmpty(@NotNull final FutureConsumer<Boolean> consumer) {
-      materialized(new StateConsumer<E>() {
+      wrapped.materializeHasElement(0, new CancellableFutureConsumer<Boolean>() {
         @Override
-        public void accept(@NotNull final ListFutureMaterializer<E> state) {
-          state.materializeEmpty(consumer);
+        public void cancellableAccept(final Boolean hasElement) throws Exception {
+          consumer.accept(!hasElement);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
         }
       });
     }
@@ -148,12 +154,21 @@ public class ReduceRightListFutureMaterializer<E> extends AbstractListFutureMate
     @Override
     public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      materialized(new StateConsumer<E>() {
-        @Override
-        public void accept(@NotNull final ListFutureMaterializer<E> state) {
-          state.materializeHasElement(index, consumer);
-        }
-      });
+      if (index == 0) {
+        wrapped.materializeHasElement(0, new CancellableFutureConsumer<Boolean>() {
+          @Override
+          public void cancellableAccept(final Boolean hasElement) throws Exception {
+            consumer.accept(hasElement);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      } else {
+        safeConsume(consumer, false, LOGGER);
+      }
     }
 
     @Override
@@ -180,10 +195,15 @@ public class ReduceRightListFutureMaterializer<E> extends AbstractListFutureMate
 
     @Override
     public void materializeSize(@NotNull final FutureConsumer<Integer> consumer) {
-      materialized(new StateConsumer<E>() {
+      wrapped.materializeHasElement(0, new CancellableFutureConsumer<Boolean>() {
         @Override
-        public void accept(@NotNull final ListFutureMaterializer<E> state) {
-          state.materializeSize(consumer);
+        public void cancellableAccept(final Boolean hasElement) throws Exception {
+          consumer.accept(hasElement ? 1 : 0);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
         }
       });
     }
@@ -205,12 +225,12 @@ public class ReduceRightListFutureMaterializer<E> extends AbstractListFutureMate
 
     @Override
     public int weightEmpty() {
-      return 1;
+      return wrapped.weightHasElement();
     }
 
     @Override
     public int weightHasElement() {
-      return 1;
+      return wrapped.weightHasElement();
     }
 
     @Override
@@ -225,7 +245,7 @@ public class ReduceRightListFutureMaterializer<E> extends AbstractListFutureMate
 
     @Override
     public int weightSize() {
-      return 1;
+      return wrapped.weightHasElement();
     }
 
     private void consumeState(@NotNull final ListFutureMaterializer<E> state) {

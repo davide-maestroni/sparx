@@ -15,11 +15,14 @@
  */
 package sparx.internal.future.list;
 
+import static sparx.internal.future.FutureConsumers.safeConsume;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
@@ -29,16 +32,13 @@ import sparx.util.annotation.NotNegative;
 
 public class MaxListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
+  private static final Logger LOGGER = Logger.getLogger(MaxListFutureMaterializer.class.getName());
+
   public MaxListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
       @NotNull final Comparator<? super E> comparator, @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context);
     setState(new ImmaterialState(wrapped, comparator, cancelException));
-  }
-
-  @Override
-  public boolean isMaterializedAtOnce() {
-    return true;
   }
 
   @Override
@@ -136,10 +136,15 @@ public class MaxListFutureMaterializer<E> extends AbstractListFutureMaterializer
 
     @Override
     public void materializeEmpty(@NotNull final FutureConsumer<Boolean> consumer) {
-      materialized(new StateConsumer<E>() {
+      wrapped.materializeHasElement(0, new CancellableFutureConsumer<Boolean>() {
         @Override
-        public void accept(@NotNull final ListFutureMaterializer<E> state) {
-          state.materializeEmpty(consumer);
+        public void cancellableAccept(final Boolean hasElement) throws Exception {
+          consumer.accept(!hasElement);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
         }
       });
     }
@@ -147,12 +152,21 @@ public class MaxListFutureMaterializer<E> extends AbstractListFutureMaterializer
     @Override
     public void materializeHasElement(@NotNegative final int index,
         @NotNull final FutureConsumer<Boolean> consumer) {
-      materialized(new StateConsumer<E>() {
-        @Override
-        public void accept(@NotNull final ListFutureMaterializer<E> state) {
-          state.materializeHasElement(index, consumer);
-        }
-      });
+      if (index == 0) {
+        wrapped.materializeHasElement(0, new CancellableFutureConsumer<Boolean>() {
+          @Override
+          public void cancellableAccept(final Boolean hasElement) throws Exception {
+            consumer.accept(hasElement);
+          }
+
+          @Override
+          public void error(@NotNull final Exception error) throws Exception {
+            consumer.error(error);
+          }
+        });
+      } else {
+        safeConsume(consumer, false, LOGGER);
+      }
     }
 
     @Override
@@ -179,10 +193,15 @@ public class MaxListFutureMaterializer<E> extends AbstractListFutureMaterializer
 
     @Override
     public void materializeSize(@NotNull final FutureConsumer<Integer> consumer) {
-      materialized(new StateConsumer<E>() {
+      wrapped.materializeHasElement(0, new CancellableFutureConsumer<Boolean>() {
         @Override
-        public void accept(@NotNull final ListFutureMaterializer<E> state) {
-          state.materializeSize(consumer);
+        public void cancellableAccept(final Boolean hasElement) throws Exception {
+          consumer.accept(hasElement ? 1 : 0);
+        }
+
+        @Override
+        public void error(@NotNull final Exception error) throws Exception {
+          consumer.error(error);
         }
       });
     }
@@ -204,12 +223,12 @@ public class MaxListFutureMaterializer<E> extends AbstractListFutureMaterializer
 
     @Override
     public int weightEmpty() {
-      return weightElements();
+      return wrapped.weightHasElement();
     }
 
     @Override
     public int weightHasElement() {
-      return weightElements();
+      return wrapped.weightHasElement();
     }
 
     @Override
@@ -224,7 +243,7 @@ public class MaxListFutureMaterializer<E> extends AbstractListFutureMaterializer
 
     @Override
     public int weightSize() {
-      return weightElements();
+      return wrapped.weightHasElement();
     }
 
     private void consumeState(@NotNull final ListFutureMaterializer<E> state) {

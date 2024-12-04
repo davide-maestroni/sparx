@@ -29,23 +29,25 @@ import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.annotation.NotNegative;
 import sparx.util.function.BinaryFunction;
+import sparx.util.function.Predicate;
 
-public class ReduceLeftListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
+public class ReduceRightWhileListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      ReduceLeftListFutureMaterializer.class.getName());
+      ReduceRightWhileListFutureMaterializer.class.getName());
 
-  public ReduceLeftListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
+  public ReduceRightWhileListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
+      @NotNull final Predicate<? super E> predicate,
       @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context);
-    setState(new ImmaterialState(wrapped, operation, cancelException));
+    setState(new ImmaterialState(wrapped, predicate, operation, cancelException));
   }
 
   @Override
   public int knownSize() {
-    return 1;
+    return -1;
   }
 
   private interface StateConsumer<E> {
@@ -57,13 +59,16 @@ public class ReduceLeftListFutureMaterializer<E> extends AbstractListFutureMater
 
     private final AtomicReference<CancellationException> cancelException;
     private final BinaryFunction<? super E, ? super E, ? extends E> operation;
+    private final Predicate<? super E> predicate;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListFutureMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListFutureMaterializer<E> wrapped,
+        @NotNull final Predicate<? super E> predicate,
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
+      this.predicate = predicate;
       this.operation = operation;
       this.cancelException = cancelException;
     }
@@ -95,7 +100,7 @@ public class ReduceLeftListFutureMaterializer<E> extends AbstractListFutureMater
 
     @Override
     public int knownSize() {
-      return 1;
+      return -1;
     }
 
     @Override
@@ -220,7 +225,7 @@ public class ReduceLeftListFutureMaterializer<E> extends AbstractListFutureMater
 
     @Override
     public int weightElements() {
-      return stateConsumers.isEmpty() ? wrapped.weightNextWhile() : 1;
+      return stateConsumers.isEmpty() ? wrapped.weightPrevWhile() : 1;
     }
 
     @Override
@@ -260,25 +265,27 @@ public class ReduceLeftListFutureMaterializer<E> extends AbstractListFutureMater
       final ArrayList<StateConsumer<E>> stateConsumers = this.stateConsumers;
       stateConsumers.add(consumer);
       if (stateConsumers.size() == 1) {
-        wrapped.materializeNextWhile(0, new CancellableIndexedFuturePredicate<E>() {
+        wrapped.materializePrevWhile(Integer.MAX_VALUE, new CancellableIndexedFuturePredicate<E>() {
           private E current;
+          private boolean first = true;
 
           @Override
           public void cancellableComplete(final int size) {
-            if (size > 0) {
-              setState(current);
-            } else {
-              setState();
-            }
+            setState();
           }
 
           @Override
           public boolean cancellableTest(final int size, final int index, final E element)
               throws Exception {
-            if (index > 0) {
-              current = operation.apply(current, element);
-            } else {
+            if (first) {
+              first = false;
               current = element;
+            } else {
+              current = operation.apply(element, current);
+            }
+            if (index == 0 || !predicate.test(current)) {
+              setState(current);
+              return false;
             }
             return true;
           }

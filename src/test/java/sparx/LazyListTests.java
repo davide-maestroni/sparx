@@ -130,6 +130,7 @@ public class LazyListTests {
     }, null));
     assertThrows(NullPointerException.class, () -> List.of(0, 0).doFor(e -> {
     }, () -> {
+      throw new IllegalStateException();
     }, null));
     assertThrows(NullPointerException.class,
         () -> List.of(0, 0).doFor((IndexedConsumer<? super Integer>) null));
@@ -137,6 +138,7 @@ public class LazyListTests {
     }, null));
     assertThrows(NullPointerException.class, () -> List.of(0, 0).doFor((i, e) -> {
     }, i -> {
+      throw new IllegalStateException();
     }, null));
     var list = new ArrayList<>();
     List.of(1, 2, 3).doFor(e -> list.add(e));
@@ -152,15 +154,17 @@ public class LazyListTests {
         () -> List.of(0, 0).doWhile((Predicate<? super Integer>) null));
     assertThrows(NullPointerException.class, () -> List.of(0, 0).doWhile(e -> true, null));
     assertThrows(NullPointerException.class, () -> List.of(0, 0).doWhile(e -> true, () -> {
+      throw new IllegalStateException();
     }, null));
     assertThrows(NullPointerException.class,
         () -> List.of(0, 0).doWhile((IndexedPredicate<? super Integer>) null));
     assertThrows(NullPointerException.class, () -> List.of(0, 0).doWhile((i, e) -> true, null));
     assertThrows(NullPointerException.class, () -> List.of(0, 0).doWhile((i, e) -> true, e -> {
+      throw new IllegalStateException();
     }, null));
     var list = new ArrayList<>();
     List.of(1, 2, 3).doWhile((i, e) -> e < 3, list::add);
-    assertEquals(List.of(3), list);
+    assertEquals(List.of(), list);
     list.clear();
     List.of(1, 2, 3).doWhile(e -> {
       list.add(e);
@@ -174,9 +178,9 @@ public class LazyListTests {
     });
     assertEquals(List.of(0, 1, 2), indexes);
     indexes.clear();
-    List.of(1, 2, 3, 4).doWhile((n, i) -> {
+    List.of(1, 2, 3).doWhile((n, i) -> {
       indexes.add(n);
-      return i < 3;
+      return true;
     }, indexes::add);
     assertEquals(List.of(0, 1, 2, 3), indexes);
   }

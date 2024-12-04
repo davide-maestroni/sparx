@@ -164,7 +164,9 @@ import sparx.internal.future.list.OrElseListFutureMaterializer;
 import sparx.internal.future.list.PrependAllListFutureMaterializer;
 import sparx.internal.future.list.PrependListFutureMaterializer;
 import sparx.internal.future.list.ReduceLeftListFutureMaterializer;
+import sparx.internal.future.list.ReduceLeftWhileListFutureMaterializer;
 import sparx.internal.future.list.ReduceRightListFutureMaterializer;
+import sparx.internal.future.list.ReduceRightWhileListFutureMaterializer;
 import sparx.internal.future.list.RemoveAfterListFutureMaterializer;
 import sparx.internal.future.list.RemoveFirstWhereListFutureMaterializer;
 import sparx.internal.future.list.RemoveLastWhereListFutureMaterializer;
@@ -5411,6 +5413,20 @@ class future extends Sparx {
       };
     }
 
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerReduceLeftWhile(
+        @NotNull final ListFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Predicate<? super E> predicate,
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return new LazyListFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> list) {
+          return lazy.List.wrap(list).reduceLeftWhile(predicate, operation);
+        }
+      };
+    }
+
     private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerReduceRight(
         @NotNull final ListFutureMaterializer<E> materializer,
         @NotNull final ExecutionContext context,
@@ -5420,6 +5436,20 @@ class future extends Sparx {
         @Override
         protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> list) {
           return lazy.List.wrap(list).reduceRight(operation);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyListFutureMaterializer<E, E> lazyMaterializerReduceRightWhile(
+        @NotNull final ListFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Predicate<? super E> predicate,
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      return new LazyListFutureMaterializer<E, E>(materializer, context, cancelException, -1) {
+        @Override
+        protected @NotNull java.util.List<E> transform(@NotNull final java.util.List<E> list) {
+          return lazy.List.wrap(list).reduceRightWhile(predicate, operation);
         }
       };
     }
@@ -5993,14 +6023,15 @@ class future extends Sparx {
     @SuppressWarnings("unchecked")
     public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer) {
       doFor(elementConsumer, (Consumer<? super Integer>) NOOP_CONSUMER,
-          (IndexedConsumer<? super Throwable>) NOOP_CONSUMER);
+          (IndexedConsumer<? super Throwable>) NOOP_INDEXED_CONSUMER);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer,
         @NotNull final Consumer<? super Integer> endConsumer) {
-      doFor(elementConsumer, endConsumer, (IndexedConsumer<? super Throwable>) NOOP_CONSUMER);
+      doFor(elementConsumer, endConsumer,
+          (IndexedConsumer<? super Throwable>) NOOP_INDEXED_CONSUMER);
     }
 
     @Override
@@ -6060,7 +6091,7 @@ class future extends Sparx {
         return;
       }
       try {
-        nonBlockingWhile(elementPredicate).get();
+        nonBlockingWhile(elementPredicate, endConsumer, errorConsumer).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -6097,7 +6128,7 @@ class future extends Sparx {
         return;
       }
       try {
-        nonBlockingWhile(elementPredicate).get();
+        nonBlockingWhile(elementPredicate, endAction, errorConsumer).get();
       } catch (final ExecutionException e) {
         throw UncheckedException.throwUnchecked(UncheckedException.addCurrentStack(e.getCause()));
       } catch (final Exception e) {
@@ -7979,9 +8010,24 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> reduceLeftWhile(@NotNull Predicate<? super E> predicate,
-        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-      return null;
+    public @NotNull List<E> reduceLeftWhile(@NotNull final Predicate<? super E> predicate,
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      final ExecutionContext context = this.context;
+      final ListFutureMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return cloneList(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerReduceLeftWhile(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
+      }
+      return new List<E>(context, cancelException,
+          new ReduceLeftWhileListFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation"),
+              context, cancelException));
     }
 
     @Override
@@ -8005,9 +8051,24 @@ class future extends Sparx {
     }
 
     @Override
-    public @NotNull List<E> reduceRightWhile(@NotNull Predicate<? super E> predicate,
-        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-      return null;
+    public @NotNull List<E> reduceRightWhile(@NotNull final Predicate<? super E> predicate,
+        @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation) {
+      final ExecutionContext context = this.context;
+      final ListFutureMaterializer<E> materializer = this.materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0 || knownSize == 1) {
+        return cloneList(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new List<E>(context, cancelException,
+            lazyMaterializerReduceRightWhile(materializer, context, cancelException,
+                Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation")));
+      }
+      return new List<E>(context, cancelException,
+          new ReduceRightWhileListFutureMaterializer<E>(materializer,
+              Require.notNull(predicate, "predicate"), Require.notNull(operation, "operation"),
+              context, cancelException));
     }
 
     @Override

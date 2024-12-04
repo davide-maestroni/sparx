@@ -37,11 +37,6 @@ public class MaxIteratorFutureMaterializer<E> extends AbstractIteratorFutureMate
   }
 
   @Override
-  public boolean isMaterializedAtOnce() {
-    return true;
-  }
-
-  @Override
   public int knownSize() {
     return -1;
   }
@@ -59,11 +54,6 @@ public class MaxIteratorFutureMaterializer<E> extends AbstractIteratorFutureMate
       this.wrapped = wrapped;
       this.comparator = comparator;
       this.cancelException = cancelException;
-    }
-
-    @Override
-    public boolean isMaterializedAtOnce() {
-      return true;
     }
 
     @Override

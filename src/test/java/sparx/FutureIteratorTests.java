@@ -342,13 +342,13 @@ public class FutureIteratorTests {
     });
     assertEquals(List.of(1, 2), list);
     list.clear();
-    List.of(1, 2, 3, 4).toFuture(context).doWhile((n, i) -> {
+    List.of(1, 2, 3).toFuture(context).doWhile((n, i) -> {
       list.add(n);
       return true;
     }, list::add);
     assertEquals(List.of(0, 1, 2, 3), list);
     list.clear();
-    List.of(1, 2, 3, 4).toFuture(context).flatMap(e -> List.of(e)).doWhile((n, i) -> {
+    List.of(1, 2, 3).toFuture(context).flatMap(e -> List.of(e)).doWhile((n, i) -> {
       list.add(n);
       return true;
     }, list::add);

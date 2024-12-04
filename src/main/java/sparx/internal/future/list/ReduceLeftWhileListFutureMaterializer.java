@@ -29,18 +29,20 @@ import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.util.annotation.NotNegative;
 import sparx.util.function.BinaryFunction;
+import sparx.util.function.Predicate;
 
-public class ReduceLeftListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
+public class ReduceLeftWhileListFutureMaterializer<E> extends AbstractListFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      ReduceLeftListFutureMaterializer.class.getName());
+      ReduceLeftWhileListFutureMaterializer.class.getName());
 
-  public ReduceLeftListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
+  public ReduceLeftWhileListFutureMaterializer(@NotNull final ListFutureMaterializer<E> wrapped,
+      @NotNull final Predicate<? super E> predicate,
       @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
       @NotNull final ExecutionContext context,
       @NotNull final AtomicReference<CancellationException> cancelException) {
     super(context);
-    setState(new ImmaterialState(wrapped, operation, cancelException));
+    setState(new ImmaterialState(wrapped, predicate, operation, cancelException));
   }
 
   @Override
@@ -57,13 +59,16 @@ public class ReduceLeftListFutureMaterializer<E> extends AbstractListFutureMater
 
     private final AtomicReference<CancellationException> cancelException;
     private final BinaryFunction<? super E, ? super E, ? extends E> operation;
+    private final Predicate<? super E> predicate;
     private final ArrayList<StateConsumer<E>> stateConsumers = new ArrayList<StateConsumer<E>>(2);
     private final ListFutureMaterializer<E> wrapped;
 
     private ImmaterialState(@NotNull final ListFutureMaterializer<E> wrapped,
+        @NotNull final Predicate<? super E> predicate,
         @NotNull final BinaryFunction<? super E, ? super E, ? extends E> operation,
         @NotNull final AtomicReference<CancellationException> cancelException) {
       this.wrapped = wrapped;
+      this.predicate = predicate;
       this.operation = operation;
       this.cancelException = cancelException;
     }
@@ -279,6 +284,10 @@ public class ReduceLeftListFutureMaterializer<E> extends AbstractListFutureMater
               current = operation.apply(current, element);
             } else {
               current = element;
+            }
+            if (!predicate.test(current)) {
+              setState(current);
+              return false;
             }
             return true;
           }
