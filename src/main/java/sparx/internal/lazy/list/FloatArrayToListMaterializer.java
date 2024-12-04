@@ -33,6 +33,11 @@ public class FloatArrayToListMaterializer implements ListMaterializer<Float> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return elements.length;
   }
