@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
@@ -73,7 +74,7 @@ public class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> 
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return state.materializeIterator();
   }
 
   @Override
@@ -229,7 +230,7 @@ public class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> 
 
     @Override
     public @NotNull Iterator<E> materializeIterator() {
-      return new ListMaterializerIterator<E>(this);
+      return new FlatMapIterator();
     }
 
     @Override
@@ -241,6 +242,41 @@ public class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> 
       }
       final long size = (long) wrappedSize + materializer.materializeSize() - 1;
       return SizeOverflowException.safeCast(size);
+    }
+
+    private class FlatMapIterator implements Iterator<E> {
+
+      private final Iterator<E> elementsIterator = materializer.materializeIterator();
+      private final Iterator<E> wrappedIterator = wrapped.materializeIterator();
+
+      private int pos;
+
+      @Override
+      public boolean hasNext() {
+        final Iterator<E> wrappedIterator = this.wrappedIterator;
+        if (pos == numElements) {
+          if (!elementsIterator.hasNext()) {
+            ++pos;
+            wrappedIterator.next();
+            return wrappedIterator.hasNext();
+          }
+          return true;
+        }
+        return wrappedIterator.hasNext();
+      }
+
+      @Override
+      public E next() {
+        if (!hasNext()) {
+          throw new NoSuchElementException();
+        }
+        return (pos == numElements ? elementsIterator : wrappedIterator).next();
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException("remove");
+      }
     }
   }
 
@@ -398,7 +434,7 @@ public class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> 
 
     @Override
     public @NotNull Iterator<E> materializeIterator() {
-      return new ListMaterializerIterator<E>(this);
+      return materialized().materializeIterator();
     }
 
     @Override
@@ -445,17 +481,30 @@ public class FlatMapLastWhereListMaterializer<E> implements ListMaterializer<E> 
         pos = wrapped.materializeSize() - 1;
       }
       try {
+        int i = 0;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        int i = pos;
-        while (i >= index) {
-          if (predicate.test(i, wrapped.materializeElement(i))) {
-            if (expectedCount != modCount.get()) {
-              throw new ConcurrentModificationException();
+        if (wrapped.isRandomAccess()) {
+          i = pos;
+          while (i >= index) {
+            if (predicate.test(i, wrapped.materializeElement(i))) {
+              if (expectedCount != modCount.get()) {
+                throw new ConcurrentModificationException();
+              }
+              found = true;
+              return pos = i;
             }
-            found = true;
-            return pos = i;
+            --i;
           }
-          --i;
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int foundIndex = -1;
+          while (iterator.hasNext()) {
+            if (predicate.test(i, iterator.next())) {
+              foundIndex = i;
+            }
+          }
+          found = foundIndex >= 0;
+          return pos = foundIndex;
         }
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();

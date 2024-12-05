@@ -73,7 +73,16 @@ public class DropListMaterializer<E> extends AbstractListMaterializer<E> impleme
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    final ListMaterializer<E> wrapped = this.wrapped;
+    if (wrapped.isRandomAccess()) {
+      return new ListMaterializerIterator<E>(this);
+    }
+    final Iterator<E> iterator = wrapped.materializeIterator();
+    int i = 0;
+    while (i < maxElements && iterator.hasNext()) {
+      iterator.next();
+    }
+    return iterator;
   }
 
   @Override

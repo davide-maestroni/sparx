@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
@@ -174,7 +175,7 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return new FlatMapIterator();
   }
 
   @Override
@@ -205,6 +206,44 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public @NotNull ListMaterializer<E> materialized() {
       return materializer;
+    }
+  }
+
+  private class FlatMapIterator implements Iterator<E> {
+
+    private final Iterator<E> wrappedIterator = wrapped.materializeIterator();
+
+    private Iterator<E> elementsIterator;
+    private int pos;
+
+    @Override
+    public boolean hasNext() {
+      final Iterator<E> wrappedIterator = this.wrappedIterator;
+      if (pos == numElements) {
+        if (elementsIterator == null) {
+          elementsIterator = state.materialized().materializeIterator();
+        }
+        if (!elementsIterator.hasNext()) {
+          ++pos;
+          wrappedIterator.next();
+          return wrappedIterator.hasNext();
+        }
+        return true;
+      }
+      return wrappedIterator.hasNext();
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      return (pos == numElements ? elementsIterator : wrappedIterator).next();
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
     }
   }
 

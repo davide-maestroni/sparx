@@ -42,6 +42,11 @@ public class FoldLeftWhileListMaterializer<E, F> implements ListMaterializer<F> 
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -136,10 +141,17 @@ public class FoldLeftWhileListMaterializer<E, F> implements ListMaterializer<F> 
         final Predicate<? super F> predicate = this.predicate;
         final BinaryFunction<? super F, ? super E, ? extends F> operation = this.operation;
         F current = identity;
-        int i = 0;
-        while (predicate.test(current) && wrapped.canMaterializeElement(i)) {
-          current = operation.apply(current, wrapped.materializeElement(i));
-          ++i;
+        if (wrapped.isRandomAccess()) {
+          int i = 0;
+          while (predicate.test(current) && wrapped.canMaterializeElement(i)) {
+            current = operation.apply(current, wrapped.materializeElement(i));
+            ++i;
+          }
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          while (predicate.test(current) && iterator.hasNext()) {
+            current = operation.apply(current, iterator.next());
+          }
         }
         return (state = new ElementState<F>(current)).materialized();
       } catch (final Exception e) {

@@ -103,7 +103,7 @@ public class CollectionToListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean isRandomAccess() {
-      return false;
+      return true;
     }
 
     @Override

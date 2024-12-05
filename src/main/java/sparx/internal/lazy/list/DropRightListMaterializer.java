@@ -16,6 +16,7 @@
 package sparx.internal.lazy.list;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
@@ -73,11 +74,40 @@ public class DropRightListMaterializer<E> extends AbstractListMaterializer<E> im
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    if (wrapped.isRandomAccess()) {
+      return new ListMaterializerIterator<E>(this);
+    }
+    return new DropIterator();
   }
 
   @Override
   public int materializeSize() {
     return Math.max(0, wrapped.materializeSize() - maxElements);
+  }
+
+  private class DropIterator implements Iterator<E> {
+
+    private final Iterator<E> iterator = wrapped.materializeIterator();
+
+    private int pos;
+
+    @Override
+    public boolean hasNext() {
+      return pos < maxElements && iterator.hasNext();
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      ++pos;
+      return iterator.next();
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
   }
 }

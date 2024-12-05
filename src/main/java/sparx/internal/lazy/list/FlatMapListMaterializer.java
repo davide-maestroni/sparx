@@ -102,7 +102,7 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
 
     @Override
     public boolean isRandomAccess() {
-      return false;
+      return true;
     }
 
     @Override

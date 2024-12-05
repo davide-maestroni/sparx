@@ -15,6 +15,7 @@
  */
 package sparx.internal.lazy.list;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -37,6 +38,11 @@ public class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
   @Override
   public boolean canMaterializeElement(@NotNegative final int index) {
     return index == 0 && !state.materialized().isEmpty();
+  }
+
+  @Override
+  public boolean isRandomAccess() {
+    return true;
   }
 
   @Override
@@ -130,8 +136,19 @@ public class FoldRightListMaterializer<E, F> implements ListMaterializer<F> {
         final ListMaterializer<E> wrapped = this.wrapped;
         final BinaryFunction<? super E, ? super F, ? extends F> operation = this.operation;
         F current = identity;
-        for (int i = wrapped.materializeSize() - 1; i >= 0; --i) {
-          current = operation.apply(wrapped.materializeElement(i), current);
+        if (wrapped.isRandomAccess()) {
+          for (int i = wrapped.materializeSize() - 1; i >= 0; --i) {
+            current = operation.apply(wrapped.materializeElement(i), current);
+          }
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          final ArrayList<E> elements = new ArrayList<E>();
+          while (iterator.hasNext()) {
+            elements.add(iterator.next());
+          }
+          for (int i = elements.size() - 1; i >= 0; --i) {
+            current = operation.apply(elements.get(i), current);
+          }
         }
         return (state = new ElementState<F>(current)).materialized();
       } catch (final Exception e) {

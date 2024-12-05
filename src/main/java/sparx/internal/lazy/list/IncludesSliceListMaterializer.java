@@ -40,6 +40,11 @@ public class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolea
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -117,6 +122,7 @@ public class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolea
         throw new ConcurrentModificationException();
       }
       try {
+        final ListMaterializer<E> wrapped = this.wrapped;
         final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
         Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
         if (!elementsIterator.hasNext()) {
@@ -125,18 +131,41 @@ public class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolea
         }
         int i = 0;
         int index = 0;
-        while (wrapped.canMaterializeElement(i)) {
-          if (!elementsIterator.hasNext()) {
-            state = TRUE_STATE;
-            return true;
+        if (wrapped.isRandomAccess()) {
+          while (wrapped.canMaterializeElement(i)) {
+            if (!elementsIterator.hasNext()) {
+              state = TRUE_STATE;
+              return true;
+            }
+            final E left = wrapped.materializeElement(i);
+            Object right = elementsIterator.next();
+            if (left == right || (left != null && left.equals(right))) {
+              ++i;
+            } else {
+              i = ++index;
+              elementsIterator = elementsMaterializer.materializeIterator();
+            }
           }
-          final E left = wrapped.materializeElement(i);
-          Object right = elementsIterator.next();
-          if (left == right || (left != null && left.equals(right))) {
-            ++i;
-          } else {
-            i = ++index;
-            elementsIterator = elementsMaterializer.materializeIterator();
+        } else {
+          Iterator<E> iterator = wrapped.materializeIterator();
+          while (iterator.hasNext()) {
+            if (!elementsIterator.hasNext()) {
+              state = TRUE_STATE;
+              return true;
+            }
+            final E left = iterator.next();
+            Object right = elementsIterator.next();
+            if (left == right || (left != null && left.equals(right))) {
+              ++i;
+            } else {
+              i = 0;
+              ++index;
+              iterator = wrapped.materializeIterator();
+              while (i < index && iterator.hasNext()) {
+                iterator.next();
+              }
+              elementsIterator = elementsMaterializer.materializeIterator();
+            }
           }
         }
         state = FALSE_STATE;

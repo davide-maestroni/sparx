@@ -82,7 +82,17 @@ public class DropWhileListMaterializer<E> extends AbstractListMaterializer<E> im
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    final ListMaterializer<E> wrapped = this.wrapped;
+    if (wrapped.isRandomAccess()) {
+      return new ListMaterializerIterator<E>(this);
+    }
+    final int maxElements = state.materialized();
+    final Iterator<E> iterator = wrapped.materializeIterator();
+    int i = 0;
+    while (i < maxElements && iterator.hasNext()) {
+      iterator.next();
+    }
+    return iterator;
   }
 
   @Override
@@ -139,9 +149,16 @@ public class DropWhileListMaterializer<E> extends AbstractListMaterializer<E> im
         final ListMaterializer<E> wrapped = DropWhileListMaterializer.this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
         int i = 0;
-        while (wrapped.canMaterializeElement(i) && predicate.test(i,
-            wrapped.materializeElement(i))) {
-          ++i;
+        if (wrapped.isRandomAccess()) {
+          while (wrapped.canMaterializeElement(i) && predicate.test(i,
+              wrapped.materializeElement(i))) {
+            ++i;
+          }
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          while (iterator.hasNext() && predicate.test(i, wrapped.materializeElement(i))) {
+            ++i;
+          }
         }
         state = new ElementsState(i);
         return i;

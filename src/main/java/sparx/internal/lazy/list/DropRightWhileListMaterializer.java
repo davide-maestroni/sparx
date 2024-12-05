@@ -77,7 +77,17 @@ public class DropRightWhileListMaterializer<E> extends AbstractListMaterializer<
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    final ListMaterializer<E> wrapped = this.wrapped;
+    if (wrapped.isRandomAccess()) {
+      return new ListMaterializerIterator<E>(this);
+    }
+    final int maxElements = state.materialized();
+    final Iterator<E> iterator = wrapped.materializeIterator();
+    int i = 0;
+    while (i < maxElements && iterator.hasNext()) {
+      iterator.next();
+    }
+    return iterator;
   }
 
   @Override
@@ -138,16 +148,35 @@ public class DropRightWhileListMaterializer<E> extends AbstractListMaterializer<
       try {
         final ListMaterializer<E> wrapped = DropRightWhileListMaterializer.this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        final int size = wrapped.materializeSize();
-        int i = size - 1;
-        for (; i >= 0; --i) {
-          if (!predicate.test(i, wrapped.materializeElement(i))) {
-            break;
+        if (wrapped.isRandomAccess()) {
+          final int size = wrapped.materializeSize();
+          int i = size - 1;
+          for (; i >= 0; --i) {
+            if (!predicate.test(i, wrapped.materializeElement(i))) {
+              break;
+            }
           }
+          final int elements = size - i - 1;
+          state = new ElementsState(elements);
+          return elements;
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int i = 0;
+          int index = -1;
+          while (iterator.hasNext()) {
+            if (!predicate.test(i, wrapped.materializeElement(i))) {
+              index = i;
+            }
+            ++i;
+          }
+          if (index >= 0) {
+            final int elements = i - index - 1;
+            state = new ElementsState(elements);
+            return elements;
+          }
+          state = new ElementsState(i);
+          return i;
         }
-        final int elements = size - i - 1;
-        state = new ElementsState(elements);
-        return elements;
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);

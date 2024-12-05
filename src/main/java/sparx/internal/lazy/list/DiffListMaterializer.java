@@ -101,7 +101,7 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean isRandomAccess() {
-      return false;
+      return true;
     }
 
     @Override

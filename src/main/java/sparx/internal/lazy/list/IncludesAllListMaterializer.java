@@ -41,6 +41,11 @@ public class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean>
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }
@@ -127,14 +132,25 @@ public class IncludesAllListMaterializer<E> implements ListMaterializer<Boolean>
           return true;
         }
         final ListMaterializer<E> wrapped = this.wrapped;
-        int i = 0;
-        while (wrapped.canMaterializeElement(i)) {
-          elements.remove(wrapped.materializeElement(i));
-          if (elements.isEmpty()) {
-            state = TRUE_STATE;
-            return true;
+        if (wrapped.isRandomAccess()) {
+          int i = 0;
+          while (wrapped.canMaterializeElement(i)) {
+            elements.remove(wrapped.materializeElement(i));
+            if (elements.isEmpty()) {
+              state = TRUE_STATE;
+              return true;
+            }
+            ++i;
           }
-          ++i;
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          while (iterator.hasNext()) {
+            elements.remove(iterator.next());
+            if (elements.isEmpty()) {
+              state = TRUE_STATE;
+              return true;
+            }
+          }
         }
         state = FALSE_STATE;
         return false;
