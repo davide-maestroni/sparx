@@ -47,6 +47,11 @@ public class RemoveLastWhereListMaterializer<E> extends AbstractListMaterializer
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
@@ -151,16 +156,34 @@ public class RemoveLastWhereListMaterializer<E> extends AbstractListMaterializer
       try {
         final ListMaterializer<E> wrapped = RemoveLastWhereListMaterializer.this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        final int size = wrapped.materializeSize();
-        for (int i = size - 1; i >= 0; --i) {
-          final E element = wrapped.materializeElement(i);
-          if (predicate.test(i, element)) {
-            state = new IndexState(i);
-            return i;
+        if (wrapped.isRandomAccess()) {
+          final int size = wrapped.materializeSize();
+          for (int i = size - 1; i >= 0; --i) {
+            final E element = wrapped.materializeElement(i);
+            if (predicate.test(i, element)) {
+              state = new IndexState(i);
+              return i;
+            }
           }
+          state = new IndexState(size);
+          return size;
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int i = 0;
+          int index = -1;
+          while (iterator.hasNext()) {
+            final E element = iterator.next();
+            if (predicate.test(i, element)) {
+              index = i;
+            }
+          }
+          if (index >= 0) {
+            state = new IndexState(index);
+            return index;
+          }
+          state = new IndexState(i);
+          return i;
         }
-        state = new IndexState(size);
-        return size;
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
