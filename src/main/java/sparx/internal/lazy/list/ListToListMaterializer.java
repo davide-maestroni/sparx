@@ -17,15 +17,18 @@ package sparx.internal.lazy.list;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.RandomAccess;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.annotation.NotNegative;
 
 public class ListToListMaterializer<E> implements ListMaterializer<E> {
 
   private final List<E> elements;
+  private final boolean isRandomAccess;
 
   public ListToListMaterializer(@NotNull final List<E> elements) {
     this.elements = elements;
+    isRandomAccess = elements instanceof RandomAccess;
   }
 
   @Override
@@ -35,7 +38,7 @@ public class ListToListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean isRandomAccess() {
-    return true;
+    return isRandomAccess;
   }
 
   @Override

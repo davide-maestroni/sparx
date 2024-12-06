@@ -282,6 +282,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
 
   private class ImmaterialState implements ListMaterializer<E> {
 
+    private final Iterator<E> iterator;
     private final IndexedFunction<? super E, ? extends ListMaterializer<E>> mapper;
     private final AtomicInteger modCount = new AtomicInteger();
     private final IndexedPredicate<? super E> predicate;
@@ -296,6 +297,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       this.wrapped = wrapped;
       this.predicate = predicate;
       this.mapper = mapper;
+      iterator = wrapped.materializeIterator();
     }
 
     @Override
@@ -480,35 +482,17 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
       final int expectedCount = modCount.incrementAndGet();
       try {
         int i = pos;
-        final ListMaterializer<E> wrapped = this.wrapped;
+        final Iterator<E> iterator = this.iterator;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        if (wrapped.isRandomAccess() || index <= i + 1) {
-          while (i <= index && wrapped.canMaterializeElement(i)) {
-            if (predicate.test(i, wrapped.materializeElement(i))) {
-              if (expectedCount != modCount.get()) {
-                throw new ConcurrentModificationException();
-              }
-              found = true;
-              return pos = i;
+        while (i <= index && iterator.hasNext()) {
+          if (predicate.test(i, iterator.next())) {
+            if (expectedCount != modCount.get()) {
+              throw new ConcurrentModificationException();
             }
-            ++i;
+            found = true;
+            return pos = i;
           }
-        } else {
-          final Iterator<E> iterator = wrapped.materializeIterator();
-          int j = 0;
-          while (j++ < i && iterator.hasNext()) {
-            iterator.next();
-          }
-          while (i <= index && iterator.hasNext()) {
-            if (predicate.test(i, iterator.next())) {
-              if (expectedCount != modCount.get()) {
-                throw new ConcurrentModificationException();
-              }
-              found = true;
-              return pos = i;
-            }
-            ++i;
-          }
+          ++i;
         }
         if (expectedCount != modCount.get()) {
           throw new ConcurrentModificationException();
