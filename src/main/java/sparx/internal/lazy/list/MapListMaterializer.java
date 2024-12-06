@@ -39,6 +39,11 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -85,6 +90,11 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
     @Override
     public boolean canMaterializeElement(@NotNegative final int index) {
       return wrapped.canMaterializeElement(index);
+    }
+
+    @Override
+    public boolean isRandomAccess() {
+      return true;
     }
 
     @Override
@@ -135,7 +145,7 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
 
     @Override
     public @NotNull Iterator<F> materializeIterator() {
-      return new ListMaterializerIterator<F>(this);
+      return new MapIterator();
     }
 
     @Override
@@ -143,6 +153,49 @@ public class MapListMaterializer<E, F> extends AbstractListMaterializer<F> {
       final int wrappedSize = wrapped.materializeSize();
       elementsCache.setSize(wrappedSize);
       return wrappedSize;
+    }
+
+    private class MapIterator implements Iterator<F> {
+
+      private final Iterator<E> wrappedIterator = wrapped.materializeIterator();
+
+      private int pos;
+
+      @Override
+      public boolean hasNext() {
+        return wrappedIterator.hasNext();
+      }
+
+      @Override
+      public F next() {
+        final ElementsCache<F> elementsCache = ImmaterialState.this.elementsCache;
+        if (elementsCache.has(pos)) {
+          return elementsCache.get(pos++);
+        }
+        final AtomicInteger modCount = ImmaterialState.this.modCount;
+        final int expectedCount = modCount.incrementAndGet();
+        try {
+          final ListMaterializer<E> wrapped = ImmaterialState.this.wrapped;
+          final Iterator<E> wrappedIterator = this.wrappedIterator;
+          final F element = mapper.apply(pos, wrappedIterator.next());
+          if (elementsCache.set(pos++, element) == wrapped.knownSize()
+              || !wrappedIterator.hasNext()) {
+            state = new ListToListMaterializer<F>(elementsCache.toList());
+          }
+          if (expectedCount != modCount.get()) {
+            throw new ConcurrentModificationException();
+          }
+          return element;
+        } catch (final Exception e) {
+          state = new FailedListMaterializer<F>(e);
+          throw UncheckedException.throwUnchecked(e);
+        }
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException("remove");
+      }
     }
   }
 }

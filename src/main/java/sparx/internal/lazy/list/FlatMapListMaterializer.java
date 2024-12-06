@@ -151,7 +151,7 @@ public class FlatMapListMaterializer<E, F> implements ListMaterializer<F> {
       try {
         Iterator<F> elementIterator = this.elementIterator;
         int i = pos;
-        if (wrapped.isRandomAccess()) {
+        if (wrapped.isRandomAccess() || index <= i + 1) {
           while (true) {
             while (elementIterator.hasNext()) {
               elements.add(elementIterator.next());

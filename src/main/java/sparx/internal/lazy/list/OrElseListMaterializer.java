@@ -34,6 +34,11 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -82,6 +87,11 @@ public class OrElseListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public boolean canMaterializeElement(@NotNegative final int index) {
       return materialized().canMaterializeElement(index);
+    }
+
+    @Override
+    public boolean isRandomAccess() {
+      return wrapped.isRandomAccess() && elementsMaterializer.isRandomAccess();
     }
 
     @Override

@@ -151,7 +151,7 @@ public class DistinctByListMaterializer<E, K> implements ListMaterializer<E> {
       final int expectedCount = modCount.incrementAndGet();
       try {
         int i = pos;
-        if (wrapped.isRandomAccess()) {
+        if (wrapped.isRandomAccess() || index <= i + 1) {
           while (true) {
             if (wrapped.canMaterializeElement(i)) {
               final E element = wrapped.materializeElement(i);

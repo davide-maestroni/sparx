@@ -39,6 +39,11 @@ public class IntersectListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -92,6 +97,11 @@ public class IntersectListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public boolean canMaterializeElement(@NotNegative final int index) {
       return materializeUntil(index) > index;
+    }
+
+    @Override
+    public boolean isRandomAccess() {
+      return true;
     }
 
     @Override

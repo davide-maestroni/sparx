@@ -45,6 +45,11 @@ public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> imp
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return wrapped.knownSize();
   }
@@ -82,7 +87,7 @@ public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> imp
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return state.iterator();
   }
 
   @Override
@@ -90,12 +95,12 @@ public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> imp
     return wrapped.materializeSize();
   }
 
-  private interface State<E> {
+  private interface State<E> extends Iterable<E> {
 
     E materialized();
   }
 
-  private static class ElementState<E> implements State<E> {
+  private class ElementState implements State<E> {
 
     private final E element;
 
@@ -104,8 +109,38 @@ public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> imp
     }
 
     @Override
+    public @NotNull Iterator<E> iterator() {
+      return new MaterialStateIterator();
+    }
+
+    @Override
     public E materialized() {
       return element;
+    }
+
+    private class MaterialStateIterator implements Iterator<E> {
+
+      private final Iterator<E> wrappedIterator = wrapped.materializeIterator();
+
+      private int pos;
+
+      @Override
+      public boolean hasNext() {
+        return wrappedIterator.hasNext();
+      }
+
+      @Override
+      public E next() {
+        if (pos++ == numElements) {
+          return element;
+        }
+        return wrappedIterator.next();
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException("remove");
+      }
     }
   }
 
@@ -119,6 +154,11 @@ public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> imp
     }
 
     @Override
+    public @NotNull Iterator<E> iterator() {
+      return new ImmaterialStateIterator();
+    }
+
+    @Override
     public E materialized() {
       if (!isMaterialized.compareAndSet(false, true)) {
         throw new ConcurrentModificationException();
@@ -126,11 +166,47 @@ public class MapAfterListMaterializer<E> extends AbstractListMaterializer<E> imp
       try {
         final int numElements = MapAfterListMaterializer.this.numElements;
         final E element = mapper.apply(numElements, wrapped.materializeElement(numElements));
-        state = new ElementState<E>(element);
+        state = new ElementState(element);
         return element;
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
+      }
+    }
+
+    private class ImmaterialStateIterator implements Iterator<E> {
+
+      private final Iterator<E> wrappedIterator = wrapped.materializeIterator();
+
+      private int pos;
+
+      @Override
+      public boolean hasNext() {
+        return wrappedIterator.hasNext();
+      }
+
+      @Override
+      public E next() {
+        if (pos++ == numElements) {
+          if (!isMaterialized.compareAndSet(false, true)) {
+            throw new ConcurrentModificationException();
+          }
+          try {
+            final int numElements = MapAfterListMaterializer.this.numElements;
+            final E element = mapper.apply(numElements, wrappedIterator.next());
+            state = new ElementState(element);
+            return element;
+          } catch (final Exception e) {
+            isMaterialized.set(false);
+            throw UncheckedException.throwUnchecked(e);
+          }
+        }
+        return wrappedIterator.next();
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException("remove");
       }
     }
   }

@@ -44,6 +44,11 @@ public class MapLastWhereListMaterializer<E> extends AbstractListMaterializer<E>
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return wrapped.knownSize();
   }
@@ -69,7 +74,7 @@ public class MapLastWhereListMaterializer<E> extends AbstractListMaterializer<E>
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return state.iterator();
   }
 
   @Override
@@ -77,14 +82,14 @@ public class MapLastWhereListMaterializer<E> extends AbstractListMaterializer<E>
     return wrapped.materializeSize();
   }
 
-  private interface State<E> {
+  private interface State<E> extends Iterable<E> {
 
     E materialized();
 
     int materializeUntil(int index);
   }
 
-  private static class ElementState<E> implements State<E> {
+  private class ElementState implements State<E> {
 
     private final E element;
     private final int index;
@@ -95,6 +100,11 @@ public class MapLastWhereListMaterializer<E> extends AbstractListMaterializer<E>
     }
 
     @Override
+    public @NotNull Iterator<E> iterator() {
+      return new MaterialStateIterator();
+    }
+
+    @Override
     public E materialized() {
       return element;
     }
@@ -102,6 +112,31 @@ public class MapLastWhereListMaterializer<E> extends AbstractListMaterializer<E>
     @Override
     public int materializeUntil(final int index) {
       return this.index;
+    }
+
+    private class MaterialStateIterator implements Iterator<E> {
+
+      private final Iterator<E> wrappedIterator = wrapped.materializeIterator();
+
+      private int pos;
+
+      @Override
+      public boolean hasNext() {
+        return wrappedIterator.hasNext();
+      }
+
+      @Override
+      public E next() {
+        if (pos++ == index) {
+          return element;
+        }
+        return wrappedIterator.next();
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException("remove");
+      }
     }
   }
 
@@ -120,35 +155,63 @@ public class MapLastWhereListMaterializer<E> extends AbstractListMaterializer<E>
     }
 
     @Override
+    public @NotNull Iterator<E> iterator() {
+      return new ListMaterializerIterator<E>(MapLastWhereListMaterializer.this);
+    }
+
+    @Override
     public int materializeUntil(final int index) {
       final ListMaterializer<E> wrapped = MapLastWhereListMaterializer.this.wrapped;
       final IndexedPredicate<? super E> predicate = this.predicate;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
-        if (pos == -1) {
-          pos = wrapped.materializeSize();
-        }
-        int i = pos - 1;
-        while (i >= index && wrapped.canMaterializeElement(i)) {
-          final E element = wrapped.materializeElement(i);
-          if (predicate.test(i, element)) {
+        if (wrapped.isRandomAccess()) {
+          if (pos == -1) {
+            pos = wrapped.materializeSize();
+          }
+          int i = pos - 1;
+          while (i >= index && wrapped.canMaterializeElement(i)) {
+            final E element = wrapped.materializeElement(i);
+            if (predicate.test(i, element)) {
+              if (expectedCount != modCount.get()) {
+                throw new ConcurrentModificationException();
+              }
+              state = new ElementState(i, mapper.apply(i, element));
+              return i;
+            }
+            --i;
+          }
+          if (expectedCount != modCount.get()) {
+            throw new ConcurrentModificationException();
+          }
+          if (i < 0 || !wrapped.canMaterializeElement(i)) {
+            state = new ElementState(i, null);
+            return -1;
+          }
+          return pos = i;
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int i = 0;
+          int foundIndex = -1;
+          E element = null;
+          while (iterator.hasNext()) {
+            element = iterator.next();
+            if (predicate.test(i, element)) {
+              foundIndex = i;
+            }
+            ++i;
+          }
+          if (foundIndex >= 0) {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();
             }
-            state = new ElementState<E>(i, mapper.apply(i, element));
-            return i;
+            state = new ElementState(foundIndex, mapper.apply(foundIndex, element));
+            return foundIndex;
           }
-          --i;
-        }
-        if (expectedCount != modCount.get()) {
-          throw new ConcurrentModificationException();
-        }
-        if (i < 0 || !wrapped.canMaterializeElement(i)) {
-          state = new ElementState<E>(i, null);
+          state = new ElementState(i, null);
           return -1;
         }
-        return pos = i;
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }

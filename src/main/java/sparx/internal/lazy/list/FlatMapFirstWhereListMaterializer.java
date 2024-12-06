@@ -482,7 +482,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
         int i = pos;
         final ListMaterializer<E> wrapped = this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        if (wrapped.isRandomAccess()) {
+        if (wrapped.isRandomAccess() || index <= i + 1) {
           while (i <= index && wrapped.canMaterializeElement(i)) {
             if (predicate.test(i, wrapped.materializeElement(i))) {
               if (expectedCount != modCount.get()) {

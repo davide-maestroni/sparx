@@ -60,6 +60,11 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess() && elementsMaterializer.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
@@ -80,29 +85,58 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
     final int numElements = this.numElements;
     final ListMaterializer<E> wrapped = this.wrapped;
     int i = 0;
-    if (element == null) {
-      while (wrapped.canMaterializeElement(i)) {
-        if (wrapped.materializeElement(i) == null) {
-          return true;
-        }
-        if (i == numElements) {
-          if (elementsMaterializer.materializeContains(null)) {
+    if (wrapped.isRandomAccess()) {
+      if (element == null) {
+        while (wrapped.canMaterializeElement(i)) {
+          if (wrapped.materializeElement(i) == null) {
             return true;
           }
+          if (i == numElements) {
+            if (elementsMaterializer.materializeContains(null)) {
+              return true;
+            }
+          }
+          ++i;
         }
-        ++i;
+      } else {
+        while (wrapped.canMaterializeElement(i)) {
+          if (element.equals(wrapped.materializeElement(i))) {
+            return true;
+          }
+          if (i == numElements) {
+            if (elementsMaterializer.materializeContains(element)) {
+              return true;
+            }
+          }
+          ++i;
+        }
       }
     } else {
-      while (wrapped.canMaterializeElement(i)) {
-        if (element.equals(wrapped.materializeElement(i))) {
-          return true;
-        }
-        if (i == numElements) {
-          if (elementsMaterializer.materializeContains(element)) {
+      final Iterator<E> iterator = wrapped.materializeIterator();
+      if (element == null) {
+        while (iterator.hasNext()) {
+          if (iterator.next() == null) {
             return true;
           }
+          if (i == numElements) {
+            if (elementsMaterializer.materializeContains(null)) {
+              return true;
+            }
+          }
+          ++i;
         }
-        ++i;
+      } else {
+        while (iterator.hasNext()) {
+          if (element.equals(iterator.next())) {
+            return true;
+          }
+          if (i == numElements) {
+            if (elementsMaterializer.materializeContains(element)) {
+              return true;
+            }
+          }
+          ++i;
+        }
       }
     }
     return false;
@@ -179,15 +213,14 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
 
   private class InsertIterator implements Iterator<E> {
 
+    private final Iterator<E> wrappedIterator = wrapped.materializeIterator();
     private final Iterator<E> elementsIterator = elementsMaterializer.materializeIterator();
 
     private int pos;
 
     @Override
     public boolean hasNext() {
-      final int pos = this.pos;
-      return wrapped.canMaterializeElement(pos) || (pos == numElements
-          && elementsIterator.hasNext());
+      return wrappedIterator.hasNext() || (pos == numElements && elementsIterator.hasNext());
     }
 
     @Override
@@ -199,7 +232,8 @@ public class InsertAllAfterListMaterializer<E> implements ListMaterializer<E> {
             return elementsIterator.next();
           }
         }
-        return wrapped.materializeElement(pos++);
+        ++pos;
+        return wrappedIterator.next();
       } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();
       }

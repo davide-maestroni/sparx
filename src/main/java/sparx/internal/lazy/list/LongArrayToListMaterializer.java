@@ -33,6 +33,11 @@ public class LongArrayToListMaterializer implements ListMaterializer<Long> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return elements.length;
   }

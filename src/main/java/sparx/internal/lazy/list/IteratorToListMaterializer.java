@@ -36,6 +36,11 @@ public class IteratorToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -107,6 +112,11 @@ public class IteratorToListMaterializer<E> implements ListMaterializer<E> {
           throw e;
         }
       }
+      return true;
+    }
+
+    @Override
+    public boolean isRandomAccess() {
       return true;
     }
 

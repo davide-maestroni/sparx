@@ -15,21 +15,40 @@
  */
 package sparx.internal.lazy.list;
 
+import java.util.Iterator;
+
 public abstract class AbstractListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean materializeContains(final Object element) {
-    int i = 0;
-    if (element == null) {
-      while (canMaterializeElement(i)) {
-        if (materializeElement(i++) == null) {
-          return true;
+    if (isRandomAccess()) {
+      int i = 0;
+      if (element == null) {
+        while (canMaterializeElement(i)) {
+          if (materializeElement(i++) == null) {
+            return true;
+          }
+        }
+      } else {
+        while (canMaterializeElement(i)) {
+          if (element.equals(materializeElement(i++))) {
+            return true;
+          }
         }
       }
     } else {
-      while (canMaterializeElement(i)) {
-        if (element.equals(materializeElement(i++))) {
-          return true;
+      final Iterator<E> iterator = materializeIterator();
+      if (element == null) {
+        while (iterator.hasNext()) {
+          if (iterator.next() == null) {
+            return true;
+          }
+        }
+      } else {
+        while (iterator.hasNext()) {
+          if (element.equals(iterator.next())) {
+            return true;
+          }
         }
       }
     }
@@ -39,8 +58,16 @@ public abstract class AbstractListMaterializer<E> implements ListMaterializer<E>
   @Override
   public int materializeElements() {
     int i = 0;
-    while (canMaterializeElement(i)) {
-      materializeElement(i++);
+    if (isRandomAccess()) {
+      while (canMaterializeElement(i)) {
+        materializeElement(i++);
+      }
+    } else {
+      final Iterator<E> iterator = materializeIterator();
+      while (iterator.hasNext()) {
+        iterator.next();
+        ++i;
+      }
     }
     return i;
   }
