@@ -83,16 +83,16 @@ public class DistinctByListMaterializer<E, K> implements ListMaterializer<E> {
 
     private final HashSet<Object> distinctKeys = new HashSet<Object>();
     private final ArrayList<E> elements = new ArrayList<E>();
+    private final Iterator<E> iterator;
     private final IndexedFunction<? super E, K> keyExtractor;
     private final AtomicInteger modCount = new AtomicInteger();
-    private final ListMaterializer<E> wrapped;
 
     private int pos;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
         @NotNull final IndexedFunction<? super E, K> keyExtractor) {
-      this.wrapped = wrapped;
       this.keyExtractor = keyExtractor;
+      iterator = wrapped.materializeIterator();
     }
 
     @Override
@@ -144,63 +144,33 @@ public class DistinctByListMaterializer<E, K> implements ListMaterializer<E> {
       if (currSize > index) {
         return currSize;
       }
-      final ListMaterializer<E> wrapped = this.wrapped;
       final HashSet<Object> distinctKeys = this.distinctKeys;
       final IndexedFunction<? super E, K> keyExtractor = this.keyExtractor;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
         int i = pos;
-        if (wrapped.isRandomAccess() || index <= i + 1) {
-          while (true) {
-            if (wrapped.canMaterializeElement(i)) {
-              final E element = wrapped.materializeElement(i);
-              if (distinctKeys.add(keyExtractor.apply(i, element))) {
-                elements.add(element);
-                if (++currSize > index) {
-                  if (expectedCount != modCount.get()) {
-                    throw new ConcurrentModificationException();
-                  }
-                  pos = i + 1;
-                  return currSize;
+        final Iterator<E> iterator = this.iterator;
+        while (true) {
+          if (iterator.hasNext()) {
+            final E element = iterator.next();
+            if (distinctKeys.add(keyExtractor.apply(i, element))) {
+              elements.add(element);
+              if (++currSize > index) {
+                if (expectedCount != modCount.get()) {
+                  throw new ConcurrentModificationException();
                 }
+                pos = i + 1;
+                return currSize;
               }
-              ++i;
-            } else {
-              if (expectedCount != modCount.get()) {
-                throw new ConcurrentModificationException();
-              }
-              state = new ListToListMaterializer<E>(elements);
-              return currSize;
             }
-          }
-        } else {
-          final Iterator<E> iterator = wrapped.materializeIterator();
-          int j = 0;
-          while (j++ < i && iterator.hasNext()) {
-            iterator.next();
-          }
-          while (true) {
-            if (iterator.hasNext()) {
-              final E element = iterator.next();
-              if (distinctKeys.add(keyExtractor.apply(i, element))) {
-                elements.add(element);
-                if (++currSize > index) {
-                  if (expectedCount != modCount.get()) {
-                    throw new ConcurrentModificationException();
-                  }
-                  pos = i + 1;
-                  return currSize;
-                }
-              }
-              ++i;
-            } else {
-              if (expectedCount != modCount.get()) {
-                throw new ConcurrentModificationException();
-              }
-              state = new ListToListMaterializer<E>(elements);
-              return currSize;
+            ++i;
+          } else {
+            if (expectedCount != modCount.get()) {
+              throw new ConcurrentModificationException();
             }
+            state = new ListToListMaterializer<E>(elements);
+            return currSize;
           }
         }
       } catch (final Exception e) {

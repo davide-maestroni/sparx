@@ -86,6 +86,7 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
     private final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper;
+    private final Iterator<E> iterator;
     private final AtomicInteger modCount = new AtomicInteger();
     private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
@@ -99,6 +100,7 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
       this.wrapped = wrapped;
       this.mapper = mapper;
       this.predicate = predicate;
+      iterator = wrapped.materializeIterator();
     }
 
     @Override
@@ -357,92 +359,48 @@ public class FlatMapWhereListMaterializer<E> implements ListMaterializer<E> {
       if (currSize > index) {
         return currSize;
       }
-      final ListMaterializer<E> wrapped = this.wrapped;
       final IndexedPredicate<? super E> predicate = this.predicate;
       final IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper = this.mapper;
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
+        final Iterator<E> wrappedIterator = this.iterator;
         Iterator<? extends E> elementIterator = this.elementIterator;
         int i = pos;
-        if (wrapped.isRandomAccess() || index <= i + 1) {
-          while (true) {
-            while (elementIterator.hasNext()) {
-              elements.add(elementIterator.next());
+        while (true) {
+          while (elementIterator.hasNext()) {
+            elements.add(elementIterator.next());
+            if (++currSize > index) {
+              if (expectedCount != modCount.get()) {
+                throw new ConcurrentModificationException();
+              }
+              pos = i;
+              this.elementIterator = elementIterator;
+              return currSize;
+            }
+          }
+          if (wrappedIterator.hasNext()) {
+            final E element = wrappedIterator.next();
+            if (predicate.test(i, element)) {
+              elementIterator = mapper.apply(i, element).iterator();
+            } else {
+              elements.add(element);
               if (++currSize > index) {
                 if (expectedCount != modCount.get()) {
                   throw new ConcurrentModificationException();
                 }
-                pos = i;
+                pos = i + 1;
                 this.elementIterator = elementIterator;
                 return currSize;
               }
             }
-            if (wrapped.canMaterializeElement(i)) {
-              final E element = wrapped.materializeElement(i);
-              if (predicate.test(i, element)) {
-                elementIterator = mapper.apply(i, element).iterator();
-              } else {
-                elements.add(element);
-                if (++currSize > index) {
-                  if (expectedCount != modCount.get()) {
-                    throw new ConcurrentModificationException();
-                  }
-                  pos = i + 1;
-                  this.elementIterator = elementIterator;
-                  return currSize;
-                }
-              }
-              ++i;
-            } else {
-              if (expectedCount != modCount.get()) {
-                throw new ConcurrentModificationException();
-              }
-              state = new ListToListMaterializer<E>(elements);
-              return currSize;
+            ++i;
+          } else {
+            if (expectedCount != modCount.get()) {
+              throw new ConcurrentModificationException();
             }
-          }
-        } else {
-          final Iterator<E> wrappedIterator = wrapped.materializeIterator();
-          int j = 0;
-          while (j++ < i && wrappedIterator.hasNext()) {
-            wrappedIterator.next();
-          }
-          while (true) {
-            while (elementIterator.hasNext()) {
-              elements.add(elementIterator.next());
-              if (++currSize > index) {
-                if (expectedCount != modCount.get()) {
-                  throw new ConcurrentModificationException();
-                }
-                pos = i;
-                this.elementIterator = elementIterator;
-                return currSize;
-              }
-            }
-            if (wrappedIterator.hasNext()) {
-              final E element = wrappedIterator.next();
-              if (predicate.test(i, element)) {
-                elementIterator = mapper.apply(i, element).iterator();
-              } else {
-                elements.add(element);
-                if (++currSize > index) {
-                  if (expectedCount != modCount.get()) {
-                    throw new ConcurrentModificationException();
-                  }
-                  pos = i + 1;
-                  this.elementIterator = elementIterator;
-                  return currSize;
-                }
-              }
-              ++i;
-            } else {
-              if (expectedCount != modCount.get()) {
-                throw new ConcurrentModificationException();
-              }
-              state = new ListToListMaterializer<E>(elements);
-              return currSize;
-            }
+            state = new ListToListMaterializer<E>(elements);
+            return currSize;
           }
         }
       } catch (final Exception e) {

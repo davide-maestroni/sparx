@@ -83,15 +83,15 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
     private final ArrayList<E> elements = new ArrayList<E>();
     private final ListMaterializer<?> elementsMaterializer;
     private final AtomicInteger modCount = new AtomicInteger();
-    private final ListMaterializer<E> wrapped;
+    private final Iterator<E> iterator;
 
     private HashMap<Object, Integer> elementsBag;
     private int pos;
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
         @NotNull final ListMaterializer<?> elementsMaterializer) {
-      this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
+      iterator = wrapped.materializeIterator();
     }
 
     @Override
@@ -179,78 +179,40 @@ public class DiffListMaterializer<E> implements ListMaterializer<E> {
       if (currSize > index) {
         return currSize;
       }
-      final ListMaterializer<E> wrapped = this.wrapped;
       final HashMap<Object, Integer> elementsBag = fillElementsBag();
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
         int i = pos;
-        if (wrapped.isRandomAccess() || index <= i + 1) {
-          while (true) {
-            if (wrapped.canMaterializeElement(i)) {
-              final E element = wrapped.materializeElement(i);
-              final Integer count = elementsBag.get(element);
-              if (count == null) {
-                elements.add(element);
-                if (++currSize > index) {
-                  if (expectedCount != modCount.get()) {
-                    throw new ConcurrentModificationException();
-                  }
-                  pos = i + 1;
-                  return currSize;
+        final Iterator<E> iterator = this.iterator;
+        while (true) {
+          if (iterator.hasNext()) {
+            final E element = iterator.next();
+            final Integer count = elementsBag.get(element);
+            if (count == null) {
+              elements.add(element);
+              if (++currSize > index) {
+                if (expectedCount != modCount.get()) {
+                  throw new ConcurrentModificationException();
                 }
-              } else {
-                final int decCount = count - 1;
-                if (decCount == 0) {
-                  elementsBag.remove(element);
-                } else {
-                  elementsBag.put(element, decCount);
-                }
+                pos = i + 1;
+                return currSize;
               }
-              ++i;
             } else {
-              if (expectedCount != modCount.get()) {
-                throw new ConcurrentModificationException();
-              }
-              state = new ListToListMaterializer<E>(elements);
-              return currSize;
-            }
-          }
-        } else {
-          final Iterator<E> iterator = wrapped.materializeIterator();
-          int j = 0;
-          while (j++ < i && iterator.hasNext()) {
-            iterator.next();
-          }
-          while (true) {
-            if (iterator.hasNext()) {
-              final E element = iterator.next();
-              final Integer count = elementsBag.get(element);
-              if (count == null) {
-                elements.add(element);
-                if (++currSize > index) {
-                  if (expectedCount != modCount.get()) {
-                    throw new ConcurrentModificationException();
-                  }
-                  pos = i + 1;
-                  return currSize;
-                }
+              final int decCount = count - 1;
+              if (decCount == 0) {
+                elementsBag.remove(element);
               } else {
-                final int decCount = count - 1;
-                if (decCount == 0) {
-                  elementsBag.remove(element);
-                } else {
-                  elementsBag.put(element, decCount);
-                }
+                elementsBag.put(element, decCount);
               }
-              ++i;
-            } else {
-              if (expectedCount != modCount.get()) {
-                throw new ConcurrentModificationException();
-              }
-              state = new ListToListMaterializer<E>(elements);
-              return currSize;
             }
+            ++i;
+          } else {
+            if (expectedCount != modCount.get()) {
+              throw new ConcurrentModificationException();
+            }
+            state = new ListToListMaterializer<E>(elements);
+            return currSize;
           }
         }
       } catch (final Exception e) {
