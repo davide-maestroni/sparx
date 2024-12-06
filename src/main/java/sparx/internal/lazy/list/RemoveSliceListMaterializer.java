@@ -63,6 +63,11 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
@@ -103,6 +108,9 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
+    if (wrapped.isRandomAccess()) {
+      return new RandomAccessRemoveIterator();
+    }
     return new RemoveIterator();
   }
 
@@ -193,7 +201,7 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
     }
   }
 
-  private class RemoveIterator implements Iterator<E> {
+  private class RandomAccessRemoveIterator implements Iterator<E> {
 
     private long pos = 0;
 
@@ -218,6 +226,42 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
       } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();
       }
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
+  }
+
+  private class RemoveIterator implements Iterator<E> {
+
+    private final Iterator<E> iterator = wrapped.materializeIterator();
+
+    private long pos = 0;
+
+    @Override
+    public boolean hasNext() {
+      final Iterator<E> iterator = this.iterator;
+      final long pos = this.pos;
+      if (pos == state.materializedStart()) {
+        int length = state.materializedLength();
+        while (length-- > 0 && iterator.hasNext()) {
+          iterator.next();
+          ++this.pos;
+        }
+        return iterator.hasNext();
+      }
+      return iterator.hasNext();
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      ++pos;
+      return iterator.next();
     }
 
     @Override
