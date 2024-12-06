@@ -40,6 +40,11 @@ public class ReduceRightWhileListMaterializer<E> implements ListMaterializer<E> 
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -92,6 +97,11 @@ public class ReduceRightWhileListMaterializer<E> implements ListMaterializer<E> 
     @Override
     public boolean canMaterializeElement(@NotNegative final int index) {
       return index == 0 && !materializeEmpty();
+    }
+
+    @Override
+    public boolean isRandomAccess() {
+      return true;
     }
 
     @Override

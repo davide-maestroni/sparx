@@ -38,6 +38,11 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -90,6 +95,11 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
+    public boolean isRandomAccess() {
+      return true;
+    }
+
+    @Override
     public int knownSize() {
       return Math.min(1, wrapped.knownSize());
     }
@@ -132,14 +142,26 @@ public class ReduceLeftListMaterializer<E> implements ListMaterializer<E> {
         throw new ConcurrentModificationException();
       }
       try {
+        final ListMaterializer<E> wrapped = this.wrapped;
         final BinaryFunction<? super E, ? super E, ? extends E> operation = this.operation;
-        final Iterator<E> iterator = wrapped.materializeIterator();
-        if (iterator.hasNext()) {
-          E current = iterator.next();
-          while (iterator.hasNext()) {
-            current = operation.apply(current, iterator.next());
+        if (wrapped.isRandomAccess()) {
+          if (!wrapped.materializeEmpty()) {
+            int i = 0;
+            E current = wrapped.materializeElement(i);
+            while (wrapped.canMaterializeElement(i)) {
+              current = operation.apply(current, wrapped.materializeElement(i++));
+            }
+            return state = new ElementToListMaterializer<E>(current);
           }
-          return state = new ElementToListMaterializer<E>(current);
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          if (iterator.hasNext()) {
+            E current = iterator.next();
+            while (iterator.hasNext()) {
+              current = operation.apply(current, iterator.next());
+            }
+            return state = new ElementToListMaterializer<E>(current);
+          }
         }
         return state = EmptyListMaterializer.instance();
       } catch (final Exception e) {

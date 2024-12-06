@@ -40,6 +40,11 @@ public class ReduceLeftWhileListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -95,6 +100,11 @@ public class ReduceLeftWhileListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
+    public boolean isRandomAccess() {
+      return true;
+    }
+
+    @Override
     public int knownSize() {
       return Math.min(1, wrapped.knownSize());
     }
@@ -137,20 +147,37 @@ public class ReduceLeftWhileListMaterializer<E> implements ListMaterializer<E> {
         throw new ConcurrentModificationException();
       }
       try {
+        final ListMaterializer<E> wrapped = this.wrapped;
         final Predicate<? super E> predicate = this.predicate;
         final BinaryFunction<? super E, ? super E, ? extends E> operation = this.operation;
-        final Iterator<E> iterator = wrapped.materializeIterator();
-        if (iterator.hasNext()) {
-          E current = iterator.next();
-          if (predicate.test(current)) {
-            while (iterator.hasNext()) {
-              current = operation.apply(current, iterator.next());
-              if (!predicate.test(current)) {
-                break;
+        if (wrapped.isRandomAccess()) {
+          if (!wrapped.materializeEmpty()) {
+            int i = 0;
+            E current = wrapped.materializeElement(i);
+            if (predicate.test(current)) {
+              while (wrapped.canMaterializeElement(i)) {
+                current = operation.apply(current, wrapped.materializeElement(i++));
+                if (!predicate.test(current)) {
+                  break;
+                }
               }
             }
+            return state = new ElementToListMaterializer<E>(current);
           }
-          return state = new ElementToListMaterializer<E>(current);
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          if (iterator.hasNext()) {
+            E current = iterator.next();
+            if (predicate.test(current)) {
+              while (iterator.hasNext()) {
+                current = operation.apply(current, iterator.next());
+                if (!predicate.test(current)) {
+                  break;
+                }
+              }
+            }
+            return state = new ElementToListMaterializer<E>(current);
+          }
         }
         return state = EmptyListMaterializer.instance();
       } catch (final Exception e) {
