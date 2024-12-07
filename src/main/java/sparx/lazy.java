@@ -198,6 +198,7 @@ import sparx.internal.lazy.list.TakeRightListMaterializer;
 import sparx.internal.lazy.list.TakeRightWhileListMaterializer;
 import sparx.internal.lazy.list.TakeWhileListMaterializer;
 import sparx.itf.Collection;
+import sparx.itf.Traversable;
 import sparx.itf.Traverser;
 import sparx.util.DequeueList;
 import sparx.util.Require;
@@ -574,7 +575,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public <T> T apply(@NotNull final Function<? super itf.Sequence<E>, T> mapper) {
+    public <T> T apply(@NotNull final Function<? super Traversable<E>, T> mapper) {
       return null;
     }
 
@@ -2483,7 +2484,7 @@ public class lazy extends Sparx {
     }
   }
 
-  public static class List<E> extends AbstractListSequence<E> implements itf.List<E> {
+  public static class List<E> extends AbstractListTraversable<E> implements itf.List<E> {
 
     private static final List<?> EMPTY_LIST = new List<Object>(EmptyListMaterializer.instance());
     private static final Splitter<?, ? extends List<?>> SPLITTER = new Splitter<Object, List<Object>>() {
@@ -2751,7 +2752,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public <T> T apply(@NotNull final Function<? super itf.Sequence<E>, T> mapper) {
+    public <T> T apply(@NotNull final Function<? super Traversable<E>, T> mapper) {
       return null;
     }
 
@@ -4850,6 +4851,11 @@ public class lazy extends Sparx {
       }
 
       @Override
+      public boolean isRandomAccess() {
+        return state.isRandomAccess();
+      }
+
+      @Override
       public int knownSize() {
         return state.knownSize();
       }
@@ -4901,6 +4907,11 @@ public class lazy extends Sparx {
           } catch (final Exception e) {
             throw UncheckedException.throwUnchecked(e);
           }
+        }
+
+        @Override
+        public boolean isRandomAccess() {
+          return false;
         }
 
         @Override
@@ -5137,7 +5148,7 @@ public class lazy extends Sparx {
     }
 
     @Override
-    public <T> T apply(@NotNull Function<? super itf.Sequence<E>, T> mapper) {
+    public <T> T apply(@NotNull Function<? super Traversable<E>, T> mapper) {
       return null;
     }
 

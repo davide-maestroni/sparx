@@ -15,12 +15,18 @@
  */
 package sparx;
 
-import java.util.AbstractSet;
+import java.util.AbstractList;
 import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
-import sparx.itf.Sequence;
+import sparx.itf.Traversable;
+import sparx.itf.Traverser;
 
-public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements Sequence<E> {
+public abstract class AbstractListTraversable<E> extends AbstractList<E> implements Traversable<E> {
+
+  @Override
+  public boolean add(final E e) {
+    throw new UnsupportedOperationException();
+  }
 
   @Override
   public boolean addAll(@NotNull final Collection<? extends E> c) {
@@ -28,7 +34,17 @@ public abstract class AbstractSetSequence<E> extends AbstractSet<E> implements S
   }
 
   @Override
+  public boolean addAll(final int index, @NotNull final Collection<? extends E> c) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public void clear() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public @NotNull Traverser<E> iterator() {
     throw new UnsupportedOperationException();
   }
 

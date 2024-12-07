@@ -191,7 +191,7 @@ import sparx.internal.future.list.TakeWhileListFutureMaterializer;
 import sparx.internal.future.list.TransformListFutureMaterializer;
 import sparx.internal.future.list.WrappingListFutureMaterializer;
 import sparx.itf.Collection;
-import sparx.itf.Sequence;
+import sparx.itf.Traversable;
 import sparx.itf.Traverser;
 import sparx.util.DeadLockException;
 import sparx.util.DequeueList;
@@ -1380,7 +1380,7 @@ class future extends Sparx {
     }
 
     @Override
-    public <T> T apply(@NotNull Function<? super Sequence<E>, T> mapper) {
+    public <T> T apply(@NotNull Function<? super Traversable<E>, T> mapper) {
       return null;
     }
 
@@ -4520,7 +4520,7 @@ class future extends Sparx {
     }
   }
 
-  public static class List<E> extends AbstractListSequence<E> implements itf.Future<E, List<E>>,
+  public static class List<E> extends AbstractListTraversable<E> implements itf.Future<E, List<E>>,
       itf.List<E> {
 
     private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> APPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {
@@ -5763,7 +5763,7 @@ class future extends Sparx {
     }
 
     @Override
-    public <T> T apply(@NotNull Function<? super itf.Sequence<E>, T> mapper) {
+    public <T> T apply(@NotNull Function<? super Traversable<E>, T> mapper) {
       return null;
     }
 
@@ -9219,7 +9219,7 @@ class future extends Sparx {
     }
 
     @Override
-    public <T> T apply(@NotNull Function<? super itf.Sequence<E>, T> mapper) {
+    public <T> T apply(@NotNull Function<? super Traversable<E>, T> mapper) {
       return null;
     }
 
