@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.IndexOverflowException;
@@ -46,6 +47,11 @@ public class TakeRightWhileListMaterializer<E> extends AbstractListMaterializer<
     final ListMaterializer<E> wrapped = this.wrapped;
     final long wrappedIndex = (long) index + Math.max(0, wrapped.materializeSize() - maxElements);
     return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
+  }
+
+  @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess();
   }
 
   @Override
@@ -86,7 +92,7 @@ public class TakeRightWhileListMaterializer<E> extends AbstractListMaterializer<
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return new TakeIterator();
   }
 
   @Override
@@ -142,20 +148,63 @@ public class TakeRightWhileListMaterializer<E> extends AbstractListMaterializer<
       try {
         final ListMaterializer<E> wrapped = TakeRightWhileListMaterializer.this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
-        final int size = wrapped.materializeSize();
-        int i = size - 1;
-        for (; i >= 0; --i) {
-          if (!predicate.test(i, wrapped.materializeElement(i))) {
-            break;
+        if (wrapped.isRandomAccess()) {
+          final int size = wrapped.materializeSize();
+          int i = size - 1;
+          for (; i >= 0; --i) {
+            if (!predicate.test(i, wrapped.materializeElement(i))) {
+              break;
+            }
           }
+          final int elements = size - i - 1;
+          state = new ElementsState(elements);
+          return elements;
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          int i = 0;
+          int elements = -1;
+          while (iterator.hasNext()) {
+            if (!predicate.test(i++, iterator.next())) {
+              elements = i;
+            }
+          }
+          if (elements >= 0) {
+            state = new ElementsState(elements);
+            return elements;
+          }
+          state = new ElementsState(i);
+          return i;
         }
-        final int elements = size - i - 1;
-        state = new ElementsState(elements);
-        return elements;
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
+    }
+  }
+
+  private class TakeIterator implements Iterator<E> {
+
+    private final Iterator<E> iterator = wrapped.materializeIterator();
+
+    private long pos;
+
+    @Override
+    public boolean hasNext() {
+      return pos < state.materialized() && iterator.hasNext();
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      ++pos;
+      return iterator.next();
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
     }
   }
 }

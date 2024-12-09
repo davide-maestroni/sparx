@@ -153,7 +153,7 @@ public class ReduceLeftWhileListMaterializer<E> implements ListMaterializer<E> {
         if (wrapped.isRandomAccess()) {
           if (!wrapped.materializeEmpty()) {
             int i = 0;
-            E current = wrapped.materializeElement(i);
+            E current = wrapped.materializeElement(i++);
             if (predicate.test(current)) {
               while (wrapped.canMaterializeElement(i)) {
                 current = operation.apply(current, wrapped.materializeElement(i++));

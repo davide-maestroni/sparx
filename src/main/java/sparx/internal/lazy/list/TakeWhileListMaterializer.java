@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
@@ -39,6 +40,11 @@ public class TakeWhileListMaterializer<E> extends AbstractListMaterializer<E> im
   @Override
   public boolean canMaterializeElement(@NotNegative final int index) {
     return index < state.materialized();
+  }
+
+  @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess();
   }
 
   @Override
@@ -75,7 +81,7 @@ public class TakeWhileListMaterializer<E> extends AbstractListMaterializer<E> im
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return new TakeIterator();
   }
 
   @Override
@@ -132,9 +138,16 @@ public class TakeWhileListMaterializer<E> extends AbstractListMaterializer<E> im
         final ListMaterializer<E> wrapped = TakeWhileListMaterializer.this.wrapped;
         final IndexedPredicate<? super E> predicate = this.predicate;
         int i = 0;
-        while (wrapped.canMaterializeElement(i) && predicate.test(i,
-            wrapped.materializeElement(i))) {
-          ++i;
+        if (wrapped.isRandomAccess()) {
+          while (wrapped.canMaterializeElement(i) && predicate.test(i,
+              wrapped.materializeElement(i))) {
+            ++i;
+          }
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          while (iterator.hasNext() && predicate.test(i, iterator.next())) {
+            ++i;
+          }
         }
         state = new ElementsState(i);
         return i;
@@ -142,6 +155,32 @@ public class TakeWhileListMaterializer<E> extends AbstractListMaterializer<E> im
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
       }
+    }
+  }
+
+  private class TakeIterator implements Iterator<E> {
+
+    private final Iterator<E> iterator = wrapped.materializeIterator();
+
+    private long pos;
+
+    @Override
+    public boolean hasNext() {
+      return pos < state.materialized() && iterator.hasNext();
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      ++pos;
+      return iterator.next();
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
     }
   }
 }
