@@ -40,6 +40,11 @@ public class StartsWithListMaterializer<E> implements ListMaterializer<Boolean> 
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public int knownSize() {
     return 1;
   }

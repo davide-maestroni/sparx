@@ -39,6 +39,11 @@ public class SymmetricDiffListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -76,9 +81,10 @@ public class SymmetricDiffListMaterializer<E> implements ListMaterializer<E> {
   private class ImmaterialState extends AbstractListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
+    private final Iterator<E> elementsIterator;
     private final ListMaterializer<E> elementsMaterializer;
     private final AtomicInteger modCount = new AtomicInteger();
-    private final ListMaterializer<E> wrapped;
+    private final Iterator<E> wrappedIterator;
 
     private HashMap<E, Integer> elementsBag;
     private boolean isWrapped = true;
@@ -86,13 +92,19 @@ public class SymmetricDiffListMaterializer<E> implements ListMaterializer<E> {
 
     private ImmaterialState(@NotNull final ListMaterializer<E> wrapped,
         @NotNull final ListMaterializer<E> elementsMaterializer) {
-      this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;
+      elementsIterator = elementsMaterializer.materializeIterator();
+      wrappedIterator = wrapped.materializeIterator();
     }
 
     @Override
     public boolean canMaterializeElement(@NotNegative final int index) {
       return materializeUntil(index) > index;
+    }
+
+    @Override
+    public boolean isRandomAccess() {
+      return true;
     }
 
     @Override
@@ -157,15 +169,15 @@ public class SymmetricDiffListMaterializer<E> implements ListMaterializer<E> {
       if (currSize > index) {
         return currSize;
       }
-      ListMaterializer<E> materializer = isWrapped ? wrapped : elementsMaterializer;
+      Iterator<E> iterator = isWrapped ? wrappedIterator : elementsIterator;
       final HashMap<E, Integer> elementsBag = fillElementsBag();
       final AtomicInteger modCount = this.modCount;
       final int expectedCount = modCount.incrementAndGet();
       try {
         int i = pos;
         while (true) {
-          if (materializer.canMaterializeElement(i)) {
-            final E element = materializer.materializeElement(i);
+          if (iterator.hasNext()) {
+            final E element = iterator.next();
             final Integer count = elementsBag.get(element);
             if (isWrapped) {
               if (count == null) {
@@ -205,7 +217,7 @@ public class SymmetricDiffListMaterializer<E> implements ListMaterializer<E> {
           } else if (isWrapped) {
             i = 0;
             isWrapped = false;
-            materializer = elementsMaterializer;
+            iterator = elementsIterator;
           } else {
             if (expectedCount != modCount.get()) {
               throw new ConcurrentModificationException();

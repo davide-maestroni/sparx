@@ -42,6 +42,11 @@ public class SlidingWindowListMaterializer<E, L extends List<E>> implements List
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -105,6 +110,11 @@ public class SlidingWindowListMaterializer<E, L extends List<E>> implements List
       final long step = this.step;
       final long wrappedIndex = index * step;
       return wrappedIndex < Integer.MAX_VALUE && wrapped.canMaterializeElement((int) wrappedIndex);
+    }
+
+    @Override
+    public boolean isRandomAccess() {
+      return true;
     }
 
     @Override

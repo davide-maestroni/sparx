@@ -71,6 +71,11 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess() && elementsMaterializer.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
@@ -265,7 +270,7 @@ public class ReplaceSliceListMaterializer<E> implements ListMaterializer<E> {
 
     private final Iterator<E> iterator = elementsMaterializer.materializeIterator();
 
-    private long pos = 0;
+    private long pos;
 
     @Override
     public boolean hasNext() {

@@ -16,6 +16,7 @@
 package sparx.internal.lazy.list;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
@@ -26,7 +27,8 @@ public class TakeListMaterializer<E> extends AbstractListMaterializer<E> impleme
   private final int maxElements;
   private final ListMaterializer<E> wrapped;
 
-  public TakeListMaterializer(@NotNull final ListMaterializer<E> wrapped, @Positive final int maxElements) {
+  public TakeListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @Positive final int maxElements) {
     this.wrapped = wrapped;
     this.maxElements = maxElements;
   }
@@ -37,6 +39,11 @@ public class TakeListMaterializer<E> extends AbstractListMaterializer<E> impleme
       return false;
     }
     return wrapped.canMaterializeElement(index);
+  }
+
+  @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess();
   }
 
   @Override
@@ -69,11 +76,37 @@ public class TakeListMaterializer<E> extends AbstractListMaterializer<E> impleme
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return new TakeIterator();
   }
 
   @Override
   public int materializeSize() {
     return Math.min(wrapped.materializeSize(), maxElements);
+  }
+
+  private class TakeIterator implements Iterator<E> {
+
+    private final Iterator<E> iterator = wrapped.materializeIterator();
+
+    private long pos;
+
+    @Override
+    public boolean hasNext() {
+      return pos < maxElements && iterator.hasNext();
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      ++pos;
+      return iterator.next();
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
   }
 }

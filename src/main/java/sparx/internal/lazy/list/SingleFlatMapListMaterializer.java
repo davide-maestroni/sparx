@@ -38,6 +38,11 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -100,6 +105,11 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
     }
 
     @Override
+    public boolean isRandomAccess() {
+      return false;
+    }
+
+    @Override
     public int knownSize() {
       return -1;
     }
@@ -151,12 +161,35 @@ public class SingleFlatMapListMaterializer<E, F> implements ListMaterializer<F> 
 
     @Override
     public boolean materializeEmpty() {
-      return wrapped.materializeEmpty();
+      if (wrapped.materializeEmpty()) {
+        return true;
+      }
+      if (!isMaterialized.compareAndSet(false, true)) {
+        throw new ConcurrentModificationException();
+      }
+      try {
+        final ListMaterializer<F> elementsMaterializer = mapper.apply(0,
+            wrapped.materializeElement(0));
+        return (state = elementsMaterializer).materializeEmpty();
+      } catch (final Exception e) {
+        isMaterialized.set(false);
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override
     public @NotNull Iterator<F> materializeIterator() {
-      return new ListMaterializerIterator<F>(this);
+      if (!isMaterialized.compareAndSet(false, true)) {
+        throw new ConcurrentModificationException();
+      }
+      try {
+        final ListMaterializer<F> elementsMaterializer = mapper.apply(0,
+            wrapped.materializeElement(0));
+        return (state = elementsMaterializer).materializeIterator();
+      } catch (final Exception e) {
+        isMaterialized.set(false);
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override

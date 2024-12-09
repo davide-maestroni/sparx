@@ -16,6 +16,7 @@
 package sparx.internal.lazy.list;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
@@ -37,6 +38,11 @@ public class ResizeListMaterializer<E> extends AbstractListMaterializer<E> imple
   @Override
   public boolean canMaterializeElement(@NotNegative final int index) {
     return index < numElements;
+  }
+
+  @Override
+  public boolean isRandomAccess() {
+    return wrapped.isRandomAccess();
   }
 
   @Override
@@ -86,11 +92,41 @@ public class ResizeListMaterializer<E> extends AbstractListMaterializer<E> imple
 
   @Override
   public @NotNull Iterator<E> materializeIterator() {
-    return new ListMaterializerIterator<E>(this);
+    return new ResizeIterator();
   }
 
   @Override
   public int materializeSize() {
     return numElements;
+  }
+
+  private class ResizeIterator implements Iterator<E> {
+
+    private final Iterator<E> iterator = wrapped.materializeIterator();
+
+    private long pos;
+
+    @Override
+    public boolean hasNext() {
+      return pos < numElements;
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      ++pos;
+      final Iterator<E> iterator = this.iterator;
+      if (iterator.hasNext()) {
+        return iterator.next();
+      }
+      return padding;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
   }
 }

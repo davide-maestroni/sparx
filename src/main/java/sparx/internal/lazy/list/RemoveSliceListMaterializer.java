@@ -203,7 +203,7 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
 
   private class RandomAccessRemoveIterator implements Iterator<E> {
 
-    private long pos = 0;
+    private long pos;
 
     @Override
     public boolean hasNext() {
@@ -238,7 +238,7 @@ public class RemoveSliceListMaterializer<E> extends AbstractListMaterializer<E> 
 
     private final Iterator<E> iterator = wrapped.materializeIterator();
 
-    private long pos = 0;
+    private long pos;
 
     @Override
     public boolean hasNext() {

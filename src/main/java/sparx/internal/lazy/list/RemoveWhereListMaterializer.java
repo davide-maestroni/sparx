@@ -39,6 +39,11 @@ public class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public int knownSize() {
     return state.knownSize();
   }
@@ -117,6 +122,11 @@ public class RemoveWhereListMaterializer<E> implements ListMaterializer<E> {
           throw UncheckedException.throwUnchecked(e);
         }
       }
+      return true;
+    }
+
+    @Override
+    public boolean isRandomAccess() {
       return true;
     }
 
