@@ -81,6 +81,7 @@ public class DropListMaterializer<E> extends AbstractListMaterializer<E> impleme
     int i = 0;
     while (i < maxElements && iterator.hasNext()) {
       iterator.next();
+      ++i;
     }
     return iterator;
   }

@@ -5943,7 +5943,7 @@ public class lazy extends Sparx {
       try {
         return list.get(pos++);
       } catch (final IndexOutOfBoundsException ignored) {
-        // FIXME: where the exception come from?
+        // FIXME: where does the exception come from?
         throw new NoSuchElementException();
       }
     }

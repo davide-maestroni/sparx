@@ -129,9 +129,9 @@ public class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolea
           state = TRUE_STATE;
           return true;
         }
-        int i = 0;
-        int index = 0;
         if (wrapped.isRandomAccess()) {
+          int i = 0;
+          int index = 0;
           while (wrapped.canMaterializeElement(i)) {
             if (!elementsIterator.hasNext()) {
               state = TRUE_STATE;
@@ -148,6 +148,7 @@ public class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolea
           }
         } else {
           Iterator<E> iterator = wrapped.materializeIterator();
+          int index = 0;
           while (iterator.hasNext()) {
             if (!elementsIterator.hasNext()) {
               state = TRUE_STATE;
@@ -155,13 +156,11 @@ public class IncludesSliceListMaterializer<E> implements ListMaterializer<Boolea
             }
             final E left = iterator.next();
             Object right = elementsIterator.next();
-            if (left == right || (left != null && left.equals(right))) {
-              ++i;
-            } else {
-              i = 0;
+            if (left != right && (left == null || !left.equals(right))) {
               ++index;
               iterator = wrapped.materializeIterator();
-              while (i < index && iterator.hasNext()) {
+              int i = 0;
+              while (i++ < index && iterator.hasNext()) {
                 iterator.next();
               }
               elementsIterator = elementsMaterializer.materializeIterator();

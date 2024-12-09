@@ -17,6 +17,7 @@ package sparx.internal.lazy.list;
 
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.NotNull;
 import sparx.util.UncheckedException;
@@ -81,13 +82,7 @@ public class DropRightWhileListMaterializer<E> extends AbstractListMaterializer<
     if (wrapped.isRandomAccess()) {
       return new ListMaterializerIterator<E>(this);
     }
-    final int maxElements = state.materialized();
-    final Iterator<E> iterator = wrapped.materializeIterator();
-    int i = 0;
-    while (i < maxElements && iterator.hasNext()) {
-      iterator.next();
-    }
-    return iterator;
+    return new DropIterator();
   }
 
   @Override
@@ -105,6 +100,32 @@ public class DropRightWhileListMaterializer<E> extends AbstractListMaterializer<
     int knownSize();
 
     int materialized();
+  }
+
+  private class DropIterator implements Iterator<E> {
+
+    private final Iterator<E> iterator = wrapped.materializeIterator();
+
+    private int pos;
+
+    @Override
+    public boolean hasNext() {
+      return pos <= state.materialized() && iterator.hasNext();
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      ++pos;
+      return iterator.next();
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
   }
 
   private static class ElementsState implements State {
@@ -164,13 +185,13 @@ public class DropRightWhileListMaterializer<E> extends AbstractListMaterializer<
           int i = 0;
           int index = -1;
           while (iterator.hasNext()) {
-            if (!predicate.test(i, wrapped.materializeElement(i))) {
+            if (!predicate.test(i, iterator.next())) {
               index = i;
             }
             ++i;
           }
           if (index >= 0) {
-            final int elements = i - index - 1;
+            final int elements = index + 1;
             state = new ElementsState(elements);
             return elements;
           }

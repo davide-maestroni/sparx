@@ -91,6 +91,7 @@ public class DropWhileListMaterializer<E> extends AbstractListMaterializer<E> im
     int i = 0;
     while (i < maxElements && iterator.hasNext()) {
       iterator.next();
+      ++i;
     }
     return iterator;
   }

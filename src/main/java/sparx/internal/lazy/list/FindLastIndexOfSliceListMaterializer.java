@@ -178,20 +178,21 @@ public class FindLastIndexOfSliceListMaterializer<E> implements ListMaterializer
           while (wrappedIterator.hasNext()) {
             if (!elementsIterator.hasNext()) {
               matched = index;
-            }
-            final E left = wrappedIterator.next();
-            final Object right = elementsIterator.next();
-            if (left == right || (left != null && left.equals(right))) {
-              ++i;
             } else {
-              final int start = ++index;
-              i = 0;
-              wrappedIterator = wrapped.materializeIterator();
-              while (i++ < start) {
-                wrappedIterator.next();
+              final E left = wrappedIterator.next();
+              final Object right = elementsIterator.next();
+              if (left == right || (left != null && left.equals(right))) {
+                ++i;
+                continue;
               }
-              elementsIterator = elementsMaterializer.materializeIterator();
             }
+            final int start = ++index;
+            i = 0;
+            wrappedIterator = wrapped.materializeIterator();
+            while (i++ < start) {
+              wrappedIterator.next();
+            }
+            elementsIterator = elementsMaterializer.materializeIterator();
           }
           if (matched >= 0) {
             state = new IndexState(matched);

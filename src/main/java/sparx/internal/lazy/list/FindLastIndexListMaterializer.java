@@ -167,6 +167,7 @@ public class FindLastIndexListMaterializer<E> implements ListMaterializer<Intege
             if (predicate.test(i, element)) {
               index = i;
             }
+            ++i;
           }
           if (index >= 0) {
             state = new IndexState(index);

@@ -456,7 +456,7 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
         final AtomicInteger modCount = this.modCount;
         final int expectedCount = modCount.incrementAndGet();
         final ListMaterializer<E> wrapped = this.wrapped;
-        if (wrapped.canMaterializeElement(numElements)) {
+        if (numElements >= 0 && wrapped.canMaterializeElement(numElements)) {
           final ListMaterializer<E> materializer = mapper.apply(numElements,
               wrapped.materializeElement(numElements));
           if (expectedCount != modCount.get()) {

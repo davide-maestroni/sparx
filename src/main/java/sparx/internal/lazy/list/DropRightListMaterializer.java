@@ -93,7 +93,7 @@ public class DropRightListMaterializer<E> extends AbstractListMaterializer<E> im
 
     @Override
     public boolean hasNext() {
-      return pos < maxElements && iterator.hasNext();
+      return pos < wrapped.materializeSize() - maxElements && iterator.hasNext();
     }
 
     @Override

@@ -49,6 +49,8 @@ public class LazyListTests {
     test(List.of(1, null, 3), () -> List.of(1).append(null).append(3));
     test(List.of(1, 2, 3), () -> List.of(1, 2).append(3));
     test(List.of(1, null, 3), () -> List.of(1, null).append(3));
+    test(List.of(1, null, 3),
+        () -> List.of(1, null).flatMapFirstWhere(e -> false, e -> List.of()).append(3));
   }
 
   @Test
@@ -62,6 +64,8 @@ public class LazyListTests {
     test(List.of(1, null, 3), () -> List.of(1, null).appendAll(Set.of(3)));
     test(List.of(1, null), () -> List.of(1, null).appendAll(List.of()));
     test(List.of(1, null), () -> List.of(1, null).appendAll(Set.of()));
+    test(List.of(1, null, 3),
+        () -> List.of(1, null).flatMapFirstWhere(e -> false, e -> List.of()).appendAll(Set.of(3)));
   }
 
   @Test
@@ -69,6 +73,8 @@ public class LazyListTests {
     test(List.of(0), () -> List.of().count());
     test(List.of(3), () -> List.of(1, 2, 3).count());
     test(List.of(3), () -> List.of(1, null, 3).count());
+    test(List.of(3),
+        () -> List.of(1, null, 3).flatMapFirstWhere(e -> false, e -> List.of()).count());
   }
 
   @Test
@@ -80,6 +86,8 @@ public class LazyListTests {
     test(List.of(0), () -> List.of().countWhere(Objects::nonNull));
     test(List.of(2), () -> List.of(1, 2, 3).countWhere(i -> i < 3));
     test(List.of(3), () -> List.of(1, 2, 3).countWhere(i -> i > 0));
+    test(List.of(2), () -> List.of(1, 2, 3).flatMapFirstWhere(e -> false, e -> List.of())
+        .countWhere(i -> i < 3));
     var l = List.of(1, null, 3).countWhere(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
@@ -108,6 +116,9 @@ public class LazyListTests {
     test(List.of(1, 2, null, 4), () -> List.of(1, 2, null, 4).diff(List.of()));
     test(List.of(1, 1, 2, null, 4), () -> List.of(1, 1, 2, null, 4).diff(List.of()));
     test(List.of(), () -> List.of().diff(List.of(1, 2, null, 4)));
+    test(List.of(1, 2, 4),
+        () -> List.of(1, 1, 2, null, 4).flatMapFirstWhere(e -> false, e -> List.of())
+            .diff(List.of(null, null, 1)));
   }
 
   @Test
@@ -120,6 +131,9 @@ public class LazyListTests {
     test(List.of(1, 2), () -> List.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 1 : e));
     test(List.of(1, null),
         () -> List.of(1, 1, null, 2, null, 1).distinctBy(e -> e == null ? 2 : e));
+    test(List.of(1, null, 2),
+        () -> List.of(1, 1, null, 2, null, 1).flatMapFirstWhere(e -> false, e -> List.of())
+            .distinct());
   }
 
   @Test
@@ -196,6 +210,8 @@ public class LazyListTests {
     test(List.of(), () -> List.of(1, null, 3).drop(4));
     test(List.of(1, null, 3), () -> List.of(1, null, 3).drop(0));
     test(List.of(1, null, 3), () -> List.of(1, null, 3).drop(-1));
+    test(List.of(null, 3),
+        () -> List.of(1, null, 3).flatMapFirstWhere(e -> false, e -> List.of()).drop(1));
   }
 
   @Test
@@ -209,6 +225,8 @@ public class LazyListTests {
     test(List.of(), () -> List.of(1, null, 3).dropRight(4));
     test(List.of(1, null, 3), () -> List.of(1, null, 3).dropRight(0));
     test(List.of(1, null, 3), () -> List.of(1, null, 3).dropRight(-1));
+    test(List.of(1, null),
+        () -> List.of(1, null, 3).flatMapFirstWhere(e -> false, e -> List.of()).dropRight(1));
   }
 
   @Test
@@ -222,6 +240,8 @@ public class LazyListTests {
     test(List.of(1, null), () -> List.of(1, null, 3).dropRightWhile(Objects::nonNull));
     test(List.of(1, null, 3), () -> List.of(1, null, 3).dropRightWhile(e -> e < 1));
     test(List.of(), () -> List.of(1, 2, 3).dropRightWhile(e -> e > 0));
+    test(List.of(1, null), () -> List.of(1, null, 3).flatMapFirstWhere(e -> false, e -> List.of())
+        .dropRightWhile(Objects::nonNull));
     assertThrows(NullPointerException.class,
         () -> List.of(1, null, 3).dropRightWhile(e -> e > 0).size());
     var indexes = new ArrayList<Integer>();
@@ -244,6 +264,8 @@ public class LazyListTests {
     test(List.of(null, 3), () -> List.of(1, null, 3).dropWhile(Objects::nonNull));
     test(List.of(1, null, 3), () -> List.of(1, null, 3).dropWhile(e -> e < 1));
     test(List.of(), () -> List.of(1, 2, 3).dropWhile(e -> e > 0));
+    test(List.of(null, 3), () -> List.of(1, null, 3).flatMapFirstWhere(e -> false, e -> List.of())
+        .dropWhile(Objects::nonNull));
     assertThrows(NullPointerException.class,
         () -> List.of(1, null, 3).dropWhile(e -> e > 0).size());
     var indexes = new ArrayList<Integer>();
@@ -266,6 +288,8 @@ public class LazyListTests {
     test(List.of(false), () -> List.of(1, 2, 3).each(i -> i < 3));
     test(List.of(true), () -> List.of(1, 2, 3).each(i -> i > 0));
     test(List.of(true), () -> List.of(1, 2, 3).each(i -> i > 0));
+    test(List.of(true),
+        () -> List.of(1, 2, 3).flatMapFirstWhere(e -> false, e -> List.of()).each(i -> i > 0));
     var l = List.of(1, null, 3).each(i -> i > 0);
     assertThrows(NullPointerException.class, l::first);
     {
@@ -293,6 +317,8 @@ public class LazyListTests {
     test(List.of(false), () -> List.of(1, null, 3).endsWith(List.of(1, null)));
     test(List.of(true), () -> List.of(1, null, 3).endsWith(List.of(1, null, 3)));
     test(List.of(false), () -> List.of(1, null, 3).endsWith(List.of(null, null, 3)));
+    test(List.of(true), () -> List.of(1, null, 3).flatMapFirstWhere(e -> false, e -> List.of())
+        .endsWith(List.of(null, 3)));
   }
 
   @Test
@@ -306,6 +332,8 @@ public class LazyListTests {
     test(List.of(false), () -> List.of(1, 2, 3).exists(i -> i > 3));
     test(List.of(true), () -> List.of(1, 2, 3).exists(i -> i > 0));
     test(List.of(true), () -> List.of(1, 2, 3).exists(i -> i > 0));
+    test(List.of(true),
+        () -> List.of(1, 2, 3).flatMapFirstWhere(e -> false, e -> List.of()).exists(i -> i > 0));
     var l = List.of(1, null, 3).exists(i -> i > 1);
     assertThrows(NullPointerException.class, l::first);
     {
@@ -334,6 +362,9 @@ public class LazyListTests {
     test(List.of(4), () -> l.filter(Objects::nonNull).filter(i -> i > 3));
     test(List.of(), () -> l.filter(Objects::nonNull).filter(i -> i > 4));
     test(List.of(), () -> List.of().filter(Objects::isNull));
+    test(List.of(1, 2),
+        () -> l.filter(Objects::nonNull).flatMapFirstWhere(e -> false, e -> List.of())
+            .filter(i -> i < 3));
     assertThrows(NullPointerException.class, () -> l.filter(i -> i > 4).size());
     var indexes = new ArrayList<Integer>();
     List.of(1, 2, 3, 4).filter((n, i) -> {
@@ -354,6 +385,7 @@ public class LazyListTests {
     test(List.of(null), () -> l.findAny(Objects::isNull));
     test(List.of(1), () -> l.findAny(i -> i < 4));
     test(List.of(), () -> List.of().findAny(Objects::isNull));
+    test(List.of(1), () -> l.flatMapFirstWhere(e -> false, e -> List.of()).findAny(i -> i < 4));
     var indexes = new ArrayList<Integer>();
     List.of(1, 2, 3, 4).findAny((n, i) -> {
       indexes.add(n);
@@ -369,6 +401,7 @@ public class LazyListTests {
     test(List.of(3), () -> l.findIndexOf(4));
     test(List.of(), () -> l.findIndexOf(3));
     test(List.of(), () -> List.of().findIndexOf(null));
+    test(List.of(3), () -> l.flatMapFirstWhere(e -> false, e -> List.of()).findIndexOf(4));
     var indexes = new ArrayList<Integer>();
     List.of(1, 2, 3, 4).findAny((n, i) -> {
       indexes.add(n);
@@ -388,6 +421,8 @@ public class LazyListTests {
     test(List.of(2), () -> List.of(1, 1, 1, 1, 2, 1).findIndexOfSlice(List.of(1, 1, 2)));
     test(List.of(), () -> List.of().findIndexOfSlice(List.of(null)));
     test(List.of(0), () -> List.of().findIndexOfSlice(List.of()));
+    test(List.of(2),
+        () -> l.flatMapFirstWhere(e -> false, e -> List.of()).findIndexOfSlice(List.of(null)));
   }
 
   @Test
@@ -402,6 +437,8 @@ public class LazyListTests {
     assertThrows(NullPointerException.class, () -> l.findIndexWhere(i -> i > 3).isEmpty());
     assertThrows(NullPointerException.class, () -> l.findIndexWhere(i -> i > 3).first());
     test(List.of(), () -> List.of().findIndexWhere(Objects::isNull));
+    test(List.of(1),
+        () -> l.flatMapFirstWhere(e -> false, e -> List.of()).findIndexWhere(i -> i > 1));
     var indexes = new ArrayList<Integer>();
     List.of(1, 2, 3, 4).findIndexWhere((n, i) -> {
       indexes.add(n);
@@ -422,6 +459,8 @@ public class LazyListTests {
     test(List.of(4), () -> l.findLast(i -> i < 5));
     test(List.of(), () -> l.findLast(i -> i != null && i > 5));
     test(List.of(), () -> List.of().findLast(Objects::isNull));
+    test(List.of(null),
+        () -> l.flatMapFirstWhere(e -> false, e -> List.of()).findLast(Objects::isNull));
     var indexes = new ArrayList<Integer>();
     List.of(1, 2, 3, 4).findLast((n, i) -> {
       indexes.add(n);
@@ -437,6 +476,7 @@ public class LazyListTests {
     test(List.of(3), () -> l.findLastIndexOf(4));
     test(List.of(), () -> l.findLastIndexOf(3));
     test(List.of(), () -> List.of().findLastIndexOf(null));
+    test(List.of(3), () -> l.flatMapFirstWhere(e -> false, e -> List.of()).findLastIndexOf(4));
   }
 
   @Test
@@ -450,6 +490,8 @@ public class LazyListTests {
     test(List.of(2), () -> List.of(1, 1, 1, 1, 2, 1).findLastIndexOfSlice(List.of(1, 1, 2)));
     test(List.of(), () -> List.of().findLastIndexOfSlice(List.of(null)));
     test(List.of(0), () -> List.of().findLastIndexOfSlice(List.of()));
+    test(List.of(1), () -> l.flatMapFirstWhere(e -> false, e -> List.of())
+        .findLastIndexOfSlice(List.of(2, null)));
   }
 
   @Test
@@ -464,6 +506,8 @@ public class LazyListTests {
     assertThrows(NullPointerException.class, () -> l.findLastIndexWhere(i -> i < 3).isEmpty());
     assertThrows(NullPointerException.class, () -> l.findLastIndexWhere(i -> i < 3).first());
     test(List.of(), () -> List.of().findLastIndexWhere(Objects::isNull));
+    test(List.of(2),
+        () -> l.flatMapFirstWhere(e -> false, e -> List.of()).findLastIndexWhere(Objects::isNull));
     var indexes = new ArrayList<Integer>();
     List.of(1, 2, 3, 4).findLastIndexWhere((n, i) -> {
       indexes.add(n);
@@ -483,6 +527,8 @@ public class LazyListTests {
     test(List.of(), () -> l.flatMap(i -> List.of()));
     test(List.of(null, null), () -> l.flatMap(i -> List.of(null)));
     assertNull(l.flatMap(i -> List.of(null)).get(1));
+    test(List.of(1, 1, 2, 2),
+        () -> l.flatMapFirstWhere(e -> false, e -> List.of()).flatMap(i -> List.of(i, i)));
     assertThrows(IndexOutOfBoundsException.class, () -> l.flatMap(i -> List.of(null)).get(2));
     var indexes = new ArrayList<Integer>();
     List.of(1, 2, 3, 4).flatMap((n, i) -> {
@@ -510,6 +556,8 @@ public class LazyListTests {
     test(List.of(1), () -> l.flatMapAfter(1, i -> List.of()));
     test(List.of(1, 2), () -> l.flatMapAfter(2, i -> List.of()));
     test(List.of(), () -> List.of().flatMapAfter(0, i -> List.of(i, i)));
+    test(List.of(1, 2, 2),
+        () -> l.flatMapFirstWhere(e -> false, e -> List.of()).flatMapAfter(1, i -> List.of(i, i)));
     var indexes = new ArrayList<Integer>();
     List.of(1, 2, 3, 4).flatMapAfter(1, (n, i) -> {
       indexes.add(n);
@@ -536,6 +584,8 @@ public class LazyListTests {
     test(List.of(2, null, 4), () -> l.flatMapFirstWhere(i -> true, i -> List.of()));
     test(List.of(1, 2, 4), () -> l.flatMapFirstWhere(Objects::isNull, i -> List.of()));
     test(List.of(1, 1, 2, null, 4), () -> l.flatMapFirstWhere(i -> i == 1, i -> List.of(i, i)));
+    test(List.of(1, 2, 3, 4), () -> l.flatMapFirstWhere(e -> false, e -> List.of())
+        .flatMapFirstWhere(Objects::isNull, i -> List.of(3)));
 
     assertFalse(l.flatMapFirstWhere(i -> i > 2, i -> List.of(i, i)).isEmpty());
     assertThrows(NullPointerException.class,
@@ -576,6 +626,8 @@ public class LazyListTests {
     test(List.of(1, 2, null), () -> l.flatMapLastWhere(i -> true, i -> List.of()));
     test(List.of(1, 2, 4), () -> l.flatMapLastWhere(Objects::isNull, i -> List.of()));
     test(List.of(1, 2, null, 4, 4), () -> l.flatMapLastWhere(i -> i == 4, i -> List.of(i, i)));
+    test(List.of(1, 2, 3, 4), () -> l.flatMapFirstWhere(e -> false, e -> List.of())
+        .flatMapLastWhere(Objects::isNull, i -> List.of(3)));
 
     assertFalse(l.flatMapLastWhere(i -> i < 2, i -> List.of(i, i)).isEmpty());
     assertThrows(NullPointerException.class,
@@ -614,6 +666,8 @@ public class LazyListTests {
     test(l, () -> l.flatMapWhere(i -> false, i -> List.of()));
     test(List.of(), () -> l.flatMapWhere(i -> true, i -> List.of()));
     test(List.of(1, 4), () -> l.flatMapWhere(Objects::isNull, i -> List.of()));
+    test(List.of(1, 3, 3, 4), () -> l.flatMapFirstWhere(e -> false, e -> List.of())
+        .flatMapWhere(Objects::isNull, i -> List.of(3)));
 
     assertFalse(l.flatMapWhere(i -> i == 1, i -> List.of(i, i)).isEmpty());
     assertEquals(1, l.flatMapWhere(i -> i == 1, i -> List.of(i, i)).get(0));
@@ -651,6 +705,8 @@ public class LazyListTests {
     test(List.of(List.of(1, 2)), () -> List.of(1, 2).foldLeft(List.<Integer>of(), List::append));
     test(List.of(1), () -> List.<Integer>of().foldLeft(1, Integer::sum));
     test(List.of(List.of()), () -> List.of().foldLeft(List.of(), List::append));
+    test(List.of(16),
+        () -> l.flatMapFirstWhere(e -> false, e -> List.of()).foldLeft(1, Integer::sum));
   }
 
   @Test
@@ -664,6 +720,8 @@ public class LazyListTests {
         () -> List.of(1, 2).foldLeftWhile(List.<Integer>of(), List::isEmpty, List::append));
     test(List.of(1), () -> List.<Integer>of().foldLeftWhile(1, i -> true, Integer::sum));
     test(List.of(List.of()), () -> List.of().foldLeftWhile(List.of(), i -> true, List::append));
+    test(List.of(7), () -> l.flatMapFirstWhere(e -> false, e -> List.of())
+        .foldLeftWhile(1, i -> i < 5, Integer::sum));
   }
 
   @Test
@@ -675,6 +733,8 @@ public class LazyListTests {
         () -> List.of(1, 2).foldRight(List.<Integer>of(), (i, li) -> li.append(i)));
     test(List.of(1), () -> List.<Integer>of().foldRight(1, Integer::sum));
     test(List.of(List.of()), () -> List.of().foldRight(List.of(), (i, li) -> li.append(i)));
+    test(List.of(16),
+        () -> l.flatMapFirstWhere(e -> false, e -> List.of()).foldRight(1, Integer::sum));
   }
 
   @Test
@@ -690,6 +750,8 @@ public class LazyListTests {
     test(List.of(1), () -> List.<Integer>of().foldRightWhile(1, i -> true, Integer::sum));
     test(List.of(List.of()),
         () -> List.of().foldRightWhile(List.of(), i -> true, (i, li) -> li.append(i)));
+    test(List.of(6), () -> l.flatMapFirstWhere(e -> false, e -> List.of())
+        .foldRightWhile(1, i -> i < 5, Integer::sum));
   }
 
   @Test
@@ -699,6 +761,7 @@ public class LazyListTests {
     test(List.of(false), () -> l.includes(0));
     test(List.of(false), () -> List.of().includes(0));
     test(List.of(false), () -> List.of().includes(null));
+    test(List.of(true), () -> l.flatMapFirstWhere(e -> false, e -> List.of()).includes(null));
   }
 
   @Test
@@ -710,6 +773,8 @@ public class LazyListTests {
     test(List.of(true), () -> l.includesAll(List.of()));
     test(List.of(false), () -> List.of().includesAll(List.of(null, 1)));
     test(List.of(true), () -> List.of().includesAll(List.of()));
+    test(List.of(true),
+        () -> l.flatMapFirstWhere(e -> false, e -> List.of()).includesAll(List.of(null, 1)));
   }
 
   @Test
@@ -721,6 +786,8 @@ public class LazyListTests {
     test(List.of(true), () -> l.includesSlice(List.of()));
     test(List.of(false), () -> List.of().includesSlice(List.of(null, 1)));
     test(List.of(true), () -> List.of().includesSlice(List.of()));
+    test(List.of(true),
+        () -> l.flatMapFirstWhere(e -> false, e -> List.of()).includesSlice(List.of(3, null)));
   }
 
   @Test
@@ -737,6 +804,7 @@ public class LazyListTests {
     Iterable<Object> iterable = () -> List.of().iterator();
     test(List.of(), () -> List.wrap(iterable).insertAfter(5, null));
     test(List.of(null), () -> List.wrap(iterable).insertAfter(0, null));
+    // TODO: isRandomAccess
   }
 
   @Test
