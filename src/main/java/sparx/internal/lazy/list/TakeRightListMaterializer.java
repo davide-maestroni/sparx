@@ -94,11 +94,20 @@ public class TakeRightListMaterializer<E> extends AbstractListMaterializer<E> im
 
     private final Iterator<E> iterator = wrapped.materializeIterator();
 
+    private int materialized = -1;
     private long pos;
 
     @Override
     public boolean hasNext() {
-      return pos < materializeSize() && iterator.hasNext();
+      if (materialized < 0) {
+        final int materialized = Math.max(0, wrapped.materializeSize() - maxElements);
+        while (pos < materialized && iterator.hasNext()) {
+          ++pos;
+          iterator.next();
+        }
+        this.materialized = materialized;
+      }
+      return iterator.hasNext();
     }
 
     @Override

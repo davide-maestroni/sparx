@@ -162,15 +162,16 @@ public class TakeRightWhileListMaterializer<E> extends AbstractListMaterializer<
         } else {
           final Iterator<E> iterator = wrapped.materializeIterator();
           int i = 0;
-          int elements = -1;
+          int index = -1;
           while (iterator.hasNext()) {
-            if (!predicate.test(i++, iterator.next())) {
-              elements = i;
+            if (!predicate.test(i, iterator.next())) {
+              index = i;
             }
+            ++i;
           }
-          if (elements >= 0) {
-            state = new ElementsState(elements);
-            return elements;
+          if (index >= 0) {
+            state = new ElementsState(index);
+            return index;
           }
           state = new ElementsState(i);
           return i;
@@ -190,7 +191,12 @@ public class TakeRightWhileListMaterializer<E> extends AbstractListMaterializer<
 
     @Override
     public boolean hasNext() {
-      return pos < state.materialized() && iterator.hasNext();
+      final int materialized = state.materialized();
+      while (pos <= materialized && iterator.hasNext()) {
+        ++pos;
+        iterator.next();
+      }
+      return iterator.hasNext();
     }
 
     @Override

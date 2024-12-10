@@ -176,6 +176,7 @@ public class RemoveLastWhereListMaterializer<E> extends AbstractListMaterializer
             if (predicate.test(i, element)) {
               index = i;
             }
+            ++i;
           }
           if (index >= 0) {
             state = new IndexState(index);
