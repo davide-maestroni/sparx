@@ -149,19 +149,35 @@ public class MaxListMaterializer<E> implements ListMaterializer<E> {
         throw new ConcurrentModificationException();
       }
       try {
+        final ListMaterializer<E> wrapped = this.wrapped;
         final Comparator<? super E> comparator = this.comparator;
-        final Iterator<E> iterator = wrapped.materializeIterator();
-        if (!iterator.hasNext()) {
-          return state = EmptyListMaterializer.instance();
-        }
-        E max = iterator.next();
-        while (iterator.hasNext()) {
-          final E next = iterator.next();
-          if (comparator.compare(next, max) > 0) {
-            max = next;
+        if (wrapped.isRandomAccess()) {
+          if (!wrapped.canMaterializeElement(0)) {
+            return state = EmptyListMaterializer.instance();
           }
+          int i = 0;
+          E max = wrapped.materializeElement(i++);
+          while (wrapped.canMaterializeElement(i)) {
+            final E next = wrapped.materializeElement(i++);
+            if (comparator.compare(next, max) > 0) {
+              max = next;
+            }
+          }
+          return state = new ElementToListMaterializer<E>(max);
+        } else {
+          final Iterator<E> iterator = wrapped.materializeIterator();
+          if (!iterator.hasNext()) {
+            return state = EmptyListMaterializer.instance();
+          }
+          E max = iterator.next();
+          while (iterator.hasNext()) {
+            final E next = iterator.next();
+            if (comparator.compare(next, max) > 0) {
+              max = next;
+            }
+          }
+          return state = new ElementToListMaterializer<E>(max);
         }
-        return state = new ElementToListMaterializer<E>(max);
       } catch (final Exception e) {
         isMaterialized.set(false);
         throw UncheckedException.throwUnchecked(e);
