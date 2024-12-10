@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
+import java.util.RandomAccess;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
@@ -473,14 +474,20 @@ public class lazy extends Sparx {
         if (materializer.knownSize() == 0) {
           return EmptyIteratorMaterializer.instance();
         }
-        return new ListMaterializerToIteratorMaterializer<E>(materializer);
+        if (materializer.isRandomAccess()) {
+          return new ListMaterializerToIteratorMaterializer<E>(materializer);
+        }
+        return new IteratorToIteratorMaterializer<E>(materializer.materializeIterator());
       }
       if (elements instanceof java.util.List) {
         final java.util.List<E> list = (java.util.List<E>) elements;
         if (list.isEmpty()) {
           return EmptyIteratorMaterializer.instance();
         }
-        return new ListToIteratorMaterializer<E>(list);
+        if (list instanceof RandomAccess) {
+          return new ListToIteratorMaterializer<E>(list);
+        }
+        return new IteratorToIteratorMaterializer<E>(elements.iterator());
       }
       if (elements instanceof java.util.Collection) {
         final java.util.Collection<E> collection = (java.util.Collection<E>) elements;

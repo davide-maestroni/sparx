@@ -238,7 +238,11 @@ public class FlatMapAfterListMaterializer<E> implements ListMaterializer<E> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      return (pos == numElements ? elementsIterator : wrappedIterator).next();
+      if (pos == numElements) {
+        return elementsIterator.next();
+      }
+      ++pos;
+      return wrappedIterator.next();
     }
 
     @Override

@@ -88,7 +88,7 @@ public class ReverseListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public boolean hasNext() {
-      return wrapped.canMaterializeElement(pos);
+      return pos >= 0 && wrapped.canMaterializeElement(pos);
     }
 
     @Override

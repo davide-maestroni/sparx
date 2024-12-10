@@ -120,22 +120,21 @@ public class InsertAfterListMaterializer<E> extends AbstractListMaterializer<E> 
   private class InsertIterator implements Iterator<E> {
 
     private int pos;
+    private int wrappedIndex;
 
     @Override
     public boolean hasNext() {
-      final int pos = this.pos;
-      return wrapped.canMaterializeElement(pos) || pos == numElements;
+      return pos == numElements || wrapped.canMaterializeElement(wrappedIndex);
     }
 
     @Override
     public E next() {
       try {
         final int numElements = InsertAfterListMaterializer.this.numElements;
-        final int i = this.pos;
+        final int i = this.pos++;
         if (i != numElements) {
-          return wrapped.materializeElement(pos++);
+          return wrapped.materializeElement(wrappedIndex++);
         }
-        ++pos;
         return element;
       } catch (final IndexOutOfBoundsException ignored) {
         throw new NoSuchElementException();

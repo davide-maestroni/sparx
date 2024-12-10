@@ -270,7 +270,11 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
         if (!hasNext()) {
           throw new NoSuchElementException();
         }
-        return (pos == numElements ? elementsIterator : wrappedIterator).next();
+        if (pos == numElements) {
+          return elementsIterator.next();
+        }
+        ++pos;
+        return wrappedIterator.next();
       }
 
       @Override
@@ -435,7 +439,8 @@ public class FlatMapFirstWhereListMaterializer<E> implements ListMaterializer<E>
 
     @Override
     public @NotNull Iterator<E> materializeIterator() {
-      return materialized().materializeIterator();
+      materialized();
+      return state.materializeIterator();
     }
 
     @Override
