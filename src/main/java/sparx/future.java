@@ -192,7 +192,6 @@ import sparx.internal.future.list.TakeWhileListFutureMaterializer;
 import sparx.internal.future.list.TransformListFutureMaterializer;
 import sparx.internal.future.list.WrappingListFutureMaterializer;
 import sparx.itf.Collection;
-import sparx.itf.Traversable;
 import sparx.itf.Traverser;
 import sparx.util.DeadLockException;
 import sparx.util.DequeueList;
@@ -344,7 +343,8 @@ class future extends Sparx {
         @Override
         public IteratorFutureMaterializer<F> apply(final int index, final E element)
             throws Exception {
-          return getElementsMaterializer(context, mapper.apply(element));
+          return getElementsMaterializer(context,
+              Require.notNull(mapper.apply(element), "elements"));
         }
       };
     }
@@ -356,7 +356,8 @@ class future extends Sparx {
         @Override
         public IteratorFutureMaterializer<F> apply(final int index, final E element)
             throws Exception {
-          return getElementsMaterializer(context, mapper.apply(index, element));
+          return getElementsMaterializer(context,
+              Require.notNull(mapper.apply(index, element), "elements"));
         }
       };
     }
@@ -370,7 +371,8 @@ class future extends Sparx {
         public IteratorFutureMaterializer<E> apply(final int index, final E element)
             throws Exception {
           if (predicate.test(index, element)) {
-            return getElementsMaterializer(context, mapper.apply(index, element));
+            return getElementsMaterializer(context,
+                Require.notNull(mapper.apply(index, element), "elements"));
           }
           return new ElementToIteratorFutureMaterializer<E>(element);
         }
@@ -385,7 +387,8 @@ class future extends Sparx {
         public IteratorFutureMaterializer<E> apply(final int index, final E element)
             throws Exception {
           if (predicate.test(element)) {
-            return getElementsMaterializer(context, mapper.apply(element));
+            return getElementsMaterializer(context,
+                Require.notNull(mapper.apply(element), "elements"));
           }
           return new ElementToIteratorFutureMaterializer<E>(element);
         }
@@ -401,7 +404,8 @@ class future extends Sparx {
         public IteratorFutureMaterializer<E> apply(final int index, final Throwable exception)
             throws Exception {
           if (exceptionType.isInstance(exception)) {
-            return getElementsMaterializer(context, mapper.apply((T) exception));
+            return getElementsMaterializer(context,
+                Require.notNull(mapper.apply((T) exception), "elements"));
           }
           if (exception instanceof Exception) {
             throw (Exception) exception;
@@ -420,7 +424,8 @@ class future extends Sparx {
         public IteratorFutureMaterializer<E> apply(final int index, final Throwable exception)
             throws Exception {
           if (exceptionType.isInstance(exception)) {
-            return getElementsMaterializer(context, mapper.apply(index, (T) exception));
+            return getElementsMaterializer(context,
+                Require.notNull(mapper.apply(index, (T) exception), "elements"));
           }
           if (exception instanceof Exception) {
             throw (Exception) exception;
@@ -436,7 +441,7 @@ class future extends Sparx {
       return new Supplier<IteratorFutureMaterializer<E>>() {
         @Override
         public IteratorFutureMaterializer<E> get() throws Exception {
-          return getElementsMaterializer(context, supplier.get());
+          return getElementsMaterializer(context, Require.notNull(supplier.get(), "elements"));
         }
       };
     }
@@ -1395,9 +1400,19 @@ class future extends Sparx {
               cancelException, List.<E>appendAllFunction()));
     }
 
-    @Override
-    public <T> T apply(@NotNull Function<? super Traversable<E>, T> mapper) {
-      return null;
+    public @NotNull <F> Iterator<F> apply(
+        @NotNull final Function<? super Iterator<E>, ? extends Iterable<F>> mapper) {
+      Require.notNull(mapper, "mapper");
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new Iterator<F>(context, cancelException,
+          new SuppliedIteratorFutureMaterializer<F>(new Supplier<IteratorFutureMaterializer<F>>() {
+            @Override
+            public IteratorFutureMaterializer<F> get() throws Exception {
+              return getElementsMaterializer(context,
+                  Require.notNull(mapper.apply(Iterator.this), "elements"));
+            }
+          }, context, cancelException));
     }
 
     @Override
@@ -4759,7 +4774,8 @@ class future extends Sparx {
       return new IndexedFunction<E, ListFutureMaterializer<E>>() {
         @Override
         public ListFutureMaterializer<E> apply(final int index, final E element) throws Exception {
-          return getElementsMaterializer(context, mapper.apply(element));
+          return getElementsMaterializer(context,
+              Require.notNull(mapper.apply(element), "elements"));
         }
       };
     }
@@ -4770,7 +4786,8 @@ class future extends Sparx {
       return new IndexedFunction<E, ListFutureMaterializer<E>>() {
         @Override
         public ListFutureMaterializer<E> apply(final int index, final E element) throws Exception {
-          return getElementsMaterializer(context, mapper.apply(index, element));
+          return getElementsMaterializer(context,
+              Require.notNull(mapper.apply(index, element), "elements"));
         }
       };
     }
@@ -4815,7 +4832,7 @@ class future extends Sparx {
       return new Supplier<ListFutureMaterializer<E>>() {
         @Override
         public ListFutureMaterializer<E> get() throws Exception {
-          return getElementsMaterializer(context, supplier.get());
+          return getElementsMaterializer(context, Require.notNull(supplier.get(), "elements"));
         }
       };
     }
@@ -5801,9 +5818,19 @@ class future extends Sparx {
               cancelException, List.<E>appendAllFunction()));
     }
 
-    @Override
-    public <T> T apply(@NotNull Function<? super Traversable<E>, T> mapper) {
-      return null;
+    public @NotNull <F> List<F> apply(
+        @NotNull final Function<? super List<E>, ? extends Iterable<F>> mapper) {
+      Require.notNull(mapper, "mapper");
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new List<F>(context, cancelException,
+          new SuppliedListFutureMaterializer<F>(new Supplier<ListFutureMaterializer<F>>() {
+            @Override
+            public ListFutureMaterializer<F> get() throws Exception {
+              return getElementsMaterializer(context,
+                  Require.notNull(mapper.apply(List.this), "elements"));
+            }
+          }, context, cancelException));
     }
 
     @Override
@@ -9257,9 +9284,19 @@ class future extends Sparx {
       throw new UnsupportedOperationException();
     }
 
-    @Override
-    public <T> T apply(@NotNull Function<? super Traversable<E>, T> mapper) {
-      return null;
+    public @NotNull <F> ListIterator<F> apply(
+        @NotNull final Function<? super ListIterator<E>, ? extends Iterable<F>> mapper) {
+      Require.notNull(mapper, "mapper");
+      final ExecutionContext context = this.context;
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      return new ListIterator<F>(context, new List<F>(context, cancelException,
+          new SuppliedListFutureMaterializer<F>(new Supplier<ListFutureMaterializer<F>>() {
+            @Override
+            public ListFutureMaterializer<F> get() throws Exception {
+              return List.getElementsMaterializer(context,
+                  Require.notNull(mapper.apply(ListIterator.this), "elements"));
+            }
+          }, context, cancelException)));
     }
 
     @Override

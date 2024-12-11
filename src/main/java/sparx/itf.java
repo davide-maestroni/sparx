@@ -39,9 +39,6 @@ class itf {
   public interface Collection<E> extends java.util.Collection<E>, Traversable<E> {
 
     @Override
-    <T> T apply(@NotNull Function<? super Traversable<E>, T> mapper);
-
-    @Override
     @NotNull
     <F> Collection<F> as();
 
@@ -2712,13 +2709,8 @@ class itf {
 
   public interface Traversable<E> extends Iterable<E> {
 
-    <T> T apply(@NotNull Function<? super Traversable<E>, T> mapper); // TODO: cannot inherit!!!
-
     @NotNull
     <F> Traversable<F> as();
-
-    // TODO: clone() [lazy.Iterator??]
-    // TODO: Collection collect(Collection)
 
     @NotNull
     Traversable<Integer> count();

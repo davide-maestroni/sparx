@@ -112,6 +112,7 @@ import sparx.internal.lazy.iterator.ResizeIteratorMaterializer;
 import sparx.internal.lazy.iterator.SliceIteratorMaterializer;
 import sparx.internal.lazy.iterator.SlidingWindowIteratorMaterializer;
 import sparx.internal.lazy.iterator.StartsWithIteratorMaterializer;
+import sparx.internal.lazy.iterator.SuppliedIteratorMaterializer;
 import sparx.internal.lazy.iterator.SwitchExceptionallyIteratorMaterializer;
 import sparx.internal.lazy.iterator.SymmetricDiffIteratorMaterializer;
 import sparx.internal.lazy.iterator.TakeIteratorMaterializer;
@@ -194,13 +195,13 @@ import sparx.internal.lazy.list.SlidingWindowListMaterializer;
 import sparx.internal.lazy.list.SlidingWindowListMaterializer.Splitter;
 import sparx.internal.lazy.list.SortedListMaterializer;
 import sparx.internal.lazy.list.StartsWithListMaterializer;
+import sparx.internal.lazy.list.SuppliedListMaterializer;
 import sparx.internal.lazy.list.SymmetricDiffListMaterializer;
 import sparx.internal.lazy.list.TakeListMaterializer;
 import sparx.internal.lazy.list.TakeRightListMaterializer;
 import sparx.internal.lazy.list.TakeRightWhileListMaterializer;
 import sparx.internal.lazy.list.TakeWhileListMaterializer;
 import sparx.itf.Collection;
-import sparx.itf.Traversable;
 import sparx.itf.Traverser;
 import sparx.util.DequeueList;
 import sparx.util.Require;
@@ -505,7 +506,7 @@ public class lazy extends Sparx {
       return new IndexedFunction<E, IteratorMaterializer<F>>() {
         @Override
         public IteratorMaterializer<F> apply(final int index, final E element) throws Exception {
-          return getElementsMaterializer(mapper.apply(element));
+          return getElementsMaterializer(Require.notNull(mapper.apply(element), "elements"));
         }
       };
     }
@@ -515,7 +516,7 @@ public class lazy extends Sparx {
       return new IndexedFunction<E, IteratorMaterializer<F>>() {
         @Override
         public IteratorMaterializer<F> apply(final int index, final E element) throws Exception {
-          return getElementsMaterializer(mapper.apply(index, element));
+          return getElementsMaterializer(Require.notNull(mapper.apply(index, element), "elements"));
         }
       };
     }
@@ -529,7 +530,8 @@ public class lazy extends Sparx {
         public IteratorMaterializer<E> apply(final int index, final Throwable exception)
             throws Exception {
           if (exceptionType.isInstance(exception)) {
-            return getElementsMaterializer(mapper.apply((T) exception));
+            return getElementsMaterializer(
+                Require.notNull(mapper.apply((T) exception), "elements"));
           }
           if (exception instanceof Exception) {
             throw (Exception) exception;
@@ -548,7 +550,8 @@ public class lazy extends Sparx {
         public IteratorMaterializer<E> apply(final int index, final Throwable exception)
             throws Exception {
           if (exceptionType.isInstance(exception)) {
-            return getElementsMaterializer(mapper.apply(index, (T) exception));
+            return getElementsMaterializer(
+                Require.notNull(mapper.apply(index, (T) exception), "elements"));
           }
           if (exception instanceof Exception) {
             throw (Exception) exception;
@@ -557,6 +560,16 @@ public class lazy extends Sparx {
             throw (Error) exception;
           }
           throw UncheckedException.throwUnchecked(exception);
+        }
+      };
+    }
+
+    private static @NotNull <E> Supplier<IteratorMaterializer<E>> getIterableToIteratorMaterializer(
+        @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+      return new Supplier<IteratorMaterializer<E>>() {
+        @Override
+        public IteratorMaterializer<E> get() throws Exception {
+          return getElementsMaterializer(Require.notNull(supplier.get(), "elements"));
         }
       };
     }
@@ -582,9 +595,17 @@ public class lazy extends Sparx {
           new AppendAllIteratorMaterializer<E>(materializer, elementsMaterializer));
     }
 
-    @Override
-    public <T> T apply(@NotNull final Function<? super Traversable<E>, T> mapper) {
-      return null;
+    public @NotNull <F> Iterator<F> apply(
+        @NotNull final Function<? super Iterator<E>, ? extends Iterable<F>> mapper) {
+      Require.notNull(mapper, "mapper");
+      return new Iterator<F>(
+          new SuppliedIteratorMaterializer<F>(new Supplier<IteratorMaterializer<F>>() {
+            @Override
+            public IteratorMaterializer<F> get() throws Exception {
+              return getElementsMaterializer(
+                  Require.notNull(mapper.apply(Iterator.this), "elements"));
+            }
+          }));
     }
 
     @Override
@@ -1662,10 +1683,12 @@ public class lazy extends Sparx {
         @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
-        return new Iterator<E>(new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier")));
+        return new Iterator<E>(new SuppliedIteratorMaterializer<E>(
+            getIterableToIteratorMaterializer(Require.notNull(supplier, "supplier"))));
       }
       return new Iterator<E>(new OrElseIteratorMaterializer<E>(materializer,
-          new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier"))));
+          new SuppliedIteratorMaterializer<E>(
+              getIterableToIteratorMaterializer(Require.notNull(supplier, "supplier")))));
     }
 
     @Override
@@ -2428,83 +2451,6 @@ public class lazy extends Sparx {
     int knownSize() {
       return materializer.knownSize();
     }
-
-    private static class SuppliedMaterializer<E> implements IteratorMaterializer<E> {
-
-      private volatile IteratorMaterializer<E> state;
-
-      private SuppliedMaterializer(
-          @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
-        state = new ImmaterialState(supplier);
-      }
-
-      @Override
-      public int knownSize() {
-        return state.knownSize();
-      }
-
-      @Override
-      public boolean materializeHasNext() {
-        return state.materializeHasNext();
-      }
-
-      @Override
-      public E materializeNext() {
-        return state.materializeNext();
-      }
-
-      @Override
-      public int materializeSkip(final int count) {
-        return state.materializeSkip(count);
-      }
-
-      private class ImmaterialState implements IteratorMaterializer<E> {
-
-        private final Supplier<? extends Iterable<? extends E>> supplier;
-
-        private ImmaterialState(@NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
-          this.supplier = supplier;
-        }
-
-        @Override
-        public int knownSize() {
-          return -1;
-        }
-
-        @Override
-        public boolean materializeHasNext() {
-          try {
-            final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).materializeHasNext();
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-
-        @Override
-        public E materializeNext() {
-          try {
-            final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).materializeNext();
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-
-        @Override
-        public int materializeSkip(final int count) {
-          try {
-            final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).materializeSkip(count);
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-      }
-    }
   }
 
   public static class List<E> extends TraversableAbstractList<E> implements itf.List<E> {
@@ -2691,21 +2637,6 @@ public class lazy extends Sparx {
       return new List<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
     }
 
-    private static @NotNull <E> Splitter<E, List<E>> getSplitter(final int size, final E padding) {
-      return new Splitter<E, List<E>>() {
-        @Override
-        public @NotNull List<E> getChunk(@NotNull final ListMaterializer<E> materializer,
-            final int start, final int end) {
-          final List<E> sliced = new List<E>(materializer).slice(start, end);
-          final int paddingSize = size - (end - start);
-          if (paddingSize > 0) {
-            return sliced.appendAll(List.times(paddingSize, padding));
-          }
-          return sliced;
-        }
-      };
-    }
-
     @SuppressWarnings("unchecked")
     private static @NotNull <E> ListMaterializer<E> getElementsMaterializer(
         @NotNull final Iterable<? extends E> elements) {
@@ -2738,7 +2669,7 @@ public class lazy extends Sparx {
       return new IndexedFunction<E, ListMaterializer<F>>() {
         @Override
         public ListMaterializer<F> apply(final int index, final E element) throws Exception {
-          return getElementsMaterializer(mapper.apply(element));
+          return getElementsMaterializer(Require.notNull(mapper.apply(element), "elements"));
         }
       };
     }
@@ -2748,7 +2679,32 @@ public class lazy extends Sparx {
       return new IndexedFunction<E, ListMaterializer<F>>() {
         @Override
         public ListMaterializer<F> apply(final int index, final E element) throws Exception {
-          return getElementsMaterializer(mapper.apply(index, element));
+          return getElementsMaterializer(Require.notNull(mapper.apply(index, element), "elements"));
+        }
+      };
+    }
+
+    private static @NotNull <E> Supplier<ListMaterializer<E>> getIterableToListMaterializer(
+        @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
+      return new Supplier<ListMaterializer<E>>() {
+        @Override
+        public ListMaterializer<E> get() throws Exception {
+          return getElementsMaterializer(Require.notNull(supplier.get(), "elements"));
+        }
+      };
+    }
+
+    private static @NotNull <E> Splitter<E, List<E>> getSplitter(final int size, final E padding) {
+      return new Splitter<E, List<E>>() {
+        @Override
+        public @NotNull List<E> getChunk(@NotNull final ListMaterializer<E> materializer,
+            final int start, final int end) {
+          final List<E> sliced = new List<E>(materializer).slice(start, end);
+          final int paddingSize = size - (end - start);
+          if (paddingSize > 0) {
+            return sliced.appendAll(List.times(paddingSize, padding));
+          }
+          return sliced;
         }
       };
     }
@@ -2774,9 +2730,15 @@ public class lazy extends Sparx {
           getElementsMaterializer(Require.notNull(elements, "elements"))));
     }
 
-    @Override
-    public <T> T apply(@NotNull final Function<? super Traversable<E>, T> mapper) {
-      return null;
+    public @NotNull <F> List<F> apply(
+        @NotNull final Function<? super List<E>, ? extends Iterable<F>> mapper) {
+      Require.notNull(mapper, "mapper");
+      return new List<F>(new SuppliedListMaterializer<F>(new Supplier<ListMaterializer<F>>() {
+        @Override
+        public ListMaterializer<F> get() throws Exception {
+          return getElementsMaterializer(Require.notNull(mapper.apply(List.this), "elements"));
+        }
+      }));
     }
 
     @Override
@@ -4169,13 +4131,15 @@ public class lazy extends Sparx {
       final ListMaterializer<E> materializer = this.materializer;
       final int knownSize = materializer.knownSize();
       if (knownSize == 0) {
-        return new List<E>(new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier")));
+        return new List<E>(new SuppliedListMaterializer<E>(
+            getIterableToListMaterializer(Require.notNull(supplier, "supplier"))));
       }
       if (knownSize > 0) {
         return this;
       }
       return new List<E>(new OrElseListMaterializer<E>(materializer,
-          new SuppliedMaterializer<E>(Require.notNull(supplier, "supplier"))));
+          new SuppliedListMaterializer<E>(
+              getIterableToListMaterializer(Require.notNull(supplier, "supplier")))));
     }
 
     @Override
@@ -4858,157 +4822,6 @@ public class lazy extends Sparx {
     int knownSize() {
       return materializer.knownSize();
     }
-
-    private static class SuppliedMaterializer<E> implements ListMaterializer<E> {
-
-      private volatile ListMaterializer<E> state;
-
-      private SuppliedMaterializer(
-          @NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
-        state = new ImmaterialState(Require.notNull(supplier, "supplier"));
-      }
-
-      @Override
-      public boolean canMaterializeElement(@NotNegative final int index) {
-        return state.canMaterializeElement(index);
-      }
-
-      @Override
-      public boolean isRandomAccess() {
-        return state.isRandomAccess();
-      }
-
-      @Override
-      public int knownSize() {
-        return state.knownSize();
-      }
-
-      @Override
-      public boolean materializeContains(final Object element) {
-        return state.materializeContains(element);
-      }
-
-      @Override
-      public E materializeElement(@NotNegative final int index) {
-        return state.materializeElement(index);
-      }
-
-      @Override
-      public int materializeElements() {
-        return state.materializeElements();
-      }
-
-      @Override
-      public boolean materializeEmpty() {
-        return state.materializeEmpty();
-      }
-
-      @Override
-      public @NotNull java.util.Iterator<E> materializeIterator() {
-        return state.materializeIterator();
-      }
-
-      @Override
-      public int materializeSize() {
-        return state.materializeSize();
-      }
-
-      private class ImmaterialState implements ListMaterializer<E> {
-
-        private final Supplier<? extends Iterable<? extends E>> supplier;
-
-        private ImmaterialState(@NotNull final Supplier<? extends Iterable<? extends E>> supplier) {
-          this.supplier = supplier;
-        }
-
-        @Override
-        public boolean canMaterializeElement(@NotNegative final int index) {
-          try {
-            final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).canMaterializeElement(index);
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-
-        @Override
-        public boolean isRandomAccess() {
-          return false;
-        }
-
-        @Override
-        public int knownSize() {
-          return -1;
-        }
-
-        @Override
-        public boolean materializeContains(final Object element) {
-          try {
-            final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).materializeContains(element);
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-
-        @Override
-        public E materializeElement(@NotNegative final int index) {
-          try {
-            final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).materializeElement(index);
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-
-        @Override
-        public int materializeElements() {
-          try {
-            final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).materializeElements();
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-
-        @Override
-        public boolean materializeEmpty() {
-          try {
-            final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).materializeEmpty();
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-
-        @Override
-        public @NotNull java.util.Iterator<E> materializeIterator() {
-          try {
-            final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).materializeIterator();
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-
-        @Override
-        public int materializeSize() {
-          try {
-            final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
-                supplier.get());
-            return (state = elementsMaterializer).materializeSize();
-          } catch (final Exception e) {
-            throw UncheckedException.throwUnchecked(e);
-          }
-        }
-      }
-    }
   }
 
   public static class ListIterator<E> implements itf.ListIterator<E> {
@@ -5170,9 +4983,17 @@ public class lazy extends Sparx {
       throw new UnsupportedOperationException();
     }
 
-    @Override
-    public <T> T apply(@NotNull Function<? super Traversable<E>, T> mapper) {
-      return null;
+    public @NotNull <F> ListIterator<F> apply(
+        @NotNull final Function<? super ListIterator<E>, ? extends Iterable<F>> mapper) {
+      Require.notNull(mapper, "mapper");
+      return new ListIterator<F>(
+          new List<F>(new SuppliedListMaterializer<F>(new Supplier<ListMaterializer<F>>() {
+            @Override
+            public ListMaterializer<F> get() throws Exception {
+              return List.getElementsMaterializer(
+                  Require.notNull(mapper.apply(ListIterator.this), "elements"));
+            }
+          })));
     }
 
     @Override
