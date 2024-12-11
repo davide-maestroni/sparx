@@ -34,7 +34,7 @@ class itf {
   private itf() {
   }
 
-  // TODO: equals, clone, Serializable
+  // TODO: equals, Serializable
 
   public interface Collection<E> extends java.util.Collection<E>, Traversable<E> {
 
@@ -1075,7 +1075,8 @@ class itf {
     @NotNull
     Iterator<E> resizeTo(@NotNegative int numElements, E padding);
 
-    // TODO: runAfter
+    @NotNull
+    Iterator<E> runAfter(@NotNull Action action);
 
     @NotNull
     Iterator<E> runFinally(@NotNull Action action);

@@ -53,6 +53,7 @@ import sparx.concurrent.ExecutorContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
+import sparx.internal.future.iterator.AfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.AppendAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountIteratorFutureMaterializer;
@@ -2105,6 +2106,47 @@ public class FutureIteratorTests {
             (l, n, p) -> lazy.List.wrap(l).resizeTo(n, p)));
 
     testCancel(it -> it.resizeTo(5, null));
+  }
+
+  @Test
+  public void runAfter() throws Exception {
+    var called = new AtomicBoolean();
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null, 3).toFuture(context).filter(i -> i > 0).drop(1)
+            .runAfter(() -> called.set(true)).next());
+    assertFalse(called.get());
+    assertEquals(3,
+        Iterator.of(1, null, 3).toFuture(context).runAfter(() -> called.set(true)).size());
+    assertTrue(called.get());
+    called.set(false);
+    Iterator.of(1, null, 3).toFuture(context).runAfter(() -> called.set(true)).doFor(i -> {
+    });
+    assertTrue(called.get());
+    called.set(false);
+    Iterator.of(1, null, 3).toFuture(context).runAfter(() -> called.set(true))
+        .doWhile((i, v) -> i < 1);
+    assertFalse(called.get());
+    called.set(false);
+    assertEquals(3, Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
+        .runAfter(() -> called.set(true)).size());
+    assertTrue(called.get());
+    called.set(false);
+    Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
+        .runAfter(() -> called.set(true)).doFor(i -> {
+        });
+    assertTrue(called.get());
+    called.set(false);
+    Iterator.of(1, null, 3).toFuture(context).flatMap(e -> List.of(e))
+        .runAfter(() -> called.set(true)).doWhile((i, v) -> i < 1);
+    assertFalse(called.get());
+
+    testMaterializer(List.of(1, 2, 3),
+        c -> new ListToIteratorFutureMaterializer<>(List.of(1, 2, 3), c),
+        (c, m) -> new AfterIteratorFutureMaterializer<>(m, () -> {
+        }, c, new AtomicReference<>()));
+
+    testCancel(it -> it.runAfter(() -> {
+    }));
   }
 
   @Test

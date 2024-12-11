@@ -1309,6 +1309,24 @@ public class LazyIteratorTests {
   }
 
   @Test
+  public void runAfter() {
+    var called = new AtomicBoolean();
+    assertThrows(NullPointerException.class,
+        () -> Iterator.of(1, null, 3).filter(i -> i > 0).drop(1).runAfter(() -> called.set(true))
+            .next());
+    assertFalse(called.get());
+    assertEquals(3, Iterator.of(1, null, 3).runAfter(() -> called.set(true)).size());
+    assertTrue(called.get());
+    called.set(false);
+    Iterator.of(1, null, 3).runAfter(() -> called.set(true)).doFor(i -> {
+    });
+    assertTrue(called.get());
+    called.set(false);
+    Iterator.of(1, null, 3).runAfter(() -> called.set(true)).doWhile((i, v) -> i < 1);
+    assertFalse(called.get());
+  }
+
+  @Test
   public void runFinally() {
     var called = new AtomicBoolean();
     assertThrows(NullPointerException.class,

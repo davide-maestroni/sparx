@@ -22,9 +22,9 @@ import sparx.util.UncheckedException;
 import sparx.util.annotation.Positive;
 import sparx.util.function.Action;
 
-public class FinallyIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
+public class AfterIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  public FinallyIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+  public AfterIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final Action action) {
     setState(new ImmaterialState(wrapped, action));
   }
@@ -46,7 +46,6 @@ public class FinallyIteratorMaterializer<E> extends StatefulIteratorMaterializer
       try {
         return wrapped.knownSize();
       } catch (final Exception e) {
-        materialize();
         setState(new FailedIteratorMaterializer<E>(e));
         throw UncheckedException.throwUnchecked(e);
       }
@@ -62,7 +61,6 @@ public class FinallyIteratorMaterializer<E> extends StatefulIteratorMaterializer
         }
         return true;
       } catch (final Exception e) {
-        materialize();
         setState(new FailedIteratorMaterializer<E>(e));
         throw UncheckedException.throwUnchecked(e);
       }
@@ -76,7 +74,6 @@ public class FinallyIteratorMaterializer<E> extends StatefulIteratorMaterializer
       try {
         return wrapped.materializeNext();
       } catch (final Exception e) {
-        materialize();
         setState(new FailedIteratorMaterializer<E>(e));
         throw UncheckedException.throwUnchecked(e);
       }
@@ -92,7 +89,6 @@ public class FinallyIteratorMaterializer<E> extends StatefulIteratorMaterializer
         }
         return skipped;
       } catch (final Exception e) {
-        materialize();
         setState(new FailedIteratorMaterializer<E>(e));
         throw UncheckedException.throwUnchecked(e);
       }

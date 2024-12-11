@@ -35,6 +35,7 @@ import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
 import sparx.internal.future.IteratorFutureMaterializerToListFutureMaterializer;
 import sparx.internal.future.ListFutureMaterializerToIteratorFutureMaterializer;
+import sparx.internal.future.iterator.AfterIteratorFutureMaterializer;
 import sparx.internal.future.iterator.AppendAllIteratorFutureMaterializer;
 import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CollectionToIteratorFutureMaterializer;
@@ -1203,6 +1204,21 @@ class future extends Sparx {
         protected @NotNull java.util.Iterator<E> transform(
             @NotNull final java.util.Iterator<E> iterator) {
           return lazy.Iterator.wrap(iterator).resizeTo(numElements, padding);
+        }
+      };
+    }
+
+    private static @NotNull <E> LazyIteratorFutureMaterializer<E, E> lazyMaterializerRunAfter(
+        @NotNull final IteratorFutureMaterializer<E> materializer,
+        @NotNull final ExecutionContext context,
+        @NotNull final AtomicReference<CancellationException> cancelException,
+        @NotNull final Action action) {
+      return new LazyIteratorFutureMaterializer<E, E>(materializer, context, cancelException,
+          materializer.knownSize()) {
+        @Override
+        protected @NotNull java.util.Iterator<E> transform(
+            @NotNull final java.util.Iterator<E> iterator) {
+          return lazy.Iterator.wrap(iterator).runAfter(action);
         }
       };
     }
@@ -4038,6 +4054,29 @@ class future extends Sparx {
     }
 
     @Override
+    public @NotNull Iterator<E> runAfter(@NotNull final Action action) {
+      final ExecutionContext context = this.context;
+      final IteratorFutureMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        try {
+          action.run();
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+        return cloneIterator(context, materializer);
+      }
+      final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
+      if (materializer.isMaterializedAtOnce()) {
+        return new Iterator<E>(context, cancelException,
+            lazyMaterializerRunAfter(materializer, context, cancelException,
+                Require.notNull(action, "action")));
+      }
+      return new Iterator<E>(context, cancelException,
+          new AfterIteratorFutureMaterializer<E>(materializer, Require.notNull(action, "action"),
+              context, cancelException));
+    }
+
+    @Override
     public @NotNull Iterator<E> runFinally(@NotNull final Action action) {
       final ExecutionContext context = this.context;
       final IteratorFutureMaterializer<E> materializer = this.materializer;
@@ -4520,7 +4559,7 @@ class future extends Sparx {
     }
   }
 
-  public static class List<E> extends AbstractListTraversable<E> implements itf.Future<E, List<E>>,
+  public static class List<E> extends TraversableAbstractList<E> implements itf.Future<E, List<E>>,
       itf.List<E> {
 
     private static final BinaryFunction<? extends java.util.List<?>, ? extends java.util.List<?>, ? extends java.util.List<?>> APPEND_ALL_FUNCTION = new BinaryFunction<java.util.List<?>, java.util.List<?>, java.util.List<?>>() {

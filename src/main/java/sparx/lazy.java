@@ -36,6 +36,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.iterator.IteratorToIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.internal.lazy.ListMaterializerToIteratorMaterializer;
+import sparx.internal.lazy.iterator.AfterIteratorMaterializer;
 import sparx.internal.lazy.iterator.AppendAllIteratorMaterializer;
 import sparx.internal.lazy.iterator.AppendIteratorMaterializer;
 import sparx.internal.lazy.iterator.ArrayToIteratorMaterializer;
@@ -2112,6 +2113,21 @@ public class lazy extends Sparx {
     }
 
     @Override
+    public @NotNull Iterator<E> runAfter(@NotNull final Action action) {
+      final IteratorMaterializer<E> materializer = this.materializer;
+      if (materializer.knownSize() == 0) {
+        try {
+          action.run();
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
+        }
+        return this;
+      }
+      return new Iterator<E>(
+          new AfterIteratorMaterializer<E>(materializer, Require.notNull(action, "action")));
+    }
+
+    @Override
     public @NotNull Iterator<E> runFinally(@NotNull final Action action) {
       final IteratorMaterializer<E> materializer = this.materializer;
       if (materializer.knownSize() == 0) {
@@ -2491,7 +2507,7 @@ public class lazy extends Sparx {
     }
   }
 
-  public static class List<E> extends AbstractListTraversable<E> implements itf.List<E> {
+  public static class List<E> extends TraversableAbstractList<E> implements itf.List<E> {
 
     private static final List<?> EMPTY_LIST = new List<Object>(EmptyListMaterializer.instance());
     private static final Splitter<?, ? extends List<?>> SPLITTER = new Splitter<Object, List<Object>>() {
