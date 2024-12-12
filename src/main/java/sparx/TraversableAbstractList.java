@@ -106,16 +106,16 @@ public abstract class TraversableAbstractList<E> extends AbstractList<E> impleme
       @NotNull final String separator, @NotNull final String prefix, @NotNull final String suffix) {
     try {
       final Traverser<E> iterator = iterator();
+      appendable.append(prefix);
       if (iterator.hasNext()) {
         final E element = iterator.next();
-        appendable.append(prefix);
         appendable.append(element == null ? null : element.toString());
         while (iterator.hasNext()) {
           appendable.append(separator);
           appendable.append(element == null ? null : element.toString());
         }
-        appendable.append(suffix);
       }
+      appendable.append(suffix);
     } catch (final IOException e) {
       throw UncheckedException.throwUnchecked(e);
     }

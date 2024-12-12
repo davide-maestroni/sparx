@@ -24,6 +24,11 @@ import sparx.util.UncheckedException;
 public abstract class TraversableAbstractIterator<E> implements Iterator<E>, Traversable<E> {
 
   @Override
+  public String toString() {
+    return toString(new StringBuilder(), ", ", "[", "]").toString();
+  }
+
+  @Override
   public @NotNull <A extends Appendable> A toString(@NotNull final A appendable) {
     try {
       while (hasNext()) {
@@ -58,16 +63,16 @@ public abstract class TraversableAbstractIterator<E> implements Iterator<E>, Tra
   public @NotNull <A extends Appendable> A toString(@NotNull final A appendable,
       @NotNull final String separator, @NotNull final String prefix, @NotNull final String suffix) {
     try {
+      appendable.append(prefix);
       if (hasNext()) {
         final E element = next();
-        appendable.append(prefix);
         appendable.append(element == null ? null : element.toString());
         while (hasNext()) {
           appendable.append(separator);
           appendable.append(element == null ? null : element.toString());
         }
-        appendable.append(suffix);
       }
+      appendable.append(suffix);
     } catch (final IOException e) {
       throw UncheckedException.throwUnchecked(e);
     }
