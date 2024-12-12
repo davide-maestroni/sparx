@@ -3134,6 +3134,16 @@ class itf {
     ListIterator<E> toListIterator();
 
     @NotNull
+    <A extends Appendable> A toString(@NotNull A appendable);
+
+    @NotNull
+    <A extends Appendable> A toString(@NotNull A appendable, @NotNull String separator);
+
+    @NotNull
+    <A extends Appendable> A toString(@NotNull A appendable, @NotNull String separator,
+        @NotNull String prefix, @NotNull String suffix);
+
+    @NotNull
     Traverser<E> toTraverser();
 
     // TODO: toSet(), etc.

@@ -246,7 +246,8 @@ class future extends Sparx {
     return !(elements instanceof List || elements instanceof Iterator);
   }
 
-  public static class Iterator<E> implements itf.Future<E, Iterator<E>>, itf.Iterator<E> {
+  public static class Iterator<E> extends TraversableAbstractIterator<E> implements
+      itf.Future<E, Iterator<E>>, itf.Iterator<E> {
 
     private static final Logger LOGGER = Logger.getLogger(Iterator.class.getName());
 
@@ -9252,8 +9253,8 @@ class future extends Sparx {
     }
   }
 
-  public static class ListIterator<E> implements itf.Future<E, java.util.ListIterator<E>>,
-      itf.ListIterator<E> {
+  public static class ListIterator<E> extends TraversableAbstractListIterator<E> implements
+      itf.Future<E, java.util.ListIterator<E>>, itf.ListIterator<E> {
 
     private static final Function<? extends List<?>, ? extends ListIterator<?>> LIST_TO_ITERATOR = new Function<List<?>, ListIterator<?>>() {
       @Override

@@ -16,64 +16,18 @@
 package sparx;
 
 import java.io.IOException;
-import java.util.AbstractList;
-import java.util.Collection;
+import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.itf.Traversable;
-import sparx.itf.Traverser;
 import sparx.util.UncheckedException;
 
-public abstract class TraversableAbstractList<E> extends AbstractList<E> implements Traversable<E> {
-
-  @Override
-  public boolean add(final E e) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean addAll(@NotNull final Collection<? extends E> c) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean addAll(final int index, @NotNull final Collection<? extends E> c) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void clear() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public @NotNull Traverser<E> iterator() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean notEmpty() {
-    return !isEmpty();
-  }
-
-  @Override
-  public boolean remove(final Object o) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean removeAll(@NotNull final Collection<?> c) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean retainAll(@NotNull final Collection<?> c) {
-    throw new UnsupportedOperationException();
-  }
+public abstract class TraversableAbstractIterator<E> implements Iterator<E>, Traversable<E> {
 
   @Override
   public @NotNull <A extends Appendable> A toString(@NotNull final A appendable) {
     try {
-      for (E element : this) {
+      while (hasNext()) {
+        final E element = next();
         appendable.append(element == null ? null : element.toString());
       }
     } catch (final IOException e) {
@@ -86,11 +40,10 @@ public abstract class TraversableAbstractList<E> extends AbstractList<E> impleme
   public @NotNull <A extends Appendable> A toString(@NotNull final A appendable,
       @NotNull final String separator) {
     try {
-      final Traverser<E> iterator = iterator();
-      if (iterator.hasNext()) {
-        final E element = iterator.next();
+      if (hasNext()) {
+        final E element = next();
         appendable.append(element == null ? null : element.toString());
-        while (iterator.hasNext()) {
+        while (hasNext()) {
           appendable.append(separator);
           appendable.append(element == null ? null : element.toString());
         }
@@ -105,12 +58,11 @@ public abstract class TraversableAbstractList<E> extends AbstractList<E> impleme
   public @NotNull <A extends Appendable> A toString(@NotNull final A appendable,
       @NotNull final String separator, @NotNull final String prefix, @NotNull final String suffix) {
     try {
-      final Traverser<E> iterator = iterator();
-      if (iterator.hasNext()) {
-        final E element = iterator.next();
+      if (hasNext()) {
+        final E element = next();
         appendable.append(prefix);
         appendable.append(element == null ? null : element.toString());
-        while (iterator.hasNext()) {
+        while (hasNext()) {
           appendable.append(separator);
           appendable.append(element == null ? null : element.toString());
         }

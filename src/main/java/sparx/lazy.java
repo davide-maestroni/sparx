@@ -249,7 +249,8 @@ public class lazy extends Sparx {
     return (IndexedFunction<E, E>) INDEXED_IDENTITY;
   }
 
-  public static class Iterator<E> implements itf.Iterator<E> {
+  public static class Iterator<E> extends TraversableAbstractIterator<E> implements
+      itf.Iterator<E> {
 
     private static final Iterator<?> EMPTY_ITERATOR = new Iterator<Object>(
         EmptyIteratorMaterializer.instance());
@@ -4824,7 +4825,8 @@ public class lazy extends Sparx {
     }
   }
 
-  public static class ListIterator<E> implements itf.ListIterator<E> {
+  public static class ListIterator<E> extends TraversableAbstractListIterator<E> implements
+      itf.ListIterator<E> {
 
     private static final ListIterator<?> EMPTY_ITERATOR = new ListIterator<Object>(List.of());
     private static final ListIterator<Boolean> FALSE_ITERATOR = new ListIterator<Boolean>(
