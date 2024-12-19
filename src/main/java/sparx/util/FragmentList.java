@@ -16,6 +16,7 @@
 package sparx.util;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
@@ -232,6 +233,50 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
   @Override
   public int size() {
     return size;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public @NotNull Object[] toArray() {
+    final Object[] data = new Object[size];
+    Fragment fragment = head;
+    int offset = 0;
+    while (fragment != null) {
+      offset = fragment.copyData(offset, data);
+      fragment = fragment.next;
+    }
+    return data;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  @SuppressWarnings("unchecked")
+  public @NotNull <T> T[] toArray(T[] array) {
+    final int size = size();
+    if (array.length < size) {
+      array = (T[]) Array.newInstance(array.getClass().getComponentType(), size);
+      Fragment fragment = head;
+      int offset = 0;
+      while (fragment != null) {
+        offset = fragment.copyData(offset, array);
+        fragment = fragment.next;
+      }
+    } else {
+      Fragment fragment = head;
+      int offset = 0;
+      while (fragment != null) {
+        offset = fragment.copyData(offset, array);
+        fragment = fragment.next;
+      }
+      if (array.length > size) {
+        array[size] = null;
+      }
+    }
+    return array;
   }
 
   @Override
