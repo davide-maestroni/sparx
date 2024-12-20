@@ -32,12 +32,10 @@ public class DequeueListTests {
 
   @Test
   public void constructors() {
-    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") var list = new DequeueList<String>();
-    assertTrue(list.isEmpty());
-    list = new DequeueList<>(10);
-    assertTrue(list.isEmpty());
-    assertThrows(IllegalArgumentException.class, () -> new DequeueList<String>(0));
-    assertThrows(IllegalArgumentException.class, () -> new DequeueList<String>(-1));
+    assertTrue(new DequeueList<>().isEmpty());
+    assertTrue(new DequeueList<>(10).isEmpty());
+    assertThrows(IllegalArgumentException.class, () -> new DequeueList<>(0));
+    assertThrows(IllegalArgumentException.class, () -> new DequeueList<>(-1));
   }
 
   @Test

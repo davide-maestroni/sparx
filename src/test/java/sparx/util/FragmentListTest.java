@@ -31,6 +31,14 @@ import sparx.lazy.List;
 public class FragmentListTest {
 
   @Test
+  public void constructors() {
+    assertTrue(new FragmentList<>().isEmpty());
+    assertTrue(new FragmentList<>(10).isEmpty());
+    assertThrows(IllegalArgumentException.class, () -> new FragmentList<>(0));
+    assertThrows(IllegalArgumentException.class, () -> new FragmentList<>(-1));
+  }
+
+  @Test
   @SuppressWarnings("ConstantValue")
   public void add() {
     var list = new FragmentList<String>();

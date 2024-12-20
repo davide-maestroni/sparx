@@ -41,8 +41,8 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
   }
 
   public FragmentList(@Positive final int maxFragments) {
+    this.maxFragments = Require.positive(maxFragments, "maxFragments");
     init();
-    this.maxFragments = maxFragments;
   }
 
   /**
