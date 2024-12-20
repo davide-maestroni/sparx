@@ -15,39 +15,695 @@
  */
 package sparx.util;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
+import java.util.ConcurrentModificationException;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 import sparx.lazy.List;
 
 public class FragmentListTest {
 
   @Test
-  public void test() {
-    var list = new FragmentList<Integer>();
-    list.add(1);
-    list.add(2);
-    list.add(3);
-    assertEquals(List.of(1, 2, 3), list);
-    list.add(0, 0);
-    assertEquals(List.of(0, 1, 2, 3), list);
-    list.add(2, null);
-    assertEquals(List.of(0, 1, null, 2, 3), list);
+  @SuppressWarnings("ConstantValue")
+  public void add() {
+    var list = new FragmentList<String>();
+    assertTrue(list.isEmpty());
+    list.add("1");
+    assertFalse(list.isEmpty());
+    assertEquals(1, list.size());
+    assertEquals("1", list.get(0));
+    list.add("2");
+    assertFalse(list.isEmpty());
+    assertEquals(2, list.size());
+    assertEquals("1", list.get(0));
+    assertEquals("2", list.get(1));
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    list.add("6");
+    list.add("7");
+    list.subList(0, 5).clear();
+    list.add("8");
+    list.add("9");
+    list.add("10");
+    list.add("11");
+    list.add("12");
+    //noinspection ListRemoveInLoop
+    for (int i = 0; i < 5; i++) {
+      list.remove(0);
+    }
+    assertFalse(list.isEmpty());
+    assertEquals(2, list.size());
+    assertEquals("11", list.get(0));
+    assertEquals("12", list.get(1));
+  }
+
+  @Test
+  @SuppressWarnings("ConstantValue")
+  public void addFirst() {
+    var list = new FragmentList<String>();
+    assertTrue(list.isEmpty());
+    list.add(0, "1");
+    assertFalse(list.isEmpty());
+    assertEquals(1, list.size());
+    assertEquals("1", list.get(0));
+    list.add(0, "2");
+    assertFalse(list.isEmpty());
+    assertEquals(2, list.size());
+    assertEquals("2", list.get(0));
+    assertEquals("1", list.get(1));
+    list.add(0, "3");
+    list.add(0, "4");
+    list.add(0, "5");
+    list.add(0, "6");
+    list.add(0, "7");
+    list.subList(list.size() - 5, list.size()).clear();
+    list.add(0, "8");
+    list.add(0, "9");
+    list.add(0, "10");
+    list.add(0, "11");
+    list.add(0, "12");
+    for (int i = 0; i < 5; i++) {
+      list.remove(list.size() - 1);
+    }
+    assertFalse(list.isEmpty());
+    assertEquals(2, list.size());
+    assertEquals("12", list.get(0));
+    assertEquals("11", list.get(1));
+  }
+
+  @Test
+  @SuppressWarnings("ConstantValue")
+  public void addIndex() {
+    var list = new FragmentList<String>();
+    assertTrue(list.isEmpty());
+    list.add(0, "1");
+    assertFalse(list.isEmpty());
+    assertEquals(1, list.size());
+    assertEquals("1", list.get(0));
+    list.add(1, "2");
+    assertFalse(list.isEmpty());
+    assertEquals(2, list.size());
+    assertEquals("1", list.get(0));
+    assertEquals("2", list.get(1));
+    list.add(1, "3");
+    assertEquals(3, list.size());
+    assertEquals("1", list.get(0));
+    assertEquals("3", list.get(1));
+    assertEquals("2", list.get(2));
+    list.add("4");
+    list.add("5");
+    list.add("6");
+    list.add("7");
+    list.subList(0, 5).clear();
+    list.add("8");
+    list.add("9");
+    list.add("10");
+    list.add("11");
+    list.add("12");
+    // 6 7 8 9 10 11 12
+    assertEquals(7, list.size());
+    list.add(1, "13");
+    // 6 13 7 8 9 10 11 12
+    assertEquals(8, list.size());
+    list.add(6, "14");
+    // 6 13 7 8 9 10 14 11 12
+    assertEquals(9, list.size());
+    assertEquals(List.of("6", "13", "7", "8", "9", "10", "14", "11", "12"), list);
     list.clear();
-    list.add(1);
-    list.add(2);
-    list.add(3);
-    list.add(2, null);
-    list.add(4);
-    assertEquals(List.of(1, 2, null, 3, 4), list);
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add(1, "4");
+    assertEquals(List.of("1", "4", "2", "3"), list);
     list.clear();
-    list.add(1);
-    list.add(2);
-    list.add(3);
+    list.add("1");
+    list.add(0, "2");
+    list.add(0, "3");
+    list.add(0, "4");
+    list.add(0, "5");
+    list.add(3, "6");
+    assertEquals(List.of("5", "4", "3", "6", "2", "1"), list);
+  }
+
+  @Test
+  @SuppressWarnings("ConstantValue")
+  public void clear() {
+    var list = new FragmentList<String>();
+    assertTrue(list.isEmpty());
+    list.add("1");
+    list.clear();
+    assertTrue(list.isEmpty());
+    list.add("1");
+    list.add("2");
+    list.clear();
+    assertTrue(list.isEmpty());
+    assertEquals(0, list.size());
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    list.add("6");
+    list.add("7");
+    //noinspection ListRemoveInLoop
+    for (int i = 0; i < 5; i++) {
+      list.remove(0);
+    }
+    list.add("8");
+    list.add("9");
+    list.add("10");
+    list.add("11");
+    list.add("12");
+    list.subList(0, 5).clear();
+    list.clear();
+    assertTrue(list.isEmpty());
+    assertEquals(0, list.size());
+    list.clear();
+    assertTrue(list.isEmpty());
+    assertEquals(0, list.size());
+    assertThrows(IndexOutOfBoundsException.class, () -> list.get(0));
+  }
+
+  @Test
+  public void get() {
+    var list = new FragmentList<String>();
+    assertTrue(list.isEmpty());
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    list.add("6");
+    list.add("7");
+    assertEquals("1", list.get(0));
+    assertEquals("2", list.get(1));
+    assertEquals("4", list.get(3));
+    assertEquals("6", list.get(5));
+    assertEquals("7", list.get(6));
+    for (int i = 0; i < 5; i++) {
+      list.remove(0);
+      assertEquals(Integer.toString(i + 2), list.get(0));
+    }
+    list.add("8");
+    list.add("9");
+    list.add("10");
+    list.add("11");
+    list.add("12");
+    assertEquals("6", list.get(0));
+    assertEquals("7", list.get(1));
+    assertEquals("9", list.get(3));
+    assertEquals("11", list.get(5));
+    assertEquals("12", list.get(6));
+    for (int i = 0; i < 5; i++) {
+      list.remove(0);
+      assertEquals(Integer.toString(i + 7), list.get(0));
+    }
+    assertThrows(IndexOutOfBoundsException.class, () -> list.get(-1));
+    assertThrows(IndexOutOfBoundsException.class, () -> list.get(3));
+  }
+
+  @Test
+  public void indexOf() {
+    var list = new FragmentList<String>();
+    assertTrue(list.isEmpty());
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    list.add("6");
+    list.add("7");
+    assertEquals(0, list.indexOf("1"));
+    assertEquals(1, list.indexOf("2"));
+    assertEquals(3, list.indexOf("4"));
+    assertEquals(5, list.indexOf("6"));
+    assertEquals(6, list.indexOf("7"));
+    assertEquals(-1, list.indexOf("8"));
+    for (int i = 0; i < 5; i++) {
+      list.remove(0);
+      assertEquals(0, list.indexOf(Integer.toString(i + 2)));
+    }
+    list.add("8");
+    list.add("9");
+    list.add("10");
+    list.add("11");
+    list.add("12");
+    assertEquals(0, list.indexOf("6"));
+    assertEquals(1, list.indexOf("7"));
+    assertEquals(3, list.indexOf("9"));
+    assertEquals(5, list.indexOf("11"));
+    assertEquals(6, list.indexOf("12"));
+    assertEquals(-1, list.indexOf("5"));
+    for (int i = 0; i < 5; i++) {
+      list.remove(0);
+      assertEquals(1, list.indexOf(Integer.toString(i + 8)));
+    }
+    list.add("12");
+    list.add("11");
+    assertEquals(0, list.indexOf("11"));
+    assertEquals(1, list.indexOf("12"));
+    list.set(1, null);
+    assertEquals(1, list.indexOf(null));
+    assertEquals(2, list.indexOf("12"));
+  }
+
+  @Test
+  public void lastIndexOf() {
+    var list = new FragmentList<String>();
+    assertTrue(list.isEmpty());
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    list.add("6");
+    list.add("7");
+    assertEquals(0, list.lastIndexOf("1"));
+    assertEquals(1, list.lastIndexOf("2"));
+    assertEquals(3, list.lastIndexOf("4"));
+    assertEquals(5, list.lastIndexOf("6"));
+    assertEquals(6, list.lastIndexOf("7"));
+    assertEquals(-1, list.lastIndexOf("8"));
+    for (int i = 0; i < 5; i++) {
+      list.remove(0);
+      assertEquals(0, list.lastIndexOf(Integer.toString(i + 2)));
+    }
+    list.add("8");
+    list.add("9");
+    list.add("10");
+    list.add("11");
+    list.add("12");
+    assertEquals(0, list.lastIndexOf("6"));
+    assertEquals(1, list.lastIndexOf("7"));
+    assertEquals(3, list.lastIndexOf("9"));
+    assertEquals(5, list.lastIndexOf("11"));
+    assertEquals(6, list.lastIndexOf("12"));
+    assertEquals(-1, list.lastIndexOf("5"));
+    for (int i = 0; i < 5; i++) {
+      list.remove(0);
+      assertEquals(1, list.lastIndexOf(Integer.toString(i + 8)));
+    }
+    list.add("12");
+    list.add("11");
+    assertEquals(3, list.lastIndexOf("11"));
+    assertEquals(2, list.lastIndexOf("12"));
+    list.set(1, null);
+    assertEquals(1, list.lastIndexOf(null));
+    assertEquals(2, list.lastIndexOf("12"));
+  }
+
+  @Test
+  public void listIterator() {
+    var list = new FragmentList<String>();
+    var iterator = list.listIterator();
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    assertThrows(NoSuchElementException.class, iterator::previous);
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    iterator = list.listIterator();
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasNext());
+      assertEquals(i, iterator.nextIndex());
+      assertEquals(i - 1, iterator.previousIndex());
+      assertEquals(Integer.toString(i + 1), iterator.next());
+      assertEquals(i + 1, iterator.nextIndex());
+      assertEquals(i, iterator.previousIndex());
+    }
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasPrevious());
+      assertEquals(5 - i, iterator.nextIndex());
+      assertEquals(4 - i, iterator.previousIndex());
+      assertEquals(Integer.toString(5 - i), iterator.previous());
+      assertEquals(4 - i, iterator.nextIndex());
+      assertEquals(3 - i, iterator.previousIndex());
+    }
+    assertFalse(iterator.hasPrevious());
+    assertThrows(NoSuchElementException.class, iterator::previous);
+    iterator = list.listIterator();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertFalse(iterator.hasPrevious());
+    assertThrows(NoSuchElementException.class, iterator::previous);
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("2", "3", "4", "5"), list);
+    iterator.next();
+    iterator.next();
+    iterator.previous();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("2", "4", "5"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("2", "4"), list);
+    list.clear();
+    list.add("1");
+    list.add(0, "2");
+    list.add(0, "3");
+    list.add(0, "4");
+    list.add(0, "5");
+    iterator = list.listIterator();
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasNext());
+      assertEquals(i, iterator.nextIndex());
+      assertEquals(i - 1, iterator.previousIndex());
+      assertEquals(Integer.toString(5 - i), iterator.next());
+      assertEquals(i + 1, iterator.nextIndex());
+      assertEquals(i, iterator.previousIndex());
+    }
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    for (int i = 0; i < 5; i++) {
+      assertTrue(iterator.hasPrevious());
+      assertEquals(5 - i, iterator.nextIndex());
+      assertEquals(4 - i, iterator.previousIndex());
+      assertEquals(Integer.toString(i + 1), iterator.previous());
+      assertEquals(4 - i, iterator.nextIndex());
+      assertEquals(3 - i, iterator.previousIndex());
+    }
+    assertFalse(iterator.hasPrevious());
+    assertThrows(NoSuchElementException.class, iterator::previous);
+    iterator = list.listIterator();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertFalse(iterator.hasPrevious());
+    assertThrows(NoSuchElementException.class, iterator::previous);
+    assertEquals(List.of("4", "3", "2", "1"), list);
+    iterator.next();
+    iterator.next();
+    iterator.previous();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("4", "2", "1"), list);
+    iterator.next();
+    iterator.next();
+    iterator.remove();
+    assertThrows(IllegalStateException.class, iterator::remove);
+    assertEquals(List.of("4", "2"), list);
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+    list.clear();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    iterator = list.listIterator();
+    iterator.next();
+    list.remove(2);
+    assertThrows(ConcurrentModificationException.class, iterator::next);
+    assertThrows(ConcurrentModificationException.class, iterator::previous);
+    assertThrows(ConcurrentModificationException.class, iterator::remove);
+    list.clear();
+    list.add("1");
+    list.add(0, "2");
+    list.add(0, "3");
+    list.add(0, "4");
+    iterator = list.listIterator();
+    iterator.next();
+    iterator.previous();
+    list.remove(2);
+    assertThrows(ConcurrentModificationException.class, iterator::next);
+    assertThrows(ConcurrentModificationException.class, iterator::previous);
+    assertThrows(ConcurrentModificationException.class, iterator::remove);
+  }
+
+  @Test
+  public void listIteratorAdd() {
+    var list = new FragmentList<String>();
+    var iterator = list.listIterator();
+    iterator.add("1");
+    assertEquals(List.of("1"), list);
+    list.clear();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    iterator = list.listIterator();
+    iterator.next();
+    iterator.next();
+    iterator.add("5");
+    assertEquals(List.of("1", "2", "5", "3", "4"), list);
+    assertEquals("5", iterator.previous());
+    iterator.add("6");
+    assertEquals(List.of("1", "2", "6", "5", "3", "4"), list);
+    iterator.next();
+    iterator.next();
+    iterator.next();
+    iterator.add("7");
+    assertEquals(List.of("1", "2", "6", "5", "3", "4", "7"), list);
+    for (int i = 0; i < 7; i++) {
+      iterator.previous();
+    }
+    iterator.add("8");
+    assertEquals(List.of("8", "1", "2", "6", "5", "3", "4", "7"), list);
+    iterator.add("9");
+    assertEquals(List.of("8", "9", "1", "2", "6", "5", "3", "4", "7"), list);
+    iterator.next();
+    iterator.next();
+    iterator.previous();
+    iterator.add("10");
+    assertEquals(List.of("8", "9", "1", "10", "2", "6", "5", "3", "4", "7"), list);
+  }
+
+  @Test
+  public void listIteratorSet() {
+    var list = new FragmentList<String>();
+    var emptyIterator = list.listIterator();
+    assertThrows(IllegalStateException.class, () -> emptyIterator.set("1"));
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    var iterator = list.listIterator();
+    iterator.next();
+    iterator.next();
+    iterator.set("5");
+    assertEquals(List.of("1", "5", "3", "4"), list);
+    assertEquals("5", iterator.previous());
+    iterator.set("6");
+    assertEquals(List.of("1", "6", "3", "4"), list);
+    iterator.next();
+    iterator.next();
+    iterator.next();
+    iterator.set("7");
+    assertEquals(List.of("1", "6", "3", "7"), list);
+    iterator.previous();
+    iterator.set("8");
+    assertEquals(List.of("1", "6", "3", "8"), list);
+    list.clear();
+    list.add(0, "1");
+    list.add(0, "2");
+    list.add(0, "3");
+    list.add(0, "4");
+    iterator = list.listIterator();
+    iterator.next();
+    iterator.next();
+    iterator.set("5");
+    assertEquals(List.of("4", "5", "2", "1"), list);
+    assertEquals("5", iterator.previous());
+    iterator.set("6");
+    assertEquals(List.of("4", "6", "2", "1"), list);
+    iterator.next();
+    iterator.next();
+    iterator.next();
+    iterator.set("7");
+    assertEquals(List.of("4", "6", "2", "7"), list);
+    iterator.set("8");
+    assertEquals(List.of("4", "6", "2", "8"), list);
+  }
+
+  @Test
+  public void remove() {
+    var list = new FragmentList<String>();
+    assertThrows(IndexOutOfBoundsException.class, () -> list.remove(0));
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertEquals("1", list.remove(0));
+    assertEquals(List.of("2", "3", "4"), list);
+    assertEquals("2", list.remove(0));
+    assertEquals(List.of("3", "4"), list);
+    assertEquals("4", list.remove(list.size() - 1));
+    assertEquals(List.of("3"), list);
+    list.clear();
+    list.add("1");
+    list.add(0, "2");
+    list.add(0, "3");
+    list.add(0, "4");
+    assertEquals("4", list.remove(0));
+    assertEquals(List.of("3", "2", "1"), list);
+    assertEquals("3", list.remove(0));
+    assertEquals(List.of("2", "1"), list);
+    assertEquals("1", list.remove(list.size() - 1));
+    assertEquals(List.of("2"), list);
+  }
+
+  @Test
+  public void removeIndex() {
+    var list = new FragmentList<String>();
+    assertThrows(IndexOutOfBoundsException.class, () -> list.remove(1));
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertEquals("2", list.remove(1));
+    assertEquals(List.of("1", "3", "4"), list);
+    assertEquals("4", list.remove(2));
+    assertEquals(List.of("1", "3"), list);
+    assertEquals("1", list.remove(0));
+    assertEquals(List.of("3"), list);
+    list.clear();
+    list.add("1");
+    list.add(0, "2");
+    list.add(0, "3");
+    list.add(0, "4");
+    assertEquals("4", list.remove(0));
+    assertEquals(List.of("3", "2", "1"), list);
+    assertEquals("3", list.remove(0));
+    assertEquals(List.of("2", "1"), list);
+    assertEquals("1", list.remove(1));
+    assertEquals(List.of("2"), list);
+    list.add(0, "3");
+    list.add(0, "4");
+    list.add(0, "5");
+    list.add(0, "6");
+    assertEquals("3", list.remove(3));
+    assertEquals(List.of("6", "5", "4", "2"), list);
+  }
+
+  @Test
+  public void removeOccurrence() {
+    var list = new FragmentList<String>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertFalse(list.remove(null));
+    assertFalse(list.remove("0"));
+    assertFalse(list.remove(null));
+    assertFalse(list.remove("0"));
+    assertTrue(list.remove("2"));
+    assertEquals(java.util.List.of("1", "3", "4"), list);
+    assertTrue(list.remove("4"));
+    assertEquals(java.util.List.of("1", "3"), list);
+    list.add(null);
     list.add(1, null);
-    list.add(0, 0);
-    assertEquals(List.of(0, 1, null, 2, 3), list);
+    list.add(1, null);
+    list.add(1, null);
+    list.add(0, null);
+    assertTrue(list.remove(null));
+    assertEquals(Arrays.asList("1", null, null, null, "3", null), list);
+    assertTrue(list.remove(null));
+    assertEquals(Arrays.asList("1", null, null, "3", null), list);
+    assertTrue(list.remove(null));
+    assertEquals(Arrays.asList("1", null, "3", null), list);
+    assertTrue(list.removeAll(List.<String>of(null)));
+    assertEquals(java.util.List.of("1", "3"), list);
+  }
+
+  @Test
+  public void set() {
+    var list = new FragmentList<String>();
+    assertTrue(list.isEmpty());
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    list.add("6");
+    list.add("7");
+    assertEquals("3", list.set(2, "30"));
+    assertEquals("5", list.set(4, "50"));
+    assertEquals("30", list.get(2));
+    assertEquals("50", list.get(4));
+    list.subList(0, 5).clear();
+    list.add("8");
+    list.add("9");
+    list.add("10");
+    list.add("11");
+    list.add("12");
+    assertEquals("8", list.set(2, "80"));
+    assertEquals("10", list.set(4, "100"));
+    assertEquals("80", list.get(2));
+    assertEquals("100", list.get(4));
+    list.subList(0, 5).clear();
+    list.add("13");
+    list.add("14");
+    assertEquals("12", list.set(1, null));
+    assertNull(list.set(1, "12"));
+    list.set(1, "120");
+    assertEquals("120", list.set(1, null));
+    assertThrows(IndexOutOfBoundsException.class, () -> list.set(4, "4"));
+  }
+
+  @Test
+  public void toArray() {
+    var list = new FragmentList<String>();
+    assertArrayEquals(new Object[0], list.toArray());
+    assertArrayEquals(new String[0], list.toArray(new String[0]));
+    assertArrayEquals(new String[]{null}, list.toArray(new String[1]));
+    list.add(null);
+    list.add("1");
+    list.add("2");
+    list.add(null);
+    list.add("3");
+    list.add("4");
+    list.add(null);
+    assertArrayEquals(new Object[]{null, "1", "2", null, "3", "4", null}, list.toArray());
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[0]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[1]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[7]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null, null, null, null},
+        list.toArray(new String[10]));
+    var array = new String[10];
+    Arrays.fill(array, "9");
+    list.toArray(array);
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null, null, "9", "9"}, array);
+    list.clear();
+    assertArrayEquals(new Object[0], list.toArray());
+    assertArrayEquals(new String[0], list.toArray(new String[0]));
+    assertArrayEquals(new String[]{null}, list.toArray(new String[1]));
+    list.add("4");
+    list.add(null);
+    list.add(0, "3");
+    list.add(0, null);
+    list.add(0, "2");
+    list.add(0, "1");
+    list.add(0, null);
+    assertArrayEquals(new Object[]{null, "1", "2", null, "3", "4", null}, list.toArray());
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[0]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[1]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null},
+        list.toArray(new String[7]));
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null, null, null, null},
+        list.toArray(new String[10]));
+    array = new String[10];
+    Arrays.fill(array, "9");
+    list.toArray(array);
+    assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null, null, "9", "9"}, array);
   }
 }
