@@ -596,6 +596,52 @@ public class FragmentListTest {
     list.add(0, "6");
     assertEquals("3", list.remove(3));
     assertEquals(List.of("6", "5", "4", "2"), list);
+
+    list.clear();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add(3, "0");
+    assertEquals(List.of("1", "2", "3", "0", "4"), list);
+    list.remove(4);
+    assertEquals(List.of("1", "2", "3", "0"), list);
+
+    list.clear();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.remove(2);
+    assertEquals(List.of("1", "2", "4"), list);
+    list.remove(2);
+    assertEquals(List.of("1", "2"), list);
+
+    list.clear();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    list.remove(3);
+    assertEquals(List.of("1", "2", "3", "5"), list);
+    list.remove(1);
+    assertEquals(List.of("1", "3", "5"), list);
+    list.remove(2);
+    assertEquals(List.of("1", "3"), list);
+
+    list.clear();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.add("5");
+    list.remove(3);
+    assertEquals(List.of("1", "2", "3", "5"), list);
+    list.remove(1);
+    assertEquals(List.of("1", "3", "5"), list);
+    list.remove(1);
+    assertEquals(List.of("1", "5"), list);
   }
 
   @Test
