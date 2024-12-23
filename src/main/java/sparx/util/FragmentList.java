@@ -29,8 +29,12 @@ import sparx.util.annotation.Positive;
 
 public class FragmentList<E> extends AbstractList<E> implements Cloneable, Serializable {
 
+  private static final int DEFAULT_CHUNK_SIZE = 4;
+  private static final Object[] EMPTY_DATA = new Object[0];
+
   private final int initialCapacity;
   private final int maxFragments;
+  private final int minCapacity;
 
   private Fragment head;
   private int numFragments;
@@ -49,7 +53,13 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
   public FragmentList(@NotNegative final int initialCapacity, @Positive final int maxFragments) {
     this.initialCapacity = Require.notNegative(initialCapacity, "initialCapacity");
     this.maxFragments = Require.positive(maxFragments, "maxFragments");
-    init();
+    minCapacity = Math.max(8, initialCapacity);
+    numFragments = 1;
+    if (initialCapacity == 0) {
+      head = tail = new OpenFragment(new EmptyChunk());
+    } else {
+      head = tail = new OpenFragment(new Chunk(initialCapacity));
+    }
   }
 
   /**
@@ -57,6 +67,9 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
    */
   @Override
   public boolean add(final E element) {
+    if (size == Integer.MAX_VALUE) {
+      return false;
+    }
     final Chunk chunk = tail.chunk;
     chunk.append(element);
     if (chunk.first == chunk.last) {
@@ -76,6 +89,9 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     if (index == 0) {
+      if (size == Integer.MAX_VALUE) {
+        throw new OutOfMemoryError();
+      }
       final Chunk chunk = head.chunk;
       chunk.prepend(element);
       if (chunk.first == chunk.last) {
@@ -94,9 +110,19 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
    */
   @Override
   public void clear() {
-    init();
-    size = 0;
-    ++modCount;
+    final int size = this.size;
+    if (size > 0) {
+      if (numFragments > 1 || size > minCapacity) {
+        head = tail = new OpenFragment(new Chunk(minCapacity));
+      } else {
+        final Chunk chunk = head.chunk;
+        while (chunk.first != chunk.last) {
+          chunk.removeLast();
+        }
+      }
+      this.size = 0;
+      ++modCount;
+    }
   }
 
   /**
@@ -362,21 +388,29 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
 
   private boolean addToFragment(@NotNull final Fragment fragment, final int index,
       final E element) {
+    if (size == Integer.MAX_VALUE) {
+      throw new OutOfMemoryError();
+    }
     boolean fragmentsModified = false;
     if (index == 0) {
       final Fragment prevFragment = fragment.prev;
       if (!fragment.isOpenLeft() && !prevFragment.isOpenRight()) {
         final Chunk chunk = fragment.chunk;
-        fragment.indexStart = (fragment.indexStart - 1) & chunk.mask;
-        chunk.insert(fragment.indexStart, element);
-        if (prevFragment.indexEnd == fragment.indexStart) {
-          final Fragment nextFragment = fragment.next;
-          prevFragment.openRight();
-          prevFragment.next = nextFragment;
-          if (nextFragment != null) {
-            nextFragment.prev = prevFragment;
+        final int indexStart = (fragment.getIndexStart() - 1) & chunk.mask;
+        fragment.setIndexStart(indexStart);
+        chunk.insert(indexStart, element);
+        if (prevFragment.getIndexEnd() == fragment.getIndexStart()) {
+          if (fragment.isOpenRight()) {
+            insertFragment(prevFragment.openRight(), prevFragment.prev, fragment.next);
           } else {
-            tail = prevFragment;
+            prevFragment.setIndexEnd(fragment.getIndexEnd());
+            final Fragment nextFragment = fragment.next;
+            prevFragment.next = nextFragment;
+            if (nextFragment != null) {
+              nextFragment.prev = prevFragment;
+            } else {
+              tail = prevFragment;
+            }
           }
           --numFragments;
           fragmentsModified = true;
@@ -403,26 +437,32 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
     } else {
       final Chunk chunk = fragment.chunk;
       final Chunk newChunk = new Chunk();
-      newChunk.prepend(element);
-      final Fragment middleFragment = new Fragment(newChunk);
-      final Fragment rightFragment = new Fragment(fragment.type, fragment.chunk);
-      final int offset = fragment.isOpenLeft() ? chunk.first : fragment.indexStart;
-      rightFragment.indexStart = (offset + index) & chunk.mask;
-      rightFragment.indexEnd = fragment.indexEnd;
-      rightFragment.closeLeft();
-      fragment.indexEnd = rightFragment.indexStart;
-      fragment.closeRight();
+      newChunk.append(element);
+      final Fragment middleFragment = new OpenFragment(newChunk);
+      final Fragment prevFragment = fragment.prev;
       final Fragment nextFragment = fragment.next;
+      final Fragment leftFragment = fragment.closeRight();
+      final Fragment rightFragment = fragment.closeLeft();
+      final int offset = fragment.getIndexStart();
+      final int indexEnd = (offset + index) & chunk.mask;
+      leftFragment.setIndexEnd(indexEnd);
+      rightFragment.setIndexStart(indexEnd);
+      leftFragment.prev = prevFragment;
+      if (prevFragment != null) {
+        prevFragment.next = leftFragment;
+      } else {
+        head = leftFragment;
+      }
+      leftFragment.next = middleFragment;
+      middleFragment.prev = leftFragment;
+      middleFragment.next = rightFragment;
+      rightFragment.prev = middleFragment;
+      rightFragment.next = nextFragment;
       if (nextFragment != null) {
         nextFragment.prev = rightFragment;
-        rightFragment.next = nextFragment;
       } else {
         tail = rightFragment;
       }
-      rightFragment.prev = middleFragment;
-      middleFragment.next = rightFragment;
-      fragment.next = middleFragment;
-      middleFragment.prev = fragment;
       numFragments += 2;
       fragmentsModified = true;
       if (numFragments > maxFragments) {
@@ -459,23 +499,39 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
     return index;
   }
 
-  private void init() {
-    head = tail = new Fragment(new Chunk()); // TODO: initialCapacity (EmptyChunk)
-    numFragments = 1;
+  private void insertFragment(@NotNull final Fragment fragment, final Fragment prevFragment,
+      final Fragment nextFragment) {
+    fragment.prev = prevFragment;
+    if (prevFragment != null) {
+      prevFragment.next = fragment;
+    } else {
+      head = fragment;
+    }
+    fragment.next = nextFragment;
+    if (nextFragment != null) {
+      nextFragment.prev = fragment;
+    } else {
+      tail = fragment;
+    }
   }
 
   private void mergeAllFragments() {
-    final Chunk newChunk = new Chunk(size); // TODO: initialCapacity (clone)
-    final Object[] newData = newChunk.data;
-    Fragment fragment = head;
-    int offset = 0;
-    while (fragment != null) {
-      offset = fragment.copyData(offset, newData);
-      fragment = fragment.next;
+    final int chunkSize = Math.max(initialCapacity, size);
+    if (chunkSize == 0) {
+      head = tail = new OpenFragment(new EmptyChunk());
+    } else {
+      final Chunk newChunk = new Chunk(chunkSize);
+      final Object[] newData = newChunk.data;
+      Fragment fragment = head;
+      int offset = 0;
+      while (fragment != null) {
+        offset = fragment.copyData(offset, newData);
+        fragment = fragment.next;
+      }
+      newChunk.first = 0;
+      newChunk.last = newChunk.used = size;
+      head = tail = new OpenFragment(newChunk);
     }
-    newChunk.first = 0;
-    newChunk.last = newChunk.used = size;
-    head = tail = new Fragment(newChunk);
     ++modCount;
   }
 
@@ -496,7 +552,7 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       }
       totalSize += startFragment.size();
       final Fragment prevFragment = startFragment.prev;
-      final Chunk newChunk = new Chunk(totalSize + 1); // TODO: initialCapacity
+      final Chunk newChunk = new Chunk(Math.max(DEFAULT_CHUNK_SIZE, totalSize + 1));
       final Object[] newData = newChunk.data;
       int offset = 0;
       do {
@@ -505,19 +561,7 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       } while (startFragment != nextFragment);
       newChunk.first = 0;
       newChunk.last = newChunk.used = totalSize;
-      final Fragment newFragment = new Fragment(newChunk);
-      newFragment.prev = prevFragment;
-      if (prevFragment != null) {
-        prevFragment.next = newFragment;
-      } else {
-        head = newFragment;
-      }
-      newFragment.next = nextFragment;
-      if (nextFragment != null) {
-        nextFragment.prev = newFragment;
-      } else {
-        tail = newFragment;
-      }
+      insertFragment(new OpenFragment(newChunk), prevFragment, nextFragment);
       numFragments -= removedFragments;
       fragmentsModified = true;
     }
@@ -541,7 +585,7 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       }
       totalSize += endFragment.size();
       final Fragment nextFragment = endFragment.next;
-      final Chunk newChunk = new Chunk(totalSize + 1); // TODO: initialCapacity
+      final Chunk newChunk = new Chunk(Math.max(DEFAULT_CHUNK_SIZE, totalSize + 1));
       final Object[] newData = newChunk.data;
       Fragment startFragment = fragment;
       int offset = 0;
@@ -551,20 +595,7 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       } while (startFragment != nextFragment);
       newChunk.first = 0;
       newChunk.last = newChunk.used = totalSize;
-      final Fragment newFragment = new Fragment(newChunk);
-      final Fragment prevFragment = fragment.prev;
-      newFragment.prev = prevFragment;
-      if (prevFragment != null) {
-        prevFragment.next = newFragment;
-      } else {
-        head = newFragment;
-      }
-      newFragment.next = nextFragment;
-      if (nextFragment != null) {
-        nextFragment.prev = newFragment;
-      } else {
-        tail = newFragment;
-      }
+      insertFragment(new OpenFragment(newChunk), fragment.prev, nextFragment);
       numFragments -= removedFragments;
       fragmentsModified = true;
     }
@@ -587,29 +618,37 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       if (fragment.isOpenLeft()) {
         chunk.removeFirst();
       } else {
-        chunk.remove(fragment.indexStart);
-        fragment.indexStart = (fragment.indexStart + 1) & chunk.mask;
+        final int indexStart = fragment.getIndexStart();
+        chunk.remove(indexStart);
+        fragment.setIndexStart((indexStart + 1) & chunk.mask);
       }
     } else if (fragment.isOpenRight() && index == fragment.size() - 1) {
       fragment.chunk.removeLast();
     } else {
       final Chunk chunk = fragment.chunk;
-      final Fragment newFragment = new Fragment(fragment.type, chunk);
-      newFragment.indexEnd = fragment.indexEnd;
-      fragment.indexEnd = (chunk.first + index) & chunk.mask;
-      newFragment.indexStart = (fragment.indexEnd + 1) & chunk.mask;
-      fragment.closeRight();
-      newFragment.closeLeft();
-      chunk.remove(fragment.indexEnd);
+      final Fragment prevFragment = fragment.prev;
       final Fragment nextFragment = fragment.next;
-      newFragment.prev = fragment;
-      newFragment.next = nextFragment;
-      fragment.next = newFragment;
-      if (nextFragment != null) {
-        nextFragment.prev = newFragment;
+      final Fragment leftFragment = fragment.closeRight();
+      final Fragment rightFragment = fragment.closeLeft();
+      final int indexEnd = (fragment.getIndexStart() + index) & chunk.mask;
+      leftFragment.setIndexEnd(indexEnd);
+      rightFragment.setIndexStart((indexEnd + 1) & chunk.mask);
+      chunk.remove(indexEnd);
+      leftFragment.prev = prevFragment;
+      if (prevFragment != null) {
+        prevFragment.next = leftFragment;
       } else {
-        tail = newFragment;
+        head = leftFragment;
       }
+      leftFragment.next = rightFragment;
+      rightFragment.prev = leftFragment;
+      rightFragment.next = nextFragment;
+      if (nextFragment != null) {
+        nextFragment.prev = rightFragment;
+      } else {
+        tail = rightFragment;
+      }
+      fragment = rightFragment;
       ++numFragments;
       fragmentsModified = true;
       if (numFragments > maxFragments) {
@@ -628,11 +667,11 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
             return mergeFragmentsLeft(fragment);
           } else if (!fragment.isOpenLeft()) {
             final Chunk chunk = prevFragment.chunk;
-            final int indexEnd = prevFragment.indexEnd;
+            final int indexEnd = prevFragment.getIndexEnd();
             do {
               chunk.removeLast();
             } while (chunk.last != indexEnd);
-            prevFragment.openRight();
+            insertFragment(prevFragment.openRight(), prevFragment.prev, prevFragment.next);
           }
         }
       } else {
@@ -646,11 +685,11 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
             return mergeFragmentsRight(fragment);
           } else if (!fragment.isOpenRight()) {
             final Chunk chunk = nextFragment.chunk;
-            final int indexStart = nextFragment.indexStart;
+            final int indexStart = nextFragment.getIndexStart();
             do {
               chunk.removeFirst();
             } while (chunk.first != indexStart);
-            nextFragment.openLeft();
+            insertFragment(nextFragment.openLeft(), nextFragment.prev, nextFragment.next);
           }
         }
       } else {
@@ -698,7 +737,7 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       fragment.chunk = newChunk;
     } else {
       final int size = fragment.size();
-      final Chunk newChunk = new Chunk(size << 1); // TODO: initialCapacity
+      final Chunk newChunk = new Chunk(Math.max(DEFAULT_CHUNK_SIZE, size << 1));
       final Object[] newData = newChunk.data;
       final int first = chunk.first;
       final int last = chunk.last;
@@ -715,294 +754,6 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
     }
   }
 
-  private enum FragmentType {
-    OPEN {
-      @Override
-      void closeLeft(@NotNull final Fragment fragment) {
-        fragment.type = FragmentType.RIGHT;
-      }
-
-      @Override
-      void closeRight(@NotNull final Fragment fragment) {
-        fragment.type = FragmentType.LEFT;
-      }
-
-      @Override
-      int copyData(@NotNull final Fragment fragment, @Positive final int offset,
-          @NotNull final Object[] dstData) {
-        final int size = size(fragment);
-        if (size == 0) {
-          return offset;
-        }
-        final Chunk chunk = fragment.chunk;
-        final Object[] data = chunk.data;
-        final int first = chunk.first;
-        final int last = chunk.last;
-        if (first < last) {
-          System.arraycopy(data, first, dstData, offset, last - first);
-        } else {
-          final int remainder = data.length - first;
-          System.arraycopy(data, first, dstData, offset, remainder);
-          System.arraycopy(data, 0, dstData, offset + remainder, last);
-        }
-        return offset + size;
-      }
-
-      @Override
-      Object get(@NotNull final Fragment fragment, final int index) {
-        final Chunk chunk = fragment.chunk;
-        final Object[] data = chunk.data;
-        return data[(chunk.first + index) & (data.length - 1)];
-      }
-
-      @Override
-      boolean isOpen() {
-        return true;
-      }
-
-      @Override
-      boolean isOpenLeft() {
-        return true;
-      }
-
-      @Override
-      boolean isOpenRight() {
-        return true;
-      }
-
-      @Override
-      Object set(@NotNull final Fragment fragment, int index, final Object element) {
-        final Chunk chunk = fragment.chunk;
-        final Object[] data = chunk.data;
-        index = (chunk.first + index) & chunk.mask;
-        final Object old = data[index];
-        data[index] = element;
-        return old;
-      }
-
-      @Override
-      int size(@NotNull final Fragment fragment) {
-        final Chunk chunk = fragment.chunk;
-        final int size = chunk.last - chunk.first;
-        return size >= 0 ? size : size + chunk.data.length;
-      }
-    }, CLOSED {
-      @Override
-      int copyData(@NotNull final Fragment fragment, @Positive final int offset,
-          @NotNull final Object[] dstData) {
-        final int size = size(fragment);
-        if (size == 0) {
-          return offset;
-        }
-        final Chunk chunk = fragment.chunk;
-        final Object[] data = chunk.data;
-        final int first = fragment.indexStart;
-        final int last = fragment.indexEnd;
-        if (first < last) {
-          System.arraycopy(data, first, dstData, offset, last - first);
-        } else {
-          final int remainder = data.length - first;
-          System.arraycopy(data, first, dstData, offset, remainder);
-          System.arraycopy(data, 0, dstData, offset + remainder, last);
-        }
-        return offset + size;
-      }
-
-      @Override
-      Object get(@NotNull final Fragment fragment, final int index) {
-        final Object[] data = fragment.chunk.data;
-        return data[(fragment.indexStart + index) & (data.length - 1)];
-      }
-
-      @Override
-      void openLeft(@NotNull final Fragment fragment) {
-        fragment.type = FragmentType.LEFT;
-      }
-
-      @Override
-      void openRight(@NotNull final Fragment fragment) {
-        fragment.type = FragmentType.RIGHT;
-      }
-
-      @Override
-      Object set(@NotNull final Fragment fragment, int index, final Object element) {
-        final Chunk chunk = fragment.chunk;
-        final Object[] data = chunk.data;
-        index = (fragment.indexStart + index) & chunk.mask;
-        final Object old = data[index];
-        data[index] = element;
-        return old;
-      }
-
-      @Override
-      int size(@NotNull final Fragment fragment) {
-        final Chunk chunk = fragment.chunk;
-        final int size = fragment.indexEnd - fragment.indexStart;
-        return size >= 0 ? size : size + chunk.data.length;
-      }
-    }, LEFT {
-      @Override
-      void closeLeft(@NotNull final Fragment fragment) {
-        fragment.type = FragmentType.CLOSED;
-      }
-
-      @Override
-      int copyData(@NotNull final Fragment fragment, @Positive final int offset,
-          @NotNull final Object[] dstData) {
-        final int size = size(fragment);
-        if (size == 0) {
-          return offset;
-        }
-        final Chunk chunk = fragment.chunk;
-        final Object[] data = chunk.data;
-        final int first = chunk.first;
-        final int last = fragment.indexEnd;
-        if (first < last) {
-          System.arraycopy(data, first, dstData, offset, last - first);
-        } else {
-          final int remainder = data.length - first;
-          System.arraycopy(data, first, dstData, offset, remainder);
-          System.arraycopy(data, 0, dstData, offset + remainder, last);
-        }
-        return offset + size;
-      }
-
-      @Override
-      Object get(@NotNull final Fragment fragment, final int index) {
-        final Chunk chunk = fragment.chunk;
-        final Object[] data = chunk.data;
-        return data[(chunk.first + index) & (data.length - 1)];
-      }
-
-      @Override
-      boolean isOpenLeft() {
-        return true;
-      }
-
-      @Override
-      void openRight(@NotNull final Fragment fragment) {
-        fragment.type = FragmentType.OPEN;
-      }
-
-      @Override
-      Object set(@NotNull final Fragment fragment, int index, final Object element) {
-        final Chunk chunk = fragment.chunk;
-        final Object[] data = chunk.data;
-        index = (chunk.first + index) & chunk.mask;
-        final Object old = data[index];
-        data[index] = element;
-        return old;
-      }
-
-      @Override
-      int size(@NotNull final Fragment fragment) {
-        final Chunk chunk = fragment.chunk;
-        final int size = fragment.indexEnd - chunk.first;
-        return size >= 0 ? size : size + chunk.data.length;
-      }
-    }, RIGHT {
-      @Override
-      void closeRight(@NotNull final Fragment fragment) {
-        fragment.type = FragmentType.CLOSED;
-      }
-
-      @Override
-      int copyData(@NotNull final Fragment fragment, @Positive final int offset,
-          @NotNull final Object[] dstData) {
-        final int size = size(fragment);
-        if (size == 0) {
-          return offset;
-        }
-        final Chunk chunk = fragment.chunk;
-        final Object[] data = chunk.data;
-        final int first = fragment.indexStart;
-        final int last = chunk.last;
-        if (first < last) {
-          System.arraycopy(data, first, dstData, offset, last - first);
-        } else {
-          final int remainder = data.length - first;
-          System.arraycopy(data, first, dstData, offset, remainder);
-          System.arraycopy(data, 0, dstData, offset + remainder, last);
-        }
-        return offset + size;
-      }
-
-      @Override
-      Object get(@NotNull final Fragment fragment, final int index) {
-        final Object[] data = fragment.chunk.data;
-        return data[(fragment.indexStart + index) & (data.length - 1)];
-      }
-
-      @Override
-      boolean isOpenRight() {
-        return true;
-      }
-
-      @Override
-      void openLeft(@NotNull final Fragment fragment) {
-        fragment.type = FragmentType.OPEN;
-      }
-
-      @Override
-      Object set(@NotNull final Fragment fragment, int index, final Object element) {
-        final Chunk chunk = fragment.chunk;
-        final Object[] data = chunk.data;
-        index = (fragment.indexStart + index) & chunk.mask;
-        final Object old = data[index];
-        data[index] = element;
-        return old;
-      }
-
-      @Override
-      int size(@NotNull final Fragment fragment) {
-        final Chunk chunk = fragment.chunk;
-        final int size = chunk.last - fragment.indexStart;
-        return size >= 0 ? size : size + chunk.data.length;
-      }
-    };
-
-    void closeLeft(@NotNull final Fragment fragment) {
-    }
-
-    void closeRight(@NotNull final Fragment fragment) {
-    }
-
-    int copyData(@NotNull final Fragment fragment, @Positive final int offset,
-        @NotNull final Object[] dstData) {
-      return offset;
-    }
-
-    Object get(@NotNull final Fragment fragment, final int index) {
-      return null;
-    }
-
-    boolean isOpen() {
-      return false;
-    }
-
-    boolean isOpenLeft() {
-      return false;
-    }
-
-    boolean isOpenRight() {
-      return false;
-    }
-
-    void openLeft(@NotNull final Fragment fragment) {
-    }
-
-    void openRight(@NotNull final Fragment fragment) {
-    }
-
-    Object set(@NotNull final Fragment fragment, final int index, final Object element) {
-      return null;
-    }
-
-    int size(@NotNull final Fragment fragment) {
-      return 0;
-    }
-  }
-
   private static class Chunk {
 
     private final Object[] data;
@@ -1013,8 +764,13 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
     private int used;
 
     private Chunk() {
-      data = new Object[4];
+      data = new Object[DEFAULT_CHUNK_SIZE];
       mask = 3;
+    }
+
+    private Chunk(@NotNull final Object[] data) {
+      this.data = data;
+      mask = data.length - 1;
     }
 
     private Chunk(@Positive final int minCapacity) {
@@ -1024,101 +780,445 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       mask = initialCapacity - 1;
     }
 
-    private void append(final Object element) {
+    void append(final Object element) {
       data[last] = element;
       last = (last + 1) & mask;
       ++used;
     }
 
-    private void insert(final int index, final Object element) {
+    void insert(final int index, final Object element) {
       data[index] = element;
       ++used;
     }
 
-    private void prepend(final Object element) {
+    void prepend(final Object element) {
       first = (first - 1) & mask;
       data[first] = element;
       ++used;
     }
 
-    private void remove(final int index) {
+    void remove(final int index) {
       data[index] = null;
       --used;
     }
 
-    private void removeFirst() {
+    void removeFirst() {
       data[first] = null;
       first = (first + 1) & mask;
       --used;
     }
 
-    private void removeLast() {
+    void removeLast() {
       last = (last - 1) & mask;
       data[last] = null;
       --used;
     }
   }
 
-  private static class Fragment {
+  private static abstract class Fragment {
 
-    private Chunk chunk;
-    private int indexEnd;
-    private int indexStart;
-    private Fragment next;
-    private Fragment prev;
-    private FragmentType type;
+    Chunk chunk;
+    Fragment next;
+    Fragment prev;
 
     private Fragment(@NotNull final Chunk chunk) {
-      this(FragmentType.OPEN, chunk);
-    }
-
-    private Fragment(final FragmentType type, @NotNull final Chunk chunk) {
-      this.type = type;
       this.chunk = chunk;
     }
 
-    private void closeLeft() {
-      type.closeLeft(this);
+    abstract @NotNull Fragment closeLeft();
+
+    abstract @NotNull Fragment closeRight();
+
+    int copyData(@Positive final int offset, @NotNull final Object[] dstData) {
+      final int first = getIndexStart();
+      final int last = getIndexEnd();
+      if (first == last) {
+        return offset;
+      }
+      final Chunk chunk = this.chunk;
+      final Object[] data = chunk.data;
+      if (first < last) {
+        System.arraycopy(data, first, dstData, offset, last - first);
+      } else {
+        final int remainder = data.length - first;
+        System.arraycopy(data, first, dstData, offset, remainder);
+        System.arraycopy(data, 0, dstData, offset + remainder, last);
+      }
+      final int size = last > first ? last - first : last - first + chunk.data.length;
+      return offset + size;
     }
 
-    private void closeRight() {
-      type.closeRight(this);
+    Object get(final int index) {
+      final Chunk chunk = this.chunk;
+      return chunk.data[(getIndexStart() + index) & chunk.mask];
     }
 
-    private int copyData(@Positive final int offset, @NotNull final Object[] dstData) {
-      return type.copyData(this, offset, dstData);
+    abstract int getIndexEnd();
+
+    abstract void setIndexEnd(int indexEnd);
+
+    abstract int getIndexStart();
+
+    abstract void setIndexStart(int indexStart);
+
+    abstract boolean isOpen();
+
+    abstract boolean isOpenLeft();
+
+    abstract boolean isOpenRight();
+
+    abstract @NotNull Fragment openLeft();
+
+    abstract @NotNull Fragment openRight();
+
+    Object set(int index, final Object element) {
+      final Chunk chunk = this.chunk;
+      final Object[] data = chunk.data;
+      index = (getIndexStart() + index) & chunk.mask;
+      final Object old = data[index];
+      data[index] = element;
+      return old;
     }
 
-    private Object get(final int index) {
-      return type.get(this, index);
+    int size() {
+      final Chunk chunk = this.chunk;
+      final int size = getIndexEnd() - getIndexStart();
+      return size >= 0 ? size : size + chunk.data.length;
+    }
+  }
+
+  private static class ClosedFragment extends Fragment {
+
+    private int indexEnd;
+    private int indexStart;
+
+    private ClosedFragment(@NotNull final Chunk chunk) {
+      super(chunk);
     }
 
-    private boolean isOpen() {
-      return type.isOpen();
+    @Override
+    @NotNull
+    Fragment closeLeft() {
+      return copy();
     }
 
-    private boolean isOpenLeft() {
-      return type.isOpenLeft();
+    @Override
+    @NotNull
+    Fragment closeRight() {
+      return copy();
     }
 
-    private boolean isOpenRight() {
-      return type.isOpenRight();
+    @Override
+    int getIndexEnd() {
+      return indexEnd;
     }
 
-    private void openLeft() {
-      type.openLeft(this);
+    @Override
+    void setIndexEnd(final int indexEnd) {
+      this.indexEnd = indexEnd;
     }
 
-    private void openRight() {
-      type.openRight(this);
+    @Override
+    int getIndexStart() {
+      return indexStart;
     }
 
-    private Object set(final int index, final Object element) {
-      return type.set(this, index, element);
+    @Override
+    void setIndexStart(final int indexStart) {
+      this.indexStart = indexStart;
     }
 
-    private int size() {
-      return type.size(this);
+    @Override
+    boolean isOpen() {
+      return false;
+    }
+
+    @Override
+    boolean isOpenLeft() {
+      return false;
+    }
+
+    @Override
+    boolean isOpenRight() {
+      return false;
+    }
+
+    @Override
+    @NotNull
+    Fragment openLeft() {
+      final OpenLeftFragment fragment = new OpenLeftFragment(chunk);
+      fragment.setIndexEnd(indexEnd);
+      return fragment;
+    }
+
+    @Override
+    @NotNull
+    Fragment openRight() {
+      final OpenRightFragment fragment = new OpenRightFragment(chunk);
+      fragment.setIndexStart(indexStart);
+      return fragment;
+    }
+
+    private @NotNull Fragment copy() {
+      final ClosedFragment fragment = new ClosedFragment(chunk);
+      fragment.setIndexStart(indexStart);
+      fragment.setIndexEnd(indexEnd);
+      return fragment;
+    }
+  }
+
+  private static class OpenFragment extends Fragment {
+
+    private OpenFragment(@NotNull final Chunk chunk) {
+      super(chunk);
+    }
+
+    @Override
+    @NotNull
+    Fragment closeLeft() {
+      return new OpenRightFragment(chunk);
+    }
+
+    @Override
+    @NotNull
+    Fragment closeRight() {
+      return new OpenLeftFragment(chunk);
+    }
+
+    @Override
+    int getIndexEnd() {
+      return chunk.last;
+    }
+
+    @Override
+    void setIndexEnd(final int indexEnd) {
+    }
+
+    @Override
+    int getIndexStart() {
+      return chunk.first;
+    }
+
+    @Override
+    void setIndexStart(final int indexStart) {
+    }
+
+    @Override
+    boolean isOpen() {
+      return true;
+    }
+
+    @Override
+    boolean isOpenLeft() {
+      return true;
+    }
+
+    @Override
+    boolean isOpenRight() {
+      return true;
+    }
+
+    @Override
+    @NotNull
+    Fragment openLeft() {
+      return new OpenFragment(chunk);
+    }
+
+    @Override
+    @NotNull
+    Fragment openRight() {
+      return new OpenFragment(chunk);
+    }
+  }
+
+  private static class OpenLeftFragment extends Fragment {
+
+    private int indexEnd;
+
+    private OpenLeftFragment(@NotNull final Chunk chunk) {
+      super(chunk);
+    }
+
+    @Override
+    @NotNull
+    Fragment closeLeft() {
+      final ClosedFragment fragment = new ClosedFragment(chunk);
+      fragment.setIndexEnd(indexEnd);
+      return fragment;
+    }
+
+    @Override
+    @NotNull
+    Fragment closeRight() {
+      return copy();
+    }
+
+    @Override
+    int getIndexEnd() {
+      return indexEnd;
+    }
+
+    @Override
+    void setIndexEnd(final int indexEnd) {
+      this.indexEnd = indexEnd;
+    }
+
+    @Override
+    int getIndexStart() {
+      return chunk.first;
+    }
+
+    @Override
+    void setIndexStart(final int indexStart) {
+    }
+
+    @Override
+    boolean isOpen() {
+      return false;
+    }
+
+    @Override
+    boolean isOpenLeft() {
+      return true;
+    }
+
+    @Override
+    boolean isOpenRight() {
+      return false;
+    }
+
+    @Override
+    @NotNull
+    Fragment openLeft() {
+      return copy();
+    }
+
+    @Override
+    @NotNull
+    Fragment openRight() {
+      return new OpenFragment(chunk);
+    }
+
+    private @NotNull Fragment copy() {
+      final OpenLeftFragment fragment = new OpenLeftFragment(chunk);
+      fragment.setIndexEnd(indexEnd);
+      return fragment;
+    }
+  }
+
+  private static class OpenRightFragment extends Fragment {
+
+    private int indexStart;
+
+    private OpenRightFragment(@NotNull final Chunk chunk) {
+      super(chunk);
+    }
+
+    @Override
+    @NotNull
+    Fragment closeLeft() {
+      return copy();
+    }
+
+    @Override
+    @NotNull
+    Fragment closeRight() {
+      final ClosedFragment fragment = new ClosedFragment(chunk);
+      fragment.setIndexStart(indexStart);
+      return fragment;
+    }
+
+    @Override
+    int getIndexEnd() {
+      return chunk.last;
+    }
+
+    @Override
+    void setIndexEnd(final int indexEnd) {
+    }
+
+    @Override
+    int getIndexStart() {
+      return indexStart;
+    }
+
+    @Override
+    void setIndexStart(final int indexStart) {
+      this.indexStart = indexStart;
+    }
+
+    @Override
+    boolean isOpen() {
+      return false;
+    }
+
+    @Override
+    boolean isOpenLeft() {
+      return false;
+    }
+
+    @Override
+    boolean isOpenRight() {
+      return true;
+    }
+
+    @Override
+    @NotNull
+    Fragment openLeft() {
+      return new OpenFragment(chunk);
+    }
+
+    @Override
+    @NotNull
+    Fragment openRight() {
+      return copy();
+    }
+
+    private @NotNull Fragment copy() {
+      final OpenRightFragment fragment = new OpenRightFragment(chunk);
+      fragment.setIndexStart(indexStart);
+      return fragment;
+    }
+  }
+
+  private class EmptyChunk extends Chunk {
+
+    private EmptyChunk() {
+      super(EMPTY_DATA);
+    }
+
+    @Override
+    void append(final Object element) {
+      init().append(element);
+    }
+
+    @Override
+    void insert(final int index, final Object element) {
+      init().insert(index, element);
+    }
+
+    @Override
+    void prepend(final Object element) {
+      init().prepend(element);
+    }
+
+    @Override
+    void remove(final int index) {
+      init().remove(index);
+    }
+
+    @Override
+    void removeFirst() {
+      init().removeFirst();
+    }
+
+    @Override
+    void removeLast() {
+      init().removeLast();
+    }
+
+    private @NotNull Chunk init() {
+      return (head.chunk = new Chunk(2));
     }
   }
 
@@ -1143,10 +1243,14 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
     @Override
     public void add(final E element) {
       checkForComodification();
-      if (addToFragment(fragment, index++, element)) {
+      final int size = fragment.size();
+      if (addToFragment(fragment, index, element)) {
         index = goToIndex(++pos);
         fragment = pointer;
       } else {
+        if (size != fragment.size()) {
+          ++index;
+        }
         ++pos;
       }
       expectedModCount = modCount;

@@ -34,8 +34,9 @@ public class FragmentListTest {
   public void constructors() {
     assertTrue(new FragmentList<>().isEmpty());
     assertTrue(new FragmentList<>(10).isEmpty());
-    assertThrows(IllegalArgumentException.class, () -> new FragmentList<>(0));
     assertThrows(IllegalArgumentException.class, () -> new FragmentList<>(-1));
+    assertThrows(IllegalArgumentException.class, () -> new FragmentList<>(0, 0));
+    assertThrows(IllegalArgumentException.class, () -> new FragmentList<>(0, -1));
   }
 
   @Test
