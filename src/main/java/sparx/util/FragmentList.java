@@ -70,7 +70,7 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
   @Override
   public boolean add(final E element) {
     if (size == Integer.MAX_VALUE) {
-      return false;
+      throw new OutOfMemoryError();
     }
     final Chunk chunk = tail.chunk;
     chunk.append(element);
@@ -96,6 +96,35 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       final int relIndex = goToIndex(index);
       addToFragment(pointer, relIndex, element);
     }
+  }
+
+  @Override
+  public boolean addAll(@NotNull final Collection<? extends E> collection) {
+    for (final E element : collection) {
+      addLast(element);
+    }
+    return true;
+  }
+
+  @Override
+  public boolean addAll(int index, @NotNull final Collection<? extends E> collection) {
+    if (index < 0 || index > size) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
+    if (index == size - 1) {
+      return addAll(collection);
+    }
+    int relIndex = goToIndex(index);
+    Fragment fragment = pointer;
+    for (final E element : collection) {
+      if (addToFragment(fragment, relIndex++, element)) {
+        relIndex = goToIndex(++index);
+        fragment = pointer;
+      } else {
+        ++index;
+      }
+    }
+    return true;
   }
 
   public boolean addFirst(final E element) {
@@ -307,13 +336,13 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
    * {@inheritDoc}
    */
   @Override
-  public boolean removeAll(@NotNull final Collection<?> c) {
+  public boolean removeAll(@NotNull final Collection<?> collection) {
     boolean modified = false;
     Fragment fragment = head;
     int pos = 0;
     do {
       for (int i = 0; i < fragment.size(); ) {
-        if (c.contains(fragment.get(i))) {
+        if (collection.contains(fragment.get(i))) {
           if (removeFromFragment(fragment, i)) {
             i = goToIndex(pos);
             fragment = pointer;
@@ -344,6 +373,29 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
     final E element = (E) fragment.get(index);
     removeFromFragment(fragment, index);
     return element;
+  }
+
+  @Override
+  public boolean retainAll(@NotNull final Collection<?> collection) {
+    boolean modified = false;
+    Fragment fragment = head;
+    int pos = 0;
+    do {
+      for (int i = 0; i < fragment.size(); ) {
+        if (!collection.contains(fragment.get(i))) {
+          if (removeFromFragment(fragment, i)) {
+            i = goToIndex(pos);
+            fragment = pointer;
+          }
+          modified = true;
+        } else {
+          ++pos;
+          ++i;
+        }
+      }
+      fragment = fragment.next;
+    } while (fragment != null);
+    return modified;
   }
 
   /**
