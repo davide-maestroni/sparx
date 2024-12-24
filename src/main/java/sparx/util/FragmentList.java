@@ -91,20 +91,29 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     if (index == 0) {
-      if (size == Integer.MAX_VALUE) {
-        throw new OutOfMemoryError();
-      }
-      final Chunk chunk = head.chunk;
-      chunk.prepend(element);
-      if (chunk.first == chunk.last) {
-        mergeFragmentsRight(head);
-      }
-      ++size;
-      ++modCount;
+      addFirst(element);
     } else {
       final int relIndex = goToIndex(index);
       addToFragment(pointer, relIndex, element);
     }
+  }
+
+  public boolean addFirst(final E element) {
+    if (size == Integer.MAX_VALUE) {
+      throw new OutOfMemoryError();
+    }
+    final Chunk chunk = head.chunk;
+    chunk.prepend(element);
+    if (chunk.first == chunk.last) {
+      mergeFragmentsRight(head);
+    }
+    ++size;
+    ++modCount;
+    return true;
+  }
+
+  public boolean addLast(final E element) {
+    return add(element);
   }
 
   /**
@@ -252,6 +261,9 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
     if (index < 0 || index >= size) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
+    if (index == 0) {
+      return removeFirst();
+    }
     final int relIndex = goToIndex(index);
     final Fragment fragment = pointer;
     final E element = (E) fragment.get(relIndex);
@@ -315,6 +327,23 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       fragment = fragment.next;
     } while (fragment != null);
     return modified;
+  }
+
+  @SuppressWarnings("unchecked")
+  public E removeFirst() {
+    final Fragment fragment = head;
+    final E element = (E) fragment.get(0);
+    removeFromFragment(fragment, 0);
+    return element;
+  }
+
+  @SuppressWarnings("unchecked")
+  public E removeLast() {
+    final Fragment fragment = tail;
+    final int index = fragment.size() - 1;
+    final E element = (E) fragment.get(index);
+    removeFromFragment(fragment, index);
+    return element;
   }
 
   /**

@@ -672,7 +672,7 @@ public class FragmentListTest {
     list.add(1, null);
     list.add(1, null);
     list.add(1, null);
-    list.add(0, null);
+    list.addFirst( null);
     assertTrue(list.remove(null));
     assertEquals(Arrays.asList("1", null, null, null, "3", null), list);
     assertTrue(list.remove(null));
