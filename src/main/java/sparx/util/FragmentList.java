@@ -30,6 +30,8 @@ import sparx.util.annotation.Positive;
 public class FragmentList<E> extends AbstractList<E> implements Cloneable, Serializable {
 
   private static final int DEFAULT_CHUNK_SIZE = 4;
+  private static final int DEFAULT_INITIAL_CAPACITY = 8;
+  private static final int DEFAULT_MAX_FRAGMENTS = 64;
   private static final Object[] EMPTY_DATA = new Object[0];
 
   private final int initialCapacity;
@@ -43,17 +45,17 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
   private Fragment tail;
 
   public FragmentList() {
-    this(8, 64);
+    this(DEFAULT_INITIAL_CAPACITY);
   }
 
   public FragmentList(@NotNegative final int initialCapacity) {
-    this(initialCapacity, 64);
+    this(initialCapacity, DEFAULT_MAX_FRAGMENTS);
   }
 
   public FragmentList(@NotNegative final int initialCapacity, @Positive final int maxFragments) {
     this.initialCapacity = Require.notNegative(initialCapacity, "initialCapacity");
     this.maxFragments = Require.positive(maxFragments, "maxFragments");
-    minCapacity = Math.max(8, initialCapacity);
+    minCapacity = Math.max(DEFAULT_INITIAL_CAPACITY, initialCapacity);
     numFragments = 1;
     if (initialCapacity == 0) {
       head = tail = new OpenFragment(new EmptyChunk());
@@ -134,6 +136,12 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
     final FragmentList<E> clone = (FragmentList<E>) super.clone();
     clone.mergeAllFragments();
     return clone;
+  }
+
+  public void defrag() {
+    if (numFragments > 1) {
+      mergeAllFragments();
+    }
   }
 
   /**
@@ -290,12 +298,17 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
   public boolean removeAll(@NotNull final Collection<?> c) {
     boolean modified = false;
     Fragment fragment = head;
+    int pos = 0;
     do {
       for (int i = 0; i < fragment.size(); ) {
         if (c.contains(fragment.get(i))) {
-          removeFromFragment(fragment, i);
+          if (removeFromFragment(fragment, i)) {
+            i = goToIndex(pos);
+            fragment = pointer;
+          }
           modified = true;
         } else {
+          ++pos;
           ++i;
         }
       }
@@ -439,14 +452,13 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       final Chunk newChunk = new Chunk();
       newChunk.append(element);
       final Fragment middleFragment = new OpenFragment(newChunk);
-      final Fragment prevFragment = fragment.prev;
-      final Fragment nextFragment = fragment.next;
       final Fragment leftFragment = fragment.closeRight();
       final Fragment rightFragment = fragment.closeLeft();
       final int offset = fragment.getIndexStart();
       final int indexEnd = (offset + index) & chunk.mask;
       leftFragment.setIndexEnd(indexEnd);
       rightFragment.setIndexStart(indexEnd);
+      final Fragment prevFragment = fragment.prev;
       leftFragment.prev = prevFragment;
       if (prevFragment != null) {
         prevFragment.next = leftFragment;
@@ -457,6 +469,7 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       middleFragment.prev = leftFragment;
       middleFragment.next = rightFragment;
       rightFragment.prev = middleFragment;
+      final Fragment nextFragment = fragment.next;
       rightFragment.next = nextFragment;
       if (nextFragment != null) {
         nextFragment.prev = rightFragment;
@@ -626,14 +639,13 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       fragment.chunk.removeLast();
     } else {
       final Chunk chunk = fragment.chunk;
-      final Fragment prevFragment = fragment.prev;
-      final Fragment nextFragment = fragment.next;
       final Fragment leftFragment = fragment.closeRight();
       final Fragment rightFragment = fragment.closeLeft();
       final int indexEnd = (fragment.getIndexStart() + index) & chunk.mask;
       leftFragment.setIndexEnd(indexEnd);
       rightFragment.setIndexStart((indexEnd + 1) & chunk.mask);
       chunk.remove(indexEnd);
+      final Fragment prevFragment = fragment.prev;
       leftFragment.prev = prevFragment;
       if (prevFragment != null) {
         prevFragment.next = leftFragment;
@@ -642,6 +654,7 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       }
       leftFragment.next = rightFragment;
       rightFragment.prev = leftFragment;
+      final Fragment nextFragment = fragment.next;
       rightFragment.next = nextFragment;
       if (nextFragment != null) {
         nextFragment.prev = rightFragment;
@@ -695,7 +708,14 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       } else {
         tail = prevFragment;
       }
-      --numFragments;
+      if (prevFragment != null && prevFragment.isOpenLeft() && nextFragment != null
+          && nextFragment.isOpenRight()
+          && prevFragment.getIndexEnd() == nextFragment.getIndexStart()) {
+        insertFragment(prevFragment.openRight(), prevFragment.prev, nextFragment.next);
+        numFragments -= 2;
+      } else {
+        --numFragments;
+      }
       fragmentsModified = true;
     } else {
       final Chunk chunk = fragment.chunk;

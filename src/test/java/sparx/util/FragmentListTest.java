@@ -643,6 +643,14 @@ public class FragmentListTest {
     assertEquals(List.of("1", "3", "5"), list);
     list.remove(1);
     assertEquals(List.of("1", "5"), list);
+
+    list.clear();
+    list.add("1");
+    list.add("2");
+    list.add(1, "3");
+    assertEquals(List.of("1", "3", "2"), list);
+    list.remove(1);
+    assertEquals(List.of("1", "2"), list);
   }
 
   @Test
@@ -657,9 +665,9 @@ public class FragmentListTest {
     assertFalse(list.remove(null));
     assertFalse(list.remove("0"));
     assertTrue(list.remove("2"));
-    assertEquals(java.util.List.of("1", "3", "4"), list);
+    assertEquals(List.of("1", "3", "4"), list);
     assertTrue(list.remove("4"));
-    assertEquals(java.util.List.of("1", "3"), list);
+    assertEquals(List.of("1", "3"), list);
     list.add(null);
     list.add(1, null);
     list.add(1, null);
@@ -672,7 +680,7 @@ public class FragmentListTest {
     assertTrue(list.remove(null));
     assertEquals(Arrays.asList("1", null, "3", null), list);
     assertTrue(list.removeAll(List.<String>of(null)));
-    assertEquals(java.util.List.of("1", "3"), list);
+    assertEquals(List.of("1", "3"), list);
   }
 
   @Test
