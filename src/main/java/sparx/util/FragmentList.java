@@ -789,10 +789,21 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       } else {
         tail = prevFragment;
       }
-      if (prevFragment != null && prevFragment.isOpenLeft() && nextFragment != null
-          && nextFragment.isOpenRight()
+      if (prevFragment != null && !prevFragment.isOpenRight() && nextFragment != null
+          && !nextFragment.isOpenLeft()
           && prevFragment.getIndexEnd() == nextFragment.getIndexStart()) {
-        insertFragment(prevFragment.openRight(), prevFragment.prev, nextFragment.next);
+        if (nextFragment.isOpenRight()) {
+          insertFragment(prevFragment.openRight(), prevFragment.prev, nextFragment.next);
+        } else {
+          prevFragment.setIndexEnd(nextFragment.getIndexEnd());
+          final Fragment rightFragment = nextFragment.next;
+          prevFragment.next = rightFragment;
+          if (rightFragment != null) {
+            rightFragment.prev = prevFragment;
+          } else {
+            tail = prevFragment;
+          }
+        }
         numFragments -= 2;
       } else {
         --numFragments;
