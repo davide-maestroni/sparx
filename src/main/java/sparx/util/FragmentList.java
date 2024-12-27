@@ -27,6 +27,14 @@ import org.jetbrains.annotations.NotNull;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
+/*
+- no fragment with length 0 (except numFragments == 1)
+- head is open left and tail is open right
+- if fragment is open left prev fragment is closed right
+- if fragment is open right prev fragment is closed left
+- when hole in chunk fragments before and after are adjacent
+ */
+
 public class FragmentList<E> extends AbstractList<E> implements Cloneable, Serializable {
 
   private static final int DEFAULT_CHUNK_SIZE = 4;
@@ -697,14 +705,6 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
     return fragmentsModified;
   }
 
-  /*
-  - no fragment with length 0
-  - head is open left and tail is open right
-  - if fragment is open left perv fragment is closed right
-  - if fragment is open right perv fragment is closed left
-  - when hole in chunk fragments before and after are adjacent
-   */
-
   private boolean removeFromFragment(@NotNull Fragment fragment, final int index) {
     boolean fragmentsModified = false;
     if (index == 0) {
@@ -789,7 +789,7 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
       } else {
         tail = prevFragment;
       }
-      if (prevFragment != null && !prevFragment.isOpenRight() && nextFragment != null
+      if (prevFragment != null && nextFragment != null && !prevFragment.isOpenRight()
           && !nextFragment.isOpenLeft()
           && prevFragment.getIndexEnd() == nextFragment.getIndexStart()) {
         if (nextFragment.isOpenRight()) {
@@ -812,6 +812,7 @@ public class FragmentList<E> extends AbstractList<E> implements Cloneable, Seria
     } else {
       final Chunk chunk = fragment.chunk;
       if (chunk.used < chunk.data.length >> 2) {
+        // shrink
         if (fragment.isOpenLeft()) {
           mergeFragmentsRight(fragment);
         } else if (fragment.isOpenRight()) {

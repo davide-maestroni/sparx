@@ -19,6 +19,7 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.AbstractList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.Iterator;
@@ -27,6 +28,7 @@ import java.util.NoSuchElementException;
 import java.util.RandomAccess;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import sparx.util.annotation.Positive;
 
 public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<E>, RandomAccess,
     Serializable {
@@ -37,6 +39,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   private int last;
   private int mask;
   private int size;
+
+  // TODO: shrink
 
   /**
    * Creates a new empty list with a pre-defined initial capacity.
@@ -52,11 +56,15 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    * @param minCapacity the minimum capacity.
    * @throws IllegalArgumentException if the specified capacity is less than 1.
    */
-  public DequeueList(final int minCapacity) {
-    final int msb = Integer.highestOneBit(Require.positive(minCapacity, "minCapacity"));
-    final int initialCapacity = (minCapacity == msb) ? msb : msb << 1;
+  public DequeueList(@Positive final int minCapacity) {
+    final int initialCapacity = computeCapacity(Require.positive(minCapacity, "minCapacity"));
     data = new Object[initialCapacity];
     mask = initialCapacity - 1;
+  }
+
+  private static int computeCapacity(@Positive final int minCapacity) {
+    final int msb = Integer.highestOneBit(minCapacity);
+    return (minCapacity == msb) ? msb : msb << 1;
   }
 
   /**
@@ -83,6 +91,112 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         doubleCapacity();
       }
     }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public boolean addAll(final int index, final Collection<? extends E> collection) {
+    if (index < 0 || index > size) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
+    if (collection.isEmpty()) {
+      return false;
+    }
+    if (index == size) {
+      return addAll(collection);
+    }
+    final int added = collection.size();
+    final int totalSize = size + added;
+    if (totalSize < 0) {
+      throw new IllegalStateException("Maximum size exceeded");
+    }
+    final int newCapacity = computeCapacity(totalSize + 1);
+    final Object[] data = this.data;
+    final int first = this.first;
+    final int last = this.last;
+    if (newCapacity > data.length) {
+      final Object[] newData = new Object[newCapacity];
+      if (first < last) {
+        System.arraycopy(data, first, newData, 0, index);
+        System.arraycopy(collection.toArray(), 0, newData, index, added);
+        System.arraycopy(data, first + index, newData, index + added, size - index);
+      } else {
+        final int remainder = data.length - first;
+        if (index < remainder) {
+          System.arraycopy(data, first, newData, 0, index);
+          int i = index;
+          for (final E element : collection) {
+            newData[i++] = element;
+          }
+          System.arraycopy(data, first + index, newData, index + added, remainder - index);
+          System.arraycopy(data, 0, newData, remainder + added, last);
+        } else {
+          final int offset = index - remainder;
+          System.arraycopy(data, first, newData, 0, remainder);
+          System.arraycopy(data, 0, newData, remainder, offset);
+          int i = index;
+          for (final E element : collection) {
+            newData[i++] = element;
+          }
+          System.arraycopy(data, offset, newData, index + added, last - offset);
+        }
+      }
+      this.data = newData;
+      this.first = 0;
+      this.last = size + added;
+      mask = newCapacity - 1;
+      ++modCount;
+    } else if (first < last) {
+      if (first >= added) {
+        final int newFirst = first - added;
+        System.arraycopy(data, first, data, newFirst, index);
+        int i = newFirst + index;
+        for (final E element : collection) {
+          data[i++] = element;
+        }
+        this.first = newFirst;
+      } else if (data.length - last >= added) {
+        final int shift = first + index;
+        System.arraycopy(data, shift, data, shift + added, last - index);
+        int i = shift;
+        for (final E element : collection) {
+          data[i++] = element;
+        }
+        this.last = (last + added) & mask;
+      } else {
+        final int shift = first + index;
+        System.arraycopy(data, first, data, 0, index);
+        System.arraycopy(data, shift, data, index + added, last - index);
+        int i = index;
+        for (final E element : collection) {
+          data[i++] = element;
+        }
+        this.first = 0;
+        this.last = size + added;
+      }
+    } else {
+      final int remainder = data.length - first;
+      if (index < remainder) {
+        final int newFirst = first - added;
+        System.arraycopy(data, first, data, newFirst, index);
+        int i = newFirst + index;
+        for (final E element : collection) {
+          data[i++] = element;
+        }
+        this.first = newFirst;
+      } else {
+        final int offset = index - remainder;
+        System.arraycopy(data, offset, data, offset + added, last - offset);
+        int i = offset;
+        for (final E element : collection) {
+          data[i++] = element;
+        }
+        this.last = last + added;
+      }
+    }
+    return true;
   }
 
   /**
@@ -162,7 +276,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   @Override
   @SuppressWarnings("unchecked")
   public E get(final int index) {
-    if ((index < 0) || (index >= size)) {
+    if (index < 0 || index >= size) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return (E) data[(first + index) & mask];
@@ -269,7 +383,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   public @NotNull ListIterator<E> listIterator(final int index) {
-    if ((index < 0) || (index >= size)) {
+    if (index < 0 || index > size) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return new DequeueListIterator(index);
@@ -503,7 +617,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     if (array.length < size) {
       array = (T[]) Array.newInstance(array.getClass().getComponentType(), size);
       copyElements(array);
-
     } else {
       copyElements(array);
       if (array.length > size) {
@@ -511,6 +624,12 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       }
     }
     return array;
+  }
+
+  @Override
+  protected void removeRange(final int fromIndex, final int toIndex) {
+    // TODO: implement
+    super.removeRange(fromIndex, toIndex);
   }
 
   private boolean addElement(final int index, final E element) {
@@ -534,7 +653,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       this.data[index] = element;
       this.last = (last + 1) & mask;
       isForward = true;
-
     } else {
       if (front != 0) {
         if (first == 0) {
@@ -576,22 +694,11 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   }
 
   private void doubleCapacity() {
-    final Object[] data = this.data;
-    final int size = data.length;
-    final int newSize = size << 1;
-    if (newSize < size) {
-      throw new OutOfMemoryError();
+    final int newCapacity = data.length << 1;
+    if (newCapacity < data.length) {
+      throw new IllegalStateException("Maximum size exceeded");
     }
-    final int first = this.first;
-    final int remainder = size - first;
-    final Object[] newData = new Object[newSize];
-    System.arraycopy(data, first, newData, 0, remainder);
-    System.arraycopy(data, 0, newData, remainder, first);
-    this.data = newData;
-    this.first = 0;
-    last = size;
-    mask = newSize - 1;
-    ++modCount;
+    resizeData(newCapacity);
   }
 
   private boolean removeElement(final int index) {
@@ -613,7 +720,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       this.data[first] = null;
       this.first = (first + 1) & mask;
       isForward = true;
-
     } else {
       if (index < last) {
         System.arraycopy(data, index + 1, data, index, back);
@@ -629,6 +735,21 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     --size;
     ++modCount;
     return isForward;
+  }
+
+  private void resizeData(final int newCapacity) {
+    final Object[] data = this.data;
+    final int size = data.length;
+    final int first = this.first;
+    final int remainder = size - first;
+    final Object[] newData = new Object[newCapacity];
+    System.arraycopy(data, first, newData, 0, remainder);
+    System.arraycopy(data, 0, newData, remainder, first);
+    this.data = newData;
+    this.first = 0;
+    last = size;
+    mask = newCapacity - 1;
+    ++modCount;
   }
 
   @SuppressWarnings("unchecked")
