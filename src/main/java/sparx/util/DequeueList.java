@@ -93,6 +93,15 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     }
   }
 
+  @Override
+  public boolean addAll(@NotNull final Collection<? extends E> collection) {
+    if (collection.isEmpty()) {
+      return false;
+    }
+    unsafeAdd(size, collection);
+    return true;
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -104,98 +113,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     if (collection.isEmpty()) {
       return false;
     }
-    if (index == size) {
-      return addAll(collection);
-    }
-    final int added = collection.size();
-    final int totalSize = size + added;
-    if (totalSize < 0) {
-      throw new IllegalStateException("Maximum size exceeded");
-    }
-    final int newCapacity = computeCapacity(totalSize + 1);
-    final Object[] data = this.data;
-    final int first = this.first;
-    final int last = this.last;
-    if (newCapacity > data.length) {
-      final Object[] newData = new Object[newCapacity];
-      if (first < last) {
-        System.arraycopy(data, first, newData, 0, index);
-        System.arraycopy(collection.toArray(), 0, newData, index, added);
-        System.arraycopy(data, first + index, newData, index + added, size - index);
-      } else {
-        final int remainder = data.length - first;
-        if (index < remainder) {
-          System.arraycopy(data, first, newData, 0, index);
-          int i = index;
-          for (final E element : collection) {
-            newData[i++] = element;
-          }
-          System.arraycopy(data, first + index, newData, index + added, remainder - index);
-          System.arraycopy(data, 0, newData, remainder + added, last);
-        } else {
-          final int offset = index - remainder;
-          System.arraycopy(data, first, newData, 0, remainder);
-          System.arraycopy(data, 0, newData, remainder, offset);
-          int i = index;
-          for (final E element : collection) {
-            newData[i++] = element;
-          }
-          System.arraycopy(data, offset, newData, index + added, last - offset);
-        }
-      }
-      this.data = newData;
-      this.first = 0;
-      this.last = size + added;
-      mask = newCapacity - 1;
-      ++modCount;
-    } else if (first < last) {
-      if (first >= added) {
-        final int newFirst = first - added;
-        System.arraycopy(data, first, data, newFirst, index);
-        int i = newFirst + index;
-        for (final E element : collection) {
-          data[i++] = element;
-        }
-        this.first = newFirst;
-      } else if (data.length - last >= added) {
-        final int shift = first + index;
-        System.arraycopy(data, shift, data, shift + added, last - index);
-        int i = shift;
-        for (final E element : collection) {
-          data[i++] = element;
-        }
-        this.last = (last + added) & mask;
-      } else {
-        final int shift = first + index;
-        System.arraycopy(data, first, data, 0, index);
-        System.arraycopy(data, shift, data, index + added, last - index);
-        int i = index;
-        for (final E element : collection) {
-          data[i++] = element;
-        }
-        this.first = 0;
-        this.last = size + added;
-      }
-    } else {
-      final int remainder = data.length - first;
-      if (index < remainder) {
-        final int newFirst = first - added;
-        System.arraycopy(data, first, data, newFirst, index);
-        int i = newFirst + index;
-        for (final E element : collection) {
-          data[i++] = element;
-        }
-        this.first = newFirst;
-      } else {
-        final int offset = index - remainder;
-        System.arraycopy(data, offset, data, offset + added, last - offset);
-        int i = offset;
-        for (final E element : collection) {
-          data[i++] = element;
-        }
-        this.last = last + added;
-      }
-    }
+    unsafeAdd(index, collection);
     return true;
   }
 
@@ -628,8 +546,58 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
   @Override
   protected void removeRange(final int fromIndex, final int toIndex) {
-    // TODO: implement
-    super.removeRange(fromIndex, toIndex);
+    final Object[] data = this.data;
+    final int first = this.first;
+    final int last = this.last;
+    final int length = toIndex - fromIndex;
+    if (first < last) {
+      if (fromIndex < size - toIndex) {
+        final int dst = first + length;
+        System.arraycopy(data, first, data, dst, length);
+        for (int i = first; i < dst; ++i) {
+          data[i] = null;
+        }
+        this.first += length;
+      } else {
+        System.arraycopy(data, first + toIndex, data, first + fromIndex, length);
+        for (int i = last - length; i < last; ++i) {
+          data[i] = null;
+        }
+        this.last -= length;
+      }
+    } else if (first + fromIndex < data.length) {
+      final int remainder = first - data.length + length;
+      if (remainder > 0) {
+        final int dst = first - remainder + length;
+        System.arraycopy(data, first, data, dst, length - remainder);
+        for (int i = first; i < dst; ++i) {
+          data[i] = null;
+        }
+        this.first += length;
+        System.arraycopy(data, remainder, data, 0, remainder);
+        for (int i = last - remainder; i < last; ++i) {
+          data[i] = null;
+        }
+        this.last -= remainder;
+      } else {
+        final int dst = first + length;
+        System.arraycopy(data, first, data, dst, length);
+        for (int i = first; i < dst; ++i) {
+          data[i] = null;
+        }
+        this.first += length;
+      }
+    } else {
+      final int dst = fromIndex - data.length + first;
+      final int src = dst + length;
+      System.arraycopy(data, src, data, dst, last - src);
+      for (int i = last - length; i < last; ++i) {
+        data[i] = null;
+      }
+      this.last -= length;
+    }
+    size -= length;
+    ++modCount;
   }
 
   private boolean addElement(final int index, final E element) {
@@ -694,11 +662,22 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   }
 
   private void doubleCapacity() {
-    final int newCapacity = data.length << 1;
-    if (newCapacity < data.length) {
+    final int size = data.length;
+    final int newCapacity = size << 1;
+    if (newCapacity < size) {
       throw new IllegalStateException("Maximum size exceeded");
     }
-    resizeData(newCapacity);
+    final Object[] data = this.data;
+    final int first = this.first;
+    final int remainder = size - first;
+    final Object[] newData = new Object[newCapacity];
+    System.arraycopy(data, first, newData, 0, remainder);
+    System.arraycopy(data, 0, newData, remainder, first);
+    this.data = newData;
+    this.first = 0;
+    last = size;
+    mask = newCapacity - 1;
+    ++modCount;
   }
 
   private boolean removeElement(final int index) {
@@ -737,18 +716,96 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     return isForward;
   }
 
-  private void resizeData(final int newCapacity) {
+  private void unsafeAdd(final int index, @NotNull final Collection<? extends E> collection) {
+    final int added = collection.size();
+    final int totalSize = size + added;
+    if (totalSize < 0) {
+      throw new IllegalStateException("Maximum size exceeded");
+    }
+    final int newCapacity = computeCapacity(totalSize + 1);
     final Object[] data = this.data;
-    final int size = data.length;
     final int first = this.first;
-    final int remainder = size - first;
-    final Object[] newData = new Object[newCapacity];
-    System.arraycopy(data, first, newData, 0, remainder);
-    System.arraycopy(data, 0, newData, remainder, first);
-    this.data = newData;
-    this.first = 0;
-    last = size;
-    mask = newCapacity - 1;
+    final int last = this.last;
+    if (newCapacity > data.length) {
+      final Object[] newData = new Object[newCapacity];
+      if (first < last) {
+        System.arraycopy(data, first, newData, 0, index);
+        System.arraycopy(collection.toArray(), 0, newData, index, added);
+        System.arraycopy(data, first + index, newData, index + added, size - index);
+      } else {
+        final int remainder = data.length - first;
+        if (index < remainder) {
+          System.arraycopy(data, first, newData, 0, index);
+          int i = index;
+          for (final E element : collection) {
+            newData[i++] = element;
+          }
+          System.arraycopy(data, first + index, newData, index + added, remainder - index);
+          System.arraycopy(data, 0, newData, remainder + added, last);
+        } else {
+          final int offset = index - remainder;
+          System.arraycopy(data, first, newData, 0, remainder);
+          System.arraycopy(data, 0, newData, remainder, offset);
+          int i = index;
+          for (final E element : collection) {
+            newData[i++] = element;
+          }
+          System.arraycopy(data, offset, newData, index + added, last - offset);
+        }
+      }
+      this.data = newData;
+      this.first = 0;
+      this.last = size + added;
+      mask = newCapacity - 1;
+    } else if (first < last) {
+      if (first >= added) {
+        final int newFirst = first - added;
+        System.arraycopy(data, first, data, newFirst, index);
+        int i = newFirst + index;
+        for (final E element : collection) {
+          data[i++] = element;
+        }
+        this.first = newFirst;
+      } else if (data.length - last >= added) {
+        final int shift = first + index;
+        System.arraycopy(data, shift, data, shift + added, last - index);
+        int i = shift;
+        for (final E element : collection) {
+          data[i++] = element;
+        }
+        this.last = (last + added) & mask;
+      } else {
+        final int shift = first + index;
+        System.arraycopy(data, first, data, 0, index);
+        System.arraycopy(data, shift, data, index + added, last - shift);
+        int i = index;
+        for (final E element : collection) {
+          data[i++] = element;
+        }
+        this.first = 0;
+        this.last = size + added;
+      }
+    } else {
+      final int remainder = data.length - first;
+      if (index < remainder) {
+        final int newFirst = first - added;
+        System.arraycopy(data, first, data, newFirst, index);
+        int i = newFirst + index;
+        for (final E element : collection) {
+          data[i++] = element;
+        }
+        this.first = newFirst;
+      } else {
+        final int offset = index - remainder;
+        System.arraycopy(data, offset, data, offset + added, last - offset);
+        int i = offset;
+        for (final E element : collection) {
+          data[i++] = element;
+        }
+        this.last = last + added;
+      }
+    }
+    size += added;
     ++modCount;
   }
 
