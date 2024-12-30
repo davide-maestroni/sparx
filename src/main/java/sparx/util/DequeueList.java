@@ -122,7 +122,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   public void addFirst(@Nullable final E element) {
-    int newFirst = (first = (first - 1) & mask);
+    final int newFirst = (first = (first - 1) & mask);
     data[newFirst] = element;
     if (newFirst == last) {
       doubleCapacity();
@@ -416,6 +416,22 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     return element;
   }
 
+  public void remove(final int fromIndex, final int toIndex) {
+    if (fromIndex < 0 || fromIndex >= size) {
+      throw new IndexOutOfBoundsException(Integer.toString(fromIndex));
+    }
+    if (toIndex > size) {
+      throw new IndexOutOfBoundsException(Integer.toString(toIndex));
+    }
+    if (toIndex < fromIndex) {
+      throw new IllegalArgumentException("toIndex is less than fromIndex");
+    }
+    if (fromIndex == toIndex) {
+      return;
+    }
+    removeRange(fromIndex, toIndex);
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -553,27 +569,28 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     if (first < last) {
       if (fromIndex < size - toIndex) {
         final int dst = first + length;
-        System.arraycopy(data, first, data, dst, length);
+        System.arraycopy(data, first, data, dst, fromIndex);
         for (int i = first; i < dst; ++i) {
           data[i] = null;
         }
         this.first += length;
       } else {
-        System.arraycopy(data, first + toIndex, data, first + fromIndex, length);
+        System.arraycopy(data, first + toIndex, data, first + fromIndex, size - toIndex);
         for (int i = last - length; i < last; ++i) {
           data[i] = null;
         }
         this.last -= length;
       }
     } else if (first + fromIndex < data.length) {
-      final int remainder = first - data.length + length;
+      final int remainder = first - data.length + toIndex;
       if (remainder > 0) {
-        final int dst = first - remainder + length;
-        System.arraycopy(data, first, data, dst, length - remainder);
+        final int front = length - remainder;
+        final int dst = first + front;
+        System.arraycopy(data, first, data, dst, front);
         for (int i = first; i < dst; ++i) {
           data[i] = null;
         }
-        this.first += length;
+        this.first += front;
         System.arraycopy(data, remainder, data, 0, remainder);
         for (int i = last - remainder; i < last; ++i) {
           data[i] = null;
@@ -581,7 +598,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         this.last -= remainder;
       } else {
         final int dst = first + length;
-        System.arraycopy(data, first, data, dst, length);
+        System.arraycopy(data, first, data, dst, fromIndex);
         for (int i = first; i < dst; ++i) {
           data[i] = null;
         }

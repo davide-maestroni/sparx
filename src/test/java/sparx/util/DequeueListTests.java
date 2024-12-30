@@ -1112,6 +1112,127 @@ public class DequeueListTests {
   }
 
   @Test
+  public void removeRange() {
+    // first < last (start)
+    var list = new DequeueList<String>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.remove(0, 2);
+    assertEquals(List.of("3", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.remove(1, 3);
+    assertEquals(List.of("1", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.remove(2, 4);
+    assertEquals(List.of("1", "2"), list);
+
+    // first < last (middle)
+    list = new DequeueList<>();
+    list.add("");
+    list.add("");
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.removeFirst();
+    list.removeFirst();
+    list.remove(0, 2);
+    assertEquals(List.of("3", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("");
+    list.add("");
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.removeFirst();
+    list.removeFirst();
+    list.remove(1, 3);
+    assertEquals(List.of("1", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("");
+    list.add("");
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.removeFirst();
+    list.removeFirst();
+    list.remove(2, 4);
+    assertEquals(List.of("1", "2"), list);
+
+    // first < last (end)
+    list = new DequeueList<>();
+    list.addFirst("");
+    list.addFirst("4");
+    list.addFirst("3");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.removeLast();
+    list.remove(0, 2);
+    assertEquals(List.of("3", "4"), list);
+
+    list = new DequeueList<>();
+    list.addFirst("");
+    list.addFirst("4");
+    list.addFirst("3");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.removeLast();
+    list.remove(1, 3);
+    assertEquals(List.of("1", "4"), list);
+
+    list = new DequeueList<>();
+    list.addFirst("");
+    list.addFirst("4");
+    list.addFirst("3");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.removeLast();
+    list.remove(2, 4);
+    assertEquals(List.of("1", "2"), list);
+
+    // last < first
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.remove(0, 2);
+    assertEquals(List.of("3", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.remove(1, 3);
+    assertEquals(List.of("1", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.remove(2, 4);
+    assertEquals(List.of("1", "2"), list);
+  }
+
+  @Test
   public void set() {
     var list = new DequeueList<String>();
     assertTrue(list.isEmpty());
