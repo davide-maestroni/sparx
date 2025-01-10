@@ -809,6 +809,14 @@ public class DequeueListTests {
   }
 
   @Test
+  public void ensureCapacity() {
+    var list = new DequeueList<String>();
+    assertFalse(list.ensureCapacity(1));
+    assertTrue(list.ensureCapacity(1000));
+    assertThrows(IllegalStateException.class, () -> list.ensureCapacity(Integer.MAX_VALUE));
+  }
+
+  @Test
   public void listIterator() {
     var list = new DequeueList<String>();
     var iterator = list.listIterator();
