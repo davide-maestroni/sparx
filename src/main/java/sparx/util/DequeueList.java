@@ -61,27 +61,32 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     data = new Object[initialCapacity];
   }
 
-  private static int computeCapacity(@Positive final int minCapacity) {
-    if (minCapacity <= MAX_BINARY_GROWTH) {
-      final int msb = Integer.highestOneBit(minCapacity);
-      return (minCapacity == msb) ? msb : msb << 1;
+  public DequeueList(@NotNull final Collection<? extends E> collection) {
+    if (collection.getClass() == DequeueList.class) {
+      final DequeueList<?> other = (DequeueList<?>) collection;
+      data = Arrays.copyOf(other.data, other.data.length);
+      first = other.first;
+      last = other.last;
+      size = other.size;
+    } else {
+      data = new Object[computeCapacity(collection.size())];
+      addAll(collection);
     }
-    return minCapacity;
   }
 
-  private static int growCapacity(@Positive final int toCapacity) {
-    final int msb = Integer.highestOneBit(toCapacity);
-    final int binaryCapacity = (toCapacity == msb) ? msb : msb << 1;
-    final int minCapacity = binaryCapacity - (binaryCapacity >> 2);
-    if (minCapacity > toCapacity) {
-      return minCapacity;
+  private static int computeCapacity(@Positive final int minCapacity) {
+    final int msb = Integer.highestOneBit(minCapacity);
+    final int binaryCapacity = (minCapacity == msb) ? msb : msb << 1;
+    final int approximateCapacity = binaryCapacity - (binaryCapacity >> 2);
+    if (approximateCapacity > minCapacity) {
+      return approximateCapacity;
     }
-    if (binaryCapacity > toCapacity) {
+    if (binaryCapacity > minCapacity) {
       return binaryCapacity;
     }
     final int newCapacity = binaryCapacity < MAX_BINARY_GROWTH ? binaryCapacity << 1
         : binaryCapacity + (binaryCapacity >> 1);
-    if (newCapacity < toCapacity) {
+    if (newCapacity < minCapacity) {
       throw new IllegalStateException("Maximum size exceeded");
     }
     return newCapacity;
@@ -228,7 +233,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     if (data.length >= minCapacity) {
       return false;
     }
-    final Object[] newData = new Object[growCapacity(minCapacity)];
+    final Object[] newData = new Object[computeCapacity(minCapacity)];
     final int first = this.first;
     final int last = this.last;
     if (first < last) {
@@ -407,6 +412,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
   /**
    * {@inheritDoc}
+   * <p>
+   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
+   * elements. It's up to the caller to disambiguate the returned value in that case.
    */
   @Override
   public E peek() {
@@ -415,6 +423,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
   /**
    * {@inheritDoc}
+   * <p>
+   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
+   * elements. It's up to the caller to disambiguate the returned value in that case.
    */
   @Override
   @SuppressWarnings("unchecked")
@@ -427,6 +438,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
   /**
    * {@inheritDoc}
+   * <p>
+   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
+   * elements. It's up to the caller to disambiguate the returned value in that case.
    */
   @Override
   @SuppressWarnings("unchecked")
@@ -440,6 +454,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
   /**
    * {@inheritDoc}
+   * <p>
+   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
+   * elements. It's up to the caller to disambiguate the returned value in that case.
    */
   @Override
   public E poll() {
@@ -448,6 +465,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
   /**
    * {@inheritDoc}
+   * <p>
+   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
+   * elements. It's up to the caller to disambiguate the returned value in that case.
    */
   @Override
   public E pollFirst() {
@@ -459,6 +479,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
   /**
    * {@inheritDoc}
+   * <p>
+   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
+   * elements. It's up to the caller to disambiguate the returned value in that case.
    */
   @Override
   public E pollLast() {
@@ -768,7 +791,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     if (totalSize < 0) {
       throw new IllegalStateException("Maximum size exceeded");
     }
-    final int newCapacity = growCapacity(totalSize);
+    final int newCapacity = computeCapacity(totalSize);
     final Object[] data = this.data;
     final int mod = data.length;
     final int first = this.first;
@@ -876,7 +899,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     final int length = data.length;
     final int first = this.first;
     final int front = length - first;
-    final Object[] newData = new Object[growCapacity(length + 1)];
+    final Object[] newData = new Object[computeCapacity(length + 1)];
     System.arraycopy(data, first, newData, 0, front);
     System.arraycopy(data, 0, newData, front, first);
     this.data = newData;
