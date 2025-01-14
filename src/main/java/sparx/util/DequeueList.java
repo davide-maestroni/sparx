@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Davide Maestroni
+ * Copyright 2025 Davide Maestroni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,12 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     this(false);
   }
 
+  /**
+   * Creates a new empty list with a pre-defined initial capacity.
+   *
+   * @param autoShrink if the capacity automatically shrinks when elements are removed from the
+   *                   list
+   */
   public DequeueList(final boolean autoShrink) {
     data = new Object[DEFAULT_SIZE];
     this.autoShrink = autoShrink;
@@ -61,13 +67,21 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   /**
    * Creates a new empty list with the specified minimum capacity.
    *
-   * @param minCapacity the minimum capacity.
-   * @throws IllegalArgumentException if the specified capacity is less than 1.
+   * @param minCapacity the minimum capacity
+   * @throws IllegalArgumentException if the specified capacity is less than 1
    */
   public DequeueList(@Positive final int minCapacity) {
     this(minCapacity, false);
   }
 
+  /**
+   * Creates a new empty list with the specified minimum capacity.
+   *
+   * @param minCapacity the minimum capacity
+   * @param autoShrink  if the capacity automatically shrinks when elements are removed from the
+   *                    list
+   * @throws IllegalArgumentException if the specified capacity is less than 1
+   */
   public DequeueList(@Positive final int minCapacity, final boolean autoShrink) {
     final int initialCapacity = computeCapacity(Require.positive(minCapacity, "minCapacity"));
     data = new Object[initialCapacity];
@@ -75,10 +89,26 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     updateShrinkThreshold();
   }
 
+  /**
+   * Constructs a list containing the elements of the specified collection, in the order they are
+   * returned by the collection's iterator.
+   *
+   * @param collection the collection whose elements are to be placed into this list
+   * @throws NullPointerException if the specified collection is null
+   */
   public DequeueList(@NotNull final Collection<? extends E> collection) {
     this(collection, false);
   }
 
+  /**
+   * Constructs a list containing the elements of the specified collection, in the order they are
+   * returned by the collection's iterator.
+   *
+   * @param collection the collection whose elements are to be placed into this list
+   * @param autoShrink if the capacity automatically shrinks when elements are removed from the
+   *                   list
+   * @throws NullPointerException if the specified collection is null
+   */
   public DequeueList(@NotNull final Collection<? extends E> collection, final boolean autoShrink) {
     if (collection.getClass() == DequeueList.class) {
       final DequeueList<?> other = (DequeueList<?>) collection;
@@ -148,6 +178,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public boolean addAll(@NotNull final Collection<? extends E> collection) {
     if (collection.isEmpty()) {
@@ -184,7 +217,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       growCapacity();
     }
     ++size;
-    ++modCount; // TODO: cache first and last instead?
   }
 
   /**
@@ -199,7 +231,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       growCapacity();
     }
     ++size;
-    ++modCount;
   }
 
   /**
@@ -224,9 +255,14 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     first = 0;
     last = 0;
     size = 0;
-    ++modCount;
   }
 
+  /**
+   * Returns a shallow copy of this {@code DequeueList} instance (the elements themselves are not
+   * copied).
+   *
+   * @return a clone of this {@code DequeueList} instance
+   */
   @Override
   @SuppressWarnings("unchecked")
   public DequeueList<E> clone() throws CloneNotSupportedException {
@@ -252,6 +288,13 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     return getFirst();
   }
 
+  /**
+   * Increases the capacity of this {@code ArrayList} instance, if necessary, to ensure that it can
+   * hold at least the number of elements specified by the minimum capacity argument.
+   *
+   * @param minCapacity the desired minimum capacity
+   * @return {@code true} if this collection changed as a result of the call
+   */
   public boolean ensureCapacity(final int minCapacity) {
     final Object[] data = this.data;
     if (data.length >= minCapacity) {
@@ -261,6 +304,12 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     return true;
   }
 
+  /**
+   * Decreases the capacity of this {@code ArrayList} instance, if possible,
+   *
+   * @param minCapacity the desired minimum capacity
+   * @return {@code true} if this collection changed as a result of the call
+   */
   public boolean freeCapacity(final int minCapacity) {
     final Object[] data = this.data;
     final int newCapacity = Math.max(computeCapacity(size + 1), computeCapacity(minCapacity));
@@ -434,8 +483,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   /**
    * {@inheritDoc}
    * <p>
-   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
-   * elements. It's up to the caller to disambiguate the returned value in that case.
+   * NOTE: the method might return {@code null} also if list contains {@code null} elements. It's up
+   * to the caller to disambiguate the returned value in that case.
    */
   @Override
   public E peek() {
@@ -445,8 +494,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   /**
    * {@inheritDoc}
    * <p>
-   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
-   * elements. It's up to the caller to disambiguate the returned value in that case.
+   * NOTE: the method might return {@code null} also if list contains {@code null} elements. It's up
+   * to the caller to disambiguate the returned value in that case.
    */
   @Override
   @SuppressWarnings("unchecked")
@@ -460,8 +509,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   /**
    * {@inheritDoc}
    * <p>
-   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
-   * elements. It's up to the caller to disambiguate the returned value in that case.
+   * NOTE: the method might return {@code null} also if list contains {@code null} elements. It's up
+   * to the caller to disambiguate the returned value in that case.
    */
   @Override
   @SuppressWarnings("unchecked")
@@ -476,8 +525,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   /**
    * {@inheritDoc}
    * <p>
-   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
-   * elements. It's up to the caller to disambiguate the returned value in that case.
+   * NOTE: the method might return {@code null} also if list contains {@code null} elements. It's up
+   * to the caller to disambiguate the returned value in that case.
    */
   @Override
   public E poll() {
@@ -487,8 +536,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   /**
    * {@inheritDoc}
    * <p>
-   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
-   * elements. It's up to the caller to disambiguate the returned value in that case.
+   * NOTE: the method might return {@code null} also if list contains {@code null} elements. It's up
+   * to the caller to disambiguate the returned value in that case.
    */
   @Override
   public E pollFirst() {
@@ -501,8 +550,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   /**
    * {@inheritDoc}
    * <p>
-   * NOTE: the method might return <code>null</code> also if list contains <code>null</code>
-   * elements. It's up to the caller to disambiguate the returned value in that case.
+   * NOTE: the method might return {@code null} also if list contains {@code null} elements. It's up
+   * to the caller to disambiguate the returned value in that case.
    */
   @Override
   public E pollLast() {
@@ -546,6 +595,16 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     return element;
   }
 
+  /**
+   * Removes from this list all of the elements whose index is between {@code fromIndex}, inclusive,
+   * and {@code toIndex}, exclusive. Shifts any succeeding elements to the left (reduces their
+   * index). This call shortens the list by {@code (toIndex - fromIndex)} elements. If
+   * {@code toIndex==fromIndex}, this operation has no effect.
+   *
+   * @throws IndexOutOfBoundsException if {@code fromIndex} or {@code toIndex} is out of range
+   *                                   ({@code fromIndex < 0 || toIndex > size() || toIndex <
+   *                                   fromIndex})
+   */
   public void remove(final int fromIndex, final int toIndex) {
     if (fromIndex < 0 || fromIndex >= size) {
       throw new IndexOutOfBoundsException(Integer.toString(fromIndex));
@@ -664,7 +723,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     final Object[] data = this.data;
     final E old = get(index);
     data[modInc(first, index, data.length)] = element;
-    ++modCount;
     return old;
   }
 
@@ -783,17 +841,16 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       this.last -= length;
     }
     size -= length;
-    ++modCount;
   }
 
-  private boolean addElement(final int index, final E element) {
+  private int addElement(final int index, final E element) {
     final int first = this.first;
     final int last = this.last;
     final Object[] data = this.data;
     final int mod = data.length;
     final int front = modDec(index, first, mod);
     final int back = modDec(last, index, mod);
-    final boolean isForward;
+    final int nextIndex;
     if (front >= back) {
       if (back != 0) {
         if (index < last) {
@@ -807,7 +864,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       }
       this.data[index] = element;
       this.last = modInc(last, 1, mod);
-      isForward = true;
+      nextIndex = modInc(index, 1, mod);
     } else {
       if (front != 0) {
         if (first == 0) {
@@ -825,11 +882,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       }
       this.data[modDec(index, 1, mod)] = element;
       this.first = modDec(first, 1, mod);
-      isForward = false;
+      nextIndex = index;
     }
     ++size;
-    ++modCount;
-    return isForward;
+    return nextIndex;
   }
 
   private void addElements(final int index, @NotNull final Collection<? extends E> collection) {
@@ -923,7 +979,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       }
     }
     size += added;
-    ++modCount;
   }
 
   @NotNull
@@ -954,7 +1009,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     this.first = 0;
     last = length;
     updateShrinkThreshold();
-    ++modCount;
   }
 
   private int removeElement(final int index) {
@@ -1022,7 +1076,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       }
     }
     --size;
-    ++modCount;
     return nextIndex;
   }
 
@@ -1041,7 +1094,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     this.first = 0;
     this.last = size;
     updateShrinkThreshold();
-    ++modCount;
   }
 
   private void shrinkCapacity() {
@@ -1059,7 +1111,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     data[first] = null;
     --size;
     shrinkCapacity();
-    ++modCount;
     return (E) output;
   }
 
@@ -1072,7 +1123,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     data[newLast] = null;
     --size;
     shrinkCapacity();
-    ++modCount;
     return (E) output;
   }
 
@@ -1083,7 +1133,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
   private class AscendingIterator implements Iterator<E> {
 
-    protected int expectedModCount = modCount;
+    protected int expectedFirst = first;
+    protected int expectedLast = last;
     protected boolean isRemoved = true;
     protected int pointer;
 
@@ -1118,12 +1169,13 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       final int index = modDec(pointer, 1, data.length);
       checkForComodification();
       pointer = removeElement(index);
-      expectedModCount = modCount;
+      expectedFirst = first;
+      expectedLast = last;
       isRemoved = true;
     }
 
     final void checkForComodification() {
-      if (modCount != expectedModCount) {
+      if (first != expectedFirst || last != expectedLast) {
         throw new ConcurrentModificationException();
       }
     }
@@ -1142,17 +1194,18 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       checkForComodification();
       final int pointer = this.pointer;
       final int mod = data.length;
-      if (addElement(pointer, e)) {
-        this.pointer = modInc(pointer, 1, mod);
+      this.pointer = addElement(pointer, e);
+      {
+        final int first = DequeueList.this.first;
+        final int last = DequeueList.this.last;
+        if (first == last) {
+          final int index = modDec(pointer, first, mod);
+          growCapacity();
+          this.pointer = index;
+        }
       }
-      final int first = DequeueList.this.first;
-      final int last = DequeueList.this.last;
-      if (first == last) {
-        final int index = modDec(pointer, first, mod);
-        growCapacity();
-        this.pointer = index;
-      }
-      expectedModCount = modCount;
+      expectedFirst = first;
+      expectedLast = last;
       isRemoved = true; // disable remove
     }
 
@@ -1206,7 +1259,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         }
         checkForComodification();
         pointer = removeElement(pointer);
-        expectedModCount = modCount;
+        expectedFirst = first;
+        expectedLast = last;
         isRemoved = true;
       } else {
         super.remove();
@@ -1225,13 +1279,13 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         index = modDec(index, 1, data.length);
       }
       data[index] = element;
-      expectedModCount = ++modCount;
     }
   }
 
   private class DescendingIterator implements Iterator<E> {
 
-    private int expectedModCount = modCount;
+    private int expectedFirst = first;
+    private int expectedLast = last;
     private boolean isRemoved = true;
     private int pointer = last;
 
@@ -1260,12 +1314,13 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       }
       checkForComodification();
       pointer = removeElement(pointer);
-      expectedModCount = modCount;
+      expectedFirst = first;
+      expectedLast = last;
       isRemoved = true;
     }
 
     private void checkForComodification() {
-      if (modCount != expectedModCount) {
+      if (first != expectedFirst || last != expectedLast) {
         throw new ConcurrentModificationException();
       }
     }

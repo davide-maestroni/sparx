@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -1027,6 +1028,79 @@ public class DequeueListTests {
   }
 
   @Test
+  @SuppressWarnings("ConstantValue")
+  public void peek() {
+    var list = new DequeueList<String>();
+    assertTrue(list.isEmpty());
+    assertNull(list.peek());
+    assertNull(list.peekFirst());
+    assertNull(list.peekLast());
+    list.add(null);
+    assertFalse(list.isEmpty());
+    assertNull(list.peek());
+    assertNull(list.peekFirst());
+    assertNull(list.peekLast());
+    assertEquals(Collections.singletonList(null), list);
+    list.add("1");
+    assertNull(list.peek());
+    assertNull(list.peekFirst());
+    assertEquals("1", list.peekLast());
+    assertEquals(Arrays.asList(null, "1"), list);
+    list.addFirst("0");
+    assertEquals("0", list.peek());
+    assertEquals("0", list.peekFirst());
+    assertEquals("1", list.peekLast());
+    assertEquals(Arrays.asList("0", null, "1"), list);
+  }
+
+  @Test
+  @SuppressWarnings("ConstantValue")
+  public void poll() {
+    var list = new DequeueList<String>();
+    assertTrue(list.isEmpty());
+    assertNull(list.poll());
+    assertNull(list.pollFirst());
+    assertNull(list.pollLast());
+    list.add(null);
+    assertFalse(list.isEmpty());
+    assertNull(list.poll());
+    assertTrue(list.isEmpty());
+    list.add(null);
+    assertFalse(list.isEmpty());
+    assertNull(list.pollFirst());
+    assertTrue(list.isEmpty());
+    list.add(null);
+    assertFalse(list.isEmpty());
+    assertNull(list.pollLast());
+    assertTrue(list.isEmpty());
+    list.add("0");
+    assertFalse(list.isEmpty());
+    assertEquals("0", list.poll());
+    assertTrue(list.isEmpty());
+    list.add("0");
+    assertFalse(list.isEmpty());
+    assertEquals("0", list.pollFirst());
+    assertTrue(list.isEmpty());
+    list.add("0");
+    assertFalse(list.isEmpty());
+    assertEquals("0", list.pollLast());
+    assertTrue(list.isEmpty());
+    list.add("0");
+    list.add("1");
+    assertFalse(list.isEmpty());
+    assertEquals("0", list.poll());
+    assertEquals(Collections.singletonList("1"), list);
+    list.addFirst("0");
+    assertFalse(list.isEmpty());
+    assertEquals("0", list.pollFirst());
+    assertEquals(Collections.singletonList("1"), list);
+    list.addFirst("0");
+    assertFalse(list.isEmpty());
+    assertEquals("1", list.pollLast());
+    assertEquals(Collections.singletonList("0"), list);
+  }
+
+  @Test
   public void remove() {
     var list = new DequeueList<String>();
     assertThrows(NoSuchElementException.class, list::remove);
@@ -1329,17 +1403,5 @@ public class DequeueListTests {
     Arrays.fill(array, "9");
     list.toArray(array);
     assertArrayEquals(new String[]{null, "1", "2", null, "3", "4", null, null, "9", "9"}, array);
-  }
-
-  @Test
-  public void unsupported() {
-    // TODO
-//    var list = new DequeueList<String>();
-//    assertThrows(UnsupportedOperationException.class, list::peek);
-//    assertThrows(UnsupportedOperationException.class, list::peekFirst);
-//    assertThrows(UnsupportedOperationException.class, list::peekLast);
-//    assertThrows(UnsupportedOperationException.class, list::poll);
-//    assertThrows(UnsupportedOperationException.class, list::pollFirst);
-//    assertThrows(UnsupportedOperationException.class, list::pollLast);
   }
 }
