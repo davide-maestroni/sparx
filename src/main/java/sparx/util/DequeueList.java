@@ -28,6 +28,7 @@ import java.util.NoSuchElementException;
 import java.util.RandomAccess;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 
 public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<E>, RandomAccess,
@@ -36,6 +37,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   private static final int DEFAULT_SIZE = 8;
   private static final int MAX_BINARY_GROWTH = 64;
   private static final int MIN_SHRINK_SIZE = 16;
+  private static final int MIN_SHRINK_THRESHOLD = MIN_SHRINK_SIZE >> 1;
 
   private final boolean autoShrink;
 
@@ -80,10 +82,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    * @param minCapacity the minimum capacity
    * @param autoShrink  if the capacity automatically shrinks when elements are removed from the
    *                    list
-   * @throws IllegalArgumentException if the specified capacity is less than 1
+   * @throws IllegalArgumentException if the specified capacity is less than 0
    */
-  public DequeueList(@Positive final int minCapacity, final boolean autoShrink) {
-    final int initialCapacity = computeCapacity(Require.positive(minCapacity, "minCapacity"));
+  public DequeueList(@NotNegative final int minCapacity, final boolean autoShrink) {
+    final int initialCapacity = computeCapacity(Require.notNegative(minCapacity, "minCapacity"));
     data = new Object[initialCapacity];
     this.autoShrink = autoShrink;
     updateShrinkThreshold();
@@ -124,7 +126,11 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     updateShrinkThreshold();
   }
 
-  private static int computeCapacity(@Positive final int minCapacity) {
+  // TODO: move check before add => exactly match minCapacity
+  private static int computeCapacity(@NotNegative final int minCapacity) {
+    if (minCapacity == 0) {
+      return 1;
+    }
     final int msb = Integer.highestOneBit(minCapacity);
     final int binaryCapacity = (minCapacity == msb) ? msb : msb << 1;
     final int approximateCapacity = binaryCapacity - (binaryCapacity >> 2);
@@ -194,7 +200,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    * {@inheritDoc}
    */
   @Override
-  public boolean addAll(final int index, final Collection<? extends E> collection) {
+  public boolean addAll(final int index, @NotNull final Collection<? extends E> collection) {
     if (index < 0 || index > size) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
@@ -204,6 +210,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     addElements(index, collection);
     return true;
   }
+
+  // TODO: public boolean addAll(Predicate)
+  // TODO: public boolean addAll(IndexedPredicate)
 
   /**
    * {@inheritDoc}
@@ -265,11 +274,15 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   @SuppressWarnings("unchecked")
-  public DequeueList<E> clone() throws CloneNotSupportedException {
-    final Object[] data = this.data;
-    final DequeueList<E> clone = (DequeueList<E>) super.clone();
-    clone.data = Arrays.copyOf(data, data.length);
-    return clone;
+  public DequeueList<E> clone() {
+    try {
+      final Object[] data = this.data;
+      final DequeueList<E> clone = (DequeueList<E>) super.clone();
+      clone.data = Arrays.copyOf(data, data.length);
+      return clone;
+    } catch (final CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -294,13 +307,14 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    *
    * @param minCapacity the desired minimum capacity
    * @return {@code true} if this collection changed as a result of the call
+   * @throws IllegalArgumentException if the specified capacity is less than 0
    */
-  public boolean ensureCapacity(final int minCapacity) {
+  public boolean ensureCapacity(@NotNegative final int minCapacity) {
     final Object[] data = this.data;
     if (data.length >= minCapacity) {
       return false;
     }
-    resizeCapacity(computeCapacity(minCapacity));
+    resizeCapacity(computeCapacity(Require.notNegative(minCapacity, "minCapacity")));
     return true;
   }
 
@@ -309,10 +323,12 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    *
    * @param minCapacity the desired minimum capacity
    * @return {@code true} if this collection changed as a result of the call
+   * @throws IllegalArgumentException if the specified capacity is less than 0
    */
-  public boolean freeCapacity(final int minCapacity) {
+  public boolean freeCapacity(@NotNegative final int minCapacity) {
     final Object[] data = this.data;
-    final int newCapacity = Math.max(computeCapacity(size + 1), computeCapacity(minCapacity));
+    final int newCapacity = Math.max(computeCapacity(size),
+        computeCapacity(Require.notNegative(minCapacity, "minCapacity")));
     if (data.length >= newCapacity) {
       return false;
     }
@@ -768,7 +784,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     final int last = this.last;
     final int length = toIndex - fromIndex;
     if (size - length < shrinkThreshold) {
-      final int newCapacity = Math.max(MIN_SHRINK_SIZE, shrinkThreshold << 1);
+      final int newCapacity = shrinkThreshold << 1;
       final Object[] newData = new Object[newCapacity];
       if (first < last) {
         final int back = size - toIndex;
@@ -847,9 +863,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     final int first = this.first;
     final int last = this.last;
     final Object[] data = this.data;
-    final int mod = data.length;
-    final int front = modDec(index, first, mod);
-    final int back = modDec(last, index, mod);
+    final int capacity = data.length;
+    final int front = modDec(index, first, capacity);
+    final int back = modDec(last, index, capacity);
     final int nextIndex;
     if (front >= back) {
       if (back != 0) {
@@ -863,8 +879,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         }
       }
       this.data[index] = element;
-      this.last = modInc(last, 1, mod);
-      nextIndex = modInc(index, 1, mod);
+      this.last = modInc(last, 1, capacity);
+      nextIndex = modInc(index, 1, capacity);
     } else {
       if (front != 0) {
         if (first == 0) {
@@ -880,8 +896,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
           }
         }
       }
-      this.data[modDec(index, 1, mod)] = element;
-      this.first = modDec(first, 1, mod);
+      this.data[modDec(index, 1, capacity)] = element;
+      this.first = modDec(first, 1, capacity);
       nextIndex = index;
     }
     ++size;
@@ -896,17 +912,17 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     }
     final int newCapacity = computeCapacity(totalSize);
     final Object[] data = this.data;
-    final int mod = data.length;
+    final int capacity = data.length;
     final int first = this.first;
     final int last = this.last;
-    if (newCapacity > mod) {
+    if (newCapacity > capacity) {
       final Object[] newData = new Object[newCapacity];
       if (first < last) {
         System.arraycopy(data, first, newData, 0, index);
         System.arraycopy(collection.toArray(), 0, newData, index, added);
         System.arraycopy(data, first + index, newData, index + added, size - index);
       } else {
-        final int remainder = mod - first;
+        final int remainder = capacity - first;
         if (index < remainder) {
           System.arraycopy(data, first, newData, 0, index);
           int i = index;
@@ -930,7 +946,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       this.first = 0;
       this.last = size + added;
       updateShrinkThreshold();
-    } else if (first < last) {
+    } else if (first <= last) {
       if (first >= added) {
         final int newFirst = first - added;
         System.arraycopy(data, first, data, newFirst, index);
@@ -939,14 +955,14 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
           data[i++] = element;
         }
         this.first = newFirst;
-      } else if (mod - last >= added) {
+      } else if (capacity - last >= added) {
         final int shift = first + index;
         System.arraycopy(data, shift, data, shift + added, last - index);
         int i = shift;
         for (final E element : collection) {
           data[i++] = element;
         }
-        this.last = modInc(last, added, mod);
+        this.last = modInc(last, added, capacity);
       } else {
         final int shift = first + index;
         System.arraycopy(data, first, data, 0, index);
@@ -959,7 +975,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         this.last = size + added;
       }
     } else {
-      final int remainder = mod - first;
+      final int remainder = capacity - first;
       if (index < remainder) {
         final int newFirst = first - added;
         System.arraycopy(data, first, data, newFirst, index);
@@ -1002,7 +1018,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     final int length = data.length;
     final int first = this.first;
     final int front = length - first;
-    final Object[] newData = new Object[computeCapacity(length + 1)];
+    final Object[] newData = new Object[computeCapacity(length)];
     System.arraycopy(data, first, newData, 0, front);
     System.arraycopy(data, 0, newData, front, first);
     this.data = newData;
@@ -1015,10 +1031,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     final int first = this.first;
     final int last = this.last;
     final Object[] data = this.data;
-    final int mod = data.length;
+    final int capacity = data.length;
     final int nextIndex;
     if (size == shrinkThreshold) {
-      final int newCapacity = Math.max(MIN_SHRINK_SIZE, shrinkThreshold << 1);
+      final int newCapacity = shrinkThreshold;
       final Object[] newData = new Object[newCapacity];
       if (first < last) {
         final int front = index - first;
@@ -1027,10 +1043,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       } else if (first <= index) {
         final int front = index - first;
         System.arraycopy(data, first, newData, 0, front);
-        System.arraycopy(data, index + 1, newData, front, mod - index - 1);
-        System.arraycopy(data, 0, newData, mod - first - 1, last);
+        System.arraycopy(data, index + 1, newData, front, capacity - index - 1);
+        System.arraycopy(data, 0, newData, capacity - first - 1, last);
       } else {
-        final int front = mod - first;
+        final int front = capacity - first;
         System.arraycopy(data, first, newData, 0, front);
         System.arraycopy(data, 0, newData, front, index);
         System.arraycopy(data, index + 1, newData, front + index, last - index - 1);
@@ -1047,8 +1063,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       data[index] = null;
       nextIndex = this.last = index;
     } else {
-      final int front = modDec(index, first, mod);
-      final int back = modDec(last, index, mod);
+      final int front = modDec(index, first, capacity);
+      final int back = modDec(last, index, capacity);
       if (front <= back) {
         if (first <= index) {
           System.arraycopy(data, first, data, first + 1, front);
@@ -1059,8 +1075,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
           System.arraycopy(data, first, data, first + 1, rightmost - first);
         }
         this.data[first] = null;
-        this.first = modInc(first, 1, mod);
-        nextIndex = modInc(index, 1, mod);
+        this.first = modInc(first, 1, capacity);
+        nextIndex = modInc(index, 1, capacity);
       } else {
         if (index < last) {
           System.arraycopy(data, index + 1, data, index, back);
@@ -1071,7 +1087,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
           System.arraycopy(data, 1, data, 0, last);
         }
         this.data[last] = null;
-        this.last = modDec(last, 1, mod);
+        this.last = modDec(last, 1, capacity);
         nextIndex = index;
       }
     }
@@ -1098,7 +1114,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
   private void shrinkCapacity() {
     if (size < shrinkThreshold) {
-      resizeCapacity(Math.max(MIN_SHRINK_SIZE, shrinkThreshold << 1));
+      resizeCapacity(shrinkThreshold << 1);
     }
   }
 
@@ -1128,7 +1144,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
 
   private void updateShrinkThreshold() {
     final int capacity = data.length;
-    shrinkThreshold = autoShrink && capacity > MIN_SHRINK_SIZE ? capacity >> 3 : 0;
+    shrinkThreshold = autoShrink && capacity > MIN_SHRINK_SIZE ? Math.max(MIN_SHRINK_THRESHOLD,
+        computeCapacity((capacity >> 3) - 1)) : 0;
   }
 
   private class AscendingIterator implements Iterator<E> {
@@ -1193,13 +1210,12 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     public void add(final E e) {
       checkForComodification();
       final int pointer = this.pointer;
-      final int mod = data.length;
       this.pointer = addElement(pointer, e);
       {
         final int first = DequeueList.this.first;
         final int last = DequeueList.this.last;
         if (first == last) {
-          final int index = modDec(pointer, first, mod);
+          final int index = modDec(pointer, first, data.length);
           growCapacity();
           this.pointer = index;
         }

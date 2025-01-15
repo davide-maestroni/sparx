@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Davide Maestroni
+ * Copyright 2025 Davide Maestroni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,18 @@ public class DequeueListTests {
   @Test
   public void constructors() {
     assertTrue(new DequeueList<>().isEmpty());
+    assertTrue(new DequeueList<>(0).isEmpty());
     assertTrue(new DequeueList<>(10).isEmpty());
-    assertThrows(IllegalArgumentException.class, () -> new DequeueList<>(0));
     assertThrows(IllegalArgumentException.class, () -> new DequeueList<>(-1));
+    var list = new DequeueList<String>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertEquals(list, new DequeueList<>(list));
+    assertEquals(list, new DequeueList<>(List.of("1", "2", "3", "4")));
+    assertEquals(List.of("1", "2", "3", "4"), new DequeueList<>(List.of("1", "2", "3", "4")));
+    assertEquals(list, list.clone());
   }
 
   @Test
@@ -85,6 +94,7 @@ public class DequeueListTests {
   }
 
   @Test
+  @SuppressWarnings("DataFlowIssue")
   public void addAll() {
     // first < last (start) - no resize
     var list = new DequeueList<String>();
@@ -111,6 +121,14 @@ public class DequeueListTests {
     list.addAll(4, List.of("5", "6", "7"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
 
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.addAll(List.of("5", "6", "7"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
+
     // first < last (start) - resize
     list = new DequeueList<>();
     list.add("1");
@@ -134,6 +152,14 @@ public class DequeueListTests {
     list.add("3");
     list.add("4");
     list.addAll(4, List.of("5", "6", "7", "8"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
+
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.addAll(List.of("5", "6", "7", "8"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
 
     // first < last (middle) - no resize
@@ -173,6 +199,18 @@ public class DequeueListTests {
     list.addAll(4, List.of("5", "6", "7"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
 
+    list = new DequeueList<>();
+    list.add("");
+    list.add("");
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.removeFirst();
+    list.removeFirst();
+    list.addAll(List.of("5", "6", "7"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
+
     // first < last (middle) - resize
     list = new DequeueList<>();
     list.add("");
@@ -210,6 +248,18 @@ public class DequeueListTests {
     list.addAll(4, List.of("5", "6", "7", "8"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
 
+    list = new DequeueList<>();
+    list.add("");
+    list.add("");
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.removeFirst();
+    list.removeFirst();
+    list.addAll(List.of("5", "6", "7", "8"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
+
     // first < last (end) - no resize
     list = new DequeueList<>();
     list.addFirst("");
@@ -241,6 +291,16 @@ public class DequeueListTests {
     list.addAll(4, List.of("5", "6", "7"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
 
+    list = new DequeueList<>();
+    list.addFirst("");
+    list.addFirst("4");
+    list.addFirst("3");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.removeLast();
+    list.addAll(List.of("5", "6", "7"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
+
     // first < last (end) - resize
     list = new DequeueList<>();
     list.addFirst("");
@@ -270,6 +330,16 @@ public class DequeueListTests {
     list.addFirst("1");
     list.removeLast();
     list.addAll(4, List.of("5", "6", "7", "8"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
+
+    list = new DequeueList<>();
+    list.addFirst("");
+    list.addFirst("4");
+    list.addFirst("3");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.removeLast();
+    list.addAll(List.of("5", "6", "7", "8"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
 
     // last < first - no resize
@@ -313,6 +383,14 @@ public class DequeueListTests {
     list.addAll(4, List.of("5", "6", "7"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
 
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.addAll(List.of("5", "6", "7"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
+
     // last < first - resize
     list = new DequeueList<>();
     list.add("3");
@@ -353,6 +431,29 @@ public class DequeueListTests {
     list.addFirst("1");
     list.addAll(4, List.of("5", "6", "7", "8"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
+
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.addAll(List.of("5", "6", "7", "8"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
+
+    // corner cases
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertFalse(list.addAll(List.of()));
+    assertFalse(list.addAll(0, List.of()));
+    assertFalse(list.addAll(4, List.of()));
+    assertEquals(List.of("1", "2", "3", "4"), list);
+    assertThrows(NullPointerException.class, () -> new DequeueList<>().addAll(null));
+    assertThrows(NullPointerException.class, () -> new DequeueList<>().addAll(0, null));
+    assertThrows(IndexOutOfBoundsException.class, () -> new DequeueList<>().addAll(-1, List.of()));
+    assertThrows(IndexOutOfBoundsException.class, () -> new DequeueList<>().addAll(1, List.of()));
   }
 
   @Test
