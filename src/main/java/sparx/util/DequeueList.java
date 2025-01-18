@@ -30,6 +30,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
+import sparx.util.function.IndexedPredicate;
+import sparx.util.function.Predicate;
 
 public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<E>, RandomAccess,
     Serializable {
@@ -133,7 +135,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     updateShrinkThreshold();
   }
 
-  // TODO: move check before add => exactly match minCapacity
   private static int computeCapacity(@NotNegative final int minCapacity) {
     final int msb = Integer.highestOneBit(minCapacity);
     if (minCapacity == msb) {
@@ -215,9 +216,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     addElements(index, collection);
     return true;
   }
-
-  // TODO: public boolean removeAll(Predicate)
-  // TODO: public boolean removeAll(IndexedPredicate)
 
   /**
    * {@inheritDoc}
@@ -617,6 +615,63 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     final E element = get(index);
     removeElement(modInc(first, index, data.length));
     return element;
+  }
+
+  @SuppressWarnings("unchecked")
+  public boolean removeAll(@NotNull final Predicate<? super E> predicate) {
+    final int first = this.first;
+    final int last = this.last;
+    final Object[] data = this.data;
+    try {
+      if (first < last) {
+        int index = last - 1;
+        while (index >= first && predicate.test((E) data[index])) {
+          data[index--] = null;
+        }
+        if (index < first) {
+          this.last = first;
+          clear();
+          return true;
+        }
+        final int newLast = index + 1;
+        while (index >= first && !predicate.test((E) data[index])) {
+          --index;
+        }
+        // TODO: direct copy element by element?
+        int end = index + 1;
+        while (index > first) {
+          do {
+            --index;
+          } while (index >= first && predicate.test((E) data[index]));
+          if (index >= first) {
+            int len = 0;
+            do {
+              --index;
+              ++len;
+            } while (index >= first && !predicate.test((E) data[index]));
+            end -= len;
+            System.arraycopy(data, index + 1, data, end, len);
+          }
+        }
+        for (int i = first; i < end; ++i) {
+          data[i] = null;
+        }
+        if (this.first != end || this.last != newLast) {
+          this.first = end;
+          this.last = newLast;
+          size = newLast - end;
+          shrinkCapacity();
+          return true;
+        }
+      }
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
+    }
+    return false;
+  }
+
+  public boolean removeAll(@NotNull final IndexedPredicate<? super E> predicate) {
+    return false;
   }
 
   /**
