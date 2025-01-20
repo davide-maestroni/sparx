@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 public class DequeueListTests {
@@ -1229,6 +1230,49 @@ public class DequeueListTests {
     assertEquals(List.of("2", "1"), list);
     assertEquals("1", list.removeLast());
     assertEquals(List.of("2"), list);
+  }
+
+  @Test
+  public void removeAll() {
+    var list = new DequeueList<String>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertFalse(list.removeAll(Objects::isNull));
+    assertEquals(List.of("1", "2", "3", "4"), list);
+    assertTrue(list.removeAll(e -> e.equals("1") || e.equals("3")));
+    assertEquals(List.of("2", "4"), list);
+
+    list = new DequeueList<>();
+    list.addFirst("2");
+    list.addFirst("1");
+    list.add("3");
+    list.add("4");
+    assertFalse(list.removeAll(Objects::isNull));
+    assertEquals(List.of("1", "2", "3", "4"), list);
+    assertTrue(list.removeAll(e -> e.equals("1") || e.equals("3")));
+    assertEquals(List.of("2", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertFalse(list.removeAll((i, e) -> Objects.isNull(e)));
+    assertEquals(List.of("1", "2", "3", "4"), list);
+    assertTrue(list.removeAll((i, e) -> e.equals("1") || e.equals("3")));
+    assertEquals(List.of("2", "4"), list);
+
+    list = new DequeueList<>();
+    list.addFirst("2");
+    list.addFirst("1");
+    list.add("3");
+    list.add("4");
+    assertFalse(list.removeAll((i, e) -> Objects.isNull(e)));
+    assertEquals(List.of("1", "2", "3", "4"), list);
+    assertTrue(list.removeAll((i, e) -> e.equals("1") || e.equals("3")));
+    assertEquals(List.of("2", "4"), list);
   }
 
   @Test
