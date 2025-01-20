@@ -103,39 +103,6 @@ public class DequeueListTests {
     list.add("2");
     list.add("3");
     list.add("4");
-    list.addAll(0, List.of("5", "6", "7"));
-    assertEquals(List.of("5", "6", "7", "1", "2", "3", "4"), list);
-
-    list = new DequeueList<>();
-    list.add("1");
-    list.add("2");
-    list.add("3");
-    list.add("4");
-    list.addAll(2, List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "5", "6", "7", "3", "4"), list);
-
-    list = new DequeueList<>();
-    list.add("1");
-    list.add("2");
-    list.add("3");
-    list.add("4");
-    list.addAll(4, List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
-
-    list = new DequeueList<>();
-    list.add("1");
-    list.add("2");
-    list.add("3");
-    list.add("4");
-    list.addAll(List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
-
-    // first < last (start) - resize
-    list = new DequeueList<>();
-    list.add("1");
-    list.add("2");
-    list.add("3");
-    list.add("4");
     list.addAll(0, List.of("5", "6", "7", "8"));
     assertEquals(List.of("5", "6", "7", "8", "1", "2", "3", "4"), list);
 
@@ -162,6 +129,39 @@ public class DequeueListTests {
     list.add("4");
     list.addAll(List.of("5", "6", "7", "8"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
+
+    // first < last (start) - resize
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.addAll(0, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("5", "6", "7", "8", "9", "1", "2", "3", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.addAll(2, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "5", "6", "7", "8", "9", "3", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.addAll(4, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"), list);
+
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    list.addAll(List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"), list);
 
     // first < last (middle) - no resize
     list = new DequeueList<>();
@@ -173,8 +173,8 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.addAll(0, List.of("5", "6", "7"));
-    assertEquals(List.of("5", "6", "7", "1", "2", "3", "4"), list);
+    list.addAll(0, List.of("5", "6", "7", "8"));
+    assertEquals(List.of("5", "6", "7", "8", "1", "2", "3", "4"), list);
 
     list = new DequeueList<>();
     list.add("");
@@ -185,8 +185,8 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.addAll(2, List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "5", "6", "7", "3", "4"), list);
+    list.addAll(2, List.of("5", "6", "7", "8"));
+    assertEquals(List.of("1", "2", "5", "6", "7", "8", "3", "4"), list);
 
     list = new DequeueList<>();
     list.add("");
@@ -197,8 +197,8 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.addAll(4, List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
+    list.addAll(4, List.of("5", "6", "7", "8"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
 
     list = new DequeueList<>();
     list.add("");
@@ -209,8 +209,8 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.addAll(List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
+    list.addAll(List.of("5", "6", "7", "8"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
 
     // first < last (middle) - resize
     list = new DequeueList<>();
@@ -222,8 +222,8 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.addAll(0, List.of("5", "6", "7", "8"));
-    assertEquals(List.of("5", "6", "7", "8", "1", "2", "3", "4"), list);
+    list.addAll(0, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("5", "6", "7", "8", "9", "1", "2", "3", "4"), list);
 
     list = new DequeueList<>();
     list.add("");
@@ -234,8 +234,8 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.addAll(2, List.of("5", "6", "7", "8"));
-    assertEquals(List.of("1", "2", "5", "6", "7", "8", "3", "4"), list);
+    list.addAll(2, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "5", "6", "7", "8", "9", "3", "4"), list);
 
     list = new DequeueList<>();
     list.add("");
@@ -246,8 +246,8 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.addAll(4, List.of("5", "6", "7", "8"));
-    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
+    list.addAll(4, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"), list);
 
     list = new DequeueList<>();
     list.add("");
@@ -258,8 +258,8 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.addAll(List.of("5", "6", "7", "8"));
-    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
+    list.addAll(List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"), list);
 
     // first < last (end) - no resize
     list = new DequeueList<>();
@@ -269,47 +269,6 @@ public class DequeueListTests {
     list.addFirst("2");
     list.addFirst("1");
     list.removeLast();
-    list.addAll(0, List.of("5", "6", "7"));
-    assertEquals(List.of("5", "6", "7", "1", "2", "3", "4"), list);
-
-    list = new DequeueList<>();
-    list.addFirst("");
-    list.addFirst("4");
-    list.addFirst("3");
-    list.addFirst("2");
-    list.addFirst("1");
-    list.removeLast();
-    list.addAll(2, List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "5", "6", "7", "3", "4"), list);
-
-    list = new DequeueList<>();
-    list.addFirst("");
-    list.addFirst("4");
-    list.addFirst("3");
-    list.addFirst("2");
-    list.addFirst("1");
-    list.removeLast();
-    list.addAll(4, List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
-
-    list = new DequeueList<>();
-    list.addFirst("");
-    list.addFirst("4");
-    list.addFirst("3");
-    list.addFirst("2");
-    list.addFirst("1");
-    list.removeLast();
-    list.addAll(List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
-
-    // first < last (end) - resize
-    list = new DequeueList<>();
-    list.addFirst("");
-    list.addFirst("4");
-    list.addFirst("3");
-    list.addFirst("2");
-    list.addFirst("1");
-    list.removeLast();
     list.addAll(0, List.of("5", "6", "7", "8"));
     assertEquals(List.of("5", "6", "7", "8", "1", "2", "3", "4"), list);
 
@@ -343,56 +302,48 @@ public class DequeueListTests {
     list.addAll(List.of("5", "6", "7", "8"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
 
+    // first < last (end) - resize
+    list = new DequeueList<>();
+    list.addFirst("");
+    list.addFirst("4");
+    list.addFirst("3");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.removeLast();
+    list.addAll(0, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("5", "6", "7", "8", "9", "1", "2", "3", "4"), list);
+
+    list = new DequeueList<>();
+    list.addFirst("");
+    list.addFirst("4");
+    list.addFirst("3");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.removeLast();
+    list.addAll(2, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "5", "6", "7", "8", "9", "3", "4"), list);
+
+    list = new DequeueList<>();
+    list.addFirst("");
+    list.addFirst("4");
+    list.addFirst("3");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.removeLast();
+    list.addAll(4, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"), list);
+
+    list = new DequeueList<>();
+    list.addFirst("");
+    list.addFirst("4");
+    list.addFirst("3");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.removeLast();
+    list.addAll(List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"), list);
+
     // last < first - no resize
-    list = new DequeueList<>();
-    list.add("3");
-    list.add("4");
-    list.addFirst("2");
-    list.addFirst("1");
-    list.addAll(0, List.of("5", "6", "7"));
-    assertEquals(List.of("5", "6", "7", "1", "2", "3", "4"), list);
-
-    list = new DequeueList<>();
-    list.add("3");
-    list.add("4");
-    list.addFirst("2");
-    list.addFirst("1");
-    list.addAll(1, List.of("5", "6", "7"));
-    assertEquals(List.of("1", "5", "6", "7", "2", "3", "4"), list);
-
-    list = new DequeueList<>();
-    list.add("3");
-    list.add("4");
-    list.addFirst("2");
-    list.addFirst("1");
-    list.addAll(2, List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "5", "6", "7", "3", "4"), list);
-
-    list = new DequeueList<>();
-    list.add("3");
-    list.add("4");
-    list.addFirst("2");
-    list.addFirst("1");
-    list.addAll(3, List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "3", "5", "6", "7", "4"), list);
-
-    list = new DequeueList<>();
-    list.add("3");
-    list.add("4");
-    list.addFirst("2");
-    list.addFirst("1");
-    list.addAll(4, List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
-
-    list = new DequeueList<>();
-    list.add("3");
-    list.add("4");
-    list.addFirst("2");
-    list.addFirst("1");
-    list.addAll(List.of("5", "6", "7"));
-    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), list);
-
-    // last < first - resize
     list = new DequeueList<>();
     list.add("3");
     list.add("4");
@@ -440,6 +391,55 @@ public class DequeueListTests {
     list.addFirst("1");
     list.addAll(List.of("5", "6", "7", "8"));
     assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), list);
+
+    // last < first - resize
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.addAll(0, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("5", "6", "7", "8", "9", "1", "2", "3", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.addAll(1, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "5", "6", "7", "8", "9", "2", "3", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.addAll(2, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "5", "6", "7", "8", "9", "3", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.addAll(3, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "3", "5", "6", "7", "8", "9", "4"), list);
+
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.addAll(4, List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"), list);
+
+    list = new DequeueList<>();
+    list.add("3");
+    list.add("4");
+    list.addFirst("2");
+    list.addFirst("1");
+    list.addAll(List.of("5", "6", "7", "8", "9"));
+    assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"), list);
 
     // corner cases
     list = new DequeueList<>();
