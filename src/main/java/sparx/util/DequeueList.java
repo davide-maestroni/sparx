@@ -30,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
-import sparx.util.function.IndexedPredicate;
 import sparx.util.function.Predicate;
 
 public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<E>, RandomAccess,
@@ -182,11 +181,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     } else if (index == size) {
       addLast(element);
     } else {
-      final int capacity = data.length;
-      if (size == capacity) {
+      if (size == data.length) {
         growCapacity();
       }
-      addElement(modInc(first, index, capacity), element);
+      addElement(modInc(first, index, data.length), element);
     }
   }
 
@@ -222,13 +220,11 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   public void addFirst(@Nullable final E element) {
-    final Object[] data = this.data;
-    final int capacity = data.length;
-    if (size == capacity) {
+    if (size == data.length) {
       growCapacity();
     }
-    final int newFirst = (first = modDec(first, 1, capacity));
-    data[newFirst] = element;
+    final Object[] data = this.data;
+    data[first = modDec(first, 1, data.length)] = element;
     ++size;
   }
 
@@ -237,14 +233,13 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   public void addLast(@Nullable final E element) {
-    final Object[] data = this.data;
-    final int capacity = data.length;
-    if (size == capacity) {
+    if (size == data.length) {
       growCapacity();
     }
     final int last = this.last;
+    final Object[] data = this.data;
     data[last] = element;
-    this.last = modInc(last, 1, capacity);
+    this.last = modInc(last, 1, data.length);
     ++size;
   }
 
@@ -254,11 +249,12 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   @Override
   public void clear() {
     final Object[] data = this.data;
-    if (autoShrink && data.length > MIN_SHRINK_SIZE) {
+    final int capacity = data.length;
+    if (autoShrink && capacity > MIN_SHRINK_SIZE) {
       this.data = new Object[MIN_SHRINK_SIZE];
-    } else {
+    } else if (size > 0) {
       final int last = this.last;
-      for (int i = first, to = (i <= last) ? last : data.length; ; i = 0, to = last) {
+      for (int i = first, to = (i < last) ? last : capacity; ; i = 0, to = last) {
         for (; i < to; ++i) {
           data[i] = null;
         }
@@ -385,11 +381,14 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   public int indexOf(final Object o) {
+    if (isEmpty()) {
+      return -1;
+    }
     final int first = this.first;
     final int last = this.last;
     final Object[] data = this.data;
     if (o == null) {
-      for (int i = first, to = (i <= last) ? last : data.length; ; i = 0, to = last) {
+      for (int i = first, to = (i < last) ? last : data.length; ; i = 0, to = last) {
         for (; i < to; ++i) {
           if (data[i] == null) {
             return modDec(i, first, data.length);
@@ -400,7 +399,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         }
       }
     } else {
-      for (int i = first, to = (i <= last) ? last : data.length; ; i = 0, to = last) {
+      for (int i = first, to = (i < last) ? last : data.length; ; i = 0, to = last) {
         for (; i < to; ++i) {
           if (o.equals(data[i])) {
             return modDec(i, first, data.length);
@@ -617,167 +616,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     return element;
   }
 
-  @SuppressWarnings("unchecked")
-  public boolean removeAll(@NotNull final Predicate<? super E> predicate) {
-    final int first = this.first;
-    final int last = this.last;
-    final Object[] data = this.data;
-    final int capacity = data.length;
-    try {
-      final int end = (first <= last) ? last : capacity;
-      int newFirst = first;
-      boolean next = false;
-      int i = first, to = end;
-      for (; ; i = 0, to = last) {
-        for (; i < to; ++i) {
-          if (predicate.test((E) data[i])) {
-            data[i] = null;
-          } else {
-            newFirst = i;
-            if (++i == to) {
-              i = 0;
-              to = last;
-            }
-            next = true;
-            break;
-          }
-        }
-        if (next || to == last) {
-          break;
-        }
-      }
-      next = false;
-      int newLast = last;
-      for (; ; i = 0, to = last) {
-        for (; i < to; ++i) {
-          if (predicate.test((E) data[i])) {
-            newLast = i;
-            if (++i == to) {
-              i = 0;
-              to = last;
-            }
-            next = true;
-            break;
-          }
-        }
-        if (next || to == last) {
-          break;
-        }
-      }
-      for (; ; i = 0, to = last) {
-        for (; i < to; ++i) {
-          final E element = (E) data[i];
-          if (!predicate.test(element)) {
-            data[newLast] = element;
-            newLast = modInc(newLast, 1, capacity);
-          }
-        }
-        if (to == last) {
-          break;
-        }
-      }
-      for (i = newLast, to = (newLast <= last) ? last : capacity; ; i = 0, to = last) {
-        for (; i < to; ++i) {
-          data[i] = null;
-        }
-        if (to == last) {
-          break;
-        }
-      }
-      if (this.first != newFirst || this.last != newLast) {
-        this.first = newFirst;
-        this.last = newLast;
-        size = modDec(newLast, newFirst, capacity);
-        shrinkCapacity();
-        return true;
-      }
-    } catch (final Exception e) {
-      throw UncheckedException.throwUnchecked(e);
-    }
-    return false;
-  }
-
-  @SuppressWarnings("unchecked")
-  public boolean removeAll(@NotNull final IndexedPredicate<? super E> predicate) {
-    final int first = this.first;
-    final int last = this.last;
-    final Object[] data = this.data;
-    final int capacity = data.length;
-    try {
-      final int end = (first <= last) ? last : capacity;
-      int index = 0;
-      int newFirst = first;
-      boolean next = false;
-      int i = first, to = end;
-      for (; ; i = 0, to = last) {
-        for (; i < to; ++i) {
-          if (predicate.test(index++, (E) data[i])) {
-            data[i] = null;
-          } else {
-            newFirst = i;
-            if (++i == to) {
-              i = 0;
-              to = last;
-            }
-            next = true;
-            break;
-          }
-        }
-        if (next || to == last) {
-          break;
-        }
-      }
-      next = false;
-      int newLast = last;
-      for (; ; i = 0, to = last) {
-        for (; i < to; ++i) {
-          if (predicate.test(index++, (E) data[i])) {
-            newLast = i;
-            if (++i == to) {
-              i = 0;
-              to = last;
-            }
-            next = true;
-            break;
-          }
-        }
-        if (next || to == last) {
-          break;
-        }
-      }
-      for (; ; i = 0, to = last) {
-        for (; i < to; ++i) {
-          final E element = (E) data[i];
-          if (!predicate.test(index++, element)) {
-            data[newLast] = element;
-            newLast = modInc(newLast, 1, capacity);
-          }
-        }
-        if (to == last) {
-          break;
-        }
-      }
-      for (i = newLast, to = (newLast <= last) ? last : capacity; ; i = 0, to = last) {
-        for (; i < to; ++i) {
-          data[i] = null;
-        }
-        if (to == last) {
-          break;
-        }
-      }
-      if (this.first != newFirst || this.last != newLast) {
-        this.first = newFirst;
-        this.last = newLast;
-        size = modDec(newLast, newFirst, capacity);
-        shrinkCapacity();
-        return true;
-      }
-    } catch (final Exception e) {
-      throw UncheckedException.throwUnchecked(e);
-    }
-    return false;
-  }
-
   /**
    * Removes from this list all of the elements whose index is between {@code fromIndex}, inclusive,
    * and {@code toIndex}, exclusive. Shifts any succeeding elements to the left (reduces their
@@ -808,6 +646,123 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    * {@inheritDoc}
    */
   @Override
+  public boolean removeAll(@NotNull final Collection<?> collection) {
+    Require.notNull(collection, "collection");
+    return removeAll(new Predicate<E>() {
+      @Override
+      public boolean test(final E element) {
+        return collection.contains(element);
+      }
+    });
+  }
+
+  /**
+   * Removes all of the elements of this collection that satisfy the given predicate.  Errors or
+   * runtime exceptions thrown during iteration or by the predicate are relayed to the caller.
+   *
+   * @param predicate a predicate which returns {@code true} for elements to be removed
+   * @return {@code true} if any elements were removed
+   * @throws NullPointerException if the specified predicate is {@code null}
+   */
+  @SuppressWarnings("unchecked")
+  public boolean removeAll(@NotNull final Predicate<? super E> predicate) {
+    if (isEmpty()) {
+      return false;
+    }
+    final int first = this.first;
+    final int last = this.last;
+    final Object[] data = this.data;
+    final int capacity = data.length;
+    final int end = (first < last) ? last : capacity;
+    int newFirst = first;
+    int newLast = last;
+    boolean next = false;
+    int i = first, to = end;
+    try {
+      for (; ; i = 0, to = last) {
+        for (; i < to; ++i) {
+          if (predicate.test((E) data[i])) {
+            data[i] = null;
+          } else {
+            newFirst = i;
+            if (++i == to) {
+              i = 0;
+              to = last;
+            }
+            next = true;
+            break;
+          }
+        }
+        if (next || to == last) {
+          break;
+        }
+      }
+      next = false;
+      for (; ; i = 0, to = last) {
+        for (; i < to; ++i) {
+          if (predicate.test((E) data[i])) {
+            newLast = i;
+            if (++i == to) {
+              i = 0;
+              to = last;
+            }
+            next = true;
+            break;
+          }
+        }
+        if (next || to == last) {
+          break;
+        }
+      }
+    } catch (final Exception e) {
+      if (this.first != newFirst) {
+        this.first = newFirst;
+        size -= modDec(newFirst, first, capacity);
+        shrinkCapacity();
+      }
+      throw UncheckedException.throwUnchecked(e);
+    }
+    try {
+      for (; ; i = 0, to = last) {
+        for (; i < to; ++i) {
+          final E element = (E) data[i];
+          if (!predicate.test(element)) {
+            data[newLast] = element;
+            newLast = modInc(newLast, 1, capacity);
+          }
+        }
+        if (to == last) {
+          break;
+        }
+      }
+    } catch (final Exception e) {
+      this.first = newFirst;
+      size -= modDec(newFirst, first, capacity);
+      removeRange(modDec(newLast, newFirst, capacity), modDec(i, newFirst, capacity));
+      throw UncheckedException.throwUnchecked(e);
+    }
+    for (i = newLast, to = (newLast <= last) ? last : capacity; ; i = 0, to = last) {
+      for (; i < to; ++i) {
+        data[i] = null;
+      }
+      if (to == last) {
+        break;
+      }
+    }
+    if (this.first != newFirst || this.last != newLast) {
+      this.first = newFirst;
+      this.last = newLast;
+      size = modDec(newLast, newFirst, capacity);
+      shrinkCapacity();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public E removeFirst() {
     if (isEmpty()) {
       throw new NoSuchElementException();
@@ -820,11 +775,14 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   public boolean removeFirstOccurrence(final Object o) {
+    if (isEmpty()) {
+      return false;
+    }
     final int first = this.first;
     final int last = this.last;
     final Object[] data = this.data;
     if (o == null) {
-      for (int i = first, to = (i <= last) ? last : data.length; ; i = 0, to = last) {
+      for (int i = first, to = (i < last) ? last : data.length; ; i = 0, to = last) {
         for (; i < to; ++i) {
           if (data[i] == null) {
             removeElement(i);
@@ -836,7 +794,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         }
       }
     } else {
-      for (int i = first, to = (i <= last) ? last : data.length; ; i = 0, to = last) {
+      for (int i = first, to = (i < last) ? last : data.length; ; i = 0, to = last) {
         for (; i < to; ++i) {
           if (o.equals(data[i])) {
             removeElement(i);
@@ -896,6 +854,20 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       }
     }
     return false;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public boolean retainAll(@NotNull final Collection<?> collection) {
+    Require.notNull(collection, "collection");
+    return removeAll(new Predicate<E>() {
+      @Override
+      public boolean test(final E element) {
+        return !collection.contains(element);
+      }
+    });
   }
 
   /**
@@ -1029,14 +1001,13 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     size -= length;
   }
 
-  private int addElement(final int index, final E element) {
+  private void addElement(final int index, final E element) {
     final int first = this.first;
     final int last = this.last;
     final Object[] data = this.data;
     final int capacity = data.length;
     final int front = modDec(index, first, capacity);
     final int back = modDec(last, index, capacity);
-    final int nextIndex;
     if (front >= back) {
       if (back != 0) {
         if (index < last) {
@@ -1050,7 +1021,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       }
       this.data[index] = element;
       this.last = modInc(last, 1, capacity);
-      nextIndex = modInc(index, 1, capacity);
     } else {
       if (front != 0) {
         if (first == 0) {
@@ -1068,10 +1038,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       }
       this.data[modDec(index, 1, capacity)] = element;
       this.first = modDec(first, 1, capacity);
-      nextIndex = index;
     }
     ++size;
-    return nextIndex;
   }
 
   private void addElements(final int index, @NotNull final Collection<? extends E> collection) {
@@ -1087,10 +1055,18 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     final int last = this.last;
     if (newCapacity > capacity) {
       final Object[] newData = new Object[newCapacity];
-      if (first < last) {
+      if (isEmpty()) {
+        int i = 0;
+        for (final E element : collection) {
+          newData[i++] = element;
+        }
+      } else if (first < last) {
         System.arraycopy(data, first, newData, 0, index);
-        System.arraycopy(collection.toArray(), 0, newData, index, added);
-        System.arraycopy(data, first + index, newData, index + added, size - index);
+        int i = index;
+        for (final E element : collection) {
+          newData[i++] = element;
+        }
+        System.arraycopy(data, first + index, newData, i, size - index);
       } else {
         final int remainder = capacity - first;
         if (index < remainder) {
@@ -1116,7 +1092,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       this.first = 0;
       this.last = size + added;
       updateShrinkThreshold();
-    } else if (first <= last) {
+    } else if (first < last || isEmpty()) {
       if (first >= added) {
         final int newFirst = first - added;
         System.arraycopy(data, first, data, newFirst, index);
@@ -1170,15 +1146,17 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   @NotNull
   @SuppressWarnings("SuspiciousSystemArraycopy")
   private <T> T[] copyElements(@NotNull final T[] dst) {
-    final Object[] data = this.data;
-    final int first = this.first;
-    final int last = this.last;
-    if (first <= last) {
-      System.arraycopy(data, first, dst, 0, size);
-    } else {
-      final int length = data.length - first;
-      System.arraycopy(data, first, dst, 0, length);
-      System.arraycopy(data, 0, dst, length, last);
+    if (size > 0) {
+      final Object[] data = this.data;
+      final int first = this.first;
+      final int last = this.last;
+      if (first < last) {
+        System.arraycopy(data, first, dst, 0, size);
+      } else {
+        final int front = data.length - first;
+        System.arraycopy(data, first, dst, 0, front);
+        System.arraycopy(data, 0, dst, front, last);
+      }
     }
     return dst;
   }
@@ -1197,12 +1175,11 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     updateShrinkThreshold();
   }
 
-  private int removeElement(final int index) {
+  private void removeElement(final int index) {
     final int first = this.first;
     final int last = this.last;
     final Object[] data = this.data;
     final int capacity = data.length;
-    final int nextIndex;
     if (size == shrinkThreshold) {
       final int newCapacity = shrinkThreshold << 1;
       final Object[] newData = new Object[newCapacity];
@@ -1225,13 +1202,12 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       this.first = 0;
       this.last = size - 1;
       updateShrinkThreshold();
-      nextIndex = index - first;
     } else if (index == first) {
       data[first] = null;
-      nextIndex = this.first = modInc(first, 1, data.length);
+      this.first = modInc(first, 1, data.length);
     } else if (index == modDec(last, 1, data.length)) {
       data[index] = null;
-      nextIndex = this.last = index;
+      this.last = index;
     } else {
       final int front = modDec(index, first, capacity);
       final int back = modDec(last, index, capacity);
@@ -1246,7 +1222,6 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         }
         this.data[first] = null;
         this.first = modInc(first, 1, capacity);
-        nextIndex = modInc(index, 1, capacity);
       } else {
         if (index < last) {
           System.arraycopy(data, index + 1, data, index, back);
@@ -1258,11 +1233,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         }
         this.data[last] = null;
         this.last = modDec(last, 1, capacity);
-        nextIndex = index;
       }
     }
     --size;
-    return nextIndex;
   }
 
   private void resizeCapacity(final int capacity) {
@@ -1324,10 +1297,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     protected int expectedLast = last;
     protected int index;
     protected boolean isRemoved = true;
-    protected int pointer;
 
     private AscendingIterator(final int offset) {
-      pointer = modInc(first, offset, data.length);
       index = offset;
     }
 
@@ -1344,11 +1315,8 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         throw new NoSuchElementException();
       }
       isRemoved = false;
-      final int pointer = this.pointer;
       final Object[] data = DequeueList.this.data;
-      this.pointer = modInc(pointer, 1, data.length);
-      ++index;
-      return (E) data[pointer];
+      return (E) data[modInc(index++, first, data.length)];
     }
 
     @Override
@@ -1357,11 +1325,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         throw new IllegalStateException();
       }
       checkForComodification();
-      pointer = removeElement(modDec(pointer, 1, data.length));
+      removeElement(modInc(--index, first, data.length));
       expectedFirst = first;
       expectedLast = last;
       isRemoved = true;
-      --index;
     }
 
     final void checkForComodification() {
@@ -1382,12 +1349,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     @Override
     public void add(final E e) {
       checkForComodification();
-      final int capacity = data.length;
-      if (size == capacity) {
-        pointer = modDec(pointer, first, capacity);
+      if (size == data.length) {
         growCapacity();
       }
-      pointer = addElement(pointer, e);
+      addElement(modInc(index++, first, data.length), e);
       expectedFirst = first;
       expectedLast = last;
       isRemoved = true; // disable remove
@@ -1415,15 +1380,13 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     @SuppressWarnings("unchecked")
     public E previous() {
       checkForComodification();
-      final int pointer = this.pointer;
-      if (pointer == first) {
+      if (index == 0) {
         throw new NoSuchElementException();
       }
       isForward = false;
       isRemoved = false;
       final Object[] data = DequeueList.this.data;
-      --index;
-      return (E) data[this.pointer = modDec(pointer, 1, data.length)];
+      return (E) data[modInc(--index, first, data.length)];
     }
 
     @Override
@@ -1435,15 +1398,18 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     @Override
     public void remove() {
       if (!isForward) {
-        if (isRemoved) {
+        if (isRemoved || index == size) {
           throw new IllegalStateException();
         }
         checkForComodification();
-        pointer = removeElement(pointer);
+        removeElement(modInc(index, first, data.length));
         expectedFirst = first;
         expectedLast = last;
         isRemoved = true;
       } else {
+        if (index == 0) {
+          throw new IllegalStateException();
+        }
         super.remove();
       }
     }
@@ -1451,15 +1417,15 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     @Override
     public void set(final E element) {
       checkForComodification();
-      int index = pointer;
       if (size == 0) {
-        throw new IndexOutOfBoundsException(Integer.toString(index));
+        throw new IndexOutOfBoundsException("0");
       }
       final Object[] data = DequeueList.this.data;
       if (isForward) {
-        index = modDec(index, 1, data.length);
+        data[modInc(index - 1, first, data.length)] = element;
+      } else {
+        data[modInc(index, first, data.length)] = element;
       }
-      data[index] = element;
     }
   }
 
@@ -1468,24 +1434,23 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
     private int expectedFirst = first;
     private int expectedLast = last;
     private boolean isRemoved = true;
-    private int pointer = last;
+    private int index = size;
 
     @Override
     public boolean hasNext() {
-      return (pointer != first);
+      return (index > 0);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public E next() {
       checkForComodification();
-      final int pointer = this.pointer;
-      if (pointer == first) {
+      if (index == 0) {
         throw new NoSuchElementException();
       }
       isRemoved = false;
       final Object[] data = DequeueList.this.data;
-      return (E) data[this.pointer = modDec(pointer, 1, data.length)];
+      return (E) data[modInc(--index, first, data.length)];
     }
 
     @Override
@@ -1494,7 +1459,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         throw new IllegalStateException();
       }
       checkForComodification();
-      pointer = removeElement(pointer);
+      removeElement(modInc(index, first, data.length));
       expectedFirst = first;
       expectedLast = last;
       isRemoved = true;
