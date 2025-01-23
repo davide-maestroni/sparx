@@ -23,12 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
+import sparx.util.function.Predicate;
 
 public class DequeueListTests {
 
@@ -650,6 +652,54 @@ public class DequeueListTests {
   }
 
   @Test
+  public void autoShrink() {
+    var list = new DequeueList<String>(64, true);
+    assertEquals(64, list.capacity());
+    list.add("");
+    list.removeFirst();
+    assertEquals(64, list.capacity());
+    for (int i = 0; i < 64; i++) {
+      list.add("");
+    }
+    assertEquals(64, list.capacity());
+    for (int i = 0; i < 60; i++) {
+      list.removeFirst();
+    }
+    assertTrue(list.capacity() < 64);
+
+    list = new DequeueList<>(64, true);
+    for (int i = 0; i < 64; i++) {
+      list.add("");
+    }
+    for (int i = 0; i < 60; i++) {
+      list.remove(list.size() >> 1);
+    }
+    assertTrue(list.capacity() < 64);
+
+    list = new DequeueList<>(64, true);
+    for (int i = 0; i < 32; i++) {
+      list.add("");
+    }
+    for (int i = 0; i < 32; i++) {
+      list.addFirst("");
+    }
+    for (int i = 0; i < 60; i++) {
+      list.remove(list.size() >> 1);
+    }
+    assertTrue(list.capacity() < 64);
+
+    list = new DequeueList<>(64, true);
+    list.addFirst("");
+    for (int i = 0; i < 63; i++) {
+      list.add("");
+    }
+    for (int i = 0; i < 60; i++) {
+      list.remove(list.size() >> 1);
+    }
+    assertTrue(list.capacity() < 64);
+  }
+
+  @Test
   @SuppressWarnings("ConstantValue")
   public void clear() {
     var list = new DequeueList<String>();
@@ -734,6 +784,7 @@ public class DequeueListTests {
   public void indexOf() {
     var list = new DequeueList<String>();
     assertTrue(list.isEmpty());
+    assertEquals(-1, list.indexOf("1"));
     list.add("1");
     list.add("2");
     list.add("3");
@@ -773,12 +824,28 @@ public class DequeueListTests {
     list.set(1, null);
     assertEquals(1, list.indexOf(null));
     assertEquals(2, list.indexOf("12"));
+
+    list = new DequeueList<>(1);
+    list.add("1");
+    assertEquals(0, list.indexOf("1"));
+    assertEquals(-1, list.indexOf("2"));
+    assertEquals(-1, list.indexOf(null));
+    list = new DequeueList<>(2);
+    list.add("1");
+    list.removeFirst();
+    list.add("1");
+    list.add("2");
+    assertEquals(0, list.indexOf("1"));
+    assertEquals(1, list.indexOf("2"));
+    assertEquals(-1, list.indexOf("3"));
+    assertEquals(-1, list.indexOf(null));
   }
 
   @Test
   public void lastIndexOf() {
     var list = new DequeueList<String>();
     assertTrue(list.isEmpty());
+    assertEquals(-1, list.lastIndexOf("1"));
     list.add("1");
     list.add("2");
     list.add("3");
@@ -818,6 +885,21 @@ public class DequeueListTests {
     list.set(1, null);
     assertEquals(1, list.lastIndexOf(null));
     assertEquals(2, list.lastIndexOf("12"));
+
+    list = new DequeueList<>(1);
+    list.add("1");
+    assertEquals(0, list.lastIndexOf("1"));
+    assertEquals(-1, list.lastIndexOf("2"));
+    assertEquals(-1, list.lastIndexOf(null));
+    list = new DequeueList<>(2);
+    list.add("1");
+    list.removeFirst();
+    list.add("1");
+    list.add("2");
+    assertEquals(0, list.lastIndexOf("1"));
+    assertEquals(1, list.lastIndexOf("2"));
+    assertEquals(-1, list.lastIndexOf("3"));
+    assertEquals(-1, list.lastIndexOf(null));
   }
 
   @Test
@@ -998,13 +1080,33 @@ public class DequeueListTests {
   public void ensureCapacity() {
     var list = new DequeueList<String>();
     assertFalse(list.ensureCapacity(1));
+    assertTrue(list.capacity() >= 1);
+    assertTrue(list.capacity() < 1000);
     assertTrue(list.ensureCapacity(1000));
+    assertTrue(list.capacity() >= 1000);
     assertThrows(IllegalStateException.class, () -> list.ensureCapacity(Integer.MAX_VALUE));
+  }
+
+
+  @Test
+  public void freeCapacity() {
+    var list = new DequeueList<String>();
+    list.add("1");
+    list.add("2");
+    assertFalse(list.freeCapacity(1000));
+    assertTrue(list.capacity() < 1000);
+    assertTrue(list.capacity() >= 2);
+    assertTrue(list.freeCapacity(1));
+    assertTrue(list.capacity() >= 2);
+    assertFalse(list.freeCapacity(1));
+    assertTrue(list.capacity() >= 2);
   }
 
   @Test
   public void listIterator() {
     var list = new DequeueList<String>();
+    assertThrows(IndexOutOfBoundsException.class, () -> list.listIterator(-1));
+    assertThrows(IndexOutOfBoundsException.class, () -> list.listIterator(1));
     var iterator = list.listIterator();
     assertFalse(iterator.hasNext());
     assertThrows(NoSuchElementException.class, iterator::next);
@@ -1358,7 +1460,12 @@ public class DequeueListTests {
   }
 
   @Test
+  @SuppressWarnings({"SuspiciousMethodCalls", "DataFlowIssue"})
   public void removeAll() {
+    var l = new DequeueList<String>();
+    assertThrows(NullPointerException.class, () -> l.removeAll((Collection<?>) null));
+    assertThrows(NullPointerException.class, () -> l.removeAll((Predicate<? super String>) null));
+
     var list = new DequeueList<String>();
     list.add("1");
     list.add("2");
@@ -1381,6 +1488,52 @@ public class DequeueListTests {
 
     assertFalse(new DequeueList<>().removeAll(Objects::isNull));
     assertFalse(new DequeueList<>(0).removeAll(Objects::isNull));
+
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("1");
+    list.add("4");
+    list.add("3");
+    list.add("4");
+    list.add("1");
+    assertFalse(list.removeAll(List.of("0", "2")));
+    assertTrue(list.removeAll(List.of("1", "3")));
+    assertEquals(List.of("4", "4"), list);
+
+    var l1 = new DequeueList<Integer>();
+    l1.add(1);
+    l1.add(2);
+    l1.add(null);
+    l1.add(3);
+    assertThrows(NullPointerException.class, () -> l1.removeAll(e -> e < 4));
+    var r1 = new DequeueList<Integer>();
+    r1.add(null);
+    r1.add(3);
+    assertEquals(r1, l1);
+
+    var l2 = new DequeueList<Integer>();
+    l2.add(1);
+    l2.add(2);
+    l2.add(null);
+    l2.add(3);
+    assertThrows(NullPointerException.class, () -> l2.removeAll(e -> e != 2));
+    var r2 = new DequeueList<Integer>();
+    r2.add(2);
+    r2.add(null);
+    r2.add(3);
+    assertEquals(r2, l2);
+
+    var l3 = new DequeueList<Integer>();
+    l3.add(1);
+    l3.add(2);
+    l3.add(null);
+    l3.add(3);
+    assertThrows(NullPointerException.class, () -> l3.removeAll(e -> e > 1));
+    var r3 = new DequeueList<Integer>();
+    r3.add(1);
+    r3.add(null);
+    r3.add(3);
+    assertEquals(r3, l3);
   }
 
   @Test
@@ -1445,6 +1598,7 @@ public class DequeueListTests {
   @Test
   public void removeOccurrence() {
     var list = new DequeueList<String>();
+    assertFalse(list.removeFirstOccurrence(null));
     list.add("1");
     list.add("2");
     list.add("3");
@@ -1474,13 +1628,23 @@ public class DequeueListTests {
 
   @Test
   public void removeRange() {
+    var l = new DequeueList<String>();
+    assertThrows(IndexOutOfBoundsException.class, () -> l.removeRange(-1, 0));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.removeRange(0, 1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.removeRange(1, 2));
+    l.add("1");
+    assertThrows(IndexOutOfBoundsException.class, () -> l.removeRange(0, 2));
+    assertThrows(IllegalArgumentException.class, () -> l.removeRange(0, -1));
+    l.removeRange(0, 0);
+    assertEquals(List.of("1"), l);
+
     // first < last (start)
     var list = new DequeueList<String>();
     list.add("1");
     list.add("2");
     list.add("3");
     list.add("4");
-    list.remove(0, 2);
+    list.removeRange(0, 2);
     assertEquals(List.of("3", "4"), list);
 
     list = new DequeueList<>();
@@ -1488,7 +1652,7 @@ public class DequeueListTests {
     list.add("2");
     list.add("3");
     list.add("4");
-    list.remove(1, 3);
+    list.removeRange(1, 3);
     assertEquals(List.of("1", "4"), list);
 
     list = new DequeueList<>();
@@ -1496,7 +1660,7 @@ public class DequeueListTests {
     list.add("2");
     list.add("3");
     list.add("4");
-    list.remove(2, 4);
+    list.removeRange(2, 4);
     assertEquals(List.of("1", "2"), list);
 
     // first < last (middle)
@@ -1509,7 +1673,7 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.remove(0, 2);
+    list.removeRange(0, 2);
     assertEquals(List.of("3", "4"), list);
 
     list = new DequeueList<>();
@@ -1521,7 +1685,7 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.remove(1, 3);
+    list.removeRange(1, 3);
     assertEquals(List.of("1", "4"), list);
 
     list = new DequeueList<>();
@@ -1533,7 +1697,7 @@ public class DequeueListTests {
     list.add("4");
     list.removeFirst();
     list.removeFirst();
-    list.remove(2, 4);
+    list.removeRange(2, 4);
     assertEquals(List.of("1", "2"), list);
 
     // first < last (end)
@@ -1544,7 +1708,7 @@ public class DequeueListTests {
     list.addFirst("2");
     list.addFirst("1");
     list.removeLast();
-    list.remove(0, 2);
+    list.removeRange(0, 2);
     assertEquals(List.of("3", "4"), list);
 
     list = new DequeueList<>();
@@ -1554,7 +1718,7 @@ public class DequeueListTests {
     list.addFirst("2");
     list.addFirst("1");
     list.removeLast();
-    list.remove(1, 3);
+    list.removeRange(1, 3);
     assertEquals(List.of("1", "4"), list);
 
     list = new DequeueList<>();
@@ -1564,7 +1728,7 @@ public class DequeueListTests {
     list.addFirst("2");
     list.addFirst("1");
     list.removeLast();
-    list.remove(2, 4);
+    list.removeRange(2, 4);
     assertEquals(List.of("1", "2"), list);
 
     // last < first
@@ -1573,7 +1737,7 @@ public class DequeueListTests {
     list.add("4");
     list.addFirst("2");
     list.addFirst("1");
-    list.remove(0, 2);
+    list.removeRange(0, 2);
     assertEquals(List.of("3", "4"), list);
 
     list = new DequeueList<>();
@@ -1581,7 +1745,7 @@ public class DequeueListTests {
     list.add("4");
     list.addFirst("2");
     list.addFirst("1");
-    list.remove(1, 3);
+    list.removeRange(1, 3);
     assertEquals(List.of("1", "4"), list);
 
     list = new DequeueList<>();
@@ -1589,24 +1753,24 @@ public class DequeueListTests {
     list.add("4");
     list.addFirst("2");
     list.addFirst("1");
-    list.remove(2, 4);
+    list.removeRange(2, 4);
     assertEquals(List.of("1", "2"), list);
 
     // corner cases
     list = new DequeueList<>(1);
     list.add("1");
-    list.remove(0, 1);
+    list.removeRange(0, 1);
     assertEquals(List.of(), list);
     list = new DequeueList<>(2);
     list.add("1");
     list.add("2");
-    list.remove(0, 1);
+    list.removeRange(0, 1);
     assertEquals(List.of("2"), list);
     list = new DequeueList<>(2);
     list.add("1");
     list.removeFirst();
     list.add("2");
-    list.remove(0, 1);
+    list.removeRange(0, 1);
     assertEquals(List.of(), list);
     list = new DequeueList<>(2);
     list.add("1");
@@ -1614,8 +1778,50 @@ public class DequeueListTests {
     list.add("1");
     list.add("2");
     list.add("3");
-    list.remove(1, 2);
+    list.removeRange(1, 2);
     assertEquals(List.of("1", "3"), list);
+  }
+
+  @Test
+  @SuppressWarnings("DataFlowIssue")
+  public void retainAll() {
+    var l = new DequeueList<String>();
+    assertThrows(NullPointerException.class, () -> l.retainAll(null));
+    assertTrue(l.isEmpty());
+
+    var list = new DequeueList<String>();
+    list.add("1");
+    list.add("2");
+    list.add("3");
+    list.add("4");
+    assertFalse(list.retainAll(List.of("1", "2", "3", "4")));
+    assertEquals(List.of("1", "2", "3", "4"), list);
+    assertTrue(list.retainAll(List.of("2", "4")));
+    assertEquals(List.of("2", "4"), list);
+
+    list = new DequeueList<>();
+    list.addFirst("2");
+    list.addFirst("1");
+    list.add("3");
+    list.add("4");
+    assertFalse(list.retainAll(List.of("1", "2", "3", "4")));
+    assertEquals(List.of("1", "2", "3", "4"), list);
+    assertTrue(list.retainAll(List.of("2", "4")));
+    assertEquals(List.of("2", "4"), list);
+
+    assertFalse(new DequeueList<>().retainAll(List.of("2", "4")));
+    assertFalse(new DequeueList<>(0).retainAll(List.of("2", "4")));
+
+    list = new DequeueList<>();
+    list.add("1");
+    list.add("1");
+    list.add("4");
+    list.add("3");
+    list.add("4");
+    list.add("1");
+    assertFalse(list.retainAll(List.of("1", "3", "4")));
+    assertTrue(list.retainAll(List.of("4")));
+    assertEquals(List.of("4", "4"), list);
   }
 
   @Test
