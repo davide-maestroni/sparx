@@ -694,7 +694,7 @@ public class DequeueListTests {
       list.add("");
     }
     for (int i = 0; i < 60; i++) {
-      list.remove(list.size() >> 1);
+      list.remove(list.size() - 2);
     }
     assertTrue(list.capacity() < 64);
   }
