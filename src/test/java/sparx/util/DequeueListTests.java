@@ -568,6 +568,10 @@ public class DequeueListTests {
   @SuppressWarnings("ConstantValue")
   public void addIndex() {
     var list = new DequeueList<String>();
+    var l = list;
+    assertThrows(IndexOutOfBoundsException.class, () -> l.remove(-1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.remove(0));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.remove(1));
     assertTrue(list.isEmpty());
     list.add(0, "1");
     assertFalse(list.isEmpty());
@@ -659,43 +663,90 @@ public class DequeueListTests {
     list.removeFirst();
     assertEquals(64, list.capacity());
     for (int i = 0; i < 64; i++) {
-      list.add("");
+      list.add(Integer.toString(i));
     }
     assertEquals(64, list.capacity());
     for (int i = 0; i < 60; i++) {
       list.removeFirst();
     }
+    assertEquals(List.of("60", "61", "62", "63"), list);
     assertTrue(list.capacity() < 64);
 
     list = new DequeueList<>(64, true);
     for (int i = 0; i < 64; i++) {
-      list.add("");
+      list.add(Integer.toString(i));
     }
     for (int i = 0; i < 60; i++) {
       list.remove(list.size() >> 1);
     }
+    assertEquals(List.of("0", "1", "62", "63"), list);
     assertTrue(list.capacity() < 64);
 
     list = new DequeueList<>(64, true);
     for (int i = 0; i < 32; i++) {
-      list.add("");
+      list.add(Integer.toString(32 + i));
     }
     for (int i = 0; i < 32; i++) {
-      list.addFirst("");
+      list.addFirst(Integer.toString(31 - i));
     }
     for (int i = 0; i < 60; i++) {
       list.remove(list.size() >> 1);
     }
+    assertEquals(List.of("0", "1", "62", "63"), list);
     assertTrue(list.capacity() < 64);
 
     list = new DequeueList<>(64, true);
-    list.addFirst("");
+    list.addFirst("0");
     for (int i = 0; i < 63; i++) {
-      list.add("");
+      list.add(Integer.toString(1 + i));
     }
     for (int i = 0; i < 60; i++) {
       list.remove(list.size() - 2);
     }
+    assertEquals(List.of("0", "1", "2", "63"), list);
+    assertTrue(list.capacity() < 64);
+
+    list = new DequeueList<>(64, true);
+    assertEquals(64, list.capacity());
+    list.add("");
+    list.removeFirst();
+    assertEquals(64, list.capacity());
+    for (int i = 0; i < 64; i++) {
+      list.add(Integer.toString(i));
+    }
+    assertEquals(64, list.capacity());
+    list.removeRange(0, 60);
+    assertEquals(List.of("60", "61", "62", "63"), list);
+    assertTrue(list.capacity() < 64);
+
+    list = new DequeueList<>(64, true);
+    for (int i = 0; i < 64; i++) {
+      list.add(Integer.toString(i));
+    }
+    list.add("");
+    list.removeLast();
+    list.removeRange(2, 62);
+    assertEquals(List.of("0", "1", "62", "63"), list);
+    assertTrue(list.capacity() < 64);
+
+    list = new DequeueList<>(64, true);
+    for (int i = 0; i < 32; i++) {
+      list.add(Integer.toString(32 + i));
+    }
+    for (int i = 0; i < 32; i++) {
+      list.addFirst(Integer.toString(31 - i));
+    }
+    list.removeRange(2, 62);
+    assertEquals(List.of("0", "1", "62", "63"), list);
+    assertTrue(list.capacity() < 64);
+
+    list = new DequeueList<>(64, true);
+    list.addFirst("0");
+    for (int i = 0; i < 63; i++) {
+      list.add(Integer.toString(1 + i));
+    }
+    list.removeRange(3, 63);
+    assertEquals(List.of("0", "1", "2", "63"), list);
     assertTrue(list.capacity() < 64);
   }
 
@@ -1540,6 +1591,8 @@ public class DequeueListTests {
   public void removeIndex() {
     var list = new DequeueList<String>();
     var l = list;
+    assertThrows(IndexOutOfBoundsException.class, () -> l.remove(-1));
+    assertThrows(IndexOutOfBoundsException.class, () -> l.remove(0));
     assertThrows(IndexOutOfBoundsException.class, () -> l.remove(1));
     list.add("1");
     list.add("2");

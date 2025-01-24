@@ -176,16 +176,13 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   public void add(final int index, @Nullable final E element) {
-    if (index == 0) {
-      addFirst(element);
-    } else if (index == size) {
-      addLast(element);
-    } else {
-      if (size == data.length) {
-        growCapacity();
-      }
-      addElement(modInc(first, index, data.length), element);
+    if (index < 0 || index > size) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
+    if (size == data.length) {
+      growCapacity();
+    }
+    addElement(modInc(first, index, data.length), element);
   }
 
   /**
@@ -623,6 +620,9 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   public E remove(final int index) {
+    if (index < 0 || index >= size) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
     final E element = get(index);
     removeElement(modInc(first, index, data.length));
     return element;
@@ -1158,7 +1158,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       this.last = index;
     } else {
       final int front = modDec(index, first, capacity);
-      final int back = modDec(last, index, capacity);
+      final int back = modDec(last, index + 1, capacity);
       if (front <= back) {
         if (first <= index) {
           System.arraycopy(data, first, data, first + 1, front);
@@ -1179,8 +1179,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
           data[rightmost] = data[0];
           System.arraycopy(data, 1, data, 0, last);
         }
-        this.data[last] = null;
-        this.last = modDec(last, 1, capacity);
+        this.data[this.last = modDec(last, 1, capacity)] = null;
       }
     }
     --size;
@@ -1258,10 +1257,13 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
           System.arraycopy(data, 0, newData, fromIndex - remainder, last);
         }
       } else {
-        final int front = data.length - first;
+        final int capacity = data.length;
+        final int front = capacity - first;
+        final int frontLength = fromIndex - 1;
+        final int backIndex = modInc(first, toIndex, capacity);
         System.arraycopy(data, first, newData, 0, front);
-        System.arraycopy(data, 0, newData, front, fromIndex);
-        System.arraycopy(data, toIndex, newData, front + fromIndex, last - toIndex);
+        System.arraycopy(data, 0, newData, front, frontLength);
+        System.arraycopy(data, backIndex, newData, front + frontLength, last - backIndex);
       }
       this.data = newData;
       this.first = 0;
