@@ -17,7 +17,7 @@ package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.SizeOverflowException;
 import sparx.util.annotation.Positive;
 
@@ -54,7 +54,7 @@ public class EndsWithIteratorMaterializer<E> extends StatefulIteratorMaterialize
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       final int elementsSize = elementsMaterializer.materializeSize();
-      final DequeueList<E> wrappedElements = new DequeueList<E>(
+      final DequeArrayList<E> wrappedElements = new DequeArrayList<E>(
           SizeOverflowException.safeCast((long) elementsSize + 1));
       while (wrapped.materializeHasNext()) {
         wrappedElements.add(wrapped.materializeNext());

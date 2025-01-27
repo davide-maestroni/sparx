@@ -17,7 +17,7 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class TakeRightIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
@@ -49,7 +49,7 @@ public class TakeRightIteratorMaterializer<E> extends StatefulAutoSkipIteratorMa
     @Override
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      final DequeueList<E> elements = new DequeueList<E>();
+      final DequeArrayList<E> elements = new DequeArrayList<E>();
       final int maxElements = this.maxElements;
       while (wrapped.materializeHasNext()) {
         elements.add(wrapped.materializeNext());
@@ -57,7 +57,7 @@ public class TakeRightIteratorMaterializer<E> extends StatefulAutoSkipIteratorMa
           elements.removeFirst();
         }
       }
-      return setState(new DequeueToIteratorMaterializer<E>(elements)).materializeHasNext();
+      return setState(new DequeToIteratorMaterializer<E>(elements)).materializeHasNext();
     }
 
     @Override

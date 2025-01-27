@@ -16,13 +16,13 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 
-public class DequeueToIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
+public class DequeToIteratorMaterializer<E> extends AutoSkipIteratorMaterializer<E> {
 
-  private final DequeueList<E> elements;
+  private final DequeArrayList<E> elements;
 
-  public DequeueToIteratorMaterializer(@NotNull final DequeueList<E> elements) {
+  public DequeToIteratorMaterializer(@NotNull final DequeArrayList<E> elements) {
     this.elements = elements;
   }
 

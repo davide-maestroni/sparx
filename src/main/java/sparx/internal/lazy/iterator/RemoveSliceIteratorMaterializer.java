@@ -17,7 +17,7 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
@@ -73,7 +73,7 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        final DequeueList<E> elements = new DequeueList<E>();
+        final DequeArrayList<E> elements = new DequeArrayList<E>();
         do {
           elements.add(wrapped.materializeNext());
         } while (wrapped.materializeHasNext());
@@ -92,7 +92,7 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
         } else {
           materializedLength = 0;
         }
-        return setState(new MaterialState(new DequeueToIteratorMaterializer<E>(elements),
+        return setState(new MaterialState(new DequeToIteratorMaterializer<E>(elements),
             Math.max(0, materializedStart), materializedLength)).materializeHasNext();
       }
       setEmptyState();
@@ -203,13 +203,13 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulAutoSkipIterator
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (pos == start) {
-        final DequeueList<E> elements = new DequeueList<E>();
+        final DequeArrayList<E> elements = new DequeArrayList<E>();
         while (wrapped.materializeHasNext()) {
           elements.add(wrapped.materializeNext());
         }
         final int materializedEnd = elements.size() + pos + end;
         final IteratorMaterializer<E> materializer = setState(
-            new DequeueToIteratorMaterializer<E>(elements));
+            new DequeToIteratorMaterializer<E>(elements));
         final int toSkip = Math.max(0, materializedEnd - start);
         if (toSkip > 0) {
           materializer.materializeSkip(toSkip);

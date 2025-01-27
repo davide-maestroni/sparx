@@ -31,7 +31,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
@@ -123,7 +123,7 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
       final ArrayList<FutureConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
-        final DequeueList<E> materialized = new DequeueList<E>();
+        final DequeArrayList<E> materialized = new DequeArrayList<E>();
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
@@ -131,7 +131,7 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
               setDone(EmptyIteratorFutureMaterializer.<E>instance());
               consumeElements(Collections.<E>emptyList());
             } else {
-              setDone(new DequeueToIteratorFutureMaterializer<E>(materialized, context, index));
+              setDone(new DequeToIteratorFutureMaterializer<E>(materialized, context, index));
               consumeElements(materialized.clone());
             }
           }
@@ -155,7 +155,7 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
                     consumeElements(Collections.<E>emptyList());
                   } else {
                     setDone(
-                        new DequeueToIteratorFutureMaterializer<E>(materialized, context, index));
+                        new DequeToIteratorFutureMaterializer<E>(materialized, context, index));
                     consumeElements(materialized.clone());
                   }
                 }

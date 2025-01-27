@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.function.BinaryFunction;
 import sparx.util.function.IndexedPredicate;
 
@@ -49,7 +49,7 @@ public class RemoveLastWhereIteratorFutureMaterializer<E> extends
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final DequeueList<E> cachedElements = new DequeueList<E>();
+    private final DequeArrayList<E> cachedElements = new DequeArrayList<E>();
     private final IndexedPredicate<? super E> predicate;
     private final BinaryFunction<List<E>, List<E>, List<E>> prependFunction;
     private final IteratorFutureMaterializer<E> wrapped;
@@ -111,14 +111,14 @@ public class RemoveLastWhereIteratorFutureMaterializer<E> extends
           }
         });
       } else {
-        final DequeueList<E> cachedElements = this.cachedElements;
+        final DequeArrayList<E> cachedElements = this.cachedElements;
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
             if (!cachedElements.isEmpty()) {
               cachedElements.removeFirst();
               elementsMaterializer = new InsertAllIteratorFutureMaterializer<E>(
-                  new DequeueToIteratorFutureMaterializer<E>(cachedElements, context), wrapped,
+                  new DequeToIteratorFutureMaterializer<E>(cachedElements, context), wrapped,
                   context, cancelException, prependFunction, currentIndex());
               materializeUntilConsumed();
             } else {

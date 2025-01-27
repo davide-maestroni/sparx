@@ -41,7 +41,7 @@ import sparx.internal.future.iterator.AppendIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CollectionToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountIteratorFutureMaterializer;
 import sparx.internal.future.iterator.CountWhereIteratorFutureMaterializer;
-import sparx.internal.future.iterator.DequeueToIteratorFutureMaterializer;
+import sparx.internal.future.iterator.DequeToIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DiffIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DistinctByIteratorFutureMaterializer;
 import sparx.internal.future.iterator.DropIteratorFutureMaterializer;
@@ -194,7 +194,7 @@ import sparx.internal.future.list.WrappingListFutureMaterializer;
 import sparx.itf.Collection;
 import sparx.itf.Traverser;
 import sparx.util.DeadLockException;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.Require;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
@@ -283,14 +283,14 @@ class future extends Sparx {
           new ElementToIteratorFutureMaterializer<Boolean>(false));
     }
 
-    private static @NotNull <E> Function<DequeueList<E>, Iterator<E>> getDequeueToIteratorFunction(
+    private static @NotNull <E> Function<DequeArrayList<E>, Iterator<E>> getDequeueToIteratorFunction(
         @NotNull final ExecutionContext context,
         @NotNull final AtomicReference<CancellationException> cancelException) {
-      return new Function<DequeueList<E>, Iterator<E>>() {
+      return new Function<DequeArrayList<E>, Iterator<E>>() {
         @Override
-        public Iterator<E> apply(final DequeueList<E> list) {
+        public Iterator<E> apply(final DequeArrayList<E> list) {
           return new Iterator<E>(context, cancelException,
-              new DequeueToIteratorFutureMaterializer<E>(list, context));
+              new DequeToIteratorFutureMaterializer<E>(list, context));
         }
       };
     }

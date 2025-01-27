@@ -30,7 +30,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
@@ -118,7 +118,7 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
       final ArrayList<FutureConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
-        final DequeueList<F> elements = new DequeueList<F>();
+        final DequeArrayList<F> elements = new DequeArrayList<F>();
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {
@@ -126,7 +126,7 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
               setDone(EmptyIteratorFutureMaterializer.<F>instance());
               consumeElements(Collections.<F>emptyList());
             } else {
-              setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context, wrappedIndex));
+              setDone(new DequeToIteratorFutureMaterializer<F>(elements, context, wrappedIndex));
               consumeElements(elements.clone());
             }
           }

@@ -30,7 +30,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implements
@@ -41,9 +41,9 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
   private final ArrayList<FutureConsumer<List<F>>> elementsConsumers = new ArrayList<FutureConsumer<List<F>>>(
       2);
   private final Logger logger;
-  private final DequeueList<FutureConsumer<DequeueList<F>>> nextElementConsumers = new DequeueList<FutureConsumer<DequeueList<F>>>(
+  private final DequeArrayList<FutureConsumer<DequeArrayList<F>>> nextElementConsumers = new DequeArrayList<FutureConsumer<DequeArrayList<F>>>(
       2);
-  private final DequeueList<F> nextElements = new DequeueList<F>(1);
+  private final DequeArrayList<F> nextElements = new DequeArrayList<F>(1);
   private final AbstractIteratorFutureMaterializer<F> parent;
   private final IteratorFutureMaterializer<E> wrapped;
 
@@ -103,16 +103,16 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
     final ArrayList<FutureConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
     elementsConsumers.add(consumer);
     if (elementsConsumers.size() == 1) {
-      final DequeueList<F> elements = new DequeueList<F>();
-      materializeNext(new FutureConsumer<DequeueList<F>>() {
+      final DequeArrayList<F> elements = new DequeArrayList<F>();
+      materializeNext(new FutureConsumer<DequeArrayList<F>>() {
         @Override
-        public void accept(final DequeueList<F> nextElements) throws Exception {
+        public void accept(final DequeArrayList<F> nextElements) throws Exception {
           if (nextElements.isEmpty()) {
             if (elements.isEmpty()) {
               parent.setDone(EmptyIteratorFutureMaterializer.<F>instance());
               consumeElements(Collections.<F>emptyList());
             } else {
-              parent.setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context, index));
+              parent.setDone(new DequeToIteratorFutureMaterializer<F>(elements, context, index));
               consumeElements(elements.clone());
             }
           } else {
@@ -132,9 +132,9 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
 
   @Override
   public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
-    materializeNext(new FutureConsumer<DequeueList<F>>() {
+    materializeNext(new FutureConsumer<DequeArrayList<F>>() {
       @Override
-      public void accept(final DequeueList<F> nextElements) throws Exception {
+      public void accept(final DequeArrayList<F> nextElements) throws Exception {
         if (nextElements.isEmpty()) {
           parent.setDone(EmptyIteratorFutureMaterializer.<F>instance());
           consumer.accept(false);
@@ -167,9 +167,9 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
 
   @Override
   public void materializeNext(@NotNull final IndexedFutureConsumer<F> consumer) {
-    materializeNext(new FutureConsumer<DequeueList<F>>() {
+    materializeNext(new FutureConsumer<DequeArrayList<F>>() {
       @Override
-      public void accept(final DequeueList<F> nextElements) throws Exception {
+      public void accept(final DequeArrayList<F> nextElements) throws Exception {
         if (nextElements.isEmpty()) {
           parent.setDone(EmptyIteratorFutureMaterializer.<F>instance());
           consumer.complete(0);
@@ -188,9 +188,9 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
 
   @Override
   public void materializeNextWhile(@NotNull final IndexedFuturePredicate<F> predicate) {
-    materializeNext(new FutureConsumer<DequeueList<F>>() {
+    materializeNext(new FutureConsumer<DequeArrayList<F>>() {
       @Override
-      public void accept(final DequeueList<F> nextElements) throws Exception {
+      public void accept(final DequeArrayList<F> nextElements) throws Exception {
         if (nextElements.isEmpty()) {
           parent.setDone(EmptyIteratorFutureMaterializer.<F>instance());
           predicate.complete(0);
@@ -210,11 +210,11 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
   @Override
   public void materializeSkip(@Positive final int count,
       @NotNull final FutureConsumer<Integer> consumer) {
-    materializeNext(new FutureConsumer<DequeueList<F>>() {
+    materializeNext(new FutureConsumer<DequeArrayList<F>>() {
       private int skipped;
 
       @Override
-      public void accept(final DequeueList<F> nextElements) throws Exception {
+      public void accept(final DequeArrayList<F> nextElements) throws Exception {
         if (nextElements.isEmpty()) {
           parent.setDone(EmptyIteratorFutureMaterializer.<F>instance());
           consumer.accept(skipped);
@@ -273,8 +273,8 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
   abstract F mapElement(E element) throws Exception;
 
   void materializeUntilConsumed() {
-    final DequeueList<F> nextElements = this.nextElements;
-    final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
+    final DequeArrayList<F> nextElements = this.nextElements;
+    final DequeArrayList<FutureConsumer<DequeArrayList<F>>> elementConsumers = this.nextElementConsumers;
     if (!nextElements.isEmpty()) {
       while (!elementConsumers.isEmpty()) {
         if (nextElements.isEmpty()) {
@@ -310,8 +310,8 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
   }
 
   void setComplete() {
-    final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
-    for (final FutureConsumer<DequeueList<F>> consumer : elementConsumers) {
+    final DequeArrayList<FutureConsumer<DequeArrayList<F>>> elementConsumers = this.nextElementConsumers;
+    for (final FutureConsumer<DequeArrayList<F>> consumer : elementConsumers) {
       safeConsume(consumer, nextElements, logger);
     }
     elementConsumers.clear();
@@ -319,7 +319,7 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
 
   boolean setNextElement(final E element) throws Exception {
     if (addElement(element)) {
-      final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
+      final DequeArrayList<FutureConsumer<DequeArrayList<F>>> elementConsumers = this.nextElementConsumers;
       nextElements.add(mapElement(element));
       while (!elementConsumers.isEmpty()) {
         if (nextElements.isEmpty()) {
@@ -342,7 +342,7 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
       }
     }
     if (added) {
-      final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
+      final DequeArrayList<FutureConsumer<DequeArrayList<F>>> elementConsumers = this.nextElementConsumers;
       while (!elementConsumers.isEmpty()) {
         if (nextElements.isEmpty()) {
           return true;
@@ -356,7 +356,7 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
   }
 
   void setNextError(@NotNull final Exception error) {
-    final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
+    final DequeArrayList<FutureConsumer<DequeArrayList<F>>> elementConsumers = this.nextElementConsumers;
     while (!elementConsumers.isEmpty()) {
       safeConsumeError(elementConsumers.getFirst(), error, logger);
       elementConsumers.removeFirst();
@@ -383,8 +383,8 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
     elementsConsumers.clear();
   }
 
-  private void materializeNext(@NotNull final FutureConsumer<DequeueList<F>> consumer) {
-    final DequeueList<FutureConsumer<DequeueList<F>>> elementConsumers = this.nextElementConsumers;
+  private void materializeNext(@NotNull final FutureConsumer<DequeArrayList<F>> consumer) {
+    final DequeArrayList<FutureConsumer<DequeArrayList<F>>> elementConsumers = this.nextElementConsumers;
     elementConsumers.add(consumer);
     if (elementConsumers.size() == 1) {
       materializeUntilConsumed();

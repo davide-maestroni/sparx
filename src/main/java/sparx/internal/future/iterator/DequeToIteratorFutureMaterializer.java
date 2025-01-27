@@ -30,27 +30,27 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
-public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMaterializer<E> {
+public class DequeToIteratorFutureMaterializer<E> implements IteratorFutureMaterializer<E> {
 
   private static final Logger LOGGER = Logger.getLogger(
-      DequeueToIteratorFutureMaterializer.class.getName());
+      DequeToIteratorFutureMaterializer.class.getName());
 
   private final ExecutionContext context;
-  private final DequeueList<E> elements;
+  private final DequeArrayList<E> elements;
   private final int knownSize;
   private final int offset;
 
   private int pos;
 
-  public DequeueToIteratorFutureMaterializer(@NotNull final DequeueList<E> elements,
+  public DequeToIteratorFutureMaterializer(@NotNull final DequeArrayList<E> elements,
       @NotNull final ExecutionContext context) {
     this(elements, context, 0);
   }
 
-  public DequeueToIteratorFutureMaterializer(@NotNull final DequeueList<E> elements,
+  public DequeToIteratorFutureMaterializer(@NotNull final DequeArrayList<E> elements,
       @NotNull final ExecutionContext context, final int offset) {
     this.elements = elements;
     this.context = context;
@@ -131,7 +131,7 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
 
   @Override
   public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
-    final DequeueList<E> elements = this.elements;
+    final DequeArrayList<E> elements = this.elements;
     try {
       if (!elements.isEmpty()) {
         safeConsume(consumer, elements.size(), offset + pos++, elements.removeFirst(), LOGGER);
@@ -149,7 +149,7 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
     if (throughput < Integer.MAX_VALUE) {
       new NextTask(predicate, throughput).run();
     } else {
-      final DequeueList<E> elements = this.elements;
+      final DequeArrayList<E> elements = this.elements;
       try {
         while (!elements.isEmpty()) {
           if (!safeConsume(predicate, elements.size(), offset + pos++, elements.removeFirst(),
@@ -169,7 +169,7 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
       @NotNull final FutureConsumer<Integer> consumer) {
     try {
       int skipped = 0;
-      final DequeueList<E> elements = this.elements;
+      final DequeArrayList<E> elements = this.elements;
       while (skipped < count && !elements.isEmpty()) {
         elements.removeFirst();
         ++skipped;
@@ -239,7 +239,7 @@ public class DequeueToIteratorFutureMaterializer<E> implements IteratorFutureMat
     protected void runWithContext() {
       final int throughput = this.throughput;
       final IndexedFuturePredicate<E> predicate = this.predicate;
-      final DequeueList<E> elements = DequeueToIteratorFutureMaterializer.this.elements;
+      final DequeArrayList<E> elements = DequeToIteratorFutureMaterializer.this.elements;
       try {
         for (int n = 0; n < throughput && !elements.isEmpty(); ++n) {
           if (!safeConsume(predicate, elements.size(), offset + pos++, elements.removeFirst(),

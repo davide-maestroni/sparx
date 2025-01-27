@@ -31,7 +31,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class TakeIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
@@ -134,7 +134,7 @@ public class TakeIteratorFutureMaterializer<E> extends AbstractIteratorFutureMat
           setDone(EmptyIteratorFutureMaterializer.<E>instance());
           consumeElements(Collections.<E>emptyList());
         } else {
-          final DequeueList<E> elements = new DequeueList<E>();
+          final DequeArrayList<E> elements = new DequeArrayList<E>();
           wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
             @Override
             public void cancellableComplete(final int size) throws Exception {
@@ -142,7 +142,7 @@ public class TakeIteratorFutureMaterializer<E> extends AbstractIteratorFutureMat
                 setDone(EmptyIteratorFutureMaterializer.<E>instance());
                 consumeElements(Collections.<E>emptyList());
               } else {
-                setDone(new DequeueToIteratorFutureMaterializer<E>(elements, context, index));
+                setDone(new DequeToIteratorFutureMaterializer<E>(elements, context, index));
                 consumeElements(elements.clone());
               }
             }
@@ -152,7 +152,7 @@ public class TakeIteratorFutureMaterializer<E> extends AbstractIteratorFutureMat
                 throws Exception {
               elements.add(element);
               if (++ImmaterialState.this.index >= maxElements) {
-                setDone(new DequeueToIteratorFutureMaterializer<E>(elements, context, index));
+                setDone(new DequeToIteratorFutureMaterializer<E>(elements, context, index));
                 consumeElements(elements.clone());
                 return false;
               }

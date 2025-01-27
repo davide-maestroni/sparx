@@ -125,7 +125,7 @@ import sparx.internal.future.iterator.UnionIteratorFutureMaterializer;
 import sparx.internal.future.list.ListToListFutureMaterializer;
 import sparx.lazy.Iterator;
 import sparx.lazy.List;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.UncheckedException.UncheckedInterruptedException;
@@ -3299,7 +3299,7 @@ public class FutureIteratorTests {
 
   private static class TestExecutor implements Executor {
 
-    private final DequeueList<Runnable> commands = new DequeueList<>();
+    private final DequeArrayList<Runnable> commands = new DequeArrayList<>();
 
     @SuppressWarnings("UnusedReturnValue")
     public int run(final int maxCommands) {

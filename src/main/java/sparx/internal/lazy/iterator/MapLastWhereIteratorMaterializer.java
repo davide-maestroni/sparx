@@ -16,7 +16,7 @@
 package sparx.internal.lazy.iterator;
 
 import org.jetbrains.annotations.NotNull;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.UncheckedException;
 import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
@@ -32,9 +32,9 @@ public class MapLastWhereIteratorMaterializer<E> extends StatefulAutoSkipIterato
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final DequeueList<E> elements = new DequeueList<E>();
+    private final DequeArrayList<E> elements = new DequeArrayList<E>();
     private final IndexedFunction<? super E, ? extends E> mapper;
-    private final IteratorMaterializer<E> materializer = new DequeueToIteratorMaterializer<E>(
+    private final IteratorMaterializer<E> materializer = new DequeToIteratorMaterializer<E>(
         elements);
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
@@ -88,7 +88,7 @@ public class MapLastWhereIteratorMaterializer<E> extends StatefulAutoSkipIterato
 //          throw UncheckedException.throwUnchecked(e);
 //        }
 //      }
-      final DequeueList<E> elements = this.elements;
+      final DequeArrayList<E> elements = this.elements;
       if (!elements.isEmpty()) {
         return materializer;
       }

@@ -26,7 +26,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.list.ListFutureMaterializer;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class IncludesSliceIteratorFutureMaterializer<E> extends
@@ -104,7 +104,7 @@ public class IncludesSliceIteratorFutureMaterializer<E> extends
     private class MaterializingFutureConsumer extends
         CancellableMultiFutureConsumer<Boolean, Object> {
 
-      private final DequeueList<Object> buffer = new DequeueList<Object>();
+      private final DequeArrayList<Object> buffer = new DequeArrayList<Object>();
 
       private int elementsIndex;
       private boolean isWrapped = true;

@@ -17,7 +17,7 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
@@ -73,7 +73,7 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        final DequeueList<E> elements = new DequeueList<E>();
+        final DequeArrayList<E> elements = new DequeArrayList<E>();
         do {
           elements.add(wrapped.materializeNext());
         } while (wrapped.materializeHasNext());
@@ -92,7 +92,7 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
         } else {
           materializedLength = 0;
         }
-        return setState(new MaterialState(new DequeueToIteratorMaterializer<E>(elements),
+        return setState(new MaterialState(new DequeToIteratorMaterializer<E>(elements),
             Math.max(0, materializedStart), materializedLength)).materializeHasNext();
       }
       setEmptyState();
@@ -210,7 +210,7 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
         if (start > 0) {
           wrapped.materializeSkip(start);
         }
-        final DequeueList<E> elements = new DequeueList<E>();
+        final DequeArrayList<E> elements = new DequeArrayList<E>();
         while (wrapped.materializeHasNext()) {
           elements.add(wrapped.materializeNext());
         }
@@ -222,7 +222,7 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
         while (elements.size() > materializeLength) {
           elements.removeLast();
         }
-        return setState(new DequeueToIteratorMaterializer<E>(elements)).materializeHasNext();
+        return setState(new DequeToIteratorMaterializer<E>(elements)).materializeHasNext();
       }
       if (wrapped.materializeHasNext()) {
         return true;
@@ -246,7 +246,7 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
       if (start > 0) {
         wrapped.materializeSkip(start);
       }
-      final DequeueList<E> elements = new DequeueList<E>();
+      final DequeArrayList<E> elements = new DequeArrayList<E>();
       while (wrapped.materializeHasNext()) {
         elements.add(wrapped.materializeNext());
       }
@@ -259,7 +259,7 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
         elements.removeLast();
       }
       if (count < elements.size()) {
-        return setState(new DequeueToIteratorMaterializer<E>(elements)).materializeSkip(count);
+        return setState(new DequeToIteratorMaterializer<E>(elements)).materializeSkip(count);
       }
       setEmptyState();
       return elements.size();

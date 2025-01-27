@@ -22,7 +22,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.list.ListFutureMaterializer;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 
 public class FindIndexOfSliceIteratorFutureMaterializer<E> extends
     AbstractIteratorFutureMaterializer<Integer> {
@@ -86,7 +86,7 @@ public class FindIndexOfSliceIteratorFutureMaterializer<E> extends
 
     private class MaterializingFutureConsumer extends CancellableIndexedFutureConsumer<E> {
 
-      private final DequeueList<E> buffer = new DequeueList<E>();
+      private final DequeArrayList<E> buffer = new DequeArrayList<E>();
       private int elementsIndex;
       private int index;
       private String taskID;

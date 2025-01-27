@@ -25,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.list.ListFutureMaterializer;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class EndsWithIteratorFutureMaterializer<E> extends
@@ -127,7 +127,7 @@ public class EndsWithIteratorFutureMaterializer<E> extends
 
     private class MaterializingFutureConsumer extends CancellableIndexedFuturePredicate<E> {
 
-      private final DequeueList<Object> elements = new DequeueList<Object>();
+      private final DequeArrayList<Object> elements = new DequeArrayList<Object>();
       private final int elementsSize;
 
       private String taskID;

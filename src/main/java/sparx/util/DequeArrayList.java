@@ -32,7 +32,7 @@ import sparx.util.annotation.NotNegative;
 import sparx.util.annotation.Positive;
 import sparx.util.function.Predicate;
 
-public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<E>, RandomAccess,
+public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deque<E>, RandomAccess,
     Serializable {
 
   private static final int DEFAULT_SIZE = 8;
@@ -53,7 +53,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
   /**
    * Creates a new empty list with a pre-defined initial capacity.
    */
-  public DequeueList() {
+  public DequeArrayList() {
     this(false);
   }
 
@@ -63,7 +63,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    * @param autoShrink if the capacity automatically shrinks when elements are removed from the
    *                   list
    */
-  public DequeueList(final boolean autoShrink) {
+  public DequeArrayList(final boolean autoShrink) {
     data = new Object[DEFAULT_SIZE];
     this.autoShrink = autoShrink;
     updateShrinkThreshold();
@@ -75,7 +75,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    * @param minCapacity the minimum capacity
    * @throws IllegalArgumentException if the specified capacity is less than 1
    */
-  public DequeueList(@Positive final int minCapacity) {
+  public DequeArrayList(@Positive final int minCapacity) {
     this(minCapacity, false);
   }
 
@@ -87,7 +87,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    *                    list
    * @throws IllegalArgumentException if the specified capacity is less than 0
    */
-  public DequeueList(@NotNegative final int minCapacity, final boolean autoShrink) {
+  public DequeArrayList(@NotNegative final int minCapacity, final boolean autoShrink) {
     if (minCapacity == 0) {
       data = EMPTY_DATA;
     } else {
@@ -104,7 +104,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    * @param collection the collection whose elements are to be placed into this list
    * @throws NullPointerException if the specified collection is null
    */
-  public DequeueList(@NotNull final Collection<? extends E> collection) {
+  public DequeArrayList(@NotNull final Collection<? extends E> collection) {
     this(collection, false);
   }
 
@@ -117,9 +117,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    *                   list
    * @throws NullPointerException if the specified collection is null
    */
-  public DequeueList(@NotNull final Collection<? extends E> collection, final boolean autoShrink) {
-    if (collection.getClass() == DequeueList.class) {
-      final DequeueList<?> other = (DequeueList<?>) collection;
+  public DequeArrayList(@NotNull final Collection<? extends E> collection,
+      final boolean autoShrink) {
+    if (collection.getClass() == DequeArrayList.class) {
+      final DequeArrayList<?> other = (DequeArrayList<?>) collection;
       data = Arrays.copyOf(other.data, other.data.length);
       first = other.first;
       last = other.last;
@@ -279,10 +280,10 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
    */
   @Override
   @SuppressWarnings("unchecked")
-  public DequeueList<E> clone() {
+  public DequeArrayList<E> clone() {
     try {
       final Object[] data = this.data;
-      final DequeueList<E> clone = (DequeueList<E>) super.clone();
+      final DequeArrayList<E> clone = (DequeArrayList<E>) super.clone();
       clone.data = Arrays.copyOf(data, data.length);
       return clone;
     } catch (final CloneNotSupportedException e) {
@@ -1351,7 +1352,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         throw new NoSuchElementException();
       }
       isRemoved = false;
-      final Object[] data = DequeueList.this.data;
+      final Object[] data = DequeArrayList.this.data;
       return (E) data[modInc(index++, first, data.length)];
     }
 
@@ -1421,7 +1422,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       }
       isForward = false;
       isRemoved = false;
-      final Object[] data = DequeueList.this.data;
+      final Object[] data = DequeArrayList.this.data;
       return (E) data[modInc(--index, first, data.length)];
     }
 
@@ -1456,7 +1457,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
       if (size == 0) {
         throw new IndexOutOfBoundsException("0");
       }
-      final Object[] data = DequeueList.this.data;
+      final Object[] data = DequeArrayList.this.data;
       if (isForward) {
         data[modInc(index - 1, first, data.length)] = element;
       } else {
@@ -1485,7 +1486,7 @@ public class DequeueList<E> extends AbstractList<E> implements Cloneable, Deque<
         throw new NoSuchElementException();
       }
       isRemoved = false;
-      final Object[] data = DequeueList.this.data;
+      final Object[] data = DequeArrayList.this.data;
       return (E) data[modInc(--index, first, data.length)];
     }
 

@@ -22,7 +22,7 @@ import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ContextTask;
 import sparx.concurrent.ExecutionContext;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.function.TernaryFunction;
 
 public class RemoveSliceIteratorFutureMaterializer<E> extends
@@ -203,7 +203,7 @@ public class RemoveSliceIteratorFutureMaterializer<E> extends
 
   private class PendingState extends ProgressiveIteratorFutureMaterializerState<E, E> {
 
-    private final DequeueList<E> cachedElements = new DequeueList<E>();
+    private final DequeArrayList<E> cachedElements = new DequeArrayList<E>();
     private final ExecutionContext context;
     private final int end;
     private final int start;
@@ -253,7 +253,7 @@ public class RemoveSliceIteratorFutureMaterializer<E> extends
           }
         });
       } else {
-        final DequeueList<E> cachedElements = this.cachedElements;
+        final DequeArrayList<E> cachedElements = this.cachedElements;
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
@@ -262,7 +262,7 @@ public class RemoveSliceIteratorFutureMaterializer<E> extends
               for (int i = 0; i < endIndex; ++i) {
                 cachedElements.removeFirst();
               }
-              elementsMaterializer = new DequeueToIteratorFutureMaterializer<E>(cachedElements,
+              elementsMaterializer = new DequeToIteratorFutureMaterializer<E>(cachedElements,
                   context, currentIndex());
               materializeUntilConsumed();
             } else {

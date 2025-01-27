@@ -17,7 +17,7 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIteratorMaterializer<E> {
@@ -76,7 +76,7 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        final DequeueList<E> elements = new DequeueList<E>();
+        final DequeArrayList<E> elements = new DequeArrayList<E>();
         do {
           elements.add(wrapped.materializeNext());
         } while (wrapped.materializeHasNext());
@@ -95,7 +95,7 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
         }
         final int materializedLength = Math.max(0, materializedEnd - materializedStart);
         return setState(
-            new MaterialState(new DequeueToIteratorMaterializer<E>(elements), materializedStart,
+            new MaterialState(new DequeToIteratorMaterializer<E>(elements), materializedStart,
                 materializedLength, elementsMaterializer)).materializeHasNext();
       }
       setEmptyState();
@@ -210,7 +210,7 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
         return true;
       }
       if (wrapped.materializeHasNext()) {
-        final DequeueList<E> elements = new DequeueList<E>();
+        final DequeArrayList<E> elements = new DequeArrayList<E>();
         do {
           elements.add(wrapped.materializeNext());
         } while (wrapped.materializeHasNext());
@@ -220,7 +220,7 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
           elements.removeFirst();
         }
         return setState(
-            new InsertAllIteratorMaterializer<E>(new DequeueToIteratorMaterializer<E>(elements),
+            new InsertAllIteratorMaterializer<E>(new DequeToIteratorMaterializer<E>(elements),
                 elementsMaterializer)).materializeHasNext();
       }
       setEmptyState();

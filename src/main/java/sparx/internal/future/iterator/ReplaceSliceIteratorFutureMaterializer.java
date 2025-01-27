@@ -30,7 +30,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 import sparx.util.function.BinaryFunction;
 
@@ -310,12 +310,12 @@ public class ReplaceSliceIteratorFutureMaterializer<E> extends
             if (materializedStart >= materializedEnd) {
               materializer = new ListToIteratorFutureMaterializer<E>(elements, context);
             } else {
-              final DequeueList<E> materialized = new DequeueList<E>();
+              final DequeArrayList<E> materialized = new DequeArrayList<E>();
               materialized.addAll(elements.subList(0, materializedStart));
               if (materializedEnd < size) {
                 materialized.addAll(elements.subList(materializedEnd, size));
               }
-              materializer = new DequeueToIteratorFutureMaterializer<E>(materialized, context);
+              materializer = new DequeToIteratorFutureMaterializer<E>(materialized, context);
             }
             final IteratorFutureMaterializer<E> newState = setState(
                 new InsertAllAfterIteratorFutureMaterializer<E>(materializer, materializedStart,
@@ -488,7 +488,7 @@ public class ReplaceSliceIteratorFutureMaterializer<E> extends
 
   private class PendingState extends ProgressiveIteratorFutureMaterializerState<E, E> {
 
-    private final DequeueList<E> cachedElements = new DequeueList<E>();
+    private final DequeArrayList<E> cachedElements = new DequeArrayList<E>();
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final int end;
@@ -552,7 +552,7 @@ public class ReplaceSliceIteratorFutureMaterializer<E> extends
           }
         });
       } else {
-        final DequeueList<E> cachedElements = this.cachedElements;
+        final DequeArrayList<E> cachedElements = this.cachedElements;
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) {
@@ -562,7 +562,7 @@ public class ReplaceSliceIteratorFutureMaterializer<E> extends
                 cachedElements.removeFirst();
               }
               elementsMaterializer = new InsertAllIteratorFutureMaterializer<E>(
-                  new DequeueToIteratorFutureMaterializer<E>(cachedElements, context,
+                  new DequeToIteratorFutureMaterializer<E>(cachedElements, context,
                       currentIndex()), patchMaterializer, context, cancelException,
                   prependFunction);
             } else {

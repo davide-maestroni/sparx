@@ -30,7 +30,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedFunction;
 
@@ -348,7 +348,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
 
     private class MaterializingFutureConsumer extends CancellableIndexedFuturePredicate<F> {
 
-      private final DequeueList<F> elements = new DequeueList<F>();
+      private final DequeArrayList<F> elements = new DequeArrayList<F>();
 
       private String taskID;
 
@@ -361,7 +361,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
               setDone(EmptyIteratorFutureMaterializer.<F>instance());
               consumeElements(Collections.<F>emptyList());
             } else {
-              setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context, index));
+              setDone(new DequeToIteratorFutureMaterializer<F>(elements, context, index));
               consumeElements(elements.clone());
             }
           } else {

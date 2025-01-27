@@ -32,7 +32,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public abstract class TransformIteratorFutureMaterializer<E, F> extends
@@ -303,7 +303,7 @@ public abstract class TransformIteratorFutureMaterializer<E, F> extends
     public void materializeElements(@NotNull final FutureConsumer<List<F>> consumer) {
       try {
         final Iterator<F> iterator = this.iterator;
-        final DequeueList<F> elements = new DequeueList<F>();
+        final DequeArrayList<F> elements = new DequeArrayList<F>();
         while (iterator.hasNext()) {
           elements.add(iterator.next());
         }
@@ -311,7 +311,7 @@ public abstract class TransformIteratorFutureMaterializer<E, F> extends
           setDone(EmptyIteratorFutureMaterializer.<F>instance());
           safeConsume(consumer, Collections.<F>emptyList(), LOGGER);
         } else {
-          setDone(new DequeueToIteratorFutureMaterializer<F>(elements, context));
+          setDone(new DequeToIteratorFutureMaterializer<F>(elements, context));
           safeConsume(consumer, elements.clone(), LOGGER);
         }
       } catch (final Exception error) {

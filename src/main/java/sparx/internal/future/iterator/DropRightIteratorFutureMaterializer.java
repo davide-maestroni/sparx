@@ -30,7 +30,7 @@ import sparx.concurrent.ExecutionContext;
 import sparx.internal.future.FutureConsumer;
 import sparx.internal.future.IndexedFutureConsumer;
 import sparx.internal.future.IndexedFuturePredicate;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
@@ -56,8 +56,8 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
   private class ImmaterialState implements IteratorFutureMaterializer<E> {
 
-    private final DequeueList<E> buffer;
-    private final ArrayList<FutureConsumer<DequeueList<E>>> bufferConsumers = new ArrayList<FutureConsumer<DequeueList<E>>>(
+    private final DequeArrayList<E> buffer;
+    private final ArrayList<FutureConsumer<DequeArrayList<E>>> bufferConsumers = new ArrayList<FutureConsumer<DequeArrayList<E>>>(
         2);
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
@@ -75,7 +75,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       this.maxElements = maxElements;
       this.context = context;
       this.cancelException = cancelException;
-      buffer = new DequeueList<E>(Math.min(64, maxElements));
+      buffer = new DequeArrayList<E>(Math.min(64, maxElements));
     }
 
     @Override
@@ -118,9 +118,9 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
     @Override
     public void materializeElements(@NotNull final FutureConsumer<List<E>> consumer) {
       if (buffer.isEmpty()) {
-        materializeBuffer(new FutureConsumer<DequeueList<E>>() {
+        materializeBuffer(new FutureConsumer<DequeArrayList<E>>() {
           @Override
-          public void accept(final DequeueList<E> buffer) throws Exception {
+          public void accept(final DequeArrayList<E> buffer) throws Exception {
             if (buffer.isEmpty()) {
               consumer.accept(Collections.<E>emptyList());
             } else {
@@ -146,7 +146,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
                 setDone(EmptyIteratorFutureMaterializer.<E>instance());
                 consumeElements(Collections.<E>emptyList());
               } else {
-                final DequeueList<E> buffer = ImmaterialState.this.buffer;
+                final DequeArrayList<E> buffer = ImmaterialState.this.buffer;
                 if (elementsSize > maxElements) {
                   buffer.addAll(elements.subList(0, elementsSize - maxElements));
                 } else {
@@ -158,7 +158,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
                   setDone(EmptyIteratorFutureMaterializer.<E>instance());
                   consumeElements(Collections.<E>emptyList());
                 } else {
-                  setDone(new DequeueToIteratorFutureMaterializer<E>(buffer, context, index));
+                  setDone(new DequeToIteratorFutureMaterializer<E>(buffer, context, index));
                   consumeElements(buffer.clone());
                 }
               }
@@ -189,9 +189,9 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
     @Override
     public void materializeHasNext(@NotNull final FutureConsumer<Boolean> consumer) {
       if (buffer.isEmpty()) {
-        materializeBuffer(new FutureConsumer<DequeueList<E>>() {
+        materializeBuffer(new FutureConsumer<DequeArrayList<E>>() {
           @Override
-          public void accept(final DequeueList<E> buffer) throws Exception {
+          public void accept(final DequeArrayList<E> buffer) throws Exception {
             if (buffer.isEmpty()) {
               setDone(EmptyIteratorFutureMaterializer.<E>instance());
               consumer.accept(false);
@@ -241,9 +241,9 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
     @Override
     public void materializeNext(@NotNull final IndexedFutureConsumer<E> consumer) {
       if (buffer.isEmpty()) {
-        materializeBuffer(new FutureConsumer<DequeueList<E>>() {
+        materializeBuffer(new FutureConsumer<DequeArrayList<E>>() {
           @Override
-          public void accept(final DequeueList<E> buffer) throws Exception {
+          public void accept(final DequeArrayList<E> buffer) throws Exception {
             if (buffer.isEmpty()) {
               consumer.complete(0);
             } else {
@@ -282,9 +282,9 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
     @Override
     public void materializeNextWhile(@NotNull final IndexedFuturePredicate<E> predicate) {
       if (buffer.isEmpty()) {
-        materializeBuffer(new FutureConsumer<DequeueList<E>>() {
+        materializeBuffer(new FutureConsumer<DequeArrayList<E>>() {
           @Override
-          public void accept(final DequeueList<E> buffer) throws Exception {
+          public void accept(final DequeArrayList<E> buffer) throws Exception {
             if (buffer.isEmpty()) {
               setDone(EmptyIteratorFutureMaterializer.<E>instance());
               predicate.complete(0);
@@ -390,8 +390,8 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       elementsConsumers.clear();
     }
 
-    private void materializeBuffer(@NotNull final FutureConsumer<DequeueList<E>> consumer) {
-      final ArrayList<FutureConsumer<DequeueList<E>>> bufferConsumers = this.bufferConsumers;
+    private void materializeBuffer(@NotNull final FutureConsumer<DequeArrayList<E>> consumer) {
+      final ArrayList<FutureConsumer<DequeArrayList<E>>> bufferConsumers = this.bufferConsumers;
       bufferConsumers.add(consumer);
       if (bufferConsumers.size() == 1) {
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
@@ -399,7 +399,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           public void cancellableComplete(final int size) {
             buffer.clear();
             setDone(EmptyIteratorFutureMaterializer.<E>instance());
-            for (final FutureConsumer<DequeueList<E>> consumer : bufferConsumers) {
+            for (final FutureConsumer<DequeArrayList<E>> consumer : bufferConsumers) {
               safeConsume(consumer, buffer, LOGGER);
             }
             bufferConsumers.clear();
@@ -409,7 +409,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
           public boolean cancellableTest(final int size, final int index, final E element) {
             buffer.add(element);
             if (buffer.size() >= maxElements) {
-              for (final FutureConsumer<DequeueList<E>> consumer : bufferConsumers) {
+              for (final FutureConsumer<DequeArrayList<E>> consumer : bufferConsumers) {
                 safeConsume(consumer, buffer, LOGGER);
               }
               bufferConsumers.clear();
@@ -423,12 +423,12 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
             final CancellationException exception = cancelException.get();
             if (exception != null) {
               setCancelled(exception);
-              for (final FutureConsumer<DequeueList<E>> consumer : bufferConsumers) {
+              for (final FutureConsumer<DequeArrayList<E>> consumer : bufferConsumers) {
                 safeConsumeError(consumer, exception, LOGGER);
               }
             } else {
               setFailed(error);
-              for (final FutureConsumer<DequeueList<E>> consumer : bufferConsumers) {
+              for (final FutureConsumer<DequeArrayList<E>> consumer : bufferConsumers) {
                 safeConsumeError(consumer, error, LOGGER);
               }
             }

@@ -18,7 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class IncludesSliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<Boolean> {
@@ -51,7 +51,7 @@ public class IncludesSliceIteratorMaterializer<E> extends StatefulIteratorMateri
 
     @Override
     public Boolean materializeNext() {
-      final DequeueList<E> queue = new DequeueList<E>();
+      final DequeArrayList<E> queue = new DequeArrayList<E>();
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();
       if (!elementsIterator.hasNext()) {

@@ -19,7 +19,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 import sparx.internal.lazy.list.ListMaterializer;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class FindLastIndexOfSliceIteratorMaterializer<E> extends
@@ -48,7 +48,7 @@ public class FindLastIndexOfSliceIteratorMaterializer<E> extends
 
     @Override
     public boolean materializeHasNext() {
-      final DequeueList<E> queue = new DequeueList<E>();
+      final DequeArrayList<E> queue = new DequeArrayList<E>();
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       Iterator<?> elementsIterator = elementsMaterializer.materializeIterator();

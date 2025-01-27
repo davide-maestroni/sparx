@@ -17,7 +17,7 @@ package sparx.internal.lazy.iterator;
 
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.UncheckedException;
 import sparx.util.annotation.Positive;
 import sparx.util.function.IndexedPredicate;
@@ -31,7 +31,7 @@ public class DropRightWhileIteratorMaterializer<E> extends StatefulAutoSkipItera
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final DequeueList<E> elements = new DequeueList<E>();
+    private final DequeArrayList<E> elements = new DequeArrayList<E>();
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
@@ -43,13 +43,13 @@ public class DropRightWhileIteratorMaterializer<E> extends StatefulAutoSkipItera
 
     @Override
     public int knownSize() {
-      final DequeueList<E> elements = this.elements;
+      final DequeArrayList<E> elements = this.elements;
       return !elements.isEmpty() ? elements.size() : -1;
     }
 
     @Override
     public boolean materializeHasNext() {
-      final DequeueList<E> elements = this.elements;
+      final DequeArrayList<E> elements = this.elements;
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (elements.isEmpty()) {
         while (wrapped.materializeHasNext()) {

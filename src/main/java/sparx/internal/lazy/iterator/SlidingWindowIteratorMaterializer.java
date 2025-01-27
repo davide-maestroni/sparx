@@ -18,7 +18,7 @@ package sparx.internal.lazy.iterator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.SizeOverflowException;
 import sparx.util.UncheckedException;
 import sparx.util.annotation.Positive;
@@ -29,20 +29,20 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
 
   public SlidingWindowIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @Positive final int maxSize, @Positive final int step,
-      @NotNull final Function<? super DequeueList<E>, ? extends I> mapper) {
+      @NotNull final Function<? super DequeArrayList<E>, ? extends I> mapper) {
     setState(new ImmaterialState(wrapped, maxSize, 0, step, null, mapper));
   }
 
   public SlidingWindowIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @Positive final int size, @Positive final int step, final E padding,
-      @NotNull final Function<? super DequeueList<E>, ? extends I> mapper) {
+      @NotNull final Function<? super DequeArrayList<E>, ? extends I> mapper) {
     setState(new ImmaterialState(wrapped, size, size, step, padding, mapper));
   }
 
   private class ImmaterialState implements IteratorMaterializer<I> {
 
-    private final DequeueList<E> elements;
-    private final Function<? super DequeueList<E>, ? extends I> mapper;
+    private final DequeArrayList<E> elements;
+    private final Function<? super DequeArrayList<E>, ? extends I> mapper;
     private final int maxSize;
     private final int size;
     private final int skip;
@@ -54,7 +54,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
 
     private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped, final int maxSize,
         final int size, final int step, final E padding,
-        @NotNull final Function<? super DequeueList<E>, ? extends I> mapper) {
+        @NotNull final Function<? super DequeArrayList<E>, ? extends I> mapper) {
       this.wrapped = wrapped;
       this.maxSize = maxSize;
       this.size = size;
@@ -62,7 +62,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
       this.padding = padding;
       this.mapper = mapper;
       skip = Math.max(0, step - maxSize);
-      elements = new DequeueList<E>(maxSize);
+      elements = new DequeArrayList<E>(maxSize);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
       final int size = this.size;
       final E padding = this.padding;
       try {
-        final DequeueList<E> clone = elements.clone();
+        final DequeArrayList<E> clone = elements.clone();
         while (clone.size() < size) {
           clone.add(padding);
         }
@@ -108,7 +108,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
     @Override
     public int materializeSkip(@Positive final int count) {
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      final DequeueList<E> elements = this.elements;
+      final DequeArrayList<E> elements = this.elements;
       final int maxSize = this.maxSize;
       final int skip = this.skip;
       int skipped = 0;
@@ -154,7 +154,7 @@ public class SlidingWindowIteratorMaterializer<E, I extends Iterator<E>> extends
 
     private boolean advance() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      final DequeueList<E> elements = this.elements;
+      final DequeArrayList<E> elements = this.elements;
       final int maxSize = this.maxSize;
       final int skip = this.skip;
       if (elements.isEmpty()) {

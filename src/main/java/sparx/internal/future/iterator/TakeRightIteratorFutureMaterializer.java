@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import sparx.concurrent.ExecutionContext;
-import sparx.util.DequeueList;
+import sparx.util.DequeArrayList;
 import sparx.util.annotation.Positive;
 
 public class TakeRightIteratorFutureMaterializer<E> extends AbstractIteratorFutureMaterializer<E> {
@@ -83,7 +83,7 @@ public class TakeRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
 
     @Override
     void materialize() {
-      final DequeueList<E> elements = new DequeueList<E>();
+      final DequeArrayList<E> elements = new DequeArrayList<E>();
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
         public void cancellableComplete(final int size) throws Exception {
@@ -91,7 +91,7 @@ public class TakeRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
             setDone(EmptyIteratorFutureMaterializer.<E>instance());
             consumeElements(Collections.<E>emptyList());
           } else {
-            setDone(new DequeueToIteratorFutureMaterializer<E>(elements, context));
+            setDone(new DequeToIteratorFutureMaterializer<E>(elements, context));
             consumeElements(elements.clone());
           }
         }
