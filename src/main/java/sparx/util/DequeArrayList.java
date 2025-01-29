@@ -626,7 +626,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     final E element = get(index);
-    removeElement(modInc(first, index, data.length));
+    removeElement(index);
     return element;
   }
 
@@ -807,7 +807,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       for (int i = first, to = (i < last) ? last : data.length; ; i = 0, to = last) {
         for (; i < to; ++i) {
           if (data[i] == null) {
-            removeElement(i);
+            removeElement(modDec(i, first, data.length));
             return true;
           }
         }
@@ -819,7 +819,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       for (int i = first, to = (i < last) ? last : data.length; ; i = 0, to = last) {
         for (; i < to; ++i) {
           if (o.equals(data[i])) {
-            removeElement(i);
+            removeElement(modDec(i, first, data.length));
             return true;
           }
         }
@@ -854,7 +854,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       for (int i = last, to = (i >= first) ? first : 0; ; i = data.length, to = first) {
         for (i--; i > to - 1; i--) {
           if (data[i] == null) {
-            removeElement(i);
+            removeElement(modDec(i, first, data.length));
             return true;
           }
         }
@@ -866,7 +866,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       for (int i = last, to = (i >= first) ? first : 0; ; i = data.length, to = first) {
         for (i--; i > to - 1; i--) {
           if (o.equals(data[i])) {
-            removeElement(i);
+            removeElement(modDec(i, first, data.length));
             return true;
           }
         }
@@ -1135,51 +1135,53 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     if (size == shrinkLowerThreshold) {
       final int newCapacity = shrinkLowerThreshold << 1;
       final Object[] newData = new Object[newCapacity];
+      final int front = capacity - first;
       if (first < last) {
-        final int front = index - first;
-        System.arraycopy(data, first, newData, 0, front);
-        System.arraycopy(data, index + 1, newData, front, last - index - 1);
-      } else if (first <= index) {
-        final int front = index - first;
-        System.arraycopy(data, first, newData, 0, front);
-        System.arraycopy(data, index + 1, newData, front, capacity - index - 1);
-        System.arraycopy(data, 0, newData, capacity - first - 1, last);
+        final int i = first + index + 1;
+        System.arraycopy(data, first, newData, 0, index);
+        System.arraycopy(data, i, newData, index, last - i);
+      } else if (index < front) {
+        final int i = modInc(first, index + 1, capacity);
+        System.arraycopy(data, first, newData, 0, index);
+        System.arraycopy(data, i, newData, index, front - index - 1);
+        System.arraycopy(data, 0, newData, front - 1, last);
       } else {
-        final int front = capacity - first;
+        final int i = index - front;
         System.arraycopy(data, first, newData, 0, front);
-        System.arraycopy(data, 0, newData, front, index);
-        System.arraycopy(data, index + 1, newData, front + index, last - index - 1);
+        System.arraycopy(data, 0, newData, front, i);
+        System.arraycopy(data, i + 1, newData, index, last - i - 1);
       }
       this.data = newData;
       this.first = 0;
       this.last = size - 1;
       updateShrinkThreshold();
-    } else if (index == first) {
+    } else if (index == 0) {
       data[first] = null;
       this.first = modInc(first, 1, capacity);
-    } else if (index == modDec(last, 1, capacity)) {
-      data[index] = null;
-      this.last = index;
+    } else if (index == size - 1) {
+      data[this.last = modDec(last, 1, capacity)] = null;
     } else {
-      final int front = modDec(index, first, capacity);
-      final int back = modDec(last, index + 1, capacity);
-      if (front <= back) {
-        if (first <= index) {
-          System.arraycopy(data, first, data, first + 1, front);
+      final int back = size - index;
+      if (index <= back) {
+        final int remainder = index - capacity + first;
+        if (remainder < 0) {
+          System.arraycopy(data, first, data, first + 1, index);
         } else {
           final int rightmost = capacity - 1;
-          System.arraycopy(data, 0, data, 1, index);
+          System.arraycopy(data, 0, data, 1, remainder);
           data[0] = data[rightmost];
           System.arraycopy(data, first, data, first + 1, rightmost - first);
         }
         this.data[first] = null;
         this.first = modInc(first, 1, capacity);
       } else {
-        if (index < last) {
-          System.arraycopy(data, index + 1, data, index, back);
+        final int remainder = last - size + index;
+        if (remainder >= 0) {
+          System.arraycopy(data, remainder + 1, data, remainder, back);
         } else {
+          final int i = first + index;
           final int rightmost = capacity - 1;
-          System.arraycopy(data, index + 1, data, index, rightmost - index);
+          System.arraycopy(data, i + 1, data, i, rightmost - i);
           data[rightmost] = data[0];
           System.arraycopy(data, 1, data, 0, last);
         }
@@ -1367,7 +1369,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
         throw new IllegalStateException();
       }
       checkForComodification();
-      removeElement(modInc(--index, first, data.length));
+      removeElement(--index);
       expectedFirst = first;
       expectedLast = last;
       isRemoved = true;
@@ -1444,7 +1446,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
           throw new IllegalStateException();
         }
         checkForComodification();
-        removeElement(modInc(index, first, data.length));
+        removeElement(index);
         expectedFirst = first;
         expectedLast = last;
         isRemoved = true;
@@ -1502,7 +1504,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
         throw new IllegalStateException();
       }
       checkForComodification();
-      removeElement(modInc(index, first, data.length));
+      removeElement(index);
       expectedFirst = first;
       expectedLast = last;
       isRemoved = true;
