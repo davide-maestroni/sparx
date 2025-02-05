@@ -76,7 +76,7 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        final DequeArrayList<E> elements = new DequeArrayList<E>();
+        final DequeArrayList<E> elements = new DequeArrayList<E>(true);
         do {
           elements.add(wrapped.materializeNext());
         } while (wrapped.materializeHasNext());
@@ -210,7 +210,7 @@ public class ReplaceSliceIteratorMaterializer<E> extends StatefulAutoSkipIterato
         return true;
       }
       if (wrapped.materializeHasNext()) {
-        final DequeArrayList<E> elements = new DequeArrayList<E>();
+        final DequeArrayList<E> elements = new DequeArrayList<E>(true);
         do {
           elements.add(wrapped.materializeNext());
         } while (wrapped.materializeHasNext());

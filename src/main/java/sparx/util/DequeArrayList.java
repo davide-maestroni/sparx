@@ -58,7 +58,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
   }
 
   /**
-   * Creates a new empty list with a pre-defined initial capacity.
+   * Constructs an empty list with a pre-defined initial capacity.
    *
    * @param autoShrink if the capacity automatically shrinks when elements count is below an
    *                   adaptive threshold
@@ -70,7 +70,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
   }
 
   /**
-   * Creates a new empty list with the specified minimum capacity.
+   * Constructs an empty list with at least the specified minimum capacity.
    *
    * @param minCapacity the minimum capacity
    * @throws IllegalArgumentException if the specified capacity is less than 1
@@ -80,7 +80,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
   }
 
   /**
-   * Creates a new empty list with the specified minimum capacity.
+   * Constructs an empty list with at least the specified minimum capacity.
    *
    * @param minCapacity the minimum capacity
    * @param autoShrink  if the capacity automatically shrinks when elements count is below an

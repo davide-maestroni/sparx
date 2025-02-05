@@ -32,7 +32,7 @@ public class MapLastWhereIteratorMaterializer<E> extends StatefulAutoSkipIterato
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final DequeArrayList<E> elements = new DequeArrayList<E>();
+    private final DequeArrayList<E> elements = new DequeArrayList<E>(true);
     private final IndexedFunction<? super E, ? extends E> mapper;
     private final IteratorMaterializer<E> materializer = new DequeToIteratorMaterializer<E>(
         elements);

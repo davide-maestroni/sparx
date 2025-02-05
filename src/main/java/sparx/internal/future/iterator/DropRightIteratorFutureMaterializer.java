@@ -75,7 +75,7 @@ public class DropRightIteratorFutureMaterializer<E> extends AbstractIteratorFutu
       this.maxElements = maxElements;
       this.context = context;
       this.cancelException = cancelException;
-      buffer = new DequeArrayList<E>(Math.min(64, maxElements));
+      buffer = new DequeArrayList<E>(Math.min(64, maxElements), true);
     }
 
     @Override

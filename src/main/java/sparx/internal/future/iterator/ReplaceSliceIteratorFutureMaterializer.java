@@ -310,7 +310,7 @@ public class ReplaceSliceIteratorFutureMaterializer<E> extends
             if (materializedStart >= materializedEnd) {
               materializer = new ListToIteratorFutureMaterializer<E>(elements, context);
             } else {
-              final DequeArrayList<E> materialized = new DequeArrayList<E>();
+              final DequeArrayList<E> materialized = new DequeArrayList<E>(true);
               materialized.addAll(elements.subList(0, materializedStart));
               if (materializedEnd < size) {
                 materialized.addAll(elements.subList(materializedEnd, size));
@@ -488,7 +488,7 @@ public class ReplaceSliceIteratorFutureMaterializer<E> extends
 
   private class PendingState extends ProgressiveIteratorFutureMaterializerState<E, E> {
 
-    private final DequeArrayList<E> cachedElements = new DequeArrayList<E>();
+    private final DequeArrayList<E> cachedElements = new DequeArrayList<E>(true);
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
     private final int end;

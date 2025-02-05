@@ -49,7 +49,7 @@ public class RemoveLastWhereIteratorFutureMaterializer<E> extends
 
     private final AtomicReference<CancellationException> cancelException;
     private final ExecutionContext context;
-    private final DequeArrayList<E> cachedElements = new DequeArrayList<E>();
+    private final DequeArrayList<E> cachedElements = new DequeArrayList<E>(true);
     private final IndexedPredicate<? super E> predicate;
     private final BinaryFunction<List<E>, List<E>, List<E>> prependFunction;
     private final IteratorFutureMaterializer<E> wrapped;

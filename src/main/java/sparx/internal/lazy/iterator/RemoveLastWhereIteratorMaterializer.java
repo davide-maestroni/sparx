@@ -31,7 +31,7 @@ public class RemoveLastWhereIteratorMaterializer<E> extends
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final DequeArrayList<E> elements = new DequeArrayList<E>();
+    private final DequeArrayList<E> elements = new DequeArrayList<E>(true);
     private final IteratorMaterializer<E> materializer = new DequeToIteratorMaterializer<E>(
         elements);
     private final IndexedPredicate<? super E> predicate;

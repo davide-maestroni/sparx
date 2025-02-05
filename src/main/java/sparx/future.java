@@ -4259,7 +4259,7 @@ class future extends Sparx {
       }
       final AtomicReference<CancellationException> cancelException = new AtomicReference<CancellationException>();
       return new Iterator<Iterator<E>>(context, cancelException,
-          new SlidingWindowIteratorFutureMaterializer<E, Iterator<E>>(materializer, size,
+          new SlidingWindowIteratorFutureMaterializer<E, Iterator<E>>(materializer, Require.positive(size, "size"),
               Require.positive(step, "step"), padding, context, cancelException,
               Iterator.<E>getDequeueToIteratorFunction(context, cancelException)));
     }

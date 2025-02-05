@@ -33,7 +33,7 @@ public class FlatMapLastWhereIteratorMaterializer<E> extends
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final DequeArrayList<E> elements = new DequeArrayList<E>();
+    private final DequeArrayList<E> elements = new DequeArrayList<E>(true);
     private final IndexedFunction<? super E, ? extends IteratorMaterializer<E>> mapper;
     private final IteratorMaterializer<E> materializer = new DequeToIteratorMaterializer<E>(
         elements);

@@ -49,7 +49,7 @@ public class TakeRightIteratorMaterializer<E> extends StatefulAutoSkipIteratorMa
     @Override
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      final DequeArrayList<E> elements = new DequeArrayList<E>();
+      final DequeArrayList<E> elements = new DequeArrayList<E>(true);
       final int maxElements = this.maxElements;
       while (wrapped.materializeHasNext()) {
         elements.add(wrapped.materializeNext());

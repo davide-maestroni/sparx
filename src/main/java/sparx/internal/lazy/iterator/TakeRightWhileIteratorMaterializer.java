@@ -48,7 +48,7 @@ public class TakeRightWhileIteratorMaterializer<E> extends StatefulAutoSkipItera
     @Override
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      final DequeArrayList<E> elements = new DequeArrayList<E>();
+      final DequeArrayList<E> elements = new DequeArrayList<E>(true);
       // TODO: processing vs memory
 //      while (wrapped.materializeHasNext()) {
 //        elements.add(wrapped.materializeNext());

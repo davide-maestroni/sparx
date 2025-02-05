@@ -303,7 +303,7 @@ public abstract class TransformIteratorFutureMaterializer<E, F> extends
     public void materializeElements(@NotNull final FutureConsumer<List<F>> consumer) {
       try {
         final Iterator<F> iterator = this.iterator;
-        final DequeArrayList<F> elements = new DequeArrayList<F>();
+        final DequeArrayList<F> elements = new DequeArrayList<F>(true);
         while (iterator.hasNext()) {
           elements.add(iterator.next());
         }

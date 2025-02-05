@@ -103,7 +103,7 @@ public abstract class ProgressiveIteratorFutureMaterializerState<E, F> implement
     final ArrayList<FutureConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
     elementsConsumers.add(consumer);
     if (elementsConsumers.size() == 1) {
-      final DequeArrayList<F> elements = new DequeArrayList<F>();
+      final DequeArrayList<F> elements = new DequeArrayList<F>(true);
       materializeNext(new FutureConsumer<DequeArrayList<F>>() {
         @Override
         public void accept(final DequeArrayList<F> nextElements) throws Exception {

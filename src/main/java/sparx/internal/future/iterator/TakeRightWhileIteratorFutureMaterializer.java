@@ -75,12 +75,12 @@ public class TakeRightWhileIteratorFutureMaterializer<E> extends
 
     @Override
     void materialize() {
-      final DequeArrayList<E> elements = new DequeArrayList<E>();
+      final DequeArrayList<E> elements = new DequeArrayList<E>(true);
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         private int index;
 
         @Override
-        public void cancellableComplete(final int size) throws Exception {
+        public void cancellableComplete(final int size) {
           if (elements.isEmpty()) {
             setDone(EmptyIteratorFutureMaterializer.<E>instance());
             consumeElements(Collections.<E>emptyList());

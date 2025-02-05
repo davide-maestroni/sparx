@@ -73,7 +73,7 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
-        final DequeArrayList<E> elements = new DequeArrayList<E>();
+        final DequeArrayList<E> elements = new DequeArrayList<E>(true);
         do {
           elements.add(wrapped.materializeNext());
         } while (wrapped.materializeHasNext());
@@ -210,7 +210,7 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
         if (start > 0) {
           wrapped.materializeSkip(start);
         }
-        final DequeArrayList<E> elements = new DequeArrayList<E>();
+        final DequeArrayList<E> elements = new DequeArrayList<E>(true);
         while (wrapped.materializeHasNext()) {
           elements.add(wrapped.materializeNext());
         }
@@ -246,7 +246,7 @@ public class SliceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
       if (start > 0) {
         wrapped.materializeSkip(start);
       }
-      final DequeArrayList<E> elements = new DequeArrayList<E>();
+      final DequeArrayList<E> elements = new DequeArrayList<E>(true);
       while (wrapped.materializeHasNext()) {
         elements.add(wrapped.materializeNext());
       }

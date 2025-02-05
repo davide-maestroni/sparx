@@ -75,7 +75,7 @@ public class DropRightWhileIteratorFutureMaterializer<E> extends
 
     @Override
     void materialize() {
-      final DequeArrayList<E> elements = new DequeArrayList<E>();
+      final DequeArrayList<E> elements = new DequeArrayList<E>(true);
       wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
         @Override
         public void cancellableComplete(final int size) throws Exception {

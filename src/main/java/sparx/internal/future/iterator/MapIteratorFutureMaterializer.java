@@ -118,7 +118,7 @@ public class MapIteratorFutureMaterializer<E, F> extends AbstractIteratorFutureM
       final ArrayList<FutureConsumer<List<F>>> elementsConsumers = this.elementsConsumers;
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
-        final DequeArrayList<F> elements = new DequeArrayList<F>();
+        final DequeArrayList<F> elements = new DequeArrayList<F>(true);
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
           public void cancellableComplete(final int size) throws Exception {

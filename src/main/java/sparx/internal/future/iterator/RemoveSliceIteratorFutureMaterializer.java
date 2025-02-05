@@ -203,7 +203,7 @@ public class RemoveSliceIteratorFutureMaterializer<E> extends
 
   private class PendingState extends ProgressiveIteratorFutureMaterializerState<E, E> {
 
-    private final DequeArrayList<E> cachedElements = new DequeArrayList<E>();
+    private final DequeArrayList<E> cachedElements = new DequeArrayList<E>(true);
     private final ExecutionContext context;
     private final int end;
     private final int start;

@@ -134,10 +134,10 @@ public class TakeIteratorFutureMaterializer<E> extends AbstractIteratorFutureMat
           setDone(EmptyIteratorFutureMaterializer.<E>instance());
           consumeElements(Collections.<E>emptyList());
         } else {
-          final DequeArrayList<E> elements = new DequeArrayList<E>();
+          final DequeArrayList<E> elements = new DequeArrayList<E>(true);
           wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
             @Override
-            public void cancellableComplete(final int size) throws Exception {
+            public void cancellableComplete(final int size) {
               if (elements.isEmpty()) {
                 setDone(EmptyIteratorFutureMaterializer.<E>instance());
                 consumeElements(Collections.<E>emptyList());
@@ -148,8 +148,7 @@ public class TakeIteratorFutureMaterializer<E> extends AbstractIteratorFutureMat
             }
 
             @Override
-            public boolean cancellableTest(final int size, final int index, final E element)
-                throws Exception {
+            public boolean cancellableTest(final int size, final int index, final E element) {
               elements.add(element);
               if (++ImmaterialState.this.index >= maxElements) {
                 setDone(new DequeToIteratorFutureMaterializer<E>(elements, context, index));

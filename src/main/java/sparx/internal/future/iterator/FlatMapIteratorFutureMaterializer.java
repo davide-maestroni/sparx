@@ -348,7 +348,7 @@ public class FlatMapIteratorFutureMaterializer<E, F> extends AbstractIteratorFut
 
     private class MaterializingFutureConsumer extends CancellableIndexedFuturePredicate<F> {
 
-      private final DequeArrayList<F> elements = new DequeArrayList<F>();
+      private final DequeArrayList<F> elements = new DequeArrayList<F>(true);
 
       private String taskID;
 

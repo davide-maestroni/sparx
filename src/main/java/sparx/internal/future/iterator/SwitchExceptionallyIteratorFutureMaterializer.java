@@ -123,10 +123,10 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
       final ArrayList<FutureConsumer<List<E>>> elementsConsumers = this.elementsConsumers;
       elementsConsumers.add(consumer);
       if (elementsConsumers.size() == 1) {
-        final DequeArrayList<E> materialized = new DequeArrayList<E>();
+        final DequeArrayList<E> materialized = new DequeArrayList<E>(true);
         wrapped.materializeNextWhile(new CancellableIndexedFuturePredicate<E>() {
           @Override
-          public void cancellableComplete(final int size) throws Exception {
+          public void cancellableComplete(final int size) {
             if (materialized.isEmpty()) {
               setDone(EmptyIteratorFutureMaterializer.<E>instance());
               consumeElements(Collections.<E>emptyList());
@@ -148,7 +148,7 @@ public class SwitchExceptionallyIteratorFutureMaterializer<E> extends
             if (materializer != null) {
               materializer.materializeElements(new CancellableFutureConsumer<List<E>>() {
                 @Override
-                public void cancellableAccept(final List<E> elements) throws Exception {
+                public void cancellableAccept(final List<E> elements) {
                   materialized.addAll(elements);
                   if (materialized.isEmpty()) {
                     setDone(EmptyIteratorFutureMaterializer.<E>instance());
