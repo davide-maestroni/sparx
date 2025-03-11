@@ -1585,6 +1585,44 @@ public class DequeArrayListTests {
     r3.add(null);
     r3.add(3);
     assertEquals(r3, l3);
+
+    var l4 = new DequeArrayList<>();
+    l4.add("1");
+    l4.add("2");
+    l4.add("3");
+    l4.add("4");
+    l4.removeAll(e -> {
+      if ("2".equals(e)){
+        return true;
+      }
+      if ("3".equals(e)){
+        assertEquals("4", l4.get(2));
+        assertEquals(1, l4.indexOf("3"));
+        assertEquals(1, l4.lastIndexOf("3"));
+        assertEquals(List.of("1", "3", "4"), l4.clone());
+      }
+      return false;
+    });
+    assertEquals(List.of("1", "3", "4"), l4);
+
+    var l5 = new DequeArrayList<>();
+    l5.add("3");
+    l5.add("4");
+    l5.addFirst("2");
+    l5.addFirst("1");
+    l5.removeAll(e -> {
+      if ("2".equals(e)){
+        return true;
+      }
+      if ("3".equals(e)){
+        assertEquals("4", l5.get(2));
+        assertEquals(1, l5.indexOf("3"));
+        assertEquals(1, l5.lastIndexOf("3"));
+        assertEquals(List.of("1", "3", "4"), l5.clone());
+      }
+      return false;
+    });
+    assertEquals(List.of("1", "3", "4"), l5);
   }
 
   @Test

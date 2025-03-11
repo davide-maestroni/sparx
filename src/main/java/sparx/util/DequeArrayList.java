@@ -45,6 +45,8 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
 
   private Object[] data;
   private int first;
+  private int gapIndex = Integer.MAX_VALUE;
+  private int gapOffset = 0;
   private int last;
   private int shrinkLowerThreshold;
   private int shrinkUpperThreshold = Integer.MAX_VALUE;
@@ -177,8 +179,11 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public void add(final int index, @Nullable final E element) {
-    if (index < 0 || index > size) {
+    if (index < 0 || index > size()) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
     }
     if (size == data.length) {
       growCapacity();
@@ -194,6 +199,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     if (collection.isEmpty()) {
       return false;
     }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
+    }
     addElements(size, collection);
     return true;
   }
@@ -203,11 +211,14 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public boolean addAll(final int index, @NotNull final Collection<? extends E> collection) {
-    if (index < 0 || index > size) {
+    if (index < 0 || index > size()) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     if (collection.isEmpty()) {
       return false;
+    }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
     }
     addElements(index, collection);
     return true;
@@ -218,6 +229,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public void addFirst(@Nullable final E element) {
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
+    }
     if (size == data.length) {
       growCapacity();
     }
@@ -234,6 +248,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public void addLast(@Nullable final E element) {
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
+    }
     if (size == data.length) {
       growCapacity();
     }
@@ -252,6 +269,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public void clear() {
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
+    }
     final Object[] data = this.data;
     final int capacity = data.length;
     if (autoShrink && capacity > MIN_SHRINK_SIZE) {
@@ -284,7 +304,36 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     try {
       final Object[] data = this.data;
       final DequeArrayList<E> clone = (DequeArrayList<E>) super.clone();
-      clone.data = Arrays.copyOf(data, data.length);
+      if (gapOffset > 0) {
+        final int first = this.first;
+        final int last = this.last;
+        final int capacity = data.length;
+        final int size = size();
+        final int newCapacity = size < shrinkLowerThreshold ? shrinkLowerThreshold << 1 : capacity;
+        final Object[] newData = new Object[newCapacity];
+        final int gapFirst = modInc(first, gapIndex, capacity);
+        final int front = gapFirst - first;
+        if (gapFirst > first) {
+          System.arraycopy(data, first, newData, 0, front);
+        }
+        final int gapLast = modInc(gapFirst, gapOffset, capacity);
+        if (gapLast < last) {
+          System.arraycopy(data, gapLast, newData, front, last - gapLast);
+        } else {
+          final int back = capacity - gapLast;
+          System.arraycopy(data, gapLast, newData, front, back);
+          System.arraycopy(data, 0, newData, front + back, last);
+        }
+        clone.first = 0;
+        clone.last = size;
+        clone.data = newData;
+        clone.gapIndex = Integer.MAX_VALUE;
+        clone.gapOffset = 0;
+        clone.size = size;
+        clone.updateShrinkThreshold();
+      } else {
+        clone.data = Arrays.copyOf(data, data.length);
+      }
       return clone;
     } catch (final CloneNotSupportedException e) {
       throw new RuntimeException(e);
@@ -320,6 +369,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     if (data.length >= minCapacity) {
       return false;
     }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
+    }
     resizeCapacity(computeCapacity(Require.notNegative(minCapacity, "minCapacity")));
     return true;
   }
@@ -338,6 +390,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     if (data.length <= newCapacity) {
       return false;
     }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
+    }
     resizeCapacity(newCapacity);
     return true;
   }
@@ -347,9 +402,12 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   @SuppressWarnings("unchecked")
-  public E get(final int index) {
-    if (index < 0 || index >= size) {
+  public E get(int index) {
+    if (index < 0 || index >= size()) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
+    if (index > gapIndex) {
+      index += gapOffset;
     }
     final Object[] data = this.data;
     return (E) data[modInc(first, index, data.length)];
@@ -392,26 +450,66 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     final int last = this.last;
     final Object[] data = this.data;
     final int capacity = data.length;
-    if (o == null) {
-      for (int i = first, to = (i < last) ? last : capacity; ; i = 0, to = last) {
-        for (; i < to; ++i) {
-          if (data[i] == null) {
-            return modDec(i, first, capacity);
+    final int gapOffset = this.gapOffset;
+    if (gapOffset > 0) {
+      final int gapFirst = modInc(first, gapIndex, capacity);
+      if (o == null) {
+        for (int i = first, to = (i < gapFirst) ? gapFirst : capacity; ; ) {
+          for (; i < to; ++i) {
+            if (data[i] == null) {
+              return modDec(i, first + gapOffset, capacity);
+            }
+          }
+          if (to == gapFirst) {
+            i = modInc(gapFirst, gapOffset, capacity);
+            to = (i < last) ? last : capacity;
+          } else if (to == capacity) {
+            i = 0;
+            to = gapFirst;
+          } else {
+            break;
           }
         }
-        if (to == last) {
-          break;
+      } else {
+        for (int i = first, to = (i < gapFirst) ? gapFirst : capacity; ; ) {
+          for (; i < to; ++i) {
+            if (o.equals(data[i])) {
+              return modDec(i, first + gapOffset, capacity);
+            }
+          }
+          if (to == gapFirst) {
+            i = modInc(gapFirst, gapOffset, capacity);
+            to = (i < last) ? last : capacity;
+          } else if (to == capacity) {
+            i = 0;
+            to = gapFirst;
+          } else {
+            break;
+          }
         }
       }
     } else {
-      for (int i = first, to = (i < last) ? last : capacity; ; i = 0, to = last) {
-        for (; i < to; ++i) {
-          if (o.equals(data[i])) {
-            return modDec(i, first, capacity);
+      if (o == null) {
+        for (int i = first, to = (i < last) ? last : capacity; ; i = 0, to = last) {
+          for (; i < to; ++i) {
+            if (data[i] == null) {
+              return modDec(i, first, capacity);
+            }
+          }
+          if (to == last) {
+            break;
           }
         }
-        if (to == last) {
-          break;
+      } else {
+        for (int i = first, to = (i < last) ? last : capacity; ; i = 0, to = last) {
+          for (; i < to; ++i) {
+            if (o.equals(data[i])) {
+              return modDec(i, first, capacity);
+            }
+          }
+          if (to == last) {
+            break;
+          }
         }
       }
     }
@@ -423,7 +521,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public boolean isEmpty() {
-    return size == 0;
+    return size() == 0;
   }
 
   /**
@@ -446,28 +544,70 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     final int last = this.last;
     final Object[] data = this.data;
     final int capacity = data.length;
-    if (o == null) {
-      for (int i = modDec(last, 1, capacity), to = (i > first) ? first : 0; ;
-          i = capacity - 1, to = first) {
-        for (; i > to - 1; --i) {
-          if (data[i] == null) {
-            return modDec(i, first, capacity);
+    final int gapOffset = this.gapOffset;
+    if (gapOffset > 0) {
+      final int gapFirst =
+          gapIndex == 0 ? modDec(first, 1, capacity) : modInc(first, gapIndex - 1, capacity);
+      final int gapLast = modInc(gapFirst, gapOffset, capacity);
+      if (o == null) {
+        for (int i = modDec(last, 1, capacity), to = (i > gapLast) ? gapLast : 0; ; ) {
+          for (; i > to - 1; --i) {
+            if (data[i] == null) {
+              return modDec(i, first + gapOffset, capacity);
+            }
+          }
+          if (to == gapLast) {
+            i = gapFirst;
+            to = (i > first) ? first : 0;
+          } else if (to == 0) {
+            i = (first > gapFirst) ? capacity - 1 : gapLast;
+            to = first;
+          } else {
+            break;
           }
         }
-        if (to == first) {
-          break;
+      } else {
+        for (int i = modDec(last, 1, capacity), to = (i > gapLast) ? gapLast : 0; ; ) {
+          for (; i > to - 1; --i) {
+            if (o.equals(data[i])) {
+              return modDec(i, first + gapOffset, capacity);
+            }
+          }
+          if (to == gapLast) {
+            i = gapFirst;
+            to = (i > first) ? first : 0;
+          } else if (to == 0) {
+            i = (first > gapFirst) ? capacity - 1 : gapLast;
+            to = first;
+          } else {
+            break;
+          }
         }
       }
     } else {
-      for (int i = modDec(last, 1, capacity), to = (i > first) ? first : 0; ;
-          i = capacity - 1, to = first) {
-        for (; i > to - 1; --i) {
-          if (o.equals(data[i])) {
-            return modDec(i, first, capacity);
+      if (o == null) {
+        for (int i = modDec(last, 1, capacity), to = (i > first) ? first : 0; ;
+            i = capacity - 1, to = first) {
+          for (; i > to - 1; --i) {
+            if (data[i] == null) {
+              return modDec(i, first, capacity);
+            }
+          }
+          if (to == first) {
+            break;
           }
         }
-        if (to == first) {
-          break;
+      } else {
+        for (int i = modDec(last, 1, capacity), to = (i > first) ? first : 0; ;
+            i = capacity - 1, to = first) {
+          for (; i > to - 1; --i) {
+            if (o.equals(data[i])) {
+              return modDec(i, first, capacity);
+            }
+          }
+          if (to == first) {
+            break;
+          }
         }
       }
     }
@@ -479,6 +619,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public @NotNull ListIterator<E> listIterator(final int index) {
+    // TODO => gap
     if (index < 0 || index > size) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
@@ -576,6 +717,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     if (isEmpty()) {
       return null;
     }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
+    }
     return unsafeRemoveFirst();
   }
 
@@ -589,6 +733,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
   public E pollLast() {
     if (isEmpty()) {
       return null;
+    }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
     }
     return unsafeRemoveLast();
   }
@@ -622,8 +769,11 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public E remove(final int index) {
-    if (index < 0 || index >= size) {
+    if (index < 0 || index >= size()) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
     }
     final E element = get(index);
     removeElement(index);
@@ -635,6 +785,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public void removeRange(final int fromIndex, final int toIndex) {
+    final int size = size();
     if (fromIndex < 0 || fromIndex >= size) {
       throw new IndexOutOfBoundsException(Integer.toString(fromIndex));
     }
@@ -646,6 +797,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     }
     if (fromIndex == toIndex) {
       return;
+    }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
     }
     unsafeRemoveRange(fromIndex, toIndex);
   }
@@ -678,6 +832,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     if (isEmpty()) {
       return false;
     }
+    final boolean canModify = gapOffset == 0;
     final int first = this.first;
     final int last = this.last;
     final Object[] data = this.data;
@@ -692,6 +847,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       for (; ; i = 0, to = last) {
         for (; i < to; ++i) {
           if (predicate.test((E) data[i])) {
+            if (!canModify) {
+              throw new ConcurrentModificationException();
+            }
             data[i] = null;
           } else {
             newFirst = i;
@@ -721,6 +879,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       for (; ; i = 0, to = last) {
         for (; i < to; ++i) {
           if (predicate.test((E) data[i])) {
+            if (!canModify) {
+              throw new ConcurrentModificationException();
+            }
             newLast = i;
             if (++i == to) {
               i = 0;
@@ -742,14 +903,21 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       }
       throw UncheckedException.throwUnchecked(e);
     }
+    if (next) {
+      gapIndex = modDec(newLast, newFirst, capacity);
+      gapOffset = 1;
+    }
     try {
       // shift or remove remaining elements
       for (; ; i = 0, to = last) {
         for (; i < to; ++i) {
           final E element = (E) data[i];
           if (!predicate.test(element)) {
+            ++gapIndex;
             data[newLast] = element;
             newLast = modInc(newLast, 1, capacity);
+          } else {
+            ++gapOffset;
           }
         }
         if (to == last) {
@@ -757,6 +925,8 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
         }
       }
     } catch (final Exception e) {
+      gapIndex = Integer.MAX_VALUE;
+      gapOffset = 0;
       this.first = newFirst;
       size -= modDec(newFirst, first, capacity);
       unsafeRemoveRange(modDec(newLast, newFirst, capacity), modDec(i, newFirst, capacity));
@@ -771,6 +941,8 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
         break;
       }
     }
+    gapIndex = Integer.MAX_VALUE;
+    gapOffset = 0;
     if (this.first != newFirst || this.last != newLast) {
       this.first = newFirst;
       this.last = newLast;
@@ -788,6 +960,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
   public E removeFirst() {
     if (isEmpty()) {
       throw new NoSuchElementException();
+    }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
     }
     return unsafeRemoveFirst();
   }
@@ -807,6 +982,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       for (int i = first, to = (i < last) ? last : data.length; ; i = 0, to = last) {
         for (; i < to; ++i) {
           if (data[i] == null) {
+            if (gapOffset > 0) {
+              throw new ConcurrentModificationException();
+            }
             removeElement(modDec(i, first, data.length));
             return true;
           }
@@ -819,6 +997,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       for (int i = first, to = (i < last) ? last : data.length; ; i = 0, to = last) {
         for (; i < to; ++i) {
           if (o.equals(data[i])) {
+            if (gapOffset > 0) {
+              throw new ConcurrentModificationException();
+            }
             removeElement(modDec(i, first, data.length));
             return true;
           }
@@ -839,6 +1020,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     if (isEmpty()) {
       throw new NoSuchElementException();
     }
+    if (gapOffset > 0) {
+      throw new ConcurrentModificationException();
+    }
     return unsafeRemoveLast();
   }
 
@@ -847,6 +1031,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public boolean removeLastOccurrence(final Object o) {
+    if (isEmpty()) {
+      return false;
+    }
     final int first = this.first;
     final int last = this.last;
     final Object[] data = this.data;
@@ -854,6 +1041,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       for (int i = last, to = (i >= first) ? first : 0; ; i = data.length, to = first) {
         for (i--; i > to - 1; i--) {
           if (data[i] == null) {
+            if (gapOffset > 0) {
+              throw new ConcurrentModificationException();
+            }
             removeElement(modDec(i, first, data.length));
             return true;
           }
@@ -866,6 +1056,9 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
       for (int i = last, to = (i >= first) ? first : 0; ; i = data.length, to = first) {
         for (i--; i > to - 1; i--) {
           if (o.equals(data[i])) {
+            if (gapOffset > 0) {
+              throw new ConcurrentModificationException();
+            }
             removeElement(modDec(i, first, data.length));
             return true;
           }
@@ -899,7 +1092,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
   public E set(final int index, @Nullable final E element) {
     final Object[] data = this.data;
     final E old = get(index);
-    data[modInc(first, index, data.length)] = element;
+    data[modInc(first, index + gapOffset, data.length)] = element;
     return old;
   }
 
@@ -908,7 +1101,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    */
   @Override
   public int size() {
-    return size;
+    return size - gapOffset;
   }
 
   /**
@@ -1098,6 +1291,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
   @NotNull
   @SuppressWarnings("SuspiciousSystemArraycopy")
   private <T> T[] copyElements(@NotNull final T[] dst) {
+    // TODO => gap
     if (size > 0) {
       final int first = this.first;
       final int last = this.last;
