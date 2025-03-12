@@ -477,8 +477,10 @@ public class DequeArrayListTests {
     assertEquals(List.of("1", "2", "3", "4"), list);
     assertThrows(NullPointerException.class, () -> new DequeArrayList<>().addAll(null));
     assertThrows(NullPointerException.class, () -> new DequeArrayList<>().addAll(0, null));
-    assertThrows(IndexOutOfBoundsException.class, () -> new DequeArrayList<>().addAll(-1, List.of()));
-    assertThrows(IndexOutOfBoundsException.class, () -> new DequeArrayList<>().addAll(1, List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> new DequeArrayList<>().addAll(-1, List.of()));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> new DequeArrayList<>().addAll(1, List.of()));
 
     // corner cases
     list = new DequeArrayList<>(0);
@@ -1273,6 +1275,7 @@ public class DequeArrayListTests {
     list.offerFirst("4");
     iterator = list.listIterator();
     iterator.next();
+    iterator.next();
     iterator.previous();
     list.remove(2);
     assertThrows(ConcurrentModificationException.class, iterator::next);
@@ -1592,13 +1595,15 @@ public class DequeArrayListTests {
     l4.add("3");
     l4.add("4");
     l4.removeAll(e -> {
-      if ("2".equals(e)){
+      if ("2".equals(e)) {
         return true;
       }
-      if ("3".equals(e)){
-        assertEquals("4", l4.get(2));
+      if ("3".equals(e)) {
+        assertEquals("3", l4.get(1));
         assertEquals(1, l4.indexOf("3"));
         assertEquals(1, l4.lastIndexOf("3"));
+        assertArrayEquals(new String[]{"1", "3", "4"}, l4.toArray());
+        assertEquals(List.of("1", "3", "4"), l4);
         assertEquals(List.of("1", "3", "4"), l4.clone());
       }
       return false;
@@ -1611,13 +1616,15 @@ public class DequeArrayListTests {
     l5.addFirst("2");
     l5.addFirst("1");
     l5.removeAll(e -> {
-      if ("2".equals(e)){
+      if ("2".equals(e)) {
         return true;
       }
-      if ("3".equals(e)){
-        assertEquals("4", l5.get(2));
+      if ("3".equals(e)) {
+        assertEquals("3", l5.get(1));
         assertEquals(1, l5.indexOf("3"));
         assertEquals(1, l5.lastIndexOf("3"));
+        assertArrayEquals(new String[]{"1", "3", "4"}, l5.toArray());
+        assertEquals(List.of("1", "3", "4"), l5);
         assertEquals(List.of("1", "3", "4"), l5.clone());
       }
       return false;
