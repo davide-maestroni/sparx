@@ -2738,6 +2738,528 @@ public class itf {
         @NotNull java.lang.Iterable<F> elements, E paddingLeft, F paddingRight);
   }
 
+  public interface Set<E, T extends Set<E, T>> extends Collection<E, T>, java.util.Set<E> {
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> apply(
+        @NotNull Function<? super T, java.lang.Iterable<F>> function);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> cast();
+
+    @Override
+    @NotNull
+    Set<E, T> clone();
+
+    @Override
+    @NotNull
+    Set<E, T> clone(@NotNull Function<? super E, ? extends E> cloner);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> count();
+
+    @Override
+    @NotNull
+    Set<E, T> diff(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> distinct();
+
+    @Override
+    @NotNull
+    <K> Set<E, T> distinctBy(@NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> Set<E, T> distinctBy(@NotNull IndexedFunction<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    Set<E, T> dropFirst(int maxElements);
+
+    @Override
+    @NotNull
+    Set<E, T> dropFirstWhere(@NotNull IndexedPredicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> dropFirstWhere(@NotNull Predicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> dropFirstWhile(@NotNull IndexedPredicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> dropFirstWhile(@NotNull Predicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> dropLast(int maxElements);
+
+    @Override
+    @NotNull
+    Set<E, T> dropLastWhere(@NotNull IndexedPredicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> dropLastWhere(@NotNull Predicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> dropLastWhile(@NotNull IndexedPredicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> dropLastWhile(@NotNull Predicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> endsWith(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> exists(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> exists(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> existsBackward(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> existsBackward(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> existsForward(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> existsForward(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> filter(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> filter(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> filterWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> filterWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> find(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> find(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> findFirst(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> findFirst(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findFirstIndex(
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findFirstIndex(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findFirstIndexOf(@Nullable Object element);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findFirstIndexOfSlice(
+        @NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findIndex(
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findIndex(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findIndexOf(@Nullable Object element);
+
+    @Override
+    @NotNull
+    Set<E, T> findLast(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> findLast(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findLastIndex(
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findLastIndex(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findLastIndexOf(@Nullable Object element);
+
+    @Override
+    @NotNull
+    Set<Integer, ? extends Set<Integer, ?>> findLastIndexOfSlice(
+        @NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> flatMap(
+        @NotNull Function<? super E, ? extends java.lang.Iterable<F>> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> flatMap(
+        @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<F>> mapper);
+
+    @Override
+    @NotNull
+    Set<E, T> flatMapWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<? extends E>> mapper);
+
+    @Override
+    @NotNull
+    Set<E, T> flatMapWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends java.lang.Iterable<? extends E>> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> fold(F identity,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> foldBackward(F identity,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> foldForward(F identity,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> foldWhile(F identity, @NotNull Predicate<? super F> condition,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> foldWhileBackward(F identity,
+        @NotNull Predicate<? super F> condition,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> foldWhileForward(F identity,
+        @NotNull Predicate<? super F> condition,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> includes(@Nullable Object element);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> includesAll(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> includesSlice(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> interleave(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> interleaveInner(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> interleaveInnerWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
+        E paddingOuter, E paddingInner);
+
+    @Override
+    @NotNull
+    Set<E, T> interleaveWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
+        E paddingOuter, E paddingInner);
+
+    @Override
+    @NotNull
+    Set<E, T> intersect(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> map(@NotNull Function<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> map(@NotNull IndexedFunction<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> mapBackward(@NotNull Function<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> mapBackward(@NotNull IndexedFunction<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> mapForward(@NotNull Function<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> mapForward(@NotNull IndexedFunction<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> mapWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> mapWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> mapWhileBackward(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> mapWhileBackward(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> mapWhileForward(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    <F> Set<F, ? extends Set<F, ?>> mapWhileForward(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, F> mapper);
+
+    @Override
+    @NotNull
+    Set<E, T> materialize();
+
+    @Override
+    @NotNull
+    Set<E, T> max(@NotNull Comparator<? super E> comparator);
+
+    @Override
+    @NotNull
+    Set<E, T> min(@NotNull Comparator<? super E> comparator);
+
+    @Override
+    @NotNull
+    Set<E, T> minus(@Nullable E element);
+
+    @Override
+    @NotNull
+    Set<E, T> minusAll(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> minusFirst(@Nullable E element);
+
+    @Override
+    @NotNull
+    Set<E, T> minusLast(@Nullable E element);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> notExists(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> notExists(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> notExistsBackward(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> notExistsBackward(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> notExistsForward(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> notExistsForward(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> orElse(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> orElseGet(@NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
+
+    @Override
+    @NotNull
+    Set<E, T> plus(@Nullable E element);
+
+    @Override
+    @NotNull
+    Set<E, T> plusAll(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> reduce(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    @NotNull
+    Set<E, T> reduceBackward(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    @NotNull
+    Set<E, T> reduceForward(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    @NotNull
+    Set<E, T> reduceWhile(@NotNull Predicate<? super E> condition,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    @NotNull
+    Set<E, T> reduceWhileBackward(@NotNull Predicate<? super E> condition,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    @NotNull
+    Set<E, T> reduceWhileForward(@NotNull Predicate<? super E> condition,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    @NotNull
+    Set<E, T> removeSlice(int start, int end);
+
+    @Override
+    @NotNull
+    Set<E, T> replaceSlice(int start, int end, @NotNull java.lang.Iterable<? extends E> patch);
+
+    @Override
+    @NotNull
+    Set<E, T> resizeTo(int numElements, E padding);
+
+    @Override
+    @NotNull
+    Set<E, T> slice(int start);
+
+    @Override
+    @NotNull
+    Set<E, T> slice(int start, int end);
+
+    @Override
+    @NotNull
+    Set<? extends Set<E, T>, ? extends Set<? extends Set<E, T>, ?>> slidingWindow(int maxSize,
+        int step);
+
+    @Override
+    @NotNull
+    Set<? extends Set<E, T>, ? extends Set<? extends Set<E, T>, ?>> slidingWindowWithPadding(
+        int size, int step, E padding);
+
+    @Override
+    @NotNull
+    Set<Boolean, ? extends Set<Boolean, ?>> startsWith(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> symmetricDiff(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> takeFirst(int maxElements);
+
+    @Override
+    @NotNull
+    Set<E, T> takeFirstWhile(@NotNull IndexedPredicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> takeFirstWhile(@NotNull Predicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> takeLast(int maxElements);
+
+    @Override
+    @NotNull
+    Set<E, T> takeLastWhile(@NotNull IndexedPredicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> takeLastWhile(@NotNull Predicate<? super E> condition);
+
+    @Override
+    @NotNull
+    Set<E, T> union(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    @NotNull
+    <F> Set<ZipEntry<E, F>, ? extends Set<ZipEntry<E, F>, ?>> zip(
+        @NotNull java.lang.Iterable<F> elements);
+
+    @Override
+    @NotNull
+    <F> Set<ZipEntry<E, F>, ? extends Set<ZipEntry<E, F>, ?>> zipWithPadding(
+        @NotNull java.lang.Iterable<F> elements, E paddingLeft, F paddingRight);
+  }
+
   public interface Tro<E> extends Iterable<E, Tro<E>> {
 
     @NotNull
