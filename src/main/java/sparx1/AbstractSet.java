@@ -18,26 +18,15 @@ package sparx1;
 import java.io.IOException;
 import java.util.Collection;
 import sparx1.itf.Iterator;
-import sparx1.itf.List;
-import sparx1.itf.ListIterator;
+import sparx1.itf.Set;
 import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNull;
 
-abstract class AbstractList<E, T extends AbstractList<E, T>> extends
-    java.util.AbstractList<E> implements List<E, T> {
-
-  @Override
-  public boolean add(final E e) {
-    throw new UnsupportedOperationException();
-  }
+abstract class AbstractSet<E, T extends AbstractSet<E, T>> extends
+    java.util.AbstractSet<E> implements Set<E, T> {
 
   @Override
   public boolean addAll(final @NotNull Collection<? extends E> c) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean addAll(final int index, final @NotNull Collection<? extends E> c) {
     throw new UnsupportedOperationException();
   }
 
@@ -47,7 +36,7 @@ abstract class AbstractList<E, T extends AbstractList<E, T>> extends
   }
 
   @Override
-  public abstract @NotNull List<E, T> clone();
+  public abstract @NotNull Set<E, T> clone();
 
   @Override
   public boolean isNotEmpty() {
@@ -56,12 +45,6 @@ abstract class AbstractList<E, T extends AbstractList<E, T>> extends
 
   @Override
   public abstract @NotNull Iterator<E, ? extends Iterator<E, ?>> iterator();
-
-  @Override
-  public abstract @NotNull ListIterator<E, ? extends ListIterator<E, ?>> listIterator();
-
-  @Override
-  public abstract @NotNull ListIterator<E, ? extends ListIterator<E, ?>> listIterator(int index);
 
   @Override
   public boolean remove(final Object o) {

@@ -16,7 +16,7 @@
 package sparx1.util;
 
 import java.util.Collection;
-import org.jetbrains.annotations.NotNull;
+import sparx1.util.annotation.NotNull;
 
 public class Require {
 

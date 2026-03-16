@@ -16,10 +16,10 @@
 package sparx1;
 
 import java.util.Comparator;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import sparx1.util.ZipEntry;
 import sparx1.util.annotation.NotNegative;
+import sparx1.util.annotation.NotNull;
+import sparx1.util.annotation.Nullable;
 import sparx1.util.annotation.Positive;
 import sparx1.util.function.Action;
 import sparx1.util.function.BinaryFunction;
@@ -80,14 +80,6 @@ public class itf {
 
     @Override
     @NotNull
-    Collection<E, T> dropFirstWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @Override
-    @NotNull
-    Collection<E, T> dropFirstWhere(@NotNull Predicate<? super E> condition);
-
-    @Override
-    @NotNull
     Collection<E, T> dropFirstWhile(@NotNull IndexedPredicate<? super E> condition);
 
     @Override
@@ -97,14 +89,6 @@ public class itf {
     @Override
     @NotNull
     Collection<E, T> dropLast(int maxElements);
-
-    @Override
-    @NotNull
-    Collection<E, T> dropLastWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @Override
-    @NotNull
-    Collection<E, T> dropLastWhere(@NotNull Predicate<? super E> condition);
 
     @NotNull
     Collection<E, T> dropLastWhile(@NotNull IndexedPredicate<? super E> condition);
@@ -196,7 +180,7 @@ public class itf {
 
     @Override
     @NotNull
-    Collection<Integer, ? extends Collection<Integer, ?>> findFirstIndexOfSlice(
+    Collection<Integer, ? extends Collection<Integer, ?>> findFirstIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -237,7 +221,7 @@ public class itf {
 
     @Override
     @NotNull
-    Collection<Integer, ? extends Collection<Integer, ?>> findLastIndexOfSlice(
+    Collection<Integer, ? extends Collection<Integer, ?>> findLastIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -302,7 +286,7 @@ public class itf {
 
     @Override
     @NotNull
-    Collection<Boolean, ? extends Collection<Boolean, ?>> includesSlice(
+    Collection<Boolean, ? extends Collection<Boolean, ?>> includesSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -316,12 +300,12 @@ public class itf {
     @Override
     @NotNull
     Collection<E, T> interleaveInnerWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @Override
     @NotNull
     Collection<E, T> interleaveWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @Override
     @NotNull
@@ -356,14 +340,14 @@ public class itf {
 
     @Override
     @NotNull
-    <F> Collection<F, ? extends Collection<F, ?>> mapWhile(
+    Collection<E, ? extends Collection<E, ?>> mapWhile(
         @NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    <F> Collection<F, ? extends Collection<F, ?>> mapWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Function<? super E, F> mapper);
+    Collection<E, ? extends Collection<E, ?>> mapWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
 
     @NotNull
     <F> Collection<F, ? extends Collection<F, ?>> mapWhileBackward(
@@ -376,14 +360,14 @@ public class itf {
 
     @Override
     @NotNull
-    <F> Collection<F, ? extends Collection<F, ?>> mapWhileForward(
+    Collection<E, ? extends Collection<E, ?>> mapWhileForward(
         @NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    <F> Collection<F, ? extends Collection<F, ?>> mapWhileForward(
-        @NotNull Predicate<? super E> condition, @NotNull Function<? super E, F> mapper);
+    Collection<E, ? extends Collection<E, ?>> mapWhileForward(
+        @NotNull Predicate<? super E> condition, @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
@@ -487,7 +471,51 @@ public class itf {
 
     @Override
     @NotNull
+    Collection<E, T> removeFirst(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Collection<E, T> removeFirst(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Collection<E, T> removeFirstSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Collection<E, T> removeLast(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Collection<E, T> removeLast(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Collection<E, T> removeLastSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Collection<E, T> removeSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
     Collection<E, T> removeSlice(int start, int end);
+
+    @NotNull
+    Collection<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Collection<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Collection<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Collection<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
@@ -496,7 +524,7 @@ public class itf {
 
     @Override
     @NotNull
-    Collection<E, T> resizeTo(int numElements, E padding);
+    Collection<E, T> resizeTo(@NotNegative int numElements, E padding);
 
     @Override
     @NotNull
@@ -509,12 +537,12 @@ public class itf {
     @Override
     @NotNull
     Collection<? extends Collection<E, T>, ? extends Collection<? extends Collection<E, T>, ?>> slidingWindow(
-        int maxSize, int step);
+        @Positive int maxSize, @Positive int step);
 
     @Override
     @NotNull
     Collection<? extends Collection<E, T>, ? extends Collection<? extends Collection<E, T>, ?>> slidingWindowWithPadding(
-        int size, int step, E padding);
+        @Positive int size, @Positive int step, E padding);
 
     @Override
     @NotNull
@@ -688,12 +716,6 @@ public class itf {
     Iterable<E, T> dropFirst(int maxElements);
 
     @NotNull
-    Iterable<E, T> dropFirstWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @NotNull
-    Iterable<E, T> dropFirstWhere(@NotNull Predicate<? super E> condition);
-
-    @NotNull
     Iterable<E, T> dropFirstWhile(@NotNull IndexedPredicate<? super E> condition);
 
     @NotNull
@@ -701,12 +723,6 @@ public class itf {
 
     @NotNull
     Iterable<E, T> dropLast(int maxElements);
-
-    @NotNull
-    Iterable<E, T> dropLastWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @NotNull
-    Iterable<E, T> dropLastWhere(@NotNull Predicate<? super E> condition);
 
     @NotNull
     Iterable<Boolean, ? extends Iterable<Boolean, ?>> endsWith(
@@ -794,11 +810,11 @@ public class itf {
     Iterable<Integer, ? extends Iterable<Integer, ?>> findLastIndexOf(@Nullable Object element);
 
     @NotNull
-    Iterable<Integer, ? extends Iterable<Integer, ?>> findFirstIndexOfSlice(
+    Iterable<Integer, ? extends Iterable<Integer, ?>> findFirstIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @NotNull
-    Iterable<Integer, ? extends Iterable<Integer, ?>> findLastIndexOfSlice(
+    Iterable<Integer, ? extends Iterable<Integer, ?>> findLastIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     E first();
@@ -845,7 +861,7 @@ public class itf {
         @NotNull java.lang.Iterable<?> elements);
 
     @NotNull
-    Iterable<Boolean, ? extends Iterable<Boolean, ?>> includesSlice(
+    Iterable<Boolean, ? extends Iterable<Boolean, ?>> includesSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @NotNull
@@ -856,11 +872,11 @@ public class itf {
 
     @NotNull
     Iterable<E, T> interleaveInnerWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @NotNull
     Iterable<E, T> interleaveWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @NotNull
     Iterable<E, T> intersect(@NotNull java.lang.Iterable<?> elements);
@@ -899,22 +915,21 @@ public class itf {
         @NotNull IndexedFunction<? super E, F> mapper);
 
     @NotNull
-    <F> Iterable<F, ? extends Iterable<F, ?>> mapWhile(
+    Iterable<E, ? extends Iterable<E, ?>> mapWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
+
+    @NotNull
+    Iterable<E, ? extends Iterable<E, ?>> mapWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
+
+    @NotNull
+    Iterable<E, ? extends Iterable<E, ?>> mapWhileForward(
         @NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @NotNull
-    <F> Iterable<F, ? extends Iterable<F, ?>> mapWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Function<? super E, F> mapper);
-
-    @NotNull
-    <F> Iterable<F, ? extends Iterable<F, ?>> mapWhileForward(
-        @NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
-
-    @NotNull
-    <F> Iterable<F, ? extends Iterable<F, ?>> mapWhileForward(
-        @NotNull Predicate<? super E> condition, @NotNull Function<? super E, F> mapper);
+    Iterable<E, ? extends Iterable<E, ?>> mapWhileForward(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
 
     @NotNull
     Iterable<E, T> materialize();
@@ -960,13 +975,13 @@ public class itf {
     Iterable<E, T> orElseGet(@NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
 
     @NotNull
-    Iterable<E, T> reduce(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
-
-    @NotNull
     Iterable<E, T> plus(@Nullable E element);
 
     @NotNull
     Iterable<E, T> plusAll(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @NotNull
+    Iterable<E, T> reduce(@NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
     @NotNull
     Iterable<E, T> reduceForward(
@@ -981,10 +996,47 @@ public class itf {
         @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
 
     @NotNull
+    Iterable<E, T> removeFirst(@NotNull IndexedPredicate<? super E> predicate);
+
+    @NotNull
+    Iterable<E, T> removeFirst(@NotNull Predicate<? super E> predicate);
+
+    @NotNull
+    Iterable<E, T> removeFirstSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @NotNull
+    Iterable<E, T> removeLast(@NotNull IndexedPredicate<? super E> predicate);
+
+    @NotNull
+    Iterable<E, T> removeLast(@NotNull Predicate<? super E> predicate);
+
+    @NotNull
+    Iterable<E, T> removeLastSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @NotNull
+    Iterable<E, T> removeSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @NotNull
     Iterable<E, T> removeSlice(int start, int end);
 
     @NotNull
     Iterable<E, T> replaceSlice(int start, int end, @NotNull java.lang.Iterable<? extends E> patch);
+
+    @NotNull
+    Iterable<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Iterable<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Iterable<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Iterable<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Iterable<E, T> resizeTo(@NotNegative int numElements, E padding);
@@ -1110,14 +1162,6 @@ public class itf {
 
     @Override
     @NotNull
-    Iterator<E, T> dropFirstWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @Override
-    @NotNull
-    Iterator<E, T> dropFirstWhere(@NotNull Predicate<? super E> condition);
-
-    @Override
-    @NotNull
     Iterator<E, T> dropFirstWhile(@NotNull IndexedPredicate<? super E> condition);
 
     @Override
@@ -1127,14 +1171,6 @@ public class itf {
     @Override
     @NotNull
     Iterator<E, T> dropLast(int maxElements);
-
-    @Override
-    @NotNull
-    Iterator<E, T> dropLastWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @Override
-    @NotNull
-    Iterator<E, T> dropLastWhere(@NotNull Predicate<? super E> condition);
 
     @Override
     @NotNull
@@ -1211,7 +1247,7 @@ public class itf {
 
     @Override
     @NotNull
-    Iterator<Integer, ? extends Iterator<Integer, ?>> findFirstIndexOfSlice(
+    Iterator<Integer, ? extends Iterator<Integer, ?>> findFirstIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -1252,7 +1288,7 @@ public class itf {
 
     @Override
     @NotNull
-    Iterator<Integer, ? extends Iterator<Integer, ?>> findLastIndexOfSlice(
+    Iterator<Integer, ? extends Iterator<Integer, ?>> findLastIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -1308,7 +1344,7 @@ public class itf {
 
     @Override
     @NotNull
-    Iterator<Boolean, ? extends Iterator<Boolean, ?>> includesSlice(
+    Iterator<Boolean, ? extends Iterator<Boolean, ?>> includesSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @NotNull
@@ -1335,12 +1371,12 @@ public class itf {
     @Override
     @NotNull
     Iterator<E, T> interleaveInnerWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @Override
     @NotNull
     Iterator<E, T> interleaveWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @Override
     @NotNull
@@ -1365,25 +1401,24 @@ public class itf {
 
     @Override
     @NotNull
-    <F> Iterator<F, ? extends Iterator<F, ?>> mapWhile(
+    Iterator<E, ? extends Iterator<E, ?>> mapWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
+
+    @Override
+    @NotNull
+    Iterator<E, ? extends Iterator<E, ?>> mapWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
+
+    @Override
+    @NotNull
+    Iterator<E, ? extends Iterator<E, ?>> mapWhileForward(
         @NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    <F> Iterator<F, ? extends Iterator<F, ?>> mapWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Function<? super E, F> mapper);
-
-    @Override
-    @NotNull
-    <F> Iterator<F, ? extends Iterator<F, ?>> mapWhileForward(
-        @NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
-
-    @Override
-    @NotNull
-    <F> Iterator<F, ? extends Iterator<F, ?>> mapWhileForward(
-        @NotNull Predicate<? super E> condition, @NotNull Function<? super E, F> mapper);
+    Iterator<E, ? extends Iterator<E, ?>> mapWhileForward(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
@@ -1482,7 +1517,51 @@ public class itf {
 
     @Override
     @NotNull
+    Iterator<E, T> removeFirst(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Iterator<E, T> removeFirst(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Iterator<E, T> removeFirstSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Iterator<E, T> removeLast(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Iterator<E, T> removeLast(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Iterator<E, T> removeLastSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Iterator<E, T> removeSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
     Iterator<E, T> removeSlice(int start, int end);
+
+    @NotNull
+    Iterator<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Iterator<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Iterator<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Iterator<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
@@ -1490,7 +1569,7 @@ public class itf {
 
     @Override
     @NotNull
-    Iterator<E, T> resizeTo(int numElements, E padding);
+    Iterator<E, T> resizeTo(@NotNegative int numElements, E padding);
 
     int skip(int maxElements);
 
@@ -1505,12 +1584,12 @@ public class itf {
     @Override
     @NotNull
     Iterator<? extends Iterator<E, T>, ? extends Iterator<? extends Iterator<E, T>, ?>> slidingWindow(
-        int maxSize, int step);
+        @Positive int maxSize, @Positive int step);
 
     @Override
     @NotNull
     Iterator<? extends Iterator<E, T>, ? extends Iterator<? extends Iterator<E, T>, ?>> slidingWindowWithPadding(
-        int size, int step, E padding);
+        @Positive int size, @Positive int step, E padding);
 
     @Override
     @NotNull
@@ -1619,14 +1698,6 @@ public class itf {
 
     @Override
     @NotNull
-    List<E, T> dropFirstWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @Override
-    @NotNull
-    List<E, T> dropFirstWhere(@NotNull Predicate<? super E> condition);
-
-    @Override
-    @NotNull
     List<E, T> dropFirstWhile(@NotNull IndexedPredicate<? super E> condition);
 
     @Override
@@ -1636,14 +1707,6 @@ public class itf {
     @Override
     @NotNull
     List<E, T> dropLast(int maxElements);
-
-    @Override
-    @NotNull
-    List<E, T> dropLastWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @Override
-    @NotNull
-    List<E, T> dropLastWhere(@NotNull Predicate<? super E> condition);
 
     @Override
     @NotNull
@@ -1737,7 +1800,7 @@ public class itf {
 
     @Override
     @NotNull
-    List<Integer, ? extends List<Integer, ?>> findFirstIndexOfSlice(
+    List<Integer, ? extends List<Integer, ?>> findFirstIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -1777,7 +1840,7 @@ public class itf {
 
     @Override
     @NotNull
-    List<Integer, ? extends List<Integer, ?>> findLastIndexOfSlice(
+    List<Integer, ? extends List<Integer, ?>> findLastIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -1842,7 +1905,7 @@ public class itf {
 
     @Override
     @NotNull
-    List<Boolean, ? extends List<Boolean, ?>> includesSlice(
+    List<Boolean, ? extends List<Boolean, ?>> includesSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @NotNull
@@ -1862,12 +1925,12 @@ public class itf {
     @Override
     @NotNull
     List<E, T> interleaveInnerWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @Override
     @NotNull
     List<E, T> interleaveWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @Override
     @NotNull
@@ -1907,13 +1970,13 @@ public class itf {
 
     @Override
     @NotNull
-    <F> List<F, ? extends List<F, ?>> mapWhile(@NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
+    List<E, ? extends List<E, ?>> mapWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    <F> List<F, ? extends List<F, ?>> mapWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Function<? super E, F> mapper);
+    List<E, ? extends List<E, ?>> mapWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
@@ -1928,14 +1991,13 @@ public class itf {
 
     @Override
     @NotNull
-    <F> List<F, ? extends List<F, ?>> mapWhileForward(
-        @NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
+    List<E, ? extends List<E, ?>> mapWhileForward(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    <F> List<F, ? extends List<F, ?>> mapWhileForward(@NotNull Predicate<? super E> condition,
-        @NotNull Function<? super E, F> mapper);
+    List<E, ? extends List<E, ?>> mapWhileForward(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
@@ -2046,7 +2108,51 @@ public class itf {
 
     @Override
     @NotNull
+    List<E, T> removeFirst(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    List<E, T> removeFirst(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    List<E, T> removeFirstSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    List<E, T> removeLast(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    List<E, T> removeLast(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    List<E, T> removeLastSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    List<E, T> removeSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
     List<E, T> removeSlice(int start, int end);
+
+    @NotNull
+    List<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    List<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    List<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    List<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
@@ -2054,7 +2160,7 @@ public class itf {
 
     @Override
     @NotNull
-    List<E, T> resizeTo(int numElements, E padding);
+    List<E, T> resizeTo(@NotNegative int numElements, E padding);
 
     @NotNull
     List<E, T> reverse();
@@ -2069,13 +2175,13 @@ public class itf {
 
     @Override
     @NotNull
-    List<? extends List<E, T>, ? extends List<? extends List<E, T>, ?>> slidingWindow(int maxSize,
-        int step);
+    List<? extends List<E, T>, ? extends List<? extends List<E, T>, ?>> slidingWindow(
+        @Positive int maxSize, @Positive int step);
 
     @Override
     @NotNull
     List<? extends List<E, T>, ? extends List<? extends List<E, T>, ?>> slidingWindowWithPadding(
-        int size, int step, E padding);
+        @Positive int size, @Positive int step, E padding);
 
     @NotNull
     List<E, T> sorted(@NotNull Comparator<? super E> comparator);
@@ -2187,14 +2293,6 @@ public class itf {
 
     @Override
     @NotNull
-    ListIterator<E, T> dropFirstWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @Override
-    @NotNull
-    ListIterator<E, T> dropFirstWhere(@NotNull Predicate<? super E> condition);
-
-    @Override
-    @NotNull
     ListIterator<E, T> dropFirstWhile(@NotNull IndexedPredicate<? super E> condition);
 
     @Override
@@ -2204,14 +2302,6 @@ public class itf {
     @Override
     @NotNull
     ListIterator<E, T> dropLast(int maxElements);
-
-    @Override
-    @NotNull
-    ListIterator<E, T> dropLastWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @Override
-    @NotNull
-    ListIterator<E, T> dropLastWhere(@NotNull Predicate<? super E> condition);
 
     @NotNull
     ListIterator<E, T> dropLastWhile(@NotNull IndexedPredicate<? super E> condition);
@@ -2303,7 +2393,7 @@ public class itf {
 
     @Override
     @NotNull
-    ListIterator<Integer, ? extends ListIterator<Integer, ?>> findFirstIndexOfSlice(
+    ListIterator<Integer, ? extends ListIterator<Integer, ?>> findFirstIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -2345,7 +2435,7 @@ public class itf {
 
     @Override
     @NotNull
-    ListIterator<Integer, ? extends ListIterator<Integer, ?>> findLastIndexOfSlice(
+    ListIterator<Integer, ? extends ListIterator<Integer, ?>> findLastIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -2410,7 +2500,7 @@ public class itf {
 
     @Override
     @NotNull
-    ListIterator<Boolean, ? extends ListIterator<Boolean, ?>> includesSlice(
+    ListIterator<Boolean, ? extends ListIterator<Boolean, ?>> includesSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -2441,12 +2531,12 @@ public class itf {
     @Override
     @NotNull
     ListIterator<E, T> interleaveInnerWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @Override
     @NotNull
     ListIterator<E, T> interleaveWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @Override
     @NotNull
@@ -2484,14 +2574,14 @@ public class itf {
 
     @Override
     @NotNull
-    <F> ListIterator<F, ? extends ListIterator<F, ?>> mapWhile(
+    ListIterator<E, ? extends ListIterator<E, ?>> mapWhile(
         @NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    <F> ListIterator<F, ? extends ListIterator<F, ?>> mapWhile(
-        @NotNull Predicate<? super E> condition, @NotNull Function<? super E, F> mapper);
+    ListIterator<E, ? extends ListIterator<E, ?>> mapWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
 
     @NotNull
     <F> ListIterator<F, ? extends ListIterator<F, ?>> mapWhileBackward(
@@ -2504,14 +2594,14 @@ public class itf {
 
     @Override
     @NotNull
-    <F> ListIterator<F, ? extends ListIterator<F, ?>> mapWhileForward(
+    ListIterator<E, ? extends ListIterator<E, ?>> mapWhileForward(
         @NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    <F> ListIterator<F, ? extends ListIterator<F, ?>> mapWhileForward(
-        @NotNull Predicate<? super E> condition, @NotNull Function<? super E, F> mapper);
+    ListIterator<E, ? extends ListIterator<E, ?>> mapWhileForward(
+        @NotNull Predicate<? super E> condition, @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
@@ -2640,7 +2730,51 @@ public class itf {
 
     @Override
     @NotNull
+    ListIterator<E, T> removeFirst(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    ListIterator<E, T> removeFirst(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    ListIterator<E, T> removeFirstSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    ListIterator<E, T> removeLast(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    ListIterator<E, T> removeLast(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    ListIterator<E, T> removeLastSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    ListIterator<E, T> removeSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
     ListIterator<E, T> removeSlice(int start, int end);
+
+    @NotNull
+    ListIterator<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    ListIterator<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    ListIterator<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    ListIterator<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
@@ -2649,7 +2783,7 @@ public class itf {
 
     @Override
     @NotNull
-    ListIterator<E, T> resizeTo(int numElements, E padding);
+    ListIterator<E, T> resizeTo(@NotNegative int numElements, E padding);
 
     @Override
     int skip(int maxElements);
@@ -2665,12 +2799,12 @@ public class itf {
     @Override
     @NotNull
     ListIterator<? extends ListIterator<E, T>, ? extends ListIterator<? extends ListIterator<E, T>, ?>> slidingWindow(
-        int maxSize, int step);
+        @Positive int maxSize, @Positive int step);
 
     @Override
     @NotNull
     ListIterator<? extends ListIterator<E, T>, ? extends ListIterator<? extends ListIterator<E, T>, ?>> slidingWindowWithPadding(
-        int size, int step, E padding);
+        @Positive int size, @Positive int step, E padding);
 
     @Override
     @NotNull
@@ -2783,14 +2917,6 @@ public class itf {
 
     @Override
     @NotNull
-    Set<E, T> dropFirstWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @Override
-    @NotNull
-    Set<E, T> dropFirstWhere(@NotNull Predicate<? super E> condition);
-
-    @Override
-    @NotNull
     Set<E, T> dropFirstWhile(@NotNull IndexedPredicate<? super E> condition);
 
     @Override
@@ -2800,14 +2926,6 @@ public class itf {
     @Override
     @NotNull
     Set<E, T> dropLast(int maxElements);
-
-    @Override
-    @NotNull
-    Set<E, T> dropLastWhere(@NotNull IndexedPredicate<? super E> condition);
-
-    @Override
-    @NotNull
-    Set<E, T> dropLastWhere(@NotNull Predicate<? super E> condition);
 
     @Override
     @NotNull
@@ -2900,7 +3018,7 @@ public class itf {
 
     @Override
     @NotNull
-    Set<Integer, ? extends Set<Integer, ?>> findFirstIndexOfSlice(
+    Set<Integer, ? extends Set<Integer, ?>> findFirstIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -2939,7 +3057,7 @@ public class itf {
 
     @Override
     @NotNull
-    Set<Integer, ? extends Set<Integer, ?>> findLastIndexOfSlice(
+    Set<Integer, ? extends Set<Integer, ?>> findLastIndexOfSequence(
         @NotNull java.lang.Iterable<?> elements);
 
     @Override
@@ -3004,7 +3122,8 @@ public class itf {
 
     @Override
     @NotNull
-    Set<Boolean, ? extends Set<Boolean, ?>> includesSlice(@NotNull java.lang.Iterable<?> elements);
+    Set<Boolean, ? extends Set<Boolean, ?>> includesSequence(
+        @NotNull java.lang.Iterable<?> elements);
 
     @Override
     @NotNull
@@ -3017,12 +3136,12 @@ public class itf {
     @Override
     @NotNull
     Set<E, T> interleaveInnerWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @Override
     @NotNull
     Set<E, T> interleaveWithPadding(@NotNull java.lang.Iterable<? extends E> elements,
-        E paddingOuter, E paddingInner);
+        E paddingLeft, E paddingRight);
 
     @Override
     @NotNull
@@ -3054,13 +3173,13 @@ public class itf {
 
     @Override
     @NotNull
-    <F> Set<F, ? extends Set<F, ?>> mapWhile(@NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
+    Set<E, ? extends Set<E, ?>> mapWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    <F> Set<F, ? extends Set<F, ?>> mapWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Function<? super E, F> mapper);
+    Set<E, ? extends Set<E, ?>> mapWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
@@ -3074,13 +3193,13 @@ public class itf {
 
     @Override
     @NotNull
-    <F> Set<F, ? extends Set<F, ?>> mapWhileForward(@NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, F> mapper);
+    Set<E, ? extends Set<E, ?>> mapWhileForward(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
-    <F> Set<F, ? extends Set<F, ?>> mapWhileForward(@NotNull Predicate<? super E> condition,
-        @NotNull Function<? super E, F> mapper);
+    Set<E, ? extends Set<E, ?>> mapWhileForward(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
 
     @Override
     @NotNull
@@ -3185,7 +3304,51 @@ public class itf {
 
     @Override
     @NotNull
+    Set<E, T> removeFirst(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> removeFirst(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> removeFirstSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> removeLast(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> removeLast(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    @NotNull
+    Set<E, T> removeLastSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
+    Set<E, T> removeSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    @NotNull
     Set<E, T> removeSlice(int start, int end);
+
+    @NotNull
+    Set<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Set<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Set<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Set<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
@@ -3193,7 +3356,7 @@ public class itf {
 
     @Override
     @NotNull
-    Set<E, T> resizeTo(int numElements, E padding);
+    Set<E, T> resizeTo(@NotNegative int numElements, E padding);
 
     @Override
     @NotNull
@@ -3205,13 +3368,13 @@ public class itf {
 
     @Override
     @NotNull
-    Set<? extends Set<E, T>, ? extends Set<? extends Set<E, T>, ?>> slidingWindow(int maxSize,
-        int step);
+    Set<? extends Set<E, T>, ? extends Set<? extends Set<E, T>, ?>> slidingWindow(
+        @Positive int maxSize, @Positive int step);
 
     @Override
     @NotNull
     Set<? extends Set<E, T>, ? extends Set<? extends Set<E, T>, ?>> slidingWindowWithPadding(
-        int size, int step, E padding);
+        @Positive int size, @Positive int step, E padding);
 
     @Override
     @NotNull

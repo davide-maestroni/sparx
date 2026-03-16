@@ -24,7 +24,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.jetbrains.annotations.NotNull;
+import sparx1.util.annotation.NotNull;
 
 public class SharedTimer {
 
@@ -36,7 +36,7 @@ public class SharedTimer {
 
   private final AtomicBoolean released;
 
-  private SharedTimer(@NotNull final AtomicBoolean released) {
+  private SharedTimer(final @NotNull AtomicBoolean released) {
     this.released = released;
   }
 
@@ -70,7 +70,7 @@ public class SharedTimer {
   private static @NotNull ScheduledExecutorService createsExecutorService() {
     return Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
       @Override
-      public Thread newThread(@NotNull final Runnable r) {
+      public Thread newThread(final @NotNull Runnable r) {
         final Thread thread = new Thread(r, "sparx-timer");
         thread.setPriority(Thread.MIN_PRIORITY);
         return thread;
@@ -104,24 +104,24 @@ public class SharedTimer {
     }
   }
 
-  public @NotNull ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
-      @NotNull final TimeUnit unit) {
+  public @NotNull ScheduledFuture<?> schedule(final @NotNull Runnable command, final long delay,
+      final @NotNull TimeUnit unit) {
     if (released.get()) {
       throw new RejectedExecutionException("Timer already released");
     }
     return executorService.schedule(command, delay, unit);
   }
 
-  public @NotNull ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
-      final long initialDelay, final long period, @NotNull final TimeUnit unit) {
+  public @NotNull ScheduledFuture<?> scheduleAtFixedRate(final @NotNull Runnable command,
+      final long initialDelay, final long period, final @NotNull TimeUnit unit) {
     if (released.get()) {
       throw new RejectedExecutionException("Timer already released");
     }
     return executorService.scheduleAtFixedRate(command, initialDelay, period, unit);
   }
 
-  public @NotNull ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
-      final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
+  public @NotNull ScheduledFuture<?> scheduleWithFixedDelay(final @NotNull Runnable command,
+      final long initialDelay, final long delay, final @NotNull TimeUnit unit) {
     if (released.get()) {
       throw new RejectedExecutionException("Timer already released");
     }
@@ -132,7 +132,7 @@ public class SharedTimer {
 
     private final AtomicBoolean released;
 
-    TimerWeakReference(@NotNull final SharedTimer timer, @NotNull final AtomicBoolean released) {
+    TimerWeakReference(final @NotNull SharedTimer timer, final @NotNull AtomicBoolean released) {
       super(timer, referenceQueue);
       this.released = released;
     }

@@ -16,73 +16,52 @@
 package sparx1;
 
 import java.io.IOException;
-import java.util.Collection;
 import sparx1.itf.Iterator;
-import sparx1.itf.List;
-import sparx1.itf.ListIterator;
 import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNull;
 
-abstract class AbstractList<E, T extends AbstractList<E, T>> extends
-    java.util.AbstractList<E> implements List<E, T> {
+abstract class AbstractIterator<E, T extends AbstractIterator<E, T>> implements Iterator<E, T> {
 
   @Override
-  public boolean add(final E e) {
-    throw new UnsupportedOperationException();
+  public E first() {
+    return next();
   }
 
   @Override
-  public boolean addAll(final @NotNull Collection<? extends E> c) {
-    throw new UnsupportedOperationException();
+  public boolean isEmpty() {
+    return !hasNext();
   }
-
-  @Override
-  public boolean addAll(final int index, final @NotNull Collection<? extends E> c) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void clear() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public abstract @NotNull List<E, T> clone();
 
   @Override
   public boolean isNotEmpty() {
-    return !isEmpty();
+    return hasNext();
   }
 
   @Override
-  public abstract @NotNull Iterator<E, ? extends Iterator<E, ?>> iterator();
+  public boolean isOrdered() {
+    return true;
+  }
 
   @Override
-  public abstract @NotNull ListIterator<E, ? extends ListIterator<E, ?>> listIterator();
+  public boolean isRepeatable() {
+    return false;
+  }
 
   @Override
-  public abstract @NotNull ListIterator<E, ? extends ListIterator<E, ?>> listIterator(int index);
-
-  @Override
-  public boolean remove(final Object o) {
+  public void remove() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean removeAll(final @NotNull Collection<?> c) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean retainAll(final @NotNull Collection<?> c) {
-    throw new UnsupportedOperationException();
+  public String toString() {
+    return toString(new StringBuilder(), ", ", "[", "]").toString();
   }
 
   @Override
   public @NotNull <A extends Appendable> A toString(final @NotNull A appendable) {
     try {
-      for (E element : this) {
-        appendable.append(String.valueOf(element));
+      while (hasNext()) {
+        appendable.append(String.valueOf(next()));
       }
     } catch (final IOException e) {
       throw UncheckedException.throwUnchecked(e);
@@ -94,12 +73,11 @@ abstract class AbstractList<E, T extends AbstractList<E, T>> extends
   public @NotNull <A extends Appendable> A toString(final @NotNull A appendable,
       final @NotNull String separator) {
     try {
-      final java.util.Iterator<E> iterator = iterator();
-      if (iterator.hasNext()) {
-        appendable.append(String.valueOf(iterator.next()));
-        while (iterator.hasNext()) {
+      if (hasNext()) {
+        appendable.append(String.valueOf(next()));
+        while (hasNext()) {
           appendable.append(separator);
-          appendable.append(String.valueOf(iterator.next()));
+          appendable.append(String.valueOf(next()));
         }
       }
     } catch (final IOException e) {
@@ -112,13 +90,12 @@ abstract class AbstractList<E, T extends AbstractList<E, T>> extends
   public @NotNull <A extends Appendable> A toString(final @NotNull A appendable,
       final @NotNull String separator, final @NotNull String prefix, final @NotNull String suffix) {
     try {
-      final java.util.Iterator<E> iterator = iterator();
       appendable.append(prefix);
-      if (iterator.hasNext()) {
-        appendable.append(String.valueOf(iterator.next()));
-        while (iterator.hasNext()) {
+      if (hasNext()) {
+        appendable.append(String.valueOf(next()));
+        while (hasNext()) {
           appendable.append(separator);
-          appendable.append(String.valueOf(iterator.next()));
+          appendable.append(String.valueOf(next()));
         }
       }
       appendable.append(suffix);

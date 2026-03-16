@@ -26,9 +26,9 @@ import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.RandomAccess;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import sparx1.util.annotation.NotNegative;
+import sparx1.util.annotation.NotNull;
+import sparx1.util.annotation.Nullable;
 import sparx1.util.annotation.Positive;
 import sparx1.util.function.Predicate;
 
@@ -106,7 +106,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * @param collection the collection whose elements are to be placed into this list
    * @throws NullPointerException if the specified collection is null
    */
-  public DequeArrayList(@NotNull final Collection<? extends E> collection) {
+  public DequeArrayList(final @NotNull Collection<? extends E> collection) {
     this(collection, false);
   }
 
@@ -119,7 +119,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    *                   adaptive threshold
    * @throws NullPointerException if the specified collection is null
    */
-  public DequeArrayList(@NotNull final Collection<? extends E> collection,
+  public DequeArrayList(final @NotNull Collection<? extends E> collection,
       final boolean autoShrink) {
     if (collection.getClass() == DequeArrayList.class) {
       final DequeArrayList<?> other = (DequeArrayList<?>) collection;
@@ -169,7 +169,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * {@inheritDoc}
    */
   @Override
-  public boolean add(@Nullable final E element) {
+  public boolean add(final @Nullable E element) {
     addLast(element);
     return true;
   }
@@ -178,7 +178,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * {@inheritDoc}
    */
   @Override
-  public void add(final int index, @Nullable final E element) {
+  public void add(final int index, final @Nullable E element) {
     if (index < 0 || index > size()) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
@@ -195,7 +195,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * {@inheritDoc}
    */
   @Override
-  public boolean addAll(@NotNull final Collection<? extends E> collection) {
+  public boolean addAll(final @NotNull Collection<? extends E> collection) {
     if (collection.isEmpty()) {
       return false;
     }
@@ -210,7 +210,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * {@inheritDoc}
    */
   @Override
-  public boolean addAll(final int index, @NotNull final Collection<? extends E> collection) {
+  public boolean addAll(final int index, final @NotNull Collection<? extends E> collection) {
     if (index < 0 || index > size()) {
       throw new IndexOutOfBoundsException(Integer.toString(index));
     }
@@ -228,7 +228,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * {@inheritDoc}
    */
   @Override
-  public void addFirst(@Nullable final E element) {
+  public void addFirst(final @Nullable E element) {
     if (gapOffset > 0) {
       throw new ConcurrentModificationException();
     }
@@ -247,7 +247,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * {@inheritDoc}
    */
   @Override
-  public void addLast(@Nullable final E element) {
+  public void addLast(final @Nullable E element) {
     if (gapOffset > 0) {
       throw new ConcurrentModificationException();
     }
@@ -807,7 +807,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * {@inheritDoc}
    */
   @Override
-  public boolean removeAll(@NotNull final Collection<?> collection) {
+  public boolean removeAll(final @NotNull Collection<?> collection) {
     Require.notNull(collection, "collection");
     return removeAll(new Predicate<E>() {
       @Override
@@ -826,7 +826,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * @throws NullPointerException if the specified predicate is {@code null}
    */
   @SuppressWarnings("unchecked")
-  public boolean removeAll(@NotNull final Predicate<? super E> predicate) {
+  public boolean removeAll(final @NotNull Predicate<? super E> predicate) {
     Require.notNull(predicate, "predicate");
     if (isEmpty()) {
       return false;
@@ -1074,7 +1074,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * {@inheritDoc}
    */
   @Override
-  public boolean retainAll(@NotNull final Collection<?> collection) {
+  public boolean retainAll(final @NotNull Collection<?> collection) {
     Require.notNull(collection, "collection");
     return removeAll(new Predicate<E>() {
       @Override
@@ -1088,7 +1088,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * {@inheritDoc}
    */
   @Override
-  public E set(final int index, @Nullable final E element) {
+  public E set(final int index, final @Nullable E element) {
     final Object[] data = this.data;
     final E old = get(index);
     data[modInc(first, index + gapOffset, data.length)] = element;
@@ -1183,7 +1183,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     }
   }
 
-  private void addElements(final int index, @NotNull final Collection<? extends E> collection) {
+  private void addElements(final int index, final @NotNull Collection<? extends E> collection) {
     final int added = collection.size();
     final int totalSize = size + added;
     if (totalSize < 0) {
@@ -1289,7 +1289,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
 
   @NotNull
   @SuppressWarnings("SuspiciousSystemArraycopy")
-  private <T> T[] copyElements(@NotNull final T[] dst) {
+  private <T> T[] copyElements(final @NotNull T[] dst) {
     if (size() > 0) {
       final int first = this.first;
       final int last = this.last;

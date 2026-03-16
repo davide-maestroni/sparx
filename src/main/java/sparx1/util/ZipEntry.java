@@ -16,8 +16,8 @@
 package sparx1.util;
 
 import java.util.Map.Entry;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import sparx1.util.annotation.NotNull;
+import sparx1.util.annotation.Nullable;
 
 public class ZipEntry<L, R> implements Entry<L, R> {
 
@@ -30,7 +30,7 @@ public class ZipEntry<L, R> implements Entry<L, R> {
   }
 
   @NotNull
-  public static <L, R> ZipEntry<L, R> of(@NotNull final Entry<? extends L, ? extends R> entry) {
+  public static <L, R> ZipEntry<L, R> of(final @NotNull Entry<? extends L, ? extends R> entry) {
     return new ZipEntry<L, R>(entry.getKey(), entry.getValue());
   }
 

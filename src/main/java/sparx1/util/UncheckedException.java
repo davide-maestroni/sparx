@@ -17,14 +17,14 @@ package sparx1.util;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
-import org.jetbrains.annotations.NotNull;
+import sparx1.util.annotation.NotNull;
 
 public class UncheckedException extends RuntimeException {
 
   private static final String ADD_STACK_METHOD_NAME = "addCurrentStack";
   private static final String CLASS_NAME = UncheckedException.class.getName();
 
-  public static @NotNull Throwable addCurrentStack(@NotNull final Throwable error) {
+  public static @NotNull Throwable addCurrentStack(final @NotNull Throwable error) {
     final StackTraceElement[] currentStack = Thread.currentThread().getStackTrace();
     int offset = 0;
     for (; offset < currentStack.length; ++offset) {
