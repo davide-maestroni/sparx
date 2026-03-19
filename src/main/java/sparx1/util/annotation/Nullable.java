@@ -21,7 +21,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.jetbrains.annotations.NonNls;
 
 /**
  * An element annotated with {@link sparx1.util.annotation.Nullable} claims {@code null} value is
@@ -51,5 +50,5 @@ public @interface Nullable {
   /**
    * @return textual reason when the annotated value could be null, for documentation purposes.
    */
-  @NonNls String value() default "";
+  String value() default "";
 }

@@ -19,51 +19,63 @@ import java.util.NoSuchElementException;
 import sparx1.internal.lazy.IteratorMaterializer;
 import sparx1.util.annotation.NotNull;
 
-public class InterleaveInnerIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
-
-  private final IteratorMaterializer<E> elementsMaterializer;
-  private final IteratorMaterializer<E> wrapped;
-
-  private boolean isWrapped = true;
+public class InterleaveInnerIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public InterleaveInnerIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IteratorMaterializer<E> elementsMaterializer) {
-    this.wrapped = wrapped;
-    this.elementsMaterializer = elementsMaterializer;
+    setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
-  @Override
-  public int currentKnownSize() {
-    final int knownSize = wrapped.currentKnownSize();
-    if (knownSize >= 0) {
-      final int elementsSize = elementsMaterializer.currentKnownSize();
-      if (elementsSize >= 0) {
-        return isWrapped ? (Math.max(knownSize - 1, elementsSize) * 2) + 1
-            : Math.max(knownSize, elementsSize) * 2;
+  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+
+    private final IteratorMaterializer<E> elementsMaterializer;
+    private final IteratorMaterializer<E> wrapped;
+
+    private boolean isWrapped = true;
+
+    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+        final @NotNull IteratorMaterializer<E> elementsMaterializer) {
+      this.wrapped = wrapped;
+      this.elementsMaterializer = elementsMaterializer;
+    }
+
+    @Override
+    public int currentKnownSize() {
+      final int knownSize = wrapped.currentKnownSize();
+      if (knownSize >= 0) {
+        final int elementsSize = elementsMaterializer.currentKnownSize();
+        if (elementsSize >= 0) {
+          return isWrapped ? (Math.max(knownSize - 1, elementsSize) * 2) + 1
+              : Math.max(knownSize, elementsSize) * 2;
+        }
       }
+      return -1;
     }
-    return -1;
-  }
 
-  @Override
-  public boolean materializeHasNext() {
-    return isWrapped ? wrapped.materializeHasNext()
-        : wrapped.materializeHasNext() && elementsMaterializer.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    final IteratorMaterializer<E> wrapped = this.wrapped;
-    final boolean isWrapped = this.isWrapped;
-    final E next;
-    if (isWrapped) {
-      next = wrapped.materializeNext();
-    } else if (wrapped.materializeHasNext()) {
-      next = elementsMaterializer.materializeNext();
-    } else {
-      throw new NoSuchElementException();
+    @Override
+    public boolean materializeHasNext() {
+      if (isWrapped ? wrapped.materializeHasNext()
+          : wrapped.materializeHasNext() && elementsMaterializer.materializeHasNext()) {
+        return true;
+      }
+      setEmptyState();
+      return false;
     }
-    this.isWrapped = !isWrapped;
-    return next;
+
+    @Override
+    public E materializeNext() {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      final boolean isWrapped = this.isWrapped;
+      final E next;
+      if (isWrapped) {
+        next = wrapped.materializeNext();
+      } else if (wrapped.materializeHasNext()) {
+        next = elementsMaterializer.materializeNext();
+      } else {
+        throw new NoSuchElementException();
+      }
+      this.isWrapped = !isWrapped;
+      return next;
+    }
   }
 }

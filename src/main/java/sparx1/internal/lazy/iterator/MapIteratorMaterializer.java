@@ -21,43 +21,55 @@ import sparx1.util.annotation.NotNull;
 import sparx1.util.annotation.Positive;
 import sparx1.util.function.IndexedFunction;
 
-public class MapIteratorMaterializer<E, F> implements IteratorMaterializer<F> {
-
-  private final IndexedFunction<? super E, F> mapper;
-  private final IteratorMaterializer<E> wrapped;
-
-  private int pos;
+public class MapIteratorMaterializer<E, F> extends StatefulIteratorMaterializer<F> {
 
   public MapIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedFunction<? super E, F> mapper) {
-    this.wrapped = wrapped;
-    this.mapper = mapper;
+    setState(new ImmaterialState(wrapped, mapper));
   }
 
-  @Override
-  public int currentKnownSize() {
-    return wrapped.currentKnownSize();
-  }
+  private class ImmaterialState implements IteratorMaterializer<F> {
 
-  @Override
-  public boolean materializeHasNext() {
-    return wrapped.materializeHasNext();
-  }
+    private final IndexedFunction<? super E, F> mapper;
+    private final IteratorMaterializer<E> wrapped;
 
-  @Override
-  public F materializeNext() {
-    try {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      return mapper.apply(pos++, wrapped.materializeNext());
-    } catch (final Exception e) {
-      throw UncheckedException.throwUnchecked(e);
+    private int pos;
+
+    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+        final @NotNull IndexedFunction<? super E, F> mapper) {
+      this.wrapped = wrapped;
+      this.mapper = mapper;
     }
-  }
 
-  @Override
-  public int materializeSkip(@Positive final int count) {
-    final int skipped = wrapped.materializeSkip(count);
-    pos += skipped;
-    return skipped;
+    @Override
+    public int currentKnownSize() {
+      return wrapped.currentKnownSize();
+    }
+
+    @Override
+    public boolean materializeHasNext() {
+      if (wrapped.materializeHasNext()) {
+        return true;
+      }
+      setEmptyState();
+      return false;
+    }
+
+    @Override
+    public F materializeNext() {
+      try {
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        return mapper.apply(pos++, wrapped.materializeNext());
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+
+    @Override
+    public int materializeSkip(@Positive final int count) {
+      final int skipped = wrapped.materializeSkip(count);
+      pos += skipped;
+      return skipped;
+    }
   }
 }

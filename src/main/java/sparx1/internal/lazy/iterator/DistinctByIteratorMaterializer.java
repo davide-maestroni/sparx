@@ -22,60 +22,69 @@ import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.function.IndexedFunction;
 
-public class DistinctByIteratorMaterializer<E, K> extends AbstractIteratorMaterializer<E> {
-
-  private final HashSet<Object> distinctKeys = new HashSet<Object>();
-  private final IndexedFunction<? super E, K> keyExtractor;
-  private final IteratorMaterializer<E> wrapped;
-
-  private boolean hasNext;
-  private E next;
-  private int pos;
+public class DistinctByIteratorMaterializer<E, K> extends StatefulIteratorMaterializer<E> {
 
   public DistinctByIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedFunction<? super E, K> keyExtractor) {
-    this.wrapped = wrapped;
-    this.keyExtractor = keyExtractor;
+    setState(new ImmaterialState(wrapped, keyExtractor));
   }
 
-  @Override
-  public int currentKnownSize() {
-    return -1;
-  }
+  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
 
-  @Override
-  public boolean materializeHasNext() {
-    if (hasNext) {
-      return true;
+    private final HashSet<Object> distinctKeys = new HashSet<Object>();
+    private final IndexedFunction<? super E, K> keyExtractor;
+    private final IteratorMaterializer<E> wrapped;
+
+    private boolean hasNext;
+    private E next;
+    private int pos;
+
+    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+        final @NotNull IndexedFunction<? super E, K> keyExtractor) {
+      this.wrapped = wrapped;
+      this.keyExtractor = keyExtractor;
     }
-    try {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      final HashSet<Object> distinctKeys = this.distinctKeys;
-      final IndexedFunction<? super E, K> keyExtractor = this.keyExtractor;
-      while (wrapped.materializeHasNext()) {
-        final E element = wrapped.materializeNext();
-        final int index = pos++;
-        if (distinctKeys.add(keyExtractor.apply(index, element))) {
-          hasNext = true;
-          next = element;
-          return true;
-        }
+
+    @Override
+    public int currentKnownSize() {
+      return -1;
+    }
+
+    @Override
+    public boolean materializeHasNext() {
+      if (hasNext) {
+        return true;
       }
-      distinctKeys.clear();
-    } catch (final Exception e) {
-      throw UncheckedException.throwUnchecked(e);
+      try {
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        final HashSet<Object> distinctKeys = this.distinctKeys;
+        final IndexedFunction<? super E, K> keyExtractor = this.keyExtractor;
+        while (wrapped.materializeHasNext()) {
+          final E element = wrapped.materializeNext();
+          final int index = pos++;
+          if (distinctKeys.add(keyExtractor.apply(index, element))) {
+            hasNext = true;
+            next = element;
+            return true;
+          }
+        }
+        distinctKeys.clear();
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+      setEmptyState();
+      return false;
     }
-    return false;
-  }
 
-  @Override
-  public E materializeNext() {
-    if (!materializeHasNext()) {
-      throw new NoSuchElementException();
+    @Override
+    public E materializeNext() {
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
+      final E next = this.next;
+      hasNext = false;
+      this.next = null;
+      return next;
     }
-    final E next = this.next;
-    hasNext = false;
-    this.next = null;
-    return next;
   }
 }

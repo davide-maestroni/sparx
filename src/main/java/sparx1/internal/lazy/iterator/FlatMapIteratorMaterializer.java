@@ -22,60 +22,70 @@ import sparx1.util.annotation.NotNull;
 import sparx1.util.annotation.Positive;
 import sparx1.util.function.IndexedFunction;
 
-public class FlatMapIteratorMaterializer<E, F> implements IteratorMaterializer<F> {
-
-  private final IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper;
-  private final IteratorMaterializer<E> wrapped;
-
-  private IteratorMaterializer<F> materializer = EmptyIteratorMaterializer.instance();
-  private int pos;
+public class FlatMapIteratorMaterializer<E, F> extends StatefulIteratorMaterializer<F> {
 
   public FlatMapIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper) {
-    this.wrapped = wrapped;
-    this.mapper = mapper;
+    setState(new ImmaterialState(wrapped, mapper));
   }
 
-  @Override
-  public int currentKnownSize() {
-    return -1;
-  }
+  private class ImmaterialState implements IteratorMaterializer<F> {
 
-  @Override
-  public boolean materializeHasNext() {
-    if (materializer.materializeHasNext()) {
-      return true;
+    private final IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper;
+    private final IteratorMaterializer<E> wrapped;
+
+    private IteratorMaterializer<F> materializer = EmptyIteratorMaterializer.instance();
+    private int pos;
+
+    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+        final @NotNull IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper) {
+      this.wrapped = wrapped;
+      this.mapper = mapper;
     }
-    try {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      final IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper = this.mapper;
-      while (wrapped.materializeHasNext()) {
-        final IteratorMaterializer<F> materializer = mapper.apply(pos++, wrapped.materializeNext());
-        if (materializer.materializeHasNext()) {
-          this.materializer = materializer;
-          return true;
-        }
+
+    @Override
+    public int currentKnownSize() {
+      return -1;
+    }
+
+    @Override
+    public boolean materializeHasNext() {
+      if (materializer.materializeHasNext()) {
+        return true;
       }
-    } catch (final Exception e) {
-      throw UncheckedException.throwUnchecked(e);
+      try {
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        final IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper = this.mapper;
+        while (wrapped.materializeHasNext()) {
+          final IteratorMaterializer<F> materializer = mapper.apply(pos++,
+              wrapped.materializeNext());
+          if (materializer.materializeHasNext()) {
+            this.materializer = materializer;
+            return true;
+          }
+        }
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+      setEmptyState();
+      return false;
     }
-    return false;
-  }
 
-  @Override
-  public F materializeNext() {
-    if (!materializeHasNext()) {
-      throw new NoSuchElementException();
+    @Override
+    public F materializeNext() {
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
+      return materializer.materializeNext();
     }
-    return materializer.materializeNext();
-  }
 
-  @Override
-  public int materializeSkip(@Positive final int count) {
-    int skipped = 0;
-    while (skipped < count && materializeHasNext()) {
-      skipped += materializer.materializeSkip(count - skipped);
+    @Override
+    public int materializeSkip(@Positive final int count) {
+      int skipped = 0;
+      while (skipped < count && materializeHasNext()) {
+        skipped += materializer.materializeSkip(count - skipped);
+      }
+      return skipped;
     }
-    return skipped;
   }
 }

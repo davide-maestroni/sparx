@@ -15,6 +15,7 @@
  */
 package sparx1.util.function;
 
+import java.util.Comparator;
 import sparx1.util.Require;
 import sparx1.util.annotation.NotNull;
 
@@ -38,6 +39,18 @@ public class Functions {
       return param != null;
     }
   };
+  private static final IndexedPredicate<?> TEST_FALSE = new IndexedPredicate<Object>() {
+    @Override
+    public boolean test(final int index, final Object param) {
+      return false;
+    }
+  };
+  private static final IndexedPredicate<?> TEST_TRUE = new IndexedPredicate<Object>() {
+    @Override
+    public boolean test(final int index, final Object param) {
+      return true;
+    }
+  };
 
   private Functions() {
   }
@@ -58,6 +71,44 @@ public class Functions {
   @SuppressWarnings("unchecked")
   public static @NotNull <P, R> IndexedFunction<P, R> indexedIdentity() {
     return (IndexedFunction<P, R>) INDEXED_IDENTITY;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> IndexedPredicate<E> notEqualsElement(final Object element) {
+    if (element == null) {
+      return (IndexedPredicate<E>) NOT_EQUALS_NULL;
+    }
+    return new IndexedPredicate<E>() {
+      @Override
+      public boolean test(final int index, final E param) {
+        return !element.equals(param);
+      }
+    };
+  }
+
+  public static @NotNull <T> Comparator<T> reversed(@NotNull final Comparator<T> comparator) {
+    return reversed(comparator, "comparator");
+  }
+
+  public static @NotNull <T> Comparator<T> reversed(@NotNull final Comparator<T> comparator,
+      final String name) {
+    Require.notNull(comparator, name);
+    return new Comparator<T>() {
+      @Override
+      public int compare(final T o1, final T o2) {
+        return comparator.compare(o2, o1);
+      }
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> IndexedPredicate<E> indexedFalse() {
+    return (IndexedPredicate<E>) TEST_FALSE;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> IndexedPredicate<E> indexedTrue() {
+    return (IndexedPredicate<E>) TEST_TRUE;
   }
 
   public static @NotNull <E, F> IndexedFunction<E, F> toIndexedFunction(

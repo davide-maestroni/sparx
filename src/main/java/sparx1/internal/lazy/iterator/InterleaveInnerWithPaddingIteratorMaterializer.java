@@ -20,64 +20,77 @@ import sparx1.internal.lazy.IteratorMaterializer;
 import sparx1.util.annotation.NotNull;
 
 public class InterleaveInnerWithPaddingIteratorMaterializer<E> extends
-    AbstractIteratorMaterializer<E> {
-
-  private final IteratorMaterializer<E> elementsMaterializer;
-  private final E paddingLeft;
-  private final E paddingRight;
-  private final IteratorMaterializer<E> wrapped;
-
-  private boolean isWrapped = true;
+    StatefulIteratorMaterializer<E> {
 
   public InterleaveInnerWithPaddingIteratorMaterializer(
       final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IteratorMaterializer<E> elementsMaterializer, final E paddingLeft,
       final E paddingRight) {
-    this.wrapped = wrapped;
-    this.elementsMaterializer = elementsMaterializer;
-    this.paddingLeft = paddingLeft;
-    this.paddingRight = paddingRight;
+    setState(new ImmaterialState(wrapped, elementsMaterializer, paddingLeft, paddingRight));
   }
 
-  @Override
-  public int currentKnownSize() {
-    final int knownSize = wrapped.currentKnownSize();
-    if (knownSize >= 0) {
-      final int elementsSize = elementsMaterializer.currentKnownSize();
-      if (elementsSize >= 0) {
-        return (Math.max(knownSize, elementsSize) * 2) + 1;
-      }
+  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+
+    private final IteratorMaterializer<E> elementsMaterializer;
+    private final E paddingLeft;
+    private final E paddingRight;
+    private final IteratorMaterializer<E> wrapped;
+
+    private boolean isWrapped = true;
+
+    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+        final @NotNull IteratorMaterializer<E> elementsMaterializer, final E paddingLeft,
+        final E paddingRight) {
+      this.wrapped = wrapped;
+      this.elementsMaterializer = elementsMaterializer;
+      this.paddingLeft = paddingLeft;
+      this.paddingRight = paddingRight;
     }
-    return -1;
-  }
 
-  @Override
-  public boolean materializeHasNext() {
-    return isWrapped || wrapped.materializeHasNext() || elementsMaterializer.materializeHasNext();
-  }
-
-  @Override
-  public E materializeNext() {
-    final boolean isWrapped = this.isWrapped;
-    final E next;
-    if (isWrapped) {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      if (wrapped.materializeHasNext()) {
-        next = wrapped.materializeNext();
-      } else {
-        next = paddingLeft;
+    @Override
+    public int currentKnownSize() {
+      final int knownSize = wrapped.currentKnownSize();
+      if (knownSize >= 0) {
+        final int elementsSize = elementsMaterializer.currentKnownSize();
+        if (elementsSize >= 0) {
+          return (Math.max(knownSize, elementsSize) * 2) + 1;
+        }
       }
-    } else {
-      final IteratorMaterializer<E> elementsMaterializer = this.elementsMaterializer;
-      if (elementsMaterializer.materializeHasNext()) {
-        next = elementsMaterializer.materializeNext();
-      } else if (wrapped.materializeHasNext()) {
-        next = paddingRight;
-      } else {
-        throw new NoSuchElementException();
-      }
+      return -1;
     }
-    this.isWrapped = !isWrapped;
-    return next;
+
+    @Override
+    public boolean materializeHasNext() {
+      if (isWrapped || wrapped.materializeHasNext() || elementsMaterializer.materializeHasNext()) {
+        return true;
+      }
+      setEmptyState();
+      return false;
+    }
+
+    @Override
+    public E materializeNext() {
+      final boolean isWrapped = this.isWrapped;
+      final E next;
+      if (isWrapped) {
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        if (wrapped.materializeHasNext()) {
+          next = wrapped.materializeNext();
+        } else {
+          next = paddingLeft;
+        }
+      } else {
+        final IteratorMaterializer<E> elementsMaterializer = this.elementsMaterializer;
+        if (elementsMaterializer.materializeHasNext()) {
+          next = elementsMaterializer.materializeNext();
+        } else if (wrapped.materializeHasNext()) {
+          next = paddingRight;
+        } else {
+          throw new NoSuchElementException();
+        }
+      }
+      this.isWrapped = !isWrapped;
+      return next;
+    }
   }
 }

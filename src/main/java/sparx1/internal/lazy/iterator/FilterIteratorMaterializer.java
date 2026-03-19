@@ -22,64 +22,73 @@ import sparx1.util.annotation.NotNull;
 import sparx1.util.annotation.Positive;
 import sparx1.util.function.IndexedPredicate;
 
-public class FilterIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
-
-  private final IndexedPredicate<? super E> predicate;
-  private final IteratorMaterializer<E> wrapped;
-
-  private boolean hasNext;
-  private E next;
-  private int pos;
+public class FilterIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public FilterIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedPredicate<? super E> predicate) {
-    this.wrapped = wrapped;
-    this.predicate = predicate;
+    setState(new ImmaterialState(wrapped, predicate));
   }
 
-  @Override
-  public int currentKnownSize() {
-    return -1;
-  }
+  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
 
-  @Override
-  public boolean materializeHasNext() {
-    if (hasNext) {
-      return true;
+    private final IndexedPredicate<? super E> predicate;
+    private final IteratorMaterializer<E> wrapped;
+
+    private boolean hasNext;
+    private E next;
+    private int pos;
+
+    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+        final @NotNull IndexedPredicate<? super E> predicate) {
+      this.wrapped = wrapped;
+      this.predicate = predicate;
     }
-    try {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      final IndexedPredicate<? super E> predicate = this.predicate;
-      while (wrapped.materializeHasNext()) {
-        final int pos = this.pos++;
-        final E element = wrapped.materializeNext();
-        if (predicate.test(pos, element)) {
-          next = element;
-          hasNext = true;
-          return true;
-        }
+
+    @Override
+    public int currentKnownSize() {
+      return -1;
+    }
+
+    @Override
+    public boolean materializeHasNext() {
+      if (hasNext) {
+        return true;
       }
-    } catch (final Exception e) {
-      throw UncheckedException.throwUnchecked(e);
+      try {
+        final IteratorMaterializer<E> wrapped = this.wrapped;
+        final IndexedPredicate<? super E> predicate = this.predicate;
+        while (wrapped.materializeHasNext()) {
+          final int pos = this.pos++;
+          final E element = wrapped.materializeNext();
+          if (predicate.test(pos, element)) {
+            next = element;
+            hasNext = true;
+            return true;
+          }
+        }
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+      setEmptyState();
+      return false;
     }
-    return false;
-  }
 
-  @Override
-  public E materializeNext() {
-    if (!materializeHasNext()) {
-      throw new NoSuchElementException();
+    @Override
+    public E materializeNext() {
+      if (!materializeHasNext()) {
+        throw new NoSuchElementException();
+      }
+      hasNext = false;
+      final E next = this.next;
+      this.next = null;
+      return next;
     }
-    hasNext = false;
-    final E next = this.next;
-    this.next = null;
-    return next;
-  }
 
-  @Override
-  public int materializeSkip(@Positive final int count) {
-    final int skipped = super.materializeSkip(count);
-    pos += skipped;
-    return skipped;
+    @Override
+    public int materializeSkip(@Positive final int count) {
+      final int skipped = super.materializeSkip(count);
+      pos += skipped;
+      return skipped;
+    }
   }
 }
