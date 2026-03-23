@@ -74,7 +74,7 @@ public class DropFirstWhileIteratorMaterializer<E> extends StatefulIteratorMater
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       if (materializeHasNext()) {
         return getState().materializeSkip(count);
       }

@@ -68,7 +68,7 @@ public class PeekIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       final int skipped = wrapped.materializeSkip(count);
       pos += skipped;
       return skipped;

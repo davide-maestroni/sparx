@@ -44,7 +44,7 @@ public class DequeToIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
-  public int materializeSkip(@Positive int count) {
+  public int materializeSkip(final @Positive int count) {
     final int skipped = Math.min(count, elements.size());
     elements.removeRange(0, skipped);
     return skipped;

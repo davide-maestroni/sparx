@@ -21,7 +21,7 @@ import sparx1.util.annotation.Positive;
 public abstract class AbstractIteratorMaterializer<E> implements IteratorMaterializer<E> {
 
   @Override
-  public int materializeSkip(@Positive final int count) {
+  public int materializeSkip(final @Positive int count) {
     int skipped = 0;
     while (skipped < count && materializeHasNext()) {
       materializeNext();

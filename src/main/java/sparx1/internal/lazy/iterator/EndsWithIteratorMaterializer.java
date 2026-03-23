@@ -81,7 +81,7 @@ public class EndsWithIteratorMaterializer<E> extends StatefulIteratorMaterialize
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       setEmptyState();
       return 1;
     }

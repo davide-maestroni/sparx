@@ -89,7 +89,7 @@ public class FlatMapWhileIteratorMaterializer<E> extends StatefulIteratorMateria
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       int skipped = 0;
       while (skipped < count && materializeHasNext()) {
         skipped += materializer.materializeSkip(count - skipped);

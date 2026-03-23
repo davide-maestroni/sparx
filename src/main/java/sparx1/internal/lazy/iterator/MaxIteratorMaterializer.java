@@ -79,7 +79,7 @@ public class MaxIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> 
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       setEmptyState();
       return wrapped.materializeHasNext() ? 1 : 0;
     }

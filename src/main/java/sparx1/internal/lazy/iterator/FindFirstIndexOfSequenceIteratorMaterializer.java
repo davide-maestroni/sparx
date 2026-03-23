@@ -106,7 +106,7 @@ public class FindFirstIndexOfSequenceIteratorMaterializer<E> extends
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       if (materializeHasNext()) {
         setEmptyState();
         return 1;

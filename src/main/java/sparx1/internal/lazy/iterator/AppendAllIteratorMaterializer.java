@@ -68,7 +68,7 @@ public class AppendAllIteratorMaterializer<E> extends StatefulIteratorMaterializ
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       final int skipped = wrapped.materializeSkip(count);
       if (skipped < count) {
         return skipped + setState(elementsMaterializer).materializeSkip(count - skipped);

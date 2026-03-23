@@ -24,7 +24,7 @@ import sparx1.util.annotation.Positive;
 public class InsertAfterIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public InsertAfterIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      @NotNegative final int numElements, final E element) {
+      final @NotNegative int numElements, final E element) {
     setState(new ImmaterialState(wrapped, numElements, element));
   }
 
@@ -71,7 +71,7 @@ public class InsertAfterIteratorMaterializer<E> extends StatefulIteratorMaterial
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       final int remaining = numElements - pos;
       if (count <= remaining) {
         final int skipped = wrapped.materializeSkip(count);

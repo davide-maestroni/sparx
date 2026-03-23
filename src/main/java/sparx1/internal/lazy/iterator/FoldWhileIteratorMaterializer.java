@@ -74,7 +74,7 @@ public class FoldWhileIteratorMaterializer<E, F> extends StatefulIteratorMateria
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       setEmptyState();
       return 1;
     }

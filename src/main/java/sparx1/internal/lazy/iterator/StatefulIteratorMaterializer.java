@@ -39,7 +39,7 @@ abstract class StatefulIteratorMaterializer<E> implements IteratorMaterializer<E
   }
 
   @Override
-  public int materializeSkip(@Positive final int count) {
+  public int materializeSkip(final @Positive int count) {
     return state.materializeSkip(count);
   }
 

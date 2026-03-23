@@ -24,7 +24,7 @@ import sparx1.util.annotation.Positive;
 public class DropLastIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public DropLastIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      @Positive final int maxElements) {
+      final @Positive int maxElements) {
     setState(new ImmaterialState(wrapped, maxElements));
   }
 

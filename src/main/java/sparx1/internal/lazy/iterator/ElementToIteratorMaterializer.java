@@ -49,7 +49,7 @@ public class ElementToIteratorMaterializer<E> implements IteratorMaterializer<E>
   }
 
   @Override
-  public int materializeSkip(@Positive final int count) {
+  public int materializeSkip(final @Positive int count) {
     if (!consumed) {
       consumed = true;
       return 1;

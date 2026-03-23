@@ -75,7 +75,7 @@ public class FindFirstIteratorMaterializer<E> extends StatefulIteratorMaterializ
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       if (materializeHasNext()) {
         return getState().materializeSkip(count);
       }

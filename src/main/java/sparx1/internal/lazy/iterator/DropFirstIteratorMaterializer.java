@@ -23,7 +23,7 @@ import sparx1.util.annotation.Positive;
 public class DropFirstIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public DropFirstIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      @Positive final int maxElements) {
+      final @Positive int maxElements) {
     setState(new ImmaterialState(wrapped, maxElements));
   }
 
@@ -33,7 +33,7 @@ public class DropFirstIteratorMaterializer<E> extends StatefulIteratorMaterializ
     private final IteratorMaterializer<E> wrapped;
 
     private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
-        @Positive final int maxElements) {
+        final @Positive int maxElements) {
       this.wrapped = wrapped;
       this.maxElements = maxElements;
     }
@@ -68,7 +68,7 @@ public class DropFirstIteratorMaterializer<E> extends StatefulIteratorMaterializ
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       if (materializeHasNext()) {
         return getState().materializeSkip(count);
       }

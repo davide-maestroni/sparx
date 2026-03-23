@@ -60,7 +60,7 @@ public class SuppliedIteratorMaterializer<E> extends StatefulIteratorMaterialize
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       try {
         return setState(materializerSupplier.get()).materializeSkip(count);
       } catch (final Exception e) {

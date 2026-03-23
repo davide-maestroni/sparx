@@ -61,7 +61,7 @@ public class OrElseIteratorMaterializer<E> extends StatefulIteratorMaterializer<
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final int skipped = wrapped.materializeSkip(count);
       if (skipped > 0) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Davide Maestroni
+ * Copyright 2024 Davide Maestroni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,20 +19,17 @@ import java.util.NoSuchElementException;
 import sparx1.internal.lazy.IteratorMaterializer;
 import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNull;
-import sparx1.util.annotation.Positive;
 import sparx1.util.function.IndexedPredicate;
 
-public class FilterWhileIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
+public class RemoveFirstIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  public FilterWhileIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      final @NotNull IndexedPredicate<? super E> condition,
-      final @NotNull IndexedPredicate<? super E> predicate) {
-    setState(new ImmaterialState(wrapped, condition, predicate));
+  public RemoveFirstIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
+      @NotNull final IndexedPredicate<? super E> predicate) {
+    setState(new ImmaterialState(wrapped, predicate));
   }
 
   private class ImmaterialState extends AbstractIteratorMaterializer<E> {
 
-    private final IndexedPredicate<? super E> condition;
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
@@ -40,11 +37,9 @@ public class FilterWhileIteratorMaterializer<E> extends StatefulIteratorMaterial
     private E next;
     private int pos;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
-        final @NotNull IndexedPredicate<? super E> condition,
-        final @NotNull IndexedPredicate<? super E> predicate) {
+    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
+        @NotNull final IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;
-      this.condition = condition;
       this.predicate = predicate;
     }
 
@@ -58,44 +53,39 @@ public class FilterWhileIteratorMaterializer<E> extends StatefulIteratorMaterial
       if (hasNext) {
         return true;
       }
-      try {
-        final IteratorMaterializer<E> wrapped = this.wrapped;
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (wrapped.materializeHasNext()) {
         final IndexedPredicate<? super E> predicate = this.predicate;
-        while (wrapped.materializeHasNext()) {
-          final int pos = this.pos++;
-          final E element = wrapped.materializeNext();
-          if (condition.test(pos, element)) {
-            if (predicate.test(pos, element)) {
-              next = element;
-              hasNext = true;
-              return true;
-            }
-          } else {
-            setEmptyState();
+        final int pos = this.pos++;
+        E next = wrapped.materializeNext();
+        try {
+          if (!predicate.test(pos, next)) {
+            this.next = next;
+            return hasNext = true;
           }
+        } catch (final Exception e) {
+          throw UncheckedException.throwUnchecked(e);
         }
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
+        if (setState(wrapped).materializeHasNext()) {
+          return true;
+        }
       }
+      setEmptyState();
       return false;
     }
 
     @Override
     public E materializeNext() {
+      if (hasNext) {
+        hasNext = false;
+        final E next = this.next;
+        this.next = null;
+        return next;
+      }
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      hasNext = false;
-      final E next = this.next;
-      this.next = null;
-      return next;
-    }
-
-    @Override
-    public int materializeSkip(final @Positive int count) {
-      final int skipped = super.materializeSkip(count);
-      pos += skipped;
-      return skipped;
+      return getState().materializeNext();
     }
   }
 }

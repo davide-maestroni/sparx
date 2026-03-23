@@ -81,7 +81,7 @@ public class FindLastIteratorMaterializer<E> extends StatefulIteratorMaterialize
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       if (materializeHasNext()) {
         setEmptyState();
         return 1;

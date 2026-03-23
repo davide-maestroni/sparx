@@ -77,7 +77,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * @param minCapacity the minimum capacity
    * @throws IllegalArgumentException if the specified capacity is less than 1
    */
-  public DequeArrayList(@Positive final int minCapacity) {
+  public DequeArrayList(final @Positive int minCapacity) {
     this(minCapacity, false);
   }
 
@@ -89,7 +89,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    *                    adaptive threshold
    * @throws IllegalArgumentException if the specified capacity is less than 0
    */
-  public DequeArrayList(@NotNegative final int minCapacity, final boolean autoShrink) {
+  public DequeArrayList(final @NotNegative int minCapacity, final boolean autoShrink) {
     if (minCapacity == 0) {
       data = EMPTY_DATA;
     } else {
@@ -137,7 +137,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
     updateShrinkThreshold();
   }
 
-  private static int computeCapacity(@NotNegative final int minCapacity) {
+  private static int computeCapacity(final @NotNegative int minCapacity) {
     final int msb = Integer.highestOneBit(minCapacity);
     if (minCapacity == msb) {
       return msb;
@@ -364,7 +364,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * @return {@code true} if this collection changed as a result of the call
    * @throws IllegalArgumentException if the specified capacity is less than 0
    */
-  public boolean ensureCapacity(@NotNegative final int minCapacity) {
+  public boolean ensureCapacity(final @NotNegative int minCapacity) {
     final Object[] data = this.data;
     if (data.length >= minCapacity) {
       return false;
@@ -383,7 +383,7 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
    * @return {@code true} if this collection changed as a result of the call
    * @throws IllegalArgumentException if the specified capacity is less than 0
    */
-  public boolean freeCapacity(@NotNegative final int minCapacity) {
+  public boolean freeCapacity(final @NotNegative int minCapacity) {
     final Object[] data = this.data;
     final int newCapacity = Math.max(computeCapacity(size),
         computeCapacity(Require.notNegative(minCapacity, "minCapacity")));

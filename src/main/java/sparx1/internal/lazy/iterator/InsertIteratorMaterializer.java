@@ -58,7 +58,7 @@ public class InsertIteratorMaterializer<E> extends StatefulIteratorMaterializer<
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       final IteratorMaterializer<E> state = setState(wrapped);
       if (count > 1) {
         return state.materializeSkip(count - 1) + 1;

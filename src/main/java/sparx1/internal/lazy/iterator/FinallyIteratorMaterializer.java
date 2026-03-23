@@ -75,7 +75,7 @@ public class FinallyIteratorMaterializer<E> extends StatefulIteratorMaterializer
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       try {
         final int skipped = wrapped.materializeSkip(count);
         if (skipped < count) {

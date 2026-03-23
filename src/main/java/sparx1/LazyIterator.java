@@ -79,6 +79,8 @@ import sparx1.internal.lazy.iterator.PeekExceptionallyIteratorMaterializer;
 import sparx1.internal.lazy.iterator.PeekIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ReduceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ReduceWhileIteratorMaterializer;
+import sparx1.internal.lazy.iterator.RemoveFirstIteratorMaterializer;
+import sparx1.internal.lazy.iterator.RemoveLastIteratorMaterializer;
 import sparx1.internal.lazy.iterator.SuppliedIteratorMaterializer;
 import sparx1.lazy.Iterator;
 import sparx1.util.DequeArrayList;
@@ -1419,28 +1421,48 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> removeFirst(@NotNull IndexedPredicate<? super E> predicate) {
+  public @NotNull Iterator<E> removeFirst(final @NotNull IndexedPredicate<? super E> predicate) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<E>(new RemoveFirstIteratorMaterializer<E>(materializer,
+        Require.notNull(predicate, "predicate")));
+  }
+
+  @Override
+  public @NotNull Iterator<E> removeFirst(final @NotNull Predicate<? super E> predicate) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<E>(new RemoveFirstIteratorMaterializer<E>(materializer,
+        toIndexedPredicate(predicate, "predicate")));
+  }
+
+  @Override
+  public @NotNull Iterator<E> removeFirstSequence(final @NotNull java.lang.Iterable<?> elements) {
     return null;
   }
 
   @Override
-  public @NotNull Iterator<E> removeFirst(@NotNull Predicate<? super E> predicate) {
-    return null;
+  public @NotNull Iterator<E> removeLast(final @NotNull IndexedPredicate<? super E> predicate) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<E>(new RemoveLastIteratorMaterializer<E>(materializer,
+        Require.notNull(predicate, "predicate")));
   }
 
   @Override
-  public @NotNull Iterator<E> removeFirstSequence(@NotNull java.lang.Iterable<?> elements) {
-    return null;
-  }
-
-  @Override
-  public @NotNull Iterator<E> removeLast(@NotNull IndexedPredicate<? super E> predicate) {
-    return null;
-  }
-
-  @Override
-  public @NotNull Iterator<E> removeLast(@NotNull Predicate<? super E> predicate) {
-    return null;
+  public @NotNull Iterator<E> removeLast(final @NotNull Predicate<? super E> predicate) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<E>(new RemoveLastIteratorMaterializer<E>(materializer,
+        toIndexedPredicate(predicate, "predicate")));
   }
 
   @Override

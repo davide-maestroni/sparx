@@ -102,7 +102,7 @@ public class IncludesSequenceIteratorMaterializer<E> extends StatefulIteratorMat
     }
 
     @Override
-    public int materializeSkip(@Positive final int count) {
+    public int materializeSkip(final @Positive int count) {
       setEmptyState();
       return 1;
     }
