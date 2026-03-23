@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Davide Maestroni
+ * Copyright 2026 Davide Maestroni
  6
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
