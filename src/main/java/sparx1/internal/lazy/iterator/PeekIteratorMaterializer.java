@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Davide Maestroni
+ * Copyright 2024 Davide Maestroni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,73 +15,63 @@
  */
 package sparx1.internal.lazy.iterator;
 
-import java.util.Comparator;
-import java.util.NoSuchElementException;
 import sparx1.internal.lazy.IteratorMaterializer;
+import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.annotation.Positive;
+import sparx1.util.function.IndexedConsumer;
 
-public class MaxIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
+public class PeekIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  public MaxIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      final @NotNull Comparator<? super E> comparator) {
-    setState(new ImmaterialState(wrapped, comparator));
+  public PeekIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
+      final @NotNull IndexedConsumer<? super E> consumer) {
+    setState(new ImmaterialState(wrapped, consumer));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final Comparator<? super E> comparator;
+    private final IndexedConsumer<? super E> consumer;
     private final IteratorMaterializer<E> wrapped;
 
+    private int pos;
+
     private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
-        final @NotNull Comparator<? super E> comparator) {
+        final @NotNull IndexedConsumer<? super E> consumer) {
       this.wrapped = wrapped;
-      this.comparator = comparator;
+      this.consumer = consumer;
     }
 
     @Override
     public int currentKnownSize() {
-      final int knownSize = wrapped.currentKnownSize();
-      if (knownSize > 0) {
-        return 1;
-      }
-      if (knownSize == 0) {
-        return 0;
-      }
-      return -1;
+      return wrapped.currentKnownSize();
     }
 
     @Override
     public boolean materializeHasNext() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
       if (!wrapped.materializeHasNext()) {
         setEmptyState();
         return false;
       }
-      final Comparator<? super E> comparator = this.comparator;
-      E max = wrapped.materializeNext();
-      while (wrapped.materializeHasNext()) {
-        final E next = wrapped.materializeNext();
-        if (comparator.compare(next, max) > 0) {
-          max = next;
-        }
-      }
-      setState(new ElementToIteratorMaterializer<E>(max));
       return true;
     }
 
     @Override
     public E materializeNext() {
-      if (!materializeHasNext()) {
-        throw new NoSuchElementException();
+      final E next = wrapped.materializeNext();
+      final int index = pos++;
+      try {
+        consumer.accept(index, next);
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
       }
-      return getState().materializeNext();
+      return next;
     }
 
     @Override
     public int materializeSkip(@Positive final int count) {
-      setEmptyState();
-      return wrapped.materializeHasNext() ? 1 : 0;
+      final int skipped = wrapped.materializeSkip(count);
+      pos += skipped;
+      return skipped;
     }
   }
 }

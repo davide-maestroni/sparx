@@ -18,9 +18,12 @@ package sparx1;
 import static sparx1.lazy.getKnownSize;
 import static sparx1.util.function.Functions.equalsElement;
 import static sparx1.util.function.Functions.indexedIdentity;
+import static sparx1.util.function.Functions.negated;
 import static sparx1.util.function.Functions.reversed;
+import static sparx1.util.function.Functions.toIndexedConsumer;
 import static sparx1.util.function.Functions.toIndexedFunction;
 import static sparx1.util.function.Functions.toIndexedPredicate;
+import static sparx1.util.function.Functions.toNegatedIndexedPredicate;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -71,6 +74,11 @@ import sparx1.internal.lazy.iterator.ListToIteratorMaterializer;
 import sparx1.internal.lazy.iterator.MapIteratorMaterializer;
 import sparx1.internal.lazy.iterator.MapWhileIteratorMaterializer;
 import sparx1.internal.lazy.iterator.MaxIteratorMaterializer;
+import sparx1.internal.lazy.iterator.OrElseIteratorMaterializer;
+import sparx1.internal.lazy.iterator.PeekExceptionallyIteratorMaterializer;
+import sparx1.internal.lazy.iterator.PeekIteratorMaterializer;
+import sparx1.internal.lazy.iterator.ReduceIteratorMaterializer;
+import sparx1.internal.lazy.iterator.ReduceWhileIteratorMaterializer;
 import sparx1.internal.lazy.iterator.SuppliedIteratorMaterializer;
 import sparx1.lazy.Iterator;
 import sparx1.util.DequeArrayList;
@@ -283,7 +291,7 @@ public class LazyIterator<E> extends Iterator<E> {
       return emptyIterator();
     }
     if (getKnownSize(elements) == 0) {
-      return this;
+      return iterator();
     }
     return new LazyIterator<E>(new DiffIteratorMaterializer<E>(materializer,
         getElementsMaterializer(Require.notNull(elements, "elements"))));
@@ -302,7 +310,7 @@ public class LazyIterator<E> extends Iterator<E> {
       return emptyIterator();
     }
     if (knownSize == 1) {
-      return this;
+      return iterator();
     }
     return new LazyIterator<E>(new DistinctByIteratorMaterializer<E, K>(materializer,
         toIndexedFunction(keyExtractor, "keyExtractor")));
@@ -317,7 +325,7 @@ public class LazyIterator<E> extends Iterator<E> {
       return emptyIterator();
     }
     if (knownSize == 1) {
-      return this;
+      return iterator();
     }
     return new LazyIterator<E>(new DistinctByIteratorMaterializer<E, K>(materializer,
         Require.notNull(keyExtractor, "keyExtractor")));
@@ -559,7 +567,7 @@ public class LazyIterator<E> extends Iterator<E> {
       return emptyIterator();
     }
     if (maxElements <= 0) {
-      return this;
+      return iterator();
     }
     return new LazyIterator<E>(new DropFirstIteratorMaterializer<E>(materializer, maxElements));
   }
@@ -594,7 +602,7 @@ public class LazyIterator<E> extends Iterator<E> {
       return emptyIterator();
     }
     if (maxElements <= 0) {
-      return this;
+      return iterator();
     }
     return new LazyIterator<E>(new DropLastIteratorMaterializer<E>(materializer, maxElements));
   }
@@ -967,7 +975,7 @@ public class LazyIterator<E> extends Iterator<E> {
   @Override
   public @NotNull Iterator<E> insertAfter(final int numElements, final @Nullable E element) {
     if (numElements < 0 || numElements == Integer.MAX_VALUE) {
-      return this;
+      return iterator();
     }
     if (numElements == 0) {
       return insert(element);
@@ -979,7 +987,7 @@ public class LazyIterator<E> extends Iterator<E> {
     }
     if (knownSize > 0) {
       if (knownSize < numElements) {
-        return this;
+        return iterator();
       }
       if (knownSize == numElements) {
         return append(element);
@@ -992,7 +1000,7 @@ public class LazyIterator<E> extends Iterator<E> {
   @Override
   public @NotNull Iterator<E> insertAll(final @NotNull java.lang.Iterable<? extends E> elements) {
     if (getKnownSize(elements) == 0) {
-      return this;
+      return iterator();
     }
     return new LazyIterator<E>(new InsertAllIteratorMaterializer<E>(materializer,
         getElementsMaterializer(Require.notNull(elements, "elements"))));
@@ -1217,7 +1225,7 @@ public class LazyIterator<E> extends Iterator<E> {
       return emptyIterator();
     }
     if (getKnownSize(elements) == 0) {
-      return this;
+      return iterator();
     }
     final IndexedPredicate<E> predicate;
     if (elements instanceof Collection) {
@@ -1242,12 +1250,12 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> minusFirst(final @Nullable E element) {
-    return null;
+    return removeFirst(Functions.<E>equalsElement(element));
   }
 
   @Override
-  public @NotNull Iterator<E> minusLast(@Nullable E element) {
-    return null;
+  public @NotNull Iterator<E> minusLast(final @Nullable E element) {
+    return removeLast(Functions.<E>equalsElement(element));
   }
 
   @Override
@@ -1256,93 +1264,158 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<Boolean> notExists(boolean whenEmpty,
-      @NotNull IndexedPredicate<? super E> predicate) {
-    return null;
+  public @NotNull Iterator<Boolean> notExists(final boolean whenEmpty,
+      final @NotNull IndexedPredicate<? super E> predicate) {
+    return notExistsForward(whenEmpty, predicate);
   }
 
   @Override
-  public @NotNull Iterator<Boolean> notExists(boolean whenEmpty,
-      @NotNull Predicate<? super E> predicate) {
-    return null;
+  public @NotNull Iterator<Boolean> notExists(final boolean whenEmpty,
+      final @NotNull Predicate<? super E> predicate) {
+    return notExistsForward(whenEmpty, predicate);
   }
 
   @Override
-  public @NotNull Iterator<Boolean> notExistsForward(boolean whenEmpty,
-      @NotNull IndexedPredicate<? super E> predicate) {
-    return null;
+  public @NotNull Iterator<Boolean> notExistsForward(final boolean whenEmpty,
+      final @NotNull IndexedPredicate<? super E> predicate) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return elementIterator(whenEmpty);
+    }
+    return new LazyIterator<Boolean>(
+        new ExistsIteratorMaterializer<E>(materializer, negated(predicate, "predicate"),
+            whenEmpty));
   }
 
   @Override
-  public @NotNull Iterator<Boolean> notExistsForward(boolean whenEmpty,
-      @NotNull Predicate<? super E> predicate) {
-    return null;
+  public @NotNull Iterator<Boolean> notExistsForward(final boolean whenEmpty,
+      final @NotNull Predicate<? super E> predicate) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return elementIterator(whenEmpty);
+    }
+    return new LazyIterator<Boolean>(new ExistsIteratorMaterializer<E>(materializer,
+        toNegatedIndexedPredicate(predicate, "predicate"), whenEmpty));
   }
 
   @Override
-  public @NotNull Iterator<E> orElse(@NotNull java.lang.Iterable<? extends E> elements) {
-    return null;
+  public @NotNull Iterator<E> orElse(final @NotNull java.lang.Iterable<? extends E> elements) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
+        Require.notNull(elements, "elements"));
+    if (knownSize == 0) {
+      return new LazyIterator<E>(elementsMaterializer);
+    }
+    return new LazyIterator<E>(
+        new OrElseIteratorMaterializer<E>(materializer, elementsMaterializer));
   }
 
   @Override
   public @NotNull Iterator<E> orElseGet(
-      @NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier) {
-    return null;
+      final @NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final SuppliedIteratorMaterializer<E> elementsMaterializer = new SuppliedIteratorMaterializer<E>(
+        getIterableToIteratorMaterializer(Require.notNull(supplier, "supplier")));
+    if (materializer.currentKnownSize() == 0) {
+      return new LazyIterator<E>(elementsMaterializer);
+    }
+    return new LazyIterator<E>(
+        new OrElseIteratorMaterializer<E>(materializer, elementsMaterializer));
   }
 
   @Override
-  public @NotNull Iterator<E> peek(@NotNull Consumer<? super E> consumer) {
-    return null;
+  public @NotNull Iterator<E> peek(final @NotNull Consumer<? super E> consumer) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return iterator();
+    }
+    return new LazyIterator<E>(
+        new PeekIteratorMaterializer<E>(materializer, toIndexedConsumer(consumer, "consumer")));
   }
 
   @Override
-  public @NotNull Iterator<E> peek(@NotNull IndexedConsumer<? super E> consumer) {
-    return null;
-  }
-
-  @Override
-  public @NotNull Iterator<E> peekExceptionally(@NotNull Consumer<? super Throwable> consumer) {
-    return null;
+  public @NotNull Iterator<E> peek(final @NotNull IndexedConsumer<? super E> consumer) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return iterator();
+    }
+    return new LazyIterator<E>(
+        new PeekIteratorMaterializer<E>(materializer, Require.notNull(consumer, "consumer")));
   }
 
   @Override
   public @NotNull Iterator<E> peekExceptionally(
-      @NotNull IndexedConsumer<? super Throwable> consumer) {
-    return null;
+      final @NotNull Consumer<? super Throwable> consumer) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return iterator();
+    }
+    return new LazyIterator<E>(new PeekExceptionallyIteratorMaterializer<E>(materializer,
+        toIndexedConsumer(consumer, "consumer")));
   }
 
   @Override
-  public @NotNull Iterator<E> plus(@Nullable E element) {
-    return null;
+  public @NotNull Iterator<E> peekExceptionally(
+      final @NotNull IndexedConsumer<? super Throwable> consumer) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return iterator();
+    }
+    return new LazyIterator<E>(new PeekExceptionallyIteratorMaterializer<E>(materializer,
+        Require.notNull(consumer, "consumer")));
   }
 
   @Override
-  public @NotNull Iterator<E> plusAll(@NotNull java.lang.Iterable<? extends E> elements) {
-    return null;
+  public @NotNull Iterator<E> plus(final @Nullable E element) {
+    return append(element);
+  }
+
+  @Override
+  public @NotNull Iterator<E> plusAll(final @NotNull java.lang.Iterable<? extends E> elements) {
+    return appendAll(elements);
   }
 
   @Override
   public @NotNull Iterator<E> reduce(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-    return null;
+      final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+    return reduceForward(operation);
   }
 
   @Override
   public @NotNull Iterator<E> reduceForward(
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-    return null;
+      final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize == 0) {
+      return emptyIterator();
+    }
+    if (knownSize == 1) {
+      return iterator();
+    }
+    return new LazyIterator<E>(
+        new ReduceIteratorMaterializer<E>(materializer, Require.notNull(operation, "operation")));
   }
 
   @Override
-  public @NotNull Iterator<E> reduceWhile(@NotNull Predicate<? super E> condition,
-      @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-    return null;
+  public @NotNull Iterator<E> reduceWhile(final @NotNull Predicate<? super E> condition,
+      final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+    return reduceWhileForward(condition, operation);
   }
 
   @Override
   public @NotNull Iterator<E> reduceWhileForward(@NotNull Predicate<? super E> condition,
       @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-    return null;
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize == 0) {
+      return emptyIterator();
+    }
+    if (knownSize == 1) {
+      return iterator();
+    }
+    return new LazyIterator<E>(new ReduceWhileIteratorMaterializer<E>(materializer,
+        Require.notNull(condition, "condition"), Require.notNull(operation, "operation")));
   }
 
   @Override

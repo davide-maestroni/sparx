@@ -73,6 +73,22 @@ public class Functions {
     return (IndexedFunction<P, R>) INDEXED_IDENTITY;
   }
 
+  public static @NotNull <P> IndexedPredicate<P> negated(
+      final @NotNull IndexedPredicate<P> predicate) {
+    return negated(predicate, "predicate");
+  }
+
+  public static @NotNull <P> IndexedPredicate<P> negated(
+      final @NotNull IndexedPredicate<P> predicate, final String name) {
+    Require.notNull(predicate, name);
+    return new IndexedPredicate<P>() {
+      @Override
+      public boolean test(final int index, final P param) throws Exception {
+        return !predicate.test(index, param);
+      }
+    };
+  }
+
   @SuppressWarnings("unchecked")
   public static @NotNull <E> IndexedPredicate<E> notEqualsElement(final Object element) {
     if (element == null) {
@@ -86,11 +102,11 @@ public class Functions {
     };
   }
 
-  public static @NotNull <T> Comparator<T> reversed(@NotNull final Comparator<T> comparator) {
+  public static @NotNull <T> Comparator<T> reversed(final @NotNull Comparator<T> comparator) {
     return reversed(comparator, "comparator");
   }
 
-  public static @NotNull <T> Comparator<T> reversed(@NotNull final Comparator<T> comparator,
+  public static @NotNull <T> Comparator<T> reversed(final @NotNull Comparator<T> comparator,
       final String name) {
     Require.notNull(comparator, name);
     return new Comparator<T>() {
@@ -109,6 +125,22 @@ public class Functions {
   @SuppressWarnings("unchecked")
   public static @NotNull <E> IndexedPredicate<E> indexedTrue() {
     return (IndexedPredicate<E>) TEST_TRUE;
+  }
+
+  public static @NotNull <E> IndexedConsumer<E> toIndexedConsumer(
+      final @NotNull Consumer<E> consumer) {
+    return toIndexedConsumer(consumer, "consumer");
+  }
+
+  public static @NotNull <E> IndexedConsumer<E> toIndexedConsumer(
+      final @NotNull Consumer<E> consumer, final String name) {
+    Require.notNull(consumer, name);
+    return new IndexedConsumer<E>() {
+      @Override
+      public void accept(final int index, final E param) throws Exception {
+        consumer.accept(param);
+      }
+    };
   }
 
   public static @NotNull <E, F> IndexedFunction<E, F> toIndexedFunction(
@@ -141,6 +173,11 @@ public class Functions {
         return predicate.test(param);
       }
     };
+  }
+
+  public static @NotNull <E> IndexedPredicate<E> toNegatedIndexedPredicate(
+      final @NotNull Predicate<E> predicate) {
+    return toNegatedIndexedPredicate(predicate, "predicate");
   }
 
   public static @NotNull <E> IndexedPredicate<E> toNegatedIndexedPredicate(

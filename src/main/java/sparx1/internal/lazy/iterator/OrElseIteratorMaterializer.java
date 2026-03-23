@@ -15,73 +15,60 @@
  */
 package sparx1.internal.lazy.iterator;
 
-import java.util.Comparator;
-import java.util.NoSuchElementException;
 import sparx1.internal.lazy.IteratorMaterializer;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.annotation.Positive;
 
-public class MaxIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
+public class OrElseIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  public MaxIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      final @NotNull Comparator<? super E> comparator) {
-    setState(new ImmaterialState(wrapped, comparator));
+  public OrElseIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
+      final @NotNull IteratorMaterializer<E> elementsMaterializer) {
+    setState(new ImmaterialState(wrapped, elementsMaterializer));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final Comparator<? super E> comparator;
+    private final IteratorMaterializer<E> elementsMaterializer;
     private final IteratorMaterializer<E> wrapped;
 
     private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
-        final @NotNull Comparator<? super E> comparator) {
+        final @NotNull IteratorMaterializer<E> elementsMaterializer) {
       this.wrapped = wrapped;
-      this.comparator = comparator;
+      this.elementsMaterializer = elementsMaterializer;
     }
 
     @Override
     public int currentKnownSize() {
       final int knownSize = wrapped.currentKnownSize();
-      if (knownSize > 0) {
-        return 1;
-      }
       if (knownSize == 0) {
-        return 0;
+        return elementsMaterializer.currentKnownSize();
       }
-      return -1;
+      return knownSize;
     }
 
     @Override
     public boolean materializeHasNext() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      if (!wrapped.materializeHasNext()) {
-        setEmptyState();
-        return false;
-      }
-      final Comparator<? super E> comparator = this.comparator;
-      E max = wrapped.materializeNext();
-      while (wrapped.materializeHasNext()) {
-        final E next = wrapped.materializeNext();
-        if (comparator.compare(next, max) > 0) {
-          max = next;
-        }
-      }
-      setState(new ElementToIteratorMaterializer<E>(max));
-      return true;
+      return wrapped.materializeHasNext() || elementsMaterializer.materializeHasNext();
     }
 
     @Override
     public E materializeNext() {
-      if (!materializeHasNext()) {
-        throw new NoSuchElementException();
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (wrapped.materializeHasNext()) {
+        return setState(wrapped).materializeNext();
       }
-      return getState().materializeNext();
+      return setState(elementsMaterializer).materializeNext();
     }
 
     @Override
     public int materializeSkip(@Positive final int count) {
-      setEmptyState();
-      return wrapped.materializeHasNext() ? 1 : 0;
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      final int skipped = wrapped.materializeSkip(count);
+      if (skipped > 0) {
+        setState(wrapped);
+        return skipped;
+      }
+      return setState(elementsMaterializer).materializeSkip(count);
     }
   }
 }

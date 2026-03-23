@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Davide Maestroni
+ * Copyright 2024 Davide Maestroni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,67 +15,58 @@
  */
 package sparx1.internal.lazy.iterator;
 
-import java.util.Comparator;
 import java.util.NoSuchElementException;
 import sparx1.internal.lazy.IteratorMaterializer;
+import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.annotation.Positive;
+import sparx1.util.function.BinaryFunction;
 
-public class MaxIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
+public class ReduceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  public MaxIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      final @NotNull Comparator<? super E> comparator) {
-    setState(new ImmaterialState(wrapped, comparator));
+  public ReduceIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
+      final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
+    setState(new ImmaterialState(wrapped, operation));
   }
 
   private class ImmaterialState implements IteratorMaterializer<E> {
 
-    private final Comparator<? super E> comparator;
+    private final BinaryFunction<? super E, ? super E, ? extends E> operation;
     private final IteratorMaterializer<E> wrapped;
 
     private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
-        final @NotNull Comparator<? super E> comparator) {
+        final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
       this.wrapped = wrapped;
-      this.comparator = comparator;
+      this.operation = operation;
     }
 
     @Override
     public int currentKnownSize() {
-      final int knownSize = wrapped.currentKnownSize();
-      if (knownSize > 0) {
-        return 1;
-      }
-      if (knownSize == 0) {
-        return 0;
-      }
-      return -1;
+      return 1;
     }
 
     @Override
     public boolean materializeHasNext() {
-      final IteratorMaterializer<E> wrapped = this.wrapped;
-      if (!wrapped.materializeHasNext()) {
-        setEmptyState();
-        return false;
-      }
-      final Comparator<? super E> comparator = this.comparator;
-      E max = wrapped.materializeNext();
-      while (wrapped.materializeHasNext()) {
-        final E next = wrapped.materializeNext();
-        if (comparator.compare(next, max) > 0) {
-          max = next;
-        }
-      }
-      setState(new ElementToIteratorMaterializer<E>(max));
-      return true;
+      return wrapped.materializeHasNext();
     }
 
     @Override
     public E materializeNext() {
-      if (!materializeHasNext()) {
+      final IteratorMaterializer<E> wrapped = this.wrapped;
+      if (!wrapped.materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return getState().materializeNext();
+      try {
+        final BinaryFunction<? super E, ? super E, ? extends E> operation = this.operation;
+        E current = wrapped.materializeNext();
+        while (wrapped.materializeHasNext()) {
+          current = operation.apply(current, wrapped.materializeNext());
+        }
+        setEmptyState();
+        return current;
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
     }
 
     @Override
