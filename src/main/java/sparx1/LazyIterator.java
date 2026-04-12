@@ -80,7 +80,9 @@ import sparx1.internal.lazy.iterator.PeekIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ReduceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ReduceWhileIteratorMaterializer;
 import sparx1.internal.lazy.iterator.RemoveFirstIteratorMaterializer;
+import sparx1.internal.lazy.iterator.RemoveFirstSequenceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.RemoveLastIteratorMaterializer;
+import sparx1.internal.lazy.iterator.RemoveLastSequenceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.SuppliedIteratorMaterializer;
 import sparx1.lazy.Iterator;
 import sparx1.util.DequeArrayList;
@@ -1442,7 +1444,17 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> removeFirstSequence(final @NotNull java.lang.Iterable<?> elements) {
-    return null;
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    if (getKnownSize(elements) == 0) {
+      return iterator();
+    }
+    final ListMaterializer<Object> elementsMaterializer = LazyList.getElementsMaterializer(
+        Require.notNull(elements, "elements"));
+    return new LazyIterator<E>(
+        new RemoveFirstSequenceIteratorMaterializer<E>(materializer, elementsMaterializer));
   }
 
   @Override
@@ -1466,12 +1478,22 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> removeLastSequence(@NotNull java.lang.Iterable<?> elements) {
-    return null;
+  public @NotNull Iterator<E> removeLastSequence(final @NotNull java.lang.Iterable<?> elements) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    if (getKnownSize(elements) == 0) {
+      return iterator();
+    }
+    final ListMaterializer<Object> elementsMaterializer = LazyList.getElementsMaterializer(
+        Require.notNull(elements, "elements"));
+    return new LazyIterator<E>(
+        new RemoveLastSequenceIteratorMaterializer<E>(materializer, elementsMaterializer));
   }
 
   @Override
-  public @NotNull Iterator<E> removeSequence(@NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<E> removeSequence(final @NotNull java.lang.Iterable<?> elements) {
     return null;
   }
 

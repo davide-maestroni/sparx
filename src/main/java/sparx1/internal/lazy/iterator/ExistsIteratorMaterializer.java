@@ -25,16 +25,16 @@ public class ExistsIteratorMaterializer<E> extends StatefulIteratorMaterializer<
 
   public ExistsIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedPredicate<? super E> predicate, final boolean defaultResult) {
-    setState(new ImmaterialState(wrapped, predicate, defaultResult));
+    setState(new InitialState(wrapped, predicate, defaultResult));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<Boolean> {
+  private class InitialState implements IteratorMaterializer<Boolean> {
 
     private final boolean defaultResult;
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IndexedPredicate<? super E> predicate, final boolean defaultResult) {
       this.wrapped = wrapped;
       this.predicate = predicate;

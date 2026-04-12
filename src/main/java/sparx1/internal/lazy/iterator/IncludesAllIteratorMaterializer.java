@@ -24,15 +24,15 @@ public class IncludesAllIteratorMaterializer<E> extends StatefulIteratorMaterial
 
   public IncludesAllIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull Iterable<?> elements) {
-    setState(new ImmaterialState(wrapped, elements));
+    setState(new InitialState(wrapped, elements));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<Boolean> {
+  private class InitialState implements IteratorMaterializer<Boolean> {
 
     private final Iterable<?> elements;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull Iterable<?> elements) {
       this.wrapped = wrapped;
       this.elements = elements;

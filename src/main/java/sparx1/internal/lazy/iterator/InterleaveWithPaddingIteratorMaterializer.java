@@ -24,10 +24,10 @@ public class InterleaveWithPaddingIteratorMaterializer<E> extends StatefulIterat
   public InterleaveWithPaddingIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IteratorMaterializer<E> elementsMaterializer, final E paddingLeft,
       final E paddingRight) {
-    setState(new ImmaterialState(wrapped, elementsMaterializer, paddingLeft, paddingRight));
+    setState(new InitialState(wrapped, elementsMaterializer, paddingLeft, paddingRight));
   }
 
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractIteratorMaterializer<E> {
 
     private final IteratorMaterializer<E> elementsMaterializer;
     private final E paddingLeft;
@@ -36,7 +36,7 @@ public class InterleaveWithPaddingIteratorMaterializer<E> extends StatefulIterat
 
     private boolean isWrapped = true;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IteratorMaterializer<E> elementsMaterializer, final E paddingLeft,
         final E paddingRight) {
       this.wrapped = wrapped;

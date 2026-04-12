@@ -26,10 +26,10 @@ public class DistinctByIteratorMaterializer<E, K> extends StatefulIteratorMateri
 
   public DistinctByIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedFunction<? super E, K> keyExtractor) {
-    setState(new ImmaterialState(wrapped, keyExtractor));
+    setState(new InitialState(wrapped, keyExtractor));
   }
 
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractIteratorMaterializer<E> {
 
     private final HashSet<Object> distinctKeys = new HashSet<Object>();
     private final IndexedFunction<? super E, K> keyExtractor;
@@ -39,7 +39,7 @@ public class DistinctByIteratorMaterializer<E, K> extends StatefulIteratorMateri
     private E next;
     private int pos;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IndexedFunction<? super E, K> keyExtractor) {
       this.wrapped = wrapped;
       this.keyExtractor = keyExtractor;

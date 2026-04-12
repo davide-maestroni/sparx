@@ -27,10 +27,10 @@ public class MapWhileIteratorMaterializer<E> extends StatefulIteratorMaterialize
   public MapWhileIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedPredicate<? super E> condition,
       final @NotNull IndexedFunction<? super E, ? extends E> mapper) {
-    setState(new ImmaterialState(wrapped, condition, mapper));
+    setState(new InitialState(wrapped, condition, mapper));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final IndexedPredicate<? super E> condition;
     private final IndexedFunction<? super E, ? extends E> mapper;
@@ -38,7 +38,7 @@ public class MapWhileIteratorMaterializer<E> extends StatefulIteratorMaterialize
 
     private int pos;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IndexedPredicate<? super E> condition,
         final @NotNull IndexedFunction<? super E, ? extends E> mapper) {
       this.wrapped = wrapped;

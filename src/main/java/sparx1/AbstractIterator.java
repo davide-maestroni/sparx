@@ -43,7 +43,7 @@ abstract class AbstractIterator<E, T extends AbstractIterator<E, T>> implements 
   }
 
   @Override
-  public boolean isRepeatable() {
+  public boolean isTraversableAgain() {
     return false;
   }
 

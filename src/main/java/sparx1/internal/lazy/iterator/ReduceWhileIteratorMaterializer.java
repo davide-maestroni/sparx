@@ -28,16 +28,16 @@ public class ReduceWhileIteratorMaterializer<E> extends StatefulIteratorMaterial
   public ReduceWhileIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull Predicate<? super E> predicate,
       final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-    setState(new ImmaterialState(wrapped, predicate, operation));
+    setState(new InitialState(wrapped, predicate, operation));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final BinaryFunction<? super E, ? super E, ? extends E> operation;
     private final Predicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull Predicate<? super E> predicate,
         final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
       this.wrapped = wrapped;

@@ -27,10 +27,10 @@ public class FilterWhileIteratorMaterializer<E> extends StatefulIteratorMaterial
   public FilterWhileIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedPredicate<? super E> condition,
       final @NotNull IndexedPredicate<? super E> predicate) {
-    setState(new ImmaterialState(wrapped, condition, predicate));
+    setState(new InitialState(wrapped, condition, predicate));
   }
 
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractIteratorMaterializer<E> {
 
     private final IndexedPredicate<? super E> condition;
     private final IndexedPredicate<? super E> predicate;
@@ -40,7 +40,7 @@ public class FilterWhileIteratorMaterializer<E> extends StatefulIteratorMaterial
     private E next;
     private int pos;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IndexedPredicate<? super E> condition,
         final @NotNull IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;

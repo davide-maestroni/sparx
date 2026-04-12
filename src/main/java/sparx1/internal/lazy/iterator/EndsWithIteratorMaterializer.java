@@ -25,15 +25,15 @@ public class EndsWithIteratorMaterializer<E> extends StatefulIteratorMaterialize
 
   public EndsWithIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull ListMaterializer<?> elementsMaterializer) {
-    setState(new ImmaterialState(wrapped, elementsMaterializer));
+    setState(new InitialState(wrapped, elementsMaterializer));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<Boolean> {
+  private class InitialState implements IteratorMaterializer<Boolean> {
 
     private final ListMaterializer<?> elementsMaterializer;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull ListMaterializer<?> elementsMaterializer) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;

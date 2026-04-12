@@ -24,15 +24,15 @@ public class DropFirstIteratorMaterializer<E> extends StatefulIteratorMaterializ
 
   public DropFirstIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @Positive int maxElements) {
-    setState(new ImmaterialState(wrapped, maxElements));
+    setState(new InitialState(wrapped, maxElements));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final int maxElements;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @Positive int maxElements) {
       this.wrapped = wrapped;
       this.maxElements = maxElements;

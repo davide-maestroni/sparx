@@ -25,10 +25,10 @@ public class RemoveFirstIteratorMaterializer<E> extends StatefulIteratorMaterial
 
   public RemoveFirstIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
       @NotNull final IndexedPredicate<? super E> predicate) {
-    setState(new ImmaterialState(wrapped, predicate));
+    setState(new InitialState(wrapped, predicate));
   }
 
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractIteratorMaterializer<E> {
 
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
@@ -37,7 +37,7 @@ public class RemoveFirstIteratorMaterializer<E> extends StatefulIteratorMaterial
     private E next;
     private int pos;
 
-    private ImmaterialState(@NotNull final IteratorMaterializer<E> wrapped,
+    private InitialState(@NotNull final IteratorMaterializer<E> wrapped,
         @NotNull final IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;
       this.predicate = predicate;

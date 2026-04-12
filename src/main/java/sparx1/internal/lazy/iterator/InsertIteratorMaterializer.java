@@ -24,15 +24,15 @@ public class InsertIteratorMaterializer<E> extends StatefulIteratorMaterializer<
 
   public InsertIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final E element) {
-    setState(new ImmaterialState(wrapped, element));
+    setState(new InitialState(wrapped, element));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final E element;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped, final E element) {
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped, final E element) {
       this.wrapped = wrapped;
       this.element = element;
     }

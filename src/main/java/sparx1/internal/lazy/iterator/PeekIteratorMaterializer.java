@@ -25,17 +25,17 @@ public class PeekIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
 
   public PeekIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedConsumer<? super E> consumer) {
-    setState(new ImmaterialState(wrapped, consumer));
+    setState(new InitialState(wrapped, consumer));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final IndexedConsumer<? super E> consumer;
     private final IteratorMaterializer<E> wrapped;
 
     private int pos;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IndexedConsumer<? super E> consumer) {
       this.wrapped = wrapped;
       this.consumer = consumer;

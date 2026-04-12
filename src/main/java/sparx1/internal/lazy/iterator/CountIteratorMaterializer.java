@@ -22,14 +22,14 @@ import sparx1.util.annotation.Positive;
 public class CountIteratorMaterializer<E> extends StatefulIteratorMaterializer<Integer> {
 
   public CountIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped) {
-    setState(new ImmaterialState(wrapped));
+    setState(new InitialState(wrapped));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<Integer> {
+  private class InitialState implements IteratorMaterializer<Integer> {
 
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped) {
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped) {
       this.wrapped = wrapped;
     }
 

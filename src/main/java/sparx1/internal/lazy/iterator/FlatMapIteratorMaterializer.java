@@ -26,10 +26,10 @@ public class FlatMapIteratorMaterializer<E, F> extends StatefulIteratorMateriali
 
   public FlatMapIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper) {
-    setState(new ImmaterialState(wrapped, mapper));
+    setState(new InitialState(wrapped, mapper));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<F> {
+  private class InitialState implements IteratorMaterializer<F> {
 
     private final IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper;
     private final IteratorMaterializer<E> wrapped;
@@ -37,7 +37,7 @@ public class FlatMapIteratorMaterializer<E, F> extends StatefulIteratorMateriali
     private IteratorMaterializer<F> materializer = EmptyIteratorMaterializer.instance();
     private int pos;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IndexedFunction<? super E, ? extends IteratorMaterializer<F>> mapper) {
       this.wrapped = wrapped;
       this.mapper = mapper;

@@ -25,16 +25,16 @@ public class DropLastIteratorMaterializer<E> extends StatefulIteratorMaterialize
 
   public DropLastIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @Positive int maxElements) {
-    setState(new ImmaterialState(wrapped, maxElements));
+    setState(new InitialState(wrapped, maxElements));
   }
 
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractIteratorMaterializer<E> {
 
     private final DequeArrayList<E> elements = new DequeArrayList<E>();
     private final int maxElements;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped, final int maxElements) {
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped, final int maxElements) {
       this.wrapped = wrapped;
       this.maxElements = maxElements;
     }

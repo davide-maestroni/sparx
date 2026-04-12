@@ -25,14 +25,14 @@ public class SuppliedIteratorMaterializer<E> extends StatefulIteratorMaterialize
 
   public SuppliedIteratorMaterializer(
       final @NotNull Supplier<IteratorMaterializer<E>> materializerSupplier) {
-    setState(new ImmaterialState(materializerSupplier));
+    setState(new InitialState(materializerSupplier));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final Supplier<IteratorMaterializer<E>> materializerSupplier;
 
-    private ImmaterialState(final @NotNull Supplier<IteratorMaterializer<E>> materializerSupplier) {
+    private InitialState(final @NotNull Supplier<IteratorMaterializer<E>> materializerSupplier) {
       this.materializerSupplier = materializerSupplier;
     }
 

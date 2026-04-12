@@ -20,20 +20,24 @@ import sparx1.internal.lazy.IteratorMaterializer;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.DequeArrayList;
 import sparx1.util.annotation.NotNull;
-import sparx1.util.annotation.Positive;
+import sparx1.util.function.Functions;
 
-public class FindLastIndexOfSequenceIteratorMaterializer<E> extends
-    StatefulIteratorMaterializer<Integer> {
+public class RemoveFirstSequenceIteratorMaterializer<E> extends
+    StatefulIteratorMaterializer<E> {
 
-  public FindLastIndexOfSequenceIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
+  public RemoveFirstSequenceIteratorMaterializer(
+      final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull ListMaterializer<?> elementsMaterializer) {
     setState(new InitialState(wrapped, elementsMaterializer));
   }
 
-  private class InitialState implements IteratorMaterializer<Integer> {
+  private class InitialState extends AbstractIteratorMaterializer<E> {
 
+    private final DequeArrayList<E> elements = new DequeArrayList<E>(true);
     private final ListMaterializer<?> elementsMaterializer;
     private final IteratorMaterializer<E> wrapped;
+
+    private boolean hasNext = false;
 
     private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull ListMaterializer<?> elementsMaterializer) {
@@ -48,79 +52,55 @@ public class FindLastIndexOfSequenceIteratorMaterializer<E> extends
 
     @Override
     public boolean materializeHasNext() {
+      if (hasNext) {
+        return true;
+      }
       final IteratorMaterializer<E> wrapped = this.wrapped;
+      final DequeArrayList<E> wrappedElements = this.elements;
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       final int elementsSize = elementsMaterializer.materializeSize();
-      boolean found = false;
-      int last = 0;
-      int pos = 0;
       if (elementsSize > 0) {
-        final DequeArrayList<E> wrappedElements = new DequeArrayList<E>();
         int index = 0;
+        if (!wrappedElements.isEmpty()) {
+          for (final E wrappedElement : wrappedElements) {
+            if (!elementsMaterializer.canMaterializeElement(index)) {
+              return setState(wrapped).materializeHasNext();
+            }
+            final Object element = elementsMaterializer.materializeElement(index++);
+            if (!Functions.objectsEqual(wrappedElement, element)) {
+              return hasNext = true;
+            }
+          }
+        }
         while (wrapped.materializeHasNext()) {
           if (!elementsMaterializer.canMaterializeElement(index)) {
-            last = pos;
-            found = true;
-            index = 0;
+            return setState(wrapped).materializeHasNext();
           }
-          while (!wrappedElements.isEmpty()) {
-            if (!elementsMaterializer.canMaterializeElement(index)) {
-              last = pos;
-              found = true;
-              index = 0;
-            }
-            for (final E next : wrappedElements) {
-              final Object element = elementsMaterializer.materializeElement(index++);
-              if (next == element || (next != null && next.equals(element))) {
-                continue;
-              }
-              wrappedElements.removeFirst();
-              index = 0;
-              break;
-            }
-          }
-          if (!elementsMaterializer.canMaterializeElement(index)) {
-            last = pos;
-            found = true;
-            index = 0;
-          }
-          ++pos;
           final E next = wrapped.materializeNext();
-          final Object element = elementsMaterializer.materializeElement(index++);
           wrappedElements.add(next);
-          if (next == element || (next != null && next.equals(element))) {
-            continue;
+          final Object element = elementsMaterializer.materializeElement(index++);
+          if (!Functions.objectsEqual(next, element)) {
+            return hasNext = true;
           }
-          wrappedElements.removeFirst();
-          index = 0;
         }
-        if (found) {
-          setState(new ElementToIteratorMaterializer<Integer>(last));
-          return true;
+        if (!elementsMaterializer.canMaterializeElement(index)) {
+          return setState(wrapped).materializeHasNext();
         }
-        setEmptyState();
-        return false;
+        return setState(new DequeToIteratorMaterializer<E>(wrappedElements)).materializeHasNext();
       }
-      final int size = materializeSkip(Integer.MAX_VALUE);
-      setState(new ElementToIteratorMaterializer<Integer>(size));
-      return true;
+      return setState(wrapped).materializeHasNext();
     }
 
     @Override
-    public Integer materializeNext() {
+    public E materializeNext() {
       if (!materializeHasNext()) {
         throw new NoSuchElementException();
       }
-      return getState().materializeNext();
-    }
-
-    @Override
-    public int materializeSkip(final @Positive int count) {
-      if (materializeHasNext()) {
-        setEmptyState();
-        return 1;
+      if (hasNext){
+        hasNext = false;
+        return elements.removeFirst();
       }
-      return 0;
+      return getState().materializeNext();
     }
   }
 }

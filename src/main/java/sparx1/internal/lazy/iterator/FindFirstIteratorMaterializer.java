@@ -26,15 +26,15 @@ public class FindFirstIteratorMaterializer<E> extends StatefulIteratorMaterializ
 
   public FindFirstIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedPredicate<? super E> predicate) {
-    setState(new ImmaterialState(wrapped, predicate));
+    setState(new InitialState(wrapped, predicate));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;
       this.predicate = predicate;

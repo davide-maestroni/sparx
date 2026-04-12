@@ -26,10 +26,10 @@ public class InsertAllAfterIteratorMaterializer<E> extends StatefulIteratorMater
   public InsertAllAfterIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNegative int numElements,
       final @NotNull IteratorMaterializer<E> elementsMaterializer) {
-    setState(new ImmaterialState(wrapped, numElements, elementsMaterializer));
+    setState(new InitialState(wrapped, numElements, elementsMaterializer));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final IteratorMaterializer<E> elementsMaterializer;
     private final int numElements;
@@ -37,7 +37,7 @@ public class InsertAllAfterIteratorMaterializer<E> extends StatefulIteratorMater
 
     private int pos;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped, final int numElements,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped, final int numElements,
         final @NotNull IteratorMaterializer<E> elementsMaterializer) {
       this.wrapped = wrapped;
       this.numElements = numElements;

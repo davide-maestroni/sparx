@@ -24,17 +24,17 @@ public class PeekExceptionallyIteratorMaterializer<E> extends StatefulIteratorMa
 
   public PeekExceptionallyIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedConsumer<? super Throwable> consumer) {
-    setState(new ImmaterialState(wrapped, consumer));
+    setState(new InitialState(wrapped, consumer));
   }
 
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractIteratorMaterializer<E> {
 
     private final IndexedConsumer<? super Throwable> consumer;
     private final IteratorMaterializer<E> wrapped;
 
     private int pos;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IndexedConsumer<? super Throwable> consumer) {
       this.wrapped = wrapped;
       this.consumer = consumer;

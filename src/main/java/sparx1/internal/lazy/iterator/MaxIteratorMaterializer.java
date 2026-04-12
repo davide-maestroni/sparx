@@ -25,15 +25,15 @@ public class MaxIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> 
 
   public MaxIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull Comparator<? super E> comparator) {
-    setState(new ImmaterialState(wrapped, comparator));
+    setState(new InitialState(wrapped, comparator));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final Comparator<? super E> comparator;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull Comparator<? super E> comparator) {
       this.wrapped = wrapped;
       this.comparator = comparator;

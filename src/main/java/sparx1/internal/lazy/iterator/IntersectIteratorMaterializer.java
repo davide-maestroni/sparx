@@ -24,10 +24,10 @@ public class IntersectIteratorMaterializer<E> extends StatefulIteratorMaterializ
 
   public IntersectIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IteratorMaterializer<Object> elementsMaterializer) {
-    setState(new ImmaterialState(wrapped, elementsMaterializer));
+    setState(new InitialState(wrapped, elementsMaterializer));
   }
 
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractIteratorMaterializer<E> {
 
     private final IteratorMaterializer<Object> elementsMaterializer;
     private final IteratorMaterializer<E> wrapped;
@@ -36,7 +36,7 @@ public class IntersectIteratorMaterializer<E> extends StatefulIteratorMaterializ
     private boolean hasNext;
     private E next;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IteratorMaterializer<Object> elementsMaterializer) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;

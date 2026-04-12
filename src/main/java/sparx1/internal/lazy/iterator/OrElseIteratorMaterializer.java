@@ -23,15 +23,15 @@ public class OrElseIteratorMaterializer<E> extends StatefulIteratorMaterializer<
 
   public OrElseIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IteratorMaterializer<E> elementsMaterializer) {
-    setState(new ImmaterialState(wrapped, elementsMaterializer));
+    setState(new InitialState(wrapped, elementsMaterializer));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final IteratorMaterializer<E> elementsMaterializer;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IteratorMaterializer<E> elementsMaterializer) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;

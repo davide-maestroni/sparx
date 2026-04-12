@@ -26,16 +26,16 @@ public class FoldIteratorMaterializer<E, F> extends StatefulIteratorMaterializer
   public FoldIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final F identity,
       final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
-    setState(new ImmaterialState(wrapped, identity, operation));
+    setState(new InitialState(wrapped, identity, operation));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<F> {
+  private class InitialState implements IteratorMaterializer<F> {
 
     private final F identity;
     private final BinaryFunction<? super F, ? super E, ? extends F> operation;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped, final F identity,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped, final F identity,
         final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
       this.wrapped = wrapped;
       this.identity = identity;

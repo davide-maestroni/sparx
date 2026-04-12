@@ -27,17 +27,17 @@ public class FoldWhileIteratorMaterializer<E, F> extends StatefulIteratorMateria
   public FoldWhileIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final F identity, final @NotNull Predicate<? super F> predicate,
       final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
-    setState(new ImmaterialState(wrapped, identity, predicate, operation));
+    setState(new InitialState(wrapped, identity, predicate, operation));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<F> {
+  private class InitialState implements IteratorMaterializer<F> {
 
     private final F identity;
     private final BinaryFunction<? super F, ? super E, ? extends F> operation;
     private final Predicate<? super F> predicate;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped, final F identity,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped, final F identity,
         final @NotNull Predicate<? super F> predicate,
         final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
       this.wrapped = wrapped;

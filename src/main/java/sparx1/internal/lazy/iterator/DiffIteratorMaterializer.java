@@ -24,10 +24,10 @@ public class DiffIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
 
   public DiffIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IteratorMaterializer<?> elementsMaterializer) {
-    setState(new ImmaterialState(wrapped, elementsMaterializer));
+    setState(new InitialState(wrapped, elementsMaterializer));
   }
 
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractIteratorMaterializer<E> {
 
     private final IteratorMaterializer<?> elementsMaterializer;
     private final IteratorMaterializer<E> wrapped;
@@ -36,7 +36,7 @@ public class DiffIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
     private boolean hasNext;
     private E next;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IteratorMaterializer<?> elementsMaterializer) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;

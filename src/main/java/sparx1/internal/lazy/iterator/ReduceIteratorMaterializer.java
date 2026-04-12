@@ -26,15 +26,15 @@ public class ReduceIteratorMaterializer<E> extends StatefulIteratorMaterializer<
 
   public ReduceIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-    setState(new ImmaterialState(wrapped, operation));
+    setState(new InitialState(wrapped, operation));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final BinaryFunction<? super E, ? super E, ? extends E> operation;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
       this.wrapped = wrapped;
       this.operation = operation;

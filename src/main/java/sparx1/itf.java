@@ -853,6 +853,8 @@ public class itf {
         @NotNull Predicate<? super F> condition,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
+    // TODO: hasDefiniteSize
+
     @NotNull
     Iterable<Boolean, ? extends Iterable<Boolean, ?>> includes(@Nullable Object element);
 
@@ -891,9 +893,9 @@ public class itf {
 
     boolean isOrdered();
 
-    boolean isRepeatable();
-
     boolean isSorted();
+
+    boolean isTraversableAgain();
 
     @Override
     @NotNull
@@ -973,6 +975,8 @@ public class itf {
 
     @NotNull
     Iterable<E, T> orElseGet(@NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
+
+    // TODO: partition => 2 iterables
 
     @NotNull
     Iterable<E, T> plus(@Nullable E element);

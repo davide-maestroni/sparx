@@ -23,17 +23,17 @@ public class InterleaveIteratorMaterializer<E> extends StatefulIteratorMateriali
 
   public InterleaveIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IteratorMaterializer<E> elementsMaterializer) {
-    setState(new ImmaterialState(wrapped, elementsMaterializer));
+    setState(new InitialState(wrapped, elementsMaterializer));
   }
 
-  private class ImmaterialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractIteratorMaterializer<E> {
 
     private final IteratorMaterializer<E> elementsMaterializer;
     private final IteratorMaterializer<E> wrapped;
 
     private boolean isWrapped = true;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IteratorMaterializer<E> elementsMaterializer) {
       this.wrapped = wrapped;
       this.elementsMaterializer = elementsMaterializer;

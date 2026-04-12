@@ -25,17 +25,17 @@ public class MapIteratorMaterializer<E, F> extends StatefulIteratorMaterializer<
 
   public MapIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull IndexedFunction<? super E, F> mapper) {
-    setState(new ImmaterialState(wrapped, mapper));
+    setState(new InitialState(wrapped, mapper));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<F> {
+  private class InitialState implements IteratorMaterializer<F> {
 
     private final IndexedFunction<? super E, F> mapper;
     private final IteratorMaterializer<E> wrapped;
 
     private int pos;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull IndexedFunction<? super E, F> mapper) {
       this.wrapped = wrapped;
       this.mapper = mapper;

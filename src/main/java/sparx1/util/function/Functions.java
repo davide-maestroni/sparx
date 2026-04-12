@@ -102,6 +102,10 @@ public class Functions {
     };
   }
 
+  public static boolean objectsEqual(final Object element1, final Object element2) {
+    return element1 == element2 || (element1 != null && element1.equals(element2));
+  }
+
   public static @NotNull <T> Comparator<T> reversed(final @NotNull Comparator<T> comparator) {
     return reversed(comparator, "comparator");
   }

@@ -25,15 +25,15 @@ public class FinallyIteratorMaterializer<E> extends StatefulIteratorMaterializer
 
   public FinallyIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull Action action) {
-    setState(new ImmaterialState(wrapped, action));
+    setState(new InitialState(wrapped, action));
   }
 
-  private class ImmaterialState implements IteratorMaterializer<E> {
+  private class InitialState implements IteratorMaterializer<E> {
 
     private final Action action;
     private final IteratorMaterializer<E> wrapped;
 
-    private ImmaterialState(final @NotNull IteratorMaterializer<E> wrapped,
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
         final @NotNull Action action) {
       this.wrapped = wrapped;
       this.action = action;
