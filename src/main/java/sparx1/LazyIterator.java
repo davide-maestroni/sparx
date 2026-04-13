@@ -83,6 +83,8 @@ import sparx1.internal.lazy.iterator.RemoveFirstIteratorMaterializer;
 import sparx1.internal.lazy.iterator.RemoveFirstSequenceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.RemoveLastIteratorMaterializer;
 import sparx1.internal.lazy.iterator.RemoveLastSequenceIteratorMaterializer;
+import sparx1.internal.lazy.iterator.RemoveSequenceIteratorMaterializer;
+import sparx1.internal.lazy.iterator.RemoveSliceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.SuppliedIteratorMaterializer;
 import sparx1.lazy.Iterator;
 import sparx1.util.DequeArrayList;
@@ -1494,12 +1496,59 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> removeSequence(final @NotNull java.lang.Iterable<?> elements) {
-    return null;
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    if (getKnownSize(elements) == 0) {
+      return iterator();
+    }
+    final ListMaterializer<Object> elementsMaterializer = LazyList.getElementsMaterializer(
+        Require.notNull(elements, "elements"));
+    return new LazyIterator<E>(
+        new RemoveSequenceIteratorMaterializer<E>(materializer, elementsMaterializer));
   }
 
   @Override
-  public @NotNull Iterator<E> removeSlice(int start, int end) {
-    return null;
+  public @NotNull Iterator<E> removeSlice(final int start) {
+    return start == -1 ? removeSlice(-1, Integer.MAX_VALUE) : removeSlice(start, start + 1);
+  }
+
+  @Override
+  public @NotNull Iterator<E> removeSlice(final int start, final int end) {
+    if ((end >= 0 || start < 0) && start >= end) {
+      return iterator();
+    }
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize == 0) {
+      return this;
+    }
+    if (start == 0 && end > start) {
+      return dropFirst(end);
+    }
+    if (knownSize > 0) {
+      final int knownStart;
+      if (start < 0) {
+        knownStart = Math.max(0, knownSize + start);
+      } else {
+        knownStart = Math.min(knownSize, start);
+      }
+      final int knownEnd;
+      if (end < 0) {
+        knownEnd = Math.max(0, knownSize + end);
+      } else {
+        knownEnd = Math.min(knownSize, end);
+      }
+      if (knownStart >= knownEnd) {
+        return iterator();
+      }
+      final int knownLength = knownEnd - knownStart;
+      if (knownLength == knownSize) {
+        return Iterator.of();
+      }
+    }
+    return new LazyIterator<E>(new RemoveSliceIteratorMaterializer<E>(materializer, start, end));
   }
 
   @Override
@@ -1529,6 +1578,11 @@ public class LazyIterator<E> extends Iterator<E> {
   @Override
   public @NotNull Iterator<E> replaceSlice(int start, int end,
       @NotNull java.lang.Iterable<? extends E> patch) {
+    return null;
+  }
+
+  @Override
+  public @NotNull Iterator<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch) {
     return null;
   }
 

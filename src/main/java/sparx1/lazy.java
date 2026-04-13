@@ -414,6 +414,9 @@ public class lazy {
     public abstract @NotNull Iterator<E> removeSequence(@NotNull java.lang.Iterable<?> elements);
 
     @Override
+    public abstract @NotNull Iterator<E> removeSlice(int start);
+
+    @Override
     public abstract @NotNull Iterator<E> removeSlice(int start, int end);
 
     @Override
@@ -437,6 +440,10 @@ public class lazy {
     @Override
     public abstract @NotNull Iterator<E> replaceSlice(int start, int end,
         @NotNull java.lang.Iterable<? extends E> patch);
+
+    @Override
+    public abstract @NotNull Iterator<E> replaceSlice(int start,
+        @NotNull Iterable<? extends E> patch);
 
     @Override
     public abstract @NotNull Iterator<E> resizeTo(@NotNegative int numElements, E padding);

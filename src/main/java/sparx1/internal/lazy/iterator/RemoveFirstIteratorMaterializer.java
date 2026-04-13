@@ -28,7 +28,7 @@ public class RemoveFirstIteratorMaterializer<E> extends StatefulIteratorMaterial
     setState(new InitialState(wrapped, predicate));
   }
 
-  private class InitialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractStateIteratorMaterializer {
 
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;

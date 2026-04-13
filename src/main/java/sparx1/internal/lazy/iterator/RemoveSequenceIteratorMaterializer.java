@@ -22,9 +22,9 @@ import sparx1.util.DequeArrayList;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.function.Functions;
 
-public class RemoveFirstSequenceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
+public class RemoveSequenceIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  public RemoveFirstSequenceIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
+  public RemoveSequenceIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
       final @NotNull ListMaterializer<?> elementsMaterializer) {
     setState(new InitialState(wrapped, elementsMaterializer));
   }
@@ -57,22 +57,29 @@ public class RemoveFirstSequenceIteratorMaterializer<E> extends StatefulIterator
       final DequeArrayList<E> wrappedElements = this.elements;
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       final int elementsSize = elementsMaterializer.materializeSize();
-      if (elementsSize > 0) {
+      while (elementsSize > 0) {
         int index = 0;
+        boolean found = false;
         if (!wrappedElements.isEmpty()) {
           for (final E wrappedElement : wrappedElements) {
             if (!elementsMaterializer.canMaterializeElement(index)) {
-              return setState(wrapped).materializeHasNext();
+              found = true;
+              break;
             }
             final Object element = elementsMaterializer.materializeElement(index++);
             if (!Functions.objectsEqual(wrappedElement, element)) {
               return hasNext = true;
             }
           }
+          if (found) {
+            wrappedElements.removeRange(0, elementsSize);
+            continue;
+          }
         }
         while (wrapped.materializeHasNext()) {
           if (!elementsMaterializer.canMaterializeElement(index)) {
-            return setState(wrapped).materializeHasNext();
+            found = true;
+            break;
           }
           final E next = wrapped.materializeNext();
           wrappedElements.add(next);
@@ -81,8 +88,9 @@ public class RemoveFirstSequenceIteratorMaterializer<E> extends StatefulIterator
             return hasNext = true;
           }
         }
-        if (!elementsMaterializer.canMaterializeElement(index)) {
-          return setState(wrapped).materializeHasNext();
+        if (found || !elementsMaterializer.canMaterializeElement(index)) {
+          wrappedElements.removeRange(0, elementsSize);
+          continue;
         }
         return setState(new DequeToIteratorMaterializer<E>(wrappedElements)).materializeHasNext();
       }

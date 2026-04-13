@@ -20,7 +20,6 @@ import sparx1.internal.lazy.IteratorMaterializer;
 import sparx1.util.DequeArrayList;
 import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNull;
-import sparx1.util.annotation.Positive;
 import sparx1.util.function.IndexedPredicate;
 
 public class RemoveLastIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
@@ -30,7 +29,7 @@ public class RemoveLastIteratorMaterializer<E> extends StatefulIteratorMateriali
     setState(new InitialState(wrapped, predicate));
   }
 
-  private class InitialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractStateIteratorMaterializer {
 
     private final IndexedPredicate<? super E> predicate;
     private final IteratorMaterializer<E> wrapped;
@@ -88,7 +87,7 @@ public class RemoveLastIteratorMaterializer<E> extends StatefulIteratorMateriali
     }
   }
 
-  private class FoundState implements IteratorMaterializer<E> {
+  private class FoundState extends AbstractStateIteratorMaterializer {
 
     private final DequeArrayList<E> elements = new DequeArrayList<E>(true);
     private final IndexedPredicate<? super E> predicate;
@@ -152,23 +151,6 @@ public class RemoveLastIteratorMaterializer<E> extends StatefulIteratorMateriali
         throw new NoSuchElementException();
       }
       return elements.removeFirst();
-    }
-
-    @Override
-    public int materializeSkip(final @Positive int count) {
-      final DequeArrayList<E> elements = this.elements;
-      int skipped = 0;
-      while (count > skipped && materializeHasNext()) {
-        final IteratorMaterializer<E> state = getState();
-        if (state == this) {
-          final int toSkip = Math.min(count - skipped, elements.size() - 1);
-          elements.removeRange(0, toSkip);
-          skipped += toSkip;
-        } else {
-          skipped += state.materializeSkip(count - skipped);
-        }
-      }
-      return skipped;
     }
   }
 }

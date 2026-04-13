@@ -55,4 +55,23 @@ abstract class StatefulIteratorMaterializer<E> implements IteratorMaterializer<E
       final @NotNull IteratorMaterializer<E> newState) {
     return state = newState;
   }
+
+  abstract class AbstractStateIteratorMaterializer implements IteratorMaterializer<E> {
+
+    @Override
+    public int materializeSkip(final @Positive int count) {
+      int skipped = 0;
+      while (skipped < count && materializeHasNext()) {
+        materializeNext();
+        ++skipped;
+        if (skipped < count) {
+          final IteratorMaterializer<E> state = getState();
+          if (state != this) {
+            return skipped + state.materializeSkip(count - skipped);
+          }
+        }
+      }
+      return skipped;
+    }
+  }
 }

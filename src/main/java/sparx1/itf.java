@@ -499,6 +499,10 @@ public class itf {
 
     @Override
     @NotNull
+    Collection<E, T> removeSlice(int start);
+
+    @Override
+    @NotNull
     Collection<E, T> removeSlice(int start, int end);
 
     @NotNull
@@ -521,6 +525,10 @@ public class itf {
     @NotNull
     Collection<E, T> replaceSlice(int start, int end,
         @NotNull java.lang.Iterable<? extends E> patch);
+
+    @Override
+    @NotNull
+    Collection<E, T> replaceSlice(int start, @NotNull java.lang.Iterable<? extends E> patch);
 
     @Override
     @NotNull
@@ -1021,10 +1029,10 @@ public class itf {
     Iterable<E, T> removeSequence(@NotNull java.lang.Iterable<?> elements);
 
     @NotNull
-    Iterable<E, T> removeSlice(int start, int end);
+    Iterable<E, T> removeSlice(int start);
 
     @NotNull
-    Iterable<E, T> replaceSlice(int start, int end, @NotNull java.lang.Iterable<? extends E> patch);
+    Iterable<E, T> removeSlice(int start, int end);
 
     @NotNull
     Iterable<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
@@ -1041,6 +1049,12 @@ public class itf {
     @NotNull
     Iterable<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
         @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @NotNull
+    Iterable<E, T> replaceSlice(int start, int end, @NotNull java.lang.Iterable<? extends E> patch);
+
+    @NotNull
+    Iterable<E, T> replaceSlice(int start, @NotNull java.lang.Iterable<? extends E> patch);
 
     @NotNull
     Iterable<E, T> resizeTo(@NotNegative int numElements, E padding);
@@ -1549,6 +1563,10 @@ public class itf {
 
     @Override
     @NotNull
+    Iterator<E, T> removeSlice(int start);
+
+    @Override
+    @NotNull
     Iterator<E, T> removeSlice(int start, int end);
 
     @NotNull
@@ -1570,6 +1588,10 @@ public class itf {
     @Override
     @NotNull
     Iterator<E, T> replaceSlice(int start, int end, @NotNull java.lang.Iterable<? extends E> patch);
+
+    @Override
+    @NotNull
+    Iterator<E, T> replaceSlice(int start, @NotNull java.lang.Iterable<? extends E> patch);
 
     @Override
     @NotNull
@@ -2140,6 +2162,10 @@ public class itf {
 
     @Override
     @NotNull
+    List<E, T> removeSlice(int start);
+
+    @Override
+    @NotNull
     List<E, T> removeSlice(int start, int end);
 
     @NotNull
@@ -2161,6 +2187,10 @@ public class itf {
     @Override
     @NotNull
     List<E, T> replaceSlice(int start, int end, @NotNull java.lang.Iterable<? extends E> patch);
+
+    @Override
+    @NotNull
+    List<E, T> replaceSlice(int start, @NotNull java.lang.Iterable<? extends E> patch);
 
     @Override
     @NotNull
@@ -2762,6 +2792,10 @@ public class itf {
 
     @Override
     @NotNull
+    ListIterator<E, T> removeSlice(int start);
+
+    @Override
+    @NotNull
     ListIterator<E, T> removeSlice(int start, int end);
 
     @NotNull
@@ -2784,6 +2818,10 @@ public class itf {
     @NotNull
     ListIterator<E, T> replaceSlice(int start, int end,
         @NotNull java.lang.Iterable<? extends E> patch);
+
+    @Override
+    @NotNull
+    ListIterator<E, T> replaceSlice(int start, @NotNull java.lang.Iterable<? extends E> patch);
 
     @Override
     @NotNull
@@ -3336,6 +3374,10 @@ public class itf {
 
     @Override
     @NotNull
+    Set<E, T> removeSlice(int start);
+
+    @Override
+    @NotNull
     Set<E, T> removeSlice(int start, int end);
 
     @NotNull
@@ -3357,6 +3399,10 @@ public class itf {
     @Override
     @NotNull
     Set<E, T> replaceSlice(int start, int end, @NotNull java.lang.Iterable<? extends E> patch);
+
+    @Override
+    @NotNull
+    Set<E, T> replaceSlice(int start, @NotNull java.lang.Iterable<? extends E> patch);
 
     @Override
     @NotNull

@@ -29,7 +29,7 @@ public class RemoveLastSequenceIteratorMaterializer<E> extends StatefulIteratorM
     setState(new InitialState(wrapped, elementsMaterializer));
   }
 
-  private class InitialState extends AbstractIteratorMaterializer<E> {
+  private class InitialState extends AbstractStateIteratorMaterializer {
 
     private final DequeArrayList<E> elements = new DequeArrayList<E>(true);
     private final ListMaterializer<?> elementsMaterializer;
@@ -105,7 +105,7 @@ public class RemoveLastSequenceIteratorMaterializer<E> extends StatefulIteratorM
     }
   }
 
-  private class FoundState extends AbstractIteratorMaterializer<E> {
+  private class FoundState extends AbstractStateIteratorMaterializer {
 
     private final DequeArrayList<E> elements;
     private final ListMaterializer<?> elementsMaterializer;
