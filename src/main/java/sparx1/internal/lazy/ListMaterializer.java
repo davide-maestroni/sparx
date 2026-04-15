@@ -16,7 +16,6 @@
 package sparx1.internal.lazy;
 
 import java.util.Iterator;
-import sparx.internal.lazy.CollectionMaterializer;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
 

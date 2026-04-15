@@ -48,6 +48,11 @@ public class FindFirstIndexOfSequenceIteratorMaterializer<E> extends
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return false;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;

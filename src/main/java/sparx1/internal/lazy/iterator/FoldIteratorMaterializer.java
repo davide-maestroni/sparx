@@ -48,6 +48,11 @@ public class FoldIteratorMaterializer<E, F> extends StatefulIteratorMaterializer
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return true;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       return true;
     }

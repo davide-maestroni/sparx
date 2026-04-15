@@ -42,6 +42,11 @@ public class SuppliedIteratorMaterializer<E> extends StatefulIteratorMaterialize
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return false;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       try {
         return setState(materializerSupplier.get()).materializeHasNext();

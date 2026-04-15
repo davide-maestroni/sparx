@@ -47,6 +47,11 @@ public class PeekIteratorMaterializer<E> extends StatefulIteratorMaterializer<E>
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       if (!wrapped.materializeHasNext()) {
         setEmptyState();

@@ -53,10 +53,23 @@ public class InsertAllAfterIteratorMaterializer<E> extends StatefulIteratorMater
           if (elementsSize >= 0) {
             return SizeOverflowException.safeCast((long) knownSize + elementsSize);
           }
+          return -1;
         }
         return knownSize;
       }
       return -1;
+    }
+
+    @Override
+    public boolean isSizeKnown() {
+      final int knownSize = wrapped.currentKnownSize();
+      if (knownSize >= 0) {
+        if (knownSize >= numElements - pos) {
+          return elementsMaterializer.isSizeKnown();
+        }
+        return true;
+      }
+      return false;
     }
 
     @Override

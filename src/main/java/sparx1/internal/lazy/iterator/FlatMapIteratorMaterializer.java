@@ -49,6 +49,11 @@ public class FlatMapIteratorMaterializer<E, F> extends StatefulIteratorMateriali
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return false;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       if (materializer.materializeHasNext()) {
         return true;

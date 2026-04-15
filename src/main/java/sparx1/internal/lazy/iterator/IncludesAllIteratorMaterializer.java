@@ -44,6 +44,11 @@ public class IncludesAllIteratorMaterializer<E> extends StatefulIteratorMaterial
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return true;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       return true;
     }

@@ -46,6 +46,11 @@ public class PeekExceptionallyIteratorMaterializer<E> extends StatefulIteratorMa
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       try {
         if (!wrapped.materializeHasNext()) {

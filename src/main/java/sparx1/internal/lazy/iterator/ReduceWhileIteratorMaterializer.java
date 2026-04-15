@@ -51,6 +51,11 @@ public class ReduceWhileIteratorMaterializer<E> extends StatefulIteratorMaterial
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return true;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       return wrapped.materializeHasNext();
     }

@@ -49,6 +49,11 @@ public class DropLastIteratorMaterializer<E> extends StatefulIteratorMaterialize
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       final DequeArrayList<E> elements = this.elements;
       final IteratorMaterializer<E> wrapped = this.wrapped;

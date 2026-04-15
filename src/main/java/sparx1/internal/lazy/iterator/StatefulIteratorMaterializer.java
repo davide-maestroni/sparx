@@ -29,6 +29,11 @@ abstract class StatefulIteratorMaterializer<E> implements IteratorMaterializer<E
   }
 
   @Override
+  public boolean isSizeKnown() {
+    return state.isSizeKnown();
+  }
+
+  @Override
   public boolean materializeHasNext() {
     return state.materializeHasNext();
   }

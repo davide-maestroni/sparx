@@ -50,6 +50,11 @@ public class FilterIteratorMaterializer<E> extends StatefulIteratorMaterializer<
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return false;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       if (hasNext) {
         return true;

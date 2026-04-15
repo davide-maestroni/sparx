@@ -60,6 +60,11 @@ public class InterleaveInnerWithPaddingIteratorMaterializer<E> extends
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown() && elementsMaterializer.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       if (isWrapped || wrapped.materializeHasNext() || elementsMaterializer.materializeHasNext()) {
         return true;

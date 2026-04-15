@@ -49,6 +49,11 @@ public class RemoveFirstIteratorMaterializer<E> extends StatefulIteratorMaterial
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return false;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       if (hasNext) {
         return true;

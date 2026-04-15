@@ -39,6 +39,11 @@ public class CountIteratorMaterializer<E> extends StatefulIteratorMaterializer<I
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return true;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       return true;
     }

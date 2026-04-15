@@ -53,6 +53,11 @@ public class InterleaveIteratorMaterializer<E> extends StatefulIteratorMateriali
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown() && elementsMaterializer.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       if (isWrapped ? wrapped.materializeHasNext() && elementsMaterializer.materializeHasNext()
           : elementsMaterializer.materializeHasNext()) {

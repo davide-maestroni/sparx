@@ -58,6 +58,11 @@ public class InterleaveWithPaddingIteratorMaterializer<E> extends StatefulIterat
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown() && elementsMaterializer.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       if (!isWrapped || wrapped.materializeHasNext() || elementsMaterializer.materializeHasNext()) {
         return true;

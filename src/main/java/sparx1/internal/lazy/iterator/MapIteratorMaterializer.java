@@ -47,6 +47,11 @@ public class MapIteratorMaterializer<E, F> extends StatefulIteratorMaterializer<
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       if (wrapped.materializeHasNext()) {
         return true;

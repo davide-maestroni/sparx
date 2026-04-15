@@ -51,6 +51,11 @@ public class DistinctByIteratorMaterializer<E, K> extends StatefulIteratorMateri
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return false;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       if (hasNext) {
         return true;

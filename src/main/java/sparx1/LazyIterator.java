@@ -89,6 +89,7 @@ import sparx1.internal.lazy.iterator.SuppliedIteratorMaterializer;
 import sparx1.lazy.Iterator;
 import sparx1.util.DequeArrayList;
 import sparx1.util.Require;
+import sparx1.util.SizeOverflowException;
 import sparx1.util.UncheckedException;
 import sparx1.util.ZipEntry;
 import sparx1.util.annotation.NotNegative;
@@ -1552,8 +1553,8 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
-      @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper) {
+  public @NotNull Iterator<E> replaceFirstSequence(final @NotNull java.lang.Iterable<?> elements,
+      final @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper) {
     return null;
   }
 
@@ -1593,7 +1594,15 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public int size() {
-    return materializer.materializeSkip(Integer.MAX_VALUE);
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize >= 0) {
+      return knownSize;
+    }
+    final int size = materializer.materializeSkip(Integer.MAX_VALUE);
+    if (size == Integer.MAX_VALUE && materializer.materializeSkip(1) > 0) {
+      throw new SizeOverflowException(1L + Integer.MAX_VALUE);
+    }
+    return size;
   }
 
   @Override

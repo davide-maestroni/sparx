@@ -41,9 +41,14 @@ public class InsertIteratorMaterializer<E> extends StatefulIteratorMaterializer<
     public int currentKnownSize() {
       final int knownSize = wrapped.currentKnownSize();
       if (knownSize >= 0) {
-        return SizeOverflowException.safeCast((long) knownSize + 1);
+        return SizeOverflowException.safeCast(knownSize + 1L);
       }
       return -1;
+    }
+
+    @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
     }
 
     @Override

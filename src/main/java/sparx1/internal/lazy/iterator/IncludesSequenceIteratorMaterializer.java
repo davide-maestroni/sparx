@@ -46,6 +46,11 @@ public class IncludesSequenceIteratorMaterializer<E> extends StatefulIteratorMat
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return true;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;

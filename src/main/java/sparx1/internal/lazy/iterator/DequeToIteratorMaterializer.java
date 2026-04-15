@@ -34,6 +34,11 @@ public class DequeToIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
+  public boolean isSizeKnown() {
+    return true;
+  }
+
+  @Override
   public boolean materializeHasNext() {
     return !elements.isEmpty();
   }

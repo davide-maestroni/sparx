@@ -47,6 +47,15 @@ public class OrElseIteratorMaterializer<E> extends StatefulIteratorMaterializer<
     }
 
     @Override
+    public boolean isSizeKnown() {
+      final int knownSize = wrapped.currentKnownSize();
+      if (knownSize == 0) {
+        return elementsMaterializer.isSizeKnown();
+      }
+      return false;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       return wrapped.materializeHasNext() || elementsMaterializer.materializeHasNext();
     }

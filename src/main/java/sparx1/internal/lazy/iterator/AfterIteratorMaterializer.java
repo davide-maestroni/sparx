@@ -42,11 +42,12 @@ public class AfterIteratorMaterializer<E> extends StatefulIteratorMaterializer<E
 
     @Override
     public int currentKnownSize() {
-      try {
-        return wrapped.currentKnownSize();
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
+      return wrapped.currentKnownSize();
+    }
+
+    @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
     }
 
     @Override

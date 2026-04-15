@@ -48,6 +48,11 @@ public class DropFirstIteratorMaterializer<E> extends StatefulIteratorMaterializ
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       final int maxElements = this.maxElements;
       final IteratorMaterializer<E> wrapped = this.wrapped;

@@ -51,6 +51,11 @@ public class InsertAllIteratorMaterializer<E> extends StatefulIteratorMaterializ
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown() && elementsMaterializer.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       return wrapped.materializeHasNext() || elementsMaterializer.materializeHasNext();
     }

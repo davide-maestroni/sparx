@@ -42,6 +42,11 @@ public class CollectionToIteratorMaterializer<E> extends AbstractIteratorMateria
   }
 
   @Override
+  public boolean isSizeKnown() {
+    return true;
+  }
+
+  @Override
   public boolean materializeHasNext() {
     return iterator.hasNext();
   }

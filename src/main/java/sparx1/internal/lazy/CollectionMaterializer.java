@@ -22,6 +22,8 @@ public interface CollectionMaterializer<E> {
 
   int knownSize();
 
+  boolean isSizeKnown();
+
   boolean materializeContains(Object element);
 
   int materializeElements();

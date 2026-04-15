@@ -21,6 +21,8 @@ public interface IteratorMaterializer<E> {
 
   int currentKnownSize();
 
+  boolean isSizeKnown();
+
   boolean materializeHasNext();
 
   E materializeNext();

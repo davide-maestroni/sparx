@@ -50,6 +50,16 @@ public class FinallyIteratorMaterializer<E> extends StatefulIteratorMaterializer
     }
 
     @Override
+    public boolean isSizeKnown() {
+      try {
+        return wrapped.isSizeKnown();
+      } catch (final Exception e) {
+        materialize();
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+
+    @Override
     public boolean materializeHasNext() {
       try {
         if (!wrapped.materializeHasNext()) {

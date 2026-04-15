@@ -46,6 +46,11 @@ public class DropFirstWhileIteratorMaterializer<E> extends StatefulIteratorMater
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return false;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       try {
         final IteratorMaterializer<E> wrapped = this.wrapped;

@@ -38,6 +38,11 @@ public class EmptyIteratorMaterializer<E> implements IteratorMaterializer<E> {
   }
 
   @Override
+  public boolean isSizeKnown() {
+    return true;
+  }
+
+  @Override
   public boolean materializeHasNext() {
     return false;
   }

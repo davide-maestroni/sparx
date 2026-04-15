@@ -18,6 +18,7 @@ package sparx1.internal.lazy.iterator;
 import java.util.NoSuchElementException;
 import sparx1.internal.lazy.IteratorMaterializer;
 import sparx1.util.DequeArrayList;
+import sparx1.util.SizeOverflowException;
 import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.function.IndexedPredicate;
@@ -47,6 +48,11 @@ public class RemoveLastIteratorMaterializer<E> extends StatefulIteratorMateriali
     @Override
     public int currentKnownSize() {
       return -1;
+    }
+
+    @Override
+    public boolean isSizeKnown() {
+      return false;
     }
 
     @Override
@@ -107,9 +113,14 @@ public class RemoveLastIteratorMaterializer<E> extends StatefulIteratorMateriali
     public int currentKnownSize() {
       final int knownSize = wrapped.currentKnownSize();
       if (knownSize >= 0) {
-        return knownSize + elements.size() - 1;
+        return SizeOverflowException.safeCast(knownSize + elements.size() - 1L);
       }
       return -1;
+    }
+
+    @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
     }
 
     @Override

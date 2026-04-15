@@ -52,6 +52,11 @@ public class MaxIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> 
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (!wrapped.materializeHasNext()) {

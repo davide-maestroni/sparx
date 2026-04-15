@@ -70,6 +70,11 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulIteratorMaterial
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return false;
+    }
+
+    @Override
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (wrapped.materializeHasNext()) {
@@ -136,6 +141,11 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulIteratorMaterial
     }
 
     @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
+    }
+
+    @Override
     public boolean materializeHasNext() {
       final IteratorMaterializer<E> wrapped = this.wrapped;
       if (pos == start) {
@@ -187,6 +197,11 @@ public class RemoveSliceIteratorMaterializer<E> extends StatefulIteratorMaterial
         return Math.max(start - pos, knownSize - Math.max(0, materializedEnd - start));
       }
       return -1;
+    }
+
+    @Override
+    public boolean isSizeKnown() {
+      return wrapped.isSizeKnown();
     }
 
     @Override
