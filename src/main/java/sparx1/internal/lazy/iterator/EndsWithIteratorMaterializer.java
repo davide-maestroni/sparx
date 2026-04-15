@@ -46,7 +46,7 @@ public class EndsWithIteratorMaterializer<E> extends StatefulIteratorMaterialize
 
     @Override
     public boolean isSizeKnown() {
-      return false;
+      return true;
     }
 
     @Override

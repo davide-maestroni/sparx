@@ -52,7 +52,7 @@ public class OrElseIteratorMaterializer<E> extends StatefulIteratorMaterializer<
       if (knownSize == 0) {
         return elementsMaterializer.isSizeKnown();
       }
-      return false;
+      return knownSize > 0;
     }
 
     @Override
