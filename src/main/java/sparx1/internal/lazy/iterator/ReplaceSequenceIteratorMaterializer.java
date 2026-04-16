@@ -15,8 +15,6 @@
  */
 package sparx1.internal.lazy.iterator;
 
-import static java.util.Collections.unmodifiableList;
-
 import java.util.List;
 import java.util.NoSuchElementException;
 import sparx1.internal.lazy.IteratorMaterializer;
@@ -37,11 +35,11 @@ public class ReplaceSequenceIteratorMaterializer<E> extends StatefulIteratorMate
 
   private class InitialState extends AbstractStateIteratorMaterializer {
 
-    private final DequeArrayList<E> elements = new DequeArrayList<E>(true);
     private final ListMaterializer<?> elementsMaterializer;
     private final IndexedFunction<? super List<E>, IteratorMaterializer<E>> mapper;
     private final IteratorMaterializer<E> wrapped;
 
+    private DequeArrayList<E> elements = new DequeArrayList<E>(true);
     private boolean hasNext = false;
     private IteratorMaterializer<E> materializer;
     private int pos;
@@ -76,9 +74,9 @@ public class ReplaceSequenceIteratorMaterializer<E> extends StatefulIteratorMate
         return true;
       }
       final IteratorMaterializer<E> wrapped = this.wrapped;
-      final DequeArrayList<E> wrappedElements = this.elements;
       final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
       final int elementsSize = elementsMaterializer.materializeSize();
+      DequeArrayList<E> wrappedElements = elements;
       while (elementsSize > 0) {
         int index = 0;
         boolean found = false;
@@ -95,9 +93,9 @@ public class ReplaceSequenceIteratorMaterializer<E> extends StatefulIteratorMate
           }
           if (found) {
             try {
-              final IteratorMaterializer<E> nextMaterializer = mapper.apply(pos,
-                  unmodifiableList(wrappedElements.subList(0, elementsSize)));
-              wrappedElements.removeRange(0, elementsSize);
+              elements = new DequeArrayList<E>(true);
+              final IteratorMaterializer<E> nextMaterializer = mapper.apply(pos, wrappedElements);
+              wrappedElements = elements;
               if (nextMaterializer.materializeHasNext()) {
                 this.materializer = nextMaterializer;
                 return true;
@@ -122,9 +120,9 @@ public class ReplaceSequenceIteratorMaterializer<E> extends StatefulIteratorMate
         }
         if (found || !elementsMaterializer.canMaterializeElement(index)) {
           try {
-            final IteratorMaterializer<E> nextMaterializer = mapper.apply(pos,
-                unmodifiableList(wrappedElements.subList(0, elementsSize)));
-            wrappedElements.removeRange(0, elementsSize);
+            elements = new DequeArrayList<E>(true);
+            final IteratorMaterializer<E> nextMaterializer = mapper.apply(pos, wrappedElements);
+            wrappedElements = elements;
             if (nextMaterializer.materializeHasNext()) {
               this.materializer = nextMaterializer;
               return true;

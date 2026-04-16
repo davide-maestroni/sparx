@@ -15,8 +15,6 @@
  */
 package sparx1.internal.lazy.iterator;
 
-import static java.util.Collections.unmodifiableList;
-
 import java.util.List;
 import java.util.NoSuchElementException;
 import sparx1.internal.lazy.IteratorMaterializer;
@@ -76,7 +74,7 @@ public class ReplaceFirstSequenceIteratorMaterializer<E> extends StatefulIterato
         if (!wrappedElements.isEmpty()) {
           for (final E wrappedElement : wrappedElements) {
             if (!elementsMaterializer.canMaterializeElement(index)) {
-              return setFinalState(elementsSize).materializeHasNext();
+              return setFinalState().materializeHasNext();
             }
             final Object element = elementsMaterializer.materializeElement(index++);
             if (!Functions.objectsEqual(wrappedElement, element)) {
@@ -86,7 +84,7 @@ public class ReplaceFirstSequenceIteratorMaterializer<E> extends StatefulIterato
         }
         while (wrapped.materializeHasNext()) {
           if (!elementsMaterializer.canMaterializeElement(index)) {
-            return setFinalState(elementsSize).materializeHasNext();
+            return setFinalState().materializeHasNext();
           }
           final E next = wrapped.materializeNext();
           wrappedElements.add(next);
@@ -96,7 +94,7 @@ public class ReplaceFirstSequenceIteratorMaterializer<E> extends StatefulIterato
           }
         }
         if (!elementsMaterializer.canMaterializeElement(index)) {
-          return setFinalState(elementsSize).materializeHasNext();
+          return setFinalState().materializeHasNext();
         }
         return setState(new DequeToIteratorMaterializer<E>(wrappedElements)).materializeHasNext();
       }
@@ -115,10 +113,9 @@ public class ReplaceFirstSequenceIteratorMaterializer<E> extends StatefulIterato
       return getState().materializeNext();
     }
 
-    private @NotNull IteratorMaterializer<E> setFinalState(final int elementsSize) {
+    private @NotNull IteratorMaterializer<E> setFinalState() {
       try {
-        return setState(new InsertAllIteratorMaterializer<E>(wrapped,
-            mapper.apply(unmodifiableList(elements.subList(0, elementsSize)))));
+        return setState(new InsertAllIteratorMaterializer<E>(wrapped, mapper.apply(elements)));
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }

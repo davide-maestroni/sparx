@@ -192,23 +192,32 @@ public class ReplaceLastSequenceIteratorMaterializer<E> extends StatefulIterator
           }
           if (index > 0) {
             try {
-              final IteratorMaterializer<E> materializer;
               if (!elementsMaterializer.canMaterializeElement(index)) {
-                final int size = wrappedElements.size();
-                materializer = mapper.apply(
-                    unmodifiableList(wrappedElements.subList(size - elementsSize, size)));
-                wrappedElements.removeRange(size - elementsSize, size);
+                final DequeArrayList<E> elements = new DequeArrayList<E>(elementsSize);
+                for (int i = 0; i < elementsSize; ++i) {
+                  elements.addFirst(wrappedElements.removeLast());
+                }
+                final IteratorMaterializer<E> materializer = mapper.apply(
+                    unmodifiableList(elements));
+                if (wrappedElements.isEmpty()) {
+                  return setState(materializer).materializeHasNext();
+                }
+                return setState(new AppendAllIteratorMaterializer<E>(
+                    new DequeToIteratorMaterializer<E>(wrappedElements),
+                    materializer)).materializeHasNext();
               } else {
-                materializer = mapper.apply(
-                    unmodifiableList(wrappedElements.subList(0, elementsSize)));
-                wrappedElements.removeRange(0, elementsSize);
+                final DequeArrayList<E> elements = new DequeArrayList<E>(elementsSize);
+                for (int i = 0; i < elementsSize; ++i) {
+                  elements.add(wrappedElements.remove());
+                }
+                final IteratorMaterializer<E> materializer = mapper.apply(elements);
+                if (wrappedElements.isEmpty()) {
+                  return setState(materializer).materializeHasNext();
+                }
+                return setState(new InsertAllIteratorMaterializer<E>(
+                    new DequeToIteratorMaterializer<E>(wrappedElements),
+                    materializer)).materializeHasNext();
               }
-              if (wrappedElements.isEmpty()) {
-                return setState(materializer).materializeHasNext();
-              }
-              return setState(new InsertAllIteratorMaterializer<E>(
-                  new DequeToIteratorMaterializer<E>(wrappedElements),
-                  materializer)).materializeHasNext();
             } catch (final Exception e) {
               throw UncheckedException.throwUnchecked(e);
             }
