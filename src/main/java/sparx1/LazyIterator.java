@@ -85,10 +85,15 @@ import sparx1.internal.lazy.iterator.RemoveLastIteratorMaterializer;
 import sparx1.internal.lazy.iterator.RemoveLastSequenceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.RemoveSequenceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.RemoveSliceIteratorMaterializer;
+import sparx1.internal.lazy.iterator.RepeatIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ReplaceFirstSequenceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ReplaceLastSequenceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ReplaceSequenceIteratorMaterializer;
+import sparx1.internal.lazy.iterator.ReplaceSliceIteratorMaterializer;
+import sparx1.internal.lazy.iterator.ResizeIteratorMaterializer;
+import sparx1.internal.lazy.iterator.SliceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.SuppliedIteratorMaterializer;
+import sparx1.internal.lazy.iterator.TakeFirstIteratorMaterializer;
 import sparx1.lazy.Iterator;
 import sparx1.util.DequeArrayList;
 import sparx1.util.Require;
@@ -1586,7 +1591,7 @@ public class LazyIterator<E> extends Iterator<E> {
       }
       final int knownLength = knownEnd - knownStart;
       if (knownLength == knownSize) {
-        return Iterator.of();
+        return emptyIterator();
       }
     }
     return new LazyIterator<E>(new RemoveSliceIteratorMaterializer<E>(materializer, start, end));
@@ -1661,19 +1666,71 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> replaceSlice(int start, int end,
-      @NotNull java.lang.Iterable<? extends E> patch) {
-    return null;
+  public @NotNull Iterator<E> replaceSlice(final int start, final int end,
+      final @NotNull java.lang.Iterable<? extends E> patch) {
+    if (end >= 0 && start >= end) {
+      return insertAllAfter(start, patch);
+    }
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize >= 0) {
+      final int knownStart;
+      if (start < 0) {
+        knownStart = Math.max(0, knownSize + start);
+      } else {
+        knownStart = Math.min(knownSize, start);
+      }
+      final int knownEnd;
+      if (end < 0) {
+        knownEnd = Math.max(0, knownSize + end);
+      } else {
+        knownEnd = Math.min(knownSize, end);
+      }
+      if (knownStart >= knownEnd) {
+        return insertAllAfter(knownStart, patch);
+      }
+      final int knownLength = knownEnd - knownStart;
+      if (knownLength == knownSize) {
+        return new LazyIterator<E>(getElementsMaterializer(Require.notNull(patch, "patch")));
+      }
+    }
+    if (getKnownSize(patch) == 0) {
+      return new LazyIterator<E>(new RemoveSliceIteratorMaterializer<E>(materializer, start, end));
+    }
+    return new LazyIterator<E>(new ReplaceSliceIteratorMaterializer<E>(materializer, start, end,
+        getElementsMaterializer(Require.notNull(patch, "patch"))));
   }
 
   @Override
-  public @NotNull Iterator<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch) {
-    return null;
+  public @NotNull Iterator<E> replaceSlice(final int start,
+      final @NotNull Iterable<? extends E> patch) {
+    return start == -1 ? replaceSlice(-1, Integer.MAX_VALUE, patch)
+        : replaceSlice(start, start + 1, patch);
   }
 
   @Override
-  public @NotNull Iterator<E> resizeTo(@NotNegative int numElements, E padding) {
-    return null;
+  public @NotNull Iterator<E> resizeTo(final @NotNegative int numElements, final E padding) {
+    Require.notNegative(numElements, "numElements");
+    if (numElements == 0) {
+      return emptyIterator();
+    }
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize >= 0) {
+      if (knownSize == 0) {
+        return new LazyIterator<E>(new RepeatIteratorMaterializer<E>(numElements, padding));
+      }
+      if (knownSize == numElements) {
+        return iterator();
+      }
+      if (knownSize > numElements) {
+        return new LazyIterator<E>(new TakeFirstIteratorMaterializer<E>(materializer, numElements));
+      }
+      return new LazyIterator<E>(new AppendAllIteratorMaterializer<E>(materializer,
+          new RepeatIteratorMaterializer<E>(numElements - knownSize, padding)));
+    }
+    return new LazyIterator<E>(
+        new ResizeIteratorMaterializer<E>(materializer, numElements, padding));
   }
 
   @Override
@@ -1698,13 +1755,44 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> slice(int start) {
-    return null;
+  public @NotNull Iterator<E> slice(final int start) {
+    return start == -1 ? slice(-1, Integer.MAX_VALUE) : slice(start, start + 1);
   }
 
   @Override
-  public @NotNull Iterator<E> slice(int start, int end) {
-    return null;
+  public @NotNull Iterator<E> slice(final int start, final int end) {
+    if (end == Integer.MAX_VALUE && start >= 0) {
+      return dropFirst(start);
+    }
+    if (start == 0 && end >= 0) {
+      return takeFirst(end);
+    }
+    if ((end >= 0 || start < 0) && start >= end) {
+      return emptyIterator();
+    }
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize == 0) {
+      return this;
+    }
+    if (knownSize > 0) {
+      final int knownStart;
+      if (start < 0) {
+        knownStart = Math.max(0, knownSize + start);
+      } else {
+        knownStart = Math.min(knownSize, start);
+      }
+      final int knownEnd;
+      if (end < 0) {
+        knownEnd = Math.max(0, knownSize + end);
+      } else {
+        knownEnd = Math.min(knownSize, end);
+      }
+      if (knownStart >= knownEnd) {
+        return emptyIterator();
+      }
+    }
+    return new LazyIterator<E>(new SliceIteratorMaterializer<E>(materializer, start, end));
   }
 
   @Override

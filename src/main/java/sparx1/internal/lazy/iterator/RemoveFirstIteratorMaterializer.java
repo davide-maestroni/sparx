@@ -23,8 +23,8 @@ import sparx1.util.function.IndexedPredicate;
 
 public class RemoveFirstIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
-  public RemoveFirstIteratorMaterializer(@NotNull final IteratorMaterializer<E> wrapped,
-      @NotNull final IndexedPredicate<? super E> predicate) {
+  public RemoveFirstIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
+      final @NotNull IndexedPredicate<? super E> predicate) {
     setState(new InitialState(wrapped, predicate));
   }
 
@@ -37,8 +37,8 @@ public class RemoveFirstIteratorMaterializer<E> extends StatefulIteratorMaterial
     private E next;
     private int pos;
 
-    private InitialState(@NotNull final IteratorMaterializer<E> wrapped,
-        @NotNull final IndexedPredicate<? super E> predicate) {
+    private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
+        final @NotNull IndexedPredicate<? super E> predicate) {
       this.wrapped = wrapped;
       this.predicate = predicate;
     }
