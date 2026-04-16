@@ -422,20 +422,20 @@ public class lazy {
     @Override
     public abstract @NotNull Iterator<E> replaceFirstSequence(
         @NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull Iterator<E> replaceLastSequence(
         @NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull Iterator<E> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull Iterator<E> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull Iterator<E> replaceSlice(int start, int end,

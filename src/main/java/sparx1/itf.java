@@ -507,19 +507,19 @@ public class itf {
 
     @NotNull
     Collection<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Collection<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Collection<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Collection<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
@@ -861,8 +861,6 @@ public class itf {
         @NotNull Predicate<? super F> condition,
         @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
 
-    // TODO: hasDefiniteSize
-
     @NotNull
     Iterable<Boolean, ? extends Iterable<Boolean, ?>> includes(@Nullable Object element);
 
@@ -890,6 +888,8 @@ public class itf {
 
     @NotNull
     Iterable<E, T> intersect(@NotNull java.lang.Iterable<?> elements);
+
+    boolean isDefinite();
 
     boolean isEmpty();
 
@@ -1036,19 +1036,19 @@ public class itf {
 
     @NotNull
     Iterable<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Iterable<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Iterable<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Iterable<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Iterable<E, T> replaceSlice(int start, int end, @NotNull java.lang.Iterable<? extends E> patch);
@@ -1571,19 +1571,19 @@ public class itf {
 
     @NotNull
     Iterator<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Iterator<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Iterator<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Iterator<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
@@ -2170,19 +2170,19 @@ public class itf {
 
     @NotNull
     List<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     List<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     List<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     List<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
@@ -2800,19 +2800,19 @@ public class itf {
 
     @NotNull
     ListIterator<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     ListIterator<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     ListIterator<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     ListIterator<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
@@ -3382,19 +3382,19 @@ public class itf {
 
     @NotNull
     Set<E, T> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Set<E, T> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Set<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @NotNull
     Set<E, T> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull IndexedFunction<? super java.lang.Iterable<E>, java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
 
     @Override
     @NotNull
