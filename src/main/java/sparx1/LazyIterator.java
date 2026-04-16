@@ -92,7 +92,10 @@ import sparx1.internal.lazy.iterator.ReplaceSequenceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ReplaceSliceIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ResizeIteratorMaterializer;
 import sparx1.internal.lazy.iterator.SliceIteratorMaterializer;
+import sparx1.internal.lazy.iterator.SlidingWindowIteratorMaterializer;
+import sparx1.internal.lazy.iterator.StartsWithIteratorMaterializer;
 import sparx1.internal.lazy.iterator.SuppliedIteratorMaterializer;
+import sparx1.internal.lazy.iterator.SwitchExceptionallyIteratorMaterializer;
 import sparx1.internal.lazy.iterator.TakeFirstIteratorMaterializer;
 import sparx1.lazy.Iterator;
 import sparx1.util.DequeArrayList;
@@ -1796,46 +1799,92 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<? extends Iterator<E>> slidingWindow(@Positive int maxSize,
-      @Positive int step) {
-    return null;
+  @SuppressWarnings("unchecked")
+  public @NotNull Iterator<? extends Iterator<E>> slidingWindow(final @Positive int maxSize,
+      final @Positive int step) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<Iterator<E>>(
+        new SlidingWindowIteratorMaterializer<E, Iterator<E>>(materializer,
+            Require.positive(maxSize, "maxSize"), Require.positive(step, "step"),
+            (Function<? super DequeArrayList<E>, ? extends Iterator<E>>) FROM_DEQUEUE_LIST));
   }
 
   @Override
-  public @NotNull Iterator<? extends Iterator<E>> slidingWindowWithPadding(@Positive int size,
-      @Positive int step, E padding) {
-    return null;
+  @SuppressWarnings("unchecked")
+  public @NotNull Iterator<? extends Iterator<E>> slidingWindowWithPadding(final @Positive int size,
+      final @Positive int step, final E padding) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return Iterator.of();
+    }
+    return new LazyIterator<Iterator<E>>(
+        new SlidingWindowIteratorMaterializer<E, Iterator<E>>(materializer,
+            Require.positive(size, "size"), Require.positive(step, "step"), padding,
+            (Function<? super DequeArrayList<E>, ? extends Iterator<E>>) FROM_DEQUEUE_LIST));
   }
 
   @Override
-  public @NotNull Iterator<Boolean> startsWith(@NotNull java.lang.Iterable<?> elements) {
-    return null;
+  public @NotNull Iterator<Boolean> startsWith(final @NotNull java.lang.Iterable<?> elements) {
+    if (getKnownSize(elements) == 0) {
+      return elementIterator(true);
+    }
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return elementIterator(false);
+    }
+    return new LazyIterator<Boolean>(new StartsWithIteratorMaterializer<E>(materializer,
+        getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
   public @NotNull <X extends Throwable> Iterator<E> switchExceptionally(
-      @NotNull Class<X> exceptionType,
-      @NotNull Function<? super X, ? extends java.lang.Iterable<? extends E>> mapper) {
-    return null;
+      final @NotNull Class<X> exceptionType,
+      final @NotNull Function<? super X, ? extends java.lang.Iterable<? extends E>> mapper) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return this;
+    }
+    return new LazyIterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
+        getExceptionToMaterializer(Require.notNull(exceptionType, "exceptionType"),
+            Require.notNull(mapper, "mapper"))));
   }
 
   @Override
   public @NotNull <X extends Throwable> Iterator<E> switchExceptionally(
-      @NotNull Class<X> exceptionType,
-      @NotNull IndexedFunction<? super X, ? extends java.lang.Iterable<? extends E>> mapper) {
-    return null;
+      final @NotNull Class<X> exceptionType,
+      final @NotNull IndexedFunction<? super X, ? extends java.lang.Iterable<? extends E>> mapper) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return this;
+    }
+    return new LazyIterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
+        getExceptionToMaterializer(Require.notNull(exceptionType, "exceptionType"),
+            Require.notNull(mapper, "mapper"))));
   }
 
   @Override
   public @NotNull Iterator<E> switchExceptionally(
-      @NotNull Function<? super Throwable, ? extends java.lang.Iterable<? extends E>> mapper) {
-    return null;
+      final @NotNull Function<? super Throwable, ? extends java.lang.Iterable<? extends E>> mapper) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return this;
+    }
+    return new LazyIterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
+        getIndexedElementToMaterializer(Require.notNull(mapper, "mapper"))));
   }
 
   @Override
   public @NotNull Iterator<E> switchExceptionally(
-      @NotNull IndexedFunction<? super Throwable, ? extends java.lang.Iterable<? extends E>> mapper) {
-    return null;
+      final @NotNull IndexedFunction<? super Throwable, ? extends java.lang.Iterable<? extends E>> mapper) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return this;
+    }
+    return new LazyIterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
+        getIndexedElementToMaterializer(Require.notNull(mapper, "mapper"))));
   }
 
   @Override
