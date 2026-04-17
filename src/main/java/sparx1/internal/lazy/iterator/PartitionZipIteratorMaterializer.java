@@ -15,69 +15,80 @@
  */
 package sparx1.internal.lazy.iterator;
 
+import java.util.LinkedHashMap;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import sparx1.internal.lazy.IteratorMaterializer;
 import sparx1.itf.Iterator;
 import sparx1.util.DequeArrayList;
 import sparx1.util.UncheckedException;
+import sparx1.util.ZipEntry;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.annotation.Nullable;
 import sparx1.util.annotation.Positive;
 import sparx1.util.function.Function;
 import sparx1.util.function.IndexedFunction;
 
-public class PartitionIteratorMaterializer<E, I extends Iterator<E, ?>> extends
-    StatefulIteratorMaterializer<I> {
+public class PartitionZipIteratorMaterializer<E, K, I extends Iterator<E, ?>> extends
+    StatefulIteratorMaterializer<ZipEntry<K, I>> {
 
-  public PartitionIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      final @NotNull IndexedFunction<? super E, Integer> indexExtractor, final int numPartitions,
+  public PartitionZipIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
+      final @NotNull IndexedFunction<? super E, K> keyExtractor,
       final @NotNull Function<IteratorMaterializer<E>, I> factory) {
-    setState(new InitialState(wrapped, indexExtractor, numPartitions, factory));
+    setState(new InitialState(wrapped, keyExtractor, factory));
   }
 
-  private class InitialState implements IteratorMaterializer<I> {
+  private class InitialState extends AbstractStateIteratorMaterializer {
 
     private final Function<IteratorMaterializer<E>, I> factory;
-    private final IndexedFunction<? super E, Integer> indexExtractor;
-    private final DequeArrayList<?>[] partitions;
-    private final boolean[] skippedPartitions;
+    private final IndexedFunction<? super E, K> keyExtractor;
+    private final LinkedHashMap<K, DequeArrayList<E>> partitions = new LinkedHashMap<K, DequeArrayList<E>>();
     private final IteratorMaterializer<E> wrapped;
 
     private int index;
     private int pos;
 
     private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
-        final @NotNull IndexedFunction<? super E, Integer> indexExtractor, final int numPartitions,
+        final @NotNull IndexedFunction<? super E, K> keyExtractor,
         final @NotNull Function<IteratorMaterializer<E>, I> factory) {
       this.wrapped = wrapped;
-      this.indexExtractor = indexExtractor;
+      this.keyExtractor = keyExtractor;
       this.factory = factory;
-      partitions = new DequeArrayList[numPartitions];
-      skippedPartitions = new boolean[numPartitions];
     }
 
     @Override
     public int currentKnownSize() {
-      return partitions.length;
+      return -1;
     }
 
     @Override
     public boolean isSizeKnown() {
-      return true;
+      return false;
     }
 
     @Override
     public boolean materializeHasNext() {
-      return index < partitions.length;
+      final int index = this.index;
+      final LinkedHashMap<K, DequeArrayList<E>> partitions = this.partitions;
+      do {
+        if (index < partitions.size()) {
+          return true;
+        }
+      } while (advance());
+      return false;
     }
 
     @Override
-    public I materializeNext() {
+    public ZipEntry<K, I> materializeNext() {
+      final Entry<K, DequeArrayList<E>> entry = getPartition(index++);
+      if (entry == null) {
+        throw new NoSuchElementException();
+      }
       final StatefulIteratorMaterializer<E> materializer = new StatefulIteratorMaterializer<E>() {
       };
-      materializer.setState(new PartitionState(getPartition(index++)));
+      materializer.setState(new PartitionState(entry.getValue()));
       try {
-        return factory.apply(materializer);
+        return ZipEntry.of(entry.getKey(), factory.apply(materializer));
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }
@@ -85,14 +96,17 @@ public class PartitionIteratorMaterializer<E, I extends Iterator<E, ?>> extends
 
     @Override
     public int materializeSkip(final @Positive int count) {
-      final DequeArrayList<?>[] partitions = this.partitions;
-      final boolean[] skippedPartitions = this.skippedPartitions;
-      int i = 0;
-      for (; i < count && index < partitions.length; ++i, ++index) {
-        partitions[index] = null;
-        skippedPartitions[index] = true;
+      final LinkedHashMap<K, DequeArrayList<E>> partitions = this.partitions;
+      final java.util.Iterator<Entry<K, DequeArrayList<E>>> iterator = partitions.entrySet()
+          .iterator();
+      for (int i = 0; i < index; ++i) {
+        iterator.next();
       }
-      return i;
+      int i = 0;
+      for (; i < count && index < partitions.size(); ++i, ++index) {
+        iterator.next().setValue(null);
+      }
+      return i == count ? i : super.materializeSkip(count - i);
     }
 
     private boolean advance() {
@@ -102,11 +116,15 @@ public class PartitionIteratorMaterializer<E, I extends Iterator<E, ?>> extends
         final E next = wrapped.materializeNext();
         ++this.pos;
         try {
-          final int index = indexExtractor.apply(pos, next);
-          if (index < 0 || index >= partitions.length) {
-            throw new IndexOutOfBoundsException(String.valueOf(index));
+          final K key = keyExtractor.apply(pos, next);
+          final LinkedHashMap<K, DequeArrayList<E>> partitions = this.partitions;
+          final DequeArrayList<E> partition;
+          if (!partitions.containsKey(key)) {
+            partition = new DequeArrayList<E>();
+            partitions.put(key, partition);
+          } else {
+            partition = partitions.get(key);
           }
-          final DequeArrayList<E> partition = getPartition(index);
           if (partition != null) {
             partition.add(next);
           }
@@ -118,16 +136,19 @@ public class PartitionIteratorMaterializer<E, I extends Iterator<E, ?>> extends
       return false;
     }
 
-    private @Nullable DequeArrayList<E> getPartition(final int index) {
-      if (skippedPartitions[index]) {
-        return null;
-      }
-      final DequeArrayList<?>[] partitions = this.partitions;
-      @SuppressWarnings("unchecked") DequeArrayList<E> partition = (DequeArrayList<E>) partitions[index];
-      if (partition == null) {
-        partitions[index] = partition = new DequeArrayList<E>();
-      }
-      return partition;
+    private @Nullable Entry<K, DequeArrayList<E>> getPartition(final int index) {
+      final LinkedHashMap<K, DequeArrayList<E>> partitions = this.partitions;
+      do {
+        if (index < partitions.size()) {
+          final java.util.Iterator<Entry<K, DequeArrayList<E>>> iterator = partitions.entrySet()
+              .iterator();
+          for (int i = 0; i < index; ++i) {
+            iterator.next();
+          }
+          return iterator.next();
+        }
+      } while (advance());
+      return null;
     }
 
     private class PartitionState implements IteratorMaterializer<E> {

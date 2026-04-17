@@ -76,6 +76,7 @@ import sparx1.internal.lazy.iterator.MapWhileIteratorMaterializer;
 import sparx1.internal.lazy.iterator.MaxIteratorMaterializer;
 import sparx1.internal.lazy.iterator.OrElseIteratorMaterializer;
 import sparx1.internal.lazy.iterator.PartitionIteratorMaterializer;
+import sparx1.internal.lazy.iterator.PartitionZipIteratorMaterializer;
 import sparx1.internal.lazy.iterator.PeekExceptionallyIteratorMaterializer;
 import sparx1.internal.lazy.iterator.PeekIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ReduceIteratorMaterializer;
@@ -1255,8 +1256,10 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> materialize() {
-    // TODO
-    materializer.materializeSkip(Integer.MAX_VALUE);
+    final IteratorMaterializer<E> materializer = this.materializer;
+    while (materializer.materializeHasNext()) {
+      materializer.materializeNext();
+    }
     return this;
   }
 
@@ -1430,13 +1433,29 @@ public class LazyIterator<E> extends Iterator<E> {
   @Override
   public @NotNull <K> Iterator<ZipEntry<K, Iterator<E>>> partitionZip(
       final @NotNull Function<? super E, K> keyExtractor) {
-    return null;
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<ZipEntry<K, Iterator<E>>>(
+        new PartitionZipIteratorMaterializer<E, K, Iterator<E>>(materializer,
+            toIndexedFunction(keyExtractor, "keyExtractor"),
+            LazyIterator.<E>getMaterializerToIterator()));
   }
 
   @Override
   public @NotNull <K> Iterator<ZipEntry<K, Iterator<E>>> partitionZip(
       final @NotNull IndexedFunction<? super E, K> keyExtractor) {
-    return null;
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<ZipEntry<K, Iterator<E>>>(
+        new PartitionZipIteratorMaterializer<E, K, Iterator<E>>(materializer,
+            Require.notNull(keyExtractor, "keyExtractor"),
+            LazyIterator.<E>getMaterializerToIterator()));
   }
 
   @Override
