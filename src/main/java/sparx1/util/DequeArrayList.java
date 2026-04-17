@@ -818,8 +818,8 @@ public class DequeArrayList<E> extends AbstractList<E> implements Cloneable, Deq
   }
 
   /**
-   * Removes all of the elements of this collection that satisfy the given predicate.  Errors or
-   * runtime exceptions thrown during iteration or by the predicate are relayed to the caller.
+   * Removes all the elements of this collection that satisfy the given predicate. Errors or runtime
+   * exceptions thrown during iteration or by the predicate are relayed to the caller.
    *
    * @param predicate a predicate which returns {@code true} for elements to be removed
    * @return {@code true} if any elements were removed

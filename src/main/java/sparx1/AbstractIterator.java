@@ -16,7 +16,9 @@
 package sparx1;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import sparx1.itf.Iterator;
+import sparx1.util.DequeArrayList;
 import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNull;
 
@@ -50,6 +52,50 @@ abstract class AbstractIterator<E, T extends AbstractIterator<E, T>> implements 
   @Override
   public void remove() {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public @NotNull Object[] toArray() {
+    final Object[] array;
+    if (isDefinite()) {
+      array = new Object[size()];
+      int i = 0;
+      while (hasNext()) {
+        array[i++] = next();
+      }
+    } else {
+      final DequeArrayList<E> list = new DequeArrayList<E>();
+      while (hasNext()) {
+        list.add(next());
+      }
+      array = list.toArray();
+    }
+    return array;
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public @NotNull <R> R[] toArray(@NotNull R[] array) {
+    if (isDefinite()) {
+      final int size = size();
+      if (array.length < size) {
+        array = (R[]) Array.newInstance(array.getClass().getComponentType(), size);
+      }
+      int i = 0;
+      while (hasNext()) {
+        array[i++] = (R) next();
+      }
+      if (array.length > size) {
+        array[size] = null;
+      }
+    } else {
+      final DequeArrayList<E> list = new DequeArrayList<E>();
+      while (hasNext()) {
+        list.add(next());
+      }
+      array = list.toArray(array);
+    }
+    return array;
   }
 
   @Override

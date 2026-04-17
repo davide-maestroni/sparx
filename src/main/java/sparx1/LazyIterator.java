@@ -96,7 +96,13 @@ import sparx1.internal.lazy.iterator.SlidingWindowIteratorMaterializer;
 import sparx1.internal.lazy.iterator.StartsWithIteratorMaterializer;
 import sparx1.internal.lazy.iterator.SuppliedIteratorMaterializer;
 import sparx1.internal.lazy.iterator.SwitchExceptionallyIteratorMaterializer;
+import sparx1.internal.lazy.iterator.SymmetricDiffIteratorMaterializer;
 import sparx1.internal.lazy.iterator.TakeFirstIteratorMaterializer;
+import sparx1.internal.lazy.iterator.TakeFirstWhileIteratorMaterializer;
+import sparx1.internal.lazy.iterator.TakeLastIteratorMaterializer;
+import sparx1.internal.lazy.iterator.UnionIteratorMaterializer;
+import sparx1.internal.lazy.iterator.ZipIteratorMaterializer;
+import sparx1.internal.lazy.iterator.ZipWithPaddingIteratorMaterializer;
 import sparx1.lazy.Iterator;
 import sparx1.util.DequeArrayList;
 import sparx1.util.Require;
@@ -813,7 +819,7 @@ public class LazyIterator<E> extends Iterator<E> {
     }
     return new LazyIterator<Integer>(
         new FindFirstIndexOfSequenceIteratorMaterializer<E>(materializer,
-            LazyList.getElementsMaterializer(elements)));
+            LazyList.getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
@@ -891,7 +897,7 @@ public class LazyIterator<E> extends Iterator<E> {
     }
     return new LazyIterator<Integer>(
         new FindLastIndexOfSequenceIteratorMaterializer<E>(materializer,
-            LazyList.getElementsMaterializer(elements)));
+            LazyList.getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
@@ -1014,7 +1020,7 @@ public class LazyIterator<E> extends Iterator<E> {
       return elementIterator(false);
     }
     return new LazyIterator<Boolean>(new IncludesSequenceIteratorMaterializer<E>(materializer,
-        LazyList.getElementsMaterializer(elements)));
+        LazyList.getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
@@ -1239,6 +1245,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> materialize() {
+    // TODO
     materializer.materializeSkip(Integer.MAX_VALUE);
     return this;
   }
@@ -1292,7 +1299,8 @@ public class LazyIterator<E> extends Iterator<E> {
         }
       };
     } else {
-      final ListMaterializer<E> elementsMaterializer = LazyList.getElementsMaterializer(elements);
+      final ListMaterializer<E> elementsMaterializer = LazyList.getElementsMaterializer(
+          Require.notNull(elements, "elements"));
       predicate = new IndexedPredicate<E>() {
         @Override
         public boolean test(final int index, final E element) {
@@ -1383,7 +1391,7 @@ public class LazyIterator<E> extends Iterator<E> {
   public @NotNull Iterator<E> peek(final @NotNull Consumer<? super E> consumer) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
-      return iterator();
+      return emptyIterator();
     }
     return new LazyIterator<E>(
         new PeekIteratorMaterializer<E>(materializer, toIndexedConsumer(consumer, "consumer")));
@@ -1393,7 +1401,7 @@ public class LazyIterator<E> extends Iterator<E> {
   public @NotNull Iterator<E> peek(final @NotNull IndexedConsumer<? super E> consumer) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
-      return iterator();
+      return emptyIterator();
     }
     return new LazyIterator<E>(
         new PeekIteratorMaterializer<E>(materializer, Require.notNull(consumer, "consumer")));
@@ -1404,7 +1412,7 @@ public class LazyIterator<E> extends Iterator<E> {
       final @NotNull Consumer<? super Throwable> consumer) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
-      return iterator();
+      return emptyIterator();
     }
     return new LazyIterator<E>(new PeekExceptionallyIteratorMaterializer<E>(materializer,
         toIndexedConsumer(consumer, "consumer")));
@@ -1415,7 +1423,7 @@ public class LazyIterator<E> extends Iterator<E> {
       final @NotNull IndexedConsumer<? super Throwable> consumer) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
-      return iterator();
+      return emptyIterator();
     }
     return new LazyIterator<E>(new PeekExceptionallyIteratorMaterializer<E>(materializer,
         Require.notNull(consumer, "consumer")));
@@ -1571,7 +1579,7 @@ public class LazyIterator<E> extends Iterator<E> {
     final IteratorMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.currentKnownSize();
     if (knownSize == 0) {
-      return this;
+      return emptyIterator();
     }
     if (start == 0 && end > start) {
       return dropFirst(end);
@@ -1776,7 +1784,7 @@ public class LazyIterator<E> extends Iterator<E> {
     final IteratorMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.currentKnownSize();
     if (knownSize == 0) {
-      return this;
+      return emptyIterator();
     }
     if (knownSize > 0) {
       final int knownStart;
@@ -1845,7 +1853,7 @@ public class LazyIterator<E> extends Iterator<E> {
       final @NotNull Function<? super X, ? extends java.lang.Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
-      return this;
+      return emptyIterator();
     }
     return new LazyIterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
         getExceptionToMaterializer(Require.notNull(exceptionType, "exceptionType"),
@@ -1858,7 +1866,7 @@ public class LazyIterator<E> extends Iterator<E> {
       final @NotNull IndexedFunction<? super X, ? extends java.lang.Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
-      return this;
+      return emptyIterator();
     }
     return new LazyIterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
         getExceptionToMaterializer(Require.notNull(exceptionType, "exceptionType"),
@@ -1870,7 +1878,7 @@ public class LazyIterator<E> extends Iterator<E> {
       final @NotNull Function<? super Throwable, ? extends java.lang.Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
-      return this;
+      return emptyIterator();
     }
     return new LazyIterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
         getIndexedElementToMaterializer(Require.notNull(mapper, "mapper"))));
@@ -1881,61 +1889,110 @@ public class LazyIterator<E> extends Iterator<E> {
       final @NotNull IndexedFunction<? super Throwable, ? extends java.lang.Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
-      return this;
+      return emptyIterator();
     }
     return new LazyIterator<E>(new SwitchExceptionallyIteratorMaterializer<E>(materializer,
         getIndexedElementToMaterializer(Require.notNull(mapper, "mapper"))));
   }
 
   @Override
-  public @NotNull Iterator<E> symmetricDiff(@NotNull java.lang.Iterable<? extends E> elements) {
-    return null;
+  public @NotNull Iterator<E> symmetricDiff(
+      final @NotNull java.lang.Iterable<? extends E> elements) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return new LazyIterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
+    }
+    if (getKnownSize(elements) == 0) {
+      return iterator();
+    }
+    return new LazyIterator<E>(new SymmetricDiffIteratorMaterializer<E>(materializer,
+        LazyList.getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
-  public @NotNull Iterator<E> takeFirst(int maxElements) {
-    return null;
+  public @NotNull Iterator<E> takeFirst(final int maxElements) {
+    if (maxElements <= 0) {
+      return emptyIterator();
+    }
+    if (maxElements == Integer.MAX_VALUE) {
+      return iterator();
+    }
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<E>(new TakeFirstIteratorMaterializer<E>(materializer, maxElements));
   }
 
   @Override
-  public @NotNull Iterator<E> takeFirstWhile(@NotNull IndexedPredicate<? super E> condition) {
-    return null;
+  public @NotNull Iterator<E> takeFirstWhile(final @NotNull IndexedPredicate<? super E> condition) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<E>(new TakeFirstWhileIteratorMaterializer<E>(materializer,
+        Require.notNull(condition, "condition")));
   }
 
   @Override
-  public @NotNull Iterator<E> takeFirstWhile(@NotNull Predicate<? super E> condition) {
-    return null;
+  public @NotNull Iterator<E> takeFirstWhile(final @NotNull Predicate<? super E> condition) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<E>(new TakeFirstWhileIteratorMaterializer<E>(materializer,
+        toIndexedPredicate(condition, "condition")));
   }
 
   @Override
-  public @NotNull Iterator<E> takeLast(int maxElements) {
-    return null;
+  public @NotNull Iterator<E> takeLast(final int maxElements) {
+    if (maxElements <= 0) {
+      return emptyIterator();
+    }
+    if (maxElements == Integer.MAX_VALUE) {
+      return iterator();
+    }
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<E>(new TakeLastIteratorMaterializer<E>(materializer, maxElements));
   }
 
   @Override
-  public @NotNull Object[] toArray() {
-    return new Object[0];
+  public @NotNull Iterator<E> union(final @NotNull java.lang.Iterable<? extends E> elements) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0) {
+      return new LazyIterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
+    }
+    if (getKnownSize(elements) == 0) {
+      return iterator();
+    }
+    return new LazyIterator<E>(new UnionIteratorMaterializer<E>(materializer,
+        getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
-  public @NotNull <R> R[] toArray(@NotNull R[] array) {
-    return null;
-  }
-
-  @Override
-  public @NotNull Iterator<E> union(@NotNull java.lang.Iterable<? extends E> elements) {
-    return null;
-  }
-
-  @Override
-  public @NotNull <F> Iterator<ZipEntry<E, F>> zip(@NotNull java.lang.Iterable<F> elements) {
-    return null;
+  public @NotNull <F> Iterator<ZipEntry<E, F>> zip(final @NotNull java.lang.Iterable<F> elements) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0 || getKnownSize(elements) == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<ZipEntry<E, F>>(new ZipIteratorMaterializer<E, F>(materializer,
+        getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
   public @NotNull <F> Iterator<ZipEntry<E, F>> zipWithPadding(
-      @NotNull java.lang.Iterable<F> elements, E paddingLeft, F paddingRight) {
-    return null;
+      final @NotNull java.lang.Iterable<F> elements, final E paddingLeft, final F paddingRight) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    if (materializer.currentKnownSize() == 0 && getKnownSize(elements) == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<ZipEntry<E, F>>(
+        new ZipWithPaddingIteratorMaterializer<E, F>(materializer,
+            getElementsMaterializer(Require.notNull(elements, "elements")), paddingLeft,
+            paddingRight));
   }
 
   int knownSize() {
