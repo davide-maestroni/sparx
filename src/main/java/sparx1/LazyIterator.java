@@ -75,6 +75,7 @@ import sparx1.internal.lazy.iterator.MapIteratorMaterializer;
 import sparx1.internal.lazy.iterator.MapWhileIteratorMaterializer;
 import sparx1.internal.lazy.iterator.MaxIteratorMaterializer;
 import sparx1.internal.lazy.iterator.OrElseIteratorMaterializer;
+import sparx1.internal.lazy.iterator.PartitionIteratorMaterializer;
 import sparx1.internal.lazy.iterator.PeekExceptionallyIteratorMaterializer;
 import sparx1.internal.lazy.iterator.PeekIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ReduceIteratorMaterializer;
@@ -196,48 +197,6 @@ public class LazyIterator<E> extends Iterator<E> {
     };
   }
 
-  private static @NotNull <E, F> IndexedFunction<E, IteratorMaterializer<F>> getIndexedElementToMaterializer(
-      final @NotNull Function<? super E, ? extends java.lang.Iterable<? extends F>> mapper) {
-    return new IndexedFunction<E, IteratorMaterializer<F>>() {
-      @Override
-      public IteratorMaterializer<F> apply(final int index, final E element) throws Exception {
-        return getElementsMaterializer(Require.notNull(mapper.apply(element), "elements"));
-      }
-    };
-  }
-
-  private static @NotNull <E, F> IndexedFunction<E, IteratorMaterializer<F>> getIndexedElementToMaterializer(
-      final @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<? extends F>> mapper) {
-    return new IndexedFunction<E, IteratorMaterializer<F>>() {
-      @Override
-      public IteratorMaterializer<F> apply(final int index, final E element) throws Exception {
-        return getElementsMaterializer(Require.notNull(mapper.apply(index, element), "elements"));
-      }
-    };
-  }
-
-  private static @NotNull <E, F> IndexedFunction<java.util.List<E>, IteratorMaterializer<F>> getIndexedElementsToMaterializer(
-      final @NotNull Function<? super java.util.List<E>, ? extends java.lang.Iterable<? extends F>> mapper) {
-    return new IndexedFunction<java.util.List<E>, IteratorMaterializer<F>>() {
-      @Override
-      public IteratorMaterializer<F> apply(final int index, final java.util.List<E> elements)
-          throws Exception {
-        return getElementsMaterializer(Require.notNull(mapper.apply(elements), "elements"));
-      }
-    };
-  }
-
-  private static @NotNull <E, F> IndexedFunction<java.util.List<E>, IteratorMaterializer<F>> getIndexedElementsToMaterializer(
-      final @NotNull IndexedFunction<? super java.util.List<E>, ? extends java.lang.Iterable<? extends F>> mapper) {
-    return new IndexedFunction<java.util.List<E>, IteratorMaterializer<F>>() {
-      @Override
-      public IteratorMaterializer<F> apply(final int index, final java.util.List<E> elements)
-          throws Exception {
-        return getElementsMaterializer(Require.notNull(mapper.apply(index, elements), "elements"));
-      }
-    };
-  }
-
   private static @NotNull <E, T extends Throwable> IndexedFunction<Throwable, IteratorMaterializer<E>> getExceptionToMaterializer(
       final @NotNull Class<T> exceptionType,
       final @NotNull Function<? super T, ? extends java.lang.Iterable<? extends E>> mapper) {
@@ -280,12 +239,63 @@ public class LazyIterator<E> extends Iterator<E> {
     };
   }
 
+  private static @NotNull <E, F> IndexedFunction<E, IteratorMaterializer<F>> getIndexedElementToMaterializer(
+      final @NotNull Function<? super E, ? extends java.lang.Iterable<? extends F>> mapper) {
+    return new IndexedFunction<E, IteratorMaterializer<F>>() {
+      @Override
+      public IteratorMaterializer<F> apply(final int index, final E element) throws Exception {
+        return getElementsMaterializer(Require.notNull(mapper.apply(element), "elements"));
+      }
+    };
+  }
+
+  private static @NotNull <E, F> IndexedFunction<E, IteratorMaterializer<F>> getIndexedElementToMaterializer(
+      final @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<? extends F>> mapper) {
+    return new IndexedFunction<E, IteratorMaterializer<F>>() {
+      @Override
+      public IteratorMaterializer<F> apply(final int index, final E element) throws Exception {
+        return getElementsMaterializer(Require.notNull(mapper.apply(index, element), "elements"));
+      }
+    };
+  }
+
+  private static @NotNull <E, F> IndexedFunction<java.util.List<E>, IteratorMaterializer<F>> getIndexedElementsToMaterializer(
+      final @NotNull Function<? super java.util.List<E>, ? extends java.lang.Iterable<? extends F>> mapper) {
+    return new IndexedFunction<java.util.List<E>, IteratorMaterializer<F>>() {
+      @Override
+      public IteratorMaterializer<F> apply(final int index, final java.util.List<E> elements)
+          throws Exception {
+        return getElementsMaterializer(Require.notNull(mapper.apply(elements), "elements"));
+      }
+    };
+  }
+
+  private static @NotNull <E, F> IndexedFunction<java.util.List<E>, IteratorMaterializer<F>> getIndexedElementsToMaterializer(
+      final @NotNull IndexedFunction<? super java.util.List<E>, ? extends java.lang.Iterable<? extends F>> mapper) {
+    return new IndexedFunction<java.util.List<E>, IteratorMaterializer<F>>() {
+      @Override
+      public IteratorMaterializer<F> apply(final int index, final java.util.List<E> elements)
+          throws Exception {
+        return getElementsMaterializer(Require.notNull(mapper.apply(index, elements), "elements"));
+      }
+    };
+  }
+
   private static @NotNull <E> Supplier<IteratorMaterializer<E>> getIterableToIteratorMaterializer(
       final @NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier) {
     return new Supplier<IteratorMaterializer<E>>() {
       @Override
       public IteratorMaterializer<E> get() throws Exception {
         return getElementsMaterializer(Require.notNull(supplier.get(), "elements"));
+      }
+    };
+  }
+
+  private static @NotNull <E> Function<IteratorMaterializer<E>, Iterator<E>> getMaterializerToIterator() {
+    return new Function<IteratorMaterializer<E>, Iterator<E>>() {
+      @Override
+      public Iterator<E> apply(final IteratorMaterializer<E> materializer) {
+        return new LazyIterator<E>(materializer);
       }
     };
   }
@@ -1385,6 +1395,48 @@ public class LazyIterator<E> extends Iterator<E> {
     }
     return new LazyIterator<E>(
         new OrElseIteratorMaterializer<E>(materializer, elementsMaterializer));
+  }
+
+  @Override
+  public @NotNull Iterator<Iterator<E>> partition(final @Positive int numPartitions,
+      final @NotNull Function<? super E, Integer> indexExtractor) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<Iterator<E>>(
+        new PartitionIteratorMaterializer<E, Iterator<E>>(materializer,
+            toIndexedFunction(indexExtractor, "indexExtractor"),
+            Require.positive(numPartitions, "numPartitions"),
+            LazyIterator.<E>getMaterializerToIterator()));
+  }
+
+  @Override
+  public @NotNull Iterator<Iterator<E>> partition(final @Positive int numPartitions,
+      final @NotNull IndexedFunction<? super E, Integer> indexExtractor) {
+    final IteratorMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.currentKnownSize();
+    if (knownSize == 0) {
+      return emptyIterator();
+    }
+    return new LazyIterator<Iterator<E>>(
+        new PartitionIteratorMaterializer<E, Iterator<E>>(materializer,
+            Require.notNull(indexExtractor, "indexExtractor"),
+            Require.positive(numPartitions, "numPartitions"),
+            LazyIterator.<E>getMaterializerToIterator()));
+  }
+
+  @Override
+  public @NotNull <K> Iterator<ZipEntry<K, Iterator<E>>> partitionZip(
+      final @NotNull Function<? super E, K> keyExtractor) {
+    return null;
+  }
+
+  @Override
+  public @NotNull <K> Iterator<ZipEntry<K, Iterator<E>>> partitionZip(
+      final @NotNull IndexedFunction<? super E, K> keyExtractor) {
+    return null;
   }
 
   @Override

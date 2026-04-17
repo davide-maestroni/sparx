@@ -436,6 +436,26 @@ public class itf {
 
     @Override
     @NotNull
+    Iterator<? extends Collection<E, T>, ? extends Iterator<? extends Collection<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull Function<? super E, Integer> indexExtractor);
+
+    @Override
+    @NotNull
+    Iterator<? extends Collection<E, T>, ? extends Iterator<? extends Collection<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull IndexedFunction<? super E, Integer> indexExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends Collection<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends Collection<E, T>>, ?>> partitionZip(
+        @NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends Collection<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends Collection<E, T>>, ?>> partitionZip(
+        @NotNull IndexedFunction<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
     Collection<E, T> plus(@Nullable E element);
 
     @Override
@@ -984,7 +1004,21 @@ public class itf {
     @NotNull
     Iterable<E, T> orElseGet(@NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
 
-    // TODO: partition => 2 iterables
+    @NotNull
+    Iterator<? extends Iterable<E, T>, ? extends Iterator<? extends Iterable<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull Function<? super E, Integer> indexExtractor);
+
+    @NotNull
+    Iterator<? extends Iterable<E, T>, ? extends Iterator<? extends Iterable<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull IndexedFunction<? super E, Integer> indexExtractor);
+
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends Iterable<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends Iterable<E, T>>, ?>> partitionZip(
+        @NotNull Function<? super E, K> keyExtractor);
+
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends Iterable<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends Iterable<E, T>>, ?>> partitionZip(
+        @NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @NotNull
     Iterable<E, T> plus(@Nullable E element);
@@ -1493,6 +1527,26 @@ public class itf {
     @Override
     @NotNull
     Iterator<E, T> orElseGet(@NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
+
+    @Override
+    @NotNull
+    Iterator<? extends Iterator<E, T>, ? extends Iterator<? extends Iterator<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull Function<? super E, Integer> indexExtractor);
+
+    @Override
+    @NotNull
+    Iterator<? extends Iterator<E, T>, ? extends Iterator<? extends Iterator<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull IndexedFunction<? super E, Integer> indexExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends Iterator<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends Iterator<E, T>>, ?>> partitionZip(
+        @NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends Iterator<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends Iterator<E, T>>, ?>> partitionZip(
+        @NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @NotNull
     Iterator<E, T> peek(@NotNull Consumer<? super E> consumer);
@@ -2090,6 +2144,26 @@ public class itf {
     @Override
     @NotNull
     List<E, T> orElseGet(@NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
+
+    @Override
+    @NotNull
+    Iterator<? extends List<E, T>, ? extends Iterator<? extends List<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull Function<? super E, Integer> indexExtractor);
+
+    @Override
+    @NotNull
+    Iterator<? extends List<E, T>, ? extends Iterator<? extends List<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull IndexedFunction<? super E, Integer> indexExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends List<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends List<E, T>>, ?>> partitionZip(
+        @NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends List<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends List<E, T>>, ?>> partitionZip(
+        @NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @Override
     @NotNull
@@ -2713,6 +2787,26 @@ public class itf {
 
     @Override
     @NotNull
+    Iterator<? extends ListIterator<E, T>, ? extends Iterator<? extends ListIterator<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull Function<? super E, Integer> indexExtractor);
+
+    @Override
+    @NotNull
+    Iterator<? extends ListIterator<E, T>, ? extends Iterator<? extends ListIterator<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull IndexedFunction<? super E, Integer> indexExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends ListIterator<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends ListIterator<E, T>>, ?>> partitionZip(
+        @NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends ListIterator<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends ListIterator<E, T>>, ?>> partitionZip(
+        @NotNull IndexedFunction<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
     ListIterator<E, T> peek(@NotNull Consumer<? super E> consumer);
 
     @Override
@@ -3308,6 +3402,26 @@ public class itf {
     @Override
     @NotNull
     Set<E, T> orElseGet(@NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
+
+    @Override
+    @NotNull
+    Iterator<? extends Set<E, T>, ? extends Iterator<? extends Set<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull Function<? super E, Integer> indexExtractor);
+
+    @Override
+    @NotNull
+    Iterator<? extends Set<E, T>, ? extends Iterator<? extends Set<E, T>, ?>> partition(
+        @Positive int numPartitions, @NotNull IndexedFunction<? super E, Integer> indexExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends Set<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends Set<E, T>>, ?>> partitionZip(
+        @NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    @NotNull
+    <K> Iterator<? extends ZipEntry<K, ? extends Set<E, T>>, ? extends Iterator<? extends ZipEntry<K, ? extends Set<E, T>>, ?>> partitionZip(
+        @NotNull IndexedFunction<? super E, K> keyExtractor);
 
     @Override
     @NotNull

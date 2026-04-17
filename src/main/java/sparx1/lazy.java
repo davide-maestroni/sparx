@@ -354,6 +354,22 @@ public class lazy {
         @NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
 
     @Override
+    public abstract @NotNull Iterator<Iterator<E>> partition(@Positive int numPartitions,
+        @NotNull Function<? super E, Integer> indexExtractor);
+
+    @Override
+    public abstract @NotNull Iterator<Iterator<E>> partition(@Positive int numPartitions,
+        @NotNull IndexedFunction<? super E, Integer> indexExtractor);
+
+    @Override
+    public abstract @NotNull <K> Iterator<ZipEntry<K, Iterator<E>>> partitionZip(
+        @NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    public abstract @NotNull <K> Iterator<ZipEntry<K, Iterator<E>>> partitionZip(
+        @NotNull IndexedFunction<? super E, K> keyExtractor);
+
+    @Override
     public abstract @NotNull Iterator<E> peek(@NotNull Consumer<? super E> consumer);
 
     @Override
