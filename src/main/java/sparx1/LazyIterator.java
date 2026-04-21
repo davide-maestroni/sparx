@@ -148,7 +148,12 @@ public class LazyIterator<E> extends Iterator<E> {
     return (LazyIterator<E>) EMPTY_ITERATOR;
   }
 
-  static @NotNull <E> LazyIterator<E> elementIterator(final @Nullable E element) {
+  static @NotNull <E> LazyIterator<E> wrappedIterator(
+      final @NotNull Iterable<? extends E> elements) {
+    return new LazyIterator<E>(getElementsMaterializer(elements));
+  }
+
+  private static @NotNull <E> LazyIterator<E> elementIterator(final @Nullable E element) {
     return new LazyIterator<E>(new ElementToIteratorMaterializer<E>(element));
   }
 

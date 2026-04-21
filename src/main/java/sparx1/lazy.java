@@ -15,7 +15,32 @@
  */
 package sparx1;
 
+import static sparx1.util.function.Functions.toIndexedFunction;
+import static sparx1.util.function.Functions.toIndexedPredicate;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Comparator;
+import sparx1.internal.lazy.iterator.ArrayToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.CharSequenceToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.DoubleArrayToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.ElementToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.FloatArrayToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.GeneratorToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.IntArrayToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.IteratorToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.LinesIteratorMaterializer;
+import sparx1.internal.lazy.iterator.LongArrayToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.LoopToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.RepeatIteratorMaterializer;
+import sparx1.util.Require;
 import sparx1.util.ZipEntry;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
@@ -54,6 +79,192 @@ public class lazy {
 
     public static @NotNull <E> Iterator<E> of() {
       return LazyIterator.emptyIterator();
+    }
+
+    public static @NotNull <E> Iterator<E> of(final E el0) {
+      return new LazyIterator<E>(new ElementToIteratorMaterializer<E>(el0));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> of(final E el0, final E el1) {
+      return new LazyIterator<E>(new ArrayToIteratorMaterializer<E>(el0, el1));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> of(final E el0, final E el1, final E el2) {
+      return new LazyIterator<E>(new ArrayToIteratorMaterializer<E>(el0, el1, el2));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> of(final E el0, final E el1, final E el2, final E el3) {
+      return new LazyIterator<E>(new ArrayToIteratorMaterializer<E>(el0, el1, el2, el3));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> of(final E el0, final E el1, final E el2, final E el3,
+        final E el4) {
+      return new LazyIterator<E>(new ArrayToIteratorMaterializer<E>(el0, el1, el2, el3, el4));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> of(final E el0, final E el1, final E el2, final E el3,
+        final E el4, final E el5) {
+      return new LazyIterator<E>(new ArrayToIteratorMaterializer<E>(el0, el1, el2, el3, el4, el5));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> of(final E el0, final E el1, final E el2, final E el3,
+        final E el4, final E el5, final E el6) {
+      return new LazyIterator<E>(
+          new ArrayToIteratorMaterializer<E>(el0, el1, el2, el3, el4, el5, el6));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> of(final E el0, final E el1, final E el2, final E el3,
+        final E el4, final E el5, final E el6, final E el7) {
+      return new LazyIterator<E>(
+          new ArrayToIteratorMaterializer<E>(el0, el1, el2, el3, el4, el5, el6, el7));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> of(final E el0, final E el1, final E el2, final E el3,
+        final E el4, final E el5, final E el6, final E el7, final E el8) {
+      return new LazyIterator<E>(
+          new ArrayToIteratorMaterializer<E>(el0, el1, el2, el3, el4, el5, el6, el7, el8));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> of(final E el0, final E el1, final E el2, final E el3,
+        final E el4, final E el5, final E el6, final E el7, final E el8, final E el9) {
+      return new LazyIterator<E>(
+          new ArrayToIteratorMaterializer<E>(el0, el1, el2, el3, el4, el5, el6, el7, el8, el9));
+    }
+
+    public static @NotNull <E> Iterator<E> ofArray(final E... elements) {
+      if (elements == null || elements.length == 0) {
+        return LazyIterator.emptyIterator();
+      }
+      return new LazyIterator<E>(
+          new ArrayToIteratorMaterializer<E>(Arrays.copyOf(elements, elements.length)));
+    }
+
+    public static @NotNull Iterator<Character> ofChars(final @NotNull CharSequence chars) {
+      return new LazyIterator<Character>(
+          new CharSequenceToIteratorMaterializer(Require.notNull(chars, "chars")));
+    }
+
+    public static @NotNull Iterator<Double> ofDoubles(final double... elements) {
+      if (elements == null || elements.length == 0) {
+        return LazyIterator.emptyIterator();
+      }
+      return new LazyIterator<Double>(
+          new DoubleArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
+    }
+
+    public static @NotNull Iterator<Float> ofFloats(final float... elements) {
+      if (elements == null || elements.length == 0) {
+        return LazyIterator.emptyIterator();
+      }
+      return new LazyIterator<Float>(
+          new FloatArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
+    }
+
+    public static @NotNull <G, E> Iterator<E> ofGenerator(final @NotNull G generator,
+        final @NotNull IndexedPredicate<? super G> hasNextPredicate,
+        final @NotNull IndexedFunction<? super G, ? extends E> nextFunction) {
+      return new LazyIterator<E>(
+          new GeneratorToIteratorMaterializer<G, E>(Require.notNull(generator, "generator"),
+              Require.notNull(hasNextPredicate, "hasNextPredicate"),
+              Require.notNull(nextFunction, "nextFunction")));
+    }
+
+    public static @NotNull <G, E> Iterator<E> ofGenerator(final @NotNull G generator,
+        final @NotNull Predicate<? super G> hasNextPredicate,
+        final @NotNull Function<? super G, ? extends E> nextFunction) {
+      return new LazyIterator<E>(
+          new GeneratorToIteratorMaterializer<G, E>(Require.notNull(generator, "generator"),
+              toIndexedPredicate(hasNextPredicate, "hasNextPredicate"),
+              toIndexedFunction(nextFunction, "nextFunction")));
+    }
+
+    public static @NotNull Iterator<Integer> ofInts(final int... elements) {
+      if (elements == null || elements.length == 0) {
+        return LazyIterator.emptyIterator();
+      }
+      return new LazyIterator<Integer>(
+          new IntArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
+    }
+
+    private static @NotNull Iterator<String> ofLines(final @NotNull BufferedReader reader) {
+      return new LazyIterator<String>(
+          new LinesIteratorMaterializer(Require.notNull(reader, "reader")));
+    }
+
+    public static @NotNull Iterator<String> ofLines(final @NotNull File file,
+        final @Nullable Charset charset) throws FileNotFoundException {
+      return ofLines(new FileInputStream(file), charset);
+    }
+
+    private static @NotNull Iterator<String> ofLines(final @NotNull InputStream inputStream,
+        final @Nullable Charset charset) {
+      return ofLines(new BufferedReader(new InputStreamReader(inputStream,
+          charset != null ? charset : Charset.defaultCharset())));
+    }
+
+    public static @NotNull Iterator<String> ofLines(final @NotNull Reader reader) {
+      if (reader instanceof BufferedReader) {
+        return ofLines((BufferedReader) reader);
+      }
+      return ofLines(new BufferedReader(reader));
+    }
+
+    public static @NotNull Iterator<Long> ofLongs(final long... elements) {
+      if (elements == null || elements.length == 0) {
+        return LazyIterator.emptyIterator();
+      }
+      return new LazyIterator<Long>(
+          new LongArrayToIteratorMaterializer(Arrays.copyOf(elements, elements.length)));
+    }
+
+    public static @NotNull <E> Iterator<E> ofLoop(final E initialValue,
+        final @NotNull IndexedPredicate<? super E> predicate,
+        final @NotNull IndexedFunction<? super E, ? extends E> update) {
+      return new LazyIterator<E>(
+          new LoopToIteratorMaterializer<E>(initialValue, Require.notNull(predicate, "predicate"),
+              Require.notNull(update, "update")));
+    }
+
+    public static @NotNull <E> Iterator<E> ofLoop(final E initialValue,
+        final @NotNull Predicate<? super E> predicate,
+        final @NotNull Function<? super E, ? extends E> update) {
+      return new LazyIterator<E>(new LoopToIteratorMaterializer<E>(initialValue,
+          toIndexedPredicate(predicate, "predicate"), toIndexedFunction(update, "update")));
+    }
+
+    public static @NotNull <E> Iterator<E> times(final @NotNegative int count, final E element) {
+      if (count == 0) {
+        return LazyIterator.emptyIterator();
+      }
+      return new LazyIterator<E>(
+          new RepeatIteratorMaterializer<E>(Require.notNegative(count, "count"), element));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> wrap(final @NotNull Iterable<? extends E> elements) {
+      if (elements instanceof Iterator) {
+        return (Iterator<E>) elements;
+      }
+      return LazyIterator.wrappedIterator(Require.notNull(elements, "elements"));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static @NotNull <E> Iterator<E> wrap(
+        final @NotNull java.util.Iterator<? extends E> elements) {
+      if (elements instanceof Iterator) {
+        return (Iterator<E>) elements;
+      }
+      return new LazyIterator<E>(
+          new IteratorToIteratorMaterializer<E>(Require.notNull(elements, "elements")));
     }
 
     @Override
