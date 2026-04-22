@@ -17,8 +17,12 @@ package sparx1;
 
 import java.util.Comparator;
 import sparx1.internal.lazy.ListMaterializer;
+import sparx1.internal.lazy.list.AppendListMaterializer;
+import sparx1.internal.lazy.list.CollectionToListMaterializer;
 import sparx1.internal.lazy.list.ElementToListMaterializer;
 import sparx1.internal.lazy.list.EmptyListMaterializer;
+import sparx1.internal.lazy.list.IteratorToListMaterializer;
+import sparx1.internal.lazy.list.ListToListMaterializer;
 import sparx1.lazy.Iterator;
 import sparx1.lazy.List;
 import sparx1.lazy.ListIterator;
@@ -40,7 +44,7 @@ public class LazyList<E> extends List<E> {
       EmptyListMaterializer.instance());
   //  private static final Splitter<?, ? extends LazyList<?>> SPLITTER = new Splitter<Object, LazyList<Object>>() {
 //    @Override
-//    public @NotNull LazyList<Object> getChunk(@NotNull final ListMaterializer<Object> materializer,
+//    public @NotNull LazyList<Object> getChunk(final @NotNull ListMaterializer<Object> materializer,
 //        final int start, final int end) {
 //      return new LazyList<Object>(materializer).slice(start, end);
 //    }
@@ -56,18 +60,44 @@ public class LazyList<E> extends List<E> {
 
   final ListMaterializer<E> materializer;
 
-  LazyList(@NotNull final ListMaterializer<E> materializer) {
+  LazyList(final @NotNull ListMaterializer<E> materializer) {
     this.materializer = materializer;
   }
 
+  @SuppressWarnings("unchecked")
   static @NotNull <E> ListMaterializer<E> getElementsMaterializer(
       final @NotNull Iterable<? extends E> elements) {
-    return null;
+    if (elements instanceof LazyList) {
+      return ((LazyList<E>) elements).materializer;
+    }
+    if (elements instanceof java.util.List) {
+      final java.util.List<E> list = (java.util.List<E>) elements;
+      final int size = list.size();
+      if (size == 0) {
+        return EmptyListMaterializer.instance();
+      }
+      if (size == 1) {
+        return new ElementToListMaterializer<E>(list.get(0));
+      }
+      return new ListToListMaterializer<E>(list);
+    }
+    if (elements instanceof java.util.Collection) {
+      final java.util.Collection<E> collection = (java.util.Collection<E>) elements;
+      if (collection.isEmpty()) {
+        return EmptyListMaterializer.instance();
+      }
+      return new CollectionToListMaterializer<E>(collection);
+    }
+    return new IteratorToListMaterializer<E>((java.util.Iterator<E>) elements.iterator());
   }
 
   @Override
-  public List<E> append(E element) {
-    return null;
+  public List<E> append(final E element) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return new LazyList<E>(new ElementToListMaterializer<E>(element));
+    }
+    return new LazyList<E>(new AppendListMaterializer<E>(materializer, element));
   }
 
   @Override

@@ -51,7 +51,7 @@ abstract class AbstractIterator<E, T extends AbstractIterator<E, T>> implements 
 
   @Override
   public void remove() {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("remove");
   }
 
   @Override

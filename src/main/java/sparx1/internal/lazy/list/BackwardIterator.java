@@ -42,6 +42,6 @@ class BackwardIterator<E> implements Iterator<E> {
 
   @Override
   public void remove() {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("remove");
   }
 }
