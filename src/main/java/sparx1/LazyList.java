@@ -54,7 +54,7 @@ public class LazyList<E> extends List<E> {
   private static final LazyList<Integer> ZERO_LIST = new LazyList<Integer>(
       new ElementToListMaterializer<Integer>(0));
 
-  private final ListMaterializer<E> materializer;
+  final ListMaterializer<E> materializer;
 
   LazyList(@NotNull final ListMaterializer<E> materializer) {
     this.materializer = materializer;

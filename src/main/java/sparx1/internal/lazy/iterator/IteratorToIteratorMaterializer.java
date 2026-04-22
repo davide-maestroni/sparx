@@ -21,19 +21,32 @@ import sparx1.util.annotation.NotNull;
 public class IteratorToIteratorMaterializer<E> extends AbstractIteratorMaterializer<E> {
 
   private final Iterator<? extends E> elements;
+  private final int size;
+
+  private int pos;
 
   public IteratorToIteratorMaterializer(final @NotNull Iterator<? extends E> elements) {
+    this(elements, -1);
+  }
+
+  public IteratorToIteratorMaterializer(final @NotNull Iterator<? extends E> elements,
+      final int size) {
     this.elements = elements;
+    this.size = size;
   }
 
   @Override
   public int currentKnownSize() {
+    final int size = this.size;
+    if (size >= 0) {
+      return size - pos;
+    }
     return -1;
   }
 
   @Override
   public boolean isSizeKnown() {
-    return false;
+    return size >= 0;
   }
 
   @Override
@@ -43,6 +56,8 @@ public class IteratorToIteratorMaterializer<E> extends AbstractIteratorMateriali
 
   @Override
   public E materializeNext() {
-    return elements.next();
+    final E next = elements.next();
+    ++pos;
+    return next;
   }
 }

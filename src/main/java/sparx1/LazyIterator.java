@@ -70,6 +70,7 @@ import sparx1.internal.lazy.iterator.InterleaveIteratorMaterializer;
 import sparx1.internal.lazy.iterator.InterleaveWithPaddingIteratorMaterializer;
 import sparx1.internal.lazy.iterator.IntersectIteratorMaterializer;
 import sparx1.internal.lazy.iterator.IteratorToIteratorMaterializer;
+import sparx1.internal.lazy.iterator.ListMaterializerToIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ListToIteratorMaterializer;
 import sparx1.internal.lazy.iterator.MapIteratorMaterializer;
 import sparx1.internal.lazy.iterator.MapWhileIteratorMaterializer;
@@ -137,7 +138,7 @@ public class LazyIterator<E> extends Iterator<E> {
     }
   };
 
-  private final IteratorMaterializer<E> materializer;
+  final IteratorMaterializer<E> materializer;
 
   LazyIterator(final @NotNull IteratorMaterializer<E> materializer) {
     this.materializer = materializer;
@@ -163,16 +164,18 @@ public class LazyIterator<E> extends Iterator<E> {
     if (elements instanceof LazyIterator) {
       return ((LazyIterator<E>) elements).materializer;
     }
-//      if (elements instanceof List) {
-//        final ListMaterializer<E> materializer = ((List<E>) elements).materializer;
-//        if (materializer.knownSize() == 0) {
-//          return EmptyIteratorMaterializer.instance();
-//        }
-//        if (materializer.isRandomAccess()) {
-//          return new ListMaterializerToIteratorMaterializer<E>(materializer);
-//        }
-//        return new IteratorToIteratorMaterializer<E>(materializer.materializeIterator());
-//      }
+    if (elements instanceof LazyList) {
+      final ListMaterializer<E> materializer = ((LazyList<E>) elements).materializer;
+      final int knownSize = materializer.knownSize();
+      if (knownSize == 0) {
+        return EmptyIteratorMaterializer.instance();
+      }
+      if (materializer.isRandomAccess()) {
+        return new ListMaterializerToIteratorMaterializer<E>(materializer);
+      }
+      return new IteratorToIteratorMaterializer<E>(materializer.materializeForwardIterator(0),
+          knownSize);
+    }
     if (elements instanceof java.util.List) {
       final java.util.List<E> list = (java.util.List<E>) elements;
       if (list.isEmpty()) {
@@ -181,7 +184,7 @@ public class LazyIterator<E> extends Iterator<E> {
       if (list instanceof RandomAccess) {
         return new ListToIteratorMaterializer<E>(list);
       }
-      return new IteratorToIteratorMaterializer<E>(elements.iterator());
+      return new IteratorToIteratorMaterializer<E>(elements.iterator(), list.size());
     }
     if (elements instanceof java.util.Collection) {
       final java.util.Collection<E> collection = (java.util.Collection<E>) elements;
