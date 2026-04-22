@@ -746,4 +746,491 @@ public class lazy {
     public abstract @NotNull <F> Iterator<ZipEntry<E, F>> zipWithPadding(
         @NotNull java.lang.Iterable<F> elements, E paddingLeft, F paddingRight);
   }
+
+  public abstract static class List<E> extends AbstractList<E, List<E>> implements
+      itf.List<E, List<E>> {
+
+    @Override
+    public abstract @NotNull List<E> append(@Nullable E element);
+
+    @Override
+    public abstract @NotNull List<E> appendAll(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    public abstract @NotNull <F> List<F> apply(
+        @NotNull Function<? super List<E>, java.lang.Iterable<F>> function);
+
+    @Override
+    public abstract @NotNull <F> List<F> cast();
+
+    @Override
+    public abstract @NotNull List<E> clone();
+
+    @Override
+    public abstract @NotNull List<E> clone(@NotNull Function<? super E, ? extends E> cloner);
+
+    @Override
+    public abstract @NotNull List<Integer> count();
+
+    @Override
+    public abstract @NotNull List<E> diff(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    public abstract @NotNull List<E> distinct();
+
+    @Override
+    public abstract @NotNull <K> List<E> distinctBy(@NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    public abstract @NotNull <K> List<E> distinctBy(
+        @NotNull IndexedFunction<? super E, K> keyExtractor);
+
+    @Override
+    public abstract @NotNull List<E> dropFirst(int maxElements);
+
+    @Override
+    public abstract @NotNull List<E> dropFirstWhile(@NotNull IndexedPredicate<? super E> condition);
+
+    @Override
+    public abstract @NotNull List<E> dropFirstWhile(@NotNull Predicate<? super E> condition);
+
+    @Override
+    public abstract @NotNull List<E> dropLast(int maxElements);
+
+    @Override
+    public abstract @NotNull List<E> dropLastWhile(@NotNull IndexedPredicate<? super E> condition);
+
+    @Override
+    public abstract @NotNull List<E> dropLastWhile(@NotNull Predicate<? super E> condition);
+
+    @Override
+    public abstract @NotNull List<Boolean> endsWith(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    public abstract @NotNull List<Boolean> exists(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Boolean> exists(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Boolean> existsBackward(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Boolean> existsBackward(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Boolean> existsForward(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Boolean> existsForward(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> filter(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> filter(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> filterWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> filterWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> find(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> find(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> findFirst(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> findFirst(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Integer> findFirstIndex(
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Integer> findFirstIndex(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Integer> findFirstIndexOf(@Nullable Object element);
+
+    @Override
+    public abstract @NotNull List<Integer> findFirstIndexOfSequence(
+        @NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    public abstract @NotNull List<Integer> findIndex(
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Integer> findIndex(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Integer> findIndexOf(@Nullable Object element);
+
+    @Override
+    public abstract @NotNull List<E> findLast(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> findLast(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Integer> findLastIndex(
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Integer> findLastIndex(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Integer> findLastIndexOf(@Nullable Object element);
+
+    @Override
+    public abstract @NotNull List<Integer> findLastIndexOfSequence(
+        @NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    public abstract @NotNull <F> List<F> flatMap(
+        @NotNull Function<? super E, ? extends java.lang.Iterable<F>> mapper);
+
+    @Override
+    public abstract @NotNull <F> List<F> flatMap(
+        @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<F>> mapper);
+
+    @Override
+    public abstract @NotNull List<E> flatMapWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<? extends E>> mapper);
+
+    @Override
+    public abstract @NotNull List<E> flatMapWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends java.lang.Iterable<? extends E>> mapper);
+
+    @Override
+    public abstract @NotNull <F> List<F> fold(F identity,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    public abstract @NotNull <F> List<F> foldBackward(F identity,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    public abstract @NotNull <F> List<F> foldForward(F identity,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    public abstract @NotNull <F> List<F> foldWhile(F identity,
+        @NotNull Predicate<? super F> condition,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    public abstract @NotNull <F> List<F> foldWhileBackward(F identity,
+        @NotNull Predicate<? super F> condition,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    public abstract @NotNull <F> List<F> foldWhileForward(F identity,
+        @NotNull Predicate<? super F> condition,
+        @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation);
+
+    @Override
+    public abstract @NotNull List<Boolean> includes(@Nullable Object element);
+
+    @Override
+    public abstract @NotNull List<Boolean> includesAll(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    public abstract @NotNull List<Boolean> includesSequence(
+        @NotNull java.lang.Iterable<?> elements);
+
+    public abstract @NotNull List<E> insertAfter(int numElements, E element);
+
+    public abstract @NotNull List<E> insertAllAfter(int numElements,
+        @NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    public abstract @NotNull List<E> interleave(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    public abstract @NotNull List<E> interleaveInner(
+        @NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    public abstract @NotNull List<E> interleaveInnerWithPadding(
+        @NotNull java.lang.Iterable<? extends E> elements, E paddingLeft, E paddingRight);
+
+    @Override
+    public abstract @NotNull List<E> interleaveWithPadding(
+        @NotNull java.lang.Iterable<? extends E> elements, E paddingLeft, E paddingRight);
+
+    @Override
+    public abstract @NotNull List<E> intersect(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    public abstract @NotNull ListIterator<E> listIterator();
+
+    @Override
+    public abstract @NotNull ListIterator<E> listIterator(int index);
+
+    @Override
+    public abstract @NotNull <F> List<F> map(@NotNull Function<? super E, F> mapper);
+
+    @Override
+    public abstract @NotNull <F> List<F> map(@NotNull IndexedFunction<? super E, F> mapper);
+
+    @Override
+    public abstract @NotNull <F> List<F> mapBackward(@NotNull Function<? super E, F> mapper);
+
+    @Override
+    public abstract @NotNull <F> List<F> mapBackward(@NotNull IndexedFunction<? super E, F> mapper);
+
+    @Override
+    public abstract @NotNull <F> List<F> mapForward(@NotNull Function<? super E, F> mapper);
+
+    @Override
+    public abstract @NotNull <F> List<F> mapForward(@NotNull IndexedFunction<? super E, F> mapper);
+
+    @Override
+    public abstract @NotNull List<E> mapWhile(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
+
+    @Override
+    public abstract @NotNull List<E> mapWhile(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
+
+    @Override
+    public abstract @NotNull <F> List<F> mapWhileBackward(
+        @NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, F> mapper);
+
+    @Override
+    public abstract @NotNull <F> List<F> mapWhileBackward(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, F> mapper);
+
+    @Override
+    public abstract @NotNull List<E> mapWhileForward(@NotNull IndexedPredicate<? super E> condition,
+        @NotNull IndexedFunction<? super E, ? extends E> mapper);
+
+    @Override
+    public abstract @NotNull List<E> mapWhileForward(@NotNull Predicate<? super E> condition,
+        @NotNull Function<? super E, ? extends E> mapper);
+
+    @Override
+    public abstract @NotNull List<E> materialize();
+
+    @Override
+    public abstract @NotNull List<E> max(@NotNull Comparator<? super E> comparator);
+
+    @Override
+    public abstract @NotNull List<E> min(@NotNull Comparator<? super E> comparator);
+
+    @Override
+    public abstract @NotNull List<E> minus(@Nullable E element);
+
+    @Override
+    public abstract @NotNull List<E> minusAll(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    public abstract @NotNull List<E> minusFirst(@Nullable E element);
+
+    @Override
+    public abstract @NotNull List<E> minusLast(@Nullable E element);
+
+    @Override
+    public abstract @NotNull List<Boolean> notExists(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Boolean> notExists(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Boolean> notExistsBackward(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Boolean> notExistsBackward(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Boolean> notExistsForward(boolean whenEmpty,
+        @NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<Boolean> notExistsForward(boolean whenEmpty,
+        @NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> orElse(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    public abstract @NotNull List<E> orElseGet(
+        @NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
+
+    @Override
+    public abstract @NotNull Iterator<List<E>> partition(@Positive int numPartitions,
+        @NotNull Function<? super E, Integer> indexExtractor);
+
+    @Override
+    public abstract @NotNull Iterator<List<E>> partition(@Positive int numPartitions,
+        @NotNull IndexedFunction<? super E, Integer> indexExtractor);
+
+    @Override
+    public abstract @NotNull <K> Iterator<ZipEntry<K, List<E>>> partitionZip(
+        @NotNull Function<? super E, K> keyExtractor);
+
+    @Override
+    public abstract @NotNull <K> Iterator<ZipEntry<K, List<E>>> partitionZip(
+        @NotNull IndexedFunction<? super E, K> keyExtractor);
+
+    @Override
+    public abstract @NotNull List<E> plus(@Nullable E element);
+
+    @Override
+    public abstract @NotNull List<E> plusAll(@NotNull java.lang.Iterable<? extends E> elements);
+
+    public abstract @NotNull List<E> prepend(E element);
+
+    public abstract @NotNull List<E> prependAll(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    public abstract @NotNull List<E> reduce(
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    public abstract @NotNull List<E> reduceBackward(
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    public abstract @NotNull List<E> reduceForward(
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    public abstract @NotNull List<E> reduceWhile(@NotNull Predicate<? super E> condition,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    public abstract @NotNull List<E> reduceWhileBackward(@NotNull Predicate<? super E> condition,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    public abstract @NotNull List<E> reduceWhileForward(@NotNull Predicate<? super E> condition,
+        @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation);
+
+    @Override
+    public abstract @NotNull List<E> removeFirst(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> removeFirst(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> removeFirstSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    public abstract @NotNull List<E> removeLast(@NotNull IndexedPredicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> removeLast(@NotNull Predicate<? super E> predicate);
+
+    @Override
+    public abstract @NotNull List<E> removeLastSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    public abstract @NotNull List<E> removeSequence(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    public abstract @NotNull List<E> removeSlice(int start);
+
+    @Override
+    public abstract @NotNull List<E> removeSlice(int start, int end);
+
+    public abstract @NotNull List<E> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+
+    public abstract @NotNull List<E> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+
+    public abstract @NotNull List<E> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+
+    public abstract @NotNull List<E> replaceSequence(@NotNull java.lang.Iterable<?> elements,
+        @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+
+    @Override
+    public abstract @NotNull List<E> replaceSlice(int start, int end,
+        @NotNull java.lang.Iterable<? extends E> patch);
+
+    @Override
+    public abstract @NotNull List<E> replaceSlice(int start,
+        @NotNull java.lang.Iterable<? extends E> patch);
+
+    @Override
+    public abstract @NotNull List<E> resizeTo(@NotNegative int numElements, E padding);
+
+    public abstract @NotNull List<E> reverse();
+
+    @Override
+    public abstract @NotNull List<E> slice(int start);
+
+    @Override
+    public abstract @NotNull List<E> slice(int start, int end);
+
+    @Override
+    public abstract @NotNull List<List<E>> slidingWindow(@Positive int maxSize, @Positive int step);
+
+    @Override
+    public abstract @NotNull List<List<E>> slidingWindowWithPadding(@Positive int size,
+        @Positive int step, E padding);
+
+    public abstract @NotNull List<E> sorted(@NotNull Comparator<? super E> comparator);
+
+    @Override
+    public abstract @NotNull List<Boolean> startsWith(@NotNull java.lang.Iterable<?> elements);
+
+    @Override
+    public abstract @NotNull List<E> symmetricDiff(
+        @NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    public abstract @NotNull List<E> takeFirst(int maxElements);
+
+    @Override
+    public abstract @NotNull List<E> takeFirstWhile(@NotNull IndexedPredicate<? super E> condition);
+
+    @Override
+    public abstract @NotNull List<E> takeFirstWhile(@NotNull Predicate<? super E> condition);
+
+    @Override
+    public abstract @NotNull List<E> takeLast(int maxElements);
+
+    @Override
+    public abstract @NotNull List<E> takeLastWhile(@NotNull IndexedPredicate<? super E> condition);
+
+    @Override
+    public abstract @NotNull List<E> takeLastWhile(@NotNull Predicate<? super E> condition);
+
+    @Override
+    public abstract @NotNull List<E> union(@NotNull java.lang.Iterable<? extends E> elements);
+
+    @Override
+    public abstract @NotNull <F> List<ZipEntry<E, F>> zip(@NotNull java.lang.Iterable<F> elements);
+
+    @Override
+    public abstract @NotNull <F> List<ZipEntry<E, F>> zipWithPadding(
+        @NotNull java.lang.Iterable<F> elements, E paddingLeft, F paddingRight);
+  }
+
+  public abstract static class ListIterator<E> implements itf.ListIterator<E, ListIterator<E>> {
+
+  }
 }

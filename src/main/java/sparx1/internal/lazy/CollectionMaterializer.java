@@ -15,9 +15,6 @@
  */
 package sparx1.internal.lazy;
 
-import java.util.Iterator;
-import sparx1.util.annotation.NotNull;
-
 public interface CollectionMaterializer<E> {
 
   int knownSize();
@@ -29,9 +26,6 @@ public interface CollectionMaterializer<E> {
   int materializeElements();
 
   boolean materializeEmpty();
-
-  @NotNull
-  Iterator<E> materializeIterator();
 
   int materializeSize();
 }
