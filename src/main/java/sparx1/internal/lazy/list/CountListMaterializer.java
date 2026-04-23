@@ -23,7 +23,7 @@ public class CountListMaterializer<E> extends SuppliedListMaterializer<Integer> 
 
   private final ListMaterializer<E> wrapped;
 
-  public CountListMaterializer(@NotNull final ListMaterializer<E> wrapped) {
+  public CountListMaterializer(final @NotNull ListMaterializer<E> wrapped) {
     this.wrapped = wrapped;
   }
 

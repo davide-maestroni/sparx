@@ -24,8 +24,8 @@ import sparx1.util.annotation.NotNull;
 
 public class DiffListMaterializer<E> extends StatefulListMaterializer<E> {
 
-  public DiffListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final ListMaterializer<?> elementsMaterializer) {
+  public DiffListMaterializer(final @NotNull ListMaterializer<E> wrapped,
+      final @NotNull ListMaterializer<?> elementsMaterializer) {
     setState(new InitialState(wrapped, elementsMaterializer));
   }
 
@@ -38,14 +38,14 @@ public class DiffListMaterializer<E> extends StatefulListMaterializer<E> {
     private HashMap<Object, Integer> elementsBag;
     private int pos;
 
-    private InitialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final ListMaterializer<?> elementsMaterializer) {
+    private InitialState(final @NotNull ListMaterializer<E> wrapped,
+        final @NotNull ListMaterializer<?> elementsMaterializer) {
       this.elementsMaterializer = elementsMaterializer;
       iterator = wrapped.materializeForwardIterator(0);
     }
 
     @Override
-    public boolean canMaterializeElement(@NotNegative final int index) {
+    public boolean canMaterializeElement(final @NotNegative int index) {
       return materializeUntil(index) > index;
     }
 
@@ -65,7 +65,7 @@ public class DiffListMaterializer<E> extends StatefulListMaterializer<E> {
     }
 
     @Override
-    public E materializeElement(@NotNegative final int index) {
+    public E materializeElement(final @NotNegative int index) {
       if (materializeUntil(index) <= index) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }

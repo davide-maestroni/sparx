@@ -26,8 +26,8 @@ import sparx1.util.function.IndexedFunction;
 
 public class DistinctByListMaterializer<E, K> extends StatefulListMaterializer<E> {
 
-  public DistinctByListMaterializer(@NotNull final ListMaterializer<E> wrapped,
-      @NotNull final IndexedFunction<? super E, K> keyExtractor) {
+  public DistinctByListMaterializer(final @NotNull ListMaterializer<E> wrapped,
+      final @NotNull IndexedFunction<? super E, K> keyExtractor) {
     setState(new InitialState(wrapped, keyExtractor));
   }
 
@@ -40,14 +40,14 @@ public class DistinctByListMaterializer<E, K> extends StatefulListMaterializer<E
 
     private int pos;
 
-    private InitialState(@NotNull final ListMaterializer<E> wrapped,
-        @NotNull final IndexedFunction<? super E, K> keyExtractor) {
+    private InitialState(final @NotNull ListMaterializer<E> wrapped,
+        final @NotNull IndexedFunction<? super E, K> keyExtractor) {
       this.keyExtractor = keyExtractor;
       iterator = wrapped.materializeForwardIterator(0);
     }
 
     @Override
-    public boolean canMaterializeElement(@NotNegative final int index) {
+    public boolean canMaterializeElement(final @NotNegative int index) {
       return materializeUntil(index) > index;
     }
 
@@ -67,7 +67,7 @@ public class DistinctByListMaterializer<E, K> extends StatefulListMaterializer<E
     }
 
     @Override
-    public E materializeElement(@NotNegative final int index) {
+    public E materializeElement(final @NotNegative int index) {
       if (materializeUntil(index) <= index) {
         throw new IndexOutOfBoundsException(Integer.toString(index));
       }

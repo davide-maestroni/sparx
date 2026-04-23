@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
-import sparx1.util.function.Functions;
 
 public class IteratorToListMaterializer<E> extends StatefulListMaterializer<E> {
 
@@ -67,17 +66,6 @@ public class IteratorToListMaterializer<E> extends StatefulListMaterializer<E> {
 
     @Override
     public boolean isSizeKnown() {
-      return false;
-    }
-
-    @Override
-    public boolean materializeContains(final Object element) {
-      final Iterator<E> iterator = materializeUnorderedIterator();
-      while (iterator.hasNext()) {
-        if (Functions.objectsEqual(element, iterator.next())) {
-          return true;
-        }
-      }
       return false;
     }
 

@@ -24,6 +24,7 @@ import java.util.Comparator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.internal.lazy.list.AppendAllListMaterializer;
 import sparx1.internal.lazy.list.AppendListMaterializer;
+import sparx1.internal.lazy.list.ArrayToListMaterializer;
 import sparx1.internal.lazy.list.CollectionToListMaterializer;
 import sparx1.internal.lazy.list.CountListMaterializer;
 import sparx1.internal.lazy.list.DiffListMaterializer;
@@ -153,15 +154,31 @@ public class LazyList<E> extends List<E> {
 
   @Override
   public List<E> clone() {
-    return new LazyList<E>(new ListToListMaterializer<E>(new DequeArrayList<E>(this)));
+    final ListMaterializer<E> materializer = this.materializer;
+    int size = materializer.knownSize();
+    if (size < 0) {
+      size = materializer.materializeSize();
+    }
+    if (size == 0) {
+      return emptyList();
+    }
+    if (size == 1) {
+      return elementList(get(0));
+    }
+    return new LazyList<Object>(new ArrayToListMaterializer<Object>(toArray())).cast();
   }
 
   @Override
   public List<E> clone(final @NotNull Function<? super E, ? extends E> cloner) {
     final ListMaterializer<E> materializer = this.materializer;
-    final int knownSize = materializer.knownSize();
-    final DequeArrayList<E> elements =
-        knownSize >= 0 ? new DequeArrayList<E>(knownSize) : new DequeArrayList<E>();
+    int size = materializer.knownSize();
+    if (size < 0) {
+      size = materializer.materializeSize();
+    }
+    if (size == 0) {
+      return emptyList();
+    }
+    final DequeArrayList<E> elements = new DequeArrayList<E>(size);
     try {
       final java.util.Iterator<E> iterator = materializer.materializeForwardIterator(0);
       while (iterator.hasNext()) {
@@ -238,7 +255,7 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doFor(@NotNull final Consumer<? super E> elementConsumer) {
+  public void doFor(final @NotNull Consumer<? super E> elementConsumer) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     if (knownSize == 0) {
@@ -262,8 +279,8 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doFor(@NotNull final Consumer<? super E> elementConsumer,
-      @NotNull final Action endAction) {
+  public void doFor(final @NotNull Consumer<? super E> elementConsumer,
+      final @NotNull Action endAction) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     try {
@@ -289,8 +306,8 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doFor(@NotNull final Consumer<? super E> elementConsumer,
-      @NotNull final Action endAction, @NotNull final Consumer<? super Throwable> errorConsumer) {
+  public void doFor(final @NotNull Consumer<? super E> elementConsumer,
+      final @NotNull Action endAction, final @NotNull Consumer<? super Throwable> errorConsumer) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     try {
@@ -320,7 +337,7 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer) {
+  public void doFor(final @NotNull IndexedConsumer<? super E> elementConsumer) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     if (knownSize == 0) {
@@ -344,8 +361,8 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer,
-      @NotNull final Consumer<? super Integer> endConsumer) {
+  public void doFor(final @NotNull IndexedConsumer<? super E> elementConsumer,
+      final @NotNull Consumer<? super Integer> endConsumer) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     try {
@@ -372,9 +389,9 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer,
-      @NotNull final Consumer<? super Integer> endConsumer,
-      @NotNull final IndexedConsumer<? super Throwable> errorConsumer) {
+  public void doFor(final @NotNull IndexedConsumer<? super E> elementConsumer,
+      final @NotNull Consumer<? super Integer> endConsumer,
+      final @NotNull IndexedConsumer<? super Throwable> errorConsumer) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     int i = 0;
@@ -405,7 +422,7 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate) {
+  public void doWhile(final @NotNull IndexedPredicate<? super E> elementPredicate) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     if (knownSize == 0) {
@@ -433,8 +450,8 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate,
-      @NotNull final Consumer<? super Integer> endConsumer) {
+  public void doWhile(final @NotNull IndexedPredicate<? super E> elementPredicate,
+      final @NotNull Consumer<? super Integer> endConsumer) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     try {
@@ -465,9 +482,9 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate,
-      @NotNull final Consumer<? super Integer> endConsumer,
-      @NotNull final IndexedConsumer<? super Throwable> errorConsumer) {
+  public void doWhile(final @NotNull IndexedPredicate<? super E> elementPredicate,
+      final @NotNull Consumer<? super Integer> endConsumer,
+      final @NotNull IndexedConsumer<? super Throwable> errorConsumer) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     int i = 0;
@@ -502,7 +519,7 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doWhile(@NotNull final Predicate<? super E> elementPredicate) {
+  public void doWhile(final @NotNull Predicate<? super E> elementPredicate) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     if (knownSize == 0) {
@@ -530,8 +547,8 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doWhile(@NotNull final Predicate<? super E> elementPredicate,
-      @NotNull final Action endAction) {
+  public void doWhile(final @NotNull Predicate<? super E> elementPredicate,
+      final @NotNull Action endAction) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     try {
@@ -560,8 +577,8 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doWhile(@NotNull final Predicate<? super E> elementPredicate,
-      @NotNull final Action endAction, @NotNull final Consumer<? super Throwable> errorConsumer) {
+  public void doWhile(final @NotNull Predicate<? super E> elementPredicate,
+      final @NotNull Action endAction, final @NotNull Consumer<? super Throwable> errorConsumer) {
     final ListMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.knownSize();
     try {

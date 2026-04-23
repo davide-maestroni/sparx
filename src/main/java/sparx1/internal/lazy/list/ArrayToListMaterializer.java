@@ -15,34 +15,48 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Collections;
-import java.util.Iterator;
-import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
 
-public abstract class AbstractListMaterializer<E> implements ListMaterializer<E> {
+public class ArrayToListMaterializer<E> extends AbstractListMaterializer<E> {
+
+  private final E[] elements;
+
+  public ArrayToListMaterializer(final @NotNull E... elements) {
+    this.elements = elements;
+  }
 
   @Override
-  public @NotNull Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
-    if (!canMaterializeElement(index)) {
-      return Collections.<E>emptyList().iterator();
-    }
-    return new BackwardIterator<E>(this, index);
+  public boolean canMaterializeElement(final @NotNegative int index) {
+    return index < elements.length;
+  }
+
+  @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
+  public boolean isSizeKnown() {
+    return true;
+  }
+
+  @Override
+  public int knownSize() {
+    return elements.length;
   }
 
   @Override
   public boolean materializeContains(final Object element) {
-    final Iterator<E> iterator = materializeUnorderedIterator();
     if (element == null) {
-      while (iterator.hasNext()) {
-        if (iterator.next() == null) {
+      for (final E e : elements) {
+        if (e == null) {
           return true;
         }
       }
     } else {
-      while (iterator.hasNext()) {
-        if (element.equals(iterator.next())) {
+      for (final E e : elements) {
+        if (element.equals(e)) {
           return true;
         }
       }
@@ -51,15 +65,22 @@ public abstract class AbstractListMaterializer<E> implements ListMaterializer<E>
   }
 
   @Override
-  public @NotNull Iterator<E> materializeForwardIterator(final @NotNegative int index) {
-    if (!canMaterializeElement(index)) {
-      return Collections.<E>emptyList().iterator();
-    }
-    return new ForwardIterator<E>(this, index);
+  public E materializeElement(final @NotNegative int index) {
+    return elements[index];
   }
 
   @Override
-  public @NotNull Iterator<E> materializeUnorderedIterator() {
-    return materializeForwardIterator(0);
+  public int materializeElements() {
+    return elements.length;
+  }
+
+  @Override
+  public boolean materializeEmpty() {
+    return elements.length == 0;
+  }
+
+  @Override
+  public int materializeSize() {
+    return elements.length;
   }
 }
