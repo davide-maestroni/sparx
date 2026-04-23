@@ -28,22 +28,22 @@ abstract class AbstractList<E, T extends AbstractList<E, T>> extends
 
   @Override
   public boolean add(final E e) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("add");
   }
 
   @Override
   public boolean addAll(final @NotNull Collection<? extends E> c) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("addAll");
   }
 
   @Override
   public boolean addAll(final int index, final @NotNull Collection<? extends E> c) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("addAll");
   }
 
   @Override
   public void clear() {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("clear");
   }
 
   @Override
@@ -65,17 +65,17 @@ abstract class AbstractList<E, T extends AbstractList<E, T>> extends
 
   @Override
   public boolean remove(final Object o) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("remove");
   }
 
   @Override
   public boolean removeAll(final @NotNull Collection<?> c) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("removeAll");
   }
 
   @Override
   public boolean retainAll(final @NotNull Collection<?> c) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("retainAll");
   }
 
   @Override

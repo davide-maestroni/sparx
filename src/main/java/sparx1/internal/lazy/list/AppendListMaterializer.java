@@ -45,6 +45,11 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public boolean isSizeKnown() {
+    return wrapped.isSizeKnown();
+  }
+
+  @Override
   public int knownSize() {
     final int knownSize = wrapped.knownSize();
     if (knownSize >= 0) {
@@ -54,8 +59,18 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean isSizeKnown() {
-    return wrapped.isSizeKnown();
+  public Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
+    final int size = materializeSize();
+    if (index >= size) {
+      return Collections.<E>emptyList().iterator();
+    }
+    if (index == size - 1) {
+      if (index == 0) {
+        return Collections.singleton(element).iterator();
+      }
+      return new PrependIterator(wrapped.materializeBackwardIterator(index - 1));
+    }
+    return wrapped.materializeBackwardIterator(index);
   }
 
   @Override
@@ -79,33 +94,6 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
-    final int size = materializeSize();
-    if (index < 0 || index >= size) {
-      return Collections.<E>emptyList().iterator();
-    }
-    if (index == size - 1) {
-      if (index == 0) {
-        return Collections.singleton(element).iterator();
-      }
-      return new PrependIterator(wrapped.materializeBackwardIterator(index - 1));
-    }
-    return wrapped.materializeBackwardIterator(index);
-  }
-
-  @Override
-  public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
-    final int size = materializeSize();
-    if (index < 0 || index >= size) {
-      return Collections.<E>emptyList().iterator();
-    }
-    if (index == size - 1) {
-      return Collections.singleton(element).iterator();
-    }
-    return new AppendIterator(wrapped.materializeForwardIterator(index));
-  }
-
-  @Override
   public int materializeElements() {
     return SizeOverflowException.safeCast((long) wrapped.materializeElements() + 1);
   }
@@ -116,13 +104,25 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> materializeUnorderedIterator() {
-    return new AppendIterator(wrapped.materializeUnorderedIterator());
+  public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
+    final int size = materializeSize();
+    if (index >= size) {
+      return Collections.<E>emptyList().iterator();
+    }
+    if (index == size - 1) {
+      return Collections.singleton(element).iterator();
+    }
+    return new AppendIterator(wrapped.materializeForwardIterator(index));
   }
 
   @Override
   public int materializeSize() {
     return SizeOverflowException.safeCast((long) wrapped.materializeSize() + 1);
+  }
+
+  @Override
+  public @NotNull Iterator<E> materializeUnorderedIterator() {
+    return new AppendIterator(wrapped.materializeUnorderedIterator());
   }
 
   private class AppendIterator implements Iterator<E> {

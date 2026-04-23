@@ -17,15 +17,20 @@ package sparx1;
 
 import java.util.Comparator;
 import sparx1.internal.lazy.ListMaterializer;
+import sparx1.internal.lazy.list.AppendAllListMaterializer;
 import sparx1.internal.lazy.list.AppendListMaterializer;
 import sparx1.internal.lazy.list.CollectionToListMaterializer;
 import sparx1.internal.lazy.list.ElementToListMaterializer;
 import sparx1.internal.lazy.list.EmptyListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
 import sparx1.internal.lazy.list.ListToListMaterializer;
+import sparx1.internal.lazy.list.SuppliedListMaterializer;
 import sparx1.lazy.Iterator;
 import sparx1.lazy.List;
 import sparx1.lazy.ListIterator;
+import sparx1.util.DequeArrayList;
+import sparx1.util.Require;
+import sparx1.util.UncheckedException;
 import sparx1.util.ZipEntry;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.function.Action;
@@ -101,48 +106,53 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<E> appendAll(Iterable<? extends E> elements) {
-    return null;
+  public List<E> appendAll(final @NotNull Iterable<? extends E> elements) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
+        Require.notNull(elements, "elements"));
+    if (materializer.knownSize() == 0) {
+      return new LazyList<E>(elementsMaterializer);
+    }
+    return new LazyList<E>(new AppendAllListMaterializer<E>(materializer, elementsMaterializer));
   }
 
   @Override
-  public <F> List<F> apply(Function<? super List<E>, Iterable<F>> function) {
-    return null;
+  public <F> List<F> apply(final @NotNull Function<? super List<E>, Iterable<F>> function) {
+    Require.notNull(function, "function");
+    return new LazyList<F>(new SuppliedListMaterializer<F>() {
+      @Override
+      public ListMaterializer<F> get() throws Exception {
+        return getElementsMaterializer(Require.notNull(function.apply(LazyList.this), "elements"));
+      }
+    });
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public <F> List<F> cast() {
-    return null;
+    return (List<F>) this;
   }
 
   @Override
   public List<E> clone() {
-    return null;
+    return new LazyList<E>(new ListToListMaterializer<E>(new DequeArrayList<E>(this)));
   }
 
   @Override
-  public E get(int index) {
-    return null;
-  }
-
-  @Override
-  public itf.Iterator<E, ? extends itf.Iterator<E, ?>> iterator() {
-    return null;
-  }
-
-  @Override
-  public E last() {
-    return null;
-  }
-
-  @Override
-  public int size() {
-    return 0;
-  }
-
-  @Override
-  public List<E> clone(Function<? super E, ? extends E> cloner) {
-    return null;
+  public List<E> clone(final @NotNull Function<? super E, ? extends E> cloner) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    final DequeArrayList<E> elements =
+        knownSize >= 0 ? new DequeArrayList<E>(knownSize) : new DequeArrayList<E>();
+    try {
+      final java.util.Iterator<E> iterator = materializer.materializeForwardIterator(0);
+      while (iterator.hasNext()) {
+        elements.add(cloner.apply(iterator.next()));
+      }
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
+    }
+    return new LazyList<E>(new ListToListMaterializer<E>(elements));
   }
 
   @Override
@@ -470,6 +480,11 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
+  public E get(int index) {
+    return null;
+  }
+
+  @Override
   public List<Boolean> includes(Object element) {
     return null;
   }
@@ -549,6 +564,16 @@ public class LazyList<E> extends List<E> {
   @Override
   public boolean isTraversableAgain() {
     return false;
+  }
+
+  @Override
+  public Iterator<E> iterator() {
+    return null;
+  }
+
+  @Override
+  public E last() {
+    return null;
   }
 
   @Override
@@ -864,6 +889,11 @@ public class LazyList<E> extends List<E> {
   @Override
   public List<E> reverse() {
     return null;
+  }
+
+  @Override
+  public int size() {
+    return 0;
   }
 
   @Override

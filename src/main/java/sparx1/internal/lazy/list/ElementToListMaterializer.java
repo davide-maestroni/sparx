@@ -32,13 +32,13 @@ public class ElementToListMaterializer<E> extends AbstractListMaterializer<E> {
   }
 
   @Override
-  public boolean isRandomAccess() {
-    return true;
+  public int knownSize() {
+    return 1;
   }
 
   @Override
-  public int knownSize() {
-    return 1;
+  public boolean isRandomAccess() {
+    return true;
   }
 
   @Override

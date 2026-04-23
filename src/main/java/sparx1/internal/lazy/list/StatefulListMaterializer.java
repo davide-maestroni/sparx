@@ -30,18 +30,23 @@ public abstract class StatefulListMaterializer<E> implements ListMaterializer<E>
   }
 
   @Override
-  public boolean isRandomAccess() {
-    return state.isRandomAccess();
-  }
-
-  @Override
   public int knownSize() {
     return state.knownSize();
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return state.isRandomAccess();
+  }
+
+  @Override
   public boolean isSizeKnown() {
     return state.isSizeKnown();
+  }
+
+  @Override
+  public Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
+    return state.materializeBackwardIterator(index);
   }
 
   @Override
@@ -55,21 +60,6 @@ public abstract class StatefulListMaterializer<E> implements ListMaterializer<E>
   }
 
   @Override
-  public Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
-    return state.materializeBackwardIterator(index);
-  }
-
-  @Override
-  public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
-    return state.materializeForwardIterator(index);
-  }
-
-  @Override
-  public Iterator<E> materializeUnorderedIterator() {
-    return state.materializeUnorderedIterator();
-  }
-
-  @Override
   public int materializeElements() {
     return state.materializeElements();
   }
@@ -80,8 +70,18 @@ public abstract class StatefulListMaterializer<E> implements ListMaterializer<E>
   }
 
   @Override
+  public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
+    return state.materializeForwardIterator(index);
+  }
+
+  @Override
   public int materializeSize() {
     return state.materializeSize();
+  }
+
+  @Override
+  public Iterator<E> materializeUnorderedIterator() {
+    return state.materializeUnorderedIterator();
   }
 
   protected final @NotNull ListMaterializer<E> getState() {

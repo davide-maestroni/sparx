@@ -27,12 +27,12 @@ abstract class AbstractSet<E, T extends AbstractSet<E, T>> extends
 
   @Override
   public boolean addAll(final @NotNull Collection<? extends E> c) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("addAll");
   }
 
   @Override
   public void clear() {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("clear");
   }
 
   @Override
@@ -48,17 +48,17 @@ abstract class AbstractSet<E, T extends AbstractSet<E, T>> extends
 
   @Override
   public boolean remove(final Object o) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("remove");
   }
 
   @Override
   public boolean removeAll(final @NotNull Collection<?> c) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("removeAll");
   }
 
   @Override
   public boolean retainAll(final @NotNull Collection<?> c) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("retainAll");
   }
 
   @Override

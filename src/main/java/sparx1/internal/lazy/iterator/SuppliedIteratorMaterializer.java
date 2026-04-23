@@ -21,20 +21,14 @@ import sparx1.util.annotation.NotNull;
 import sparx1.util.annotation.Positive;
 import sparx1.util.function.Supplier;
 
-public class SuppliedIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
+public abstract class SuppliedIteratorMaterializer<E> extends
+    StatefulIteratorMaterializer<E> implements Supplier<IteratorMaterializer<E>> {
 
-  public SuppliedIteratorMaterializer(
-      final @NotNull Supplier<IteratorMaterializer<E>> materializerSupplier) {
-    setState(new InitialState(materializerSupplier));
+  public SuppliedIteratorMaterializer() {
+    setState(new InitialState());
   }
 
   private class InitialState implements IteratorMaterializer<E> {
-
-    private final Supplier<IteratorMaterializer<E>> materializerSupplier;
-
-    private InitialState(final @NotNull Supplier<IteratorMaterializer<E>> materializerSupplier) {
-      this.materializerSupplier = materializerSupplier;
-    }
 
     @Override
     public int currentKnownSize() {
@@ -48,26 +42,22 @@ public class SuppliedIteratorMaterializer<E> extends StatefulIteratorMaterialize
 
     @Override
     public boolean materializeHasNext() {
-      try {
-        return setState(materializerSupplier.get()).materializeHasNext();
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
+      return materialize().materializeHasNext();
     }
 
     @Override
     public E materializeNext() {
-      try {
-        return setState(materializerSupplier.get()).materializeNext();
-      } catch (final Exception e) {
-        throw UncheckedException.throwUnchecked(e);
-      }
+      return materialize().materializeNext();
     }
 
     @Override
     public int materializeSkip(final @Positive int count) {
+      return materialize().materializeSkip(count);
+    }
+
+    private @NotNull IteratorMaterializer<E> materialize() {
       try {
-        return setState(materializerSupplier.get()).materializeSkip(count);
+        return setState(get());
       } catch (final Exception e) {
         throw UncheckedException.throwUnchecked(e);
       }

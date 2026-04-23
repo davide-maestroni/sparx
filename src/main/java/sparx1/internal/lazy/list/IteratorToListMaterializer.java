@@ -24,15 +24,15 @@ import sparx1.util.function.Functions;
 public class IteratorToListMaterializer<E> extends StatefulListMaterializer<E> {
 
   public IteratorToListMaterializer(final @NotNull Iterator<E> iterator) {
-    setState(new ImmaterialState(iterator));
+    setState(new InitialState(iterator));
   }
 
-  private class ImmaterialState extends AbstractListMaterializer<E> {
+  private class InitialState extends AbstractListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
     private final Iterator<E> iterator;
 
-    private ImmaterialState(final @NotNull Iterator<E> iterator) {
+    private InitialState(final @NotNull Iterator<E> iterator) {
       this.iterator = iterator;
     }
 
@@ -56,13 +56,13 @@ public class IteratorToListMaterializer<E> extends StatefulListMaterializer<E> {
     }
 
     @Override
-    public boolean isRandomAccess() {
-      return true;
+    public int knownSize() {
+      return -1;
     }
 
     @Override
-    public int knownSize() {
-      return -1;
+    public boolean isRandomAccess() {
+      return true;
     }
 
     @Override

@@ -51,13 +51,13 @@ public class CollectionToListMaterializer<E> extends StatefulListMaterializer<E>
     }
 
     @Override
-    public boolean isRandomAccess() {
-      return true;
+    public int knownSize() {
+      return elements.size();
     }
 
     @Override
-    public int knownSize() {
-      return elements.size();
+    public boolean isRandomAccess() {
+      return true;
     }
 
     @Override
@@ -132,13 +132,13 @@ public class CollectionToListMaterializer<E> extends StatefulListMaterializer<E>
     }
 
     @Override
-    public boolean isRandomAccess() {
-      return false;
+    public int knownSize() {
+      return elements.size();
     }
 
     @Override
-    public int knownSize() {
-      return elements.size();
+    public boolean isRandomAccess() {
+      return false;
     }
 
     @Override
@@ -174,20 +174,6 @@ public class CollectionToListMaterializer<E> extends StatefulListMaterializer<E>
     }
 
     @Override
-    public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
-      final Iterator<E> iterator = elements.iterator();
-      for (int i = 0; i < index && iterator.hasNext(); ++i) {
-        iterator.next();
-      }
-      return iterator;
-    }
-
-    @Override
-    public Iterator<E> materializeUnorderedIterator() {
-      return elements.iterator();
-    }
-
-    @Override
     public int materializeElements() {
       return elements.size();
     }
@@ -198,8 +184,22 @@ public class CollectionToListMaterializer<E> extends StatefulListMaterializer<E>
     }
 
     @Override
+    public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
+      final Iterator<E> iterator = elements.iterator();
+      for (int i = 0; i < index && iterator.hasNext(); ++i) {
+        iterator.next();
+      }
+      return iterator;
+    }
+
+    @Override
     public int materializeSize() {
       return elements.size();
+    }
+
+    @Override
+    public Iterator<E> materializeUnorderedIterator() {
+      return elements.iterator();
     }
   }
 }

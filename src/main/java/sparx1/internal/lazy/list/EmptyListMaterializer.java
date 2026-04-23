@@ -39,18 +39,23 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean isRandomAccess() {
-    return true;
-  }
-
-  @Override
   public int knownSize() {
     return 0;
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return true;
+  }
+
+  @Override
   public boolean isSizeKnown() {
     return true;
+  }
+
+  @Override
+  public @NotNull Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
+    throw new IndexOutOfBoundsException(Integer.toString(index));
   }
 
   @Override
@@ -64,21 +69,6 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
-    throw new IndexOutOfBoundsException(Integer.toString(index));
-  }
-
-  @Override
-  public @NotNull Iterator<E> materializeForwardIterator(final @NotNegative int index) {
-    throw new IndexOutOfBoundsException(Integer.toString(index));
-  }
-
-  @Override
-  public @NotNull Iterator<E> materializeUnorderedIterator() {
-    return Collections.<E>emptyList().iterator();
-  }
-
-  @Override
   public int materializeElements() {
     return 0;
   }
@@ -89,7 +79,17 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public @NotNull Iterator<E> materializeForwardIterator(final @NotNegative int index) {
+    throw new IndexOutOfBoundsException(Integer.toString(index));
+  }
+
+  @Override
   public int materializeSize() {
     return 0;
+  }
+
+  @Override
+  public @NotNull Iterator<E> materializeUnorderedIterator() {
+    return Collections.<E>emptyList().iterator();
   }
 }

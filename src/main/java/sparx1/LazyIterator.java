@@ -290,16 +290,6 @@ public class LazyIterator<E> extends Iterator<E> {
     };
   }
 
-  private static @NotNull <E> Supplier<IteratorMaterializer<E>> getIterableToIteratorMaterializer(
-      final @NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier) {
-    return new Supplier<IteratorMaterializer<E>>() {
-      @Override
-      public IteratorMaterializer<E> get() throws Exception {
-        return getElementsMaterializer(Require.notNull(supplier.get(), "elements"));
-      }
-    };
-  }
-
   private static @NotNull <E> Function<IteratorMaterializer<E>, Iterator<E>> getMaterializerToIterator() {
     return new Function<IteratorMaterializer<E>, Iterator<E>>() {
       @Override
@@ -334,14 +324,13 @@ public class LazyIterator<E> extends Iterator<E> {
   public @NotNull <F> Iterator<F> apply(
       final @NotNull Function<? super Iterator<E>, java.lang.Iterable<F>> function) {
     Require.notNull(function, "function");
-    return new LazyIterator<F>(
-        new SuppliedIteratorMaterializer<F>(new Supplier<IteratorMaterializer<F>>() {
-          @Override
-          public IteratorMaterializer<F> get() throws Exception {
-            return getElementsMaterializer(
-                Require.notNull(function.apply(LazyIterator.this), "elements"));
-          }
-        }));
+    return new LazyIterator<F>(new SuppliedIteratorMaterializer<F>() {
+      @Override
+      public IteratorMaterializer<F> get() throws Exception {
+        return getElementsMaterializer(
+            Require.notNull(function.apply(LazyIterator.this), "elements"));
+      }
+    });
   }
 
   @Override
@@ -995,16 +984,16 @@ public class LazyIterator<E> extends Iterator<E> {
       final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
-      return new LazyIterator<F>(
-          new SuppliedIteratorMaterializer<F>(new Supplier<IteratorMaterializer<F>>() {
-            @Override
-            public IteratorMaterializer<F> get() throws Exception {
-              if (condition.test(identity)) {
-                return new ElementToIteratorMaterializer<F>(identity);
-              }
-              return EmptyIteratorMaterializer.instance();
-            }
-          }));
+      Require.notNull(condition, "condition");
+      return new LazyIterator<F>(new SuppliedIteratorMaterializer<F>() {
+        @Override
+        public IteratorMaterializer<F> get() throws Exception {
+          if (condition.test(identity)) {
+            return new ElementToIteratorMaterializer<F>(identity);
+          }
+          return EmptyIteratorMaterializer.instance();
+        }
+      });
     }
     return new LazyIterator<F>(new FoldWhileIteratorMaterializer<E, F>(materializer, identity,
         Require.notNull(condition, "condition"), Require.notNull(operation, "operation")));
@@ -1399,8 +1388,13 @@ public class LazyIterator<E> extends Iterator<E> {
   public @NotNull Iterator<E> orElseGet(
       final @NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier) {
     final IteratorMaterializer<E> materializer = this.materializer;
-    final SuppliedIteratorMaterializer<E> elementsMaterializer = new SuppliedIteratorMaterializer<E>(
-        getIterableToIteratorMaterializer(Require.notNull(supplier, "supplier")));
+    Require.notNull(supplier, "supplier");
+    final SuppliedIteratorMaterializer<E> elementsMaterializer = new SuppliedIteratorMaterializer<E>() {
+      @Override
+      public IteratorMaterializer<E> get() throws Exception {
+        return getElementsMaterializer(Require.notNull(supplier.get(), "elements"));
+      }
+    };
     if (materializer.currentKnownSize() == 0) {
       return new LazyIterator<E>(elementsMaterializer);
     }

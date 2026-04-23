@@ -39,29 +39,18 @@ public class ListToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public boolean isRandomAccess() {
-    return isRandomAccess;
-  }
-
-  @Override
   public int knownSize() {
     return elements.size();
   }
 
   @Override
+  public boolean isRandomAccess() {
+    return isRandomAccess;
+  }
+
+  @Override
   public boolean isSizeKnown() {
     return true;
-  }
-
-  @Override
-  @SuppressWarnings("SuspiciousMethodCalls")
-  public boolean materializeContains(final Object element) {
-    return elements.contains(element);
-  }
-
-  @Override
-  public E materializeElement(final @NotNegative int index) {
-    return elements.get(index);
   }
 
   @Override
@@ -86,13 +75,14 @@ public class ListToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
-    return elements.listIterator(index);
+  @SuppressWarnings("SuspiciousMethodCalls")
+  public boolean materializeContains(final Object element) {
+    return elements.contains(element);
   }
 
   @Override
-  public Iterator<E> materializeUnorderedIterator() {
-    return elements.iterator();
+  public E materializeElement(final @NotNegative int index) {
+    return elements.get(index);
   }
 
   @Override
@@ -106,7 +96,17 @@ public class ListToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
+  public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
+    return elements.listIterator(index);
+  }
+
+  @Override
   public int materializeSize() {
     return elements.size();
+  }
+
+  @Override
+  public Iterator<E> materializeUnorderedIterator() {
+    return elements.iterator();
   }
 }
