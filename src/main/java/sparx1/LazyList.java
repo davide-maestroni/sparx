@@ -238,69 +238,359 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public void doFor(Consumer<? super E> elementConsumer) {
-
+  public void doFor(@NotNull final Consumer<? super E> elementConsumer) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return;
+    }
+    try {
+      if (knownSize > 0) {
+        for (int i = 0; i < knownSize; ++i) {
+          elementConsumer.accept(materializer.materializeElement(i));
+        }
+      } else {
+        int i = 0;
+        while (materializer.canMaterializeElement(i)) {
+          elementConsumer.accept(materializer.materializeElement(i));
+          ++i;
+        }
+      }
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
+    }
   }
 
   @Override
-  public void doFor(Consumer<? super E> elementConsumer, Action endAction) {
-
+  public void doFor(@NotNull final Consumer<? super E> elementConsumer,
+      @NotNull final Action endAction) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    try {
+      if (knownSize == 0) {
+        endAction.run();
+        return;
+      }
+      if (knownSize > 0) {
+        for (int i = 0; i < knownSize; ++i) {
+          elementConsumer.accept(materializer.materializeElement(i));
+        }
+      } else {
+        int i = 0;
+        while (materializer.canMaterializeElement(i)) {
+          elementConsumer.accept(materializer.materializeElement(i));
+          ++i;
+        }
+      }
+      endAction.run();
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
+    }
   }
 
   @Override
-  public void doFor(Consumer<? super E> elementConsumer, Action endAction,
-      Consumer<? super Throwable> errorConsumer) {
-
+  public void doFor(@NotNull final Consumer<? super E> elementConsumer,
+      @NotNull final Action endAction, @NotNull final Consumer<? super Throwable> errorConsumer) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    try {
+      if (knownSize == 0) {
+        endAction.run();
+        return;
+      }
+      if (knownSize > 0) {
+        for (int i = 0; i < knownSize; ++i) {
+          elementConsumer.accept(materializer.materializeElement(i));
+        }
+      } else {
+        int i = 0;
+        while (materializer.canMaterializeElement(i)) {
+          elementConsumer.accept(materializer.materializeElement(i));
+          ++i;
+        }
+      }
+      endAction.run();
+    } catch (final Exception e) {
+      try {
+        errorConsumer.accept(e);
+      } catch (final Exception ex) {
+        throw UncheckedException.throwUnchecked(ex);
+      }
+    }
   }
 
   @Override
-  public void doFor(IndexedConsumer<? super E> elementConsumer) {
-
+  public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return;
+    }
+    try {
+      if (knownSize > 0) {
+        for (int i = 0; i < knownSize; ++i) {
+          elementConsumer.accept(i, materializer.materializeElement(i));
+        }
+      } else {
+        int i = 0;
+        while (materializer.canMaterializeElement(i)) {
+          elementConsumer.accept(i, materializer.materializeElement(i));
+          ++i;
+        }
+      }
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
+    }
   }
 
   @Override
-  public void doFor(IndexedConsumer<? super E> elementConsumer,
-      Consumer<? super Integer> endConsumer) {
-
+  public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer,
+      @NotNull final Consumer<? super Integer> endConsumer) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    try {
+      if (knownSize == 0) {
+        endConsumer.accept(0);
+        return;
+      }
+      int i = 0;
+      if (knownSize > 0) {
+        while (i < knownSize) {
+          final int index = i++;
+          elementConsumer.accept(index, materializer.materializeElement(index));
+        }
+      } else {
+        while (materializer.canMaterializeElement(i)) {
+          final int index = i++;
+          elementConsumer.accept(index, materializer.materializeElement(index));
+        }
+      }
+      endConsumer.accept(i);
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
+    }
   }
 
   @Override
-  public void doFor(IndexedConsumer<? super E> elementConsumer,
-      Consumer<? super Integer> endConsumer, IndexedConsumer<? super Throwable> errorConsumer) {
-
+  public void doFor(@NotNull final IndexedConsumer<? super E> elementConsumer,
+      @NotNull final Consumer<? super Integer> endConsumer,
+      @NotNull final IndexedConsumer<? super Throwable> errorConsumer) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    int i = 0;
+    try {
+      if (knownSize == 0) {
+        endConsumer.accept(0);
+        return;
+      }
+      if (knownSize > 0) {
+        while (i < knownSize) {
+          final int index = i++;
+          elementConsumer.accept(index, materializer.materializeElement(index));
+        }
+      } else {
+        while (materializer.canMaterializeElement(i)) {
+          final int index = i++;
+          elementConsumer.accept(index, materializer.materializeElement(index));
+        }
+      }
+      endConsumer.accept(i);
+    } catch (final Exception e) {
+      try {
+        errorConsumer.accept(i, e);
+      } catch (final Exception ex) {
+        throw UncheckedException.throwUnchecked(ex);
+      }
+    }
   }
 
   @Override
-  public void doWhile(IndexedPredicate<? super E> elementPredicate) {
-
+  public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return;
+    }
+    try {
+      if (knownSize > 0) {
+        for (int i = 0; i < knownSize; ++i) {
+          if (!elementPredicate.test(i, materializer.materializeElement(i))) {
+            break;
+          }
+        }
+      } else {
+        int i = 0;
+        while (materializer.canMaterializeElement(i)) {
+          if (!elementPredicate.test(i, materializer.materializeElement(i))) {
+            break;
+          }
+          ++i;
+        }
+      }
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
+    }
   }
 
   @Override
-  public void doWhile(IndexedPredicate<? super E> elementPredicate,
-      Consumer<? super Integer> endConsumer) {
-
+  public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate,
+      @NotNull final Consumer<? super Integer> endConsumer) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    try {
+      if (knownSize == 0) {
+        endConsumer.accept(0);
+        return;
+      }
+      int i = 0;
+      if (knownSize > 0) {
+        while (i < knownSize) {
+          final int index = i++;
+          if (!elementPredicate.test(index, materializer.materializeElement(index))) {
+            return;
+          }
+        }
+      } else {
+        while (materializer.canMaterializeElement(i)) {
+          if (!elementPredicate.test(i, materializer.materializeElement(i))) {
+            return;
+          }
+          ++i;
+        }
+      }
+      endConsumer.accept(i);
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
+    }
   }
 
   @Override
-  public void doWhile(IndexedPredicate<? super E> elementPredicate,
-      Consumer<? super Integer> endConsumer, IndexedConsumer<? super Throwable> errorConsumer) {
-
+  public void doWhile(@NotNull final IndexedPredicate<? super E> elementPredicate,
+      @NotNull final Consumer<? super Integer> endConsumer,
+      @NotNull final IndexedConsumer<? super Throwable> errorConsumer) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    int i = 0;
+    try {
+      if (knownSize == 0) {
+        endConsumer.accept(0);
+        return;
+      }
+      if (knownSize > 0) {
+        while (i < knownSize) {
+          final int index = i++;
+          if (!elementPredicate.test(index, materializer.materializeElement(index))) {
+            return;
+          }
+        }
+      } else {
+        while (materializer.canMaterializeElement(i)) {
+          if (!elementPredicate.test(i, materializer.materializeElement(i))) {
+            return;
+          }
+          ++i;
+        }
+      }
+      endConsumer.accept(i);
+    } catch (final Exception e) {
+      try {
+        errorConsumer.accept(i, e);
+      } catch (final Exception ex) {
+        throw UncheckedException.throwUnchecked(ex);
+      }
+    }
   }
 
   @Override
-  public void doWhile(Predicate<? super E> elementPredicate) {
-
+  public void doWhile(@NotNull final Predicate<? super E> elementPredicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return;
+    }
+    try {
+      if (knownSize > 0) {
+        for (int i = 0; i < knownSize; ++i) {
+          if (!elementPredicate.test(materializer.materializeElement(i))) {
+            break;
+          }
+        }
+      } else {
+        int i = 0;
+        while (materializer.canMaterializeElement(i)) {
+          if (!elementPredicate.test(materializer.materializeElement(i))) {
+            break;
+          }
+          ++i;
+        }
+      }
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
+    }
   }
 
   @Override
-  public void doWhile(Predicate<? super E> elementPredicate, Action endAction) {
-
+  public void doWhile(@NotNull final Predicate<? super E> elementPredicate,
+      @NotNull final Action endAction) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    try {
+      if (knownSize == 0) {
+        endAction.run();
+        return;
+      }
+      int i = 0;
+      if (knownSize > 0) {
+        while (i < knownSize) {
+          if (!elementPredicate.test(materializer.materializeElement(i++))) {
+            return;
+          }
+        }
+      } else {
+        while (materializer.canMaterializeElement(i)) {
+          if (!elementPredicate.test(materializer.materializeElement(i++))) {
+            return;
+          }
+        }
+      }
+      endAction.run();
+    } catch (final Exception e) {
+      throw UncheckedException.throwUnchecked(e);
+    }
   }
 
   @Override
-  public void doWhile(Predicate<? super E> elementPredicate, Action endAction,
-      Consumer<? super Throwable> errorConsumer) {
-
+  public void doWhile(@NotNull final Predicate<? super E> elementPredicate,
+      @NotNull final Action endAction, @NotNull final Consumer<? super Throwable> errorConsumer) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    try {
+      if (knownSize == 0) {
+        endAction.run();
+        return;
+      }
+      int i = 0;
+      if (knownSize > 0) {
+        while (i < knownSize) {
+          if (!elementPredicate.test(materializer.materializeElement(i++))) {
+            return;
+          }
+        }
+      } else {
+        while (materializer.canMaterializeElement(i)) {
+          if (!elementPredicate.test(materializer.materializeElement(i++))) {
+            return;
+          }
+        }
+      }
+      endAction.run();
+    } catch (final Exception e) {
+      try {
+        errorConsumer.accept(e);
+      } catch (final Exception ex) {
+        throw UncheckedException.throwUnchecked(ex);
+      }
+    }
   }
 
   @Override
