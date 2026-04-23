@@ -20,6 +20,7 @@ import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
+import sparx1.util.function.Functions;
 
 public abstract class AbstractListMaterializer<E> implements ListMaterializer<E> {
 
@@ -29,6 +30,17 @@ public abstract class AbstractListMaterializer<E> implements ListMaterializer<E>
       return Collections.<E>emptyList().iterator();
     }
     return new BackwardIterator<E>(this, index);
+  }
+
+  @Override
+  public boolean materializeContains(final Object element) {
+    final Iterator<E> iterator = materializeUnorderedIterator();
+    while (iterator.hasNext()) {
+      if (Functions.objectsEqual(element, iterator.next())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override

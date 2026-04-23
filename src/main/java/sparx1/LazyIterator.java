@@ -27,6 +27,7 @@ import static sparx1.util.function.Functions.toNegatedIndexedPredicate;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.RandomAccess;
 import sparx1.internal.lazy.IteratorMaterializer;
 import sparx1.internal.lazy.ListMaterializer;
@@ -149,18 +150,9 @@ public class LazyIterator<E> extends Iterator<E> {
     return (LazyIterator<E>) EMPTY_ITERATOR;
   }
 
-  static @NotNull <E> LazyIterator<E> wrappedIterator(
-      final @NotNull Iterable<? extends E> elements) {
-    return new LazyIterator<E>(getElementsMaterializer(elements));
-  }
-
-  private static @NotNull <E> LazyIterator<E> elementIterator(final @Nullable E element) {
-    return new LazyIterator<E>(new ElementToIteratorMaterializer<E>(element));
-  }
-
   @SuppressWarnings("unchecked")
-  private static @NotNull <E> IteratorMaterializer<E> getElementsMaterializer(
-      final @NotNull java.lang.Iterable<? extends E> elements) {
+  static @NotNull <E> IteratorMaterializer<E> getElementsMaterializer(
+      final @NotNull Iterable<? extends E> elements) {
     if (elements instanceof LazyIterator) {
       return ((LazyIterator<E>) elements).materializer;
     }
@@ -176,8 +168,8 @@ public class LazyIterator<E> extends Iterator<E> {
       return new IteratorToIteratorMaterializer<E>(materializer.materializeForwardIterator(0),
           knownSize);
     }
-    if (elements instanceof java.util.List) {
-      final java.util.List<E> list = (java.util.List<E>) elements;
+    if (elements instanceof List) {
+      final List<E> list = (List<E>) elements;
       if (list.isEmpty()) {
         return EmptyIteratorMaterializer.instance();
       }
@@ -196,11 +188,15 @@ public class LazyIterator<E> extends Iterator<E> {
     return new IteratorToIteratorMaterializer<E>(elements.iterator());
   }
 
-  private static @NotNull <E, F> Function<java.util.List<E>, IteratorMaterializer<F>> getElementsToMaterializer(
-      final @NotNull Function<? super java.util.List<E>, ? extends java.lang.Iterable<? extends F>> mapper) {
-    return new Function<java.util.List<E>, IteratorMaterializer<F>>() {
+  private static @NotNull <E> LazyIterator<E> elementIterator(final @Nullable E element) {
+    return new LazyIterator<E>(new ElementToIteratorMaterializer<E>(element));
+  }
+
+  private static @NotNull <E, F> Function<List<E>, IteratorMaterializer<F>> getElementsToMaterializer(
+      final @NotNull Function<? super List<E>, ? extends Iterable<? extends F>> mapper) {
+    return new Function<List<E>, IteratorMaterializer<F>>() {
       @Override
-      public IteratorMaterializer<F> apply(final java.util.List<E> elements) throws Exception {
+      public IteratorMaterializer<F> apply(final List<E> elements) throws Exception {
         return getElementsMaterializer(Require.notNull(mapper.apply(elements), "elements"));
       }
     };
@@ -208,7 +204,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   private static @NotNull <E, T extends Throwable> IndexedFunction<Throwable, IteratorMaterializer<E>> getExceptionToMaterializer(
       final @NotNull Class<T> exceptionType,
-      final @NotNull Function<? super T, ? extends java.lang.Iterable<? extends E>> mapper) {
+      final @NotNull Function<? super T, ? extends Iterable<? extends E>> mapper) {
     return new IndexedFunction<Throwable, IteratorMaterializer<E>>() {
       @Override
       @SuppressWarnings("unchecked")
@@ -227,7 +223,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   private static @NotNull <E, T extends Throwable> IndexedFunction<Throwable, IteratorMaterializer<E>> getExceptionToMaterializer(
       final @NotNull Class<T> exceptionType,
-      final @NotNull IndexedFunction<? super T, ? extends java.lang.Iterable<? extends E>> mapper) {
+      final @NotNull IndexedFunction<? super T, ? extends Iterable<? extends E>> mapper) {
     return new IndexedFunction<Throwable, IteratorMaterializer<E>>() {
       @Override
       @SuppressWarnings("unchecked")
@@ -249,7 +245,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   private static @NotNull <E, F> IndexedFunction<E, IteratorMaterializer<F>> getIndexedElementToMaterializer(
-      final @NotNull Function<? super E, ? extends java.lang.Iterable<? extends F>> mapper) {
+      final @NotNull Function<? super E, ? extends Iterable<? extends F>> mapper) {
     return new IndexedFunction<E, IteratorMaterializer<F>>() {
       @Override
       public IteratorMaterializer<F> apply(final int index, final E element) throws Exception {
@@ -259,7 +255,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   private static @NotNull <E, F> IndexedFunction<E, IteratorMaterializer<F>> getIndexedElementToMaterializer(
-      final @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<? extends F>> mapper) {
+      final @NotNull IndexedFunction<? super E, ? extends Iterable<? extends F>> mapper) {
     return new IndexedFunction<E, IteratorMaterializer<F>>() {
       @Override
       public IteratorMaterializer<F> apply(final int index, final E element) throws Exception {
@@ -268,22 +264,22 @@ public class LazyIterator<E> extends Iterator<E> {
     };
   }
 
-  private static @NotNull <E, F> IndexedFunction<java.util.List<E>, IteratorMaterializer<F>> getIndexedElementsToMaterializer(
-      final @NotNull Function<? super java.util.List<E>, ? extends java.lang.Iterable<? extends F>> mapper) {
-    return new IndexedFunction<java.util.List<E>, IteratorMaterializer<F>>() {
+  private static @NotNull <E, F> IndexedFunction<List<E>, IteratorMaterializer<F>> getIndexedElementsToMaterializer(
+      final @NotNull Function<? super List<E>, ? extends Iterable<? extends F>> mapper) {
+    return new IndexedFunction<List<E>, IteratorMaterializer<F>>() {
       @Override
-      public IteratorMaterializer<F> apply(final int index, final java.util.List<E> elements)
+      public IteratorMaterializer<F> apply(final int index, final List<E> elements)
           throws Exception {
         return getElementsMaterializer(Require.notNull(mapper.apply(elements), "elements"));
       }
     };
   }
 
-  private static @NotNull <E, F> IndexedFunction<java.util.List<E>, IteratorMaterializer<F>> getIndexedElementsToMaterializer(
-      final @NotNull IndexedFunction<? super java.util.List<E>, ? extends java.lang.Iterable<? extends F>> mapper) {
-    return new IndexedFunction<java.util.List<E>, IteratorMaterializer<F>>() {
+  private static @NotNull <E, F> IndexedFunction<List<E>, IteratorMaterializer<F>> getIndexedElementsToMaterializer(
+      final @NotNull IndexedFunction<? super List<E>, ? extends Iterable<? extends F>> mapper) {
+    return new IndexedFunction<List<E>, IteratorMaterializer<F>>() {
       @Override
-      public IteratorMaterializer<F> apply(final int index, final java.util.List<E> elements)
+      public IteratorMaterializer<F> apply(final int index, final List<E> elements)
           throws Exception {
         return getElementsMaterializer(Require.notNull(mapper.apply(index, elements), "elements"));
       }
@@ -309,7 +305,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> appendAll(final @NotNull java.lang.Iterable<? extends E> elements) {
+  public @NotNull Iterator<E> appendAll(final @NotNull Iterable<? extends E> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
         Require.notNull(elements, "elements"));
@@ -322,7 +318,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull <F> Iterator<F> apply(
-      final @NotNull Function<? super Iterator<E>, java.lang.Iterable<F>> function) {
+      final @NotNull Function<? super Iterator<E>, Iterable<F>> function) {
     Require.notNull(function, "function");
     return new LazyIterator<F>(new SuppliedIteratorMaterializer<F>() {
       @Override
@@ -349,7 +345,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> diff(final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<E> diff(final @NotNull Iterable<?> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -672,7 +668,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<Boolean> endsWith(final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<Boolean> endsWith(final @NotNull Iterable<?> elements) {
     if (getKnownSize(elements) == 0) {
       return elementIterator(true);
     }
@@ -820,8 +816,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<Integer> findFirstIndexOfSequence(
-      final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<Integer> findFirstIndexOfSequence(final @NotNull Iterable<?> elements) {
     if (getKnownSize(elements) == 0) {
       return elementIterator(0);
     }
@@ -898,8 +893,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<Integer> findLastIndexOfSequence(
-      final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<Integer> findLastIndexOfSequence(final @NotNull Iterable<?> elements) {
     if (getKnownSize(elements) == 0) {
       return elementIterator(size());
     }
@@ -910,7 +904,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull <F> Iterator<F> flatMap(
-      final @NotNull Function<? super E, ? extends java.lang.Iterable<F>> mapper) {
+      final @NotNull Function<? super E, ? extends Iterable<F>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -921,7 +915,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull <F> Iterator<F> flatMap(
-      final @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<F>> mapper) {
+      final @NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -932,7 +926,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> flatMapWhile(final @NotNull IndexedPredicate<? super E> condition,
-      final @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<? extends E>> mapper) {
+      final @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -944,7 +938,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> flatMapWhile(final @NotNull Predicate<? super E> condition,
-      final @NotNull Function<? super E, ? extends java.lang.Iterable<? extends E>> mapper) {
+      final @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1013,7 +1007,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<Boolean> includesAll(final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<Boolean> includesAll(final @NotNull Iterable<?> elements) {
     if (getKnownSize(elements) == 0) {
       return elementIterator(true);
     }
@@ -1022,8 +1016,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<Boolean> includesSequence(
-      final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<Boolean> includesSequence(final @NotNull Iterable<?> elements) {
     if (getKnownSize(elements) == 0) {
       return elementIterator(false);
     }
@@ -1062,7 +1055,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> insertAll(final @NotNull java.lang.Iterable<? extends E> elements) {
+  public @NotNull Iterator<E> insertAll(final @NotNull Iterable<? extends E> elements) {
     if (getKnownSize(elements) == 0) {
       return iterator();
     }
@@ -1072,7 +1065,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> insertAllAfter(final int numElements,
-      final @NotNull java.lang.Iterable<? extends E> elements) {
+      final @NotNull Iterable<? extends E> elements) {
     if (numElements < 0 || numElements == Integer.MAX_VALUE) {
       return iterator();
     }
@@ -1097,7 +1090,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> interleave(final @NotNull java.lang.Iterable<? extends E> elements) {
+  public @NotNull Iterator<E> interleave(final @NotNull Iterable<? extends E> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0 || getKnownSize(elements) == 0) {
       return emptyIterator();
@@ -1107,8 +1100,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> interleaveInner(
-      final @NotNull java.lang.Iterable<? extends E> elements) {
+  public @NotNull Iterator<E> interleaveInner(final @NotNull Iterable<? extends E> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1119,8 +1111,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> interleaveInnerWithPadding(
-      final @NotNull java.lang.Iterable<? extends E> elements, final E paddingLeft,
-      final E paddingRight) {
+      final @NotNull Iterable<? extends E> elements, final E paddingLeft, final E paddingRight) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0 || getKnownSize(elements) == 0) {
       return elementIterator(paddingLeft);
@@ -1130,9 +1121,8 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> interleaveWithPadding(
-      final @NotNull java.lang.Iterable<? extends E> elements, final E paddingLeft,
-      final E paddingRight) {
+  public @NotNull Iterator<E> interleaveWithPadding(final @NotNull Iterable<? extends E> elements,
+      final E paddingLeft, final E paddingRight) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0 || getKnownSize(elements) == 0) {
       return emptyIterator();
@@ -1142,7 +1132,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> intersect(final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<E> intersect(final @NotNull Iterable<?> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0 || getKnownSize(elements) == 0) {
       return emptyIterator();
@@ -1291,7 +1281,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> minusAll(final @NotNull java.lang.Iterable<? extends E> elements) {
+  public @NotNull Iterator<E> minusAll(final @NotNull Iterable<? extends E> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1372,7 +1362,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> orElse(final @NotNull java.lang.Iterable<? extends E> elements) {
+  public @NotNull Iterator<E> orElse(final @NotNull Iterable<? extends E> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     final int knownSize = materializer.currentKnownSize();
     final IteratorMaterializer<E> elementsMaterializer = getElementsMaterializer(
@@ -1386,7 +1376,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> orElseGet(
-      final @NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier) {
+      final @NotNull Supplier<? extends Iterable<? extends E>> supplier) {
     final IteratorMaterializer<E> materializer = this.materializer;
     Require.notNull(supplier, "supplier");
     final SuppliedIteratorMaterializer<E> elementsMaterializer = new SuppliedIteratorMaterializer<E>() {
@@ -1508,7 +1498,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> plusAll(final @NotNull java.lang.Iterable<? extends E> elements) {
+  public @NotNull Iterator<E> plusAll(final @NotNull Iterable<? extends E> elements) {
     return appendAll(elements);
   }
 
@@ -1575,7 +1565,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> removeFirstSequence(final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<E> removeFirstSequence(final @NotNull Iterable<?> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1610,7 +1600,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> removeLastSequence(final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<E> removeLastSequence(final @NotNull Iterable<?> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1625,7 +1615,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> removeSequence(final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<E> removeSequence(final @NotNull Iterable<?> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1682,8 +1672,8 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> replaceFirstSequence(final @NotNull java.lang.Iterable<?> elements,
-      final @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper) {
+  public @NotNull Iterator<E> replaceFirstSequence(final @NotNull Iterable<?> elements,
+      final @NotNull Function<? super List<E>, Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1699,8 +1689,8 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> replaceLastSequence(final @NotNull java.lang.Iterable<?> elements,
-      final @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper) {
+  public @NotNull Iterator<E> replaceLastSequence(final @NotNull Iterable<?> elements,
+      final @NotNull Function<? super List<E>, Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1716,8 +1706,8 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> replaceSequence(final @NotNull java.lang.Iterable<?> elements,
-      final @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper) {
+  public @NotNull Iterator<E> replaceSequence(final @NotNull Iterable<?> elements,
+      final @NotNull Function<? super List<E>, Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1733,8 +1723,8 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> replaceSequence(final @NotNull java.lang.Iterable<?> elements,
-      final @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper) {
+  public @NotNull Iterator<E> replaceSequence(final @NotNull Iterable<?> elements,
+      final @NotNull IndexedFunction<? super List<E>, Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1751,7 +1741,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> replaceSlice(final int start, final int end,
-      final @NotNull java.lang.Iterable<? extends E> patch) {
+      final @NotNull Iterable<? extends E> patch) {
     if (end >= 0 && start >= end) {
       return insertAllAfter(start, patch);
     }
@@ -1908,7 +1898,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<Boolean> startsWith(final @NotNull java.lang.Iterable<?> elements) {
+  public @NotNull Iterator<Boolean> startsWith(final @NotNull Iterable<?> elements) {
     if (getKnownSize(elements) == 0) {
       return elementIterator(true);
     }
@@ -1923,7 +1913,7 @@ public class LazyIterator<E> extends Iterator<E> {
   @Override
   public @NotNull <X extends Throwable> Iterator<E> switchExceptionally(
       final @NotNull Class<X> exceptionType,
-      final @NotNull Function<? super X, ? extends java.lang.Iterable<? extends E>> mapper) {
+      final @NotNull Function<? super X, ? extends Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1936,7 +1926,7 @@ public class LazyIterator<E> extends Iterator<E> {
   @Override
   public @NotNull <X extends Throwable> Iterator<E> switchExceptionally(
       final @NotNull Class<X> exceptionType,
-      final @NotNull IndexedFunction<? super X, ? extends java.lang.Iterable<? extends E>> mapper) {
+      final @NotNull IndexedFunction<? super X, ? extends Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1948,7 +1938,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> switchExceptionally(
-      final @NotNull Function<? super Throwable, ? extends java.lang.Iterable<? extends E>> mapper) {
+      final @NotNull Function<? super Throwable, ? extends Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1959,7 +1949,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<E> switchExceptionally(
-      final @NotNull IndexedFunction<? super Throwable, ? extends java.lang.Iterable<? extends E>> mapper) {
+      final @NotNull IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return emptyIterator();
@@ -1969,8 +1959,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> symmetricDiff(
-      final @NotNull java.lang.Iterable<? extends E> elements) {
+  public @NotNull Iterator<E> symmetricDiff(final @NotNull Iterable<? extends E> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return new LazyIterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
@@ -2033,7 +2022,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> union(final @NotNull java.lang.Iterable<? extends E> elements) {
+  public @NotNull Iterator<E> union(final @NotNull Iterable<? extends E> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0) {
       return new LazyIterator<E>(getElementsMaterializer(Require.notNull(elements, "elements")));
@@ -2046,7 +2035,7 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull <F> Iterator<ZipEntry<E, F>> zip(final @NotNull java.lang.Iterable<F> elements) {
+  public @NotNull <F> Iterator<ZipEntry<E, F>> zip(final @NotNull Iterable<F> elements) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0 || getKnownSize(elements) == 0) {
       return emptyIterator();
@@ -2056,8 +2045,8 @@ public class LazyIterator<E> extends Iterator<E> {
   }
 
   @Override
-  public @NotNull <F> Iterator<ZipEntry<E, F>> zipWithPadding(
-      final @NotNull java.lang.Iterable<F> elements, final E paddingLeft, final F paddingRight) {
+  public @NotNull <F> Iterator<ZipEntry<E, F>> zipWithPadding(final @NotNull Iterable<F> elements,
+      final E paddingLeft, final F paddingRight) {
     final IteratorMaterializer<E> materializer = this.materializer;
     if (materializer.currentKnownSize() == 0 && getKnownSize(elements) == 0) {
       return emptyIterator();

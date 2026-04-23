@@ -15,11 +15,19 @@
  */
 package sparx1;
 
+import static sparx1.lazy.getKnownSize;
+import static sparx1.util.function.Functions.indexedIdentity;
+import static sparx1.util.function.Functions.toIndexedFunction;
+
+import java.util.Collection;
 import java.util.Comparator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.internal.lazy.list.AppendAllListMaterializer;
 import sparx1.internal.lazy.list.AppendListMaterializer;
 import sparx1.internal.lazy.list.CollectionToListMaterializer;
+import sparx1.internal.lazy.list.CountListMaterializer;
+import sparx1.internal.lazy.list.DiffListMaterializer;
+import sparx1.internal.lazy.list.DistinctByListMaterializer;
 import sparx1.internal.lazy.list.ElementToListMaterializer;
 import sparx1.internal.lazy.list.EmptyListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
@@ -33,6 +41,7 @@ import sparx1.util.Require;
 import sparx1.util.UncheckedException;
 import sparx1.util.ZipEntry;
 import sparx1.util.annotation.NotNull;
+import sparx1.util.annotation.Nullable;
 import sparx1.util.function.Action;
 import sparx1.util.function.BinaryFunction;
 import sparx1.util.function.Consumer;
@@ -70,6 +79,11 @@ public class LazyList<E> extends List<E> {
   }
 
   @SuppressWarnings("unchecked")
+  static @NotNull <E> LazyList<E> emptyList() {
+    return (LazyList<E>) EMPTY_LIST;
+  }
+
+  @SuppressWarnings("unchecked")
   static @NotNull <E> ListMaterializer<E> getElementsMaterializer(
       final @NotNull Iterable<? extends E> elements) {
     if (elements instanceof LazyList) {
@@ -86,14 +100,18 @@ public class LazyList<E> extends List<E> {
       }
       return new ListToListMaterializer<E>(list);
     }
-    if (elements instanceof java.util.Collection) {
-      final java.util.Collection<E> collection = (java.util.Collection<E>) elements;
+    if (elements instanceof Collection) {
+      final Collection<E> collection = (Collection<E>) elements;
       if (collection.isEmpty()) {
         return EmptyListMaterializer.instance();
       }
       return new CollectionToListMaterializer<E>(collection);
     }
     return new IteratorToListMaterializer<E>((java.util.Iterator<E>) elements.iterator());
+  }
+
+  private static @NotNull <E> LazyList<E> elementList(final @Nullable E element) {
+    return new LazyList<E>(new ElementToListMaterializer<E>(element));
   }
 
   @Override
@@ -156,28 +174,67 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<Integer> count() {
-    return null;
+  public boolean contains(final Object o) {
+    return materializer.materializeContains(o);
   }
 
   @Override
-  public List<E> diff(Iterable<?> elements) {
-    return null;
+  public List<Integer> count() {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return ZERO_LIST;
+    }
+    if (knownSize > 0) {
+      return elementList(knownSize);
+    }
+    return new LazyList<Integer>(new CountListMaterializer<E>(materializer));
+  }
+
+  @Override
+  public List<E> diff(final @NotNull Iterable<?> elements) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    if (getKnownSize(elements) == 0) {
+      return this;
+    }
+    return new LazyList<E>(new DiffListMaterializer<E>(materializer,
+        getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
   public List<E> distinct() {
-    return null;
+    return distinctBy(indexedIdentity());
   }
 
   @Override
-  public <K> List<E> distinctBy(Function<? super E, K> keyExtractor) {
-    return null;
+  public <K> List<E> distinctBy(final @NotNull Function<? super E, K> keyExtractor) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return emptyList();
+    }
+    if (knownSize == 1) {
+      return this;
+    }
+    return new LazyList<E>(new DistinctByListMaterializer<E, K>(materializer,
+        toIndexedFunction(keyExtractor, "keyExtractor")));
   }
 
   @Override
-  public <K> List<E> distinctBy(IndexedFunction<? super E, K> keyExtractor) {
-    return null;
+  public <K> List<E> distinctBy(final @NotNull IndexedFunction<? super E, K> keyExtractor) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return emptyList();
+    }
+    if (knownSize == 1) {
+      return this;
+    }
+    return new LazyList<E>(new DistinctByListMaterializer<E, K>(materializer,
+        Require.notNull(keyExtractor, "keyExtractor")));
   }
 
   @Override
@@ -980,5 +1037,9 @@ public class LazyList<E> extends List<E> {
   public <F> List<ZipEntry<E, F>> zipWithPadding(Iterable<F> elements, E paddingLeft,
       F paddingRight) {
     return null;
+  }
+
+  int knownSize() {
+    return materializer.knownSize();
   }
 }

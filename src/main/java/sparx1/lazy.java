@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import sparx1.internal.lazy.iterator.ArrayToIteratorMaterializer;
 import sparx1.internal.lazy.iterator.CharSequenceToIteratorMaterializer;
@@ -61,15 +62,15 @@ public class lazy {
   private lazy() {
   }
 
-  static int getKnownSize(final java.lang.Iterable<?> elements) {
-//    if (elements instanceof List) {
-//      return ((List<?>) elements).knownSize();
-//    }
+  static int getKnownSize(final Iterable<?> elements) {
+    if (elements instanceof LazyList) {
+      return ((LazyList<?>) elements).knownSize();
+    }
     if (elements instanceof LazyIterator) {
       return ((LazyIterator<?>) elements).knownSize();
     }
-    if (elements instanceof java.util.Collection) {
-      return ((java.util.Collection<?>) elements).size();
+    if (elements instanceof Collection) {
+      return ((Collection<?>) elements).size();
     }
     return -1;
   }
@@ -254,7 +255,8 @@ public class lazy {
       if (elements instanceof Iterator) {
         return (Iterator<E>) elements;
       }
-      return LazyIterator.wrappedIterator(Require.notNull(elements, "elements"));
+      return new LazyIterator<E>(
+          LazyIterator.getElementsMaterializer(Require.notNull(elements, "elements")));
     }
 
     @SuppressWarnings("unchecked")
@@ -271,12 +273,11 @@ public class lazy {
     public abstract @NotNull Iterator<E> append(@Nullable E element);
 
     @Override
-    public abstract @NotNull Iterator<E> appendAll(
-        @NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull Iterator<E> appendAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull <F> Iterator<F> apply(
-        @NotNull Function<? super Iterator<E>, java.lang.Iterable<F>> function);
+        @NotNull Function<? super Iterator<E>, Iterable<F>> function);
 
     @Override
     public abstract @NotNull <F> Iterator<F> cast();
@@ -285,7 +286,7 @@ public class lazy {
     public abstract @NotNull Iterator<Integer> count();
 
     @Override
-    public abstract @NotNull Iterator<E> diff(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull Iterator<E> diff(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull Iterator<E> distinct();
@@ -318,7 +319,7 @@ public class lazy {
     public abstract @NotNull Iterator<E> dropLast(int maxElements);
 
     @Override
-    public abstract @NotNull Iterator<Boolean> endsWith(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull Iterator<Boolean> endsWith(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull Iterator<Boolean> exists(boolean whenEmpty,
@@ -375,7 +376,7 @@ public class lazy {
 
     @Override
     public abstract @NotNull Iterator<Integer> findFirstIndexOfSequence(
-        @NotNull java.lang.Iterable<?> elements);
+        @NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull Iterator<Integer> findIndex(
@@ -406,24 +407,24 @@ public class lazy {
 
     @Override
     public abstract @NotNull Iterator<Integer> findLastIndexOfSequence(
-        @NotNull java.lang.Iterable<?> elements);
+        @NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull <F> Iterator<F> flatMap(
-        @NotNull Function<? super E, ? extends java.lang.Iterable<F>> mapper);
+        @NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
     @Override
     public abstract @NotNull <F> Iterator<F> flatMap(
-        @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<F>> mapper);
+        @NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper);
 
     @Override
     public abstract @NotNull Iterator<E> flatMapWhile(
         @NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull Iterator<E> flatMapWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Function<? super E, ? extends java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull <F> Iterator<F> fold(F identity,
@@ -447,11 +448,10 @@ public class lazy {
     public abstract @NotNull Iterator<Boolean> includes(@Nullable Object element);
 
     @Override
-    public abstract @NotNull Iterator<Boolean> includesAll(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull Iterator<Boolean> includesAll(@NotNull Iterable<?> elements);
 
     @Override
-    public abstract @NotNull Iterator<Boolean> includesSequence(
-        @NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull Iterator<Boolean> includesSequence(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull Iterator<E> insert(@Nullable E element);
@@ -460,31 +460,28 @@ public class lazy {
     public abstract @NotNull Iterator<E> insertAfter(int numElements, @Nullable E element);
 
     @Override
-    public abstract @NotNull Iterator<E> insertAll(
-        @NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull Iterator<E> insertAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull Iterator<E> insertAllAfter(int numElements,
-        @NotNull java.lang.Iterable<? extends E> elements);
+        @NotNull Iterable<? extends E> elements);
 
     @Override
-    public abstract @NotNull Iterator<E> interleave(
-        @NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull Iterator<E> interleave(@NotNull Iterable<? extends E> elements);
 
     @Override
-    public abstract @NotNull Iterator<E> interleaveInner(
-        @NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull Iterator<E> interleaveInner(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull Iterator<E> interleaveInnerWithPadding(
-        @NotNull java.lang.Iterable<? extends E> elements, E paddingLeft, E paddingRight);
+        @NotNull Iterable<? extends E> elements, E paddingLeft, E paddingRight);
 
     @Override
     public abstract @NotNull Iterator<E> interleaveWithPadding(
-        @NotNull java.lang.Iterable<? extends E> elements, E paddingLeft, E paddingRight);
+        @NotNull Iterable<? extends E> elements, E paddingLeft, E paddingRight);
 
     @Override
-    public abstract @NotNull Iterator<E> intersect(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull Iterator<E> intersect(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull Iterator<E> iterator();
@@ -532,8 +529,7 @@ public class lazy {
     public abstract @NotNull Iterator<E> minus(@Nullable E element);
 
     @Override
-    public abstract @NotNull Iterator<E> minusAll(
-        @NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull Iterator<E> minusAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull Iterator<E> minusFirst(@Nullable E element);
@@ -558,11 +554,11 @@ public class lazy {
         @NotNull Predicate<? super E> predicate);
 
     @Override
-    public abstract @NotNull Iterator<E> orElse(@NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull Iterator<E> orElse(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull Iterator<E> orElseGet(
-        @NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
+        @NotNull Supplier<? extends Iterable<? extends E>> supplier);
 
     @Override
     public abstract @NotNull Iterator<Iterator<E>> partition(@Positive int numPartitions,
@@ -598,7 +594,7 @@ public class lazy {
     public abstract @NotNull Iterator<E> plus(@Nullable E element);
 
     @Override
-    public abstract @NotNull Iterator<E> plusAll(@NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull Iterator<E> plusAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull Iterator<E> reduce(
@@ -624,8 +620,7 @@ public class lazy {
     public abstract @NotNull Iterator<E> removeFirst(@NotNull Predicate<? super E> predicate);
 
     @Override
-    public abstract @NotNull Iterator<E> removeFirstSequence(
-        @NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull Iterator<E> removeFirstSequence(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull Iterator<E> removeLast(@NotNull IndexedPredicate<? super E> predicate);
@@ -634,11 +629,10 @@ public class lazy {
     public abstract @NotNull Iterator<E> removeLast(@NotNull Predicate<? super E> predicate);
 
     @Override
-    public abstract @NotNull Iterator<E> removeLastSequence(
-        @NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull Iterator<E> removeLastSequence(@NotNull Iterable<?> elements);
 
     @Override
-    public abstract @NotNull Iterator<E> removeSequence(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull Iterator<E> removeSequence(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull Iterator<E> removeSlice(int start);
@@ -647,26 +641,24 @@ public class lazy {
     public abstract @NotNull Iterator<E> removeSlice(int start, int end);
 
     @Override
-    public abstract @NotNull Iterator<E> replaceFirstSequence(
-        @NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+    public abstract @NotNull Iterator<E> replaceFirstSequence(@NotNull Iterable<?> elements,
+        @NotNull Function<? super java.util.List<E>, Iterable<? extends E>> mapper);
 
     @Override
-    public abstract @NotNull Iterator<E> replaceLastSequence(
-        @NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+    public abstract @NotNull Iterator<E> replaceLastSequence(@NotNull Iterable<?> elements,
+        @NotNull Function<? super java.util.List<E>, Iterable<? extends E>> mapper);
 
     @Override
-    public abstract @NotNull Iterator<E> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+    public abstract @NotNull Iterator<E> replaceSequence(@NotNull Iterable<?> elements,
+        @NotNull Function<? super java.util.List<E>, Iterable<? extends E>> mapper);
 
     @Override
-    public abstract @NotNull Iterator<E> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+    public abstract @NotNull Iterator<E> replaceSequence(@NotNull Iterable<?> elements,
+        @NotNull IndexedFunction<? super java.util.List<E>, Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull Iterator<E> replaceSlice(int start, int end,
-        @NotNull java.lang.Iterable<? extends E> patch);
+        @NotNull Iterable<? extends E> patch);
 
     @Override
     public abstract @NotNull Iterator<E> replaceSlice(int start,
@@ -693,29 +685,28 @@ public class lazy {
         @Positive int size, @Positive int step, E padding);
 
     @Override
-    public abstract @NotNull Iterator<Boolean> startsWith(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull Iterator<Boolean> startsWith(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull <X extends Throwable> Iterator<E> switchExceptionally(
         @NotNull Class<X> exceptionType,
-        @NotNull Function<? super X, ? extends java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super X, ? extends Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull <X extends Throwable> Iterator<E> switchExceptionally(
         @NotNull Class<X> exceptionType,
-        @NotNull IndexedFunction<? super X, ? extends java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super X, ? extends Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull Iterator<E> switchExceptionally(
-        @NotNull Function<? super Throwable, ? extends java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super Throwable, ? extends Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull Iterator<E> switchExceptionally(
-        @NotNull IndexedFunction<? super Throwable, ? extends java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super Throwable, ? extends Iterable<? extends E>> mapper);
 
     @Override
-    public abstract @NotNull Iterator<E> symmetricDiff(
-        @NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull Iterator<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull Iterator<E> takeFirst(int maxElements);
@@ -736,15 +727,14 @@ public class lazy {
     }
 
     @Override
-    public abstract @NotNull Iterator<E> union(@NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull Iterator<E> union(@NotNull Iterable<? extends E> elements);
 
     @Override
-    public abstract @NotNull <F> Iterator<ZipEntry<E, F>> zip(
-        @NotNull java.lang.Iterable<F> elements);
+    public abstract @NotNull <F> Iterator<ZipEntry<E, F>> zip(@NotNull Iterable<F> elements);
 
     @Override
     public abstract @NotNull <F> Iterator<ZipEntry<E, F>> zipWithPadding(
-        @NotNull java.lang.Iterable<F> elements, E paddingLeft, F paddingRight);
+        @NotNull Iterable<F> elements, E paddingLeft, F paddingRight);
   }
 
   public abstract static class List<E> extends AbstractList<E, List<E>> implements
@@ -754,11 +744,11 @@ public class lazy {
     public abstract @NotNull List<E> append(@Nullable E element);
 
     @Override
-    public abstract @NotNull List<E> appendAll(@NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull List<E> appendAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull <F> List<F> apply(
-        @NotNull Function<? super List<E>, java.lang.Iterable<F>> function);
+        @NotNull Function<? super List<E>, Iterable<F>> function);
 
     @Override
     public abstract @NotNull <F> List<F> cast();
@@ -773,7 +763,7 @@ public class lazy {
     public abstract @NotNull List<Integer> count();
 
     @Override
-    public abstract @NotNull List<E> diff(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<E> diff(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull List<E> distinct();
@@ -804,7 +794,7 @@ public class lazy {
     public abstract @NotNull List<E> dropLastWhile(@NotNull Predicate<? super E> condition);
 
     @Override
-    public abstract @NotNull List<Boolean> endsWith(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<Boolean> endsWith(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull List<Boolean> exists(boolean whenEmpty,
@@ -867,8 +857,7 @@ public class lazy {
     public abstract @NotNull List<Integer> findFirstIndexOf(@Nullable Object element);
 
     @Override
-    public abstract @NotNull List<Integer> findFirstIndexOfSequence(
-        @NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<Integer> findFirstIndexOfSequence(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull List<Integer> findIndex(
@@ -897,24 +886,23 @@ public class lazy {
     public abstract @NotNull List<Integer> findLastIndexOf(@Nullable Object element);
 
     @Override
-    public abstract @NotNull List<Integer> findLastIndexOfSequence(
-        @NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<Integer> findLastIndexOfSequence(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull <F> List<F> flatMap(
-        @NotNull Function<? super E, ? extends java.lang.Iterable<F>> mapper);
+        @NotNull Function<? super E, ? extends Iterable<F>> mapper);
 
     @Override
     public abstract @NotNull <F> List<F> flatMap(
-        @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<F>> mapper);
+        @NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper);
 
     @Override
     public abstract @NotNull List<E> flatMapWhile(@NotNull IndexedPredicate<? super E> condition,
-        @NotNull IndexedFunction<? super E, ? extends java.lang.Iterable<? extends E>> mapper);
+        @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull List<E> flatMapWhile(@NotNull Predicate<? super E> condition,
-        @NotNull Function<? super E, ? extends java.lang.Iterable<? extends E>> mapper);
+        @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull <F> List<F> fold(F identity,
@@ -947,34 +935,32 @@ public class lazy {
     public abstract @NotNull List<Boolean> includes(@Nullable Object element);
 
     @Override
-    public abstract @NotNull List<Boolean> includesAll(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<Boolean> includesAll(@NotNull Iterable<?> elements);
 
     @Override
-    public abstract @NotNull List<Boolean> includesSequence(
-        @NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<Boolean> includesSequence(@NotNull Iterable<?> elements);
 
     public abstract @NotNull List<E> insertAfter(int numElements, E element);
 
     public abstract @NotNull List<E> insertAllAfter(int numElements,
-        @NotNull java.lang.Iterable<? extends E> elements);
+        @NotNull Iterable<? extends E> elements);
 
     @Override
-    public abstract @NotNull List<E> interleave(@NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull List<E> interleave(@NotNull Iterable<? extends E> elements);
 
     @Override
-    public abstract @NotNull List<E> interleaveInner(
-        @NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull List<E> interleaveInner(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull List<E> interleaveInnerWithPadding(
-        @NotNull java.lang.Iterable<? extends E> elements, E paddingLeft, E paddingRight);
+        @NotNull Iterable<? extends E> elements, E paddingLeft, E paddingRight);
 
     @Override
-    public abstract @NotNull List<E> interleaveWithPadding(
-        @NotNull java.lang.Iterable<? extends E> elements, E paddingLeft, E paddingRight);
+    public abstract @NotNull List<E> interleaveWithPadding(@NotNull Iterable<? extends E> elements,
+        E paddingLeft, E paddingRight);
 
     @Override
-    public abstract @NotNull List<E> intersect(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<E> intersect(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull ListIterator<E> listIterator();
@@ -1038,7 +1024,7 @@ public class lazy {
     public abstract @NotNull List<E> minus(@Nullable E element);
 
     @Override
-    public abstract @NotNull List<E> minusAll(@NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull List<E> minusAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull List<E> minusFirst(@Nullable E element);
@@ -1071,11 +1057,11 @@ public class lazy {
         @NotNull Predicate<? super E> predicate);
 
     @Override
-    public abstract @NotNull List<E> orElse(@NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull List<E> orElse(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull List<E> orElseGet(
-        @NotNull Supplier<? extends java.lang.Iterable<? extends E>> supplier);
+        @NotNull Supplier<? extends Iterable<? extends E>> supplier);
 
     @Override
     public abstract @NotNull Iterator<List<E>> partition(@Positive int numPartitions,
@@ -1097,11 +1083,11 @@ public class lazy {
     public abstract @NotNull List<E> plus(@Nullable E element);
 
     @Override
-    public abstract @NotNull List<E> plusAll(@NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull List<E> plusAll(@NotNull Iterable<? extends E> elements);
 
     public abstract @NotNull List<E> prepend(E element);
 
-    public abstract @NotNull List<E> prependAll(@NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull List<E> prependAll(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull List<E> reduce(
@@ -1134,7 +1120,7 @@ public class lazy {
     public abstract @NotNull List<E> removeFirst(@NotNull Predicate<? super E> predicate);
 
     @Override
-    public abstract @NotNull List<E> removeFirstSequence(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<E> removeFirstSequence(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull List<E> removeLast(@NotNull IndexedPredicate<? super E> predicate);
@@ -1143,10 +1129,10 @@ public class lazy {
     public abstract @NotNull List<E> removeLast(@NotNull Predicate<? super E> predicate);
 
     @Override
-    public abstract @NotNull List<E> removeLastSequence(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<E> removeLastSequence(@NotNull Iterable<?> elements);
 
     @Override
-    public abstract @NotNull List<E> removeSequence(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<E> removeSequence(@NotNull Iterable<?> elements);
 
     @Override
     public abstract @NotNull List<E> removeSlice(int start);
@@ -1154,25 +1140,24 @@ public class lazy {
     @Override
     public abstract @NotNull List<E> removeSlice(int start, int end);
 
-    public abstract @NotNull List<E> replaceFirstSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+    public abstract @NotNull List<E> replaceFirstSequence(@NotNull Iterable<?> elements,
+        @NotNull Function<? super java.util.List<E>, Iterable<? extends E>> mapper);
 
-    public abstract @NotNull List<E> replaceLastSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+    public abstract @NotNull List<E> replaceLastSequence(@NotNull Iterable<?> elements,
+        @NotNull Function<? super java.util.List<E>, Iterable<? extends E>> mapper);
 
-    public abstract @NotNull List<E> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull Function<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+    public abstract @NotNull List<E> replaceSequence(@NotNull Iterable<?> elements,
+        @NotNull Function<? super java.util.List<E>, Iterable<? extends E>> mapper);
 
-    public abstract @NotNull List<E> replaceSequence(@NotNull java.lang.Iterable<?> elements,
-        @NotNull IndexedFunction<? super java.util.List<E>, java.lang.Iterable<? extends E>> mapper);
+    public abstract @NotNull List<E> replaceSequence(@NotNull Iterable<?> elements,
+        @NotNull IndexedFunction<? super java.util.List<E>, Iterable<? extends E>> mapper);
 
     @Override
     public abstract @NotNull List<E> replaceSlice(int start, int end,
-        @NotNull java.lang.Iterable<? extends E> patch);
+        @NotNull Iterable<? extends E> patch);
 
     @Override
-    public abstract @NotNull List<E> replaceSlice(int start,
-        @NotNull java.lang.Iterable<? extends E> patch);
+    public abstract @NotNull List<E> replaceSlice(int start, @NotNull Iterable<? extends E> patch);
 
     @Override
     public abstract @NotNull List<E> resizeTo(@NotNegative int numElements, E padding);
@@ -1195,11 +1180,10 @@ public class lazy {
     public abstract @NotNull List<E> sorted(@NotNull Comparator<? super E> comparator);
 
     @Override
-    public abstract @NotNull List<Boolean> startsWith(@NotNull java.lang.Iterable<?> elements);
+    public abstract @NotNull List<Boolean> startsWith(@NotNull Iterable<?> elements);
 
     @Override
-    public abstract @NotNull List<E> symmetricDiff(
-        @NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull List<E> symmetricDiff(@NotNull Iterable<? extends E> elements);
 
     @Override
     public abstract @NotNull List<E> takeFirst(int maxElements);
@@ -1220,14 +1204,14 @@ public class lazy {
     public abstract @NotNull List<E> takeLastWhile(@NotNull Predicate<? super E> condition);
 
     @Override
-    public abstract @NotNull List<E> union(@NotNull java.lang.Iterable<? extends E> elements);
+    public abstract @NotNull List<E> union(@NotNull Iterable<? extends E> elements);
 
     @Override
-    public abstract @NotNull <F> List<ZipEntry<E, F>> zip(@NotNull java.lang.Iterable<F> elements);
+    public abstract @NotNull <F> List<ZipEntry<E, F>> zip(@NotNull Iterable<F> elements);
 
     @Override
-    public abstract @NotNull <F> List<ZipEntry<E, F>> zipWithPadding(
-        @NotNull java.lang.Iterable<F> elements, E paddingLeft, F paddingRight);
+    public abstract @NotNull <F> List<ZipEntry<E, F>> zipWithPadding(@NotNull Iterable<F> elements,
+        E paddingLeft, F paddingRight);
   }
 
   public abstract static class ListIterator<E> implements itf.ListIterator<E, ListIterator<E>> {

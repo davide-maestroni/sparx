@@ -1,0 +1,124 @@
+/*
+ * Copyright 2026 Davide Maestroni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package sparx1.internal.lazy.list;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import sparx1.internal.lazy.ListMaterializer;
+import sparx1.util.UncheckedException;
+import sparx1.util.annotation.NotNegative;
+import sparx1.util.annotation.NotNull;
+import sparx1.util.function.IndexedFunction;
+
+public class DistinctByListMaterializer<E, K> extends StatefulListMaterializer<E> {
+
+  public DistinctByListMaterializer(@NotNull final ListMaterializer<E> wrapped,
+      @NotNull final IndexedFunction<? super E, K> keyExtractor) {
+    setState(new InitialState(wrapped, keyExtractor));
+  }
+
+  private class InitialState extends AbstractListMaterializer<E> {
+
+    private final HashSet<Object> distinctKeys = new HashSet<Object>();
+    private final ArrayList<E> elements = new ArrayList<E>();
+    private final Iterator<E> iterator;
+    private final IndexedFunction<? super E, K> keyExtractor;
+
+    private int pos;
+
+    private InitialState(@NotNull final ListMaterializer<E> wrapped,
+        @NotNull final IndexedFunction<? super E, K> keyExtractor) {
+      this.keyExtractor = keyExtractor;
+      iterator = wrapped.materializeForwardIterator(0);
+    }
+
+    @Override
+    public boolean canMaterializeElement(@NotNegative final int index) {
+      return materializeUntil(index) > index;
+    }
+
+    @Override
+    public boolean isRandomAccess() {
+      return true;
+    }
+
+    @Override
+    public boolean isSizeKnown() {
+      return false;
+    }
+
+    @Override
+    public int knownSize() {
+      return -1;
+    }
+
+    @Override
+    public E materializeElement(@NotNegative final int index) {
+      if (materializeUntil(index) <= index) {
+        throw new IndexOutOfBoundsException(Integer.toString(index));
+      }
+      return elements.get(index);
+    }
+
+    @Override
+    public int materializeElements() {
+      return materializeUntil(Integer.MAX_VALUE);
+    }
+
+    @Override
+    public boolean materializeEmpty() {
+      return materializeUntil(0) < 1;
+    }
+
+    @Override
+    public int materializeSize() {
+      return materializeUntil(Integer.MAX_VALUE);
+    }
+
+    private int materializeUntil(final int index) {
+      final ArrayList<E> elements = this.elements;
+      int currSize = elements.size();
+      if (currSize > index) {
+        return currSize;
+      }
+      final HashSet<Object> distinctKeys = this.distinctKeys;
+      final IndexedFunction<? super E, K> keyExtractor = this.keyExtractor;
+      try {
+        int i = pos;
+        final Iterator<E> iterator = this.iterator;
+        while (true) {
+          if (iterator.hasNext()) {
+            final E element = iterator.next();
+            if (distinctKeys.add(keyExtractor.apply(i, element))) {
+              elements.add(element);
+              if (++currSize > index) {
+                pos = i + 1;
+                return currSize;
+              }
+            }
+            ++i;
+          } else {
+            setState(new ListToListMaterializer<E>(elements));
+            return currSize;
+          }
+        }
+      } catch (final Exception e) {
+        throw UncheckedException.throwUnchecked(e);
+      }
+    }
+  }
+}
