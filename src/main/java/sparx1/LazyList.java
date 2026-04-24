@@ -18,6 +18,7 @@ package sparx1;
 import static sparx1.lazy.getKnownSize;
 import static sparx1.util.function.Functions.indexedIdentity;
 import static sparx1.util.function.Functions.toIndexedFunction;
+import static sparx1.util.function.Functions.toIndexedPredicate;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -30,6 +31,9 @@ import sparx1.internal.lazy.list.CountListMaterializer;
 import sparx1.internal.lazy.list.DiffListMaterializer;
 import sparx1.internal.lazy.list.DistinctByListMaterializer;
 import sparx1.internal.lazy.list.DropFirstListMaterializer;
+import sparx1.internal.lazy.list.DropFirstWhileListMaterializer;
+import sparx1.internal.lazy.list.DropLastListMaterializer;
+import sparx1.internal.lazy.list.DropLastWhileListMaterializer;
 import sparx1.internal.lazy.list.ElementToListMaterializer;
 import sparx1.internal.lazy.list.EmptyListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
@@ -628,28 +632,59 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<E> dropFirstWhile(IndexedPredicate<? super E> condition) {
-    return null;
+  public List<E> dropFirstWhile(final @NotNull IndexedPredicate<? super E> condition) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(new DropFirstWhileListMaterializer<E>(materializer,
+        Require.notNull(condition, "condition")));
   }
 
   @Override
-  public List<E> dropFirstWhile(Predicate<? super E> condition) {
-    return null;
+  public List<E> dropFirstWhile(final @NotNull Predicate<? super E> condition) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(new DropFirstWhileListMaterializer<E>(materializer,
+        toIndexedPredicate(condition, "condition")));
   }
 
   @Override
-  public List<E> dropLast(int maxElements) {
-    return null;
+  public List<E> dropLast(final int maxElements) {
+    if (maxElements == Integer.MAX_VALUE) {
+      return emptyList();
+    }
+    if (maxElements <= 0) {
+      return this;
+    }
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize >= 0 && maxElements >= knownSize) {
+      return emptyList();
+    }
+    return new LazyList<E>(new DropLastListMaterializer<E>(materializer, maxElements));
   }
 
   @Override
-  public List<E> dropLastWhile(IndexedPredicate<? super E> condition) {
-    return null;
+  public List<E> dropLastWhile(final @NotNull IndexedPredicate<? super E> condition) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(new DropLastWhileListMaterializer<E>(materializer,
+        Require.notNull(condition, "condition")));
   }
 
   @Override
-  public List<E> dropLastWhile(Predicate<? super E> condition) {
-    return null;
+  public List<E> dropLastWhile(final @NotNull Predicate<? super E> condition) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(new DropLastWhileListMaterializer<E>(materializer,
+        toIndexedPredicate(condition, "condition")));
   }
 
   @Override
