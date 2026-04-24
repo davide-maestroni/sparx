@@ -22,6 +22,7 @@ import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.SizeOverflowException;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
+import sparx1.util.function.Functions;
 
 public class AppendListMaterializer<E> implements ListMaterializer<E> {
 
@@ -75,7 +76,7 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public boolean materializeContains(final Object element) {
-    if (element == this.element || (element != null && element.equals(this.element))) {
+    if (Functions.objectsEqual(element, this.element)) {
       return true;
     }
     return wrapped.materializeContains(element);

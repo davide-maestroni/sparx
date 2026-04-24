@@ -29,6 +29,7 @@ import sparx1.internal.lazy.list.CollectionToListMaterializer;
 import sparx1.internal.lazy.list.CountListMaterializer;
 import sparx1.internal.lazy.list.DiffListMaterializer;
 import sparx1.internal.lazy.list.DistinctByListMaterializer;
+import sparx1.internal.lazy.list.DropFirstListMaterializer;
 import sparx1.internal.lazy.list.ElementToListMaterializer;
 import sparx1.internal.lazy.list.EmptyListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
@@ -73,7 +74,7 @@ public class LazyList<E> extends List<E> {
   private static final LazyList<Integer> ZERO_LIST = new LazyList<Integer>(
       new ElementToListMaterializer<Integer>(0));
 
-  final ListMaterializer<E> materializer;
+  private final ListMaterializer<E> materializer;
 
   LazyList(final @NotNull ListMaterializer<E> materializer) {
     this.materializer = materializer;
@@ -611,8 +612,19 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<E> dropFirst(int maxElements) {
-    return null;
+  public List<E> dropFirst(final int maxElements) {
+    if (maxElements == Integer.MAX_VALUE) {
+      return emptyList();
+    }
+    if (maxElements <= 0) {
+      return this;
+    }
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize >= 0 && maxElements >= knownSize) {
+      return emptyList();
+    }
+    return new LazyList<E>(new DropFirstListMaterializer<E>(materializer, maxElements));
   }
 
   @Override

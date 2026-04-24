@@ -71,7 +71,6 @@ import sparx1.internal.lazy.iterator.InterleaveIteratorMaterializer;
 import sparx1.internal.lazy.iterator.InterleaveWithPaddingIteratorMaterializer;
 import sparx1.internal.lazy.iterator.IntersectIteratorMaterializer;
 import sparx1.internal.lazy.iterator.IteratorToIteratorMaterializer;
-import sparx1.internal.lazy.iterator.ListMaterializerToIteratorMaterializer;
 import sparx1.internal.lazy.iterator.ListToIteratorMaterializer;
 import sparx1.internal.lazy.iterator.MapIteratorMaterializer;
 import sparx1.internal.lazy.iterator.MapWhileIteratorMaterializer;
@@ -139,7 +138,7 @@ public class LazyIterator<E> extends Iterator<E> {
     }
   };
 
-  final IteratorMaterializer<E> materializer;
+  private final IteratorMaterializer<E> materializer;
 
   LazyIterator(final @NotNull IteratorMaterializer<E> materializer) {
     this.materializer = materializer;
@@ -157,16 +156,12 @@ public class LazyIterator<E> extends Iterator<E> {
       return ((LazyIterator<E>) elements).materializer;
     }
     if (elements instanceof LazyList) {
-      final ListMaterializer<E> materializer = ((LazyList<E>) elements).materializer;
-      final int knownSize = materializer.knownSize();
+      final LazyList<E> list = (LazyList<E>) elements;
+      final int knownSize = list.knownSize();
       if (knownSize == 0) {
         return EmptyIteratorMaterializer.instance();
       }
-      if (materializer.isRandomAccess()) {
-        return new ListMaterializerToIteratorMaterializer<E>(materializer);
-      }
-      return new IteratorToIteratorMaterializer<E>(materializer.materializeForwardIterator(0),
-          knownSize);
+      return new IteratorToIteratorMaterializer<E>(list.iterator(), knownSize);
     }
     if (elements instanceof List) {
       final List<E> list = (List<E>) elements;
