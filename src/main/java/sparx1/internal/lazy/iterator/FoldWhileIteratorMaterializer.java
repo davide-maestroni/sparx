@@ -25,24 +25,24 @@ import sparx1.util.function.Predicate;
 public class FoldWhileIteratorMaterializer<E, F> extends StatefulIteratorMaterializer<F> {
 
   public FoldWhileIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      final F identity, final @NotNull Predicate<? super F> predicate,
+      final F identity, final @NotNull Predicate<? super F> condition,
       final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
-    setState(new InitialState(wrapped, identity, predicate, operation));
+    setState(new InitialState(wrapped, identity, condition, operation));
   }
 
   private class InitialState implements IteratorMaterializer<F> {
 
     private final F identity;
     private final BinaryFunction<? super F, ? super E, ? extends F> operation;
-    private final Predicate<? super F> predicate;
+    private final Predicate<? super F> condition;
     private final IteratorMaterializer<E> wrapped;
 
     private InitialState(final @NotNull IteratorMaterializer<E> wrapped, final F identity,
-        final @NotNull Predicate<? super F> predicate,
+        final @NotNull Predicate<? super F> condition,
         final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
       this.wrapped = wrapped;
       this.identity = identity;
-      this.predicate = predicate;
+      this.condition = condition;
       this.operation = operation;
     }
 
@@ -65,10 +65,10 @@ public class FoldWhileIteratorMaterializer<E, F> extends StatefulIteratorMateria
     public F materializeNext() {
       try {
         final IteratorMaterializer<E> wrapped = this.wrapped;
-        final Predicate<? super F> predicate = this.predicate;
+        final Predicate<? super F> condition = this.condition;
         final BinaryFunction<? super F, ? super E, ? extends F> operation = this.operation;
         F current = identity;
-        while (predicate.test(current) && wrapped.materializeHasNext()) {
+        while (condition.test(current) && wrapped.materializeHasNext()) {
           current = operation.apply(current, wrapped.materializeNext());
         }
         setEmptyState();

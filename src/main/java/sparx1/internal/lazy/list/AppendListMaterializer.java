@@ -122,8 +122,29 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> materializeUnorderedIterator() {
-    return new AppendIterator(wrapped.materializeUnorderedIterator());
+  public @NotNull IndexedIterator<E> materializeUnorderedIterator() {
+    return new AppendIndexedIterator(wrapped.materializeUnorderedIterator());
+  }
+
+  private class AppendIndexedIterator extends AppendIterator implements IndexedIterator<E> {
+
+    private int pos;
+
+    private AppendIndexedIterator(final @NotNull Iterator<E> iterator) {
+      super(iterator);
+    }
+
+    @Override
+    public E next() {
+      final E next = super.next();
+      ++pos;
+      return next;
+    }
+
+    @Override
+    public int nextIndex() {
+      return pos;
+    }
   }
 
   private class AppendIterator implements Iterator<E> {

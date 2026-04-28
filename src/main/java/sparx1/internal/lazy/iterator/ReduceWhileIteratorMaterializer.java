@@ -26,22 +26,22 @@ import sparx1.util.function.Predicate;
 public class ReduceWhileIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public ReduceWhileIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      final @NotNull Predicate<? super E> predicate,
+      final @NotNull Predicate<? super E> condition,
       final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
-    setState(new InitialState(wrapped, predicate, operation));
+    setState(new InitialState(wrapped, condition, operation));
   }
 
   private class InitialState implements IteratorMaterializer<E> {
 
     private final BinaryFunction<? super E, ? super E, ? extends E> operation;
-    private final Predicate<? super E> predicate;
+    private final Predicate<? super E> condition;
     private final IteratorMaterializer<E> wrapped;
 
     private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
-        final @NotNull Predicate<? super E> predicate,
+        final @NotNull Predicate<? super E> condition,
         final @NotNull BinaryFunction<? super E, ? super E, ? extends E> operation) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
+      this.condition = condition;
       this.operation = operation;
     }
 
@@ -67,13 +67,13 @@ public class ReduceWhileIteratorMaterializer<E> extends StatefulIteratorMaterial
         throw new NoSuchElementException();
       }
       try {
-        final Predicate<? super E> predicate = this.predicate;
+        final Predicate<? super E> condition = this.condition;
         final BinaryFunction<? super E, ? super E, ? extends E> operation = this.operation;
         E current = wrapped.materializeNext();
-        if (predicate.test(current)) {
+        if (condition.test(current)) {
           while (wrapped.materializeHasNext()) {
             current = operation.apply(current, wrapped.materializeNext());
-            if (!predicate.test(current)) {
+            if (!condition.test(current)) {
               break;
             }
           }

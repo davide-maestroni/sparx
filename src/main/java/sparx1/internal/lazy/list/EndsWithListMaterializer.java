@@ -15,16 +15,21 @@
  */
 package sparx1.internal.lazy.list;
 
+import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
+import sparx1.util.function.Functions;
 
-public class CountListMaterializer<E> extends SuppliedListMaterializer<Integer> {
+public class EndsWithListMaterializer<E> extends SuppliedListMaterializer<Boolean> {
 
   private ListMaterializer<E> wrapped;
+  private ListMaterializer<?> elementsMaterializer;
 
-  public CountListMaterializer(final @NotNull ListMaterializer<E> wrapped) {
+  public EndsWithListMaterializer(final @NotNull ListMaterializer<E> wrapped,
+      final @NotNull ListMaterializer<?> elementsMaterializer) {
     this.wrapped = wrapped;
+    this.elementsMaterializer = elementsMaterializer;
   }
 
   @Override
@@ -33,16 +38,31 @@ public class CountListMaterializer<E> extends SuppliedListMaterializer<Integer> 
   }
 
   @Override
-  public ListMaterializer<Integer> get() {
+  public ListMaterializer<Boolean> get() {
     final ListMaterializer<E> wrapped = this.wrapped;
-    if (wrapped.materializeEmpty()) {
+    final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
+    final int wrappedSize = wrapped.materializeSize();
+    final int elementsSize = elementsMaterializer.materializeSize();
+    if (wrappedSize < elementsSize) {
       this.wrapped = null;
-      return ElementToListMaterializer.ZERO;
+      this.elementsMaterializer = null;
+      return ElementToListMaterializer.FALSE;
     }
-    final ElementToListMaterializer<Integer> materializer = new ElementToListMaterializer<Integer>(
-        wrapped.materializeSize());
+    final Iterator<E> wrappedIterator = wrapped.materializeForwardIterator(
+        wrappedSize - elementsSize);
+    final Iterator<?> elementsIterator = elementsMaterializer.materializeForwardIterator(0);
+    while (wrappedIterator.hasNext() && elementsIterator.hasNext()) {
+      final E left = wrappedIterator.next();
+      final Object right = elementsIterator.next();
+      if (!Functions.objectsEqual(left, right)) {
+        this.wrapped = null;
+        this.elementsMaterializer = null;
+        return ElementToListMaterializer.FALSE;
+      }
+    }
     this.wrapped = null;
-    return materializer;
+    this.elementsMaterializer = null;
+    return ElementToListMaterializer.TRUE;
   }
 
   @Override

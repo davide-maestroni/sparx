@@ -15,16 +15,24 @@
  */
 package sparx1.internal.lazy.list;
 
+import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
+import sparx1.util.function.IndexedPredicate;
 
-public class CountListMaterializer<E> extends SuppliedListMaterializer<Integer> {
+public class ExistsForwardListMaterializer<E> extends SuppliedListMaterializer<Boolean> {
+
+  private final boolean defaultResult;
 
   private ListMaterializer<E> wrapped;
+  private IndexedPredicate<? super E> predicate;
 
-  public CountListMaterializer(final @NotNull ListMaterializer<E> wrapped) {
+  public ExistsForwardListMaterializer(final @NotNull ListMaterializer<E> wrapped,
+      final @NotNull IndexedPredicate<? super E> predicate, final boolean defaultResult) {
     this.wrapped = wrapped;
+    this.predicate = predicate;
+    this.defaultResult = defaultResult;
   }
 
   @Override
@@ -33,16 +41,27 @@ public class CountListMaterializer<E> extends SuppliedListMaterializer<Integer> 
   }
 
   @Override
-  public ListMaterializer<Integer> get() {
+  public ListMaterializer<Boolean> get() throws Exception {
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.materializeEmpty()) {
       this.wrapped = null;
-      return ElementToListMaterializer.ZERO;
+      this.predicate = null;
+      return defaultResult ? ElementToListMaterializer.TRUE : ElementToListMaterializer.FALSE;
     }
-    final ElementToListMaterializer<Integer> materializer = new ElementToListMaterializer<Integer>(
-        wrapped.materializeSize());
+    final Iterator<E> iterator = wrapped.materializeForwardIterator(0);
+    final IndexedPredicate<? super E> predicate = this.predicate;
+    int i = 0;
+    do {
+      if (predicate.test(i, iterator.next())) {
+        this.wrapped = null;
+        this.predicate = null;
+        return ElementToListMaterializer.TRUE;
+      }
+      ++i;
+    } while (iterator.hasNext());
     this.wrapped = null;
-    return materializer;
+    this.predicate = null;
+    return ElementToListMaterializer.FALSE;
   }
 
   @Override

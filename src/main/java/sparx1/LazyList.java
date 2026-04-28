@@ -36,6 +36,12 @@ import sparx1.internal.lazy.list.DropLastListMaterializer;
 import sparx1.internal.lazy.list.DropLastWhileListMaterializer;
 import sparx1.internal.lazy.list.ElementToListMaterializer;
 import sparx1.internal.lazy.list.EmptyListMaterializer;
+import sparx1.internal.lazy.list.EndsWithListMaterializer;
+import sparx1.internal.lazy.list.ExistsBackwardListMaterializer;
+import sparx1.internal.lazy.list.ExistsForwardListMaterializer;
+import sparx1.internal.lazy.list.ExistsListMaterializer;
+import sparx1.internal.lazy.list.FilterListMaterializer;
+import sparx1.internal.lazy.list.FilterWhileListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
 import sparx1.internal.lazy.list.ListToListMaterializer;
 import sparx1.internal.lazy.list.SuppliedListMaterializer;
@@ -70,13 +76,12 @@ public class LazyList<E> extends List<E> {
 //    }
 //  };
   private static final LazyList<Boolean> FALSE_LIST = new LazyList<Boolean>(
-      new ElementToListMaterializer<Boolean>(false));
-  private static final LazyList<?> NULL_LIST = new LazyList<Object>(
-      new ElementToListMaterializer<Object>(null));
+      ElementToListMaterializer.FALSE);
+  private static final LazyList<?> NULL_LIST = new LazyList<Object>(ElementToListMaterializer.NULL);
   private static final LazyList<Boolean> TRUE_LIST = new LazyList<Boolean>(
-      new ElementToListMaterializer<Boolean>(true));
+      ElementToListMaterializer.TRUE);
   private static final LazyList<Integer> ZERO_LIST = new LazyList<Integer>(
-      new ElementToListMaterializer<Integer>(0));
+      ElementToListMaterializer.ZERO);
 
   private final ListMaterializer<E> materializer;
 
@@ -688,59 +693,131 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<Boolean> endsWith(Iterable<?> elements) {
-    return null;
+  public List<Boolean> endsWith(final @NotNull Iterable<?> elements) {
+    final int elementsKnownSize = getKnownSize(elements);
+    if (elementsKnownSize == 0) {
+      return TRUE_LIST;
+    }
+    final ListMaterializer<E> materializer = this.materializer;
+    if (elementsKnownSize > 0 && materializer.knownSize() == 0) {
+      return FALSE_LIST;
+    }
+    return new LazyList<Boolean>(new EndsWithListMaterializer<E>(materializer,
+        getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
-  public List<Boolean> exists(boolean whenEmpty, IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<Boolean> exists(final boolean whenEmpty,
+      final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return whenEmpty ? TRUE_LIST : FALSE_LIST;
+    }
+    return new LazyList<Boolean>(
+        new ExistsListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+            whenEmpty));
   }
 
   @Override
-  public List<Boolean> exists(boolean whenEmpty, Predicate<? super E> predicate) {
-    return null;
+  public List<Boolean> exists(final boolean whenEmpty,
+      final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return whenEmpty ? TRUE_LIST : FALSE_LIST;
+    }
+    return new LazyList<Boolean>(
+        new ExistsListMaterializer<E>(materializer, toIndexedPredicate(predicate, "predicate"),
+            whenEmpty));
   }
 
   @Override
-  public List<Boolean> existsBackward(boolean whenEmpty, IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<Boolean> existsBackward(final boolean whenEmpty,
+      final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return whenEmpty ? TRUE_LIST : FALSE_LIST;
+    }
+    return new LazyList<Boolean>(
+        new ExistsBackwardListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+            whenEmpty));
   }
 
   @Override
-  public List<Boolean> existsBackward(boolean whenEmpty, Predicate<? super E> predicate) {
-    return null;
+  public List<Boolean> existsBackward(final boolean whenEmpty,
+      final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return whenEmpty ? TRUE_LIST : FALSE_LIST;
+    }
+    return new LazyList<Boolean>(new ExistsBackwardListMaterializer<E>(materializer,
+        toIndexedPredicate(predicate, "predicate"), whenEmpty));
   }
 
   @Override
-  public List<Boolean> existsForward(boolean whenEmpty, IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<Boolean> existsForward(final boolean whenEmpty,
+      final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return whenEmpty ? TRUE_LIST : FALSE_LIST;
+    }
+    return new LazyList<Boolean>(
+        new ExistsForwardListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+            whenEmpty));
   }
 
   @Override
-  public List<Boolean> existsForward(boolean whenEmpty, Predicate<? super E> predicate) {
-    return null;
+  public List<Boolean> existsForward(final boolean whenEmpty,
+      final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return whenEmpty ? TRUE_LIST : FALSE_LIST;
+    }
+    return new LazyList<Boolean>(new ExistsForwardListMaterializer<E>(materializer,
+        toIndexedPredicate(predicate, "predicate"), whenEmpty));
   }
 
   @Override
-  public List<E> filter(IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<E> filter(final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(
+        new FilterListMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
   }
 
   @Override
-  public List<E> filter(Predicate<? super E> predicate) {
-    return null;
+  public List<E> filter(final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(
+        new FilterListMaterializer<E>(materializer, toIndexedPredicate(predicate, "predicate")));
   }
 
   @Override
-  public List<E> filterWhile(IndexedPredicate<? super E> condition,
-      IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<E> filterWhile(final @NotNull IndexedPredicate<? super E> condition,
+      final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(
+        new FilterWhileListMaterializer<E>(materializer, Require.notNull(predicate, "predicate"),
+            Require.notNull(condition, "condition")));
   }
 
   @Override
-  public List<E> filterWhile(Predicate<? super E> condition, Predicate<? super E> predicate) {
-    return null;
+  public List<E> filterWhile(final @NotNull Predicate<? super E> condition,
+      final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(
+        new FilterWhileListMaterializer<E>(materializer, toIndexedPredicate(predicate, "predicate"),
+            toIndexedPredicate(condition, "condition")));
   }
 
   @Override
@@ -1363,7 +1440,7 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public itf.Iterator<E, ? extends itf.Iterator<E, ?>> toIterator() {
+  public Iterator<E> toIterator() {
     return null;
   }
 

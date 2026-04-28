@@ -25,19 +25,19 @@ import sparx1.util.function.IndexedPredicate;
 public class DropFirstWhileIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public DropFirstWhileIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      final @NotNull IndexedPredicate<? super E> predicate) {
-    setState(new InitialState(wrapped, predicate));
+      final @NotNull IndexedPredicate<? super E> condition) {
+    setState(new InitialState(wrapped, condition));
   }
 
   private class InitialState implements IteratorMaterializer<E> {
 
-    private final IndexedPredicate<? super E> predicate;
+    private final IndexedPredicate<? super E> condition;
     private final IteratorMaterializer<E> wrapped;
 
     private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
-        final @NotNull IndexedPredicate<? super E> predicate) {
+        final @NotNull IndexedPredicate<? super E> condition) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
+      this.condition = condition;
     }
 
     @Override
@@ -54,11 +54,11 @@ public class DropFirstWhileIteratorMaterializer<E> extends StatefulIteratorMater
     public boolean materializeHasNext() {
       try {
         final IteratorMaterializer<E> wrapped = this.wrapped;
-        final IndexedPredicate<? super E> predicate = this.predicate;
+        final IndexedPredicate<? super E> condition = this.condition;
         int i = 0;
         while (wrapped.materializeHasNext()) {
           final E next = wrapped.materializeNext();
-          if (!predicate.test(i, next)) {
+          if (!condition.test(i, next)) {
             setState(new InsertIteratorMaterializer<E>(wrapped, next));
             return true;
           }

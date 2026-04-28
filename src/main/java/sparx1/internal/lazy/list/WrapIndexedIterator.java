@@ -13,31 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package sparx1.internal.lazy;
+package sparx1.internal.lazy.list;
 
 import java.util.Iterator;
-import sparx1.util.annotation.NotNegative;
+import sparx1.internal.lazy.ListMaterializer.IndexedIterator;
 import sparx1.util.annotation.NotNull;
 
-public interface ListMaterializer<E> extends CollectionMaterializer<E> {
+class WrapIndexedIterator<E> implements IndexedIterator<E> {
 
-  boolean canMaterializeElement(@NotNegative int index);
+  private final Iterator<E> iterator;
 
-  boolean isRandomAccess();
+  private int pos;
 
-  E materializeElement(@NotNegative int index);
+  WrapIndexedIterator(final @NotNull Iterator<E> iterator) {
+    this.iterator = iterator;
+  }
 
-  @NotNull
-  Iterator<E> materializeBackwardIterator(@NotNegative int index);
+  @Override
+  public boolean hasNext() {
+    return iterator.hasNext();
+  }
 
-  @NotNull
-  Iterator<E> materializeForwardIterator(@NotNegative int index);
+  @Override
+  public E next() {
+    final E next = iterator.next();
+    ++pos;
+    return next;
+  }
 
-  @NotNull
-  IndexedIterator<E> materializeUnorderedIterator();
+  @Override
+  public int nextIndex() {
+    return pos;
+  }
 
-  interface IndexedIterator<E> extends Iterator<E> {
-
-    int nextIndex();
+  @Override
+  public void remove() {
+    throw new UnsupportedOperationException("remove");
   }
 }

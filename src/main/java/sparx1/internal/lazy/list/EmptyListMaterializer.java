@@ -15,8 +15,8 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
@@ -24,6 +24,7 @@ import sparx1.util.annotation.NotNull;
 public class EmptyListMaterializer<E> implements ListMaterializer<E> {
 
   private static final EmptyListMaterializer<?> INSTANCE = new EmptyListMaterializer<Object>();
+  private static final EmptyIndexedIterator EMPTY_ITERATOR = new EmptyIndexedIterator();
 
   private EmptyListMaterializer() {
   }
@@ -89,7 +90,31 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> materializeUnorderedIterator() {
-    return Collections.<E>emptyList().iterator();
+  @SuppressWarnings("unchecked")
+  public @NotNull IndexedIterator<E> materializeUnorderedIterator() {
+    return (IndexedIterator<E>) EMPTY_ITERATOR;
+  }
+
+  private static class EmptyIndexedIterator implements IndexedIterator<Object> {
+
+    @Override
+    public boolean hasNext() {
+      return false;
+    }
+
+    @Override
+    public Object next() {
+      throw new NoSuchElementException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
   }
 }

@@ -198,8 +198,8 @@ public class CollectionToListMaterializer<E> extends StatefulListMaterializer<E>
     }
 
     @Override
-    public Iterator<E> materializeUnorderedIterator() {
-      return elements.iterator();
+    public IndexedIterator<E> materializeUnorderedIterator() {
+      return new WrapIndexedIterator<E>(elements.iterator());
     }
   }
 }

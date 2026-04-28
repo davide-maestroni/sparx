@@ -87,7 +87,7 @@ public abstract class SuppliedListMaterializer<E> extends StatefulListMaterializ
     }
 
     @Override
-    public Iterator<E> materializeUnorderedIterator() {
+    public IndexedIterator<E> materializeUnorderedIterator() {
       return materialize().materializeUnorderedIterator();
     }
 

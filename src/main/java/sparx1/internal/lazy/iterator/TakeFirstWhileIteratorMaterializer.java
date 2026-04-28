@@ -24,13 +24,13 @@ import sparx1.util.function.IndexedPredicate;
 public class TakeFirstWhileIteratorMaterializer<E> extends StatefulIteratorMaterializer<E> {
 
   public TakeFirstWhileIteratorMaterializer(final @NotNull IteratorMaterializer<E> wrapped,
-      final @NotNull IndexedPredicate<? super E> predicate) {
-    setState(new InitialState(wrapped, predicate));
+      final @NotNull IndexedPredicate<? super E> condition) {
+    setState(new InitialState(wrapped, condition));
   }
 
   private class InitialState extends AbstractStateIteratorMaterializer {
 
-    private final IndexedPredicate<? super E> predicate;
+    private final IndexedPredicate<? super E> condition;
     private final IteratorMaterializer<E> wrapped;
 
     private boolean hasNext;
@@ -38,9 +38,9 @@ public class TakeFirstWhileIteratorMaterializer<E> extends StatefulIteratorMater
     private int pos;
 
     private InitialState(final @NotNull IteratorMaterializer<E> wrapped,
-        final @NotNull IndexedPredicate<? super E> predicate) {
+        final @NotNull IndexedPredicate<? super E> condition) {
       this.wrapped = wrapped;
-      this.predicate = predicate;
+      this.condition = condition;
     }
 
     @Override
@@ -63,7 +63,7 @@ public class TakeFirstWhileIteratorMaterializer<E> extends StatefulIteratorMater
         final int pos = this.pos++;
         final E next = wrapped.materializeNext();
         try {
-          if (predicate.test(pos, next)) {
+          if (condition.test(pos, next)) {
             hasNext = true;
             this.next = next;
             return true;

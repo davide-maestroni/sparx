@@ -15,11 +15,11 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
+import sparx1.internal.lazy.ListMaterializer.IndexedIterator;
 import sparx1.util.annotation.NotNull;
 
-class ForwardIterator<E> implements Iterator<E> {
+class ForwardIterator<E> implements IndexedIterator<E> {
 
   private final ListMaterializer<E> materializer;
 
@@ -38,6 +38,11 @@ class ForwardIterator<E> implements Iterator<E> {
   @Override
   public E next() {
     return materializer.materializeElement(pos++);
+  }
+
+  @Override
+  public int nextIndex() {
+    return pos;
   }
 
   @Override

@@ -80,7 +80,7 @@ public abstract class StatefulListMaterializer<E> implements ListMaterializer<E>
   }
 
   @Override
-  public Iterator<E> materializeUnorderedIterator() {
+  public IndexedIterator<E> materializeUnorderedIterator() {
     return state.materializeUnorderedIterator();
   }
 

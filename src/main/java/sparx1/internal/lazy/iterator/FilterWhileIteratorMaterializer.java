@@ -65,10 +65,11 @@ public class FilterWhileIteratorMaterializer<E> extends StatefulIteratorMaterial
       }
       try {
         final IteratorMaterializer<E> wrapped = this.wrapped;
+        final IndexedPredicate<? super E> condition = this.condition;
         final IndexedPredicate<? super E> predicate = this.predicate;
         while (wrapped.materializeHasNext()) {
-          final int pos = this.pos++;
           final E element = wrapped.materializeNext();
+          final int pos = this.pos++;
           if (condition.test(pos, element)) {
             if (predicate.test(pos, element)) {
               next = element;
@@ -76,7 +77,8 @@ public class FilterWhileIteratorMaterializer<E> extends StatefulIteratorMaterial
               return true;
             }
           } else {
-            setEmptyState();
+            setState(new InsertIteratorMaterializer<E>(wrapped, element));
+            return true;
           }
         }
       } catch (final Exception e) {

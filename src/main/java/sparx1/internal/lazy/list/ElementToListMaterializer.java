@@ -20,6 +20,15 @@ import sparx1.util.function.Functions;
 
 public class ElementToListMaterializer<E> extends AbstractListMaterializer<E> {
 
+  public static final ElementToListMaterializer<Boolean> FALSE = new ElementToListMaterializer<Boolean>(
+      Boolean.FALSE);
+  public static final ElementToListMaterializer<Object> NULL = new ElementToListMaterializer<Object>(
+      null);
+  public static final ElementToListMaterializer<Boolean> TRUE = new ElementToListMaterializer<Boolean>(
+      Boolean.TRUE);
+  public static final ElementToListMaterializer<Integer> ZERO = new ElementToListMaterializer<Integer>(
+      0);
+
   private final E element;
 
   public ElementToListMaterializer(final E element) {
