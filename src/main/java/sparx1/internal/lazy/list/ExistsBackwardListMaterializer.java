@@ -15,7 +15,6 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
@@ -48,17 +47,15 @@ public class ExistsBackwardListMaterializer<E> extends SuppliedListMaterializer<
       this.predicate = null;
       return defaultResult ? ElementToListMaterializer.TRUE : ElementToListMaterializer.FALSE;
     }
-    final int startIndex = wrapped.materializeSize() - 1;
-    final Iterator<E> iterator = wrapped.materializeForwardIterator(startIndex);
+    final IndexedIterator<E> iterator = wrapped.materializeForwardIterator(
+        wrapped.materializeSize() - 1);
     final IndexedPredicate<? super E> predicate = this.predicate;
-    int i = startIndex;
     do {
-      if (predicate.test(i, iterator.next())) {
+      if (predicate.test(iterator.nextIndex(), iterator.next())) {
         this.wrapped = null;
         this.predicate = null;
         return ElementToListMaterializer.TRUE;
       }
-      --i;
     } while (iterator.hasNext());
     this.wrapped = null;
     this.predicate = null;

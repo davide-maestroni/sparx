@@ -15,7 +15,6 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.annotation.NotNegative;
@@ -32,6 +31,11 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
   @SuppressWarnings("unchecked")
   public static @NotNull <E> EmptyListMaterializer<E> instance() {
     return (EmptyListMaterializer<E>) INSTANCE;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> IndexedIterator<E> iteratorInstance() {
+    return (IndexedIterator<E>) EMPTY_ITERATOR;
   }
 
   @Override
@@ -55,8 +59,8 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
-    throw new IndexOutOfBoundsException(Integer.toString(index));
+  public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
+    return iteratorInstance();
   }
 
   @Override
@@ -80,8 +84,8 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public @NotNull Iterator<E> materializeForwardIterator(final @NotNegative int index) {
-    throw new IndexOutOfBoundsException(Integer.toString(index));
+  public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
+    return iteratorInstance();
   }
 
   @Override
@@ -90,9 +94,8 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public @NotNull IndexedIterator<E> materializeUnorderedIterator() {
-    return (IndexedIterator<E>) EMPTY_ITERATOR;
+    return iteratorInstance();
   }
 
   private static class EmptyIndexedIterator implements IndexedIterator<Object> {
@@ -109,7 +112,7 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public int nextIndex() {
-      return -1;
+      return 0;
     }
 
     @Override

@@ -16,9 +16,9 @@
 package sparx1.internal.lazy.list;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import sparx1.internal.lazy.ListMaterializer;
+import sparx1.util.IndexOverflowException;
 import sparx1.util.SizeOverflowException;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
@@ -60,16 +60,16 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
+  public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
     final int size = materializeSize();
     if (index >= size) {
-      return Collections.<E>emptyList().iterator();
+      return EmptyListMaterializer.iteratorInstance();
     }
     if (index == size - 1) {
       if (index == 0) {
-        return Collections.singleton(element).iterator();
+        return new WrapBackwardIterator<E>(Collections.singleton(element).iterator());
       }
-      return new PrependIterator(wrapped.materializeBackwardIterator(index - 1));
+      return new PrependIterator<E>(wrapped.materializeBackwardIterator(index - 1), element);
     }
     return wrapped.materializeBackwardIterator(index);
   }
@@ -105,15 +105,15 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
+  public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
     final int size = materializeSize();
     if (index >= size) {
-      return Collections.<E>emptyList().iterator();
+      return EmptyListMaterializer.iteratorInstance();
     }
     if (index == size - 1) {
-      return Collections.singleton(element).iterator();
+      return new WrapForwardIterator<E>(Collections.singleton(element).iterator(), index);
     }
-    return new AppendIterator(wrapped.materializeForwardIterator(index));
+    return new AppendIterator<E>(wrapped.materializeForwardIterator(index), element);
   }
 
   @Override
@@ -123,38 +123,19 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public @NotNull IndexedIterator<E> materializeUnorderedIterator() {
-    return new AppendIndexedIterator(wrapped.materializeUnorderedIterator());
+    return new UnorderedIterator<E>(wrapped.materializeUnorderedIterator(), element);
   }
 
-  private class AppendIndexedIterator extends AppendIterator implements IndexedIterator<E> {
+  private static class AppendIterator<E> implements IndexedIterator<E> {
 
-    private int pos;
-
-    private AppendIndexedIterator(final @NotNull Iterator<E> iterator) {
-      super(iterator);
-    }
-
-    @Override
-    public E next() {
-      final E next = super.next();
-      ++pos;
-      return next;
-    }
-
-    @Override
-    public int nextIndex() {
-      return pos;
-    }
-  }
-
-  private class AppendIterator implements Iterator<E> {
-
-    private final Iterator<E> iterator;
+    private final E element;
+    private final IndexedIterator<E> iterator;
 
     private boolean consumedElement;
 
-    private AppendIterator(final @NotNull Iterator<E> iterator) {
+    private AppendIterator(final @NotNull IndexedIterator<E> iterator, final E element) {
       this.iterator = iterator;
+      this.element = element;
     }
 
     @Override
@@ -164,7 +145,7 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public E next() {
-      final Iterator<E> iterator = this.iterator;
+      final IndexedIterator<E> iterator = this.iterator;
       if (!iterator.hasNext()) {
         if (consumedElement) {
           throw new NoSuchElementException();
@@ -176,19 +157,27 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
+    public int nextIndex() {
+      return consumedElement ? IndexOverflowException.safeCast(iterator.nextIndex() + 1L)
+          : iterator.nextIndex();
+    }
+
+    @Override
     public void remove() {
       throw new UnsupportedOperationException("remove");
     }
   }
 
-  private class PrependIterator implements Iterator<E> {
+  private static class PrependIterator<E> implements IndexedIterator<E> {
 
-    private final Iterator<E> iterator;
+    private final E element;
+    private final IndexedIterator<E> iterator;
 
     private boolean consumedElement;
 
-    private PrependIterator(final @NotNull Iterator<E> iterator) {
+    private PrependIterator(final @NotNull IndexedIterator<E> iterator, final E element) {
       this.iterator = iterator;
+      this.element = element;
     }
 
     @Override
@@ -206,8 +195,35 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
+    public int nextIndex() {
+      return consumedElement ? iterator.nextIndex()
+          : IndexOverflowException.safeCast(iterator.nextIndex() + 1L);
+    }
+
+    @Override
     public void remove() {
       throw new UnsupportedOperationException("remove");
+    }
+  }
+
+  private static class UnorderedIterator<E> extends AppendIterator<E> {
+
+    private int pos;
+
+    private UnorderedIterator(final @NotNull IndexedIterator<E> iterator, final E element) {
+      super(iterator, element);
+    }
+
+    @Override
+    public E next() {
+      final E next = super.next();
+      ++pos;
+      return next;
+    }
+
+    @Override
+    public int nextIndex() {
+      return super.consumedElement ? pos : super.nextIndex();
     }
   }
 }

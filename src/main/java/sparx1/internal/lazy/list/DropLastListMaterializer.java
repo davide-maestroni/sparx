@@ -15,7 +15,6 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import sparx1.internal.lazy.ListMaterializer;
@@ -59,9 +58,9 @@ public class DropLastListMaterializer<E> extends AbstractListMaterializer<E> {
   }
 
   @Override
-  public Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
+  public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
     if (index >= materializeSize()) {
-      return Collections.<E>emptyList().iterator();
+      return EmptyListMaterializer.iteratorInstance();
     }
     return wrapped.materializeBackwardIterator(index);
   }
@@ -87,11 +86,12 @@ public class DropLastListMaterializer<E> extends AbstractListMaterializer<E> {
   }
 
   @Override
-  public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
+  public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
     if (index >= materializeSize()) {
-      return Collections.<E>emptyList().iterator();
+      return EmptyListMaterializer.iteratorInstance();
     }
-    return new ForwardIterator(index);
+    return new OrderedIterator<E>(wrapped.materializeForwardIterator(index), index,
+        materializeSize());
   }
 
   @Override
@@ -99,15 +99,22 @@ public class DropLastListMaterializer<E> extends AbstractListMaterializer<E> {
     return Math.max(0, wrapped.materializeSize() - maxElements);
   }
 
-  private class ForwardIterator implements Iterator<E> {
+  @Override
+  public @NotNull IndexedIterator<E> materializeUnorderedIterator() {
+    return new UnorderedIterator<E>(wrapped.materializeUnorderedIterator(), materializeSize());
+  }
+
+  private static class OrderedIterator<E> implements IndexedIterator<E> {
 
     private final Iterator<E> iterator;
-    private final int size = materializeSize();
+    private final int size;
 
     private int pos;
 
-    private ForwardIterator(final @NotNegative int index) {
-      iterator = wrapped.materializeForwardIterator(index);
+    private OrderedIterator(final @NotNull Iterator<E> iterator, final @NotNegative int index,
+        final int size) {
+      this.iterator = iterator;
+      this.size = size;
       pos = index;
     }
 
@@ -123,6 +130,51 @@ public class DropLastListMaterializer<E> extends AbstractListMaterializer<E> {
       }
       ++pos;
       return iterator.next();
+    }
+
+    @Override
+    public int nextIndex() {
+      return pos;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
+  }
+
+  private static class UnorderedIterator<E> implements IndexedIterator<E> {
+
+    private final IndexedIterator<E> iterator;
+    private final int size;
+
+    private UnorderedIterator(final @NotNull IndexedIterator<E> iterator, final int size) {
+      this.iterator = iterator;
+      this.size = size;
+    }
+
+    @Override
+    public boolean hasNext() {
+      final IndexedIterator<E> iterator = this.iterator;
+      while (iterator.hasNext() && iterator.nextIndex() >= size) {
+        iterator.next();
+      }
+      return iterator.hasNext();
+    }
+
+    @Override
+    public E next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      return iterator.next();
+    }
+
+    @Override
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public int nextIndex() {
+      hasNext();
+      return iterator.nextIndex();
     }
 
     @Override

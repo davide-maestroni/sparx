@@ -19,14 +19,19 @@ import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer.IndexedIterator;
 import sparx1.util.annotation.NotNull;
 
-class WrapIndexedIterator<E> implements IndexedIterator<E> {
+class WrapBackwardIterator<E> implements IndexedIterator<E> {
 
   private final Iterator<E> iterator;
 
   private int pos;
 
-  WrapIndexedIterator(final @NotNull Iterator<E> iterator) {
+  WrapBackwardIterator(final @NotNull Iterator<E> iterator) {
+    this(iterator, 0);
+  }
+
+  WrapBackwardIterator(final @NotNull Iterator<E> iterator, final int index) {
     this.iterator = iterator;
+    pos = index;
   }
 
   @Override
@@ -37,7 +42,7 @@ class WrapIndexedIterator<E> implements IndexedIterator<E> {
   @Override
   public E next() {
     final E next = iterator.next();
-    ++pos;
+    --pos;
     return next;
   }
 

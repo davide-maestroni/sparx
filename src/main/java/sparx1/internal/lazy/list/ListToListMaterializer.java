@@ -15,7 +15,6 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.RandomAccess;
@@ -54,9 +53,9 @@ public class ListToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
+  public IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
     final ListIterator<E> listIterator = elements.listIterator(index + 1);
-    return new Iterator<E>() {
+    return new IndexedIterator<E>() {
       @Override
       public boolean hasNext() {
         return listIterator.hasPrevious();
@@ -65,6 +64,11 @@ public class ListToListMaterializer<E> implements ListMaterializer<E> {
       @Override
       public E next() {
         return listIterator.previous();
+      }
+
+      @Override
+      public int nextIndex() {
+        return listIterator.previousIndex();
       }
 
       @Override
@@ -96,8 +100,8 @@ public class ListToListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
-    return elements.listIterator(index);
+  public IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
+    return new WrapForwardIterator<E>(elements.listIterator(index), index);
   }
 
   @Override
@@ -107,6 +111,6 @@ public class ListToListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public IndexedIterator<E> materializeUnorderedIterator() {
-    return new WrapIndexedIterator<E>(elements.iterator());
+    return new WrapForwardIterator<E>(elements.iterator());
   }
 }

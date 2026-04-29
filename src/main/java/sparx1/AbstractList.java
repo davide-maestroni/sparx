@@ -55,6 +55,16 @@ abstract class AbstractList<E, T extends AbstractList<E, T>> extends
   }
 
   @Override
+  public boolean isOrdered() {
+    return true;
+  }
+
+  @Override
+  public boolean isTraversableAgain() {
+    return true;
+  }
+
+  @Override
   public abstract @NotNull Iterator<E, ? extends Iterator<E, ?>> iterator();
 
   @Override

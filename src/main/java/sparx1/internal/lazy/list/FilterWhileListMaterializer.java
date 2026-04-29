@@ -16,7 +16,6 @@
 package sparx1.internal.lazy.list;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNegative;
@@ -35,16 +34,14 @@ public class FilterWhileListMaterializer<E> extends StatefulListMaterializer<E> 
 
     private final IndexedPredicate<? super E> condition;
     private final ArrayList<E> elements = new ArrayList<E>();
-    private final Iterator<E> iterator;
+    private final IndexedIterator<E> iterator;
     private final IndexedPredicate<? super E> predicate;
     private final ListMaterializer<E> wrapped;
-
-    private int pos;
 
     private InitialState(final @NotNull ListMaterializer<E> wrapped,
         final @NotNull IndexedPredicate<? super E> predicate,
         final @NotNull IndexedPredicate<? super E> condition) {
-      iterator = (this.wrapped = wrapped).materializeUnorderedIterator();
+      iterator = (this.wrapped = wrapped).materializeForwardIterator(0);
       this.predicate = predicate;
       this.condition = condition;
     }
@@ -56,21 +53,21 @@ public class FilterWhileListMaterializer<E> extends StatefulListMaterializer<E> 
         final IndexedPredicate<? super E> condition = this.condition;
         final IndexedPredicate<? super E> predicate = this.predicate;
         try {
-          final Iterator<E> iterator = this.iterator;
+          final IndexedIterator<E> iterator = this.iterator;
           do {
             if (!iterator.hasNext()) {
               return false;
             }
+            final int i = iterator.nextIndex();
             final E next = iterator.next();
-            final int pos = this.pos++;
-            if (condition.test(pos, next)) {
-              if (predicate.test(pos, next)) {
+            if (condition.test(i, next)) {
+              if (predicate.test(i, next)) {
                 elements.add(next);
               }
             } else {
               final ListMaterializer<E> state = setState(
                   new AppendAllListMaterializer<E>(new ListToListMaterializer<E>(elements),
-                      new DropFirstListMaterializer<E>(wrapped, pos)));
+                      new DropFirstListMaterializer<E>(wrapped, i)));
               return state.canMaterializeElement(index);
             }
           } while (elements.size() <= index);

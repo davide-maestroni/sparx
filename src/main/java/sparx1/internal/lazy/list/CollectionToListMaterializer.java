@@ -184,8 +184,8 @@ public class CollectionToListMaterializer<E> extends StatefulListMaterializer<E>
     }
 
     @Override
-    public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
-      final Iterator<E> iterator = elements.iterator();
+    public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
+      final IndexedIterator<E> iterator = new WrapForwardIterator<E>(elements.iterator());
       for (int i = 0; i < index && iterator.hasNext(); ++i) {
         iterator.next();
       }
@@ -198,8 +198,8 @@ public class CollectionToListMaterializer<E> extends StatefulListMaterializer<E>
     }
 
     @Override
-    public IndexedIterator<E> materializeUnorderedIterator() {
-      return new WrapIndexedIterator<E>(elements.iterator());
+    public @NotNull IndexedIterator<E> materializeUnorderedIterator() {
+      return new WrapForwardIterator<E>(elements.iterator());
     }
   }
 }

@@ -15,9 +15,9 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import sparx1.internal.lazy.ListMaterializer;
+import sparx1.util.IndexOverflowException;
 import sparx1.util.SizeOverflowException;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
@@ -66,13 +66,14 @@ public class AppendAllListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
+  public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
     final int wrappedSize = wrapped.materializeSize();
     if (index < wrappedSize) {
       return wrapped.materializeBackwardIterator(index);
     }
-    return new AppendIterator(elementsMaterializer.materializeBackwardIterator(index - wrappedSize),
+    return new OrderedIterator<E>(
+        elementsMaterializer.materializeBackwardIterator(index - wrappedSize),
         wrapped.materializeBackwardIterator(wrappedSize - 1));
   }
 
@@ -107,11 +108,11 @@ public class AppendAllListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
+  public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
     final ListMaterializer<E> wrapped = this.wrapped;
     final int wrappedSize = wrapped.materializeSize();
     if (index < wrappedSize) {
-      return new AppendIterator(wrapped.materializeForwardIterator(index),
+      return new OrderedIterator<E>(wrapped.materializeForwardIterator(index),
           elementsMaterializer.materializeForwardIterator(0));
     }
     return elementsMaterializer.materializeForwardIterator(index - wrappedSize);
@@ -124,42 +125,20 @@ public class AppendAllListMaterializer<E> implements ListMaterializer<E> {
   }
 
   @Override
-  public IndexedIterator<E> materializeUnorderedIterator() {
-    return new AppendIndexedIterator(wrapped.materializeUnorderedIterator(),
+  public @NotNull IndexedIterator<E> materializeUnorderedIterator() {
+    return new UnorderedIterator<E>(wrapped.materializeUnorderedIterator(),
         elementsMaterializer.materializeUnorderedIterator());
   }
 
-  private class AppendIndexedIterator extends AppendIterator implements IndexedIterator<E> {
+  private static class OrderedIterator<E> implements IndexedIterator<E> {
 
-    private int pos;
-
-    private AppendIndexedIterator(final @NotNull Iterator<E> iterator,
-        final @NotNull Iterator<E> appendIterator) {
-      super(iterator, appendIterator);
-    }
-
-    @Override
-    public E next() {
-      final E next = super.next();
-      ++pos;
-      return next;
-    }
-
-    @Override
-    public int nextIndex() {
-      return pos;
-    }
-  }
-
-  private class AppendIterator implements Iterator<E> {
-
-    private final Iterator<E> appendIterator;
+    private final IndexedIterator<E> appendIterator;
 
     private boolean consumedElements;
-    private Iterator<E> iterator;
+    private IndexedIterator<E> iterator;
 
-    private AppendIterator(final @NotNull Iterator<E> iterator,
-        final @NotNull Iterator<E> appendIterator) {
+    private OrderedIterator(final @NotNull IndexedIterator<E> iterator,
+        final @NotNull IndexedIterator<E> appendIterator) {
       this.iterator = iterator;
       this.appendIterator = appendIterator;
     }
@@ -185,8 +164,36 @@ public class AppendAllListMaterializer<E> implements ListMaterializer<E> {
     }
 
     @Override
+    public int nextIndex() {
+      return IndexOverflowException.safeCast(
+          (long) iterator.nextIndex() + appendIterator.nextIndex());
+    }
+
+    @Override
     public void remove() {
       throw new UnsupportedOperationException("remove");
+    }
+  }
+
+  private static class UnorderedIterator<E> extends OrderedIterator<E> {
+
+    private int pos;
+
+    private UnorderedIterator(final @NotNull IndexedIterator<E> iterator,
+        final @NotNull IndexedIterator<E> appendIterator) {
+      super(iterator, appendIterator);
+    }
+
+    @Override
+    public E next() {
+      final E next = super.next();
+      ++pos;
+      return next;
+    }
+
+    @Override
+    public int nextIndex() {
+      return pos;
     }
   }
 }

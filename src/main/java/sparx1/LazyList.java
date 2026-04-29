@@ -42,6 +42,8 @@ import sparx1.internal.lazy.list.ExistsForwardListMaterializer;
 import sparx1.internal.lazy.list.ExistsListMaterializer;
 import sparx1.internal.lazy.list.FilterListMaterializer;
 import sparx1.internal.lazy.list.FilterWhileListMaterializer;
+import sparx1.internal.lazy.list.FindFirstListMaterializer;
+import sparx1.internal.lazy.list.FindListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
 import sparx1.internal.lazy.list.ListToListMaterializer;
 import sparx1.internal.lazy.list.SuppliedListMaterializer;
@@ -821,23 +823,43 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<E> find(IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<E> find(final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(
+        new FindListMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
   }
 
   @Override
-  public List<E> find(Predicate<? super E> predicate) {
-    return null;
+  public List<E> find(final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(
+        new FindListMaterializer<E>(materializer, toIndexedPredicate(predicate, "predicate")));
   }
 
   @Override
-  public List<E> findFirst(IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<E> findFirst(final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(
+        new FindFirstListMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
   }
 
   @Override
-  public List<E> findFirst(Predicate<? super E> predicate) {
-    return null;
+  public List<E> findFirst(final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(
+        new FindFirstListMaterializer<E>(materializer, toIndexedPredicate(predicate, "predicate")));
   }
 
   @Override
@@ -907,7 +929,7 @@ public class LazyList<E> extends List<E> {
 
   @Override
   public E first() {
-    return null;
+    return materializer.materializeElement(0);
   }
 
   @Override
@@ -968,8 +990,11 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public E get(int index) {
-    return null;
+  public E get(final int index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(Integer.toString(index));
+    }
+    return materializer.materializeElement(index);
   }
 
   @Override
@@ -1026,12 +1051,17 @@ public class LazyList<E> extends List<E> {
 
   @Override
   public boolean isDefinite() {
-    return false;
+    return materializer.isSizeKnown();
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return materializer.materializeEmpty();
   }
 
   @Override
   public boolean isLazy() {
-    return false;
+    return true;
   }
 
   @Override
@@ -1040,17 +1070,7 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public boolean isOrdered() {
-    return false;
-  }
-
-  @Override
   public boolean isSorted() {
-    return false;
-  }
-
-  @Override
-  public boolean isTraversableAgain() {
     return false;
   }
 
@@ -1061,7 +1081,11 @@ public class LazyList<E> extends List<E> {
 
   @Override
   public E last() {
-    return null;
+    if (isEmpty()) {
+      throw new IndexOutOfBoundsException("0");
+    }
+    final ListMaterializer<E> materializer = this.materializer;
+    return materializer.materializeElement(materializer.materializeSize() - 1);
   }
 
   @Override
@@ -1381,7 +1405,7 @@ public class LazyList<E> extends List<E> {
 
   @Override
   public int size() {
-    return 0;
+    return materializer.materializeSize();
   }
 
   @Override

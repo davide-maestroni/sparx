@@ -15,29 +15,35 @@
  */
 package sparx1.internal.lazy.list;
 
-import sparx1.internal.lazy.ListMaterializer;
+import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer.IndexedIterator;
 import sparx1.util.annotation.NotNull;
 
-class BackwardIterator<E> implements IndexedIterator<E> {
+class WrapForwardIterator<E> implements IndexedIterator<E> {
 
-  private final ListMaterializer<E> materializer;
+  private final Iterator<E> iterator;
 
   private int pos;
 
-  BackwardIterator(final @NotNull ListMaterializer<E> materializer, final int pos) {
-    this.materializer = materializer;
-    this.pos = pos;
+  WrapForwardIterator(final @NotNull Iterator<E> iterator) {
+    this(iterator, 0);
+  }
+
+  WrapForwardIterator(final @NotNull Iterator<E> iterator, final int index) {
+    this.iterator = iterator;
+    pos = index;
   }
 
   @Override
   public boolean hasNext() {
-    return materializer.canMaterializeElement(pos);
+    return iterator.hasNext();
   }
 
   @Override
   public E next() {
-    return materializer.materializeElement(pos--);
+    final E next = iterator.next();
+    ++pos;
+    return next;
   }
 
   @Override

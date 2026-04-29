@@ -16,7 +16,6 @@
 package sparx1.internal.lazy.list;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNegative;
@@ -33,14 +32,12 @@ public class FilterListMaterializer<E> extends StatefulListMaterializer<E> {
   private class InitialState extends AbstractListMaterializer<E> {
 
     private final ArrayList<E> elements = new ArrayList<E>();
-    private final Iterator<E> iterator;
+    private final IndexedIterator<E> iterator;
     private final IndexedPredicate<? super E> predicate;
-
-    private int pos;
 
     private InitialState(final @NotNull ListMaterializer<E> wrapped,
         final @NotNull IndexedPredicate<? super E> predicate) {
-      iterator = wrapped.materializeUnorderedIterator();
+      iterator = wrapped.materializeForwardIterator(0);
       this.predicate = predicate;
     }
 
@@ -50,13 +47,14 @@ public class FilterListMaterializer<E> extends StatefulListMaterializer<E> {
       if (elements.size() <= index) {
         final IndexedPredicate<? super E> predicate = this.predicate;
         try {
-          final Iterator<E> iterator = this.iterator;
+          final IndexedIterator<E> iterator = this.iterator;
           do {
             if (!iterator.hasNext()) {
               return false;
             }
+            final int i = iterator.nextIndex();
             final E next = iterator.next();
-            if (predicate.test(pos++, next)) {
+            if (predicate.test(i, next)) {
               elements.add(next);
             }
           } while (elements.size() <= index);

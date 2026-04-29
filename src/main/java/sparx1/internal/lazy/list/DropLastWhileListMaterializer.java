@@ -15,13 +15,14 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.function.IndexedPredicate;
 
 public class DropLastWhileListMaterializer<E> extends SuppliedListMaterializer<E> {
+
+  private final boolean isRandomAccess;
 
   private IndexedPredicate<? super E> predicate;
   private ListMaterializer<E> wrapped;
@@ -30,23 +31,29 @@ public class DropLastWhileListMaterializer<E> extends SuppliedListMaterializer<E
       final @NotNull IndexedPredicate<? super E> predicate) {
     this.wrapped = wrapped;
     this.predicate = predicate;
+    isRandomAccess = wrapped.isRandomAccess();
   }
 
   @Override
+  @SuppressWarnings("StatementWithEmptyBody")
   public ListMaterializer<E> get() throws Exception {
     try {
       final ListMaterializer<E> wrapped = this.wrapped;
       final IndexedPredicate<? super E> predicate = this.predicate;
-      int i = wrapped.materializeSize() - 1;
-      final Iterator<E> iterator = wrapped.materializeBackwardIterator(i);
-      while (iterator.hasNext() && predicate.test(i, iterator.next())) {
-        --i;
+      final IndexedIterator<E> iterator = wrapped.materializeBackwardIterator(
+          wrapped.materializeSize() - 1);
+      while (iterator.hasNext() && predicate.test(iterator.nextIndex(), iterator.next())) {
       }
       this.wrapped = null;
       this.predicate = null;
-      return new DropFirstListMaterializer<E>(wrapped, i);
+      return new DropFirstListMaterializer<E>(wrapped, iterator.nextIndex());
     } catch (final Exception e) {
       throw UncheckedException.throwUnchecked(e);
     }
+  }
+
+  @Override
+  public boolean isRandomAccess() {
+    return isRandomAccess;
   }
 }

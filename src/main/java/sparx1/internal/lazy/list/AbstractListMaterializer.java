@@ -15,7 +15,6 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Collections;
 import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.annotation.NotNegative;
@@ -24,9 +23,9 @@ import sparx1.util.annotation.NotNull;
 public abstract class AbstractListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
-  public @NotNull Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
+  public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
     if (!canMaterializeElement(index)) {
-      return Collections.<E>emptyList().iterator();
+      return EmptyListMaterializer.iteratorInstance();
     }
     return new BackwardIterator<E>(this, index);
   }
@@ -51,9 +50,9 @@ public abstract class AbstractListMaterializer<E> implements ListMaterializer<E>
   }
 
   @Override
-  public @NotNull Iterator<E> materializeForwardIterator(final @NotNegative int index) {
+  public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
     if (!canMaterializeElement(index)) {
-      return Collections.<E>emptyList().iterator();
+      return EmptyListMaterializer.iteratorInstance();
     }
     return new ForwardIterator<E>(this, index);
   }

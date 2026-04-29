@@ -15,7 +15,6 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.UncheckedException;
 import sparx1.util.annotation.NotNegative;
@@ -52,7 +51,7 @@ public abstract class SuppliedListMaterializer<E> extends StatefulListMaterializ
     }
 
     @Override
-    public Iterator<E> materializeBackwardIterator(final @NotNegative int index) {
+    public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
       return materialize().materializeBackwardIterator(index);
     }
 
@@ -77,7 +76,7 @@ public abstract class SuppliedListMaterializer<E> extends StatefulListMaterializ
     }
 
     @Override
-    public Iterator<E> materializeForwardIterator(final @NotNegative int index) {
+    public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
       return materialize().materializeForwardIterator(index);
     }
 

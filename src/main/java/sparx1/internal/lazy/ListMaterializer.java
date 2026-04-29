@@ -28,10 +28,10 @@ public interface ListMaterializer<E> extends CollectionMaterializer<E> {
   E materializeElement(@NotNegative int index);
 
   @NotNull
-  Iterator<E> materializeBackwardIterator(@NotNegative int index);
+  IndexedIterator<E> materializeBackwardIterator(@NotNegative int index);
 
   @NotNull
-  Iterator<E> materializeForwardIterator(@NotNegative int index);
+  IndexedIterator<E> materializeForwardIterator(@NotNegative int index);
 
   @NotNull
   IndexedIterator<E> materializeUnorderedIterator();
