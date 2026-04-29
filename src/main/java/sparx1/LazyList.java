@@ -48,8 +48,10 @@ import sparx1.internal.lazy.list.FindFirstIndexOfSequenceListMaterializer;
 import sparx1.internal.lazy.list.FindFirstListMaterializer;
 import sparx1.internal.lazy.list.FindIndexListMaterializer;
 import sparx1.internal.lazy.list.FindLastIndexListMaterializer;
+import sparx1.internal.lazy.list.FindLastIndexOfSequenceListMaterializer;
 import sparx1.internal.lazy.list.FindLastListMaterializer;
 import sparx1.internal.lazy.list.FindListMaterializer;
+import sparx1.internal.lazy.list.FlatMapListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
 import sparx1.internal.lazy.list.ListToListMaterializer;
 import sparx1.internal.lazy.list.SuppliedListMaterializer;
@@ -989,8 +991,12 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<Integer> findLastIndexOfSequence(Iterable<?> elements) {
-    return null;
+  public List<Integer> findLastIndexOfSequence(final @NotNull Iterable<?> elements) {
+    if (getKnownSize(elements) == 0) {
+      return new LazyList<Integer>(new ElementToListMaterializer<Integer>(size()));
+    }
+    return new LazyList<Integer>(new FindLastIndexOfSequenceListMaterializer<E>(materializer,
+        getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
@@ -999,13 +1005,44 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public <F> List<F> flatMap(Function<? super E, ? extends Iterable<F>> mapper) {
-    return null;
+  public <F> List<F> flatMap(final @NotNull Function<? super E, ? extends Iterable<F>> mapper) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return emptyList();
+    }
+    if (knownSize == 1) {
+      Require.notNull(mapper, "mapper");
+      return new LazyList<F>(new SuppliedListMaterializer<F>() {
+        @Override
+        public ListMaterializer<F> get() throws Exception {
+          return getElementsMaterializer(mapper.apply(first()));
+        }
+      });
+    }
+    return new LazyList<F>(
+        new FlatMapListMaterializer<E, F>(materializer, toIndexedFunction(mapper, "mapper")));
   }
 
   @Override
-  public <F> List<F> flatMap(IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
-    return null;
+  public <F> List<F> flatMap(
+      final @NotNull IndexedFunction<? super E, ? extends Iterable<F>> mapper) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return emptyList();
+    }
+    if (knownSize == 1) {
+      Require.notNull(mapper, "mapper");
+      return new LazyList<F>(new SuppliedListMaterializer<F>() {
+        @Override
+        public ListMaterializer<F> get() throws Exception {
+          return getElementsMaterializer(mapper.apply(0, first()));
+        }
+      });
+    }
+    return new LazyList<F>(
+        new FlatMapListMaterializer<E, F>(materializer, Require.notNull(mapper, "mapper")));
   }
 
   @Override

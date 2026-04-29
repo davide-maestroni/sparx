@@ -44,7 +44,7 @@ public class FindIndexListMaterializer<E> extends SuppliedListMaterializer<Integ
       return EmptyListMaterializer.instance();
     }
     final IndexedPredicate<? super E> predicate = this.predicate;
-    final IndexedIterator<E> iterator = wrapped.materializeUnorderedIterator();
+    final IndexedIterator<E> iterator = iterate(wrapped);
     while (iterator.hasNext()) {
       final int index = iterator.nextIndex();
       final E element = iterator.next();
@@ -60,6 +60,11 @@ public class FindIndexListMaterializer<E> extends SuppliedListMaterializer<Integ
   @Override
   public boolean isRandomAccess() {
     return true;
+  }
+
+  @NotNull
+  IndexedIterator<E> iterate(final @NotNull ListMaterializer<E> wrapped) {
+    return wrapped.materializeUnorderedIterator();
   }
 
   private void clear() {

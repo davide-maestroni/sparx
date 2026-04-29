@@ -16,55 +16,18 @@
 package sparx1.internal.lazy.list;
 
 import sparx1.internal.lazy.ListMaterializer;
-import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.function.IndexedPredicate;
 
-public class FindLastIndexListMaterializer<E> extends SuppliedListMaterializer<Integer> {
-
-  private ListMaterializer<E> wrapped;
-  private IndexedPredicate<? super E> predicate;
+public class FindLastIndexListMaterializer<E> extends FindIndexListMaterializer<E> {
 
   public FindLastIndexListMaterializer(final @NotNull ListMaterializer<E> wrapped,
       final @NotNull IndexedPredicate<? super E> predicate) {
-    this.wrapped = wrapped;
-    this.predicate = predicate;
+    super(wrapped, predicate);
   }
 
   @Override
-  public boolean canMaterializeElement(final @NotNegative int index) {
-    return index == 0 && super.canMaterializeElement(0);
-  }
-
-  @Override
-  public ListMaterializer<Integer> get() throws Exception {
-    final ListMaterializer<E> wrapped = this.wrapped;
-    if (wrapped.materializeEmpty()) {
-      clear();
-      return EmptyListMaterializer.instance();
-    }
-    final IndexedPredicate<? super E> predicate = this.predicate;
-    final IndexedIterator<E> iterator = wrapped.materializeBackwardIterator(
-        wrapped.materializeSize() - 1);
-    while (iterator.hasNext()) {
-      final int index = iterator.nextIndex();
-      final E element = iterator.next();
-      if (predicate.test(index, element)) {
-        clear();
-        return new ElementToListMaterializer<Integer>(index);
-      }
-    }
-    clear();
-    return EmptyListMaterializer.instance();
-  }
-
-  @Override
-  public boolean isRandomAccess() {
-    return true;
-  }
-
-  private void clear() {
-    this.wrapped = null;
-    this.predicate = null;
+  IndexedIterator<E> iterate(ListMaterializer<E> wrapped) {
+    return wrapped.materializeBackwardIterator(wrapped.materializeSize() - 1);
   }
 }

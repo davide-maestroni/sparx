@@ -16,76 +16,18 @@
 package sparx1.internal.lazy.list;
 
 import sparx1.internal.lazy.ListMaterializer;
-import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.function.IndexedPredicate;
 
-public class ExistsBackwardListMaterializer<E> extends SuppliedListMaterializer<Boolean> {
-
-  private final boolean defaultResult;
-
-  private ListMaterializer<E> wrapped;
-  private IndexedPredicate<? super E> predicate;
+public class ExistsBackwardListMaterializer<E> extends ExistsListMaterializer<E> {
 
   public ExistsBackwardListMaterializer(final @NotNull ListMaterializer<E> wrapped,
       final @NotNull IndexedPredicate<? super E> predicate, final boolean defaultResult) {
-    this.wrapped = wrapped;
-    this.predicate = predicate;
-    this.defaultResult = defaultResult;
+    super(wrapped, predicate, defaultResult);
   }
 
   @Override
-  public boolean canMaterializeElement(final @NotNegative int index) {
-    return index == 0;
-  }
-
-  @Override
-  public ListMaterializer<Boolean> get() throws Exception {
-    final ListMaterializer<E> wrapped = this.wrapped;
-    if (wrapped.materializeEmpty()) {
-      clear();
-      return defaultResult ? ElementToListMaterializer.TRUE : ElementToListMaterializer.FALSE;
-    }
-    final IndexedIterator<E> iterator = wrapped.materializeForwardIterator(
-        wrapped.materializeSize() - 1);
-    final IndexedPredicate<? super E> predicate = this.predicate;
-    do {
-      if (predicate.test(iterator.nextIndex(), iterator.next())) {
-        clear();
-        return ElementToListMaterializer.TRUE;
-      }
-    } while (iterator.hasNext());
-    clear();
-    return ElementToListMaterializer.FALSE;
-  }
-
-  @Override
-  public boolean isRandomAccess() {
-    return true;
-  }
-
-  @Override
-  public boolean isSizeKnown() {
-    return true;
-  }
-
-  @Override
-  public int knownSize() {
-    return 1;
-  }
-
-  @Override
-  public boolean materializeEmpty() {
-    return false;
-  }
-
-  @Override
-  public int materializeSize() {
-    return 1;
-  }
-
-  private void clear() {
-    this.wrapped = null;
-    this.predicate = null;
+  IndexedIterator<E> iterate(ListMaterializer<E> wrapped) {
+    return wrapped.materializeBackwardIterator(wrapped.materializeSize() - 1);
   }
 }

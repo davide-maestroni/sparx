@@ -46,7 +46,7 @@ public class ExistsListMaterializer<E> extends SuppliedListMaterializer<Boolean>
       clear();
       return defaultResult ? ElementToListMaterializer.TRUE : ElementToListMaterializer.FALSE;
     }
-    final IndexedIterator<E> iterator = wrapped.materializeUnorderedIterator();
+    final IndexedIterator<E> iterator = iterate(wrapped);
     final IndexedPredicate<? super E> predicate = this.predicate;
     do {
       if (predicate.test(iterator.nextIndex(), iterator.next())) {
@@ -81,6 +81,11 @@ public class ExistsListMaterializer<E> extends SuppliedListMaterializer<Boolean>
   @Override
   public int materializeSize() {
     return 1;
+  }
+
+  @NotNull
+  IndexedIterator<E> iterate(final @NotNull ListMaterializer<E> wrapped) {
+    return wrapped.materializeUnorderedIterator();
   }
 
   private void clear() {

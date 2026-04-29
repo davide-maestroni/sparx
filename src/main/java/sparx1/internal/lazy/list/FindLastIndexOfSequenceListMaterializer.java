@@ -20,12 +20,12 @@ import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.function.Functions;
 
-public class FindFirstIndexOfSequenceListMaterializer<E> extends SuppliedListMaterializer<Integer> {
+public class FindLastIndexOfSequenceListMaterializer<E> extends SuppliedListMaterializer<Integer> {
 
   private ListMaterializer<E> wrapped;
   private ListMaterializer<?> elementsMaterializer;
 
-  public FindFirstIndexOfSequenceListMaterializer(final @NotNull ListMaterializer<E> wrapped,
+  public FindLastIndexOfSequenceListMaterializer(final @NotNull ListMaterializer<E> wrapped,
       final @NotNull ListMaterializer<?> elementsMaterializer) {
     this.wrapped = wrapped;
     this.elementsMaterializer = elementsMaterializer;
@@ -50,7 +50,7 @@ public class FindFirstIndexOfSequenceListMaterializer<E> extends SuppliedListMat
       clear();
       return EmptyListMaterializer.instance();
     }
-    for (int i = 0; i <= maxIndex; ++i) {
+    for (int i = maxIndex; i >= 0; --i) {
       final IndexedIterator<E> iterator = wrapped.materializeForwardIterator(i);
       final IndexedIterator<?> elementsIterator = elementsMaterializer.materializeForwardIterator(
           0);
