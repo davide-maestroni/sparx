@@ -46,6 +46,9 @@ import sparx1.internal.lazy.list.FilterWhileListMaterializer;
 import sparx1.internal.lazy.list.FindFirstIndexListMaterializer;
 import sparx1.internal.lazy.list.FindFirstIndexOfSequenceListMaterializer;
 import sparx1.internal.lazy.list.FindFirstListMaterializer;
+import sparx1.internal.lazy.list.FindIndexListMaterializer;
+import sparx1.internal.lazy.list.FindLastIndexListMaterializer;
+import sparx1.internal.lazy.list.FindLastListMaterializer;
 import sparx1.internal.lazy.list.FindListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
 import sparx1.internal.lazy.list.ListToListMaterializer;
@@ -63,6 +66,7 @@ import sparx1.util.function.Action;
 import sparx1.util.function.BinaryFunction;
 import sparx1.util.function.Consumer;
 import sparx1.util.function.Function;
+import sparx1.util.function.Functions;
 import sparx1.util.function.IndexedConsumer;
 import sparx1.util.function.IndexedFunction;
 import sparx1.util.function.IndexedPredicate;
@@ -905,43 +909,83 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<Integer> findIndex(IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<Integer> findIndex(final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<Integer>(
+        new FindIndexListMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
   }
 
   @Override
-  public List<Integer> findIndex(Predicate<? super E> predicate) {
-    return null;
+  public List<Integer> findIndex(final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<Integer>(
+        new FindIndexListMaterializer<E>(materializer, toIndexedPredicate(predicate, "predicate")));
   }
 
   @Override
-  public List<Integer> findIndexOf(Object element) {
-    return null;
+  public List<Integer> findIndexOf(final Object element) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<Integer>(
+        new FindIndexListMaterializer<E>(materializer, equalsElement(element)));
   }
 
   @Override
-  public List<E> findLast(IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<E> findLast(final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(
+        new FindLastListMaterializer<E>(materializer, Require.notNull(predicate, "predicate")));
   }
 
   @Override
-  public List<E> findLast(Predicate<? super E> predicate) {
-    return null;
+  public List<E> findLast(final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(
+        new FindLastListMaterializer<E>(materializer, toIndexedPredicate(predicate, "predicate")));
   }
 
   @Override
-  public List<Integer> findLastIndex(IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<Integer> findLastIndex(final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<Integer>(new FindLastIndexListMaterializer<E>(materializer,
+        Require.notNull(predicate, "predicate")));
   }
 
   @Override
-  public List<Integer> findLastIndex(Predicate<? super E> predicate) {
-    return null;
+  public List<Integer> findLastIndex(final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<Integer>(new FindLastIndexListMaterializer<E>(materializer,
+        toIndexedPredicate(predicate, "predicate")));
   }
 
   @Override
-  public List<Integer> findLastIndexOf(Object element) {
-    return null;
+  public List<Integer> findLastIndexOf(final Object element) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<Integer>(
+        new FindLastIndexListMaterializer<E>(materializer, Functions.<E>equalsElement(element)));
   }
 
   @Override
