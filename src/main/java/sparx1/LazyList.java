@@ -16,6 +16,7 @@
 package sparx1;
 
 import static sparx1.lazy.getKnownSize;
+import static sparx1.util.function.Functions.equalsElement;
 import static sparx1.util.function.Functions.indexedIdentity;
 import static sparx1.util.function.Functions.toIndexedFunction;
 import static sparx1.util.function.Functions.toIndexedPredicate;
@@ -42,6 +43,8 @@ import sparx1.internal.lazy.list.ExistsForwardListMaterializer;
 import sparx1.internal.lazy.list.ExistsListMaterializer;
 import sparx1.internal.lazy.list.FilterListMaterializer;
 import sparx1.internal.lazy.list.FilterWhileListMaterializer;
+import sparx1.internal.lazy.list.FindFirstIndexListMaterializer;
+import sparx1.internal.lazy.list.FindFirstIndexOfSequenceListMaterializer;
 import sparx1.internal.lazy.list.FindFirstListMaterializer;
 import sparx1.internal.lazy.list.FindListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
@@ -863,23 +866,42 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<Integer> findFirstIndex(IndexedPredicate<? super E> predicate) {
-    return null;
+  public List<Integer> findFirstIndex(final @NotNull IndexedPredicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<Integer>(new FindFirstIndexListMaterializer<E>(materializer,
+        Require.notNull(predicate, "predicate")));
   }
 
   @Override
-  public List<Integer> findFirstIndex(Predicate<? super E> predicate) {
-    return null;
+  public List<Integer> findFirstIndex(final @NotNull Predicate<? super E> predicate) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<Integer>(new FindFirstIndexListMaterializer<E>(materializer,
+        toIndexedPredicate(predicate, "predicate")));
   }
 
   @Override
-  public List<Integer> findFirstIndexOf(Object element) {
-    return null;
+  public List<Integer> findFirstIndexOf(final Object element) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return emptyList();
+    }
+    return new LazyList<Integer>(
+        new FindFirstIndexListMaterializer<E>(materializer, equalsElement(element)));
   }
 
   @Override
-  public List<Integer> findFirstIndexOfSequence(Iterable<?> elements) {
-    return null;
+  public List<Integer> findFirstIndexOfSequence(final @NotNull Iterable<?> elements) {
+    if (getKnownSize(elements) == 0) {
+      return ZERO_LIST;
+    }
+    return new LazyList<Integer>(new FindFirstIndexOfSequenceListMaterializer<E>(materializer,
+        getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override

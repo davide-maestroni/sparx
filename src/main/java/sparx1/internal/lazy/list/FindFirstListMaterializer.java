@@ -40,8 +40,7 @@ public class FindFirstListMaterializer<E> extends SuppliedListMaterializer<E> {
   public ListMaterializer<E> get() throws Exception {
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.materializeEmpty()) {
-      this.wrapped = null;
-      this.predicate = null;
+      clear();
       return EmptyListMaterializer.instance();
     }
     final IndexedPredicate<? super E> predicate = this.predicate;
@@ -50,18 +49,21 @@ public class FindFirstListMaterializer<E> extends SuppliedListMaterializer<E> {
       final int index = iterator.nextIndex();
       final E element = iterator.next();
       if (predicate.test(index, element)) {
-        this.wrapped = null;
-        this.predicate = null;
+        clear();
         return new ElementToListMaterializer<E>(element);
       }
     }
-    this.wrapped = null;
-    this.predicate = null;
+    clear();
     return EmptyListMaterializer.instance();
   }
 
   @Override
   public boolean isRandomAccess() {
     return true;
+  }
+
+  private void clear() {
+    this.wrapped = null;
+    this.predicate = null;
   }
 }

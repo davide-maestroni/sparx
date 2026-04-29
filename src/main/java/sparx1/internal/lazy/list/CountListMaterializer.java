@@ -36,12 +36,12 @@ public class CountListMaterializer<E> extends SuppliedListMaterializer<Integer> 
   public ListMaterializer<Integer> get() {
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.materializeEmpty()) {
-      this.wrapped = null;
+      clear();
       return ElementToListMaterializer.ZERO;
     }
     final ElementToListMaterializer<Integer> materializer = new ElementToListMaterializer<Integer>(
         wrapped.materializeSize());
-    this.wrapped = null;
+    clear();
     return materializer;
   }
 
@@ -68,5 +68,9 @@ public class CountListMaterializer<E> extends SuppliedListMaterializer<Integer> 
   @Override
   public int materializeSize() {
     return 1;
+  }
+
+  private void clear() {
+    this.wrapped = null;
   }
 }

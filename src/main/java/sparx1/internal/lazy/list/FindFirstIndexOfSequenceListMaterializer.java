@@ -15,18 +15,17 @@
  */
 package sparx1.internal.lazy.list;
 
-import java.util.Iterator;
 import sparx1.internal.lazy.ListMaterializer;
 import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.function.Functions;
 
-public class EndsWithListMaterializer<E> extends SuppliedListMaterializer<Boolean> {
+public class FindFirstIndexOfSequenceListMaterializer<E> extends SuppliedListMaterializer<Integer> {
 
   private ListMaterializer<E> wrapped;
   private ListMaterializer<?> elementsMaterializer;
 
-  public EndsWithListMaterializer(final @NotNull ListMaterializer<E> wrapped,
+  public FindFirstIndexOfSequenceListMaterializer(final @NotNull ListMaterializer<E> wrapped,
       final @NotNull ListMaterializer<?> elementsMaterializer) {
     this.wrapped = wrapped;
     this.elementsMaterializer = elementsMaterializer;
@@ -34,57 +33,48 @@ public class EndsWithListMaterializer<E> extends SuppliedListMaterializer<Boolea
 
   @Override
   public boolean canMaterializeElement(final @NotNegative int index) {
-    return index == 0;
+    return index == 0 && super.canMaterializeElement(0);
   }
 
   @Override
-  public ListMaterializer<Boolean> get() {
+  public ListMaterializer<Integer> get() throws Exception {
     final ListMaterializer<E> wrapped = this.wrapped;
     final ListMaterializer<?> elementsMaterializer = this.elementsMaterializer;
-    final int wrappedSize = wrapped.materializeSize();
-    final int elementsSize = elementsMaterializer.materializeSize();
-    if (wrappedSize < elementsSize) {
+    if (wrapped.materializeEmpty()) {
       clear();
-      return ElementToListMaterializer.FALSE;
+      return elementsMaterializer.materializeEmpty() ? ElementToListMaterializer.ZERO
+          : EmptyListMaterializer.<Integer>instance();
     }
-    final Iterator<E> wrappedIterator = wrapped.materializeForwardIterator(
-        wrappedSize - elementsSize);
-    final Iterator<?> elementsIterator = elementsMaterializer.materializeForwardIterator(0);
-    while (wrappedIterator.hasNext() && elementsIterator.hasNext()) {
-      final E left = wrappedIterator.next();
-      final Object right = elementsIterator.next();
-      if (!Functions.objectsEqual(left, right)) {
+    final int maxIndex = wrapped.materializeSize() - elementsMaterializer.materializeSize();
+    if (maxIndex < 0) {
+      clear();
+      return EmptyListMaterializer.instance();
+    }
+    for (int i = 0; i < maxIndex; ++i) {
+      final IndexedIterator<E> iterator = wrapped.materializeForwardIterator(i);
+      final IndexedIterator<?> elementsIterator = elementsMaterializer.materializeForwardIterator(
+          0);
+      while (iterator.hasNext()) {
+        if (!elementsIterator.hasNext()) {
+          clear();
+          return new ElementToListMaterializer<Integer>(i);
+        }
+        if (Functions.objectsEqual(iterator.next(), elementsIterator.next())) {
+          break;
+        }
+      }
+      if (!elementsIterator.hasNext()) {
         clear();
-        return ElementToListMaterializer.FALSE;
+        return new ElementToListMaterializer<Integer>(i);
       }
     }
     clear();
-    return ElementToListMaterializer.TRUE;
+    return EmptyListMaterializer.instance();
   }
 
   @Override
   public boolean isRandomAccess() {
     return true;
-  }
-
-  @Override
-  public boolean isSizeKnown() {
-    return true;
-  }
-
-  @Override
-  public int knownSize() {
-    return 1;
-  }
-
-  @Override
-  public boolean materializeEmpty() {
-    return false;
-  }
-
-  @Override
-  public int materializeSize() {
-    return 1;
   }
 
   private void clear() {

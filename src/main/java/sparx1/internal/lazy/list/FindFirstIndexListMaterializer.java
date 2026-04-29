@@ -20,67 +20,46 @@ import sparx1.util.annotation.NotNegative;
 import sparx1.util.annotation.NotNull;
 import sparx1.util.function.IndexedPredicate;
 
-public class ExistsListMaterializer<E> extends SuppliedListMaterializer<Boolean> {
-
-  private final boolean defaultResult;
+public class FindFirstIndexListMaterializer<E> extends SuppliedListMaterializer<Integer> {
 
   private ListMaterializer<E> wrapped;
   private IndexedPredicate<? super E> predicate;
 
-  public ExistsListMaterializer(final @NotNull ListMaterializer<E> wrapped,
-      final @NotNull IndexedPredicate<? super E> predicate, final boolean defaultResult) {
+  public FindFirstIndexListMaterializer(final @NotNull ListMaterializer<E> wrapped,
+      final @NotNull IndexedPredicate<? super E> predicate) {
     this.wrapped = wrapped;
     this.predicate = predicate;
-    this.defaultResult = defaultResult;
   }
 
   @Override
   public boolean canMaterializeElement(final @NotNegative int index) {
-    return index == 0;
+    return index == 0 && super.canMaterializeElement(0);
   }
 
   @Override
-  public ListMaterializer<Boolean> get() throws Exception {
+  public ListMaterializer<Integer> get() throws Exception {
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.materializeEmpty()) {
       clear();
-      return defaultResult ? ElementToListMaterializer.TRUE : ElementToListMaterializer.FALSE;
+      return EmptyListMaterializer.instance();
     }
-    final IndexedIterator<E> iterator = wrapped.materializeUnorderedIterator();
     final IndexedPredicate<? super E> predicate = this.predicate;
-    do {
-      if (predicate.test(iterator.nextIndex(), iterator.next())) {
+    final IndexedIterator<E> iterator = wrapped.materializeForwardIterator(0);
+    while (iterator.hasNext()) {
+      final int index = iterator.nextIndex();
+      final E element = iterator.next();
+      if (predicate.test(index, element)) {
         clear();
-        return ElementToListMaterializer.TRUE;
+        return new ElementToListMaterializer<Integer>(index);
       }
-    } while (iterator.hasNext());
+    }
     clear();
-    return ElementToListMaterializer.FALSE;
+    return EmptyListMaterializer.instance();
   }
 
   @Override
   public boolean isRandomAccess() {
     return true;
-  }
-
-  @Override
-  public boolean isSizeKnown() {
-    return true;
-  }
-
-  @Override
-  public int knownSize() {
-    return 1;
-  }
-
-  @Override
-  public boolean materializeEmpty() {
-    return false;
-  }
-
-  @Override
-  public int materializeSize() {
-    return 1;
   }
 
   private void clear() {

@@ -43,8 +43,7 @@ public class ExistsBackwardListMaterializer<E> extends SuppliedListMaterializer<
   public ListMaterializer<Boolean> get() throws Exception {
     final ListMaterializer<E> wrapped = this.wrapped;
     if (wrapped.materializeEmpty()) {
-      this.wrapped = null;
-      this.predicate = null;
+      clear();
       return defaultResult ? ElementToListMaterializer.TRUE : ElementToListMaterializer.FALSE;
     }
     final IndexedIterator<E> iterator = wrapped.materializeForwardIterator(
@@ -52,13 +51,11 @@ public class ExistsBackwardListMaterializer<E> extends SuppliedListMaterializer<
     final IndexedPredicate<? super E> predicate = this.predicate;
     do {
       if (predicate.test(iterator.nextIndex(), iterator.next())) {
-        this.wrapped = null;
-        this.predicate = null;
+        clear();
         return ElementToListMaterializer.TRUE;
       }
     } while (iterator.hasNext());
-    this.wrapped = null;
-    this.predicate = null;
+    clear();
     return ElementToListMaterializer.FALSE;
   }
 
@@ -85,5 +82,10 @@ public class ExistsBackwardListMaterializer<E> extends SuppliedListMaterializer<
   @Override
   public int materializeSize() {
     return 1;
+  }
+
+  private void clear() {
+    this.wrapped = null;
+    this.predicate = null;
   }
 }
