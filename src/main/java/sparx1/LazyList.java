@@ -52,6 +52,10 @@ import sparx1.internal.lazy.list.FindLastIndexOfSequenceListMaterializer;
 import sparx1.internal.lazy.list.FindLastListMaterializer;
 import sparx1.internal.lazy.list.FindListMaterializer;
 import sparx1.internal.lazy.list.FlatMapListMaterializer;
+import sparx1.internal.lazy.list.FlatMapWhileListMaterializer;
+import sparx1.internal.lazy.list.FoldBackwardListMaterializer;
+import sparx1.internal.lazy.list.FoldForwardListMaterializer;
+import sparx1.internal.lazy.list.FoldListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
 import sparx1.internal.lazy.list.ListToListMaterializer;
 import sparx1.internal.lazy.list.SuppliedListMaterializer;
@@ -1046,32 +1050,90 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<E> flatMapWhile(IndexedPredicate<? super E> condition,
-      IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
-    return null;
+  public List<E> flatMapWhile(final @NotNull IndexedPredicate<? super E> condition,
+      final @NotNull IndexedFunction<? super E, ? extends Iterable<? extends E>> mapper) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return emptyList();
+    }
+    if (knownSize == 1) {
+      Require.notNull(condition, "condition");
+      Require.notNull(mapper, "mapper");
+      return new LazyList<E>(new SuppliedListMaterializer<E>() {
+        @Override
+        public ListMaterializer<E> get() throws Exception {
+          final E element = first();
+          if (condition.test(0, element)) {
+            return getElementsMaterializer(mapper.apply(0, element));
+          }
+          return materializer;
+        }
+      });
+    }
+    return new LazyList<E>(
+        new FlatMapWhileListMaterializer<E>(materializer, Require.notNull(mapper, "mapper"),
+            Require.notNull(condition, "condition")));
   }
 
   @Override
-  public List<E> flatMapWhile(Predicate<? super E> condition,
-      Function<? super E, ? extends Iterable<? extends E>> mapper) {
-    return null;
+  public List<E> flatMapWhile(final @NotNull Predicate<? super E> condition,
+      final @NotNull Function<? super E, ? extends Iterable<? extends E>> mapper) {
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize == 0) {
+      return emptyList();
+    }
+    if (knownSize == 1) {
+      Require.notNull(condition, "condition");
+      Require.notNull(mapper, "mapper");
+      return new LazyList<E>(new SuppliedListMaterializer<E>() {
+        @Override
+        public ListMaterializer<E> get() throws Exception {
+          final E element = first();
+          if (condition.test(element)) {
+            return getElementsMaterializer(mapper.apply(element));
+          }
+          return materializer;
+        }
+      });
+    }
+    return new LazyList<E>(
+        new FlatMapWhileListMaterializer<E>(materializer, toIndexedFunction(mapper, "mapper"),
+            toIndexedPredicate(condition, "condition")));
   }
 
   @Override
-  public <F> List<F> fold(F identity, BinaryFunction<? super F, ? super E, ? extends F> operation) {
-    return null;
+  public <F> List<F> fold(final F identity,
+      final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+    }
+    return new LazyList<F>(new FoldListMaterializer<E, F>(materializer, identity,
+        Require.notNull(operation, "operation")));
   }
 
   @Override
-  public <F> List<F> foldBackward(F identity,
-      BinaryFunction<? super F, ? super E, ? extends F> operation) {
-    return null;
+  public <F> List<F> foldBackward(final F identity,
+      final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+    }
+    return new LazyList<F>(new FoldBackwardListMaterializer<E, F>(materializer, identity,
+        Require.notNull(operation, "operation")));
   }
 
   @Override
-  public <F> List<F> foldForward(F identity,
-      BinaryFunction<? super F, ? super E, ? extends F> operation) {
-    return null;
+  public <F> List<F> foldForward(final F identity,
+      final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+    }
+    return new LazyList<F>(new FoldForwardListMaterializer<E, F>(materializer, identity,
+        Require.notNull(operation, "operation")));
   }
 
   @Override
