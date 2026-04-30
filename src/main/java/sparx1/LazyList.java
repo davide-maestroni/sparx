@@ -56,6 +56,9 @@ import sparx1.internal.lazy.list.FlatMapWhileListMaterializer;
 import sparx1.internal.lazy.list.FoldBackwardListMaterializer;
 import sparx1.internal.lazy.list.FoldForwardListMaterializer;
 import sparx1.internal.lazy.list.FoldListMaterializer;
+import sparx1.internal.lazy.list.FoldWhileBackwardListMaterializer;
+import sparx1.internal.lazy.list.FoldWhileForwardListMaterializer;
+import sparx1.internal.lazy.list.FoldWhileListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
 import sparx1.internal.lazy.list.ListToListMaterializer;
 import sparx1.internal.lazy.list.SuppliedListMaterializer;
@@ -1137,21 +1140,38 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public <F> List<F> foldWhile(F identity, Predicate<? super F> condition,
-      BinaryFunction<? super F, ? super E, ? extends F> operation) {
-    return null;
+  public <F> List<F> foldWhile(final F identity, final @NotNull Predicate<? super F> condition,
+      final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+    }
+    return new LazyList<F>(new FoldWhileListMaterializer<E, F>(materializer, identity,
+        Require.notNull(operation, "operation"), Require.notNull(condition, "condition")));
   }
 
   @Override
-  public <F> List<F> foldWhileBackward(F identity, Predicate<? super F> condition,
-      BinaryFunction<? super F, ? super E, ? extends F> operation) {
-    return null;
+  public <F> List<F> foldWhileBackward(final F identity,
+      final @NotNull Predicate<? super F> condition,
+      final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+    }
+    return new LazyList<F>(new FoldWhileBackwardListMaterializer<E, F>(materializer, identity,
+        Require.notNull(operation, "operation"), Require.notNull(condition, "condition")));
   }
 
   @Override
-  public <F> List<F> foldWhileForward(F identity, Predicate<? super F> condition,
-      BinaryFunction<? super F, ? super E, ? extends F> operation) {
-    return null;
+  public <F> List<F> foldWhileForward(final F identity,
+      final @NotNull Predicate<? super F> condition,
+      final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+    }
+    return new LazyList<F>(new FoldWhileForwardListMaterializer<E, F>(materializer, identity,
+        Require.notNull(operation, "operation"), Require.notNull(condition, "condition")));
   }
 
   @Override
