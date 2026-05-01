@@ -59,6 +59,8 @@ import sparx1.internal.lazy.list.FoldListMaterializer;
 import sparx1.internal.lazy.list.FoldWhileBackwardListMaterializer;
 import sparx1.internal.lazy.list.FoldWhileForwardListMaterializer;
 import sparx1.internal.lazy.list.FoldWhileListMaterializer;
+import sparx1.internal.lazy.list.IncludesAllListMaterializer;
+import sparx1.internal.lazy.list.IncludesSequenceListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
 import sparx1.internal.lazy.list.ListToListMaterializer;
 import sparx1.internal.lazy.list.SuppliedListMaterializer;
@@ -147,7 +149,7 @@ public class LazyList<E> extends List<E> {
   public List<E> append(final E element) {
     final ListMaterializer<E> materializer = this.materializer;
     if (materializer.knownSize() == 0) {
-      return new LazyList<E>(new ElementToListMaterializer<E>(element));
+      return elementList(element);
     }
     return new LazyList<E>(new AppendListMaterializer<E>(materializer, element));
   }
@@ -169,7 +171,8 @@ public class LazyList<E> extends List<E> {
     return new LazyList<F>(new SuppliedListMaterializer<F>() {
       @Override
       public ListMaterializer<F> get() throws Exception {
-        return getElementsMaterializer(Require.notNull(function.apply(LazyList.this), "elements"));
+        // TODO: accept nulls (== empty)? also params?
+        return getElementsMaterializer(function.apply(LazyList.this));
       }
     });
   }
@@ -1000,7 +1003,7 @@ public class LazyList<E> extends List<E> {
   @Override
   public List<Integer> findLastIndexOfSequence(final @NotNull Iterable<?> elements) {
     if (getKnownSize(elements) == 0) {
-      return new LazyList<Integer>(new ElementToListMaterializer<Integer>(size()));
+      return elementList(size());
     }
     return new LazyList<Integer>(new FindLastIndexOfSequenceListMaterializer<E>(materializer,
         getElementsMaterializer(Require.notNull(elements, "elements"))));
@@ -1111,7 +1114,7 @@ public class LazyList<E> extends List<E> {
       final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
     final ListMaterializer<E> materializer = this.materializer;
     if (materializer.knownSize() == 0) {
-      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+      return elementList(identity);
     }
     return new LazyList<F>(new FoldListMaterializer<E, F>(materializer, identity,
         Require.notNull(operation, "operation")));
@@ -1122,7 +1125,7 @@ public class LazyList<E> extends List<E> {
       final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
     final ListMaterializer<E> materializer = this.materializer;
     if (materializer.knownSize() == 0) {
-      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+      return elementList(identity);
     }
     return new LazyList<F>(new FoldBackwardListMaterializer<E, F>(materializer, identity,
         Require.notNull(operation, "operation")));
@@ -1133,7 +1136,7 @@ public class LazyList<E> extends List<E> {
       final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
     final ListMaterializer<E> materializer = this.materializer;
     if (materializer.knownSize() == 0) {
-      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+      return elementList(identity);
     }
     return new LazyList<F>(new FoldForwardListMaterializer<E, F>(materializer, identity,
         Require.notNull(operation, "operation")));
@@ -1144,7 +1147,7 @@ public class LazyList<E> extends List<E> {
       final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
     final ListMaterializer<E> materializer = this.materializer;
     if (materializer.knownSize() == 0) {
-      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+      return elementList(identity);
     }
     return new LazyList<F>(new FoldWhileListMaterializer<E, F>(materializer, identity,
         Require.notNull(operation, "operation"), Require.notNull(condition, "condition")));
@@ -1156,7 +1159,7 @@ public class LazyList<E> extends List<E> {
       final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
     final ListMaterializer<E> materializer = this.materializer;
     if (materializer.knownSize() == 0) {
-      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+      return elementList(identity);
     }
     return new LazyList<F>(new FoldWhileBackwardListMaterializer<E, F>(materializer, identity,
         Require.notNull(operation, "operation"), Require.notNull(condition, "condition")));
@@ -1168,7 +1171,7 @@ public class LazyList<E> extends List<E> {
       final @NotNull BinaryFunction<? super F, ? super E, ? extends F> operation) {
     final ListMaterializer<E> materializer = this.materializer;
     if (materializer.knownSize() == 0) {
-      return new LazyList<F>(new ElementToListMaterializer<F>(identity));
+      return elementList(identity);
     }
     return new LazyList<F>(new FoldWhileForwardListMaterializer<E, F>(materializer, identity,
         Require.notNull(operation, "operation"), Require.notNull(condition, "condition")));
@@ -1183,18 +1186,40 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<Boolean> includes(Object element) {
-    return null;
+  public List<Boolean> includes(final Object element) {
+    return exists(false, equalsElement(element));
   }
 
   @Override
-  public List<Boolean> includesAll(Iterable<?> elements) {
-    return null;
+  public List<Boolean> includesAll(final @NotNull Iterable<?> elements) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      final int elementsKnownSize = getKnownSize(elements);
+      if (elementsKnownSize == 0) {
+        return TRUE_LIST;
+      }
+      if (elementsKnownSize > 0) {
+        return FALSE_LIST;
+      }
+    }
+    return new LazyList<Boolean>(
+        new IncludesAllListMaterializer<E>(materializer, Require.notNull(elements, "elements")));
   }
 
   @Override
-  public List<Boolean> includesSequence(Iterable<?> elements) {
-    return null;
+  public List<Boolean> includesSequence(final @NotNull Iterable<?> elements) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0) {
+      final int elementsKnownSize = getKnownSize(elements);
+      if (elementsKnownSize == 0) {
+        return TRUE_LIST;
+      }
+      if (elementsKnownSize > 0) {
+        return FALSE_LIST;
+      }
+    }
+    return new LazyList<Boolean>(new IncludesSequenceListMaterializer<E>(materializer,
+        getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override

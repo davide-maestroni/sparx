@@ -995,10 +995,7 @@ public class LazyIterator<E> extends Iterator<E> {
 
   @Override
   public @NotNull Iterator<Boolean> includes(final @Nullable Object element) {
-    if (materializer.currentKnownSize() == 0) {
-      return elementIterator(false);
-    }
-    return exists(false, Functions.<E>equalsElement(element));
+    return exists(false, equalsElement(element));
   }
 
   @Override
