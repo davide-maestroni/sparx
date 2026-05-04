@@ -61,7 +61,7 @@ public class DropFirstListMaterializer<E> extends AbstractListMaterializer<E> {
   public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
     final long wrappedIndex = (long) index + maxElements;
     if (wrappedIndex >= Integer.MAX_VALUE) {
-      return EmptyListMaterializer.iteratorInstance();
+      return EmptyListMaterializer.backwardIterator();
     }
     return new WrapBackwardIterator<E>(wrapped.materializeBackwardIterator((int) wrappedIndex),
         index);
@@ -90,7 +90,7 @@ public class DropFirstListMaterializer<E> extends AbstractListMaterializer<E> {
   public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
     final long wrappedIndex = (long) index + maxElements;
     if (wrappedIndex >= Integer.MAX_VALUE) {
-      return EmptyListMaterializer.iteratorInstance();
+      return EmptyListMaterializer.forwardIterator();
     }
     return new WrapForwardIterator<E>(wrapped.materializeForwardIterator((int) wrappedIndex),
         index);

@@ -25,7 +25,7 @@ public abstract class AbstractListMaterializer<E> implements ListMaterializer<E>
   @Override
   public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
     if (!canMaterializeElement(index)) {
-      return EmptyListMaterializer.iteratorInstance();
+      return EmptyListMaterializer.backwardIterator();
     }
     return new BackwardIterator<E>(this, index);
   }
@@ -52,7 +52,7 @@ public abstract class AbstractListMaterializer<E> implements ListMaterializer<E>
   @Override
   public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
     if (!canMaterializeElement(index)) {
-      return EmptyListMaterializer.iteratorInstance();
+      return EmptyListMaterializer.forwardIterator();
     }
     return new ForwardIterator<E>(this, index);
   }

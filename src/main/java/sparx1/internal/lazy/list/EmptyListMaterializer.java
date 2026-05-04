@@ -22,20 +22,26 @@ import sparx1.util.annotation.NotNull;
 
 public class EmptyListMaterializer<E> implements ListMaterializer<E> {
 
+  private static final BackwardIterator BACKWARD_ITERATOR = new BackwardIterator();
+  private static final ForwardIterator FORWARD_ITERATOR = new ForwardIterator();
   private static final EmptyListMaterializer<?> INSTANCE = new EmptyListMaterializer<Object>();
-  private static final EmptyIndexedIterator EMPTY_ITERATOR = new EmptyIndexedIterator();
 
   private EmptyListMaterializer() {
   }
 
   @SuppressWarnings("unchecked")
-  public static @NotNull <E> EmptyListMaterializer<E> instance() {
-    return (EmptyListMaterializer<E>) INSTANCE;
+  public static @NotNull <E> IndexedIterator<E> backwardIterator() {
+    return (IndexedIterator<E>) BACKWARD_ITERATOR;
   }
 
   @SuppressWarnings("unchecked")
-  public static @NotNull <E> IndexedIterator<E> iteratorInstance() {
-    return (IndexedIterator<E>) EMPTY_ITERATOR;
+  public static @NotNull <E> IndexedIterator<E> forwardIterator() {
+    return (IndexedIterator<E>) FORWARD_ITERATOR;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static @NotNull <E> EmptyListMaterializer<E> instance() {
+    return (EmptyListMaterializer<E>) INSTANCE;
   }
 
   @Override
@@ -60,7 +66,7 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
-    return iteratorInstance();
+    return backwardIterator();
   }
 
   @Override
@@ -85,7 +91,7 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
-    return iteratorInstance();
+    return forwardIterator();
   }
 
   @Override
@@ -95,10 +101,33 @@ public class EmptyListMaterializer<E> implements ListMaterializer<E> {
 
   @Override
   public @NotNull IndexedIterator<E> materializeUnorderedIterator() {
-    return iteratorInstance();
+    return forwardIterator();
   }
 
-  private static class EmptyIndexedIterator implements IndexedIterator<Object> {
+  private static class BackwardIterator implements IndexedIterator<Object> {
+
+    @Override
+    public boolean hasNext() {
+      return false;
+    }
+
+    @Override
+    public Object next() {
+      throw new NoSuchElementException();
+    }
+
+    @Override
+    public int nextIndex() {
+      return -1;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
+  }
+
+  private static class ForwardIterator implements IndexedIterator<Object> {
 
     @Override
     public boolean hasNext() {

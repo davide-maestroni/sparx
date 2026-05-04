@@ -61,6 +61,7 @@ import sparx1.internal.lazy.list.FoldWhileForwardListMaterializer;
 import sparx1.internal.lazy.list.FoldWhileListMaterializer;
 import sparx1.internal.lazy.list.IncludesAllListMaterializer;
 import sparx1.internal.lazy.list.IncludesSequenceListMaterializer;
+import sparx1.internal.lazy.list.InsertAfterListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
 import sparx1.internal.lazy.list.ListToListMaterializer;
 import sparx1.internal.lazy.list.SuppliedListMaterializer;
@@ -1223,8 +1224,21 @@ public class LazyList<E> extends List<E> {
   }
 
   @Override
-  public List<E> insertAfter(int numElements, E element) {
-    return null;
+  public List<E> insertAfter(final int numElements, final E element) {
+    if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+      return this;
+    }
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize >= 0) {
+      if (knownSize < numElements) {
+        return this;
+      }
+      if (knownSize == numElements) {
+        return knownSize == 0 ? elementList(element) : append(element);
+      }
+    }
+    return new LazyList<E>(new InsertAfterListMaterializer<E>(materializer, numElements, element));
   }
 
   @Override

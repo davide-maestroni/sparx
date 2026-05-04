@@ -63,7 +63,7 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
     final int size = materializeSize();
     if (index >= size) {
-      return EmptyListMaterializer.iteratorInstance();
+      return EmptyListMaterializer.backwardIterator();
     }
     if (index == size - 1) {
       if (index == 0) {
@@ -108,7 +108,7 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
   public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
     final int size = materializeSize();
     if (index >= size) {
-      return EmptyListMaterializer.iteratorInstance();
+      return EmptyListMaterializer.forwardIterator();
     }
     if (index == size - 1) {
       return new WrapForwardIterator<E>(Collections.singleton(element).iterator(), index);
@@ -217,13 +217,13 @@ public class AppendListMaterializer<E> implements ListMaterializer<E> {
     @Override
     public E next() {
       final E next = super.next();
-      ++pos;
+      pos = IndexOverflowException.safeCast(pos + 1L);
       return next;
     }
 
     @Override
     public int nextIndex() {
-      return super.consumedElement ? pos : super.nextIndex();
+      return super.consumedElement ? pos : super.iterator.nextIndex();
     }
   }
 }

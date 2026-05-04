@@ -60,7 +60,7 @@ public class DropLastListMaterializer<E> extends AbstractListMaterializer<E> {
   @Override
   public @NotNull IndexedIterator<E> materializeBackwardIterator(final @NotNegative int index) {
     if (index >= materializeSize()) {
-      return EmptyListMaterializer.iteratorInstance();
+      return EmptyListMaterializer.backwardIterator();
     }
     return wrapped.materializeBackwardIterator(index);
   }
@@ -88,7 +88,7 @@ public class DropLastListMaterializer<E> extends AbstractListMaterializer<E> {
   @Override
   public @NotNull IndexedIterator<E> materializeForwardIterator(final @NotNegative int index) {
     if (index >= materializeSize()) {
-      return EmptyListMaterializer.iteratorInstance();
+      return EmptyListMaterializer.forwardIterator();
     }
     return new OrderedIterator<E>(wrapped.materializeForwardIterator(index), index,
         materializeSize());

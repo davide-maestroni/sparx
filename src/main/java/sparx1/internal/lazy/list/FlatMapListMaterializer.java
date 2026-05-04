@@ -36,7 +36,7 @@ public class FlatMapListMaterializer<E, F> extends StatefulListMaterializer<F> {
     private final Iterator<E> iterator;
     private final IndexedFunction<? super E, ? extends Iterable<F>> mapper;
 
-    private Iterator<F> elementIterator = EmptyListMaterializer.iteratorInstance();
+    private Iterator<F> elementIterator = EmptyListMaterializer.forwardIterator();
     private int pos;
 
     private InitialState(final @NotNull ListMaterializer<E> wrapped,

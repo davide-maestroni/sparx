@@ -177,7 +177,7 @@ public class AppendAllListMaterializer<E> implements ListMaterializer<E> {
 
   private static class UnorderedIterator<E> extends OrderedIterator<E> {
 
-    private int pos;
+    private long pos;
 
     private UnorderedIterator(final @NotNull IndexedIterator<E> iterator,
         final @NotNull IndexedIterator<E> appendIterator) {
@@ -193,7 +193,8 @@ public class AppendAllListMaterializer<E> implements ListMaterializer<E> {
 
     @Override
     public int nextIndex() {
-      return pos;
+      final int index = super.iterator.nextIndex();
+      return super.consumedElements ? IndexOverflowException.safeCast(pos + index) : index;
     }
   }
 }
