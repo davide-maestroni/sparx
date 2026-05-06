@@ -62,6 +62,8 @@ import sparx1.internal.lazy.list.FoldWhileListMaterializer;
 import sparx1.internal.lazy.list.IncludesAllListMaterializer;
 import sparx1.internal.lazy.list.IncludesSequenceListMaterializer;
 import sparx1.internal.lazy.list.InsertAfterListMaterializer;
+import sparx1.internal.lazy.list.InsertAllAfterListMaterializer;
+import sparx1.internal.lazy.list.InterleaveListMaterializer;
 import sparx1.internal.lazy.list.IteratorToListMaterializer;
 import sparx1.internal.lazy.list.ListToListMaterializer;
 import sparx1.internal.lazy.list.SuppliedListMaterializer;
@@ -1235,24 +1237,48 @@ public class LazyList<E> extends List<E> {
         return this;
       }
       if (knownSize == numElements) {
-        return knownSize == 0 ? elementList(element) : append(element);
+        return knownSize == 0 ? elementList(element)
+            : new LazyList<E>(new AppendListMaterializer<E>(materializer, element));
       }
     }
     return new LazyList<E>(new InsertAfterListMaterializer<E>(materializer, numElements, element));
   }
 
   @Override
-  public List<E> insertAllAfter(int numElements, Iterable<? extends E> elements) {
-    return null;
+  public List<E> insertAllAfter(final int numElements,
+      final @NotNull Iterable<? extends E> elements) {
+    if (numElements < 0 || numElements == Integer.MAX_VALUE) {
+      return this;
+    }
+    final ListMaterializer<E> materializer = this.materializer;
+    final int knownSize = materializer.knownSize();
+    if (knownSize >= 0) {
+      if (knownSize < numElements) {
+        return this;
+      }
+      if (knownSize == numElements) {
+        final ListMaterializer<E> elementsMaterializer = getElementsMaterializer(
+            Require.notNull(elements, "elements"));
+        return knownSize == 0 ? new LazyList<E>(elementsMaterializer)
+            : new LazyList<E>(new AppendAllListMaterializer<E>(materializer, elementsMaterializer));
+      }
+    }
+    return new LazyList<E>(new InsertAllAfterListMaterializer<E>(materializer, numElements,
+        getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
-  public List<E> interleave(Iterable<? extends E> elements) {
-    return null;
+  public List<E> interleave(final @NotNull Iterable<? extends E> elements) {
+    final ListMaterializer<E> materializer = this.materializer;
+    if (materializer.knownSize() == 0 || getKnownSize(elements) == 0) {
+      return emptyList();
+    }
+    return new LazyList<E>(new InterleaveListMaterializer<E>(materializer,
+        getElementsMaterializer(Require.notNull(elements, "elements"))));
   }
 
   @Override
-  public List<E> interleaveInner(Iterable<? extends E> elements) {
+  public List<E> interleaveInner(final @NotNull Iterable<? extends E> elements) {
     return null;
   }
 

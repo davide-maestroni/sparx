@@ -15,7 +15,6 @@
  */
 package sparx1.internal.lazy.iterator;
 
-import java.util.NoSuchElementException;
 import sparx.util.annotation.Positive;
 import sparx1.internal.lazy.IteratorMaterializer;
 import sparx1.internal.lazy.ListMaterializer;
@@ -52,11 +51,7 @@ public class ListMaterializerToIteratorMaterializer<E> implements IteratorMateri
 
   @Override
   public E materializeNext() {
-    try {
-      return wrapped.materializeElement(pos++);
-    } catch (final IndexOutOfBoundsException ignored) {
-      throw new NoSuchElementException();
-    }
+    return wrapped.materializeElement(pos++);
   }
 
   @Override

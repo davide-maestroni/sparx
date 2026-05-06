@@ -59,6 +59,6 @@ public abstract class AbstractListMaterializer<E> implements ListMaterializer<E>
 
   @Override
   public @NotNull IndexedIterator<E> materializeUnorderedIterator() {
-    return new ForwardIterator<E>(this, 0);
+    return materializeForwardIterator(0);
   }
 }
